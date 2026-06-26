@@ -32,7 +32,6 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -45,6 +44,7 @@ import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.BoltTest;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.test.util.ServerUtil;
 import org.neo4j.bolt.testing.assertions.DiagnosticRecordAssertions;
 import org.neo4j.bolt.testing.assertions.FailureCauseAssertions;
@@ -62,7 +62,6 @@ import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
@@ -101,10 +100,10 @@ class ShutdownSequenceIT {
     }
 
     @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnector.thread_pool_min_size, 0);
-        settings.put(BoltConnector.thread_pool_max_size, 2);
-        settings.put(BoltConnectorInternalSettings.thread_pool_shutdown_wait_time, THREAD_POOL_SHUTDOWN_WAIT_TIME);
+    static void customizeSettings(SettingBuilder settings) {
+        settings.set(BoltConnector.thread_pool_min_size, 0)
+                .set(BoltConnector.thread_pool_max_size, 2)
+                .set(BoltConnectorInternalSettings.thread_pool_shutdown_wait_time, THREAD_POOL_SHUTDOWN_WAIT_TIME);
     }
 
     @BeforeEach

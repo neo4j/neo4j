@@ -20,20 +20,19 @@
 package org.neo4j.bolt;
 
 import java.time.Duration;
-import java.util.Map;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -44,11 +43,11 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @ExtendWith(OtherThreadExtension.class)
 public class ResetMessageIT {
     @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, Duration.ofSeconds(5));
-        settings.put(
-                BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes,
-                ByteUnit.kibiBytes(1));
+    static void customizeSettings(SettingBuilder settings) {
+        settings.set(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, Duration.ofSeconds(5))
+                .set(
+                        BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes,
+                        ByteUnit.kibiBytes(1));
     }
 
     @ProtocolTest

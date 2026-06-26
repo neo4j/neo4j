@@ -20,7 +20,6 @@
 package org.neo4j.bolt;
 
 import java.time.Duration;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
@@ -28,6 +27,7 @@ import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.test.util.ServerUtil;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
@@ -36,7 +36,6 @@ import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -54,9 +53,9 @@ class KeepAliveIT {
     private Neo4jWithSocket server;
 
     @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnector.connection_keep_alive, Duration.ofMillis(20));
-        settings.put(BoltConnector.connection_keep_alive_streaming_scheduling_interval, Duration.ofMillis(10));
+    static void customizeSettings(SettingBuilder settings) {
+        settings.set(BoltConnector.connection_keep_alive, Duration.ofMillis(20))
+                .set(BoltConnector.connection_keep_alive_streaming_scheduling_interval, Duration.ofMillis(10));
     }
 
     @BeforeEach

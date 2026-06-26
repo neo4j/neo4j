@@ -23,12 +23,14 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.support.AnnotationSupport;
+import org.junit.platform.commons.support.HierarchyTraversalMode;
 
 public final class AnnotationUtil {
     private AnnotationUtil() {}
@@ -49,14 +51,43 @@ public final class AnnotationUtil {
     }
 
     public static <A extends Annotation> List<A> findAnnotations(ExtensionContext context, Class<A> annotationType) {
-        var results = new ArrayList<A>();
+        return findAnnotationsWithContext(context, annotationType).stream()
+                .map(AnnotationContext::annotation)
+                .toList();
+    }
+
+    public static <A extends Annotation> List<AnnotationContext<A>> findAnnotationsWithContext(
+            ExtensionContext context, Class<A> annotationType) {
+        var results = new ArrayList<AnnotationContext<A>>();
 
         context.getTestClass()
-                .map(clazz -> AnnotationSupport.findRepeatableAnnotations(clazz, annotationType))
+                .map(clazz -> AnnotationSupport.findRepeatableAnnotations(clazz, annotationType).stream()
+                        .map(annotation -> new AnnotationContextImpl<>(annotation, clazz))
+                        .toList())
                 .ifPresent(results::addAll);
         context.getTestMethod()
-                .map(method -> AnnotationSupport.findRepeatableAnnotations(method, annotationType))
+                .map(method -> AnnotationSupport.findRepeatableAnnotations(method, annotationType).stream()
+                        .map(annotation ->
+                                new AnnotationContextImpl<>(annotation, context.getRequiredTestClass(), method))
+                        .toList())
                 .ifPresent(results::addAll);
+
+        return results;
+    }
+
+    public static <A extends Annotation> List<AnnotationContext<A>> findAllAnnotationsWithContext(
+            ExtensionContext context, Class<A> annotationType) {
+        var results = new ArrayList<AnnotationContext<A>>();
+        var clazz = context.getRequiredTestClass();
+
+        results.addAll(AnnotationSupport.findRepeatableAnnotations(clazz, annotationType).stream()
+                .map(annotation -> new AnnotationContextImpl<A>(annotation, clazz))
+                .toList());
+        results.addAll(
+                AnnotationSupport.findAnnotatedMethods(clazz, annotationType, HierarchyTraversalMode.BOTTOM_UP).stream()
+                        .flatMap(method -> AnnotationSupport.findRepeatableAnnotations(method, annotationType).stream()
+                                .map(annotation -> new AnnotationContextImpl<A>(annotation, clazz, method)))
+                        .toList());
 
         return results;
     }
@@ -90,7 +121,7 @@ public final class AnnotationUtil {
         }
     }
 
-    private static <A extends Annotation, T> T instantiateProvider(
+    public static <A extends Annotation, T> T instantiateProvider(
             A annotation, Function<A, Class<? extends T>> typeParameter) {
         return instantiateProvider(typeParameter.apply(annotation));
     }
@@ -134,5 +165,45 @@ public final class AnnotationUtil {
         }
 
         return stream.map(AnnotationUtil::<T>instantiateProvider).toList();
+    }
+
+    public interface AnnotationContext<A extends Annotation> {
+
+        A annotation();
+
+        Class<?> targetClass();
+
+        Optional<Method> targetMethod();
+    }
+
+    private static class AnnotationContextImpl<A extends Annotation> implements AnnotationContext<A> {
+        private final A annotation;
+        private final Class<?> targetClass;
+        private final Method targetMethod;
+
+        private AnnotationContextImpl(A annotation, Class<?> targetClass, Method targetMethod) {
+            this.annotation = annotation;
+            this.targetClass = targetClass;
+            this.targetMethod = targetMethod;
+        }
+
+        public AnnotationContextImpl(A annotation, Class<?> targetClass) {
+            this(annotation, targetClass, null);
+        }
+
+        @Override
+        public A annotation() {
+            return this.annotation;
+        }
+
+        @Override
+        public Class<?> targetClass() {
+            return this.targetClass;
+        }
+
+        @Override
+        public Optional<Method> targetMethod() {
+            return Optional.ofNullable(this.targetMethod);
+        }
     }
 }

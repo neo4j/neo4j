@@ -41,9 +41,11 @@ import org.neo4j.bolt.test.annotation.connection.transport.ExcludeTransport;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
+import org.neo4j.bolt.test.annotation.setup.preset.EnableAuthentication;
 import org.neo4j.bolt.test.annotation.test.BoltTest;
 import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
@@ -55,13 +57,10 @@ import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
@@ -80,6 +79,7 @@ import org.neo4j.values.virtual.VirtualValues;
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
+@EnableAuthentication
 @ExcludeWire(until = @Version(major = 5, minor = 0))
 @IncludeTransport({TransportType.TCP, TransportType.UNIX, TransportType.LOCAL})
 class AuthenticationIT {
@@ -96,11 +96,8 @@ class AuthenticationIT {
     }
 
     @SettingsFunction
-    protected void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(GraphDatabaseSettings.auth_enabled, true);
-        settings.put(BoltConnector.enable_unix_socket_auth, true);
-        settings.put(BoltConnectorInternalSettings.enable_unix_socket_user_database_access, true);
-        settings.put(BoltConnector.advertised_address, new SocketAddress("my-server.neo4j.io", 7688));
+    protected void customizeSettings(SettingBuilder settings) {
+        settings.set(BoltConnector.advertised_address, new SocketAddress("my-server.neo4j.io", 7688));
     }
 
     @AfterEach

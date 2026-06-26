@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.testing.client.UnwiredTestConnection;
 import org.neo4j.boltmessages.request.authentication.HelloMessage;
 import org.neo4j.boltmessages.request.authentication.LogonMessage;
@@ -37,7 +38,6 @@ import org.neo4j.boltmessages.response.RecordMessage;
 import org.neo4j.boltmessages.response.ResponseMessage;
 import org.neo4j.boltmessages.response.SuccessMessage;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.StringValue;
@@ -194,7 +194,7 @@ abstract class AbstractLocalChannelIT {
     }
 
     @SettingsFunction
-    protected void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnectorInternalSettings.enable_object_messages_local_connector, true);
+    protected static void customizeSettings(SettingBuilder settings) {
+        settings.set(BoltConnectorInternalSettings.enable_object_messages_local_connector, true);
     }
 }

@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
@@ -38,6 +37,7 @@ import org.neo4j.bolt.test.annotation.connection.transport.UseTransport;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
 import org.neo4j.bolt.test.util.ServerUtil;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
@@ -50,10 +50,8 @@ import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -86,14 +84,12 @@ public class UnixDomainSocketSchedulerIT {
     }
 
     @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnector.thread_pool_min_size, 0);
-        settings.put(BoltConnector.thread_pool_max_size, 1);
-        settings.put(BoltConnectorInternalSettings.enable_unix_socket_user_database_access, true);
-
-        settings.put(BoltConnector.unix_socket_use_dedicated_thread_pool, true);
-        settings.put(BoltConnector.unix_socket_dedicated_thread_pool_min_size, 0);
-        settings.put(BoltConnector.unix_socket_dedicated_thread_pool_max_size, 2);
+    static void customizeSettings(SettingBuilder settings) {
+        settings.set(BoltConnector.thread_pool_min_size, 0)
+                .set(BoltConnector.thread_pool_max_size, 1)
+                .set(BoltConnector.unix_socket_use_dedicated_thread_pool, true)
+                .set(BoltConnector.unix_socket_dedicated_thread_pool_min_size, 0)
+                .set(BoltConnector.unix_socket_dedicated_thread_pool_max_size, 2);
     }
 
     /**

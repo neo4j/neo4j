@@ -146,7 +146,7 @@ class BoltIT extends ExclusiveWebContainerTestBase {
                 assertThat(connection).negotiatesDefaultVersion();
             } finally {
                 if (connection != null) {
-                    connection.close();
+                    connection.disconnect();
                 }
             }
 

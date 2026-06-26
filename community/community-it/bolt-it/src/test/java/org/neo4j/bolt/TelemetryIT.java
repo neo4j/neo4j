@@ -20,12 +20,11 @@
 
 package org.neo4j.bolt;
 
-import java.util.Map;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
 import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
-import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
+import org.neo4j.bolt.test.annotation.setup.preset.EnableTelemetry;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.testing.annotation.Version;
@@ -38,22 +37,16 @@ import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.testing.messages.factory.TelemetryMessageBuilder;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
-import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
+@EnableTelemetry
 public class TelemetryIT {
-
-    @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnector.server_bolt_telemetry_enabled, true);
-    }
 
     @ProtocolTest
     @IncludeWire(until = @Version(major = 5, minor = 3))

@@ -54,7 +54,7 @@ public class ResetLockedNodeIT {
             throws Exception {
         setupConnection.send(wire.run("CREATE (n {id: 123})")).send(wire.pull());
         BoltConnectionAssertions.assertThat(setupConnection).receivesSuccess(2);
-        setupConnection.send(wire.goodbye()).close();
+        setupConnection.send(wire.goodbye()).disconnect();
 
         var paramsA = new MapValueBuilder();
         paramsA.add("currentId", intValue(123));

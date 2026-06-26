@@ -30,6 +30,7 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.basic.BasicAuthentication;
+import org.neo4j.bolt.test.connection.resolver.property.SimpleMutableTestPropertyContext;
 import org.neo4j.bolt.test.extension.db.ServerInstanceContext;
 import org.neo4j.bolt.testing.extension.dependency.StateMachineDependencyProvider;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
@@ -60,7 +61,11 @@ public class CommunityEditionStateMachineDependencyProvider implements StateMach
             Class<? extends TestDatabaseManagementServiceBuilder> defaultTestDatabaseManagementServiceBuilder,
             ExtensionContext context) {
         this.instanceContext = ServerInstanceContext.forExtensionContext(
-                context, defaultTestDatabaseManagementServiceBuilder, Collections.emptyList(), Collections.emptyList());
+                context,
+                new SimpleMutableTestPropertyContext(),
+                defaultTestDatabaseManagementServiceBuilder,
+                Collections.emptyList(),
+                Collections.emptyList());
     }
 
     private GraphDatabaseAPI getDatabaseAPI(ExtensionContext ctx) {

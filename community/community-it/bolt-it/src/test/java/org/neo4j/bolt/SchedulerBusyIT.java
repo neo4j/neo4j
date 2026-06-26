@@ -23,7 +23,6 @@ import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -34,6 +33,7 @@ import org.neo4j.bolt.test.annotation.connection.transport.ExcludeTransport;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
 import org.neo4j.bolt.test.util.ServerUtil;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
@@ -46,10 +46,8 @@ import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -84,14 +82,12 @@ class SchedulerBusyIT {
     }
 
     @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnector.thread_pool_min_size, 0);
-        settings.put(BoltConnector.thread_pool_max_size, 2);
-        settings.put(BoltConnectorInternalSettings.enable_unix_socket_user_database_access, true);
-
-        // deliberately disable dedicated thread pool for UNIX domain sockets so that we can test
-        // legacy behavior if configured
-        settings.put(BoltConnector.unix_socket_use_dedicated_thread_pool, false);
+    static void customizeSettings(SettingBuilder settings) {
+        settings.set(BoltConnector.thread_pool_min_size, 0)
+                .set(BoltConnector.thread_pool_max_size, 2)
+                // deliberately disable dedicated thread pool for UNIX domain sockets so that we can test
+                // legacy behavior if configured
+                .set(BoltConnector.unix_socket_use_dedicated_thread_pool, false);
     }
 
     @AfterEach

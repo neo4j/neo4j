@@ -32,6 +32,7 @@ import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -86,6 +87,7 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
     protected final CompositeByteBuf readBuffer = Unpooled.compositeBuffer();
     protected final List<ResponseMessage> responseMessageList;
 
+    private boolean closed;
     private Channel channel;
     protected volatile SSLEngine sslEngine;
 
@@ -100,6 +102,12 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
         this.wire = wire;
         this.eventLoopGroup = new MultiThreadIoEventLoopGroup(1, transport.createIoHandlerFactory());
         this.responseMessageList = Collections.synchronizedList(new ArrayList<>());
+    }
+
+    protected void ensureValid() {
+        if (this.closed) {
+            throw new IllegalStateException("Test client has already been closed");
+        }
     }
 
     protected abstract SocketAddress address();
@@ -162,11 +170,14 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     @Override
     public BoltWire wire() {
+        this.ensureValid();
         return this.wire;
     }
 
     @Override
     public BoltTestConnection connect() throws BoltTestClientException {
+        this.ensureValid();
+
         if (this.channel != null && this.channel.isOpen()) {
             return this;
         }
@@ -210,6 +221,8 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     @Override
     public BoltTestConnection setCertificate(X509Certificate certificate, PrivateKey privateKey) {
+        this.ensureValid();
+
         Objects.requireNonNull(certificate);
         Objects.requireNonNull(privateKey);
 
@@ -220,6 +233,8 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     @Override
     public <T> BoltTestConnection setOption(ChannelOption<T> option, T value) {
+        this.ensureValid();
+
         this.options.put(option, value);
 
         if (this.channel != null) {
@@ -231,6 +246,8 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     @Override
     public BoltTestConnection disconnect() {
+        this.ensureValid();
+
         if (this.channel == null) {
             return this;
         }
@@ -259,6 +276,8 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     @Override
     public BoltTestConnection sendRaw(ByteBuf buf) {
+        this.ensureValid();
+
         if (this.channel == null) {
             throw new BoltTestClientStateException("No active connection");
         }
@@ -323,6 +342,8 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     @Override
     public void unwired(Consumer<UnwiredTestConnection> work) {
+        this.ensureValid();
+
         this.channel.pipeline().remove(INBOUND_HANDLER_NAME);
         this.channel
                 .pipeline()
@@ -336,6 +357,8 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     @Override
     public UnwiredTestConnection sendRequest(RequestMessage requestMessage) {
+        this.ensureValid();
+
         if (this.channel == null) {
             throw new BoltTestClientStateException("No active connection");
         }
@@ -381,6 +404,8 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     @Override
     public ResponseMessage receiveResponse() {
+        this.ensureValid();
+
         if (this.channel == null) {
             throw new BoltTestClientStateException("No active connection");
         }
@@ -448,11 +473,15 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     @Override
     public long noopCount() {
+        this.ensureValid();
+
         return this.noopCount;
     }
 
     @Override
     public ByteBuf receive(int length) {
+        this.ensureValid();
+
         // buffer is deliberately unpooled in order to keep the test code as simple as
         // possible (performance being secondary here)
         var buf = Unpooled.buffer(length);
@@ -578,12 +607,24 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
     }
 
     @Override
-    public boolean isClosed() {
+    public boolean isDisconnected() {
+        this.ensureValid();
+
         try {
             this.sendRaw(new byte[] {0, 0});
             return !this.channel.isActive();
         } catch (BoltTestClientIOException e) {
             return true;
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            BoltTestConnection.super.close();
+        } finally {
+            ReferenceCountUtil.safeRelease(this.readBuffer);
+            this.closed = true;
         }
     }
 }

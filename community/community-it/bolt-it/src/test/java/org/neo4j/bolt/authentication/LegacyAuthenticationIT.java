@@ -28,14 +28,13 @@ import static org.neo4j.test.assertion.Assert.awaitUntilAsserted;
 import static org.neo4j.test.conditions.Conditions.TRUE;
 
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.protocol.common.connector.connection.AtomicSchedulingConnection;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
-import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
+import org.neo4j.bolt.test.annotation.setup.preset.EnableAuthentication;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
@@ -45,9 +44,7 @@ import org.neo4j.bolt.testing.assertions.FailureMetadataAssertions;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
@@ -67,6 +64,7 @@ import org.neo4j.values.virtual.VirtualValues;
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
+@EnableAuthentication
 @IncludeWire(until = @Version(major = 5, minor = 0))
 public class LegacyAuthenticationIT {
 
@@ -75,11 +73,6 @@ public class LegacyAuthenticationIT {
     @FactoryFunction
     protected void customizeDatabase(TestDatabaseManagementServiceBuilder factory) {
         factory.setUserLogProvider(this.userLogProvider);
-    }
-
-    @SettingsFunction
-    protected void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(GraphDatabaseSettings.auth_enabled, true);
     }
 
     @AfterEach

@@ -39,6 +39,8 @@ import org.junit.jupiter.api.extension.TestWatcher;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
+import org.neo4j.bolt.test.connection.resolver.property.SimpleMutableTestPropertyContext;
+import org.neo4j.bolt.test.connection.resolver.property.TestPropertyContext;
 import org.neo4j.bolt.test.connection.transport.DefaultTransportSelector;
 import org.neo4j.bolt.test.connection.transport.TransportSelector;
 import org.neo4j.bolt.test.extension.db.ServerInstanceContext;
@@ -75,10 +77,12 @@ public final class BoltTestSupportExtension implements TestTemplateInvocationCon
                 .filter(type -> BoltTestExtension.PlaceholderTestDatabaseManagementServiceBuilder.class != type)
                 .orElseGet(() -> (Class) this.getDefaultDatabaseFactoryType());
 
+        var properties = new SimpleMutableTestPropertyContext();
+
         var instanceContext = ServerInstanceContext.forExtensionContext(
-                context, databaseFactoryType, Collections.emptyList(), List.of((ctx, settings) -> {
-                    settings.put(BoltConnector.enabled, true);
-                    settings.put(BoltConnector.encryption_level, OPTIONAL);
+                context, properties, databaseFactoryType, Collections.emptyList(), List.of((p, settings) -> {
+                    settings.set(BoltConnector.enabled, true);
+                    settings.set(BoltConnector.encryption_level, OPTIONAL);
                 }));
 
         var transport = ConnectorTransport.selectOptimal()
@@ -88,8 +92,7 @@ public final class BoltTestSupportExtension implements TestTemplateInvocationCon
         var templates = this.getTransportTypes(context)
                 .filter(transportType -> transportType.getFactory().isSupported(transport))
                 .flatMap(transportType -> this.getWires(context)
-                        .map(wire ->
-                                this.configure(databaseFactoryType, instanceContext, transport, transportType, wire)))
+                        .map(wire -> this.configure(properties, instanceContext, transport, transportType, wire)))
                 .iterator();
 
         var it = new TestTemplateIterator(templates);
@@ -142,12 +145,12 @@ public final class BoltTestSupportExtension implements TestTemplateInvocationCon
     }
 
     protected BoltTestConfig configure(
-            Class<? extends TestDatabaseManagementServiceBuilder> databaseFactoryType,
+            TestPropertyContext propertyContext,
             ServerInstanceContext instanceContext,
             ConnectorTransport transport,
             TransportType transportType,
             BoltWire wire) {
-        return new BoltTestConfig(databaseFactoryType, instanceContext, transport, transportType, wire);
+        return new BoltTestConfig(propertyContext, instanceContext, transport, transportType, wire);
     }
 
     protected Class<? extends TestDatabaseManagementServiceBuilder> getDefaultDatabaseFactoryType() {

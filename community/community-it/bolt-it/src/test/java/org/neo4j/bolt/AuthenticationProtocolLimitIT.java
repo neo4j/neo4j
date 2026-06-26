@@ -22,22 +22,21 @@ package org.neo4j.bolt;
 import static org.neo4j.bolt.testing.messages.AbstractBoltWire.MESSAGE_TAG_HELLO;
 import static org.neo4j.bolt.testing.messages.AbstractBoltWire.MESSAGE_TAG_LOGON;
 
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
 import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
+import org.neo4j.bolt.test.annotation.setup.preset.EnableAuthentication;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.Level;
 import org.neo4j.logging.LogAssertions;
@@ -49,6 +48,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
+@EnableAuthentication
 public class AuthenticationProtocolLimitIT {
 
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
@@ -61,11 +61,9 @@ public class AuthenticationProtocolLimitIT {
     }
 
     @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(GraphDatabaseSettings.auth_enabled, true);
-
-        settings.put(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_depth, 4);
-        settings.put(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_elements, 64);
+    static void customizeSettings(SettingBuilder settings) {
+        settings.set(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_depth, 4);
+        settings.set(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_elements, 64);
     }
 
     @AfterEach

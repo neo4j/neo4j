@@ -24,7 +24,6 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
 import java.nio.file.Path;
 import java.security.cert.X509Certificate;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
@@ -32,11 +31,11 @@ import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.pki.PkiUtils;
 import org.neo4j.test.extension.Inject;
@@ -65,12 +64,12 @@ class TransportSecurityIT {
     private X509Certificate certificate;
 
     @SettingsFunction
-    void customizeSettings(Map<Setting<?>, Object> settings) {
+    void customizeSettings(SettingBuilder settings) {
         var policy = SslPolicyConfig.forScope(BOLT);
 
-        settings.put(policy.enabled, true);
-        settings.put(policy.public_certificate, this.certFile.toAbsolutePath());
-        settings.put(policy.private_key, this.keyFile.toAbsolutePath());
+        settings.set(policy.enabled, true)
+                .set(policy.public_certificate, this.certFile.toAbsolutePath())
+                .set(policy.private_key, this.keyFile.toAbsolutePath());
     }
 
     @BeforeAll

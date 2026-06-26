@@ -21,22 +21,21 @@ package org.neo4j.bolt.test.annotation.setup;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.neo4j.bolt.test.connection.setup.SettingBuilder;
-import org.neo4j.bolt.test.connection.setup.SettingsFunctionSettingCustomizer;
+import org.neo4j.bolt.test.connection.setup.SettingCustomizer;
 
 /**
- * Marks the annotated function as a settings function used when initializing a new server
- * instance.
- * <p/>
- * The annotated function is expected to accept a single parameter of type
- * {@link SettingBuilder} and be marked static (as it is invoked prior to initializing its
- * associated test template).
+ * Registers a setting customizer which adjusts the server configuration for the duration of a Bolt
+ * integration test.
  */
 @Documented
-@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@CustomizeConfig(SettingsFunctionSettingCustomizer.class)
-public @interface SettingsFunction {}
+@Repeatable(CustomizeConfigHandlers.class)
+@Target({ElementType.ANNOTATION_TYPE, ElementType.TYPE, ElementType.METHOD})
+public @interface CustomizeConfig {
+
+    Class<? extends SettingCustomizer> value();
+}

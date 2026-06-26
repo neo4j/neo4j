@@ -27,7 +27,7 @@ import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
-import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
+import org.neo4j.bolt.test.annotation.setup.preset.DisableUnixUserDatabaseAccess;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.testing.annotation.Version;
@@ -40,26 +40,18 @@ import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.boltmessages.request.connection.RoutingContext;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
+@DisableUnixUserDatabaseAccess
 @IncludeTransport(TransportType.UNIX)
 @DisabledOnOs(OS.WINDOWS)
 public class UnixDomainSocketIT {
-
-    @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        // by default, our tests will set up the UNIX domain socket connector with full functionality,
-        // but this test is designed to test the restriction specific to the connector
-        settings.put(BoltConnectorInternalSettings.enable_unix_socket_user_database_access, false);
-    }
 
     /**
      * Evaluates whether clients will receive an error when they indicate that routing should be

@@ -22,13 +22,13 @@ package org.neo4j.bolt.disccovery;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.regex.Pattern;
 import org.neo4j.bolt.protocol.common.connector.transport.NioConnectorTransport;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.testing.assertions.discovery.BeaconSignalAssertions;
 import org.neo4j.bolt.testing.assertions.discovery.DiscoveryAssertions;
 import org.neo4j.bolt.testing.client.TransportType;
@@ -36,7 +36,6 @@ import org.neo4j.bolt.testing.client.discovery.DiscoveryTestClient;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @EphemeralTestDirectoryExtension
@@ -49,11 +48,11 @@ public class DiscoveryBroadcastIT {
             Pattern.compile("^([A-Fa-f0-9]{8})-([A-Fa-f0-9]{4})-([A-Fa-f0-9]{4})-([A-Fa-f0-9]{4})-([A-Fa-f0-9]{12})$");
 
     @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnector.enable_discovery, true);
-        settings.put(BoltConnector.discovery_broadcast_interval, Duration.ofSeconds(5));
-        settings.put(BoltConnector.discovery_broadcast_jitter, 0);
-        settings.put(BoltConnector.advertised_address, new SocketAddress("neo.example.org", 7687));
+    static void customizeSettings(SettingBuilder settings) {
+        settings.set(BoltConnector.enable_discovery, true);
+        settings.set(BoltConnector.discovery_broadcast_interval, Duration.ofSeconds(5));
+        settings.set(BoltConnector.discovery_broadcast_jitter, 0);
+        settings.set(BoltConnector.advertised_address, new SocketAddress("neo.example.org", 7687));
     }
 
     // FIXME: We're abusing the test extension a little here - Accommodate this

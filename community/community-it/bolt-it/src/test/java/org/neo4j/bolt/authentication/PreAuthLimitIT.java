@@ -21,7 +21,6 @@ package org.neo4j.bolt.authentication;
 
 import static java.time.Duration.ofSeconds;
 
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +31,7 @@ import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.test.util.ServerUtil;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
@@ -46,7 +46,6 @@ import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
@@ -86,9 +85,9 @@ class PreAuthLimitIT {
     }
 
     @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes, 1000L);
-        settings.put(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, ofSeconds(2));
+    static void customizeSettings(SettingBuilder settings) {
+        settings.set(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes, 1000L)
+                .set(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, ofSeconds(2));
     }
 
     @BeforeEach

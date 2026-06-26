@@ -26,7 +26,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
-import org.neo4j.bolt.test.connection.resolver.AddressResolver;
+import org.neo4j.bolt.test.connection.resolver.address.AddressResolver;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 

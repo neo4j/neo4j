@@ -17,26 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.test.annotation.setup;
+package org.neo4j.bolt.test.annotation.setup.preset;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.neo4j.bolt.test.connection.setup.SettingBuilder;
-import org.neo4j.bolt.test.connection.setup.SettingsFunctionSettingCustomizer;
+import org.neo4j.bolt.test.annotation.setup.CustomizeConfig;
+import org.neo4j.bolt.test.connection.setup.preset.DisableUnixUserDatabaseAccessSettingCustomizer;
 
 /**
- * Marks the annotated function as a settings function used when initializing a new server
- * instance.
- * <p/>
- * The annotated function is expected to accept a single parameter of type
- * {@link SettingBuilder} and be marked static (as it is invoked prior to initializing its
- * associated test template).
+ * Enables user database access via UNIX domain sockets for the duration of a Bolt integration test.
  */
 @Documented
-@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@CustomizeConfig(SettingsFunctionSettingCustomizer.class)
-public @interface SettingsFunction {}
+@Target({ElementType.ANNOTATION_TYPE, ElementType.TYPE, ElementType.METHOD})
+@CustomizeConfig(DisableUnixUserDatabaseAccessSettingCustomizer.class)
+public @interface DisableUnixUserDatabaseAccess {}

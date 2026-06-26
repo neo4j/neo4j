@@ -24,8 +24,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import org.neo4j.bolt.test.connection.resolver.AddressResolver;
-import org.neo4j.bolt.test.connection.resolver.DefaultAddressResolver;
+import org.neo4j.bolt.test.connection.resolver.address.AddressResolver;
+import org.neo4j.bolt.test.connection.resolver.address.DefaultAddressResolver;
 import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.transport.Neo4jWithSocketSupportExtension;
 

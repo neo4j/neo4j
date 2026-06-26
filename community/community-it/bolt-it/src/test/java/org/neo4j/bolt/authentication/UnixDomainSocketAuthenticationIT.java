@@ -20,7 +20,6 @@
 package org.neo4j.bolt.authentication;
 
 import java.io.IOException;
-import java.util.Map;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -32,6 +31,7 @@ import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
@@ -40,7 +40,6 @@ import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -52,9 +51,8 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 public class UnixDomainSocketAuthenticationIT {
 
     @SettingsFunction
-    protected void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(GraphDatabaseSettings.auth_enabled, true);
-        settings.put(BoltConnector.enable_unix_socket_auth, false);
+    void customizeSettings(SettingBuilder settings) {
+        settings.set(GraphDatabaseSettings.auth_enabled, true).set(BoltConnector.enable_unix_socket_auth, false);
     }
 
     /**

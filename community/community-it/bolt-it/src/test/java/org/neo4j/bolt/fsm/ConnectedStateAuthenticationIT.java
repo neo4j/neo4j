@@ -23,25 +23,18 @@ import static org.neo4j.bolt.testing.assertions.MapValueAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.StateMachineHandleAssertions.assertThat;
 
-import java.util.Map;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
-import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
+import org.neo4j.bolt.test.annotation.setup.preset.EnableAuthentication;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.messages.BoltMessages;
 import org.neo4j.bolt.testing.response.ResponseRecorder;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.values.storable.Values;
 
+@EnableAuthentication
 @CommunityStateMachineTestExtension
 class ConnectedStateAuthenticationIT {
-
-    @SettingsFunction
-    static void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(GraphDatabaseSettings.auth_enabled, true);
-    }
 
     @StateMachineTest(until = @org.neo4j.bolt.testing.annotation.Version(major = 5, minor = 0))
     void shouldGiveCredentialsExpiredStatusOnExpiredCredentials(

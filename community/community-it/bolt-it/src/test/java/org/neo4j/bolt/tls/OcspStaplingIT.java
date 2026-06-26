@@ -32,7 +32,6 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.EnumSet;
-import java.util.Map;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -63,13 +62,13 @@ import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.testing.client.CertConfiguredSecureSocketConnection;
 import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.pki.PkiUtils;
@@ -146,13 +145,13 @@ class OcspStaplingIT {
     }
 
     @SettingsFunction
-    void customizeSettings(Map<Setting<?>, Object> settings) {
+    void customizeSettings(SettingBuilder settings) {
         var policy = SslPolicyConfig.forScope(BOLT);
-        settings.put(policy.enabled, true);
-        settings.put(policy.public_certificate, endUserCertFile.toAbsolutePath());
-        settings.put(policy.private_key, endUserKeyFile.toAbsolutePath());
 
-        settings.put(CommonConnectorConfig.ocsp_stapling_enabled, true);
+        settings.set(policy.enabled, true)
+                .set(policy.public_certificate, endUserCertFile.toAbsolutePath())
+                .set(policy.private_key, endUserKeyFile.toAbsolutePath())
+                .set(CommonConnectorConfig.ocsp_stapling_enabled, true);
     }
 
     @TransportTest

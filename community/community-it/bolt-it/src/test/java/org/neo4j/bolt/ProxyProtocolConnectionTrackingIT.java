@@ -40,6 +40,7 @@ import org.neo4j.bolt.test.annotation.connection.initializer.Connected;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
+import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.TransportType;
@@ -49,7 +50,6 @@ import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -75,8 +75,8 @@ public class ProxyProtocolConnectionTrackingIT {
     Neo4jWithSocket neo4jWithSocket;
 
     @SettingsFunction
-    void customizeServer(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnectorInternalSettings.proxy_protocol_enabled, true);
+    void customizeServer(SettingBuilder settings) {
+        settings.set(BoltConnectorInternalSettings.proxy_protocol_enabled, true);
     }
 
     @TransportTest
