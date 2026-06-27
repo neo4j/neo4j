@@ -126,6 +126,13 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         cardinalities,
         otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos, providedOrders)
       )),
+      Some(pushSemiApplyAboveAggregation(
+        context.planContext,
+        solveds,
+        cardinalities,
+        providedOrders,
+        otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos)
+      )),
       Some(removeIdenticalPlans(otherAttributes.withAlso(
         cardinalities,
         effectiveCardinalities,
