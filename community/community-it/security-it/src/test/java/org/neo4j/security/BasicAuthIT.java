@@ -40,6 +40,7 @@ import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.test.utils.TestDirectory;
 
 @DbmsExtension(configurationCallback = "configure")
@@ -81,6 +82,7 @@ class BasicAuthIT {
     }
 
     @Test
+    @SkipOnSpd(reason = "SPD is enterprise only", notes = SkipOnSpd.Note.irrelevant)
     void shouldFailImpersonate() throws Exception {
         // GIVEN
         var systemDatabase = managementService.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);

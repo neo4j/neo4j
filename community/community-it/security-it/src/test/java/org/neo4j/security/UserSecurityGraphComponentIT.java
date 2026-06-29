@@ -95,11 +95,13 @@ import org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion;
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 @TestInstance(PER_CLASS)
+@SkipOnSpd(reason = "SPD is enterprise only", notes = SkipOnSpd.Note.irrelevant)
 class UserSecurityGraphComponentIT {
     @Inject
     @SuppressWarnings("unused")
