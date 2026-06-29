@@ -212,10 +212,13 @@ trait ExecutorPool extends Executors {
 
   private def setupSecurity(dbms: DatabaseManagementService): Unit = {
     Using.resource(dbms.database(SYSTEM_DATABASE_NAME).beginTx()) { tx =>
-      tx.execute("ALTER USER neo4j SET PASSWORD CHANGE NOT REQUIRED")
+      // Close each Result so its statement is released before commit; otherwise the open
+      // statements are flagged by track_tx_statement_close when the committed tx is closed.
+      def exec(query: String): Unit = Using.resource(tx.execute(query))(_ => ())
+      exec("ALTER USER neo4j SET PASSWORD CHANGE NOT REQUIRED")
       if (conf.useEnterprise) {
-        tx.execute("CREATE USER readonly SET PASSWORD 'readonly' CHANGE NOT REQUIRED")
-        tx.execute("GRANT ROLE reader to readonly")
+        exec("CREATE USER readonly SET PASSWORD 'readonly' CHANGE NOT REQUIRED")
+        exec("GRANT ROLE reader to readonly")
       }
       tx.commit()
     }

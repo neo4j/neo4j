@@ -237,14 +237,19 @@ case class FeatureDatabaseManagementService(
    */
   def withNewExecutor(): FeatureDatabaseManagementService = {
     cypherExecutor.close()
+    restrictedCypherExecutor.close()
     FeatureDatabaseManagementService(databaseManagementService, executorFactory, databaseName, notificationConfig)
   }
 
-  def closeExecutor(): Unit = cypherExecutor.close()
+  def closeExecutor(): Unit = {
+    cypherExecutor.close()
+    restrictedCypherExecutor.close()
+  }
   def closeExecutorFactory(): Unit = executorFactory.close()
 
   def shutdown(): Unit = {
     cypherExecutor.close()
+    restrictedCypherExecutor.close()
     executorFactory.close()
     databaseManagementService.shutdown()
   }
