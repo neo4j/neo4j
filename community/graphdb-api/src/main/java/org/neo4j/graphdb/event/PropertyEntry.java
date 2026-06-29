@@ -91,4 +91,18 @@ public interface PropertyEntry<T> {
      * instance represents a removed property.
      */
     Object value();
+
+    /**
+     * @return true if this property entry has a previously committed value.
+     * Depending on {@link org.neo4j.graphdb.event.TransactionData.DataSelection} this might be the actual
+     * value or just a place-holder value. This method distinguishes between the two.
+     */
+    boolean hasPreviouslyCommittedValue();
+
+    /**
+     * @return true if this property entry has a value.
+     * Depending on {@link org.neo4j.graphdb.event.TransactionData.DataSelection} this might be the actual
+     * value or just a place-holder value. This method distinguishes between the two.
+     */
+    boolean hasValue();
 }

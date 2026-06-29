@@ -22,7 +22,9 @@ package org.neo4j.dbms.database;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -81,6 +83,11 @@ public class StandaloneDbmsRuntimeVersionProvider
     @Override
     public void afterRollback(TransactionData data, Object state, GraphDatabaseService databaseService) {
         // not interested in this event
+    }
+
+    @Override
+    public Set<TransactionData.DataSelection> transactionDataSelection() {
+        return Collections.emptySet();
     }
 
     private void fetchStateFromSystemDatabase() {

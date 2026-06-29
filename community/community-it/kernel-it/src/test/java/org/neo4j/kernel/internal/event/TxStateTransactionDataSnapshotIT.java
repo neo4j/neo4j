@@ -29,13 +29,17 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData.DataSelection;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -444,6 +448,56 @@ class TxStateTransactionDataSnapshotIT {
                 assertThat(entry.label().name()).isEqualTo(label.name());
                 assertThat(entry.node().getElementId()).isEqualTo(nodeId);
             }
+        }
+    }
+
+    @Test
+    void shouldAccessDeletedEntitiesEvenIfNotSelectingRemovedProperties() throws TransactionFailureException {
+        // given
+        String nodeId;
+        String relationshipId;
+        try (Transaction transaction = database.beginTx()) {
+            var node = transaction.createNode();
+            node.setProperty("p", "v");
+            nodeId = node.getElementId();
+            Relationship relationship = node.createRelationshipTo(transaction.createNode(), withName("relType"));
+            relationship.setProperty("p", "v");
+            relationshipId = relationship.getElementId();
+            transaction.commit();
+        }
+
+        // when
+        try (Transaction transaction = database.beginTx()) {
+            Node node = transaction.getNodeByElementId(nodeId);
+            Relationship relationship = transaction.getRelationshipByElementId(relationshipId);
+            node.delete();
+            relationship.delete();
+
+            var kernelTransaction = getKernelTransaction(transaction);
+            kernelTransaction.commit(new KernelTransaction.Monitor() {
+                private TxStateTransactionDataSnapshot snapshot;
+
+                @Override
+                public void beforeApply() {
+                    snapshot = new TxStateTransactionDataSnapshot(
+                            kernelTransaction.txState(),
+                            kernelTransaction.newStorageReader(),
+                            kernelTransaction,
+                            true,
+                            Set.of());
+                }
+
+                @Override
+                public void afterApply() {
+                    try (var close = snapshot) {
+                        assertThat(snapshot.isDeleted(node));
+                        assertThat(snapshot.isDeleted(relationship));
+                        assertThat(Iterables.asList(snapshot.deletedNodes())).isEqualTo(List.of(node));
+                        assertThat(Iterables.asList(snapshot.deletedRelationships()))
+                                .isEqualTo(List.of(relationship));
+                    }
+                }
+            });
         }
     }
 

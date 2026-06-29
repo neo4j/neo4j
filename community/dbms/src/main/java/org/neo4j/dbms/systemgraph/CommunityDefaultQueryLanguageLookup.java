@@ -23,8 +23,10 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.neo4j.cypher.internal.CypherVersion;
@@ -143,6 +145,11 @@ public class CommunityDefaultQueryLanguageLookup implements DefaultQueryLanguage
 
         @Override
         public void afterRollback(TransactionData data, Void state, GraphDatabaseService databaseService) {}
+
+        @Override
+        public Set<TransactionData.DataSelection> transactionDataSelection() {
+            return Collections.emptySet();
+        }
     }
 
     private class Life implements Lifecycle {

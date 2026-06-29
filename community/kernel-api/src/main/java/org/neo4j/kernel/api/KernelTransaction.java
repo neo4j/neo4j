@@ -109,13 +109,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
      */
     long READ_ONLY_ID = 0;
 
-    Monitor NO_MONITOR = new Monitor() {
-        @Override
-        public void beforeApply() {}
-
-        @Override
-        public void afterCommit(ExecutionStatistics statistics) {}
-    };
+    Monitor NO_MONITOR = new Monitor() {};
 
     /**
      * Commit and any changes introduced as part of this transaction.
@@ -536,32 +530,30 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
          * Called during commit after all logical transaction state have been converted into storage commands,
          * but before the commands have been applied to the transaction log and store.
          */
-        void beforeApply();
+        default void beforeApply() {}
+
+        /**
+         * Called during commit after all commands have been applied.
+         * but before the transaction has been marked as closed (it has not yet started to close).
+         */
+        default void afterApply() {}
 
         /**
          * Called after the transaction has been committed, when its execution statistics are still available.
          */
-        void afterCommit(ExecutionStatistics statistics);
+        default void afterCommit(ExecutionStatistics statistics) {}
 
         static Monitor withBeforeApply(Runnable beforeApply) {
             return new Monitor() {
-
                 @Override
                 public void beforeApply() {
                     beforeApply.run();
                 }
-
-                @Override
-                public void afterCommit(ExecutionStatistics statistics) {}
             };
         }
 
         static Monitor withAfterCommit(Consumer<ExecutionStatistics> onFinalStatistics) {
             return new Monitor() {
-
-                @Override
-                public void beforeApply() {}
-
                 @Override
                 public void afterCommit(ExecutionStatistics statistics) {
                     onFinalStatistics.accept(statistics);

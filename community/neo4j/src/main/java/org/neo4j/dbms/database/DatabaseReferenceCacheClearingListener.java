@@ -19,6 +19,8 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.Collections;
+import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
@@ -39,5 +41,10 @@ public final class DatabaseReferenceCacheClearingListener extends TransactionEve
     public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
         idRepository.invalidateAll();
         refRepository.invalidateAll();
+    }
+
+    @Override
+    public Set<TransactionData.DataSelection> transactionDataSelection() {
+        return Collections.emptySet();
     }
 }

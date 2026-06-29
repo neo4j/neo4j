@@ -61,6 +61,16 @@ class PropertyEntryImpl<T> implements PropertyEntry<T> {
         return this.valueBeforeTx;
     }
 
+    @Override
+    public boolean hasPreviouslyCommittedValue() {
+        return true;
+    }
+
+    @Override
+    public boolean hasValue() {
+        return true;
+    }
+
     void compareToAssigned(PropertyEntry<T> entry) {
         basicCompareTo(entry);
         assertEqualsMaybeNull(entry.value(), value(), entry.entity(), entry.key());

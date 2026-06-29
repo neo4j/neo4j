@@ -381,12 +381,15 @@ org.neo4j.graphdb.event.LabelEntry::label() org.neo4j.graphdb.Label public abstr
 org.neo4j.graphdb.event.LabelEntry::node() org.neo4j.graphdb.Node public abstract
 org.neo4j.graphdb.event.PropertyEntry<T extends java.lang.Object> public abstract interface
 org.neo4j.graphdb.event.PropertyEntry<T>::entity() #T public abstract
+org.neo4j.graphdb.event.PropertyEntry<T>::hasPreviouslyCommittedValue() boolean public abstract
+org.neo4j.graphdb.event.PropertyEntry<T>::hasValue() boolean public abstract
 org.neo4j.graphdb.event.PropertyEntry<T>::key() java.lang.String public abstract
 org.neo4j.graphdb.event.PropertyEntry<T>::previouslyCommittedValue() java.lang.Object public abstract
 org.neo4j.graphdb.event.PropertyEntry<T>::value() java.lang.Object public abstract
 org.neo4j.graphdb.event.TransactionData public abstract interface
 org.neo4j.graphdb.event.TransactionData.DataSelection public static final enum extends java.lang.Enum<org.neo4j.graphdb.event.TransactionData.DataSelection>
 org.neo4j.graphdb.event.TransactionData.DataSelection::deletedNodeLabels org.neo4j.graphdb.event.TransactionData.DataSelection public static final
+org.neo4j.graphdb.event.TransactionData.DataSelection::removedPropertKeys org.neo4j.graphdb.event.TransactionData.DataSelection public static final
 org.neo4j.graphdb.event.TransactionData.DataSelection::removedPropertyValues org.neo4j.graphdb.event.TransactionData.DataSelection public static final
 org.neo4j.graphdb.event.TransactionData.DataSelection::replacedPropertyValues org.neo4j.graphdb.event.TransactionData.DataSelection public static final
 org.neo4j.graphdb.event.TransactionData.DataSelection::valueOf(java.lang.String) org.neo4j.graphdb.event.TransactionData.DataSelection public static
@@ -400,6 +403,7 @@ org.neo4j.graphdb.event.TransactionData::deletedNodes() java.lang.Iterable<org.n
 org.neo4j.graphdb.event.TransactionData::deletedRelationships() java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
 org.neo4j.graphdb.event.TransactionData::getCommitTime() long public default
 org.neo4j.graphdb.event.TransactionData::getTransactionId() long public default
+org.neo4j.graphdb.event.TransactionData::hasDataChanges() boolean public default
 org.neo4j.graphdb.event.TransactionData::isDeleted(org.neo4j.graphdb.Node) boolean public abstract
 org.neo4j.graphdb.event.TransactionData::isDeleted(org.neo4j.graphdb.Relationship) boolean public abstract
 org.neo4j.graphdb.event.TransactionData::isLast() boolean public default

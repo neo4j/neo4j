@@ -115,7 +115,11 @@ public final class DefaultCommitter implements TransactionCommitter {
             // TODO:misha in default mode append index is the same as transaction id, until log merge will happen.
             // Transaction id will need to be extracted from result object when that is available to work regardless
             // mode and log merge progress
-            return commitProcess.commit(batch, transactionWriteEvent, mode);
+            try {
+                return commitProcess.commit(batch, transactionWriteEvent, mode);
+            } finally {
+                monitor.afterApply();
+            }
         }
         return KernelTransaction.READ_ONLY_ID;
     }

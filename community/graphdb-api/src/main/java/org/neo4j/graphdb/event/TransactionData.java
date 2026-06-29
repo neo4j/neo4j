@@ -210,6 +210,13 @@ public interface TransactionData {
         return true;
     }
 
+    /**
+     * @return whether this transaction contains any data changes.
+     */
+    default boolean hasDataChanges() {
+        return true;
+    }
+
     enum DataSelection {
         /**
          * The values of properties that are modified in this transaction.
@@ -220,6 +227,12 @@ public interface TransactionData {
          * The values of properties that are removed in this transaction.
          */
         removedPropertyValues,
+
+        /**
+         * The keys of properties for deleted entities, but not their actual values.
+         * Implied for a selection already including {@link #removedPropertyValues}.
+         */
+        removedPropertKeys,
 
         /**
          * The labels that were removed from deleted nodes.

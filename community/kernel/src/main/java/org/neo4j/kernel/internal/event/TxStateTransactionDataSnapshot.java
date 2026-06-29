@@ -22,6 +22,9 @@ package org.neo4j.kernel.internal.event;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newArrayList;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTY_KEYS;
+import static org.neo4j.storageengine.api.PropertySelection.onlyKeysSelection;
+import static org.neo4j.storageengine.api.PropertySelection.selection;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Iterator;
@@ -45,7 +48,6 @@ import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -207,6 +209,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         return isLast;
     }
 
+    @Override
+    public boolean hasDataChanges() {
+        return state.hasDataChanges();
+    }
+
     private void takeSnapshot(MemoryTracker memoryTracker) {
         var cursorContext = transaction.cursorContext();
         var storeCursors = transaction.storeCursors();
@@ -232,6 +239,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             throws PropertyKeyIdNotFoundKernelException {
         boolean includeRemovedPropertyValues = shouldInclude(DataSelection.removedPropertyValues);
         boolean includeReplacedPropertyValues = shouldInclude(DataSelection.replacedPropertyValues);
+        boolean includeRemovedPropertyKeys = includeRemovedPropertyValues
+                || includeReplacedPropertyValues
+                || shouldInclude(DataSelection.removedPropertKeys);
         for (RelationshipState relState : state.modifiedRelationships()) {
             Relationship relationship = relationship(relState.getId());
             Iterator<StorageProperty> added = relState.addedProperties().iterator();
@@ -248,6 +258,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                                 property.propertyKeyId(),
                                 this.relationship,
                                 properties,
+                                includeRemovedPropertyKeys,
                                 includeReplacedPropertyValues)));
             }
             relState.removedProperties().each(id -> {
@@ -258,7 +269,13 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                             relationship,
                             id,
                             null,
-                            committedValue(relState, id, this.relationship, properties, includeRemovedPropertyValues));
+                            committedValue(
+                                    relState,
+                                    id,
+                                    this.relationship,
+                                    properties,
+                                    includeRemovedPropertyKeys,
+                                    includeRemovedPropertyValues));
                     removedRelationshipProperties.add(entryView);
                 } catch (PropertyKeyIdNotFoundKernelException e) {
                     throw new IllegalStateException(
@@ -273,7 +290,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             throws PropertyKeyIdNotFoundKernelException {
         boolean includeRemovedPropertyValues = shouldInclude(DataSelection.removedPropertyValues);
         boolean includeReplacedPropertyValues = shouldInclude(DataSelection.replacedPropertyValues);
-
+        boolean includeRemovedPropertyKeys = includeRemovedPropertyValues
+                || includeReplacedPropertyValues
+                || shouldInclude(DataSelection.removedPropertKeys);
         for (NodeState nodeState : state.modifiedNodes()) {
             Iterator<StorageProperty> added = nodeState.addedProperties().iterator();
             long nodeId = nodeState.getId();
@@ -286,7 +305,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                         property.propertyKeyId(),
                         property.value(),
                         committedValue(
-                                nodeState, property.propertyKeyId(), node, properties, includeReplacedPropertyValues));
+                                nodeState,
+                                property.propertyKeyId(),
+                                node,
+                                properties,
+                                includeRemovedPropertyKeys,
+                                includeReplacedPropertyValues));
                 assignedNodeProperties.add(entryView);
             }
             nodeState.removedProperties().each(id -> {
@@ -297,7 +321,13 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                             nodeId,
                             id,
                             null,
-                            committedValue(nodeState, id, node, properties, includeRemovedPropertyValues)));
+                            committedValue(
+                                    nodeState,
+                                    id,
+                                    node,
+                                    properties,
+                                    includeRemovedPropertyKeys,
+                                    includeRemovedPropertyValues)));
                 } catch (PropertyKeyIdNotFoundKernelException e) {
                     throw new IllegalStateException("Not existing node properties was modified for node " + nodeId, e);
                 }
@@ -312,27 +342,40 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private void snapshotRemovedRelationships(
             MemoryTracker memoryTracker, StoragePropertyCursor properties, TokenRead tokenRead) {
         boolean includeRemovedPropertyValues = shouldInclude(DataSelection.removedPropertyValues);
-        if (!includeRemovedPropertyValues) {
-            return;
-        }
-
+        boolean includeRemovedPropertyKeys =
+                includeRemovedPropertyValues || shouldInclude(DataSelection.removedPropertKeys);
         state.addedAndRemovedRelationships().getRemoved().each(relId -> {
+            if (!includeRemovedPropertyValues && !includeRemovedPropertyKeys) {
+                // We don't need to include the properties for this deleted relationship. There's a chance
+                // we can get the other meta-data directly from the tx-state - try that first.
+                boolean foundInTxState = state.getRelationshipStateEvenDeleted(relId)
+                        .accept((relationshipId, typeId, startNodeId, endNodeId) -> relationshipsReadFromStore.put(
+                                relationshipId, (RelationshipEntity) internalTransaction.newRelationshipEntity(
+                                        relationshipId, startNodeId, typeId, endNodeId)));
+                if (foundInTxState) {
+                    return;
+                }
+            }
+
             Relationship relationship = relationship(relId);
             this.relationship.single(relId);
             if (this.relationship.next()) {
-                this.relationship.properties(properties, ALL_PROPERTIES);
-                while (properties.next()) {
-                    try {
-                        removedRelationshipProperties.add(createRelationshipPropertyEntryView(
-                                memoryTracker,
-                                tokenRead,
-                                relationship,
-                                properties.propertyKey(),
-                                null,
-                                properties.propertyValue()));
-                    } catch (PropertyKeyIdNotFoundKernelException e) {
-                        throw new IllegalStateException(
-                                "Not existing node properties was modified for relationship " + relId, e);
+                if (includeRemovedPropertyKeys) {
+                    this.relationship.properties(
+                            properties, includeRemovedPropertyValues ? ALL_PROPERTIES : ALL_PROPERTY_KEYS);
+                    while (properties.next()) {
+                        try {
+                            removedRelationshipProperties.add(createRelationshipPropertyEntryView(
+                                    memoryTracker,
+                                    tokenRead,
+                                    relationship,
+                                    properties.propertyKey(),
+                                    null,
+                                    includeRemovedPropertyValues ? properties.propertyValue() : NO_VALUE));
+                        } catch (PropertyKeyIdNotFoundKernelException e) {
+                            throw new IllegalStateException(
+                                    "Not existing node properties was modified for relationship " + relId, e);
+                        }
                     }
                 }
             }
@@ -346,15 +389,17 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             TokenRead tokenRead) {
         boolean includeDeletedNodeLabels = shouldInclude(DataSelection.deletedNodeLabels);
         boolean includeRemovedPropertyValues = shouldInclude(DataSelection.removedPropertyValues);
-        if (!includeDeletedNodeLabels && !includeRemovedPropertyValues) {
+        boolean includeRemovedPropertyKeys =
+                includeRemovedPropertyValues || shouldInclude(DataSelection.removedPropertKeys);
+        if (!includeDeletedNodeLabels && !includeRemovedPropertyKeys) {
             return;
         }
 
         state.addedAndRemovedNodes().getRemoved().each(nodeId -> {
             node.single(nodeId);
             if (node.next()) {
-                if (includeRemovedPropertyValues) {
-                    node.properties(properties, ALL_PROPERTIES);
+                if (includeRemovedPropertyKeys) {
+                    node.properties(properties, includeRemovedPropertyValues ? ALL_PROPERTIES : ALL_PROPERTY_KEYS);
                     while (properties.next()) {
                         try {
                             removedNodeProperties.add(createNodePropertyEntryView(
@@ -363,7 +408,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                                     nodeId,
                                     properties.propertyKey(),
                                     null,
-                                    properties.propertyValue()));
+                                    includeRemovedPropertyValues ? properties.propertyValue() : NO_VALUE));
                         } catch (PropertyKeyIdNotFoundKernelException e) {
                             throw new IllegalStateException(
                                     "Not existing properties was modified for node " + nodeId, e);
@@ -473,8 +518,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             int property,
             StorageNodeCursor node,
             StoragePropertyCursor properties,
+            boolean readPropertyKey,
             boolean readPropertyValue) {
-        if (!readPropertyValue || state.nodeIsAddedInThisBatch(nodeState.getId())) {
+        if (!readPropertyKey || state.nodeIsAddedInThisBatch(nodeState.getId())) {
             return NO_VALUE;
         }
 
@@ -482,13 +528,17 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         if (!node.next()) {
             return NO_VALUE;
         }
-        return committedValue(properties, node, property, node.entityReference());
+        return committedValue(properties, node, property, readPropertyValue);
     }
 
     private static Value committedValue(
-            StoragePropertyCursor properties, StorageEntityCursor cursor, int propertyKey, long ownerReference) {
-        cursor.properties(properties, PropertySelection.selection(propertyKey));
-        return properties.next() ? properties.propertyValue() : NO_VALUE;
+            StoragePropertyCursor properties, StorageEntityCursor cursor, int propertyKey, boolean readPropertyValue) {
+        if (readPropertyValue) {
+            cursor.properties(properties, selection(propertyKey));
+            return properties.next() ? properties.propertyValue() : null;
+        }
+        cursor.properties(properties, onlyKeysSelection(propertyKey));
+        return properties.next() ? NO_VALUE : null;
     }
 
     private Value committedValue(
@@ -496,8 +546,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             int property,
             StorageRelationshipScanCursor relationship,
             StoragePropertyCursor properties,
+            boolean readPropertyKey,
             boolean readPropertyValue) {
-        if (!readPropertyValue || state.relationshipIsAddedInThisBatch(relState.getId())) {
+        if (!readPropertyKey || state.relationshipIsAddedInThisBatch(relState.getId())) {
             return NO_VALUE;
         }
 
@@ -506,6 +557,6 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             return NO_VALUE;
         }
 
-        return committedValue(properties, relationship, property, relationship.entityReference());
+        return committedValue(properties, relationship, property, readPropertyValue);
     }
 }

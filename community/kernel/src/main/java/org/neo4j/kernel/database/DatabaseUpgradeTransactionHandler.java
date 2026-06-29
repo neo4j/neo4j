@@ -23,6 +23,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_trans
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.TransactionIdSequence.TRANSACTION_SEQUENCE_INITIAL_VALUE;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
@@ -230,6 +232,11 @@ class DatabaseUpgradeTransactionHandler {
         @Override
         public void afterRollback(TransactionData data, Lock readLock, GraphDatabaseService databaseService) {
             checkUnlockAndUnregister(readLock);
+        }
+
+        @Override
+        public Set<TransactionData.DataSelection> transactionDataSelection() {
+            return Collections.emptySet();
         }
 
         private void checkUnlockAndUnregister(Lock readLock) {

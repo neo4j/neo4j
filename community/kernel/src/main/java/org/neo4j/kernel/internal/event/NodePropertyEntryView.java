@@ -22,51 +22,26 @@ package org.neo4j.kernel.internal.event;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
-class NodePropertyEntryView implements PropertyEntry<Node> {
+class NodePropertyEntryView extends EntityPropertyEntryView<Node> {
     static final long SHALLOW_SIZE = shallowSizeOfInstance(NodePropertyEntryView.class);
 
     private final InternalTransaction internalTransaction;
     private final long nodeId;
-    private final String key;
-    private final Value newValue;
-    private final Value oldValue;
 
     NodePropertyEntryView(
             InternalTransaction internalTransaction, long nodeId, String key, Value newValue, Value oldValue) {
+        super(key, newValue, oldValue);
         this.internalTransaction = internalTransaction;
         this.nodeId = nodeId;
-        this.key = key;
-        this.newValue = newValue;
-        this.oldValue = oldValue;
     }
 
     @Override
     public Node entity() {
         return new NodeEntity(internalTransaction, nodeId);
-    }
-
-    @Override
-    public String key() {
-        return key;
-    }
-
-    @Override
-    public Object previouslyCommittedValue() {
-        return oldValue.asObjectCopy();
-    }
-
-    @Override
-    public Object value() {
-        if (newValue == null || newValue == Values.NO_VALUE) {
-            throw new IllegalStateException("This property has been removed, it has no value anymore: " + this);
-        }
-        return newValue.asObjectCopy();
     }
 
     @Override

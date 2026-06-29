@@ -21,6 +21,8 @@ package org.neo4j.dbms.database.readonly;
 
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
+import java.util.Collections;
+import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
@@ -62,6 +64,11 @@ public final class SystemGraphReadOnlyListener extends LifecycleAdapter {
         @Override
         public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
             readOnlyDatabases.refresh();
+        }
+
+        @Override
+        public Set<TransactionData.DataSelection> transactionDataSelection() {
+            return Collections.emptySet();
         }
     }
 }
