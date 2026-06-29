@@ -492,10 +492,10 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherPlannerTestSui
       (arrow, direction) <- Seq(("->", OUTGOING), ("-", BOTH))
       (selector, all) <- Seq(("ANY SHORTEST", false), ("ALL SHORTEST", true))
     } {
-      withClue(s"for simple $selector QPP, path mode ${pathMode.asPrettyString}, direction $direction") {
+      withClue(s"for simple $selector QPP, path mode $pathMode, direction $direction") {
         val query =
           s"""
-             |MATCH $matchMode p = $selector ${pathMode.asPrettyString} (a)-[r]$arrow{1,10}(b)
+             |MATCH $matchMode p = $selector $pathMode (a)-[r]$arrow{1,10}(b)
              |RETURN *
              |""".stripMargin
 
@@ -1693,10 +1693,10 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherPlannerTestSui
       (arrow, direction) <- Seq(("->", OUTGOING), ("-", BOTH))
       selector <- Seq("ANY SHORTEST", "ALL SHORTEST")
     } {
-      withClue(s"for $selector ${pathMode.asPrettyString}, direction $direction") {
+      withClue(s"for $selector $pathMode, direction $direction") {
         val query =
           s"""
-             |MATCH $matchMode $selector ${pathMode.asPrettyString}
+             |MATCH $matchMode $selector $pathMode
              |  ((start:User)-[r]$arrow{1,10}(end:User) WHERE single(rel IN r WHERE rel.prop = 5))
              |RETURN start, end
              |""".stripMargin

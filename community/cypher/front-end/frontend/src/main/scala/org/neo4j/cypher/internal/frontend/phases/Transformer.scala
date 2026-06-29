@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.util.AstString
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 
 trait Transformer[-C <: BaseContext, -FROM, +TO] {
   def transform(from: FROM, context: C): TO
@@ -281,15 +282,21 @@ object Transformer {
 class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO])
     extends Transformer[C, FROM, TO] {
 
-  override lazy val postConditions: Set[StepSequencer.Condition] =
+  private val lazyPostConditions: LazyVal[Set[StepSequencer.Condition]] = LazyVal {
     first.postConditions ++
       after.postConditions --
       after.invalidatedConditions
+  }
 
-  override lazy val invalidatedConditions: Set[StepSequencer.Condition] =
+  private val lazyInvalidatedConditions: LazyVal[Set[StepSequencer.Condition]] = LazyVal {
     after.invalidatedConditions ++
       first.invalidatedConditions --
       after.postConditions
+  }
+
+  override def postConditions: Set[StepSequencer.Condition] = lazyPostConditions.value
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = lazyInvalidatedConditions.value
 
   override def transform(from: FROM, context: C): TO = {
     val step1 = first.transform(from, context)

@@ -146,7 +146,7 @@ trait GqlExceptionMatchers {
     private def positionCheck(left: ErrorGqlStatusObject): Option[MatchResult] = {
       if (offset.nonEmpty || line.nonEmpty || column.nonEmpty) {
         left.diagnosticRecord().get("_position") match {
-          case position: java.util.Map[String, Int] =>
+          case position: java.util.Map[String, Int] @unchecked =>
             offset.flatMap(validateOffset(position)).orElse(
               line.flatMap(validateLine(position)).orElse(
                 column.flatMap(validateColumn(position))
@@ -412,4 +412,10 @@ object GqlExceptionMatchers extends GqlExceptionMatchers {
           s"error: data exception - invalid coercion. Cannot coerce $value to $expectedType."
         )
     )
+}
+
+type GqlExceptionMatchers3 = GqlExceptionMatchers
+
+object GqlExceptionMatchers3 {
+  export GqlExceptionMatchers.*
 }

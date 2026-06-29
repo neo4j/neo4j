@@ -59,7 +59,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.GqlExceptionMatcher
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.InvalidSyntaxStatus
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlException
@@ -70,17 +69,16 @@ import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.kernel.database.DatabaseReference
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
+import org.scalatest.matchers.must.Matchers.a
 import org.scalatest.matchers.must.Matchers.be
 import org.scalatest.matchers.must.Matchers.include
 import org.scalatest.matchers.must.Matchers.startWith
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import org.scalatest.matchers.should.Matchers.should
 
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
-given org.scalactic.source.Position = CypherFunSuiteWithMacroShadowing.defaultPosition
 
 /** ScalaTest Matcher for ParseResults */
 case class ParseResultsMatcher[T <: ASTNode : ClassTag](
@@ -162,8 +160,7 @@ trait FluentMatchers[Self <: FluentMatchers[Self, T], T <: ASTNode] extends AstM
 
   def withGqlStatus(gqlStatusMatcher: GqlExceptionMatcher): Self = {
     withError(throwable => {
-      given org.scalactic.source.Position = CypherFunSuiteWithMacroShadowing.defaultPosition
-      throwable should be(CypherFunSuiteWithMacroShadowing.ATypeMatcher[ErrorGqlStatusObject])
+      throwable should be(a[ErrorGqlStatusObject])
       throwable.asInstanceOf[ErrorGqlStatusObject] should be(gqlStatusMatcher)
     })
   }

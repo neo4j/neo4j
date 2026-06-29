@@ -171,7 +171,7 @@
     <required.maven.version>3.9.11</required.maven.version>
     <s3mock.version>5.0.0</s3mock.version>
     <scala-maven-plugin.version>4.9.9</scala-maven-plugin.version>
-    <scala.binary.version>2.13</scala.binary.version>
+    <scala.binary.version>3</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <scala.target.vm>${vm.target.version}</scala.target.vm>
     <scala.test.version>3.2.13</scala.test.version>
@@ -1143,7 +1143,7 @@
       </dependency>
       <dependency>
         <groupId>org.scala-lang.modules</groupId>
-        <artifactId>scala-collection-contrib_2.13</artifactId>
+        <artifactId>scala-collection-contrib_${scala.binary.version}</artifactId>
         <version>0.3.0</version>
       </dependency>
       <dependency>
@@ -1675,7 +1675,7 @@
 
           <configuration>
             <scalaVersion>${scala3.version}</scalaVersion>
-            <scalaCompatVersion>3</scalaCompatVersion>
+            <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
             <recompileMode>${scala.plugin.recompileMode}</recompileMode>
             <args>
               <arg>-Wunused:imports,privates,locals</arg>
@@ -2006,7 +2006,6 @@
               <ignoredUnusedDeclaredDependencies>
                 <ignoredUnusedDeclaredDependency>org.scala-lang:scala-reflect</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>io.github.json4s:json4s-native_${scala.binary.version}</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-macros</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-macros-scala3</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
               <ignoredUsedUndeclaredDependencies>

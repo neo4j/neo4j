@@ -21,10 +21,9 @@ import org.neo4j.cypher.internal.ast.CypherParserTestSuite
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParseResults
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParserInTest
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.matchers.Matcher
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import org.scalatest.matchers.should.Matchers.should
 
 import scala.reflect.ClassTag
 import scala.util.Failure
@@ -148,7 +147,7 @@ case class Parses[T <: ASTNode : ClassTag](
 ) extends FluentMatchers[Parses[T], T] {
 
   override protected def copyWith(matchers: Seq[Matcher[ParseResults[_]]]): Parses[T] = {
-    given org.scalactic.source.Position = CypherFunSuiteWithMacroShadowing.defaultPosition
+
     matchers.foreach(`match` => result should `match`)
     this
   }

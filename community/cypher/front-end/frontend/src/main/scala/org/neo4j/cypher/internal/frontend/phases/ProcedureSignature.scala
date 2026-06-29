@@ -107,7 +107,7 @@ case class FieldSignature(
   /**
    * Returns value of `typ`.
    */
-  lazy val getType: CypherType = typ
+  override def getType: CypherType = typ
 
   def hasDefault: Boolean = default.nonEmpty
 

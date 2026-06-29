@@ -248,7 +248,7 @@ trait PatternGen extends CypherScalaCheckDrivenPropertyChecks {
 
   def relGen: Gen[Relationship]
 
-  def emptyRelGen = relDirection.map(EmptyRelationship)
+  def emptyRelGen = relDirection.map(EmptyRelationship.apply)
 
   def emptyRelWithLengthGen =
     for {
@@ -316,9 +316,9 @@ trait PatternGen extends CypherScalaCheckDrivenPropertyChecks {
 
   def emptyNodeGen = Gen.const(EmptyNode())
 
-  def namedNodeGen = nodeName.map(NamedNode)
+  def namedNodeGen = nodeName.map(NamedNode.apply)
 
-  def labeledNodeGen = labelName.map(LabeledNode)
+  def labeledNodeGen = labelName.map(LabeledNode.apply)
 
   def labeledWithPropertiesNodeGen =
     for {

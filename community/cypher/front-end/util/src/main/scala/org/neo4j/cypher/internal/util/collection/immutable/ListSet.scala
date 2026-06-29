@@ -83,7 +83,7 @@ class ListSet[A](private val underlying: java.util.LinkedHashSet[A])
       this
     } else {
       that match {
-        case ls: ListSet[A] if size <= ls.size =>
+        case ls: ListSet[A] @unchecked if size <= ls.size =>
           val newJava = new java.util.LinkedHashSet[A](this.size)
           val thisIt = underlying.iterator()
           val thatJavaSet = ls.underlying
@@ -161,9 +161,9 @@ object ListSet extends IterableFactory[ListSet] {
 
   def from[E](it: scala.collection.IterableOnce[E]): ListSet[E] =
     it match {
-      case ls: ListSet[E]         => ls
-      case _ if it.knownSize == 0 => empty[E]
-      case _                      => (newBuilder[E] ++= it).result()
+      case ls: ListSet[E] @unchecked => ls
+      case _ if it.knownSize == 0    => empty[E]
+      case _                         => (newBuilder[E] ++= it).result()
     }
 
   implicit class IterableOnceToListSet[A](private val it: IterableOnce[A]) extends AnyVal {

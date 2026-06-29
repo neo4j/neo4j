@@ -48,25 +48,6 @@ import org.neo4j.values.virtual.MapValue
 
 trait FrontEndCompilationPhases {
 
-  // This needs to be lazy to avoid that TeaVM tries to cross-compile the configuration module to JavaScript
-  lazy val settingToFeatureMapping: Seq[(Setting[java.lang.Boolean], String)] = Seq(
-    GraphDatabaseInternalSettings.show_setting -> ShowSetting.productPrefix,
-    GraphDatabaseInternalSettings.oidc_credential_forwarding_enabled -> OidcCredentialForwarding.productPrefix,
-    GraphDatabaseInternalSettings.composable_commands -> ComposableCommands.productPrefix,
-    GraphDatabaseInternalSettings.graph_type_enabled -> GraphTypes.productPrefix,
-    GraphDatabaseInternalSettings.enable_experimental_cypher_versions -> ExperimentalCypherVersions.productPrefix,
-    GraphDatabaseInternalSettings.relationship_property_value_access_rules -> RelationshipPropertyValueAccessRules.productPrefix,
-    GraphDatabaseInternalSettings.cypher_uuid_type_enabled -> UUIDType.productPrefix,
-    GraphDatabaseInternalSettings.cypher_group_by_clause_enabled -> GroupByClause.productPrefix,
-    GraphDatabaseInternalSettings.cypher_enable_local_callables -> LocalCallables.productPrefix,
-    GraphDatabaseInternalSettings.cypher_enable_scope_queries -> ScopeQueries.productPrefix,
-    GraphDatabaseInternalSettings.cypher_enable_working_scope_namespacer -> EnableWorkingScopeNamespacer.productPrefix,
-    GraphDatabaseInternalSettings.cypher_enable_parsing_of_obfuscated_literals -> EnableParsingOfObfuscatedLiterals.productPrefix,
-    GraphDatabaseInternalSettings.cypher_disable_type_checking -> DisableTypeCheckingInSemanticAnalysis.productPrefix,
-    GraphDatabaseInternalSettings.attribute_based_access_control -> AttributeBasedAccessControl.productPrefix,
-    GraphDatabaseInternalSettings.user_tags -> UserTags.productPrefix
-  )
-
   val defaultSemanticFeatures: Seq[String] = Seq(
     MultipleDatabases.productPrefix,
     ShowSetting.productPrefix,
@@ -155,4 +136,25 @@ trait FrontEndCompilationPhases {
   }
 }
 
-object FrontEndCompilationPhases extends FrontEndCompilationPhases
+object FrontEndCompilationPhases extends FrontEndCompilationPhases {
+
+  def settingToFeatureMapping: Seq[(Setting[java.lang.Boolean], String)] = {
+    Seq(
+      GraphDatabaseInternalSettings.show_setting -> ShowSetting.productPrefix,
+      GraphDatabaseInternalSettings.oidc_credential_forwarding_enabled -> OidcCredentialForwarding.productPrefix,
+      GraphDatabaseInternalSettings.composable_commands -> ComposableCommands.productPrefix,
+      GraphDatabaseInternalSettings.graph_type_enabled -> GraphTypes.productPrefix,
+      GraphDatabaseInternalSettings.enable_experimental_cypher_versions -> ExperimentalCypherVersions.productPrefix,
+      GraphDatabaseInternalSettings.relationship_property_value_access_rules -> RelationshipPropertyValueAccessRules.productPrefix,
+      GraphDatabaseInternalSettings.cypher_uuid_type_enabled -> UUIDType.productPrefix,
+      GraphDatabaseInternalSettings.cypher_group_by_clause_enabled -> GroupByClause.productPrefix,
+      GraphDatabaseInternalSettings.cypher_enable_local_callables -> LocalCallables.productPrefix,
+      GraphDatabaseInternalSettings.cypher_enable_scope_queries -> ScopeQueries.productPrefix,
+      GraphDatabaseInternalSettings.cypher_enable_working_scope_namespacer -> EnableWorkingScopeNamespacer.productPrefix,
+      GraphDatabaseInternalSettings.cypher_enable_parsing_of_obfuscated_literals -> EnableParsingOfObfuscatedLiterals.productPrefix,
+      GraphDatabaseInternalSettings.cypher_disable_type_checking -> DisableTypeCheckingInSemanticAnalysis.productPrefix,
+      GraphDatabaseInternalSettings.attribute_based_access_control -> AttributeBasedAccessControl.productPrefix,
+      GraphDatabaseInternalSettings.user_tags -> UserTags.productPrefix
+    )
+  }
+}

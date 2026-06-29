@@ -31,9 +31,7 @@
     <module>frontend-inspector</module>
     <module>util</module>
     <module>test-util</module>
-    <module>test-util-scala3</module>
     <module>expressions</module>
-    <module>cypher-macros</module>
     <module>cypher-macros-scala3</module>
     <module>neo4j-ast-factory</module>
     <module>ast-generator</module>

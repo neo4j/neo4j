@@ -124,6 +124,13 @@
       <artifactId>scala-library</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala3-library_3</artifactId>
+    </dependency>
+
+    <!-- scala test dependencies -->
+
+    <dependency>
       <groupId>com.lihaoyi</groupId>
       <artifactId>fansi_${scala.binary.version}</artifactId>
       <scope>test</scope>
@@ -168,28 +175,6 @@
       <artifactId>neo4j-ast-test-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-test-util-scala3</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalatest</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalatestplus</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalacheck</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalactic</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -262,90 +247,4 @@
     </dependency>
 
   </dependencies>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <version>${scala-maven-plugin.version}</version>
-        <configuration>
-          <scalaVersion>${scala.version}</scalaVersion>
-          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
-          <recompileMode>${scala.plugin.recompileMode}</recompileMode>
-          <args combine.self="override">
-            <arg>-Xlint:_,-missing-interpolator</arg>
-            <arg>-target:jvm-${scala.target.vm}</arg>
-            <arg>-nobootcp</arg>
-            <arg>-Ytasty-reader</arg>
-            <!-- We need to be able to deprecate APIs and have some time for all teams to adapt. -->
-            <arg>-Wconf:cat=deprecation:is</arg>
-            <arg>-Wconf:cat=scala3-migration:${scala3.migration.wconf}</arg>
-            <arg>-Xsource:3</arg>
-          </args>
-          <jvmArgs>
-            <jvmArg>-Xms256m</jvmArg>
-            <jvmArg>-Xmx1024m</jvmArg>
-            <jvmArg>-Xss4M</jvmArg>
-          </jvmArgs>
-          <secondaryCacheDir>${java.io.tmpdir}</secondaryCacheDir>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.diffplug.spotless</groupId>
-        <artifactId>spotless-maven-plugin</artifactId>
-        <configuration>
-          <scala>
-            <scalafmt>
-              <file>scalafmt/scalafmt.conf</file>
-            </scalafmt>
-          </scala>
-        </configuration>
-      </plugin>
-      <plugin>
-        <!-- disable only the ban-test-dependencies-in-compile enforcer rule
-        since this project creates test utilities -->
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>ban-test-dependencies-in-compile</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-  <profiles>
-    <profile>
-      <id>scala-fatal-warnings</id>
-      <activation>
-        <property>
-          <name>scalaFatalWarnings</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>net.alchim31.maven</groupId>
-            <artifactId>scala-maven-plugin</artifactId>
-            <configuration>
-              <args combine.self="override">
-                <arg>-Xfatal-warnings</arg>
-                <arg>-feature</arg>
-                <arg>-Xlint:_,-missing-interpolator</arg>
-                <arg>-target:jvm-${scala.target.vm}</arg>
-                <arg>-nobootcp</arg>
-                <arg>-Ytasty-reader</arg>
-                <!-- We need to be able to deprecate APIs and have some time for all teams to adapt. -->
-                <arg>-Wconf:cat=deprecation:is</arg>
-                <arg>-Wconf:cat=scala3-migration:${scala3.migration.wconf}</arg>
-                <arg>-Xsource:3</arg>
-              </args>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

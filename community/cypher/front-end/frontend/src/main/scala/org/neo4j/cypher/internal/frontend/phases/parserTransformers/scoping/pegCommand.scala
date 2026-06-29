@@ -43,7 +43,6 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.References
 import org.neo4j.cypher.internal.ast.semantics.scoping.RegularContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
-import org.neo4j.cypher.internal.ast.semantics.scoping.UnexpectedAstNodeScopingError
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -176,16 +175,10 @@ object pegCommand {
           pegExpression(gs.graphReference, incoming)
         )
         incoming.omittedResultScope(RegularContext.unit, graphSelectionScope.toSeq)
-
-      /**
-       * To make match exhaustive
-       */
-      case _ => UnexpectedAstNodeScopingError(astNode, incoming)
     }
   }
 
   def apply(command: CommandClause, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
-    implicit val astNode: ASTNode = command
     command match {
 
       /**
@@ -195,11 +188,6 @@ object pegCommand {
         scopeCommandClause(cmd, incoming, Some(cmd.names))
       case cmd: CommandClause =>
         scopeCommandClause(cmd, incoming, None)
-
-      /**
-       * To make match exhaustive
-       */
-      case _ => UnexpectedAstNodeScopingError(astNode, incoming)
     }
   }
 

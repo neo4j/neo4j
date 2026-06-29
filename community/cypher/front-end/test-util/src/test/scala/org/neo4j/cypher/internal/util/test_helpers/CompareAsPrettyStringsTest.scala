@@ -20,16 +20,19 @@ import org.scalatest.exceptions.TestFailedException
 
 class CompareAsPrettyStringsTest extends CypherFunSuite {
 
+  private case class Person(name: String, age: Int)
+
   test("should fail when values are not equal") {
     val ex = intercept[TestFailedException] {
-      Some("Hello") compareAsPrettyStrings Some("word")
+      Person("Alice", 20) compareAsPrettyStrings Person("Bob", 30)
     }
-    ex.getMessage shouldEqual """Some(value = "Hello") did not equal Some(value = "word")"""
+    ex.getMessage shouldEqual """Person(name = "Alice", age = 20) did not equal Person(name = "Bob", age = 30)"""
   }
 
   test("should fail when values are equal") {
     val ex = intercept[TestFailedException] {
-      Some("Hello") compareAsPrettyStrings Some("Hello")
+      val p = Person("Alice", 20)
+      p compareAsPrettyStrings p
     }
     ex.getMessage shouldEqual "compareAsPrettyStrings is only for debugging and should not be committed"
   }

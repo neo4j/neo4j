@@ -117,7 +117,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-test-util-scala3</artifactId>
+      <artifactId>neo4j-test-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

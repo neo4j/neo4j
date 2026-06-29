@@ -113,8 +113,8 @@ object CompilationPhases extends FrontEndCompilationPhases {
             // It is currently not allowed to then also have it as an initial condition
             - ExpressionsHaveComputedDependencies
             - PatternExpressionsHaveSemanticInfo
-            - BaseContains[SemanticState]
-            - BaseContains[SemanticTable]
+            - BaseContains[SemanticState]()
+            - BaseContains[SemanticTable]()
             - ContainsNoNodesOfType[UnaliasedReturnItem]()
             - ProjectionClausesHaveSemanticInfo
       )

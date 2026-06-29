@@ -119,12 +119,14 @@ case class Projection(from: Vec2d, direction: Direction) {
     var i = 0
     var current = from
     var found = Option.empty[A]
-    do {
+    var searching = true
+    while (searching) {
       current = current + direction
       i += 1
       found = candidates.get(current)
       traversingSpace = lines.get(current).forall(_.isWhitespace)
-    } while (traversingSpace && i <= limit && found.isEmpty)
+      searching = traversingSpace && i <= limit && found.isEmpty
+    }
     found
   }
 

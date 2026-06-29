@@ -35,7 +35,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.neo4j.configuration.helpers.RemoteUri;
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.security.DatabaseAccessMode;
@@ -50,7 +49,7 @@ import org.neo4j.values.storable.StringArray;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.virtual.MapValue;
 
-public class GraphFunctionsTest extends CypherFunSuite {
+public class GraphFunctionsTest {
 
     private static SecurityContext securityContext;
     private static DatabaseReferenceImpl.Composite composite;

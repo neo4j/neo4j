@@ -188,25 +188,25 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
     scopeState: ScopeState,
     anonVarNameGen: AnonymousVariableNameGenerator,
     version: CypherVersion
-  ): Rewriter = new ExpandClausesRewriter(scopeState, anonVarNameGen, version).build()
+  ): Rewriter = buildExpandClausesRewriter(scopeState, anonVarNameGen, version)
 
-  private class ExpandClausesRewriter(
+  private def buildExpandClausesRewriter(
     scopeState: ScopeState,
     anonVarNameGen: AnonymousVariableNameGenerator,
     version: CypherVersion
-  ) {
+  ): Rewriter = {
 
     val ensureUniqueIds: Rewriter = bottomUp(Rewriter.lift { case v: LogicalVariable => v.copyId })
 
     /**
      * Memoized union of `referenced` variables across an AST subtree.
      */
-    private val refsCache: scala.collection.mutable.HashMap[Ref[ASTNode], Set[LogicalVariable]] =
+    val refsCache: scala.collection.mutable.HashMap[Ref[ASTNode], Set[LogicalVariable]] =
       scala.collection.mutable.HashMap.empty
 
-    private def refsFor(ast: ASTNode): Set[LogicalVariable] = collectRefsThrough(ast)
+    def refsFor(ast: ASTNode): Set[LogicalVariable] = collectRefsThrough(ast)
 
-    private def collectRefsThrough(node: AnyRef): Set[LogicalVariable] = node match {
+    def collectRefsThrough(node: AnyRef): Set[LogicalVariable] = node match {
       case ast: ASTNode =>
         refsCache.getOrElseUpdate(
           Ref(ast), {
@@ -222,14 +222,16 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
         )
     }
 
-    sealed trait ContextKind
-    case object SingleQueryCtx extends ContextKind
-    case object UnionDistinctCtx extends ContextKind
-    case object UnionAllCtx extends ContextKind
-    case object WhenCtx extends ContextKind
-    case object FirstInNextCtx extends ContextKind
-    case object BodyInNextCtx extends ContextKind
-    case object LastInNextCtx extends ContextKind
+    enum ContextKind {
+      case SingleQueryCtx
+      case UnionDistinctCtx
+      case UnionAllCtx
+      case WhenCtx
+      case FirstInNextCtx
+      case BodyInNextCtx
+      case LastInNextCtx
+    }
+    import ContextKind.*
 
     case class SemanticContext(
       kind: ContextKind,
@@ -473,10 +475,12 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
         case _ => true
       }
 
-      sealed trait QuerySemantics
-      case object ByRow extends QuerySemantics
-      case object ByTable extends QuerySemantics
-      case object RequiresCollecting extends QuerySemantics
+      enum QuerySemantics {
+        case ByRow
+        case ByTable
+        case RequiresCollecting
+      }
+      import QuerySemantics.*
 
       // Logic deciding whether a query queries ByTable semantics.
       def checkQuerySemantics(query: Query, init: QuerySemantics = ByRow): QuerySemantics =
@@ -1040,6 +1044,8 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
       case CypherVersion.Cypher25 =>
         topDown(rewriter(Layout.empty)) andThen topDown(cleanup)
     }
+
+    build()
   }
 
   override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = ExpandClauses

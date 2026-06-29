@@ -114,7 +114,6 @@ case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseCon
         val deprecationWarnings: Seq[DeprecatedFunctionNotification] = f.function.signatures.filter {
           case FunctionTypeSignature(_, _, _, _, _, argumentTypes, _, deprecated, _, _, _, _, _, _, _) =>
             deprecated && argumentTypes.length == f.arguments.length
-          case _ => false
         }.map(fts =>
           DeprecatedFunctionNotification(
             f.position,

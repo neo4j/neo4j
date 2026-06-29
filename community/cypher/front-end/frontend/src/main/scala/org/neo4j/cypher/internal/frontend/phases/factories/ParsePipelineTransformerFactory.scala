@@ -42,7 +42,6 @@ case class ParsingConfig(
     case ExtractLiteral.ALWAYS          => Forced
     case ExtractLiteral.NEVER           => Never
     case ExtractLiteral.IF_NO_PARAMETER => IfNoParameter
-    case _                              => throw new IllegalStateException(s"$extractLiterals is not a known strategy")
   }
 }
 

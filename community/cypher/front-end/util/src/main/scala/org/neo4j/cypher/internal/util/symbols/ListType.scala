@@ -73,7 +73,6 @@ case class ListType(innerType: CypherType, isNullable: Boolean)(val position: In
             }
           case innerList: ListType => otherList match {
               case otherInnerList: ListType => innerList.isSubtypeOf(otherInnerList)
-              case _                        => false
             }
           case NothingType()                                => true
           case NullType() if otherList.innerType.isNullable => true

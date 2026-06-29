@@ -52,15 +52,16 @@ class CaretPositionTest extends CypherFunSuite with TestName {
     }
   }
 
-  override def test(testName: String, testTags: Tag*)(testFun: => Any /* Assertion */ )(implicit
-    pos: source.Position): Unit = {
+  // shadows the `test` method
+  private def test(testName: String, testTags: Tag*)(testFun: => Any /* Assertion */ )(implicit
+    d: DummyImplicit): Unit = {
     // note that the test name gets trimmed by scalatest so we add non-whitespace around it
     val preventLtrim =
       if (testName.headOption.exists(c => c.isWhitespace || c == startMarker)) startMarker + testName else testName
     val preventRtrim = if (preventLtrim.lastOption.exists(c => c.isWhitespace || c == endMarker))
       preventLtrim + endMarker
     else preventLtrim
-    super.test(preventRtrim, testTags: _*)(testFun)
+    super.test(preventRtrim, testTags*)(testFun)
   }
 
   def lineTerminationPrefixSums(s: String): IndexedSeq[Int] = {

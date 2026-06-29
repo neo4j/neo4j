@@ -59,7 +59,6 @@ abstract class TreeZipper[E <: TreeElem[E]](implicit val elemClassTag: ClassTag[
     def isLeftMost: Boolean = context match {
       case tc: TreeContext => tc.left.isEmpty
       case _: Top          => true
-      case _               => false
     }
 
     def left: Option[Location] = context match {
@@ -94,7 +93,6 @@ abstract class TreeZipper[E <: TreeElem[E]](implicit val elemClassTag: ClassTag[
     def isRightMost: Boolean = context match {
       case tc: TreeContext => tc.right.isEmpty
       case _: Top          => true
-      case _               => false
     }
 
     def right: Option[Location] = context match {

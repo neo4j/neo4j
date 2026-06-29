@@ -101,22 +101,22 @@ Apache Software License, Version 2.0
   scala-xml
   scala3-library-bootstrapped
   scalacheck-1.16
-  scalactic
-  scalatest
+  scalacticDotty
   scalatest-compatible
-  scalatest-core
-  scalatest-diagrams
-  scalatest-featurespec
-  scalatest-flatspec
-  scalatest-freespec
-  scalatest-funspec
-  scalatest-funsuite
-  scalatest-matchers-core
-  scalatest-mustmatchers
-  scalatest-propspec
-  scalatest-refspec
-  scalatest-shouldmatchers
-  scalatest-wordspec
+  scalatestCoreDotty
+  scalatestDiagramsDotty
+  scalatestDotty
+  scalatestFeatureSpecDotty
+  scalatestFlatSpecDotty
+  scalatestFreeSpecDotty
+  scalatestFunSpecDotty
+  scalatestFunSuiteDotty
+  scalatestMatchersCoreDotty
+  scalatestMustMatchersDotty
+  scalatestPropSpecDotty
+  scalatestRefSpecDotty
+  scalatestShouldMatchersDotty
+  scalatestWordSpecDotty
   snappy-java
   Strategic Blue Parquet Floor
   WMI4Java
@@ -1632,16 +1632,15 @@ version.
 ------------------------------------------------------------------------------
 MIT License
   co.helmethair:scalatest-junit-runner
-  fansi_2.13
+  fansi_3
   java jwt
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core-client
   jersey-inject-hk2
   mockito-core
-  pprint_2.13
+  pprint_3
   SLF4J API Module
-  sourcecode_2.13
   sourcecode_3
 ------------------------------------------------------------------------------
 

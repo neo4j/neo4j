@@ -88,38 +88,9 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Tests: neo4j-test-util supplies CypherFunSuite etc.; neo4j-test-util-scala3 supplies Scala 3 ScalaTest stack. -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-test-util</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.scalatest</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalatestplus</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalacheck</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalactic</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.lihaoyi</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-test-util-scala3</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -175,72 +146,6 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>org/neo4j/cypher/internal/util/buildtools/**</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <configuration>
-          <scalaVersion>${scala3.version}</scalaVersion>
-          <scalaCompatVersion>3</scalaCompatVersion>
-          <args combine.self="override">
-            <!-- TODO(Scala 3): drop -nowarn and fix warnings (infix, unchecked patmat, etc.). Needed so -DscalaFatalWarnings does not fail the build while util is on Scala 3. -->
-            <arg>-nowarn</arg>
-          </args>
-          <analysisCacheFile>${project.build.directory}/scala-maven-analysis/compile</analysisCacheFile>
-          <testAnalysisCacheFile>${project.build.directory}/scala-maven-analysis/test-compile</testAnalysisCacheFile>
-        </configuration>
-        <executions>
-          <!-- Re-run scala:compile after javac; mixed Java/Scala modules can lose Scala .class files under target/classes before test-compile. -->
-          <execution>
-            <id>scala-compile-after-java</id>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <phase>process-classes</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <executions>
-          <!-- After scala + javac in compile; also after scala:compile re-run on process-classes. -->
-          <execution>
-            <id>rewriter-lift-jvm-bridge-compile</id>
-            <goals>
-              <goal>java</goal>
-            </goals>
-            <phase>compile</phase>
-            <configuration>
-              <mainClass>org.neo4j.cypher.internal.util.buildtools.RewriterLiftJvmBridgeInstaller</mainClass>
-              <arguments>
-                <argument>${project.build.outputDirectory}</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
-            <id>rewriter-lift-jvm-bridge-process-classes</id>
-            <goals>
-              <goal>java</goal>
-            </goals>
-            <phase>process-classes</phase>
-            <configuration>
-              <mainClass>org.neo4j.cypher.internal.util.buildtools.RewriterLiftJvmBridgeInstaller</mainClass>
-              <arguments>
-                <argument>${project.build.outputDirectory}</argument>
-              </arguments>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <failOnWarning>true</failOnWarning>
@@ -255,7 +160,6 @@
             <dependency>org.ow2.asm:asm</dependency>
             <dependency>org.scala-lang:scala-library</dependency>
             <dependency>org.scala-lang:scala3-library_3</dependency>
-            <dependency>org.neo4j:neo4j-test-util-scala3</dependency>
             <dependency>co.helmethair:scalatest-junit-runner</dependency>
             <dependency>org.scalatest:scalatest_3</dependency>
             <dependency>org.teavm:teavm-interop</dependency>

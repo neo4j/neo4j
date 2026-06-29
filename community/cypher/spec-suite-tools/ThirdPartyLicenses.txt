@@ -121,10 +121,10 @@ Apache Software License, Version 2.0
   scala3-staging
   scalacheck-1.16
   scalatest-compatible
-  scalatest-core
-  scalatest-funsuite
-  scalatest-matchers-core
-  scalatest-shouldmatchers
+  scalatestCoreDotty
+  scalatestFunSuiteDotty
+  scalatestMatchersCoreDotty
+  scalatestShouldMatchersDotty
   snappy-java
   Strategic Blue Parquet Floor
   tasty-core-bootstrapped
@@ -1662,7 +1662,7 @@ MIT License
   Cucumber-JVM: Plugin
   Cucumber-JVN: DataTable
   cucumber-scala
-  fansi_2.13
+  fansi_3
   fastparse_3
   geny_3
   Gherkin
@@ -1674,10 +1674,9 @@ MIT License
   JUnit XML Formatter
   Messages NDJSON
   mockito-core
-  pprint_2.13
+  pprint_3
   Pretty Formatter
   SLF4J API Module
-  sourcecode_2.13
   sourcecode_3
   TeamCity Formatter
   TestNG XML Formatter

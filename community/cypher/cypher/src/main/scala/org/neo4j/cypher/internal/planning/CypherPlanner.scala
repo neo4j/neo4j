@@ -560,7 +560,7 @@ final class TransformingPlanner private[planning] (
       cacheStrategy,
       transactionalContextWrapper
     )
-    val cacheStrategyAfterParsing = cacheStrategy.updateFromAst(syntacticQuery.statement)
+    val cacheStrategyAfterParsing = cacheStrategy.updateFromAst(syntacticQuery.statement())
 
     // The parser populates the notificationLogger as a side-effect of its work, therefore
     // in the case of a cached query the notificationLogger will not be properly filled

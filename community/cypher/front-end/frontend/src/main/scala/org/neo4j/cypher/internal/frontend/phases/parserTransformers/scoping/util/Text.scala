@@ -335,7 +335,6 @@ case class SeqSpan(parts: Seq[Span]) extends Span {
         case ((fixedLength, fillers), lp: StrLiteral)       => (fixedLength + lp.rawWidth(), fillers)
         case ((fixedLength, fillers), lp: FillerLiteral)    => (fixedLength, fillers :+ lp)
         case ((fixedLength, fillers), lp: ShrinkingLiteral) => (fixedLength + lp.rawWidth(), fillers)
-        case ((fixedLength, fillers), lp)                   => (fixedLength + lp.rawWidth(), fillers)
       }
       if (fillers.nonEmpty) {
         val toFill = minLength - fixedLength
@@ -359,7 +358,6 @@ case class SeqSpan(parts: Seq[Span]) extends Span {
         case ((flexLength, flexParts), _: StrLiteral)        => (flexLength, flexParts)
         case ((flexLength, flexParts), _: FillerLiteral)     => (flexLength, flexParts)
         case ((flexLength, flexParts), lp: ShrinkingLiteral) => (flexLength + lp.rawWidth(), flexParts :+ lp)
-        case ((flexLength, flexParts), _)                    => (flexLength, flexParts)
       }
       val ratios = flexParts.map(p => p -> Math.floorDiv(flexLength, p.rawWidth())).toMap
       SeqSpan(parts.map(p => p.rewriteToFixLength(0, ratios.getOrElse(p, Int.MaxValue))))

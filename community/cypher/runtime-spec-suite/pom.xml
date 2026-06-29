@@ -84,28 +84,6 @@
       <artifactId>neo4j-ast-test-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-test-util-scala3</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalatest</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalatestplus</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalacheck</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalactic</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -169,7 +147,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-macros</artifactId>
+      <artifactId>neo4j-cypher-macros-scala3</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

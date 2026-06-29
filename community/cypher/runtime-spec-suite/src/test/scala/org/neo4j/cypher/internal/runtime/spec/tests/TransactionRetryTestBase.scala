@@ -71,7 +71,8 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.scalatest.Assertions.withClue
 import org.scalatest.matchers.must.Matchers.be
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import org.scalatest.matchers.should.Matchers.should
+import org.scalatest.matchers.should.Matchers.shouldBe
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.LockSupport

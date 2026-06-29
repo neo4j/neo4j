@@ -65,7 +65,6 @@ object PredicateHelper {
       case o: OperatorExpression                    => o.signatures.forall(_.outputType == symbols.CTBoolean)
       case f: FunctionInvocation => f.function match {
           case ts: TypeSignatures => ts.signatures.forall(_.outputType == symbols.CTBoolean)
-          case func               => false
         }
       case f: ResolvedFunctionInvocation => f.fcnSignature.forall(_.outputType == symbols.CTBoolean)
       case _                             => false

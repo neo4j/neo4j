@@ -31,7 +31,7 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithUpdateStatement(state
   override def defaultQuery: String = s"$statement $testName"
 
   // Length of the query before the test name
-  protected val offset = statement.asPrettyString.length + 1
+  protected val offset = statement.toString.length + 1
 
   private val labelExprErrorMessage =
     s"Label expressions in patterns are not allowed in a $statement clause, but only in a MATCH clause and in expressions"

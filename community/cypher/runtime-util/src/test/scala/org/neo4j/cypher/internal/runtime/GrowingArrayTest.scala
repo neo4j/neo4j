@@ -64,7 +64,7 @@ class GrowingArrayTest extends RuntimeUtilTestSuite {
 
     val builder = Seq.newBuilder[String]
     x.foreach(str => builder += str)
-    builder shouldBe Seq("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+    builder.result() shouldBe Seq("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
   }
 
   test("foreach ignores gaps and nulls") {
@@ -76,7 +76,7 @@ class GrowingArrayTest extends RuntimeUtilTestSuite {
 
     val builder = Seq.newBuilder[String]
     x.foreach(str => builder += str)
-    builder shouldBe Seq("0", "2", "4")
+    builder.result() shouldBe Seq("0", "2", "4")
   }
 
   test("hasNeverSeenData") {

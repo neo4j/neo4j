@@ -27,6 +27,7 @@ import scala.collection.IterableFactory
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 @FunctionalInterface

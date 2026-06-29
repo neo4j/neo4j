@@ -594,9 +594,8 @@ class CollectSyntaxUsageMetricsTest extends CypherFunSuite with CypherVersionTes
   ): InternalUsageStats = {
     val startState = InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
     val semanticFeaturesParam = semanticFeatures
-    val context = new ErrorCollectingContext(version, query = query) {
+    val context = new ErrorCollectingContext(version, query = query, semanticFeatures = semanticFeaturesParam) {
       override val internalUsageStats: InternalUsageStats = InternalUsageStats.newImpl()
-      override val semanticFeatures: Seq[SemanticFeature] = semanticFeaturesParam
     }
     pipeline.transform(startState, context)
 

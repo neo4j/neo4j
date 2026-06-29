@@ -226,6 +226,10 @@ case object Acc {
 }
 
 trait VariableCheckerUtil {
+  export VariableCheckerUtil.*
+}
+
+object VariableCheckerUtil {
 
   protected type SimpleVariableCheck = PartialFunction[WorkingScope, Set[SemanticError]]
 

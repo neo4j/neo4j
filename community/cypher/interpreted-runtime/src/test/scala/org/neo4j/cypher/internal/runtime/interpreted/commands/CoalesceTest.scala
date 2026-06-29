@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Coales
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Null
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
@@ -62,7 +61,7 @@ class CoalesceTest extends InterpretedRuntimeTestSuite {
 case class BreakingExpression() extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
-    fail("Coalesce is not lazy")(using CypherFunSuiteWithMacroShadowing.defaultPosition)
+    fail("Coalesce is not lazy")
   }
 
   override def rewrite(f: Expression => Expression): Expression = null

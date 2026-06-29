@@ -22,9 +22,9 @@ import org.scalatest.Assertion
 trait CompareAsPrettyStrings {
   self: CypherFunSuite =>
 
-  implicit class AnyHasCompareAsPrettyStrings(lhs: Any) {
+  extension (lhs: Any) {
 
-    def asPrettyString: String = {
+    def asPrettyTestString: String = {
       pprint.PPrinter.BlackWhite(lhs).render
     }
 

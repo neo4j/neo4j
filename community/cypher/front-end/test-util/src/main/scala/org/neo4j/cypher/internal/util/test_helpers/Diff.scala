@@ -76,7 +76,7 @@ object LcsBasedSeqDiff {
   ): Seq[CI] = {
 
     val elementDiffCached: MemorizedFunction2[ELEMENT, ELEMENT, (ELEMENT, ELEMENT), CI & ChangeInstruction] = {
-      implicit val given: MemorizationKeyEncoder[(ELEMENT, ELEMENT), (ELEMENT, ELEMENT)] =
+      given MemorizationKeyEncoder[(ELEMENT, ELEMENT), (ELEMENT, ELEMENT)] =
         new MemorizationByIdentity[(ELEMENT, ELEMENT)]
 
       MemorizedFunction2[ELEMENT, ELEMENT, (ELEMENT, ELEMENT), CI & ChangeInstruction](elementDiff)
@@ -97,7 +97,7 @@ object LcsBasedSeqDiff {
       def lcs[A](a: Seq[(A, Int)], b: Seq[(A, Int)], eq: (A, A) => Boolean): Seq[(Int, Int)] = {
         type DP = MemorizedFunction2[Seq[(A, Int)], Seq[(A, Int)], (Int, Int), Seq[(Int, Int)]]
 
-        implicit val given: MemorizationKeyEncoder[(Seq[(A, Int)], Seq[(A, Int)]), (Int, Int)] =
+        given MemorizationKeyEncoder[(Seq[(A, Int)], Seq[(A, Int)]), (Int, Int)] =
           (v1: (Seq[(A, Int)], Seq[(A, Int)])) => (v1._1.length, v1._2.length)
 
         implicit val o: Ordering[Seq[(Int, Int)]] = Ordering.by(_.length)

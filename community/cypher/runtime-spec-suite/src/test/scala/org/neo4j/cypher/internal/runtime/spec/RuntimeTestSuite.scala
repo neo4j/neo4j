@@ -312,7 +312,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     }
   }
 
-  override def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit pos: Position): Unit = {
+  // shadows the `test` method
+  protected def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit d: DummyImplicit): Unit = {
     super.test(testName, Tag(runtime.name) +: testTags: _*)({
       testFun
       // Close the transaction here so that any errors resulting from that will be visible as test failures

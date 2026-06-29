@@ -30,3 +30,7 @@ object WindowsStringSafe extends Equality[String] {
     case _ => false
   }
 }
+
+object WindowsStringSafe3 extends Equality[String] {
+  export WindowsStringSafe.*
+}

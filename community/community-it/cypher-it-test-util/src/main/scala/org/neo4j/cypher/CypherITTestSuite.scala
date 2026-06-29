@@ -20,13 +20,8 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
-import org.scalatest.Args
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Status
 
-trait CypherITTestSuite extends CypherFunSuiteWithMacroShadowing
-    with BeforeAndAfterAll // fixes "accidental override" errors, can be removed after Scala 3 migration is complete
-    {
-  // remove after Scala 3 migration is complete
-  override def run(testName: Option[String], args: Args): Status = super.run(testName, args)
+trait CypherITTestSuite extends CypherFunSuiteWithMacroShadowing {
+  // allows using shouldBe matcher with Object on LHS and primitve type on RHS
+  given CanEqual[AnyRef, AnyVal] = CanEqual.derived
 }

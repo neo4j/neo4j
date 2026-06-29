@@ -44,6 +44,9 @@ abstract class MergeUniqueNodeTestBase[CONTEXT <: RuntimeContext](
   protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
+  // allows using shouldBe matcher with Object on LHS and primitive type on RHS
+  given CanEqual[AnyRef, AnyVal] = CanEqual.derived
+
   test("should grab shared lock when finding a node") {
     val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")

@@ -49,7 +49,8 @@ class LogReplayableOperations(inner: GraphOperations, log: String => Unit, opera
 
   override type Node = ReconstructableNode
 
-  class ReconstructableNode(node: inner.Node) extends GraphOperations.Node[ReconstructableNode] {
+  class ReconstructableNode private[LogReplayableOperations] (node: inner.Node)
+      extends GraphOperations.Node[ReconstructableNode] {
     def varName: String = s"n$id"
 
     override def id: Long = node.id

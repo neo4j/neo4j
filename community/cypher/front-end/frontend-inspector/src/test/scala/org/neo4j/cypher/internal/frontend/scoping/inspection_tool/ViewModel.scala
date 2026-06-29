@@ -150,11 +150,6 @@ object ViewModel {
         )
       case regularContext: RegularContext =>
         buildRegularContextCard("Regular incoming", regularContext)
-      case workingContext =>
-        CardViewModel(
-          title = "Incoming",
-          contents = Seq(ScalarContentViewModel("incoming", workingContext.getClass.getSimpleName))
-        )
     }
 
     private def buildRegularContextCard(labelText: String, context: RegularContext): CardViewModel = {
@@ -211,8 +206,6 @@ object ViewModel {
           )
         case TableResultWithNotYetKnownColumns | OmittedResult | NoResult | ExpressionResult =>
           Seq(ScalarContentViewModel("type", Formatting.getClassNameWithoutTrailingDollarSign(result)))
-        case other =>
-          Seq(ScalarContentViewModel("type", Formatting.getClassNameWithoutTrailingDollarSign(other)))
       }
       CardViewModel("result", contents)
     }
@@ -267,7 +260,6 @@ object ViewModel {
         val title = o match {
           case _: SubqueryExpression => "Subquery expression scope context"
           case _: NextStatement      => "Next statement scope context"
-          case _                     => "Opinionated scope context"
         }
         CardViewModel(title, Seq(VariableListContentViewModel("constants", o.constants.toSeq)))
     }
