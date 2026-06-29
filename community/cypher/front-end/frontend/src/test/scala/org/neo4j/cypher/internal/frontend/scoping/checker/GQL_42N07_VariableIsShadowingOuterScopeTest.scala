@@ -17,6 +17,8 @@
 package org.neo4j.cypher.internal.frontend.scoping.checker
 
 import org.neo4j.cypher.internal.frontend.scoping.E42N07
+import org.neo4j.cypher.internal.frontend.scoping.E42N62
+import org.neo4j.cypher.internal.frontend.scoping.Exactly
 import org.neo4j.cypher.internal.frontend.scoping.Passes
 import org.neo4j.cypher.internal.frontend.scoping.Versioned.ignoreBeforeCypher25
 
@@ -35,7 +37,7 @@ class GQL_42N07_VariableIsShadowingOuterScopeTest extends VariableCheckingWithLo
         |  UNION
         |  RETURN a + 2 AS a
         |}""".stripMargin,
-      ignoreBeforeCypher25(E42N07("a")),
+      ignoreBeforeCypher25(Exactly(E42N07("a"), E42N62("x"))),
       Seq.empty
     ),
     TestQuery(
@@ -45,7 +47,7 @@ class GQL_42N07_VariableIsShadowingOuterScopeTest extends VariableCheckingWithLo
         |  UNION
         |  RETURN x + 2 AS a
         |}""".stripMargin,
-      ignoreBeforeCypher25(E42N07("a")),
+      ignoreBeforeCypher25(Exactly(E42N07("a"), E42N62("x"))),
       Seq.empty
     ),
     TestQuery(

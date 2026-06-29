@@ -20,6 +20,33 @@ import org.neo4j.cypher.internal.CypherVersion
 
 sealed trait Outcome
 
+object Outcome {
+
+  /**
+   * Weakens an outcome for use against fuzzed / surrounded queries, where the surrounding context may
+   * introduce additional, unpredictable errors that an exact assertion could never anticipate. The
+   * intended error(s) must still be present, but extras are tolerated:
+   *
+   *   - [[Exactly]]`(errs)` ⇒ [[AllOf]]`(errs)` — each listed error must still be present; the
+   *     leaf-code-set equality is dropped, since surrounding adds codes.
+   *   - [[Absent]]          ⇒ [[Ignore]]        — absence of a code cannot be guaranteed once the
+   *     query is wrapped in arbitrary context.
+   *   - [[AllOf]] / [[Versioned]]               — relaxed structurally, per element / per branch.
+   *
+   * Single [[GqlError]], [[Passes]] and [[Ignore]] are already surrounding-robust (they only assert a
+   * code is present somewhere, or that nothing is asserted) and pass through unchanged. As a result
+   * this is the identity transform for every outcome that does not use the exact/absent combinators.
+   */
+  def relaxedForFuzzing(outcome: Outcome): Outcome = outcome match {
+    case Exactly(errors @ _*) => AllOf(errors: _*)
+    case _: Absent            => Ignore
+    case AllOf(outcomes @ _*) => AllOf(outcomes.map(relaxedForFuzzing): _*)
+    case Versioned(default, cases @ _*) =>
+      Versioned(relaxedForFuzzing(default), cases.map { case (v, o) => v -> relaxedForFuzzing(o) }: _*)
+    case other => other
+  }
+}
+
 case class Versioned(default: Outcome, map: (CypherVersion, Outcome)*) extends Outcome
 
 object Versioned {
@@ -39,10 +66,43 @@ case object Ignore extends Unversioned
 
 case object Passes extends Unversioned
 
+sealed trait MsgMatch
+
+object MsgMatch {
+  case object Equals extends MsgMatch
+  case object Contains extends MsgMatch
+}
+
 trait GqlError extends Unversioned {
   val num: String
   val msg: String
+
+  /** How this error's [[msg]] is matched against the produced status description. */
+  def msgMatch: MsgMatch = MsgMatch.Equals
+
+  final def assertMsg(actualDescription: String): Boolean = msgMatch match {
+    case MsgMatch.Equals   => actualDescription.endsWith(msg)
+    case MsgMatch.Contains => actualDescription.contains(msg)
+  }
 }
+
+/**
+ * Composite outcomes for queries that produce several semantic errors.
+ *
+ *   - [[AllOf]]    — every listed outcome must hold against the same run (e.g. two errors present,
+ *                    or an error present alongside an [[Absent]] assertion).
+ *   - [[Absent]]   — none of the given GQL status codes appears anywhere in any produced error's
+ *                    cause chain. Codes are matched by string; messages are irrelevant for absence.
+ *   - [[Exactly]]  — the set of produced errors' leaf (most-specific) status codes equals exactly
+ *                    the listed errors' codes (ignoring the generic `42001` envelope), and each
+ *                    listed error's message must also be present. Compares the set of codes, not
+ *                    their multiplicity — several errors sharing a leaf code count as one.
+ */
+case class AllOf(outcomes: Outcome*) extends Unversioned
+
+case class Absent(codes: String*) extends Unversioned
+
+case class Exactly(errors: GqlError*) extends Unversioned
 
 object GqlError {
 
@@ -79,12 +139,16 @@ case object E42N39 extends GqlError {
   override val num: String = "42N39"
 
   override val msg: String = "incompatible return column names."
+
+  override def msgMatch: MsgMatch = MsgMatch.Contains
 }
 
 case object E42N66 extends GqlError {
   override val num: String = "42N66"
 
   override val msg: String = "relationship variable already bound"
+
+  override def msgMatch: MsgMatch = MsgMatch.Contains
 }
 
 case class E42N67(parameter: String) extends GqlError {
@@ -97,15 +161,35 @@ case object E42N3A extends GqlError {
   override val num: String = "42N3A"
 
   override val msg: String = "incompatible conditional query."
+
+  override def msgMatch: MsgMatch = MsgMatch.Contains
 }
 
 case object E42N3B extends GqlError {
   override val num: String = "42N3B"
 
   override val msg: String = "incompatible number of return columns."
+
+  override def msgMatch: MsgMatch = MsgMatch.Contains
 }
 
-case class E42N44(variable: String, clause: String) extends GqlError {
+object E42N44 {
+
+  def apply(variable: String, clause: String): Outcome =
+    Versioned(
+      E42N44WithoutGroupBy(variable, clause),
+      CypherVersion.Cypher5 -> E42N44WithoutGroupBy(variable, clause)
+    )
+}
+
+case class E42N44WithGroupBy(variable: String, clause: String) extends GqlError {
+  override val num: String = "42N44"
+
+  override val msg: String =
+    s"It is not possible to access the variable `$variable` declared before the $clause clause when using `DISTINCT`, an aggregation, or a `GROUP BY` clause."
+}
+
+case class E42N44WithoutGroupBy(variable: String, clause: String) extends GqlError {
   override val num: String = "42N44"
 
   override val msg: String =
@@ -162,4 +246,18 @@ case class E42I79(variables: String*) extends GqlError {
 
   override val msg: String =
     s"Aggregation in subclause expression is not allowed to reference variables declared in the same clause: ${GqlError.ander(variables)}."
+}
+
+case class E42I80(element: String, alias: String) extends GqlError {
+  override val num: String = "42I80"
+
+  override val msg: String =
+    s"The grouping element '$element' is not a valid grouping key. A grouping element that references the projection item alias `$alias` must be a simple variable reference."
+}
+
+case class E42I80Aggregation(element: String, alias: String) extends GqlError {
+  override val num: String = "42I80"
+
+  override val msg: String =
+    s"The grouping element '$element' is not a valid grouping key. A grouping element cannot reference the aggregation `$alias`."
 }

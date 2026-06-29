@@ -58,7 +58,7 @@ class GQL_42N38_DuplicateReturnItemNameTest extends VariableCheckingWithLocalCal
       (for {
         vars <- variableSets
       } yield Seq(
-        Proj(Seq(vars._1 AS "a", "a" AS "a"), Set(vars._1)),
+        Proj(Seq(vars._1 AS "a", "a" AS "a"), Set(vars._1, "a")),
         Proj(Seq(vars._1 AS "a", "10" AS "a"), Set(vars._1)),
         Proj(Seq(vars._1 AS "a", vars._2 AS "b", vars._1 AS "a"), Set(vars._1, vars._2)),
         Proj(Seq(vars._1 AS "a", vars._2 AS "b", vars._3 AS "a"), Set(vars._1, vars._2, vars._3)),

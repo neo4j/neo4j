@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.scoping.checker
 
+import org.neo4j.cypher.internal.frontend.scoping.Outcome
 import org.neo4j.cypher.internal.frontend.scoping.VariableCheckingTestSuite
 import org.neo4j.cypher.internal.frontend.scoping.Versioned.ignoreBeforeCypher25
 
@@ -36,7 +37,7 @@ trait VariableCheckingWithLocalCallablesTestSuite extends VariableCheckingTestSu
     }
   } {
     test(query) {
-      check(ignoreBeforeCypher25(outcome))
+      check(ignoreBeforeCypher25(Outcome.relaxedForFuzzing(outcome)))
     }
   }
 
@@ -61,7 +62,7 @@ trait VariableCheckingWithLocalCallablesTestSuite extends VariableCheckingTestSu
     }
   } {
     test(query) {
-      check(ignoreBeforeCypher25(outcome))
+      check(ignoreBeforeCypher25(Outcome.relaxedForFuzzing(outcome)))
     }
   }
 }

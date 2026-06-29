@@ -17,6 +17,8 @@
 package org.neo4j.cypher.internal.frontend.scoping.checker
 
 import org.neo4j.cypher.internal.frontend.scoping.E42I37
+import org.neo4j.cypher.internal.frontend.scoping.E42N62
+import org.neo4j.cypher.internal.frontend.scoping.Exactly
 import org.neo4j.cypher.internal.frontend.scoping.Passes
 import org.neo4j.cypher.internal.frontend.scoping.Versioned.ignoreBeforeCypher25
 import org.neo4j.cypher.internal.frontend.scoping.checker.CompositionRestriction.NoCountOrExistsSubqueryBody
@@ -78,7 +80,7 @@ class GQL_42I37_InvalidUseOfReturnStarTest extends VariableCheckingWithLocalCall
         |NEXT
         |
         |RETURN x""".stripMargin,
-      ignoreBeforeCypher25(E42I37),
+      ignoreBeforeCypher25(Exactly(E42I37, E42N62("x"))),
       Seq("x"),
       compositionRestriction = NoCountOrExistsSubqueryBody
     ),

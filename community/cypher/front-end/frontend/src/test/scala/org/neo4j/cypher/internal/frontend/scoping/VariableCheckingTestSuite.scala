@@ -796,34 +796,104 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
     query: String,
     gqlError: GqlError,
     version: CypherVersion
-  ): Unit = error(query, gqlError.num, gqlError.msg, versions = Array(version))
+  ): Unit = error(query, gqlError, versions = Array(version))
 
   def error(
     query: String,
     gqlError: GqlError
-  ): Unit = error(query, gqlError.num, gqlError.msg, versions = Array(CypherVersion.Cypher25))
+  ): Unit = error(query, gqlError, versions = Array(CypherVersion.Cypher25))
 
   def error(
     query: String,
     gqlError: GqlError,
     versions: Array[CypherVersion]
-  ): Unit = error(query, gqlError.num, gqlError.msg, versions)
+  ): Unit =
+    assertError(
+      query,
+      gqlError.num,
+      gqlError.assertMsg,
+      s"${msgMatchVerb(gqlError)}:\n  ${gqlError.msg}",
+      versions
+    )
+
+  // Infinitive verb describing an error's message-match mode, for failure clues ("... to equal/contain:").
+  private def msgMatchVerb(e: GqlError): String = e.msgMatch match {
+    case MsgMatch.Equals   => "equal"
+    case MsgMatch.Contains => "contain"
+  }
+
+  // Walks an error's cause chain looking for a specific GQL status code.
+  @tailrec
+  private def findGqlStatus(
+    gqlStatusObject: ErrorGqlStatusObject,
+    expectedGqlStatusCode: String
+  ): Option[ErrorGqlStatusObject] = gqlStatusObject match {
+    case gqlStatusObject if gqlStatusObject.gqlStatus() == expectedGqlStatusCode => Some(gqlStatusObject)
+    case gqlStatusObject: ErrorGqlStatusObject =>
+      gqlStatusObject.cause().toScala match {
+        case Some(cause) => findGqlStatus(cause, expectedGqlStatusCode)
+        case None        => None
+      }
+  }
+
+  // All GQL status codes appearing anywhere in an error's cause chain.
+  private def chainCodes(error: SemanticError): Set[String] = {
+    @tailrec
+    def loop(obj: ErrorGqlStatusObject, acc: Set[String]): Set[String] = {
+      val next = acc + obj.gqlStatus()
+      obj.cause().toScala match {
+        case Some(cause) => loop(cause, next)
+        case None        => next
+      }
+    }
+    loop(error.gqlStatusObject, Set.empty)
+  }
+
+  // The most-specific (deepest cause) status object of an error chain.
+  @tailrec
+  private def leafStatusObject(obj: ErrorGqlStatusObject): ErrorGqlStatusObject =
+    obj.cause().toScala match {
+      case Some(cause) => leafStatusObject(cause)
+      case None        => obj
+    }
+
+  private def leafCode(error: SemanticError): String = leafStatusObject(error.gqlStatusObject).gqlStatus()
+
+  // Renders the produced errors as `<leafCode>: <leaf description>` lines, for failure clues.
+  private def renderProducedErrors(errors: Seq[SemanticError]): String =
+    if (errors.isEmpty) "  (none)"
+    else errors.map { e =>
+      val leaf = leafStatusObject(e.gqlStatusObject)
+      s"  - ${leaf.gqlStatus()}: ${leaf.statusDescription()}"
+    }.mkString("\n")
+
+  // Runs the query for one checker/version and returns the produced semantic errors (empty if none).
+  private def producedErrors(
+    query: String,
+    checker: Transformer[BaseContext, BaseState, BaseState],
+    version: CypherVersion
+  ): Seq[SemanticError] = runQuery(query, version, checker) match {
+    case Left(_)       => Seq.empty
+    case Right(errors) => errors
+  }
 
   def error(
     query: String,
     expectedGqlStatusCode: String,
     msgContains: String,
     versions: Array[CypherVersion]
+  ): Unit =
+    assertError(query, expectedGqlStatusCode, _.contains(msgContains), s"contain:\n  $msgContains", versions)
+
+  private def assertError(
+    query: String,
+    expectedGqlStatusCode: String,
+    msgMatches: String => Boolean,
+    msgClue: String,
+    versions: Array[CypherVersion]
   ): Unit = {
-    @tailrec
-    def findGqlStatus(gqlStatusObject: ErrorGqlStatusObject): Option[ErrorGqlStatusObject] = gqlStatusObject match {
-      case gqlStatusObject if gqlStatusObject.gqlStatus() == expectedGqlStatusCode => Some(gqlStatusObject)
-      case gqlStatusObject: ErrorGqlStatusObject =>
-        gqlStatusObject.cause().toScala match {
-          case Some(cause) => findGqlStatus(cause)
-          case None        => None
-        }
-    }
+    def findGqlStatus(gqlStatusObject: ErrorGqlStatusObject): Option[ErrorGqlStatusObject] =
+      this.findGqlStatus(gqlStatusObject, expectedGqlStatusCode)
 
     checkersUnderTest.foreach(checker => {
       versions.foreach(version => {
@@ -846,7 +916,9 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
             }) match {
               case Some(gqlStatusObject) =>
                 gqlStatusObject.gqlStatus() shouldBe expectedGqlStatusCode
-                gqlStatusObject.statusDescription() should include(msgContains)
+                withClue(
+                  s"\nExpected message to $msgClue\nbut was:\n  ${gqlStatusObject.statusDescription()}\n"
+                )(msgMatches(gqlStatusObject.statusDescription()) shouldBe true)
 
                 if (testLog) {
                   log.append(
@@ -896,9 +968,12 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
 
   def check(query: String, outcome: Outcome, versions: Array[CypherVersion]): Unit =
     outcome match {
-      case Ignore      => ()
-      case Passes      => pass(query, versions)
-      case e: GqlError => error(query, e, versions)
+      case Ignore               => ()
+      case Passes               => pass(query, versions)
+      case e: GqlError          => error(query, e, versions)
+      case AllOf(outcomes @ _*) => outcomes.foreach(o => check(query, o, versions))
+      case Absent(codes @ _*)   => absent(query, codes.toSet, versions)
+      case Exactly(errors @ _*) => exactly(query, errors, versions)
       case Versioned(default, cases @ _*) =>
         val versionsWithExceptions = cases.map(_._1).distinct
         val versionsForDefault = versions.filterNot(v => versionsWithExceptions contains v)
@@ -910,6 +985,60 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
           check(query, o, Array(v))
         }
     }
+
+  // Header shown in failure clues: which run, the query, and every error it produced.
+  private def producedErrorsClue(
+    query: String,
+    checker: Transformer[BaseContext, BaseState, BaseState],
+    version: CypherVersion,
+    errors: Seq[SemanticError]
+  ): String =
+    s"""Version: $version
+       |Checker: ${checker.name}
+       |Query:
+       |$query
+       |
+       |Produced errors:
+       |${renderProducedErrors(errors)}
+       |""".stripMargin
+
+  // Asserts that none of `codes` appears anywhere in any produced error's cause chain.
+  def absent(query: String, codes: Set[String], versions: Array[CypherVersion]): Unit =
+    checkersUnderTest.foreach(checker =>
+      versions.foreach(version => {
+        val errors = producedErrors(query, checker, version)
+        val present = errors.flatMap(chainCodes).toSet intersect codes
+        withClue(
+          producedErrorsClue(query, checker, version, errors) +
+            s"\nExpected NONE of ${codes.mkString(", ")}, but found: ${present.mkString(", ")}\n"
+        )(present shouldBe empty)
+      })
+    )
+
+  // Asserts that the produced errors' leaf (most-specific) status codes are exactly the codes of
+  // `expectedErrors`, and that each expected error's message is present.
+  def exactly(query: String, expectedErrors: Seq[GqlError], versions: Array[CypherVersion]): Unit = {
+    val expectedCodes = expectedErrors.map(_.num).toSet
+    checkersUnderTest.foreach(checker =>
+      versions.foreach(version => {
+        val errors = producedErrors(query, checker, version)
+        val actualCodes = errors.map(leafCode).toSet
+        withClue(producedErrorsClue(query, checker, version, errors)) {
+          withClue(s"\nExpected exactly the leaf codes $expectedCodes, but got $actualCodes\n")(
+            actualCodes shouldBe expectedCodes
+          )
+          expectedErrors.foreach { e =>
+            val matched = errors.exists(err =>
+              findGqlStatus(err.gqlStatusObject, e.num).exists(s => e.assertMsg(s.statusDescription()))
+            )
+            withClue(s"\nExpected an error ${e.num} whose message must ${msgMatchVerb(e)}:\n  ${e.msg}\n")(
+              matched shouldBe true
+            )
+          }
+        }
+      })
+    )
+  }
 
   def hasScope(
     expected: ExpectedWorkingScope,
