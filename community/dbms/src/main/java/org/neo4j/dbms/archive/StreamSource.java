@@ -27,6 +27,7 @@ import java.util.function.BiFunction;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.filename.SequentialFileNameHelper;
+import org.neo4j.util.Preconditions;
 
 public interface StreamSource {
     InputStream next() throws IOException;
@@ -36,8 +37,11 @@ public interface StreamSource {
     }
 
     static StreamSource siblingsOf(FileSystemAbstraction fs, Path base) {
-        SequentialFileNameHelper fnHelper = new SequentialFileNameHelper(
-                base.getParent(), base.getFileName().toString());
+        var parent = base.getParent();
+        Preconditions.checkArgument(base.isAbsolute(), "base must have an absolute path");
+        Preconditions.checkArgument(parent != null, "base must have a parent");
+        SequentialFileNameHelper fnHelper =
+                new SequentialFileNameHelper(parent, base.getFileName().toString());
         return generic(base, (p, v) -> fnHelper.getFileForVersion(v), fs::openAsInputStream);
     }
 

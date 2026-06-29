@@ -84,7 +84,8 @@ public sealed interface ArchiveInput {
         public static FileInput of(FileSystemAbstraction fs, Path path) {
             Objects.requireNonNull(fs);
             Objects.requireNonNull(path);
-            return new FileInput(StreamSource.siblingsOf(fs, path), path.toString());
+            Path absolutePath = path.toAbsolutePath();
+            return new FileInput(StreamSource.siblingsOf(fs, absolutePath), absolutePath.toString());
         }
 
         @Override
