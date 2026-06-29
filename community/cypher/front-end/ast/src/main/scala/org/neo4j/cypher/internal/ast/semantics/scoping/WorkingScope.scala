@@ -59,14 +59,31 @@ case object DummyASTNode extends ASTNode {
 sealed trait WorkingScope extends Product with Foldable {
   def astNode: ASTNode
   def incoming: WorkingContext
+
+  /**
+   * The references this scope publishes to its parent — a map from each variable use to the
+   * declaration it resolves to; parents aggregate these via [[WorkingScope.referencedInChildren]].
+   *
+   * For ordinary scopes these are the variables literally used here. The exception is a
+   * recognized leaf (see [[WorkingContext.recognizedLeafScope]], e.g. a GROUP BY grouping key):
+   * there this set is the recognized *column identity* (the projection alias, or the bare variable
+   * itself), so the parent sees the scope as that output column rather than as the raw variables
+   * inside the expression. Those raw variables are then kept in [[hiddenReferences]].
+   */
   def referenced: References
 
   /**
-   * Internal plumbing references — not visible to callers that ask about this scope's
-   * "external references". Used for `UnionMapping` that needs to be linked to the branch's
-   * output column even though neither side is "external" to the UNION.
+   * Real variable uses deliberately kept OUT of [[referenced]], so they survive whole-tree
+   * resolution ([[collectAllReferences]] / [[getSymbolGroups]]) without appearing in the scope's
+   * published set. Empty for ordinary scopes. Populated in two cases:
+   *   - a recognized leaf over a non-variable expression, where [[referenced]] holds the alias and
+   *     the variables actually written in the expression live here;
+   *   - a UNION branch, where a `UnionMapping` links the branch's output column to the union column
+   *     without leaking into the branch's published [[referenced]].
+   *
+   * Derived from [[referenced]]'s hidden channel, so it survives every `copy`.
    */
-  def internalReferences: References = References.empty
+  final def hiddenReferences: References = referenced.hiddenRefs
 
   def declared: Declarations
   def outgoing: RegularContext
@@ -78,7 +95,7 @@ sealed trait WorkingScope extends Product with Foldable {
   def withChildren(children: Seq[WorkingScope]): WorkingScope
   def withDeclared(declared: Declarations): WorkingScope
   def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): WorkingScope
-  def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): WorkingScope
+  def addHiddenReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): WorkingScope
 
   def tagForCache(inImportingWith: Boolean, foreachIterVar: Option[LogicalVariable]): WorkingScope = this
 
@@ -176,7 +193,7 @@ object WorkingScope {
 
   def referencedInChildren(children: Seq[WorkingScope]): References =
     children.foldLeft(References.empty) {
-      (referenced, c2) => referenced union c2.referenced
+      (referenced, c2) => referenced union c2.referenced.publishedOnly
     }
 
   private[scoping] def collectReferencesInto(
@@ -184,7 +201,7 @@ object WorkingScope {
     acc: scala.collection.mutable.HashMap[Ref[LogicalVariable], Ref[LogicalVariable]]
   ): Unit = {
     mergeReferencesInto(acc, scope.referenced.references)
-    mergeReferencesInto(acc, scope.internalReferences.references)
+    mergeReferencesInto(acc, scope.hiddenReferences.references)
     scope.children.foreach(child => collectReferencesInto(child, acc))
   }
 
@@ -240,11 +257,10 @@ case class AprioriScope(incoming: RegularContext, outgoing: RegularContext) exte
   override def withChildren(children: Seq[WorkingScope]): AprioriScope = this
   override def withDeclared(declared: Declarations): AprioriScope = this
 
-  override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])])
-    : AprioriScope = this
+  override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): AprioriScope = this
 
-  override def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])])
-    : AprioriScope = this
+  override def addHiddenReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): AprioriScope =
+    this
 }
 
 case class StatementScope(
@@ -257,9 +273,6 @@ case class StatementScope(
   children: Seq[WorkingScope] = WorkingScope.noChildren,
   override val inImportingWith: Boolean = false
 ) extends WorkingScope {
-  private var _internalReferences: References = References.empty
-  override def internalReferences: References = _internalReferences
-
   private var _foreachIterVar: Option[LogicalVariable] = None
   override def foreachIterVar: Option[LogicalVariable] = _foreachIterVar
 
@@ -269,19 +282,14 @@ case class StatementScope(
   override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): StatementScope =
     copy(referenced = referenced.union(References(references.toMap)))
 
-  override def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): StatementScope = {
-    val c = this.copy()
-    c._internalReferences = _internalReferences.union(References(references.toMap))
-    c._foreachIterVar = _foreachIterVar
-    c
-  }
+  override def addHiddenReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): StatementScope =
+    copy(referenced = referenced.addHidden(references.toMap))
 
   override def tagForCache(
     inImportingWith: Boolean,
     foreachIterVar: Option[LogicalVariable]
   ): StatementScope = {
     val c = this.copy(inImportingWith = inImportingWith)
-    c._internalReferences = _internalReferences
     c._foreachIterVar = foreachIterVar
     c
   }
@@ -294,9 +302,6 @@ case class ExpressionScope(
   declared: Declarations,
   children: Seq[WorkingScope] = WorkingScope.noChildren
 ) extends WorkingScope {
-  private var _internalReferences: References = References.empty
-  override def internalReferences: References = _internalReferences
-
   override def result: Result = ExpressionResult
   override def outgoing: RegularContext = RegularContext.unit
   def withAstNode(astNode: ASTNode): ExpressionScope = copy(astNode = astNode)
@@ -306,11 +311,8 @@ case class ExpressionScope(
   override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): ExpressionScope =
     copy(referenced = referenced.union(References(references.toMap)))
 
-  override def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): ExpressionScope = {
-    val c = this.copy()
-    c._internalReferences = _internalReferences.union(References(references.toMap))
-    c
-  }
+  override def addHiddenReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): ExpressionScope =
+    copy(referenced = referenced.addHidden(references.toMap))
 }
 
 case class PatternScope(
@@ -321,9 +323,6 @@ case class PatternScope(
   result: TableResult,
   children: Seq[WorkingScope] = WorkingScope.noChildren
 ) extends WorkingScope {
-  private var _internalReferences: References = References.empty
-  override def internalReferences: References = _internalReferences
-
   private var _foreachIterVar: Option[LogicalVariable] = None
   override def foreachIterVar: Option[LogicalVariable] = _foreachIterVar
 
@@ -338,19 +337,14 @@ case class PatternScope(
   override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): PatternScope =
     copy(referenced = referenced.union(References(references.toMap)))
 
-  override def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): PatternScope = {
-    val c = this.copy()
-    c._internalReferences = _internalReferences.union(References(references.toMap))
-    c._foreachIterVar = _foreachIterVar
-    c
-  }
+  override def addHiddenReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): PatternScope =
+    copy(referenced = referenced.addHidden(references.toMap))
 
   override def tagForCache(
     inImportingWith: Boolean,
     foreachIterVar: Option[LogicalVariable]
   ): PatternScope = {
     val c = this.copy()
-    c._internalReferences = _internalReferences
     c._foreachIterVar = foreachIterVar
     c
   }
@@ -391,7 +385,7 @@ case class UnexpectedAstNodeScopingError(astNode: ASTNode, incoming: RegularCont
   override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])])
     : UnexpectedAstNodeScopingError = this
 
-  override def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])])
+  override def addHiddenReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])])
     : UnexpectedAstNodeScopingError = this
 }
 
@@ -450,11 +444,31 @@ object Declarations {
     Declarations(Seq.empty[LogicalVariable], Seq.empty[LogicalVariable], Seq(localCallableScopeSignature))
 }
 
-case class References(references: Map[Ref[LogicalVariable], Ref[LogicalVariable]]) {
+/**
+ * @param references the published channel — uses this scope exposes to its parent.
+ * @param hidden     real uses kept OUT of the published channel but retained for whole-tree
+ *                   resolution (see [[WorkingScope.hiddenReferences]]). A parent must never
+ *                   aggregate a child's hidden entries, so [[publishedOnly]] strips this channel
+ *                   before [[WorkingScope.referencedInChildren]] merges children upward.
+ */
+case class References(
+  references: Map[Ref[LogicalVariable], Ref[LogicalVariable]],
+  hidden: Map[Ref[LogicalVariable], Ref[LogicalVariable]] = Map.empty
+) {
 
   def getDeclaration(variable: Ref[LogicalVariable]): Ref[LogicalVariable] = references.getOrElse(variable, variable)
 
   def getVariables: Seq[LogicalVariable] = references.keySet.toSeq.map(_.value)
+
+  /** The hidden channel viewed as a `References`, for whole-tree resolution and the checkers. */
+  def hiddenRefs: References = if (hidden.isEmpty) References.empty else References(hidden)
+
+  /** Add real uses to the hidden channel, keeping them out of the published set. */
+  def addHidden(those: Map[Ref[LogicalVariable], Ref[LogicalVariable]]): References =
+    copy(hidden = hidden ++ those)
+
+  /** This scope's references with the hidden channel cleared — what a parent is allowed to see. */
+  def publishedOnly: References = if (hidden.isEmpty) this else copy(hidden = Map.empty)
 
   // TODO is this behavior we want to rely on further
   def hasSelfReference: Boolean = references.exists { case (reference, declaration) => reference == declaration }
@@ -465,17 +479,21 @@ case class References(references: Map[Ref[LogicalVariable], Ref[LogicalVariable]
       .collect { case (reference, declaration) if reference == declaration => reference.value }
       .toSet
 
-  def union(that: References): References = References(references ++ that.references)
+  def union(that: References): References =
+    References(references ++ that.references, hidden ++ that.hidden)
 
   def union(those: Seq[References]): References =
-    References(those.foldLeft(references) { case (ref, ref2) => ref ++ ref2.references })
+    References(
+      those.foldLeft(references) { case (ref, ref2) => ref ++ ref2.references },
+      those.foldLeft(hidden) { case (h, ref2) => h ++ ref2.hidden }
+    )
 
   def intersect(those: Set[LogicalVariable]): References =
-    References(references.filter(those contains _._1.value))
+    copy(references = references.filter(those contains _._1.value))
 
   def intersectByTarget(those: Set[LogicalVariable]): References = {
     val targets: Set[(String, Int)] = those.iterator.map(v => (v.name, v.position.offset)).toSet
-    References(references.filter { case (_, decl) =>
+    copy(references = references.filter { case (_, decl) =>
       targets.contains((decl.value.name, decl.value.position.offset))
     })
   }
@@ -485,13 +503,13 @@ case class References(references: Map[Ref[LogicalVariable], Ref[LogicalVariable]
    * `References` containing only those entries whose declaration satisfies `p`.
    */
   def filterTargets(p: LogicalVariable => Boolean): References =
-    References(references.filter { case (_, decl) => p(decl.value) })
+    copy(references = references.filter { case (_, decl) => p(decl.value) })
 
   def diff(that: LogicalVariable): References =
-    References(references.filterNot(that == _._1.value))
+    copy(references = references.filterNot(that == _._1.value))
 
   def diff(those: Set[LogicalVariable]): References =
-    References(references.filterNot(those contains _._1.value))
+    copy(references = references.filterNot(those contains _._1.value))
 
 }
 

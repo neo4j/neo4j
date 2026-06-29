@@ -78,10 +78,10 @@ case object AggregationChecker extends VariableCheckerUtil {
         .getOrElse(Set.empty)
     // Recognized-leaf scope (non-variable expression matched via sub-expression).
     // Per CIP-248 Rule 2 the variables the user actually wrote live in
-    // `internalReferences`; the public `referenced` only carries the resolved
+    // `hiddenReferences`; the public `referenced` only carries the resolved
     // alias. Flag any caller whose target isn't constant in this subclause part.
-    case scope @ ExpressionScope(_, ctx, _, _, _) if scope.internalReferences.getVariables.nonEmpty =>
-      scope.internalReferences.getVariables
+    case scope @ ExpressionScope(_, ctx, _, _, _) if scope.hiddenReferences.getVariables.nonEmpty =>
+      scope.hiddenReferences.getVariables
         .filterNot(lv => ctx.isConstantForPart(lv, NonAggregatingSubclausePart))
         .map(lv => SemanticError.inaccessibleVariable(lv.name, clauseName, lv.position))
         .toSet

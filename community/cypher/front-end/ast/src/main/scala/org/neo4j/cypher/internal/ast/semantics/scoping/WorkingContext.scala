@@ -233,6 +233,12 @@ sealed trait RegularContext extends WorkingContext {
     ExpressionScope(astNode, this, referenced, declared, children)
   }
 
+  /**
+   * Scope for an expression that is recognized as a projection item (e.g. a grouping key).
+   * Its [[WorkingScope.referenced]] is set to the recognized item's alias (or, for a bare
+   * variable, the variable itself) so parents see it as that column; the variables actually
+   * written in the expression are preserved in [[WorkingScope.hiddenReferences]].
+   */
   def recognizedLeafScope(
     expression: Expression,
     recognizedItem: ProjectionItem
@@ -254,7 +260,7 @@ sealed trait RegularContext extends WorkingContext {
         val innerRefs = other.folder.findAllByClass[LogicalVariable].iterator
           .flatMap(lv => incoming.find(lv.equals).map(matched => Ref(lv) -> Ref(matched)))
           .toSeq
-        if (innerRefs.isEmpty) scope else scope.addInternalReferences(innerRefs)
+        if (innerRefs.isEmpty) scope else scope.addHiddenReferences(innerRefs)
     }
   }
 }

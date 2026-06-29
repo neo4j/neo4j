@@ -136,4 +136,45 @@ class ScopeSurveyorReferenceTest extends VariableCheckingTestSuite {
       ExpectedSymbolGroup(varOf("name", 59), Seq(varOf("name", 59), varOf("name", 59)), None)
     ))
   }
+
+  test("""WITH {p: 1} AS a, 2 AS b
+         |RETURN a.p AS x, sum(b) AS s
+         |  GROUP BY a.p""".stripMargin) {
+    hasSymbolGroups(Seq(
+      ExpectedSymbolGroup(varOf("a", 15), Seq(varOf("a", 65), varOf("a", 15)), None),
+      ExpectedSymbolGroup(varOf("b", 23), Seq(varOf("b", 46), varOf("b", 23)), None),
+      ExpectedSymbolGroup(varOf("x", 39), Seq(varOf("x", 39)), None),
+      ExpectedSymbolGroup(varOf("s", 52), Seq(varOf("s", 52)), None)
+    ))
+  }
+
+  test("""WITH {p: 1} AS a, {q: 2} AS e, 3 AS b
+         |RETURN a.p + e.q AS x, sum(b) AS s
+         |  GROUP BY a.p + e.q""".stripMargin) {
+    hasSymbolGroups(Seq(
+      ExpectedSymbolGroup(varOf("a", 15), Seq(varOf("a", 15), varOf("a", 84)), None),
+      ExpectedSymbolGroup(varOf("e", 28), Seq(varOf("e", 28), varOf("e", 90)), None),
+      ExpectedSymbolGroup(varOf("b", 36), Seq(varOf("b", 65), varOf("b", 36)), None),
+      ExpectedSymbolGroup(varOf("x", 58), Seq(varOf("x", 58)), None),
+      ExpectedSymbolGroup(varOf("s", 71), Seq(varOf("s", 71)), None)
+    ))
+  }
+
+  test("""WITH {p: 1} AS a, 2 AS b
+         |CALL () {
+         |  WITH {p: 3} AS a, 4 AS b
+         |  RETURN a.p AS x, sum(b) AS s
+         |    GROUP BY a.p
+         |    ORDER BY a.p
+         |}
+         |RETURN a, b, x, s""".stripMargin) {
+    hasSymbolGroups(Seq(
+      ExpectedSymbolGroup(varOf("a", 15), Seq(varOf("a", 136), varOf("a", 15), varOf("a", 136)), Some("  a@0")),
+      ExpectedSymbolGroup(varOf("b", 23), Seq(varOf("b", 23), varOf("b", 139), varOf("b", 139)), Some("  b@1")),
+      ExpectedSymbolGroup(varOf("a", 52), Seq(varOf("a", 106), varOf("a", 52)), Some("  a@2")),
+      ExpectedSymbolGroup(varOf("b", 60), Seq(varOf("b", 60), varOf("b", 85)), Some("  b@3")),
+      ExpectedSymbolGroup(varOf("x", 78), Seq(varOf("x", 78), varOf("x", 142), varOf("x", 142)), None),
+      ExpectedSymbolGroup(varOf("s", 91), Seq(varOf("s", 145), varOf("s", 145), varOf("s", 91)), None)
+    ))
+  }
 }

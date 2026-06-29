@@ -61,7 +61,7 @@ object SubclauseExpressionClassifier {
    *   - For an [[ExpressionScope]] whose AST node is a [[LogicalVariable]] we use
    *     `referenced` — that's the real use site.
    *   - For any other scope (including [[recognizedLeafScope]] for non-variable
-   *     expressions) we read `internalReferences` only.
+   *     expressions) we read `hiddenReferences` only.
    *
    * Then recurse into children to pick up nested recognized leaves and ordinary
    * variable scopes.
@@ -71,7 +71,7 @@ object SubclauseExpressionClassifier {
       case ExpressionScope(_: LogicalVariable, _, referenced, _, _) =>
         referenced.getVariables.toSet
       case _ =>
-        scope.internalReferences.getVariables.toSet
+        scope.hiddenReferences.getVariables.toSet
     }
     here ++ scope.children.flatMap(outerRefs).toSet
   }

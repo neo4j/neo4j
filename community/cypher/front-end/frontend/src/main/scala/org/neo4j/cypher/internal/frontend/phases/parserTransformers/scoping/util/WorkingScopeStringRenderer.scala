@@ -80,6 +80,7 @@ object WorkingScopeStringRenderer {
         renderIncoming(incoming),
         renderAst(astNode),
         renderReferenced(referenced),
+        renderHidden(referenced),
         renderDeclaration(declared),
         renderChildren(children),
         renderResult(result),
@@ -90,6 +91,7 @@ object WorkingScopeStringRenderer {
         renderIncoming(patternIncoming),
         renderAst(astNode),
         renderReferenced(referenced),
+        renderHidden(referenced),
         renderDeclaration(declared),
         renderChildren(children)
       )
@@ -98,6 +100,7 @@ object WorkingScopeStringRenderer {
         renderIncoming(patternIncoming),
         renderAst(astNode),
         renderReferenced(referenced),
+        renderHidden(referenced),
         renderDeclaration(declared),
         renderChildren(children),
         renderResult(result)
@@ -143,6 +146,15 @@ object WorkingScopeStringRenderer {
       EpsilonSpan
     } else {
       Span(s"Ref: ${renderVariableSet(variables)}")
+    }
+  }
+
+  private def renderHidden(referenced: References): Text = {
+    val variables = referenced.hiddenRefs.getVariables.toSet
+    if (variables.isEmpty) {
+      EpsilonSpan
+    } else {
+      Span(s"Hidden: ${renderVariableSet(variables)}")
     }
   }
 

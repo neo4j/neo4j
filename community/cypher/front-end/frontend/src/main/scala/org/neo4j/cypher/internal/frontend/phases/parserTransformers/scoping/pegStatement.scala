@@ -288,7 +288,7 @@ object pegStatement {
 
   /**
    * Attach each `UnionMapping`'s `variableInLhs` / `variableInRhs` as a reference to the same-named
-   * output column of its child branch. These go on the child scopes' `internalReferences` (not
+   * output column of its child branch. These go on the child scopes' `hiddenReferences` (not
    * the public `referenced`) so that:
    *   - `collectAllReferences` still surfaces them for `getSymbolGroups`.
    *   - The branch's public `referenced` is not polluted with mapping variables that don't come
@@ -302,6 +302,6 @@ object pegStatement {
     val rhs = children(1)
     val lhsRefs = References.resolveByName(unionMappings.map(_.variableInLhs), lhs.result.getColumns)
     val rhsRefs = References.resolveByName(unionMappings.map(_.variableInRhs), rhs.result.getColumns)
-    Seq(lhs.addInternalReferences(lhsRefs), rhs.addInternalReferences(rhsRefs))
+    Seq(lhs.addHiddenReferences(lhsRefs), rhs.addHiddenReferences(rhsRefs))
   }
 }
