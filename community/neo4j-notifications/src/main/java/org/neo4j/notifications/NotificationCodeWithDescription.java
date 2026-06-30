@@ -727,17 +727,16 @@ public enum NotificationCodeWithDescription {
     public static NotificationImplementation codeGenerationFailed(
             InputPosition position, String failingRuntimeConf, String fallbackRuntimeConf, String cause) {
         final var oldDetails = new String[] {cause};
+        final boolean operatorFellBack = fallbackRuntimeConf.contains("operatorEngine=interpreted")
+                && failingRuntimeConf.contains("operatorEngine=");
+        final boolean expressionFellBack = fallbackRuntimeConf.contains("expressionEngine=interpreted")
+                && failingRuntimeConf.contains("expressionEngine=");
         final String failingEngine;
-        if (failingRuntimeConf.contains("operatorEngine=compiled")
-                && fallbackRuntimeConf.contains("operatorEngine=interpreted")
-                && failingRuntimeConf.contains("expressionEngine=compiled")
-                && fallbackRuntimeConf.contains("expressionEngine=interpreted")) {
+        if (operatorFellBack && expressionFellBack) {
             failingEngine = "operator and expression";
-        } else if (failingRuntimeConf.contains("operatorEngine=compiled")
-                && fallbackRuntimeConf.contains("operatorEngine=interpreted")) {
+        } else if (operatorFellBack) {
             failingEngine = "operator";
-        } else if (failingRuntimeConf.contains("expressionEngine=compiled")
-                && fallbackRuntimeConf.contains("expressionEngine=interpreted")) {
+        } else if (expressionFellBack) {
             failingEngine = "expression";
         } else {
             failingEngine = ""; // should not happen

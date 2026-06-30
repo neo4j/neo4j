@@ -1099,6 +1099,40 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
+    void shouldConstructNotificationsFor_CODE_GENERATION_FAILED_defaultExpressionEngine() {
+        // The failing engine is configured as the default (not the literal "compiled"), which is the
+        // common case: the default expression engine still attempts compilation.
+        String preparserOptions1 = "expressionEngine=default";
+        String preparserOptions2 = "expressionEngine=interpreted";
+        String failingEnginetype = "expression";
+        String cause = "Failed to compile expression: ${regex:.*}";
+        NotificationImplementation notification =
+                codeGenerationFailed(InputPosition.empty, preparserOptions1, preparserOptions2, cause);
+
+        verifyNotification(
+                notification,
+                "The database was unable to generate code for the query. A stacktrace can be found in the debug.log.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Statement.CodeGenerationFailed",
+                "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. ("
+                        + cause + ")",
+                NotificationCategory.PERFORMANCE,
+                NotificationClassification.PERFORMANCE,
+                "03N96",
+                new DiagnosticRecord(
+                                info,
+                                NotificationClassification.PERFORMANCE,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("cfgSetting", failingEnginetype, "cause", cause))
+                        .asMap(),
+                String.format(
+                        "info: code generation failed. Failed to generate code, falling back to interpreted %s engine. A stacktrace can be found in the debug.log. Cause: %s.",
+                        failingEnginetype, cause));
+    }
+
+    @Test
     void shouldConstructNotificationsFor_SUBQUERY_VARIABLE_SHADOWING() {
         NotificationImplementation notification =
                 subqueryVariableShadowing(InputPosition.empty, NotificationDetail.shadowingVariable("v"), "CALL", "v");
