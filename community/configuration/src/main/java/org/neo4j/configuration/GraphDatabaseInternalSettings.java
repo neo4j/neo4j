@@ -2013,7 +2013,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("")
     public static final Setting<Boolean> spd_import_rpc_retry =
-            newBuilder("internal.db.spd_import.rpc.retry", BOOL, false).build();
+            newBuilder("internal.db.spd_import.rpc.retry", BOOL, true).build();
 
     @Internal
     @Description("")
