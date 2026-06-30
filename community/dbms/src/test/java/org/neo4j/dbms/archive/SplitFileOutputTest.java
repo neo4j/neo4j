@@ -73,7 +73,7 @@ class SplitFileOutputTest {
         Path base = testDirectory.file("test.dump");
 
         try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
-            stream.write(new byte[250]); // 3 parts
+            stream.write(new byte[200]); // 3 parts
         }
 
         byte[] part1 = Files.readAllBytes(base);
@@ -149,7 +149,7 @@ class SplitFileOutputTest {
     @Test
     void shouldWriteExpectedData() throws IOException {
         Path base = testDirectory.file("test.dump");
-        byte[] expected = new byte[250];
+        byte[] expected = new byte[200];
         for (int i = 0; i < expected.length; i++) {
             expected[i] = (byte) i;
         }
@@ -173,7 +173,7 @@ class SplitFileOutputTest {
     void shouldWriteMoreExpectedRandomData() throws IOException {
         Path base = testDirectory.file("test.dump");
         int parts = random.nextInt(100, 1000);
-        byte[] expected = random.nextBytes(parts * FILE_SIZE);
+        byte[] expected = random.nextBytes(parts * (FILE_SIZE - Dumper.SplitFileOutput.HEADER_SIZE));
 
         try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
             stream.write(expected);

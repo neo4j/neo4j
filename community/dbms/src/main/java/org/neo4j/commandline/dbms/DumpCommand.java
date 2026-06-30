@@ -45,7 +45,6 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
 import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.archive.DumpFormatSelector;
@@ -56,7 +55,6 @@ import org.neo4j.dbms.archive.Dumper.StdoutOutput;
 import org.neo4j.dbms.archive.Manifest;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -285,18 +283,6 @@ public class DumpCommand extends AbstractAdminCommand {
 
     record FailedDump(String dbName, Exception e) {}
 
-    private long determineArchiveSplittingSize(Config config) {
-        long defaultArchiveSplitSize = config.get(GraphDatabaseInternalSettings.split_archive_file_size);
-        if (overrideArchiveSplitSize > 0) {
-            log.warn(
-                    "You are overriding the default archive split size %s with %s - use at your own peril",
-                    ByteUnit.bytesToString(defaultArchiveSplitSize), ByteUnit.bytesToString(overrideArchiveSplitSize));
-            return overrideArchiveSplitSize;
-        }
-
-        return defaultArchiveSplitSize;
-    }
-
     private DumpOutput openDumpStream(
             SchemeFileSystemAbstraction fs, Config config, String databaseName, Path storagePath) throws IOException {
         if (storagePath == null) {
@@ -304,12 +290,12 @@ public class DumpCommand extends AbstractAdminCommand {
         }
 
         final var archive = storagePath.resolve(databaseName + DUMP_EXTENSION).toAbsolutePath();
-        long splitSize = determineArchiveSplittingSize(config);
+        long splitSize = Dumper.SplitFileOutput.determineSplitArtifactSize(config, overrideArchiveSplitSize);
 
         if (splitSize > 0) {
             // TODO(split-backups): Do pruning of archives
             // TODO(split-backups): Validate split size
-            return new Dumper.SplitFileOutput(fs, archive, determineArchiveSplittingSize(config));
+            return new Dumper.SplitFileOutput(fs, archive, splitSize);
         }
 
         // Allow "overwriting" of existing dumps.

@@ -24,6 +24,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -482,6 +483,14 @@ class DumpCommandIT {
             assertThat(output.baseArtifact()).isEqualTo(dumpDir.resolve("foo.dump"));
             assertThat(output.maxArtifactSize()).isEqualTo(ByteUnit.gibiBytes(5));
         });
+    }
+
+    @Test
+    void shouldNotAllowSplitBackupsTooSmall() {
+        assertThatCode(() -> execute("foo", dumpDir, "--experimental-split-size=5kb"))
+                .isInstanceOf(CommandFailedException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Can't split archive in sizes smaller than 1.000GiB");
     }
 
     @Test

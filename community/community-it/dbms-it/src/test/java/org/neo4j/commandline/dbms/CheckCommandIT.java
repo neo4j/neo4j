@@ -36,9 +36,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -50,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.consistency.CheckCommand;
 import org.neo4j.consistency.CheckNativeDatabase;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -419,7 +422,10 @@ class CheckCommandIT {
     }
 
     @Test
-    void checkSplitDump() {
+    void checkSplitDump() throws IOException {
+        Files.write(
+                confPath.resolve(Config.DEFAULT_CONFIG_FILE_NAME),
+                List.of(GraphDatabaseInternalSettings.allow_small_split_archive_size.name() + "=true"));
         final var dump = testDirectory.directory("split-dump");
         createDump(dump, dbName, "--experimental-split-size=5kb");
 

@@ -2158,6 +2158,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Allows the size of individual files when creating a split archive to be smaller than 1 GiB. "
+            + "This is only for testing purposes and should not be used in production.")
+    public static final Setting<Boolean> allow_small_split_archive_size = newBuilder(
+                    "internal.db.backup.allow_small_split_file_size", BOOL, false)
+            .build();
+
+    @Internal
     @Description("Enables use of new and not finalized BackupZstdFormatV3 for testing")
     public static final Setting<Boolean> use_dev_compress_backup_format = newBuilder(
                     "internal.db.backup.use_new_compressed_backup_format", BOOL, false)

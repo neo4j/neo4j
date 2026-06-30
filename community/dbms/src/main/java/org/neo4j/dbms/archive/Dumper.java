@@ -40,10 +40,13 @@ import java.util.function.Predicate;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.Util;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.archive.Manifest.FileRecord;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.SplittingOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.filename.SequentialFileNameHelper;
@@ -211,6 +214,22 @@ public class Dumper {
                 MagicSignature.of(ArchiveFormat.SPLIT_FILE_PREFIX + "MV1");
         public static final MagicSignature MAGIC_DATA_HEADER =
                 MagicSignature.of(ArchiveFormat.SPLIT_FILE_PREFIX + "DV1");
+        public static final int HEADER_SIZE = ArchiveFormat.MAGIC_PREFIX_LENGTH + 4 + 16; // header + index + uuid
+        private static final long MIN_SPLIT_ARTIFACT_SIZE = ByteUnit.gibiBytes(1);
+
+        public static long determineSplitArtifactSize(Config config, long overrideArchiveSplitSize) {
+            long splitSize = config.get(GraphDatabaseInternalSettings.split_archive_file_size);
+            if (overrideArchiveSplitSize > 0) {
+                splitSize = overrideArchiveSplitSize;
+            }
+            if (splitSize > 0
+                    && splitSize < MIN_SPLIT_ARTIFACT_SIZE
+                    && !config.get(GraphDatabaseInternalSettings.allow_small_split_archive_size)) {
+                throw new IllegalArgumentException(
+                        "Can't split archive in sizes smaller than " + ByteUnit.bytesToString(MIN_SPLIT_ARTIFACT_SIZE));
+            }
+            return splitSize;
+        }
 
         public static SplitFileOutput of(FileSystemAbstraction fs, Path baseArtifact, long maxArtifactSize) {
             return new SplitFileOutput(fs, baseArtifact, maxArtifactSize);
@@ -227,7 +246,7 @@ public class Dumper {
                     throw new UncheckedIOException(e);
                 }
             };
-            return new SplittingOutputStream(fileGenerator, maxArtifactSize, onClose);
+            return new SplittingOutputStream(fileGenerator, maxArtifactSize - HEADER_SIZE, onClose);
         }
 
         @Override

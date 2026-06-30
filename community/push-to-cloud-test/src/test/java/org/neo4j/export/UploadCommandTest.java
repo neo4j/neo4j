@@ -77,6 +77,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.export.aura.AuraClient;
 import org.neo4j.export.aura.AuraConsole;
 import org.neo4j.export.aura.AuraJsonMapper;
@@ -142,12 +144,12 @@ class UploadCommandTest {
     void setup() throws IOException {
         homeDir = directory.homePath();
         confPath = directory.directory("conf");
-        Path configDir = directory.directory("config-dir");
-        Path configFile = configDir.resolve("neo4j.conf");
+        Files.write(
+                confPath.resolve(Config.DEFAULT_CONFIG_FILE_NAME),
+                List.of(GraphDatabaseInternalSettings.allow_small_split_archive_size.name() + "=true"));
         dumpDir = directory.directory("dumps");
         ExportTestUtilities.prepareDatabase(neo4jLayout.databaseLayout(DBNAME));
         ExportTestUtilities.prepareDatabase(neo4jLayout.databaseLayout(SPLIT_DBNAME));
-        Files.createFile(configFile);
         PrintStream nullOutputStream = new PrintStream(nullOutputStream());
         ctx = new ExecutionContext(homeDir, confPath, nullOutputStream, nullOutputStream, directory.getFileSystem());
         dump = dumpDir.resolve(DBNAME + ".dump");
