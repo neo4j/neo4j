@@ -102,7 +102,8 @@ class BoltChannelInitializerTest {
         inOrder.verify(memoryTracker)
                 .allocateHeap(HeapEstimator.sizeOf(channel)
                         + TransportSelectionHandler.SHALLOW_SIZE
-                        + TrafficAccountantHandler.SHALLOW_SIZE);
+                        + TrafficAccountantHandler.SHALLOW_SIZE
+                        + DeadlockReportingHandler.SHALLOW_SIZE);
 
         inOrder.verify(pipeline).addLast(any(TrafficAccountantHandler.class));
         inOrder.verify(pipeline).addLast(any(TransportSelectionHandler.class));

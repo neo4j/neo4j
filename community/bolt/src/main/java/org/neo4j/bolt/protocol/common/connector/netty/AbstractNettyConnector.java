@@ -35,6 +35,7 @@ import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.AbstractConnector;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.thread.ThreadAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.config.NettyConnectorConfiguration;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -87,6 +88,7 @@ public abstract class AbstractNettyConnector<CFG extends NettyConnectorConfigura
             RoutingService routingService,
             ErrorAccountant errorAccountant,
             TrafficAccountant trafficAccountant,
+            ThreadAccountant threadAccountant,
             BoltDriverMetricsMonitor driverMetricsMonitor,
             CFG configuration,
             InternalLogProvider userLogProvider,
@@ -106,6 +108,7 @@ public abstract class AbstractNettyConnector<CFG extends NettyConnectorConfigura
                 routingService,
                 errorAccountant,
                 trafficAccountant,
+                threadAccountant,
                 driverMetricsMonitor,
                 configuration,
                 internalLogProvider);

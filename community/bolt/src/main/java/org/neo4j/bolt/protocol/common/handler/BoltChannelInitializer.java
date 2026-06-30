@@ -77,9 +77,12 @@ public class BoltChannelInitializer extends ChannelInitializer<Channel> {
                 .memoryTracker()
                 .allocateHeap(HeapEstimator.sizeOf(ch)
                         + TransportSelectionHandler.SHALLOW_SIZE
+                        + DeadlockReportingHandler.SHALLOW_SIZE
                         + TrafficAccountantHandler.SHALLOW_SIZE);
 
-        ch.pipeline().addLast(new TrafficAccountantHandler(this.connector.trafficAccountant()));
+        ch.pipeline()
+                .addLast(new DeadlockReportingHandler(this.connector.threadAccountant()))
+                .addLast(new TrafficAccountantHandler(this.connector.trafficAccountant()));
 
         // PROXY protocol detection is now handled by TransportSelectionHandler to avoid
         // conflicts with byte accumulation requirements

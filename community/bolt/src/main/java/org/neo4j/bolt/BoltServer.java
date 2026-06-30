@@ -65,6 +65,9 @@ import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.CircuitBreakerErrorAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.NoopErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.thread.NoopThreadAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.thread.ThreadAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.thread.TimeLimitedThreadAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.AtomicTrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.NoopTrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
@@ -364,6 +367,8 @@ public class BoltServer extends LifecycleAdapter {
                 ? ScopedSslPolicyProvider.getNullInstance()
                 : new DefaultScopedSslPolicyProvider(BOLT, sslPolicyProvider);
 
+        var threadAccountant = createThreadAccountant();
+
         registerConnector(createSocketConnector(
                 listenAddress,
                 connectionFactory,
@@ -372,7 +377,8 @@ public class BoltServer extends LifecycleAdapter {
                 boltSslPolicyProvider,
                 createAuthentication(externalAuthManager, securityLog),
                 ConnectorType.BOLT,
-                allocator));
+                allocator,
+                threadAccountant));
 
         for (var address : config.get(BoltConnector.additional_listen_addresses)) {
             registerConnector(createAdditionalSocketConnector(
@@ -382,7 +388,8 @@ public class BoltServer extends LifecycleAdapter {
                     boltSslPolicyProvider,
                     createAuthentication(externalAuthManager, securityLog),
                     ConnectorType.BOLT,
-                    allocator));
+                    allocator,
+                    threadAccountant));
         }
 
         internalLog.info("Configured external Bolt connector with listener address %s", listenAddress);
@@ -409,7 +416,8 @@ public class BoltServer extends LifecycleAdapter {
                     transport,
                     clusterSslPolicyProvider,
                     createAuthentication(internalAuthManager, securityLog),
-                    allocator));
+                    allocator,
+                    threadAccountant));
 
             internalLog.info("Configured internal Bolt connector with listener address %s", internalListenAddress);
         }
@@ -423,7 +431,8 @@ public class BoltServer extends LifecycleAdapter {
                     connectionFactory,
                     localTransport,
                     createAuthentication(externalAuthManager, securityLog),
-                    allocator));
+                    allocator,
+                    threadAccountant));
         }
 
         if (config.get(BoltConnector.enable_discovery)) {
@@ -654,7 +663,8 @@ public class BoltServer extends LifecycleAdapter {
             ScopedSslPolicyProvider sslPolicyProvider,
             Authentication authentication,
             ConnectorType connectorType,
-            ByteBufAllocator allocator) {
+            ByteBufAllocator allocator,
+            ThreadAccountant threadAccountant) {
         var config = SocketConnectorConfiguration.factory()
                 .fromConfig(this.config)
                 .requireEncryption(encryptionRequired)
@@ -683,6 +693,7 @@ public class BoltServer extends LifecycleAdapter {
                 routingService,
                 createErrorAccountant(),
                 createTrafficAccountant(),
+                threadAccountant,
                 driverMetricsMonitor,
                 config,
                 logService.getUserLogProvider(),
@@ -696,7 +707,8 @@ public class BoltServer extends LifecycleAdapter {
             ScopedSslPolicyProvider sslPolicyProvider,
             Authentication authentication,
             ConnectorType connectorType,
-            ByteBufAllocator allocator) {
+            ByteBufAllocator allocator,
+            ThreadAccountant threadAccountant) {
         var config = SocketConnectorConfiguration.factory()
                 .fromConfig(this.config)
                 .sslPolicyProvider(sslPolicyProvider)
@@ -724,6 +736,7 @@ public class BoltServer extends LifecycleAdapter {
                 routingService,
                 createErrorAccountant(),
                 createTrafficAccountant(),
+                threadAccountant,
                 driverMetricsMonitor,
                 config,
                 logService.getUserLogProvider(),
@@ -737,7 +750,8 @@ public class BoltServer extends LifecycleAdapter {
             ConnectorTransport transport,
             ScopedSslPolicyProvider sslPolicyProvider,
             Authentication authentication,
-            ByteBufAllocator allocator) {
+            ByteBufAllocator allocator,
+            ThreadAccountant threadAccountant) {
         var config = SocketConnectorConfiguration.factory()
                 .fromConfig(this.config)
                 .requireEncryption(encryptionRequired)
@@ -766,6 +780,7 @@ public class BoltServer extends LifecycleAdapter {
                 routingService,
                 createErrorAccountant(),
                 createTrafficAccountant(),
+                threadAccountant,
                 driverMetricsMonitor,
                 config,
                 logService.getUserLogProvider(),
@@ -810,6 +825,7 @@ public class BoltServer extends LifecycleAdapter {
                 transactionManager,
                 routingService,
                 createErrorAccountant(),
+                createThreadAccountant(),
                 driverMetricsMonitor,
                 config,
                 logService.getUserLogProvider(),
@@ -820,7 +836,8 @@ public class BoltServer extends LifecycleAdapter {
             Connection.Factory connectionFactory,
             ConnectorTransport transport,
             Authentication authentication,
-            ByteBufAllocator allocator) {
+            ByteBufAllocator allocator,
+            ThreadAccountant threadAccountant) {
         var config = LocalConnectorConfiguration.factory()
                 .fromConfig(this.config)
                 .enableJavaObjectMessages(
@@ -851,6 +868,7 @@ public class BoltServer extends LifecycleAdapter {
                 transactionManager,
                 routingService,
                 createErrorAccountant(),
+                threadAccountant,
                 driverMetricsMonitor,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider(),
@@ -929,6 +947,25 @@ public class BoltServer extends LifecycleAdapter {
                 config.get(BoltConnector.traffic_accounting_outgoing_threshold_mbps),
                 config.get(BoltConnector.traffic_accounting_clear_duration).toMillis(),
                 logService);
+    }
+
+    private ThreadAccountant createThreadAccountant() {
+        var maxRunTime = config.get(BoltConnectorInternalSettings.thread_accountant_max_run_time)
+                .toMillis();
+        var checkPeriod = config.get(BoltConnectorInternalSettings.thread_accountant_check_period)
+                .toMillis();
+
+        if (checkPeriod == 0) {
+            return new NoopThreadAccountant();
+        }
+
+        var accountant = new TimeLimitedThreadAccountant(maxRunTime, this.logService);
+
+        this.jobScheduler.scheduleRecurring(
+                Group.BOLT_MONITORING, accountant::reportStuckThreads, checkPeriod, TimeUnit.MILLISECONDS);
+        internalLog.info("Monitoring Bolt worker threads for possible deadlocks at interval of %d ms", checkPeriod);
+
+        return accountant;
     }
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter {

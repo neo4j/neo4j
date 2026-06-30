@@ -141,6 +141,7 @@ public enum Group {
      */
     BOLT_WORKER("BoltWorker", ExecutorServiceFactory.unschedulable()),
     BOLT_ADMISSION_CONTROL("AdmissionControl"),
+    BOLT_MONITORING("BoltMonitoring", ExecutorServiceFactory.singleThread()),
 
     // CAUSAL CLUSTER, TOPOLOGY & BACKUP.
     RAFT_CLIENT("RaftClient"),

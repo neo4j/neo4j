@@ -35,6 +35,7 @@ import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.thread.ThreadAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.NoopTrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.config.DomainSocketConnectorConfiguration;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -88,6 +89,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector<DomainSoc
             TransactionManager transactionManager,
             RoutingService routingService,
             ErrorAccountant errorAccountant,
+            ThreadAccountant threadAccountant,
             BoltDriverMetricsMonitor driverMetricsMonitor,
             DomainSocketConnectorConfiguration configuration,
             InternalLogProvider userLogProvider,
@@ -112,6 +114,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector<DomainSoc
                 routingService,
                 errorAccountant,
                 NoopTrafficAccountant.getInstance(),
+                threadAccountant,
                 driverMetricsMonitor,
                 configuration,
                 userLogProvider,

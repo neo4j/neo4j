@@ -40,6 +40,7 @@ import org.mockito.Mockito;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.thread.ThreadAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.config.SocketConnectorConfiguration;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
@@ -106,6 +107,7 @@ public class FabricSocketNettyConnectorTest extends AbstractNettyConnectorTest<F
                 Mockito.mock(RoutingService.class),
                 Mockito.mock(ErrorAccountant.class),
                 Mockito.mock(TrafficAccountant.class),
+                Mockito.mock(ThreadAccountant.class),
                 BoltDriverMetricsMonitor.noop(),
                 config,
                 logging,

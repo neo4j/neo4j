@@ -331,6 +331,20 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
             .addConstraint(minSize(1))
             .build();
 
+    @Internal
+    @Description("Period of time between thread liveliness checks (zero disables checks)")
+    public static final Setting<Duration> thread_accountant_check_period = newBuilder(
+                    "internal.dbms.bolt.thread_accountant_check_period", DURATION, Duration.ofSeconds(10))
+            .addConstraint(min(Duration.ZERO))
+            .build();
+
+    @Internal
+    @Description("Maximum duration for which a thread may be occupied before reporting it")
+    public static final Setting<Duration> thread_accountant_max_run_time = newBuilder(
+                    "internal.dbms.bolt.thread_accountant_max_run_time", DURATION, Duration.ofMinutes(10))
+            .addConstraint(min(Duration.ofSeconds(30)))
+            .build();
+
     public enum ProtocolLoggingMode {
         DECODED(false, true),
         RAW(true, false),

@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.thread.ThreadAccountant;
 import org.neo4j.bolt.protocol.common.connector.config.DomainSocketConnectorConfiguration;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.EpollConnectorTransport;
@@ -121,6 +122,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                 Mockito.mock(TransactionManager.class),
                 Mockito.mock(RoutingService.class),
                 Mockito.mock(ErrorAccountant.class),
+                Mockito.mock(ThreadAccountant.class),
                 BoltDriverMetricsMonitor.noop(),
                 config,
                 logging,
@@ -189,6 +191,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                             Mockito.mock(TransactionManager.class),
                             Mockito.mock(RoutingService.class),
                             Mockito.mock(ErrorAccountant.class),
+                            Mockito.mock(ThreadAccountant.class),
                             BoltDriverMetricsMonitor.noop(),
                             config,
                             logging,

@@ -29,6 +29,7 @@ import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.thread.ThreadAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.config.ConnectorConfiguration;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -169,6 +170,13 @@ public interface Connector<CFG extends ConnectorConfiguration> extends Lifecycle
      * @return a connector scoped traffic accountant.
      */
     TrafficAccountant trafficAccountant();
+
+    /**
+     * Retrieves the thread accountant responsible for detecting deadlock and overload conditions.
+     *
+     * @return a connector scoped thread accountant.
+     */
+    ThreadAccountant threadAccountant();
 
     /**
      * Retrieves the configuration parameters assigned to this connector.

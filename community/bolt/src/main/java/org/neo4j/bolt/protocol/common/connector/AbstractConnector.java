@@ -32,6 +32,7 @@ import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.thread.ThreadAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.config.ConnectorConfiguration;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -63,6 +64,7 @@ public abstract class AbstractConnector<CFG extends ConnectorConfiguration> impl
     private final RoutingService routingService;
     private final ErrorAccountant errorAccountant;
     private final TrafficAccountant trafficAccountant;
+    private final ThreadAccountant threadAccountant;
     private final BoltDriverMetricsMonitor driverMetricsMonitor;
     private final CFG configuration;
 
@@ -87,6 +89,7 @@ public abstract class AbstractConnector<CFG extends ConnectorConfiguration> impl
             RoutingService routingService,
             ErrorAccountant errorAccountant,
             TrafficAccountant trafficAccountant,
+            ThreadAccountant threadAccountant,
             BoltDriverMetricsMonitor driverMetricsMonitor,
             CFG configuration,
             InternalLogProvider logging) {
@@ -106,6 +109,7 @@ public abstract class AbstractConnector<CFG extends ConnectorConfiguration> impl
 
         this.errorAccountant = errorAccountant;
         this.trafficAccountant = trafficAccountant;
+        this.threadAccountant = threadAccountant;
 
         var protocolCapabilities = EnumSet.noneOf(ProtocolCapability.class);
         this.registerSupportedProtocolCapabilities(protocolCapabilities);
@@ -184,6 +188,11 @@ public abstract class AbstractConnector<CFG extends ConnectorConfiguration> impl
     @Override
     public TrafficAccountant trafficAccountant() {
         return trafficAccountant;
+    }
+
+    @Override
+    public ThreadAccountant threadAccountant() {
+        return threadAccountant;
     }
 
     @Override
