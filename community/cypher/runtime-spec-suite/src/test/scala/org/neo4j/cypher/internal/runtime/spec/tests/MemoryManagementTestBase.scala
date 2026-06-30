@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.lar
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.largeObjectThreshold
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.maxMemory
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.smallMaxMemory
+import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.varLengthBuildCommitInterval
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.ArrayUtil
@@ -76,6 +77,9 @@ object MemoryManagementTestBase {
 
   private def runningUnderSpd: Boolean =
     TestDatabaseManagementServiceFactorySupplier.isSpd
+
+  def varLengthBuildCommitInterval: Int =
+    if (runningUnderSpd) 10000 else 100
 
   val perWorkerGrabSize: Long = ByteUnit.kibiBytes(8)
   val largeObjectThreshold: Long = 2048
@@ -1120,7 +1124,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
         start.createRelationshipTo(next, RelationshipType.withName("R"))
         start = next
 
-        if (i % 100 == 0) {
+        if (i % varLengthBuildCommitInterval == 0) {
           restartTx()
           start = tx.getNodeById(start.getId)
         }
