@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.ir.helpers
 
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction.CacheKey
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
-import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe3
+import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.scalactic.Equality
 
 import java.io.ByteArrayOutputStream
@@ -212,7 +212,7 @@ class CachedFunctionTest extends CypherFunSuite3 {
       }
     }
 
-    implicit val windowsStringSafe: Equality[String] = WindowsStringSafe3
+    implicit val windowsStringSafe: Equality[String] = WindowsStringSafe
     output.toString shouldEqual
       """┌────────────────────────────────────────────────────────────┬────┬────┬──────┬──────────┬────────────────────────────────────────────────────────────┐
         |│ name                                                       │hit%│hits│misses│cache size│ raw caffeine stats                                         │

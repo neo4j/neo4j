@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.VectorType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
-import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe3
+import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.scalatest.Assertion
 
 import scala.collection.immutable.ArraySeq
@@ -220,7 +220,7 @@ class GraphTypeStringifierTest extends CypherFunSuite3 with AstGraphTypeConstruc
 
   implicit private class GraphTypeMatchers(graphType: GraphType) {
 
-    implicit val windowsSafe: WindowsStringSafe3.type = WindowsStringSafe3
+    implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
     def shouldStringifyTo(expected: String): Assertion = {
       // using `equal` instead of `be` for the windows line endings

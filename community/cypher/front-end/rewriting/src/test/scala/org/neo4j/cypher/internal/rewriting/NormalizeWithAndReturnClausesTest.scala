@@ -29,13 +29,13 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
-import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe3
+import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.gqlstatus.GqlHelper
 
 class NormalizeWithAndReturnClausesTest extends CypherFunSuite3 with RewriteTest {
 
-  implicit val windowsSafe: WindowsStringSafe3.type = WindowsStringSafe3
+  implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   def rewriterUnderTest: Rewriter =
     NormalizeWithAndReturnClauses(Neo4jCypherExceptionFactory("test", None), Some(CypherVersion.Cypher5))

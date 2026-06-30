@@ -40,12 +40,12 @@ import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.VectorType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
-import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe3
+import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
 import scala.collection.immutable.ArraySeq
 
 class GraphTypeUnitTest extends CypherFunSuite3 {
-  implicit val windowsSafe: WindowsStringSafe3.type = WindowsStringSafe3
+  implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   private val pos: InputPosition.Range = InputPosition.NONE
   private def labelName(label: String): LabelName = LabelName(label)(pos)
