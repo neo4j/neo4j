@@ -21,8 +21,6 @@ package org.neo4j.internal.id;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -103,10 +101,5 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory 
     @Override
     public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
         idGenerators.values().forEach(idGenerator -> idGenerator.clearCache(allocationEnabled, cursorContext));
-    }
-
-    @Override
-    public Collection<Path> listIdFiles() {
-        return Collections.emptyList();
     }
 }

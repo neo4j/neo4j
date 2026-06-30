@@ -22,7 +22,6 @@ package org.neo4j.internal.id;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -105,11 +104,6 @@ public abstract class AbstractBufferingIdGeneratorFactory extends LifecycleAdapt
                 openOptions,
                 slotDistribution);
         return wrapAndKeep(idType, idGenerator);
-    }
-
-    @Override
-    public Collection<Path> listIdFiles() {
-        return delegate.listIdFiles();
     }
 
     protected abstract IdGenerator wrapAndKeep(IdType idType, IdGenerator generator);

@@ -24,7 +24,6 @@ import static org.neo4j.internal.id.indexed.LoggingIndexedIdGeneratorMonitor.def
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -224,10 +223,5 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
     @Override
     public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
         generators.values().forEach(generator -> generator.clearCache(allocationEnabled, cursorContext));
-    }
-
-    @Override
-    public Collection<Path> listIdFiles() {
-        return generators.values().stream().map(IndexedIdGenerator::path).toList();
     }
 }

@@ -33,8 +33,6 @@ import static org.neo4j.test.Race.throwing;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -341,11 +339,6 @@ class BufferingIdGeneratorFactoryTest {
         @Override
         public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
             // no-op
-        }
-
-        @Override
-        public Collection<Path> listIdFiles() {
-            return Collections.emptyList();
         }
     }
 

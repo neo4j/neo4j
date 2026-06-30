@@ -19,12 +19,9 @@
  */
 package org.neo4j.internal.id;
 
-import static java.util.Collections.emptyList;
-
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -93,11 +90,6 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
     @Override
     public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
         // nothing
-    }
-
-    @Override
-    public Collection<Path> listIdFiles() {
-        return emptyList();
     }
 
     private static class EmptyIdGenerator implements IdGenerator {

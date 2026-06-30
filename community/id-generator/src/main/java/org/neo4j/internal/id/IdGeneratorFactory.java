@@ -22,7 +22,6 @@ package org.neo4j.internal.id;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -62,8 +61,6 @@ public interface IdGeneratorFactory extends IdGeneratorSupplier {
     void visit(Consumer<IdGenerator> visitor);
 
     void clearCache(boolean allocationEnabled, CursorContext cursorContext);
-
-    Collection<Path> listIdFiles();
 
     default void notifyTransactionRollback(long transactionId) {}
 }
