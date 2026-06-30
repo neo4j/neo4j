@@ -23,6 +23,8 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.NonOptional
+import org.neo4j.cypher.internal.ast.OptionalState
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -507,12 +509,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
   }
 
-  def procedureCall(call: String, withFakedFullDeclarations: Boolean = false): IMPL = {
+  def procedureCall(
+    call: String,
+    withFakedFullDeclarations: Boolean = false,
+    optionalState: OptionalState = NonOptional
+  ): IMPL = {
     val unresolvedCall = parser.parseProcedureCall(call)
     appendAtCurrentIndent(UnaryOperator(lp => {
       val resolvedCall =
         ResolvedNonLocalCall(resolver.procedureSignature)(unresolvedCall)
           .coerceArguments
+          .copy(optionalState = optionalState)(unresolvedCall.position)
       val rewrittenResolvedCall =
         if (withFakedFullDeclarations) resolvedCall.withFakedFullDeclarations else resolvedCall
       ProcedureCall(lp, rewrittenResolvedCall)(_)

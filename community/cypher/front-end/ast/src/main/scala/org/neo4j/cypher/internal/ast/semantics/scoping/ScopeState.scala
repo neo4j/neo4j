@@ -71,6 +71,8 @@ case class ScopeState(
       case wc                 => wc.allSymbols.toSeq
     }
 
+  def getAllIncoming(ast: ASTNode): Set[LogicalVariable] = scopeOf(ast).incoming.allSymbols
+
   def getResult(ast: ASTNode): Result = scopeOf(ast).result
 
   def getOutgoingVariableReturnItemSeq(ast: ASTNode): Seq[ReturnItem] =
