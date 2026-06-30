@@ -19,21 +19,19 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings.user_tags
 import org.neo4j.configuration.GraphDatabaseSettings.CypherVersion
 import org.neo4j.configuration.GraphDatabaseSettings.default_language
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.graphdb.config.Setting
 
-// Tags syntax is Cypher 25-only and gated by `user_tags` config.
-// Without both overrides the command fails at the semantic layer (wrong error),
-// so we need a standalone class rather than adding to CommunityUserAdministrationCommandAcceptanceTest.
+// Tags syntax is Cypher 25-only. Without the language override the command fails at the
+// semantic layer (wrong error), so we need a standalone class rather than adding to
+// CommunityUserAdministrationCommandAcceptanceTest.
 class CommunityUserTagsAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
   override def databaseConfig(): Map[Setting[?], Object] =
     super.databaseConfig() ++ Map(
-      default_language -> CypherVersion.Cypher25,
-      user_tags -> java.lang.Boolean.TRUE
+      default_language -> CypherVersion.Cypher25
     )
 
   private def defaultUser: Map[String, Any] = Map(
