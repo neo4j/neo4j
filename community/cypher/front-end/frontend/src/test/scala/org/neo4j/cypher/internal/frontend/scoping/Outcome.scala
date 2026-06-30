@@ -177,7 +177,7 @@ object E42N44 {
 
   def apply(variable: String, clause: String): Outcome =
     Versioned(
-      E42N44WithoutGroupBy(variable, clause),
+      E42N44WithGroupBy(variable, clause),
       CypherVersion.Cypher5 -> E42N44WithoutGroupBy(variable, clause)
     )
 }

@@ -529,6 +529,22 @@ public class GqlHelper {
                 .build();
     }
 
+    public static ErrorGqlStatusObject getGql42001_42I80(
+            String element, String alias, boolean referencesAggregation, int offset, int line, int column) {
+        String reason = referencesAggregation
+                ? "A grouping element cannot reference the aggregation `" + alias + "`."
+                : "A grouping element that references the projection item alias `" + alias
+                        + "` must be a simple variable reference.";
+        return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
+                .atPosition(offset, line, column)
+                .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42I80)
+                        .atPosition(offset, line, column)
+                        .withParam(GqlParams.StringParam.expr, element)
+                        .withParam(GqlParams.StringParam.cause, reason)
+                        .build())
+                .build();
+    }
+
     public static ErrorGqlStatusObject getGql42001_42I06(
             String input, List<String> expectedList, int offset, int line, int column) {
         return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -1105,13 +1121,17 @@ public class GqlHelper {
     }
 
     public static ErrorGqlStatusObject getGql42001_42N44(
-            String variable, String clause, int offset, int line, int column) {
+            String variable, String clause, boolean groupBySupported, int offset, int line, int column) {
+        String groupingConstructs = groupBySupported
+                ? "`DISTINCT`, an aggregation, or a `GROUP BY` clause"
+                : "`DISTINCT` or an aggregation";
         return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
                 .atPosition(offset, line, column)
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N44)
                         .atPosition(offset, line, column)
                         .withParam(GqlParams.StringParam.variable, variable)
                         .withParam(GqlParams.StringParam.clause, clause)
+                        .withParam(GqlParams.StringParam.groupingConstructs, groupingConstructs)
                         .build())
                 .build();
     }

@@ -2015,6 +2015,14 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             Map.of(GqlParams.ListParam.variableList, GqlParams.JoinStyle.ANDED),
             "invalid reference in subclause expression",
             ErrorClassification.CLIENT_ERROR),
+    STATUS_42I80(
+            "The grouping element { %s } is not a valid grouping key. { %s }",
+            new GqlParams.GqlParam[] {
+                new NonSensitiveGqlParam(GqlParams.StringParam.expr, List.of(CYPHER_CONSTRUCT)),
+                new NonSensitiveGqlParam(GqlParams.StringParam.cause, List.of(CYPHER_CONSTRUCT))
+            },
+            "invalid grouping element",
+            ErrorClassification.CLIENT_ERROR),
     STATUS_42N00(
             "A graph reference with the name { %s } was not found. Verify that the spelling is correct.",
             new GqlParams.GqlParam[] {new NonSensitiveGqlParam(GqlParams.StringParam.db, List.of(TOPOLOGY))},
@@ -2296,10 +2304,11 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
     STATUS_42N42(
             "Sub-path assignment is not supported.", "unsupported sub-path binding", ErrorClassification.CLIENT_ERROR),
     STATUS_42N44(
-            "It is not possible to access the variable { %s } declared before the { %s } clause when using `DISTINCT` or an aggregation.",
+            "It is not possible to access the variable { %s } declared before the { %s } clause when using { %s }.",
             new GqlParams.GqlParam[] {
                 new NonSensitiveGqlParam(GqlParams.StringParam.variable, List.of(CYPHER_VARIABLE)),
-                new NonSensitiveGqlParam(GqlParams.StringParam.clause, List.of(CYPHER_CONSTRUCT))
+                new NonSensitiveGqlParam(GqlParams.StringParam.clause, List.of(CYPHER_CONSTRUCT)),
+                new NonSensitiveGqlParam(GqlParams.StringParam.groupingConstructs, List.of(CYPHER_CONSTRUCT))
             },
             "inaccessible variable",
             ErrorClassification.CLIENT_ERROR),

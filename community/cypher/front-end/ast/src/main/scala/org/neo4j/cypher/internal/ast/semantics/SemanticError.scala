@@ -819,6 +819,24 @@ object SemanticError {
     SemanticError(gql, errorMsg, position)
   }
 
+  def invalidGroupingElement(
+    element: String,
+    alias: String,
+    referencesAggregation: Boolean,
+    position: InputPosition
+  ): SemanticError = {
+    val gql =
+      GqlHelper.getGql42001_42I80(
+        element,
+        alias,
+        referencesAggregation,
+        position.offset,
+        position.line,
+        position.column
+      )
+    SemanticError(gql, gql.getMessage, position)
+  }
+
   def invalidReferenceInSubclauseExpression(variables: Seq[String], position: InputPosition): SemanticError = {
     val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
       .atPosition(position.offset, position.line, position.column)
@@ -2349,10 +2367,11 @@ object SemanticError {
   def inaccessibleVariable(
     variable: String,
     clause: String,
-    position: InputPosition
+    position: InputPosition,
+    groupBySupported: Boolean = false
   ): SemanticError = {
     SemanticError(
-      GqlHelper.getGql42001_42N44(variable, clause, position.offset, position.line, position.column),
+      GqlHelper.getGql42001_42N44(variable, clause, groupBySupported, position.offset, position.line, position.column),
       s"In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: $variable",
       position
     )

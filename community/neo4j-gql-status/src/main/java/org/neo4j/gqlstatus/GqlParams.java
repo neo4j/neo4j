@@ -87,6 +87,9 @@ public class GqlParams {
         graphTypeElement2(new VERBATIM()),
         graphTypeReference(new STRLIT()), // Graph type reference
         graphTypeOperation(new VERBATIM()), // One of SET, ADD, DROP, ALTER
+        groupingConstructs(
+                new VERBATIM()), // Constructs that establish a grouping, e.g. `DISTINCT`, an aggregation, or a `GROUP
+        // BY` clause
         hint(new VERBATIM()), // Freeform description of some "hint"
         ident(new IDENT()), // Generic identifier
         idx(new IDENT()), // Index name
