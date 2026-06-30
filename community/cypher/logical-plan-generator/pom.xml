@@ -9,7 +9,6 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>neo4j-cypher-logical-plan-generator-test-util</artifactId>
-  <version>2026.07.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Neo4j - Cypher Logical Plan Generator</name>
   <description>Neo4j - Cypher logical plan generator</description>

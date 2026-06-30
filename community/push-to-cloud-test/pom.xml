@@ -8,7 +8,6 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>neo4j-push-to-cloud-test</artifactId>
-  <version>2026.07.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Neo4j - Push To Cloud - Integration tests</name>

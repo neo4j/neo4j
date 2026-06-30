@@ -9,7 +9,6 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>neo4j-cypher-physical-planning</artifactId>
-  <version>2026.07.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Neo4j - Cypher Physical Planning</name>
   <description>A runtime for Neo4j's query language</description>

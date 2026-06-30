@@ -9,7 +9,6 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>neo4j-cypher-macros-scala3</artifactId>
-  <version>2026.07.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Neo4j - Cypher Macros - Scala 3</name>
 
