@@ -2503,11 +2503,11 @@ class SlottedPipeMapper(
         case (VariableSlotKey(k), slots) if lhsSlots.contains(k) => slots
         case (key: CachedPropertySlotKey, slot) if slot.offset < argumentSize.nReferences && lhsSlots.contains(key) =>
           slot
-        case (key: DuplicatedSlotKey, slot) if lhsSlots.contains(key)                                          => slot
-        case (key: MetaDataSlotKey, slot) if slot.offset < argumentSize.nReferences && lhsSlots.contains(key)  => slot
-        case (key: ApplyPlanSlotKey, slot) if slot.offset < argumentSize.nReferences && lhsSlots.contains(key) => slot
+        case (key: DuplicatedSlotKey, slot) if lhsSlots.contains(key)                                         => slot
+        case (key: MetaDataSlotKey, slot) if slot.offset < argumentSize.nReferences && lhsSlots.contains(key) => slot
+        case (key: ApplyPlanSlotKey, slot) if slot.offset < argumentSize.nLongs && lhsSlots.contains(key)     => slot
         case (key: OuterNestedApplyPlanSlotKey, slot)
-          if slot.offset < argumentSize.nReferences && lhsSlots.contains(key) => slot
+          if slot.offset < argumentSize.nLongs && lhsSlots.contains(key) => slot
       }
       .toSeq
       .partition(_.isLongSlot)
