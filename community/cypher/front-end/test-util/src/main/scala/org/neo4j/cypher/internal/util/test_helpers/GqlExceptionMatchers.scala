@@ -413,9 +413,3 @@ object GqlExceptionMatchers extends GqlExceptionMatchers {
         )
     )
 }
-
-type GqlExceptionMatchers3 = GqlExceptionMatchers
-
-object GqlExceptionMatchers3 {
-  export GqlExceptionMatchers.*
-}

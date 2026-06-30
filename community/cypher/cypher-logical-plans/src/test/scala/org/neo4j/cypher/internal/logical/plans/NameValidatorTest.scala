@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
-import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers3.gqlStatus
+import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 

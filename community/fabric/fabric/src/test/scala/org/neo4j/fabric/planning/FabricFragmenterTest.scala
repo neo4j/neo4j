@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.ResolvedNonLocalCall
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers3.gqlException
-import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers3.gqlStatus
+import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlException
+import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.FabricTest
 import org.neo4j.fabric.FragmentTestUtils

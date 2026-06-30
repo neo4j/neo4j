@@ -37,5 +37,3 @@ trait CypherScalaCheckDrivenPropertyChecks extends Suite with ScalaCheckDrivenPr
 object CypherScalaCheckDrivenPropertyChecks {
   private val defaultSeed: Option[Long] = sys.env.get("CYPHER_SCALACHECK_SEED").map(_.toLong)
 }
-
-type CypherScalaCheckDrivenPropertyChecks3 = CypherScalaCheckDrivenPropertyChecks

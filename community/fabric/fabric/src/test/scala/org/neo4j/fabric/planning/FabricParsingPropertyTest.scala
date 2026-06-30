@@ -62,7 +62,7 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
-import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks3
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
 import org.neo4j.kernel.database.DatabaseReference
@@ -70,7 +70,7 @@ import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
 class FabricParsingPropertyTest extends CypherFunSuite3
-    with CypherScalaCheckDrivenPropertyChecks3
+    with CypherScalaCheckDrivenPropertyChecks
     with AstConstructionTestSupport {
 
   private val astGenerator = new AstGenerator(simpleStrings = false)

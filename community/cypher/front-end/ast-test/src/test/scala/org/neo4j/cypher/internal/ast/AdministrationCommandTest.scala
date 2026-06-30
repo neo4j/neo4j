@@ -68,7 +68,7 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
-import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers3.gqlStatus
+import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
 import org.neo4j.gqlstatus.GqlHelper
