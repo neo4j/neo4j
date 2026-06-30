@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.CypherVersionHelpers.arbitrarySemanticContext
+import org.neo4j.cypher.internal.CypherVersionHelpers.versionedSemanticContext
+import org.neo4j.cypher.internal.CypherVersionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -27,13 +28,13 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
 import org.neo4j.gqlstatus.GqlParams
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 
-class CommandClauseTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class CommandClauseTest extends CypherFunSuite3 with AstConstructionTestSupport with CypherVersionTestSupport {
 
   private val initialState = SemanticState.clean
 
   // Checks that the rewritten query only causes the expected 22N04 error
   // and does not cause an unexpected 42I37 - Invalid use of return star
-  test("TERMINATE TRANSACTION 'neo4j-transaction-2' YIELD nope") {
+  testVersions("TERMINATE TRANSACTION 'neo4j-transaction-2' YIELD nope") { version =>
     val rewrittenTerminate = SingleQuery(List(
       TerminateTransactionsClause(
         List(
@@ -70,8 +71,8 @@ class CommandClauseTest extends CypherFunSuite3 with AstConstructionTestSupport 
       )(pos)
     ))(pos)
 
-    rewrittenTerminate.semanticCheck.run(initialState, arbitrarySemanticContext()).errors shouldBe SemanticCheckResult
-      .error(
+    rewrittenTerminate.semanticCheck.run(initialState, versionedSemanticContext(version)).errors shouldBe
+      SemanticCheckResult.error(
         ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
           .atPosition(pos.offset, pos.line, pos.column)
           .withCause(

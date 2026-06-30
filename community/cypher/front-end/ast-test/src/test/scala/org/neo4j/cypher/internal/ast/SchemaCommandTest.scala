@@ -16,13 +16,12 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.CypherVersion
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
+import org.neo4j.cypher.internal.CypherVersionHelpers.versionedSemanticContext
+import org.neo4j.cypher.internal.CypherVersionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 import org.neo4j.cypher.internal.util.symbols.FloatType
@@ -36,13 +35,9 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes
 
 import scala.collection.immutable.ArraySeq
 
-class SchemaCommandTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class SchemaCommandTest extends CypherFunSuite3 with AstConstructionTestSupport with CypherVersionTestSupport {
 
   private val initialState = SemanticState.clean.withFeature(SemanticFeature.GraphTypes)
-
-  private val semanticContexts =
-    CypherVersion.values().toList.map(cv => (cv, SemanticCheckContext(cv, NotImplementedErrorMessageProvider)))
-  private val semanticContextsWithoutCypher5 = semanticContexts.filterNot(_._1 == CypherVersion.Cypher5)
 
   private val p = InputPosition.withLength(13, 12, 11, 10)
   private val p2 = InputPosition.withLength(42, 7, 8, 9)
@@ -121,178 +116,172 @@ class SchemaCommandTest extends CypherFunSuite3 with AstConstructionTestSupport 
 
   // Tests all Cypher versions
 
-  semanticContexts.foreach { case (cypherVersion, semanticContext) =>
-    test(s"Create node property type constraint with invalid union type (${cypherVersion.description})") {
-      val ast = CreateConstraint.createNodePropertyTypeConstraint(
-        varFor("n"),
-        labelName("L"),
-        prop("n", "p", p2),
-        invalidUnionType,
-        None,
-        IfExistsThrowError,
-        NoOptions
-      )(p)
+  testVersions("Create node property type constraint with invalid union type") { version =>
+    val ast = CreateConstraint.createNodePropertyTypeConstraint(
+      varFor("n"),
+      labelName("L"),
+      prop("n", "p", p2),
+      invalidUnionType,
+      None,
+      IfExistsThrowError,
+      NoOptions
+    )(p)
 
-      ast.semanticCheck.run(initialState, semanticContext).errors shouldBe Seq(
-        getSemanticErrorMixOfNullability("node property type", "INTEGER | FLOAT NOT NULL")
+    ast.semanticCheck.run(initialState, versionedSemanticContext(version)).errors shouldBe Seq(
+      getSemanticErrorMixOfNullability("node property type", "INTEGER | FLOAT NOT NULL")
+    )
+  }
+
+  testVersions("Create relationship property type constraint with invalid list type") { version =>
+    val ast = CreateConstraint.createRelationshipPropertyTypeConstraint(
+      varFor("r"),
+      relTypeName("T"),
+      prop("r", "p", p2),
+      invalidListType,
+      None,
+      IfExistsThrowError,
+      NoOptions
+    )(p)
+
+    val expectedErrors = Seq(
+      // Mix of nullable and not nullable types in union
+      getSemanticErrorMixOfNullability(
+        "relationship property type",
+        "LIST<BOOLEAN NOT NULL | VECTOR<INTEGER NOT NULL>> NOT NULL"
+      ),
+      // Cannot have union types in lists for property type constraints
+      getSemanticErrorErrorInList(
+        "relationship property type",
+        "LIST<BOOLEAN | VECTOR<INTEGER NOT NULL>> NOT NULL",
+        "a union of types",
+        "Lists cannot have a union of types as an inner type."
       )
-    }
+    )
 
-    test(s"Create relationship property type constraint with invalid list type (${cypherVersion.description})") {
-      val ast = CreateConstraint.createRelationshipPropertyTypeConstraint(
-        varFor("r"),
-        relTypeName("T"),
-        prop("r", "p", p2),
-        invalidListType,
-        None,
-        IfExistsThrowError,
-        NoOptions
-      )(p)
-
-      val expectedErrors = Seq(
-        // Mix of nullable and not nullable types in union
-        getSemanticErrorMixOfNullability(
-          "relationship property type",
-          "LIST<BOOLEAN NOT NULL | VECTOR<INTEGER NOT NULL>> NOT NULL"
-        ),
-        // Cannot have union types in lists for property type constraints
-        getSemanticErrorErrorInList(
-          "relationship property type",
-          "LIST<BOOLEAN | VECTOR<INTEGER NOT NULL>> NOT NULL",
-          "a union of types",
-          "Lists cannot have a union of types as an inner type."
-        )
-      )
-
-      ast.semanticCheck.run(initialState, semanticContext).errors shouldBe expectedErrors
-    }
+    ast.semanticCheck.run(initialState, versionedSemanticContext(version)).errors shouldBe expectedErrors
   }
 
   // Tests skipping Cypher 5
 
-  semanticContextsWithoutCypher5.foreach { case (cypherVersion, semanticContext) =>
-    test(s"Create node property type constraint in graph type with invalid list type (${cypherVersion.description})") {
-      val ast = AlterCurrentGraphType(
-        GraphType(
-          Set.empty,
-          Set(
-            GraphTypeConstraintDefinition(
-              None,
-              NodeTypeReferenceByLabel(labelName("L"), Some(varFor("n")))(p),
-              GraphTypeConstraint.PropertyTypeConstraint(ArraySeq(prop("n", "p", p2)), invalidListType)(p3),
-              NoOptions
-            )(p4)
-          )
-        )(p),
-        AlterCurrentGraphType.Set
-      )(p)
-
-      val expectedErrors = Seq(
-        // Mix of nullable and not nullable types in union
-        getSemanticErrorMixOfNullability("graph type", "LIST<BOOLEAN NOT NULL | VECTOR<INTEGER NOT NULL>> NOT NULL"),
-        // Cannot have union types in lists for property type constraints
-        getSemanticErrorErrorInList(
-          "graph type",
-          "LIST<BOOLEAN | VECTOR<INTEGER NOT NULL>> NOT NULL",
-          "a union of types",
-          "Lists cannot have a union of types as an inner type."
+  testVersionsExcept5("Create node property type constraint in graph type with invalid list type") { version =>
+    val ast = AlterCurrentGraphType(
+      GraphType(
+        Set.empty,
+        Set(
+          GraphTypeConstraintDefinition(
+            None,
+            NodeTypeReferenceByLabel(labelName("L"), Some(varFor("n")))(p),
+            GraphTypeConstraint.PropertyTypeConstraint(ArraySeq(prop("n", "p", p2)), invalidListType)(p3),
+            NoOptions
+          )(p4)
         )
+      )(p),
+      AlterCurrentGraphType.Set
+    )(p)
+
+    val expectedErrors = Seq(
+      // Mix of nullable and not nullable types in union
+      getSemanticErrorMixOfNullability("graph type", "LIST<BOOLEAN NOT NULL | VECTOR<INTEGER NOT NULL>> NOT NULL"),
+      // Cannot have union types in lists for property type constraints
+      getSemanticErrorErrorInList(
+        "graph type",
+        "LIST<BOOLEAN | VECTOR<INTEGER NOT NULL>> NOT NULL",
+        "a union of types",
+        "Lists cannot have a union of types as an inner type."
       )
+    )
 
-      ast.semanticCheck.run(initialState, semanticContext).errors shouldBe expectedErrors
-    }
+    ast.semanticCheck.run(initialState, versionedSemanticContext(version)).errors shouldBe expectedErrors
+  }
 
-    test(
-      s"Create relationship property type constraint in graph type with invalid union type (${cypherVersion.description})"
-    ) {
-      val ast = AlterCurrentGraphType(
-        GraphType(
-          Set.empty,
-          Set(
-            GraphTypeConstraintDefinition(
-              None,
-              EdgeTypeReferenceByLabel(relTypeName("T"), Some(varFor("r")))(p),
-              GraphTypeConstraint.PropertyTypeConstraint(ArraySeq(prop("r", "p", p2)), invalidUnionType)(p3),
-              NoOptions
-            )(p4)
-          )
-        )(p),
-        AlterCurrentGraphType.Add
-      )(p)
-
-      ast.semanticCheck.run(initialState, semanticContext).errors shouldBe Seq(
-        getSemanticErrorMixOfNullability("graph type", "INTEGER | FLOAT NOT NULL")
-      )
-    }
-
-    test(s"Create property type in node element type with invalid union type (${cypherVersion.description})") {
-      val ast = AlterCurrentGraphType(
-        GraphType(
-          Set(
-            NodeType(
-              None,
-              labelName("L"),
-              Set.empty,
-              Set(PropertyType(propName("p", p3), invalidUnionType, None)(p4)),
-              Set.empty
-            )(p2)
-          ),
-          Set.empty
-        )(p),
-        AlterCurrentGraphType.Alter
-      )(p)
-
-      ast.semanticCheck.run(initialState, semanticContext).errors shouldBe Seq(
-        getSemanticErrorMixOfNullability(
-          "graph type",
-          "INTEGER | FLOAT NOT NULL",
-          haveDifferentNullabilityCause = true
+  testVersionsExcept5("Create relationship property type constraint in graph type with invalid union type") { version =>
+    val ast = AlterCurrentGraphType(
+      GraphType(
+        Set.empty,
+        Set(
+          GraphTypeConstraintDefinition(
+            None,
+            EdgeTypeReferenceByLabel(relTypeName("T"), Some(varFor("r")))(p),
+            GraphTypeConstraint.PropertyTypeConstraint(ArraySeq(prop("r", "p", p2)), invalidUnionType)(p3),
+            NoOptions
+          )(p4)
         )
-      )
-    }
+      )(p),
+      AlterCurrentGraphType.Add
+    )(p)
 
-    test(s"Create property type in relationship element type with invalid list type (${cypherVersion.description})") {
-      val ast = AlterCurrentGraphType(
-        GraphType(
-          Set(
-            EdgeType(
-              EmptyNodeTypeReference()(p),
-              None,
-              relTypeName("T"),
-              Set(PropertyType(propName("p", p3), invalidListType, None)(p4)),
-              EmptyNodeTypeReference()(p),
-              Set.empty
-            )(p2)
-          ),
-          Set.empty
-        )(p),
-        AlterCurrentGraphType.Set
-      )(p)
+    ast.semanticCheck.run(initialState, versionedSemanticContext(version)).errors shouldBe Seq(
+      getSemanticErrorMixOfNullability("graph type", "INTEGER | FLOAT NOT NULL")
+    )
+  }
 
-      val expectedErrors = Seq(
-        // Mix of nullable and not nullable types in union
-        getSemanticErrorMixOfNullability(
-          "graph type",
-          "LIST<BOOLEAN NOT NULL | VECTOR<INTEGER NOT NULL>> NOT NULL",
-          haveDifferentNullabilityCause = true,
-          positionUnionType = pos5
+  testVersionsExcept5("Create property type in node element type with invalid union type") { version =>
+    val ast = AlterCurrentGraphType(
+      GraphType(
+        Set(
+          NodeType(
+            None,
+            labelName("L"),
+            Set.empty,
+            Set(PropertyType(propName("p", p3), invalidUnionType, None)(p4)),
+            Set.empty
+          )(p2)
         ),
-        // Cannot have union types in lists for property type constraints
-        getSemanticErrorErrorInList(
-          "graph type",
-          "LIST<BOOLEAN | VECTOR<INTEGER NOT NULL>> NOT NULL",
-          "a union of types",
-          "Lists cannot have a union of types as an inner type."
-        )
-      )
+        Set.empty
+      )(p),
+      AlterCurrentGraphType.Alter
+    )(p)
 
-      ast.semanticCheck.run(initialState, semanticContext).errors shouldBe expectedErrors
-    }
+    ast.semanticCheck.run(initialState, versionedSemanticContext(version)).errors shouldBe Seq(
+      getSemanticErrorMixOfNullability(
+        "graph type",
+        "INTEGER | FLOAT NOT NULL",
+        haveDifferentNullabilityCause = true
+      )
+    )
+  }
+
+  testVersionsExcept5("Create property type in relationship element type with invalid list type") { version =>
+    val ast = AlterCurrentGraphType(
+      GraphType(
+        Set(
+          EdgeType(
+            EmptyNodeTypeReference()(p),
+            None,
+            relTypeName("T"),
+            Set(PropertyType(propName("p", p3), invalidListType, None)(p4)),
+            EmptyNodeTypeReference()(p),
+            Set.empty
+          )(p2)
+        ),
+        Set.empty
+      )(p),
+      AlterCurrentGraphType.Set
+    )(p)
+
+    val expectedErrors = Seq(
+      // Mix of nullable and not nullable types in union
+      getSemanticErrorMixOfNullability(
+        "graph type",
+        "LIST<BOOLEAN NOT NULL | VECTOR<INTEGER NOT NULL>> NOT NULL",
+        haveDifferentNullabilityCause = true,
+        positionUnionType = pos5
+      ),
+      // Cannot have union types in lists for property type constraints
+      getSemanticErrorErrorInList(
+        "graph type",
+        "LIST<BOOLEAN | VECTOR<INTEGER NOT NULL>> NOT NULL",
+        "a union of types",
+        "Lists cannot have a union of types as an inner type."
+      )
+    )
+
+    ast.semanticCheck.run(initialState, versionedSemanticContext(version)).errors shouldBe expectedErrors
   }
 
   // LOOKUP index function checks
 
-  test("Create node lookup index with a shadowed labels() function should fail semantic checking") {
+  testVersions("Create node lookup index with a shadowed labels() function should fail semantic checking") { version =>
     val ast = CreateIndex.createLookupIndex(
       varFor("n"),
       isNodeIndex = true,
@@ -302,13 +291,15 @@ class SchemaCommandTest extends CypherFunSuite3 with AstConstructionTestSupport 
       NoOptions
     )(p)
 
-    val result = ast.semanticCheck.run(initialState, semanticContexts.head._2)
+    val result = ast.semanticCheck.run(initialState, versionedSemanticContext(version))
     result.errors.size shouldBe 1
     result.errors.head.msg shouldBe
       "Failed to create node lookup index: Function 'labels' is not allowed, valid function is 'labels'."
   }
 
-  test("Create relationship lookup index with a shadowed type() function should fail semantic checking") {
+  testVersions(
+    "Create relationship lookup index with a shadowed type() function should fail semantic checking"
+  ) { version =>
     val ast = CreateIndex.createLookupIndex(
       varFor("r"),
       isNodeIndex = false,
@@ -318,15 +309,15 @@ class SchemaCommandTest extends CypherFunSuite3 with AstConstructionTestSupport 
       NoOptions
     )(p)
 
-    val result = ast.semanticCheck.run(initialState, semanticContexts.head._2)
+    val result = ast.semanticCheck.run(initialState, versionedSemanticContext(version))
     result.errors.size shouldBe 1
     result.errors.head.msg shouldBe
       "Failed to create relationship lookup index: Function 'type' is not allowed, valid function is 'type'."
   }
 
-  test(
+  testVersions(
     "Create node lookup index with a namespaced labels() function should fail semantic checking with the full name"
-  ) {
+  ) { version =>
     val ast = CreateIndex.createLookupIndex(
       varFor("n"),
       isNodeIndex = true,
@@ -336,15 +327,15 @@ class SchemaCommandTest extends CypherFunSuite3 with AstConstructionTestSupport 
       NoOptions
     )(p)
 
-    val result = ast.semanticCheck.run(initialState, semanticContexts.head._2)
+    val result = ast.semanticCheck.run(initialState, versionedSemanticContext(version))
     result.errors.size shouldBe 1
     result.errors.head.msg shouldBe
       "Failed to create node lookup index: Function 'foo.labels' is not allowed, valid function is 'labels'."
   }
 
-  test(
+  testVersions(
     "Create relationship lookup index with a namespaced type() function should fail semantic checking with the full name"
-  ) {
+  ) { version =>
     val ast = CreateIndex.createLookupIndex(
       varFor("r"),
       isNodeIndex = false,
@@ -354,7 +345,7 @@ class SchemaCommandTest extends CypherFunSuite3 with AstConstructionTestSupport 
       NoOptions
     )(p)
 
-    val result = ast.semanticCheck.run(initialState, semanticContexts.head._2)
+    val result = ast.semanticCheck.run(initialState, versionedSemanticContext(version))
     result.errors.size shouldBe 1
     result.errors.head.msg shouldBe
       "Failed to create relationship lookup index: Function 'foo.type' is not allowed, valid function is 'type'."
