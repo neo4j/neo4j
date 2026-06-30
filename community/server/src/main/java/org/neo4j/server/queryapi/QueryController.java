@@ -46,9 +46,9 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.server.queryapi.exception.QueryApiException;
 import org.neo4j.server.queryapi.exception.TransactionConcurrentAccessException;
 import org.neo4j.server.queryapi.exception.TransactionNotFoundException;
-import org.neo4j.server.queryapi.request.AutoCommitResultContainer;
 import org.neo4j.server.queryapi.request.QueryRequest;
-import org.neo4j.server.queryapi.request.TxManagedResultContainer;
+import org.neo4j.server.queryapi.response.QueryResponseAutoCommit;
+import org.neo4j.server.queryapi.response.QueryResponseTxManaged;
 import org.neo4j.server.queryapi.tx.Transaction;
 import org.neo4j.server.queryapi.tx.TransactionManager;
 import org.neo4j.server.queryapi.tx.WrongUserException;
@@ -88,7 +88,7 @@ public class QueryController {
         var txConfig = buildTxConfig(request);
         try {
             var result = session.run(request.statement(), request.parametersOrSupplied(Map::of), txConfig);
-            var resultContainer = new AutoCommitResultContainer(result, session, request);
+            var resultContainer = new QueryResponseAutoCommit(result, session, request.includeCounters());
             return Response.accepted(resultContainer).build();
         } catch (Neo4jException neo4jException) {
             throw neo4jException;
@@ -273,7 +273,7 @@ public class QueryController {
     private static Response successWithResultResponse(
             Transaction transaction, boolean requireCounters, boolean requiresCommit) {
         return Response.accepted()
-                .entity(new TxManagedResultContainer(transaction, requireCounters, requiresCommit))
+                .entity(new QueryResponseTxManaged(transaction, requireCounters, requiresCommit))
                 .build();
     }
 
