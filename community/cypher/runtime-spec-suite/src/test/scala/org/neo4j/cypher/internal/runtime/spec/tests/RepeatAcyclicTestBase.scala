@@ -2313,6 +2313,8 @@ abstract class RepeatAcyclicTestBase[CONTEXT <: RuntimeContext](
     }
 
     registerFunction(userFunction)
+    // Refresh the transaction so its ProcedureView snapshot includes the function we just registered.
+    restartTx()
 
     val `(me) [(a)-[r]->(b)]{0,*} (you)/ExpandInto` = `(me) [(a)-[r]->(b)]{0,*} (you)`
       .copy(expansionMode = ExpandInto)
@@ -2356,6 +2358,8 @@ abstract class RepeatAcyclicTestBase[CONTEXT <: RuntimeContext](
     }
 
     registerFunction(userFunction)
+    // Refresh the transaction so its ProcedureView snapshot includes the function we just registered.
+    restartTx()
 
     val `(me) [(a)-[r]->(b)]{0,*} (you)/ExpandInto` = `(me) [(a)-[r]->(b)]{0,*} (you)`
       .copy(expansionMode = ExpandInto)
