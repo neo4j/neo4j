@@ -138,21 +138,19 @@ object pegExpression {
       /**
        * Scope expressions
        */
-      case lc @ ListComprehension(ExtractScope(variable, innerPredicate, extractExpression), expression) =>
+      case lc @ ListComprehension(es @ ExtractScope(variable, innerPredicate, extractExpression), expression) =>
         val innerIncoming = incoming.amendedWithShadowingConstant(Set(variable))
-        val innerResult = Seq(innerPredicate, extractExpression).flatMap {
-          case Some(ex) => Some(apply(ex, innerIncoming))
-          case None     => None
-        }
+        val innerResult = Seq(innerPredicate, extractExpression).flatten.map(apply(_, innerIncoming))
+        val extractReferenced = WorkingScope.referencedInChildren(innerResult) diff variable
+        val extractScope =
+          innerIncoming.expressionResultScope(
+            es,
+            innerResult,
+            Some(extractReferenced),
+            Declarations(Seq(variable), Seq.empty)
+          )
         val expressionResult = apply(expression, incoming)
-        val children = expressionResult +: innerResult
-        val referenced = {
-          val innerReferenced = WorkingScope.referencedInChildren(innerResult) diff variable
-          val expressionReferenced = expressionResult.referenced
-          Some(innerReferenced union expressionReferenced)
-        }
-        val declared = Declarations(Seq(variable), Seq.empty)
-        collect(incoming.expressionResultScope(lc, children, referenced, declared))
+        collect(incoming.expressionResultScope(lc, Seq(expressionResult, extractScope)))
 
       case pe @ PatternExpression(pattern) =>
         val patternResult =
@@ -188,54 +186,62 @@ object pegExpression {
         val FilterScope(variable, innerPredicate) = iter.scope
         val innerIncoming = incoming.amendedWithShadowingConstant(Set(variable))
         val innerResult = innerPredicate.fold(Seq.empty[WorkingScope]) { ex => Seq(apply(ex, innerIncoming)) }
+        val filterReferenced = WorkingScope.referencedInChildren(innerResult) diff variable
+        val filterScope =
+          innerIncoming.expressionResultScope(
+            iter.scope,
+            innerResult,
+            Some(filterReferenced),
+            Declarations(Seq(variable), Seq.empty)
+          )
         val expressionResult = apply(iter.expression, incoming)
-        val children = expressionResult +: innerResult
-        val referenced = {
-          val innerReferenced = WorkingScope.referencedInChildren(innerResult) diff variable
-          val expressionReference = expressionResult.referenced
-          Some(innerReferenced union expressionReference)
-        }
-        val declared = Declarations(Seq(variable), Seq.empty)
-        collect(incoming.expressionResultScope(iter, children, referenced, declared))
+        collect(incoming.expressionResultScope(iter, Seq(filterScope, expressionResult)))
 
-      case r @ ReduceExpression(ReduceScope(accumulator, variable, expression), init, list) =>
+      case r @ ReduceExpression(rs @ ReduceScope(accumulator, variable, expression), init, list) =>
         val innerIncoming = incoming.amendedWithShadowingConstant(Set(accumulator, variable))
         val innerResult = apply(expression, innerIncoming)
+        val reduceReferenced = innerResult.referenced diff accumulator diff variable
+        val reduceScope =
+          innerIncoming.expressionResultScope(
+            rs,
+            Seq(innerResult),
+            Some(reduceReferenced),
+            Declarations(Seq(accumulator, variable), Seq.empty)
+          )
         val initResult = apply(init, incoming)
         val listResult = apply(list, incoming)
-
-        val children = Seq(initResult, listResult, innerResult)
-        val referenced = {
-          val innerReferenced = innerResult.referenced diff accumulator diff variable
-          val expressionReferenced = WorkingScope.referencedInChildren(Seq(initResult, listResult))
-          Some(innerReferenced union expressionReferenced)
-        }
-        val declared = Declarations(Seq(accumulator, variable), Seq.empty)
-        collect(incoming.expressionResultScope(r, children, referenced, declared))
+        collect(incoming.expressionResultScope(r, Seq(initResult, listResult, reduceScope)))
 
       case r @ AllReducePredicate(
-          AllReduceScope(accumulator, ReductionStepVariableScope(reductionStepVariable, reductionStep, predicate)),
+          ars @ AllReduceScope(
+            accumulator,
+            rsvs @ ReductionStepVariableScope(reductionStepVariable, reductionStep, predicate)
+          ),
           init,
           list
         ) =>
-        val reductionStepResult =
-          apply(reductionStep, incoming.amendedWithShadowingConstant(Set(accumulator, reductionStepVariable)))
-        val predicateResult =
-          apply(predicate, incoming.amendedWithShadowingConstant(Set(accumulator, reductionStepVariable)))
+        val bothShadowed = incoming.amendedWithShadowingConstant(Set(accumulator, reductionStepVariable))
+        val reductionStepResult = apply(reductionStep, bothShadowed)
+        val predicateResult = apply(predicate, bothShadowed)
+        val rsvReferenced =
+          WorkingScope.referencedInChildren(Seq(reductionStepResult, predicateResult)) diff reductionStepVariable
+        val reductionStepScope =
+          bothShadowed.expressionResultScope(
+            rsvs,
+            Seq(reductionStepResult, predicateResult),
+            Some(rsvReferenced),
+            Declarations(Seq(reductionStepVariable), Seq.empty)
+          )
+        val accumulatorScope =
+          incoming.amendedWithShadowingConstant(Set(accumulator)).expressionResultScope(
+            ars,
+            Seq(reductionStepScope),
+            Some(rsvReferenced diff accumulator),
+            Declarations(Seq(accumulator), Seq.empty)
+          )
         val initResult = apply(init, incoming)
         val listResult = apply(list, incoming)
-
-        val children = Seq(initResult, listResult, reductionStepResult, predicateResult)
-        val referenced = {
-          val innerReferenced = WorkingScope.referencedInChildren(Seq(
-            reductionStepResult,
-            predicateResult
-          )) diff accumulator diff reductionStepVariable
-          val expressionReferenced = WorkingScope.referencedInChildren(Seq(initResult, listResult))
-          Some(innerReferenced union expressionReferenced)
-        }
-        val declared = Declarations(Seq(accumulator, reductionStepVariable), Seq.empty)
-        collect(incoming.expressionResultScope(r, children, referenced, declared))
+        collect(incoming.expressionResultScope(r, Seq(initResult, listResult, accumulatorScope)))
     }
   }
 

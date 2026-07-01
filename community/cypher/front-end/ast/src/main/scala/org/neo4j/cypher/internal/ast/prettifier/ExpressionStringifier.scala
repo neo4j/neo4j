@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
 import org.neo4j.cypher.internal.expressions.AllReducePredicate
+import org.neo4j.cypher.internal.expressions.AllReducePredicate.AllReduceScope
+import org.neo4j.cypher.internal.expressions.AllReducePredicate.ReductionStepVariableScope
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
@@ -752,7 +754,7 @@ private class DefaultExpressionStringifier(
         val e = delimitedInner(ast)(expression)
         noEagerConsumption(s"reduce($a = $i, $v IN $l | $e)")
 
-      case _: ExtractScope | _: FilterScope | _: ReduceScope =>
+      case _: ExtractScope | _: FilterScope | _: ReduceScope | _: AllReduceScope | _: ReductionStepVariableScope =>
         // These are not really expressions, they are part of expressions
         noEagerConsumption("")
 

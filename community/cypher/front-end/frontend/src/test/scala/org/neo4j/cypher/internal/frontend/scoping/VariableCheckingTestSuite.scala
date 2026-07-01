@@ -53,12 +53,17 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResultWithNotYetKnownColumns
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
+import org.neo4j.cypher.internal.expressions.AllReducePredicate.AllReduceScope
+import org.neo4j.cypher.internal.expressions.AllReducePredicate.ReductionStepVariableScope
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ExtractScope
+import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternAtom
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
@@ -282,12 +287,24 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
     case c: Clause                  => prettifier.asString(SingleQuery(Seq(c))(InputPosition.NONE))
     case g: GroupBy                 => prettifier.asString(g)
     case s: Search                  => prettifier.asString(s)
-    case ex: Expression             => prettifier.expr(ex)
-    case p: Pattern                 => prettifier.expr.patterns(p)
-    case p: PatternPart             => prettifier.expr.patterns(p)
-    case p: PatternElement          => prettifier.expr.patterns(p)
-    case p: RelationshipPattern     => prettifier.expr.patterns(p)
-    case lex: LabelExpression       => prettifier.expr.stringifyLabelExpression(lex)
+    case ExtractScope(v, pred, extract) =>
+      s"[${v.name}${pred.fold("")(p =>
+          s" WHERE ${prettifier.expr(p)}"
+        )}${extract.fold("")(e => s" | ${prettifier.expr(e)}")}]"
+    case FilterScope(v, pred) =>
+      s"[${v.name}${pred.fold("")(p => s" WHERE ${prettifier.expr(p)}")}]"
+    case ReduceScope(acc, v, e) =>
+      s"reduceScope(${acc.name}, ${v.name} | ${prettifier.expr(e)})"
+    case AllReduceScope(acc, redStep) =>
+      s"allReduceScope(${acc.name}, ${prettify(redStep)})"
+    case ReductionStepVariableScope(v, step, pred) =>
+      s"reductionStep(${v.name} | ${prettifier.expr(step)}, ${prettifier.expr(pred)})"
+    case ex: Expression         => prettifier.expr(ex)
+    case p: Pattern             => prettifier.expr.patterns(p)
+    case p: PatternPart         => prettifier.expr.patterns(p)
+    case p: PatternElement      => prettifier.expr.patterns(p)
+    case p: RelationshipPattern => prettifier.expr.patterns(p)
+    case lex: LabelExpression   => prettifier.expr.stringifyLabelExpression(lex)
     case cqb @ ConditionalQueryBranch(Some(_), _) =>
       prettifier.asString(ConditionalQueryWhen(Seq(cqb), None)(InputPosition.NONE))
     case cqb @ ConditionalQueryBranch(None, _) =>

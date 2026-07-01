@@ -46,10 +46,14 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.PatternScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
-import org.neo4j.cypher.internal.expressions.IterableExpression
+import org.neo4j.cypher.internal.expressions.AllReducePredicate.AllReduceScope
+import org.neo4j.cypher.internal.expressions.AllReducePredicate.ReductionStepVariableScope
+import org.neo4j.cypher.internal.expressions.ExtractScope
+import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
@@ -353,7 +357,13 @@ case class VariableChecker(
   private def visitWorkingScope(ws: WorkingScope, acc: Acc): FoldingBehavior[Acc] = {
     if (isDebugEnabled) debug.foreach(_.logVisit(ws, acc))
     ws match {
-      case s @ ExpressionScope(_: IterableExpression, _, _, d, _) =>
+      case s @ ExpressionScope(
+          _: ExtractScope | _: FilterScope | _: ReduceScope | _: AllReduceScope | _: ReductionStepVariableScope,
+          _,
+          _,
+          d,
+          _
+        ) =>
         acc match {
           case Acc(_, dCtx: DeclaringContext, _, _, _, _) if dCtx.declared.nonEmpty =>
             updateAccAndTraverse(acc, s)(_acc =>

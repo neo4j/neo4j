@@ -1686,7 +1686,6 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
           ExpectedWorkingScope(
             Ast("[x IN l + a WHERE x > 2 | a * x]"),
             Incoming(constants = Set("a", "l")),
-            Declared(constants = Seq("x")),
             Referenced(Set("a", "l")),
             ExpectedWorkingScope(
               Ast("l + a"),
@@ -1696,17 +1695,23 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
               ExpectedWorkingScope.varExp("a", Set("a", "l"))
             ),
             ExpectedWorkingScope(
-              Ast("x > 2"),
+              Ast("[x WHERE x > 2 | a * x]"),
               Incoming(constants = Set("a", "l", "x")),
-              Referenced(Set("x")),
-              ExpectedWorkingScope.varExp("x", Set("a", "l", "x"))
-            ),
-            ExpectedWorkingScope(
-              Ast("a * x"),
-              Incoming(constants = Set("a", "l", "x")),
-              Referenced(Set("a", "x")),
-              ExpectedWorkingScope.varExp("a", Set("a", "l", "x")),
-              ExpectedWorkingScope.varExp("x", Set("a", "l", "x"))
+              Declared(constants = Seq("x")),
+              Referenced(Set("a")),
+              ExpectedWorkingScope(
+                Ast("x > 2"),
+                Incoming(constants = Set("a", "l", "x")),
+                Referenced(Set("x")),
+                ExpectedWorkingScope.varExp("x", Set("a", "l", "x"))
+              ),
+              ExpectedWorkingScope(
+                Ast("a * x"),
+                Incoming(constants = Set("a", "l", "x")),
+                Referenced(Set("a", "x")),
+                ExpectedWorkingScope.varExp("a", Set("a", "l", "x")),
+                ExpectedWorkingScope.varExp("x", Set("a", "l", "x"))
+              )
             )
           )
         ),
@@ -1754,7 +1759,6 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
           ExpectedWorkingScope(
             Ast("[a IN [1, a, 3] WHERE a > 2 | a]"),
             Incoming(constants = Set("a")),
-            Declared(constants = Seq("a")),
             Referenced(Set("a")),
             ExpectedWorkingScope(
               Ast("[1, a, 3]"),
@@ -1763,12 +1767,17 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
               ExpectedWorkingScope.varExp("a", Set("a"))
             ),
             ExpectedWorkingScope(
-              Ast("a > 2"),
+              Ast("[a WHERE a > 2 | a]"),
               Incoming(constants = Set("a")),
-              Referenced(Set("a")),
+              Declared(constants = Seq("a")),
+              ExpectedWorkingScope(
+                Ast("a > 2"),
+                Incoming(constants = Set("a")),
+                Referenced(Set("a")),
+                ExpectedWorkingScope.varExp("a", Set("a"))
+              ),
               ExpectedWorkingScope.varExp("a", Set("a"))
-            ),
-            ExpectedWorkingScope.varExp("a", Set("a"))
+            )
           )
         ),
         ExpectedWorkingScope(
@@ -1808,7 +1817,6 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
           ExpectedWorkingScope(
             Ast("[a IN [1, a, 3] | 1]"),
             Incoming(constants = Set("a")),
-            Declared(constants = Seq("a")),
             Referenced(Set("a")),
             ExpectedWorkingScope(
               Ast("[1, a, 3]"),
@@ -1816,7 +1824,12 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
               Referenced(Set("a")),
               ExpectedWorkingScope.varExp("a", Set("a"))
             ),
-            ExpectedWorkingScope.constExp("1", Set("a"))
+            ExpectedWorkingScope(
+              Ast("[a | 1]"),
+              Incoming(constants = Set("a")),
+              Declared(constants = Seq("a")),
+              ExpectedWorkingScope.constExp("1", Set("a"))
+            )
           )
         ),
         ExpectedWorkingScope(
@@ -2177,7 +2190,6 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
             Ast("reduce(acc = a, x IN [1, a, 3] | acc * x + 5)"),
             Incoming(constants = Set("a")),
             Referenced(Set("a")),
-            Declared(constants = Seq("acc", "x")),
             ExpectedWorkingScope.varExp("a", Set("a")),
             ExpectedWorkingScope(
               Ast("[1, a, 3]"),
@@ -2186,11 +2198,16 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
               ExpectedWorkingScope.varExp("a", Set("a"))
             ),
             ExpectedWorkingScope(
-              Ast("acc * x + 5"),
+              Ast("reduceScope(acc, x | acc * x + 5)"),
               Incoming(constants = Set("a", "acc", "x")),
-              Referenced(Set("acc", "x")),
-              ExpectedWorkingScope.varExp("acc", Set("a", "acc", "x")),
-              ExpectedWorkingScope.varExp("x", Set("a", "acc", "x"))
+              Declared(constants = Seq("acc", "x")),
+              ExpectedWorkingScope(
+                Ast("acc * x + 5"),
+                Incoming(constants = Set("a", "acc", "x")),
+                Referenced(Set("acc", "x")),
+                ExpectedWorkingScope.varExp("acc", Set("a", "acc", "x")),
+                ExpectedWorkingScope.varExp("x", Set("a", "acc", "x"))
+              )
             )
           )
         )
@@ -4084,19 +4101,24 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
             Ast("""any(prefix IN ["a", "b", "c", word] WHERE word = prefix)""".stripMargin),
             Incoming(constants = Set("word")),
             Referenced(Set("word")),
-            Declared(Seq("prefix")),
+            ExpectedWorkingScope(
+              Ast("[prefix WHERE word = prefix]"),
+              Incoming(constants = Set("prefix", "word")),
+              Declared(Seq("prefix")),
+              Referenced(Set("word")),
+              ExpectedWorkingScope(
+                Ast("word = prefix"),
+                Incoming(constants = Set("prefix", "word")),
+                Referenced(Set("prefix", "word")),
+                ExpectedWorkingScope.varExp("word", incomingConstants = Set("prefix", "word")),
+                ExpectedWorkingScope.varExp("prefix", incomingConstants = Set("prefix", "word"))
+              )
+            ),
             ExpectedWorkingScope(
               Ast("""["a", "b", "c", word]"""),
               Incoming(constants = Set("word")),
               Referenced(Set("word")),
               ExpectedWorkingScope.varExp("word", Set("word"))
-            ),
-            ExpectedWorkingScope(
-              Ast("word = prefix"),
-              Incoming(constants = Set("prefix", "word")),
-              Referenced(Set("prefix", "word")),
-              ExpectedWorkingScope.varExp("word", incomingConstants = Set("prefix", "word")),
-              ExpectedWorkingScope.varExp("prefix", incomingConstants = Set("prefix", "word"))
             )
           )
         )
@@ -4128,7 +4150,6 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
             Ast("allReduce(acc = 0, x IN [1, 3, a] | acc + x, acc < 10)"),
             Incoming(constants = Set("a")),
             Referenced(Set("a")),
-            Declared(constants = Seq("acc", "x")),
             ExpectedWorkingScope.constExp("0", Set("a")),
             ExpectedWorkingScope(
               Ast("[1, 3, a]"),
@@ -4137,17 +4158,28 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
               ExpectedWorkingScope.varExp("a", Set("a"))
             ),
             ExpectedWorkingScope(
-              Ast("acc + x"),
-              Incoming(constants = Set("a", "acc", "x")),
-              Referenced(Set("acc", "x")),
-              ExpectedWorkingScope.varExp("acc", Set("a", "acc", "x")),
-              ExpectedWorkingScope.varExp("x", Set("a", "acc", "x"))
-            ),
-            ExpectedWorkingScope(
-              Ast("acc < 10"),
-              Incoming(constants = Set("a", "acc", "x")),
-              Referenced(Set("acc")),
-              ExpectedWorkingScope.varExp("acc", Set("a", "acc", "x"))
+              Ast("allReduceScope(acc, reductionStep(x | acc + x, acc < 10))"),
+              Incoming(constants = Set("a", "acc")),
+              Declared(constants = Seq("acc")),
+              ExpectedWorkingScope(
+                Ast("reductionStep(x | acc + x, acc < 10)"),
+                Incoming(constants = Set("a", "acc", "x")),
+                Declared(constants = Seq("x")),
+                Referenced(Set("acc")),
+                ExpectedWorkingScope(
+                  Ast("acc + x"),
+                  Incoming(constants = Set("a", "acc", "x")),
+                  Referenced(Set("acc", "x")),
+                  ExpectedWorkingScope.varExp("acc", Set("a", "acc", "x")),
+                  ExpectedWorkingScope.varExp("x", Set("a", "acc", "x"))
+                ),
+                ExpectedWorkingScope(
+                  Ast("acc < 10"),
+                  Incoming(constants = Set("a", "acc", "x")),
+                  Referenced(Set("acc")),
+                  ExpectedWorkingScope.varExp("acc", Set("a", "acc", "x"))
+                )
+              )
             )
           )
         )

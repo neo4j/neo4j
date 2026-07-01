@@ -30,7 +30,6 @@ class GQL_42I58_InvalidEntityReferenceTest extends VariableCheckingWithLocalCall
   override def testCases(): Seq[TestQuery] = testCasesCreate ++ testCasesInsert ++ testCasesMerge
 
   private def testCasesCreate = Seq(
-    // Reference with same path patterns
     TestQuery(
       """CREATE (a)-[:REL]->(b {prop: a.prop})""",
       E42I58("a"),
@@ -143,7 +142,6 @@ class GQL_42I58_InvalidEntityReferenceTest extends VariableCheckingWithLocalCall
       )
     }
   ) ++ Seq(
-    // Reference between different path patterns
     TestQuery(
       """CREATE (a), (b {prop: a.prop})""".stripMargin,
       passesBeforeCypher25(E42I58("a")),
@@ -219,6 +217,46 @@ class GQL_42I58_InvalidEntityReferenceTest extends VariableCheckingWithLocalCall
       """CREATE (x) CREATE (a), (a1)-[r:R {prop: EXISTS { (a)-[r2]->(c) }}]->(b)""".stripMargin,
       passesBeforeCypher25(E42I58("a")),
       Seq.empty
+    ),
+    TestQuery(
+      """CREATE (n {prop: true IN [x IN [false] | n]})""".stripMargin,
+      E42I58("n"),
+      Seq.empty
+    ),
+    TestQuery(
+      """CREATE (n {prop: any(x IN [false] WHERE n)})""".stripMargin,
+      E42I58("n"),
+      Seq.empty
+    ),
+    TestQuery(
+      """CREATE (n {prop: reduce(x = 1, y in [1,2] | n + x + y)})""".stripMargin,
+      E42I58("n"),
+      Seq.empty
+    ),
+    TestQuery(
+      """CREATE (n {prop: allReduce(x = 0, y IN [1] | x + n, x < 5)})""".stripMargin,
+      ignoreBeforeCypher25(E42I58("n")),
+      Seq.empty
+    ),
+    TestQuery(
+      """CREATE (n {prop: true IN [n IN [false] | n]})""".stripMargin,
+      Passes,
+      Seq.empty
+    ),
+    TestQuery(
+      """CREATE (n {prop: any(n IN [false] WHERE n)})""".stripMargin,
+      Passes,
+      Seq.empty
+    ),
+    TestQuery(
+      """CREATE (n {prop: reduce(n = 1, x in [1,2] | n + x)})""".stripMargin,
+      Passes,
+      Seq.empty
+    ),
+    TestQuery(
+      """CREATE (n {prop: allReduce(n = 0, x IN [1] | n + x, n < 5)})""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq.empty
     )
   )
 
@@ -292,9 +330,23 @@ class GQL_42I58_InvalidEntityReferenceTest extends VariableCheckingWithLocalCall
       )
     }
   ) ++ Seq(
-    // with nested variables
     TestQuery(
       """INSERT (n {prop: true IN [x IN [false] | n]})""".stripMargin,
+      ignoreBeforeCypher25(E42I58("n")),
+      Seq.empty
+    ),
+    TestQuery(
+      """INSERT (n {prop: reduce(x = 1, y in [1,2] | n + x + y)})""".stripMargin,
+      ignoreBeforeCypher25(E42I58("n")),
+      Seq.empty
+    ),
+    TestQuery(
+      """INSERT (n {prop: any(x IN [false] WHERE n)})""".stripMargin,
+      ignoreBeforeCypher25(E42I58("n")),
+      Seq.empty
+    ),
+    TestQuery(
+      """INSERT (n {prop: allReduce(x = 0, y IN [1] | x + n, x < 5)})""".stripMargin,
       ignoreBeforeCypher25(E42I58("n")),
       Seq.empty
     ),
@@ -310,6 +362,21 @@ class GQL_42I58_InvalidEntityReferenceTest extends VariableCheckingWithLocalCall
     ),
     TestQuery(
       """INSERT (n {prop: reduce(x = 1, n in [1,2] | n + x)})""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq.empty
+    ),
+    TestQuery(
+      """INSERT (n {prop: any(n IN [false] WHERE n)})""".stripMargin,
+      Passes,
+      Seq.empty
+    ),
+    TestQuery(
+      """INSERT (n {prop: allReduce(n = 0, x IN [1] | n + x, n < 5)})""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq.empty
+    ),
+    TestQuery(
+      """INSERT (n {prop: allReduce(x = 0, n IN [1] | x + n, x < 5)})""".stripMargin,
       ignoreBeforeCypher25(Passes),
       Seq.empty
     )
