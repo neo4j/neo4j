@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.api.procedure.GlobalProcedures
-import org.neo4j.kernel.impl.api.KernelTransactions
+import org.neo4j.kernel.impl.api.TransactionRegistry
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 
@@ -174,7 +174,7 @@ case class FeatureDatabaseManagementService(
   def clearCompilerCaches(): Unit = executionEngine.clearCompilerCache()
 
   def terminateAllTransactions(): Unit = {
-    database.getDependencyResolver.resolveDependency(classOf[KernelTransactions]).terminateTransactions()
+    database.getDependencyResolver.resolveDependency(classOf[TransactionRegistry]).terminateTransactions()
   }
 
   def dropIndexesAndConstraints(): Unit = Using.resource(database.beginTx()) { tx =>

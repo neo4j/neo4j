@@ -40,7 +40,10 @@ case class ShowDatabaseResult(
   propertyShards: Option[Seq[String]] = None
 ) {
   private val isPropertyShard: Boolean = details.databaseType().equals(DatabaseDetails.TYPE_PROPERTY_SHARD)
-  private val isComposite: Boolean = details.databaseType().equals(DatabaseDetails.TYPE_COMPOSITE)
+
+  private val isVirtual: Boolean =
+    details.databaseType().equals(DatabaseDetails.TYPE_COMPOSITE) ||
+      details.databaseType().equals(DatabaseDetails.TYPE_GRAPH_ENGINE)
 
   def roleValue(): AnyValue = {
     if (isPropertyShard) {
@@ -59,7 +62,7 @@ case class ShowDatabaseResult(
   }
 
   def currentPrimariesCountValue(): Value = {
-    if (details.actualPrimariesCount() == null || isPropertyShard || isComposite) {
+    if (details.actualPrimariesCount() == null || isPropertyShard || isVirtual) {
       Values.NO_VALUE
     } else {
       Values.longValue(details.actualPrimariesCount().intValue())
@@ -75,7 +78,7 @@ case class ShowDatabaseResult(
   }
 
   def currentSecondariesCountValue(): Value = {
-    if (details.actualSecondariesCount() == null || isPropertyShard || isComposite) {
+    if (details.actualSecondariesCount() == null || isPropertyShard || isVirtual) {
       Values.NO_VALUE
     } else {
       Values.longValue(details.actualSecondariesCount().intValue())
@@ -103,14 +106,14 @@ case class ShowDatabaseResult(
   }
 
   def storeValue(): AnyValue = {
-    if (isComposite) Values.NO_VALUE
+    if (isVirtual) Values.NO_VALUE
     else details.readableStoreId().map[AnyValue](s => Values.stringValue(s)).orElse(
       Values.NO_VALUE
     )
   }
 
   def optionsValue(): AnyValue =
-    if (isComposite) {
+    if (isVirtual) {
       Values.NO_VALUE
     } else {
       val valueOptions =

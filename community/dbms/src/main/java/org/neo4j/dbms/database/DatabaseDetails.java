@@ -74,6 +74,7 @@ public record DatabaseDetails(
     public static final String TYPE_GRAPH_SHARD = "graph shard";
     public static final String TYPE_PROPERTY_SHARD = "property shard";
     public static final String TYPE_MIRROR = "replica";
+    public static final String TYPE_GRAPH_ENGINE = "virtual graph";
 
     public String databaseType() {
         return type;

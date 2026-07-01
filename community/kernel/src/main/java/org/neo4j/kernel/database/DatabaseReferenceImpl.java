@@ -309,6 +309,10 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
         public DatabaseReferenceImpl.Mirror asMirror() {
             return new Mirror(alias, namedDatabaseId);
         }
+
+        public DatabaseReferenceImpl.GraphEngine asGraphEngine() {
+            return new GraphEngine(alias, namedDatabaseId);
+        }
     }
 
     public static final class Composite extends DatabaseReferenceImpl.Internal {
@@ -376,6 +380,32 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
 
         @Override
         public boolean isComposite() {
+            return true;
+        }
+    }
+
+    public static final class GraphEngine extends DatabaseReferenceImpl.Internal {
+
+        public GraphEngine(NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId) {
+            super(alias, namedDatabaseId, true);
+        }
+
+        @Override
+        public Optional<NormalizedDatabaseName> namespace() {
+            return Optional.empty();
+        }
+
+        @Override
+        public String toString() {
+            return "GraphEngine{" + "alias="
+                    + alias + ", namespace="
+                    + namespace + ", namedDatabaseId="
+                    + namedDatabaseId + ", primary="
+                    + primary + "}'";
+        }
+
+        @Override
+        public boolean isGraphEngine() {
             return true;
         }
     }

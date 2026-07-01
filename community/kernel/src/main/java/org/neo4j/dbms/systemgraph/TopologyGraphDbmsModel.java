@@ -223,6 +223,9 @@ public interface TopologyGraphDbmsModel {
 
     Label COMPOSITE_DATABASE_LABEL = Label.label("CompositeDatabase");
     String COMPOSITE_DATABASE = COMPOSITE_DATABASE_LABEL.name();
+
+    Label GRAPH_ENGINE_DATABASE_LABEL = Label.label("GraphEngine");
+
     String NAME_PROPERTY = "name";
     String VERSION_PROPERTY = "version"; // used to refresh connection pool on change
     RelationshipType TARGETS_RELATIONSHIP = RelationshipType.withName("TARGETS");

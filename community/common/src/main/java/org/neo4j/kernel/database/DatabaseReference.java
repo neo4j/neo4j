@@ -76,4 +76,14 @@ public interface DatabaseReference extends Comparable<DatabaseReference>, Privil
      * @return true if this reference points to a Composite database, otherwise false
      */
     boolean isComposite();
+
+    /** @return true if this reference points to a graph engine database. */
+    default boolean isGraphEngine() {
+        return false;
+    }
+
+    /** @return true if this reference points to a locally hosted virtual database. */
+    default boolean isVirtuallyHosted() {
+        return isComposite() || isGraphEngine();
+    }
 }
