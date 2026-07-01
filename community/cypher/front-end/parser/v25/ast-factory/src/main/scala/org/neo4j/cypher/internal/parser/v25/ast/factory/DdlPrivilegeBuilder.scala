@@ -165,7 +165,6 @@ import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.ast.util.Util.astOpt
 import org.neo4j.cypher.internal.parser.ast.util.Util.astSeq
@@ -193,8 +192,7 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
     ctx.ast = if (ctx.privilege() != null) {
       val (privilegeType, resource, qualifier) =
         ctx.privilege().ast[(PrivilegeType, Option[ActionResource], List[PrivilegeQualifier])]
-      val roleNames = ctx.roleNames.ast[ArraySeq[Expression]]()
-      GrantPrivilege(privilegeType, ctx.IMMUTABLE() != null, resource, qualifier, roleNames)(p)
+      GrantPrivilege(privilegeType, ctx.IMMUTABLE() != null, resource, qualifier, ctx.roleNames.ast())(p)
     } else {
       val (rolenames, usernamesOrAutRuleNames) =
         ctx.grantRole().ast[(Seq[Expression], UsernamesOrAuthRuleNames)]()
@@ -212,8 +210,7 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
     val p = pos(ctx)
     val (privilegeType, resource, qualifier) =
       ctx.privilege().ast[(PrivilegeType, Option[ActionResource], List[PrivilegeQualifier])]
-    val roleNames = ctx.roleNames.ast[ArraySeq[Expression]]()
-    ctx.ast = DenyPrivilege(privilegeType, ctx.IMMUTABLE() != null, resource, qualifier, roleNames)(p)
+    ctx.ast = DenyPrivilege(privilegeType, ctx.IMMUTABLE() != null, resource, qualifier, ctx.roleNames.ast())(p)
   }
 
   final override def exitRevokeCommand(
@@ -223,12 +220,11 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
     ctx.ast = if (ctx.privilege() != null) {
       val (privilegeType, resource, qualifier) =
         ctx.privilege().ast[(PrivilegeType, Option[ActionResource], List[PrivilegeQualifier])]
-      val roleNames = ctx.roleNames.ast[ArraySeq[Expression]]()
       val revokeType =
         if (ctx.DENY() != null) RevokeDenyType()(pos(ctx.DENY()))
         else if (ctx.GRANT() != null) RevokeGrantType()(pos(ctx.GRANT()))
         else RevokeBothType()(p)
-      RevokePrivilege(privilegeType, ctx.IMMUTABLE() != null, resource, qualifier, roleNames, revokeType)(p)
+      RevokePrivilege(privilegeType, ctx.IMMUTABLE() != null, resource, qualifier, ctx.roleNames.ast(), revokeType)(p)
     } else {
       val (rolenames, usernamesOrAutRuleNames) =
         ctx.revokeRole().ast[(Seq[Expression], UsernamesOrAuthRuleNames)]()
@@ -245,8 +241,8 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
     ctx: Cypher25Parser.GrantRoleContext
   ): Unit = {
     ctx.ast = (
-      ctx.roleNames.ast[Seq[Expression]](),
-      ctx.usersOrAuthRule.ast[UsernamesOrAuthRuleNames]()
+      ctx.roleNames.ast(),
+      ctx.usersOrAuthRule.ast()
     )
   }
 
@@ -254,8 +250,8 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
     ctx: Cypher25Parser.RevokeRoleContext
   ): Unit = {
     ctx.ast = (
-      ctx.roleNames.ast[Seq[Either[String, Parameter]]](),
-      ctx.usersOrAuthRule.ast[UsernamesOrAuthRuleNames]()
+      ctx.roleNames.ast(),
+      ctx.usersOrAuthRule.ast()
     )
   }
 
@@ -264,14 +260,14 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
   def exitAuthRuleKeywords(ctx: Cypher25Parser.AuthRuleKeywordsContext): Unit = {}
 
   def exitAuthRuleNames(ctx: Cypher25Parser.AuthRuleNamesContext): Unit = {
-    ctx.ast = ctx.symbolicNameOrStringParameterList().ast[Seq[Either[String, Parameter]]]
+    ctx.ast = ctx.symbolicNameOrStringParameterList().ast()
   }
 
   def exitUsersOrAuthRule(ctx: Cypher25Parser.UsersOrAuthRuleContext): Unit = {
     ctx.ast =
       if (ctx.authRuleKeywords() != null)
-        UsernamesOrAuthRuleNames.AuthRuleNames(ctx.authRuleNames().ast[Seq[Expression]]())
-      else UsernamesOrAuthRuleNames.UserNames(ctx.userNames().ast[Seq[Expression]]())
+        UsernamesOrAuthRuleNames.AuthRuleNames(ctx.authRuleNames().ast())
+      else UsernamesOrAuthRuleNames.UserNames(ctx.userNames().ast())
   }
 
   // Privilege command contexts
@@ -823,11 +819,11 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
   }
 
   override def exitRoleNames(ctx: Cypher25Parser.RoleNamesContext): Unit = {
-    ctx.ast = ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]()
+    ctx.ast = ctx.symbolicNameOrStringParameterList().ast()
   }
 
   override def exitUserNames(ctx: Cypher25Parser.UserNamesContext): Unit = {
-    ctx.ast = ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]()
+    ctx.ast = ctx.symbolicNameOrStringParameterList().ast()
   }
 
   // SCOPE CONTEXTS

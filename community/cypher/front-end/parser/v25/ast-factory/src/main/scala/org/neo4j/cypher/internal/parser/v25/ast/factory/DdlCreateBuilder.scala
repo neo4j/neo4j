@@ -442,11 +442,11 @@ trait DdlCreateBuilder extends Cypher25ParserListener {
     val from =
       if (nameExpressions.size > 1) {
         AssertMacros3.checkOnlyWhenAssertionsAreEnabled(nameExpressions.size == 2)
-        Some(nameExpressions.get(1).ast[Expression])
+        Some(nameExpressions.get(1).ast())
       } else
         None
     ctx.ast = CreateRole(
-      nameExpressions.get(0).ast[Expression](),
+      nameExpressions.get(0).ast(),
       ctx.IMMUTABLE() != null,
       from,
       ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null)
@@ -471,7 +471,7 @@ trait DdlCreateBuilder extends Cypher25ParserListener {
     val homeDatabaseAction = astOptFromList[HomeDatabaseAction](ctx.homeDatabase(), None)
     val tags = astOptFromList[SetTags](ctx.userSetTagsClause(), None)
     ctx.ast = CreateUser(
-      ctx.commandNameExpression().ast[Expression](),
+      ctx.commandNameExpression().ast(),
       UserOptions(suspended, homeDatabaseAction),
       ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
       setAuth,
@@ -491,7 +491,7 @@ trait DdlCreateBuilder extends Cypher25ParserListener {
       }
 
     ctx.ast = CreateAuthRule(
-      ctx.commandNameExpression().ast[Expression](),
+      ctx.commandNameExpression().ast(),
       ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
       setClauses
     )(pos(parent))
@@ -502,7 +502,7 @@ trait DdlCreateBuilder extends Cypher25ParserListener {
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
     ctx.ast = CreateCompositeDatabase(
-      ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
+      ctx.symbolicAliasNameOrParameter().ast(),
       ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
       astOpt[Options](ctx.commandOptions(), NoOptions),
       astOpt[WaitUntilComplete](ctx.waitClause(), NoWait()(InputPosition.NONE)),
@@ -515,7 +515,7 @@ trait DdlCreateBuilder extends Cypher25ParserListener {
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
     ctx.ast = CreateDatabase(
-      ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
+      ctx.symbolicAliasNameOrParameter().ast(),
       ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
       astOpt[Options](ctx.commandOptions(), NoOptions),
       astOpt[WaitUntilComplete](ctx.waitClause(), NoWait()(InputPosition.NONE)),
@@ -555,7 +555,7 @@ trait DdlCreateBuilder extends Cypher25ParserListener {
       ctx.ast = OidcCredentialForwarding()(pos(ctx))
     } else {
       ctx.ast = RemoteAliasStoredCredentials(
-        ctx.commandNameExpression().ast[Expression](),
+        ctx.commandNameExpression().ast(),
         ctx.passwordExpression().ast[Expression]()
       )(pos(ctx))
     }

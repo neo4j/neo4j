@@ -184,7 +184,7 @@ trait DdlBuilder extends Cypher25ParserListener {
   ): Unit = {
     val indexName = ctx.commandNameExpression()
     ctx.ast = DropIndexOnName(
-      indexName.ast[Expression](),
+      indexName.ast(),
       ctx.EXISTS() != null
     )(pos(ctx.getParent))
   }
@@ -354,7 +354,6 @@ trait DdlBuilder extends Cypher25ParserListener {
   final override def exitAlterUser(
     ctx: Cypher25Parser.AlterUserContext
   ): Unit = {
-    val username = ctx.commandNameExpression().ast[Expression]()
     val nativePassAttributes = ctx.password().asScala.toList
       .map(_.ast[(Password, Option[PasswordChange])]())
       .foldLeft(List.empty[AuthAttribute]) { case (acc, (password, change)) => (acc :+ password) ++ change }
@@ -375,7 +374,15 @@ trait DdlBuilder extends Cypher25ParserListener {
         ctx.userAddTagsClause().asScala.toList.map(_.ast[UserTagsAction]()) ++
         ctx.userSetTagsClause().asScala.toList.map(_.ast[UserTagsAction]())
     ctx.ast =
-      AlterUser(username, userOptions, ctx.EXISTS() != null, setAuth, nativeAuth, removeAuth, tags)(pos(ctx.getParent))
+      AlterUser(
+        ctx.commandNameExpression().ast(),
+        userOptions,
+        ctx.EXISTS() != null,
+        setAuth,
+        nativeAuth,
+        removeAuth,
+        tags
+      )(pos(ctx.getParent))
   }
 
   override def exitRemoveNamedProvider(ctx: Cypher25Parser.RemoveNamedProviderContext): Unit = {
@@ -385,7 +392,7 @@ trait DdlBuilder extends Cypher25ParserListener {
   }
 
   final override def exitAlterUsers(ctx: Cypher25Parser.AlterUsersContext): Unit = {
-    val userNames = ctx.commandNameExpression().asScala.toList.map(_.ast[Expression]())
+    val userNames = astSeq[Expression](ctx.commandNameExpression())
     val tags: Seq[UserTagsAction] = (
       ctx.userRemoveTagsClause().asScala.toList ++
         ctx.userAddTagsClause().asScala.toList ++
@@ -451,8 +458,7 @@ trait DdlBuilder extends Cypher25ParserListener {
   final override def exitHomeDatabase(
     ctx: Cypher25Parser.HomeDatabaseContext
   ): Unit = {
-    val dbName = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
-    ctx.ast = SetHomeDatabaseAction(dbName)
+    ctx.ast = SetHomeDatabaseAction(ctx.symbolicAliasNameOrParameter().ast())
   }
 
   // Auth rule command contexts
@@ -476,7 +482,7 @@ trait DdlBuilder extends Cypher25ParserListener {
       }
 
     ctx.ast = AlterAuthRule(
-      ctx.commandNameExpression().ast[Expression](),
+      ctx.commandNameExpression().ast(),
       ctx.EXISTS() != null,
       setClauses
     )(pos(ctx.getParent))
@@ -510,7 +516,7 @@ trait DdlBuilder extends Cypher25ParserListener {
     val additionalAction = if (ctx.DUMP() != null) DumpData else DestroyData
     val aliasAction = astOpt[DropDatabaseAliasAction](ctx.aliasAction(), Restrict)
     ctx.ast = DropDatabase(
-      ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
+      ctx.symbolicAliasNameOrParameter().ast(),
       ctx.EXISTS() != null,
       ctx.COMPOSITE() != null,
       aliasAction,
@@ -530,12 +536,11 @@ trait DdlBuilder extends Cypher25ParserListener {
   final override def exitAlterDatabase(
     ctx: Cypher25Parser.AlterDatabaseContext
   ): Unit = {
-    val dbName = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
     val waitUntilComplete = astOpt[WaitUntilComplete](ctx.waitClause(), NoWait()(InputPosition.NONE))
     ctx.ast = if (!ctx.REMOVE().isEmpty) {
       val optionsToRemove = Set.from(astSeq[String](ctx.symbolicNameString()))
       AlterDatabase(
-        dbName,
+        ctx.symbolicAliasNameOrParameter().ast(),
         ctx.EXISTS() != null,
         None,
         None,
@@ -564,7 +569,7 @@ trait DdlBuilder extends Cypher25ParserListener {
         else None
       val replicas = astOptFromList[Either[Int, Parameter]](ctx.alterReplicaTopology(), None)
       AlterDatabase(
-        dbName,
+        ctx.symbolicAliasNameOrParameter().ast(),
         ctx.EXISTS() != null,
         access,
         topology,
@@ -663,7 +668,7 @@ trait DdlBuilder extends Cypher25ParserListener {
     ctx: Cypher25Parser.DropAliasContext
   ): Unit = {
     ctx.ast =
-      DropDatabaseAlias(ctx.aliasName().ast[DatabaseName](), ctx.EXISTS() != null)(pos(
+      DropDatabaseAlias(ctx.aliasName().ast(), ctx.EXISTS() != null)(pos(
         ctx.getParent
       ))
   }
@@ -677,7 +682,7 @@ trait DdlBuilder extends Cypher25ParserListener {
       if (aliasTargetCtx.isEmpty) (None, None)
       else
         (
-          Some(aliasTargetCtx.get(0).aliasTargetName().ast[DatabaseName]()),
+          Some(aliasTargetCtx.get(0).aliasTargetName().ast()),
           astOpt[Either[String, Parameter]](aliasTargetCtx.get(0).stringOrParameter())
         )
     }
@@ -764,11 +769,11 @@ trait DdlBuilder extends Cypher25ParserListener {
   }
 
   final override def exitAliasName(ctx: Cypher25Parser.AliasNameContext): Unit = {
-    ctx.ast = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]
+    ctx.ast = ctx.symbolicAliasNameOrParameter().ast()
   }
 
   final override def exitAliasTargetName(ctx: Cypher25Parser.AliasTargetNameContext): Unit = {
-    ctx.ast = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]
+    ctx.ast = ctx.symbolicAliasNameOrParameter().ast()
   }
 
   final override def exitStringOrParameterExpression(

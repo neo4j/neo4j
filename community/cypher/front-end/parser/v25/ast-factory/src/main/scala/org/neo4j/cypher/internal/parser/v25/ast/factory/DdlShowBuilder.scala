@@ -543,7 +543,7 @@ trait DdlShowBuilder extends Cypher25ParserListener {
     val (asCommand, asRevoke) = astOpt[(Boolean, Boolean)](ctx.privilegeAsCommand(), (false, false))
     val cmdYield = astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
     val scope = ShowRolesPrivileges(
-      ctx.roleNames.symbolicNameOrStringParameterList().ast[Seq[Expression]]().toList
+      ctx.roleNames.ast[Seq[Expression]]().toList
     )(pos(ctx))
     ctx.ast = if (asCommand) {
       ShowPrivilegeCommands(scope, asRevoke, cmdYield)(pos(ctx))
@@ -575,7 +575,7 @@ trait DdlShowBuilder extends Cypher25ParserListener {
   override def exitShowDatabase(ctx: Cypher25Parser.ShowDatabaseContext): Unit = {
     val dbName = ctx.symbolicAliasNameOrParameter()
     val dbScope = {
-      if (dbName != null) SingleNamedDatabaseScope(dbName.ast[DatabaseName]())(pos(ctx))
+      if (dbName != null) SingleNamedDatabaseScope(dbName.ast())(pos(ctx))
       else if (ctx.HOME() != null) HomeDatabaseScope()(pos(ctx))
       else if (ctx.DEFAULT() != null) DefaultDatabaseScope()(pos(ctx))
       else AllDatabasesScope()(pos(ctx))
