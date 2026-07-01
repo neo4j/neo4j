@@ -21,7 +21,7 @@ package org.neo4j.test.ports;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.test.ports.PortConstants.EPHEMERAL_PORT_MINIMUM;
 
 import java.io.IOException;
@@ -66,9 +66,9 @@ class PortRepositoryIT {
         portRepository1.reserveNextPort("foo");
         portRepository1.reserveNextPort("foo");
 
-        IllegalStateException exception =
-                assertThrows(IllegalStateException.class, () -> portRepository1.reserveNextPort("foo"));
-        assertThat(exception.getMessage()).isEqualTo("There are no more ports available");
+        assertThatThrownBy(() -> portRepository1.reserveNextPort("foo"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("There are no more ports available");
     }
 
     private static Path temporaryDirectory() throws IOException {

@@ -19,8 +19,8 @@
  */
 package org.neo4j.test.extension;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Fail.fail;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -47,17 +47,17 @@ class ForkingExtensionCases {
 
     @AfterEach
     void afterEach() {
-        assertTrue(beforeEachCalled);
+        assertThat(beforeEachCalled).isTrue();
     }
 
     @AfterAll
     static void afterAll() {
-        assertTrue(beforeAllCalled);
+        assertThat(beforeAllCalled).isTrue();
     }
 
     @Test
     void executeInForm() {
-        assertTrue(true);
+        assertThat(true).isTrue();
     }
 
     @Test

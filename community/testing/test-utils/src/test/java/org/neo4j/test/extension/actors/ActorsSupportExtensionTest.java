@@ -21,11 +21,7 @@ package org.neo4j.test.extension.actors;
 
 import static java.time.Duration.ofMinutes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import java.lang.reflect.Executable;
@@ -51,7 +47,7 @@ class ActorsSupportExtensionTest {
 
         @Test
         void actorMustBeInjected() {
-            assertNotNull(actor);
+            assertThat(actor).isNotNull();
         }
 
         @Test
@@ -60,12 +56,12 @@ class ActorsSupportExtensionTest {
                 CountDownLatch l1 = new CountDownLatch(1);
                 Future<Void> f1 = actor.submit(l1::countDown);
                 l1.await();
-                assertNull(f1.get());
+                assertThat(f1.get()).isNull();
 
                 CountDownLatch l2 = new CountDownLatch(1);
                 Future<String> f2 = actor.submit(l2::countDown, "bla");
                 l2.await();
-                assertEquals("bla", f2.get());
+                assertThat(f2.get()).isEqualTo("bla");
 
                 CountDownLatch l3 = new CountDownLatch(1);
                 Future<String> f3 = actor.submit(() -> {
@@ -73,7 +69,7 @@ class ActorsSupportExtensionTest {
                     return "bla";
                 });
                 l3.await();
-                assertEquals("bla", f3.get());
+                assertThat(f3.get()).isEqualTo("bla");
             });
         }
 
@@ -93,7 +89,7 @@ class ActorsSupportExtensionTest {
 
         @Test
         void untilMethodsMustThrowIfActorIsNotStarted() {
-            assertThrows(IllegalStateException.class, () -> actor.untilWaiting());
+            assertThatThrownBy(() -> actor.untilWaiting()).isInstanceOf(IllegalStateException.class);
         }
 
         @Test
@@ -102,7 +98,7 @@ class ActorsSupportExtensionTest {
             ActorImpl actorImpl = (ActorImpl) actor;
             actorImpl.stop();
             actorImpl.join();
-            assertThrows(AssertionError.class, () -> actor.untilWaiting());
+            assertThatThrownBy(() -> actor.untilWaiting()).isInstanceOf(AssertionError.class);
         }
 
         @Test
@@ -111,14 +107,14 @@ class ActorsSupportExtensionTest {
             ActorImpl actorImpl = (ActorImpl) actor;
             actorImpl.stop();
             actorImpl.join();
-            assertThrows(IllegalStateException.class, () -> actor.submit(() -> {}));
+            assertThatThrownBy(() -> actor.submit(() -> {})).isInstanceOf(IllegalStateException.class);
         }
 
         @Test
         void untilMethodsMustThrowIfActorIsIdle() throws Exception {
             actor.submit(() -> {}).get(); // Ensure that the actor has started.
             // Because nothing is running, and no tasks are queued up, so there is nothing to wait for.
-            assertThrows(IllegalStateException.class, () -> actor.untilWaiting());
+            assertThatThrownBy(() -> actor.untilWaiting()).isInstanceOf(IllegalStateException.class);
         }
 
         @Test
@@ -130,8 +126,9 @@ class ActorsSupportExtensionTest {
             });
             actor.untilWaitingIn(CountDownLatch.class.getMethod("await"));
             actor.interrupt();
-            ExecutionException ee = assertThrows(ExecutionException.class, f1::get);
-            assertThat(ee.getCause()).isInstanceOf(InterruptedException.class);
+            assertThatThrownBy(f1::get)
+                    .isInstanceOf(ExecutionException.class)
+                    .hasCauseInstanceOf(InterruptedException.class);
         }
 
         @Test
@@ -146,7 +143,7 @@ class ActorsSupportExtensionTest {
 
                 Thread.currentThread().interrupt();
                 // The actor will not be waiting. It will be in BLOCKED state, because that's how 'synchronized' works.
-                assertThrows(InterruptedException.class, actor::untilWaiting);
+                assertThatThrownBy(actor::untilWaiting).isInstanceOf(InterruptedException.class);
             }
         }
 
@@ -181,9 +178,9 @@ class ActorsSupportExtensionTest {
 
         @Test
         void actorsMustBeDifferent() {
-            assertNotNull(emil);
-            assertNotNull(jim);
-            assertNotSame(emil, jim);
+            assertThat(emil).isNotNull();
+            assertThat(jim).isNotNull();
+            assertThat(emil).isNotSameAs(jim);
         }
 
         @Test
@@ -236,7 +233,7 @@ class ActorsSupportExtensionTest {
                     f1.get();
                     f2.get();
                     f3.get();
-                    assertEquals(3, counter.get());
+                    assertThat(counter.get()).isEqualTo(3);
                 }
             }
 
@@ -247,7 +244,7 @@ class ActorsSupportExtensionTest {
                 Future<Integer> f2 = outerActor.submit(counter::incrementAndGet);
                 f1.get();
                 f2.get();
-                assertEquals(2, counter.get());
+                assertThat(counter.get()).isEqualTo(2);
             }
         }
 
@@ -256,7 +253,7 @@ class ActorsSupportExtensionTest {
             AtomicInteger counter = new AtomicInteger();
             Future<Integer> f1 = outerActor.submit(counter::incrementAndGet);
             f1.get();
-            assertEquals(1, counter.get());
+            assertThat(counter.get()).isEqualTo(1);
         }
     }
 

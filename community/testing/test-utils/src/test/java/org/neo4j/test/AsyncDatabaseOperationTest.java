@@ -20,7 +20,7 @@
 package org.neo4j.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -45,8 +45,8 @@ class AsyncDatabaseOperationTest {
         var managementService = mock(DatabaseManagementService.class);
         when(managementService.database(DB)).thenThrow(DatabaseNotFoundHelper.databaseNotFound(DB));
 
-        assertThat(assertThrows(
-                        DatabaseNotFoundException.class, () -> findDatabaseEventually(managementService, DB, TIMEOUT)))
+        assertThatThrownBy(() -> findDatabaseEventually(managementService, DB, TIMEOUT))
+                .isInstanceOf(DatabaseNotFoundException.class)
                 .hasMessageContaining(DB);
         verify(managementService, atLeastOnce()).database(DB);
     }
@@ -60,8 +60,8 @@ class AsyncDatabaseOperationTest {
                 .thenThrow(DatabaseNotFoundHelper.databaseNotFound(DB))
                 .thenReturn(database);
 
-        assertThat(assertThrows(
-                        DatabaseNotFoundException.class, () -> findDatabaseEventually(managementService, DB, TIMEOUT)))
+        assertThatThrownBy(() -> findDatabaseEventually(managementService, DB, TIMEOUT))
+                .isInstanceOf(DatabaseNotFoundException.class)
                 .hasMessageContaining(DB);
         verify(managementService, atLeastOnce()).database(DB);
     }

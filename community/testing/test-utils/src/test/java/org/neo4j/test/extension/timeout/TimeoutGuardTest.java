@@ -20,7 +20,6 @@
 package org.neo4j.test.extension.timeout;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE_ID;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
@@ -38,8 +37,8 @@ public class TimeoutGuardTest {
 
     @Test
     void terminateHangingTest() throws IOException {
-        assertEquals(
-                1, ProcessUtils.executeJava(out, err, Duration.ofMinutes(5), UncooperativeHangerMain.class.getName()));
+        assertThat(ProcessUtils.executeJava(out, err, Duration.ofMinutes(5), UncooperativeHangerMain.class.getName()))
+                .isEqualTo(1);
         assertThat(out.toString())
                 .contains("***WARNING***")
                 .contains(

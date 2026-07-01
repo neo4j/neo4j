@@ -19,8 +19,7 @@
  */
 package org.neo4j.test.extension;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE_ID;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 import static org.junit.platform.testkit.engine.EventConditions.event;
@@ -43,14 +42,14 @@ class LifeExtensionTest {
 
     @Test
     void extensionInjectSupportingLifecycle() {
-        assertNotNull(lifecycle);
+        assertThat(lifecycle).isNotNull();
     }
 
     @Test
     void injectedLifeIsStartedAndStartingAddedComponents() {
         TestComponent testComponent = new TestComponent();
         lifecycle.add(testComponent);
-        assertTrue(testComponent.isStarted());
+        assertThat(testComponent.isStarted()).isTrue();
     }
 
     @Test
