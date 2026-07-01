@@ -32,9 +32,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.neo4j.graphdb.schema.IndexSetting;
-import org.neo4j.internal.helpers.collection.ImmutableMapEntry;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.schema.IndexConfigUtils.HasSetting;
 import org.neo4j.internal.schema.IndexSettingRecord.UnrecognizedSetting;
 import org.neo4j.internal.schema.IndexSettingRecord.Valid;
 import org.neo4j.internal.schema.IndexSettingsProcessor.ValidatingIndexSettingsProcessor;
@@ -131,7 +129,7 @@ public class DefaultIndexSettingsValidator implements IndexSettingsValidator {
         processor.updateForVerification(recordWithSettings);
 
         for (IndexSettingEntry entry : implicitSettings) {
-            recordWithSettings.upsert(new Valid(entry.setting(), entry.value(), null));
+            recordWithSettings.upsert(new Valid(entry));
         }
 
         IndexSettingRecords records = recordWithSettings.toIndexSettingRecords();
@@ -158,7 +156,7 @@ public class DefaultIndexSettingsValidator implements IndexSettingsValidator {
         }
 
         for (IndexSettingEntry entry : implicitSettings) {
-            validRecords.add(new Valid(entry.setting(), entry.value(), null));
+            validRecords.add(new Valid(entry));
         }
 
         return validRecords;
@@ -167,18 +165,5 @@ public class DefaultIndexSettingsValidator implements IndexSettingsValidator {
     @Override
     public Set<IndexSetting> acceptedSettings() {
         return extractors.settings();
-    }
-
-    public record IndexSettingEntry(IndexSetting setting, Object value)
-            implements ImmutableMapEntry<IndexSetting, Object>, HasSetting {
-        @Override
-        public IndexSetting getKey() {
-            return setting;
-        }
-
-        @Override
-        public Object getValue() {
-            return value;
-        }
     }
 }

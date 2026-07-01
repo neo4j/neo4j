@@ -99,6 +99,10 @@ public sealed interface IndexSettingRecord extends NamedSetting, Comparable<Inde
             this(hasValue.setting(), hasValue.value(), storable);
         }
 
+        public Valid(IndexSettingEntry entry) {
+            this(entry, entry.value(), entry.storable());
+        }
+
         public Valid(HasSetting hasSetting, Object value, Value storable) {
             this(hasSetting.setting(), value, storable);
         }

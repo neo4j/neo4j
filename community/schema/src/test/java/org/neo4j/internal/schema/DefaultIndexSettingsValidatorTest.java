@@ -37,7 +37,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.graphdb.schema.IndexSetting;
-import org.neo4j.internal.schema.DefaultIndexSettingsValidator.IndexSettingEntry;
 import org.neo4j.internal.schema.IndexSettingExtractors.BooleanExtractor;
 import org.neo4j.internal.schema.IndexSettingExtractors.IntegerExtractor;
 import org.neo4j.internal.schema.IndexSettingExtractors.StringExtractor;

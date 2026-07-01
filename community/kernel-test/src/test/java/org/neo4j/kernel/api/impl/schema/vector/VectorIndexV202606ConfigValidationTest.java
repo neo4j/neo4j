@@ -492,6 +492,99 @@ class VectorIndexV202606ConfigValidationTest {
     }
 
     @Test
+    void validDefaultQuantization() {
+        final VectorQuantizationType defaultQuantizationType = VectorQuantizationType.SCALAR;
+        SettingsAccessor settings = VectorIndexSettings.create().toSettingsAccessor();
+
+        IndexSettingRecordsByState validationRecords = validateAsValid(VALIDATOR, settings);
+        VectorIndexConfig vectorIndexConfig = VALIDATOR.validateToTypedConfig(validationRecords);
+        assertThat(vectorIndexConfig)
+                .extracting(
+                        VectorIndexConfig::quantizationEnabled,
+                        config -> config.get(QUANTIZATION_ENABLED),
+                        config -> config.getValue(QUANTIZATION_ENABLED))
+                .containsExactly(true, null, Values.NO_VALUE);
+
+        assertVectorIndexConfigSetting(
+                vectorIndexConfig,
+                QUANTIZATION_TYPE,
+                VectorIndexConfig::quantization,
+                defaultQuantizationType,
+                Values.utf8Value(defaultQuantizationType.name()));
+    }
+
+    @Test
+    void validQuantizationEnabledFalseNoQuantizationType() {
+        final VectorQuantizationType defaultQuantizationType = VectorQuantizationType.NONE;
+        SettingsAccessor settings =
+                VectorIndexSettings.create().withQuantizationDisabled().toSettingsAccessor();
+
+        IndexSettingRecordsByState validationRecords = validateAsValid(VALIDATOR, settings);
+        VectorIndexConfig vectorIndexConfig = VALIDATOR.validateToTypedConfig(validationRecords);
+        assertThat(vectorIndexConfig)
+                .extracting(
+                        VectorIndexConfig::quantizationEnabled,
+                        config -> config.get(QUANTIZATION_ENABLED),
+                        config -> config.getValue(QUANTIZATION_ENABLED))
+                .containsExactly(false, null, Values.NO_VALUE);
+
+        assertVectorIndexConfigSetting(
+                vectorIndexConfig,
+                QUANTIZATION_TYPE,
+                VectorIndexConfig::quantization,
+                defaultQuantizationType,
+                Values.utf8Value(defaultQuantizationType.name()));
+    }
+
+    @Test
+    void validQuantizationEnabledTrueNoQuantizationType() {
+        final VectorQuantizationType defaultQuantizationType = VectorQuantizationType.SCALAR;
+        SettingsAccessor settings =
+                VectorIndexSettings.create().withQuantizationEnabled().toSettingsAccessor();
+
+        IndexSettingRecordsByState validationRecords = validateAsValid(VALIDATOR, settings);
+        VectorIndexConfig vectorIndexConfig = VALIDATOR.validateToTypedConfig(validationRecords);
+        assertThat(vectorIndexConfig)
+                .extracting(
+                        VectorIndexConfig::quantizationEnabled,
+                        config -> config.get(QUANTIZATION_ENABLED),
+                        config -> config.getValue(QUANTIZATION_ENABLED))
+                .containsExactly(true, null, Values.NO_VALUE);
+
+        assertVectorIndexConfigSetting(
+                vectorIndexConfig,
+                QUANTIZATION_TYPE,
+                VectorIndexConfig::quantization,
+                defaultQuantizationType,
+                Values.utf8Value(defaultQuantizationType.name()));
+    }
+
+    @Test
+    void validQuantizationEnabledFalseForQuantizationType() {
+        final VectorQuantizationType quantizationType = VectorQuantizationType.NONE;
+        SettingsAccessor settings = VectorIndexSettings.create()
+                .withQuantizationDisabled()
+                .withQuantizationType(quantizationType)
+                .toSettingsAccessor();
+
+        IndexSettingRecordsByState validationRecords = validateAsValid(VALIDATOR, settings);
+        VectorIndexConfig vectorIndexConfig = VALIDATOR.validateToTypedConfig(validationRecords);
+        assertThat(vectorIndexConfig)
+                .extracting(
+                        VectorIndexConfig::quantizationEnabled,
+                        config -> config.get(QUANTIZATION_ENABLED),
+                        config -> config.getValue(QUANTIZATION_ENABLED))
+                .containsExactly(false, null, Values.NO_VALUE);
+
+        assertVectorIndexConfigSetting(
+                vectorIndexConfig,
+                QUANTIZATION_TYPE,
+                VectorIndexConfig::quantization,
+                quantizationType,
+                Values.utf8Value(quantizationType.name()));
+    }
+
+    @Test
     void validQuantizationEnabledTrueForQuantizationType() {
         final VectorQuantizationType quantizationType = VectorQuantizationType.SCALAR;
         SettingsAccessor settings = VectorIndexSettings.create()
@@ -506,7 +599,7 @@ class VectorIndexV202606ConfigValidationTest {
                         VectorIndexConfig::quantizationEnabled,
                         config -> config.get(QUANTIZATION_ENABLED),
                         config -> config.getValue(QUANTIZATION_ENABLED))
-                .containsExactly(true, Optional.empty(), Values.NO_VALUE);
+                .containsExactly(true, null, Values.NO_VALUE);
 
         assertVectorIndexConfigSetting(
                 vectorIndexConfig,
