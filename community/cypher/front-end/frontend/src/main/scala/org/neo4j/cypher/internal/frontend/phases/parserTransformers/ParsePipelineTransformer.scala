@@ -51,13 +51,15 @@ case object ParsePipelineTransformer extends StepSequencer.Step {
     UnresolveShadowedFunctions,
     ProcedureRelocator,
     ExtractLocalDefinitions,
-    ResolveCallables,
-    ObfuscationMetadataCollection
+    ResolveCallables
   )
 
   /**
-   * Steps that run after the obfuscator is wired up. Failures here carry the query text into
-   * the debug log via ExecutingQuery.onObfuscatorReady having been called at the boundary.
+   * Semantic analysis, semantics-dependent rewriting, and obfuscation metadata collection. These
+   * run before the obfuscator is wired onto the ExecutingQuery (it is wired only once this whole
+   * group has completed), so a failure here — e.g. a semantic error — leaves the query text
+   * withheld from the debug log under obfuscation. ObfuscationMetadataCollection runs here so the
+   * collected metadata reflects the fully-resolved, semantically-analysed statement.
    */
   private val postObfuscatorSet: Set[StepSequencer.Step & ParsePipelineTransformerFactory] = Set(
     ScopeSurveyor,
@@ -69,7 +71,8 @@ case object ParsePipelineTransformer extends StepSequencer.Step {
     ProcedureWarnings,
     IsolateSubqueriesInMutatingPatterns,
     ReplacePatternComprehensionWithCollectSubqueryRewriter,
-    ExpandClauses
+    ExpandClauses,
+    ObfuscationMetadataCollection
   )
 
   val AccumulatedSteps(preObfuscatorSteps, preObfuscatorPostConditions) =

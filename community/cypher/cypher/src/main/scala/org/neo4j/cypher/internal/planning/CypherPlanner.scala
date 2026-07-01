@@ -473,11 +473,13 @@ final class TransformingPlanner private[planning] (
         shadowedFunctions = shadowedFunctions
       )
 
-      val obfuscator = CypherQueryObfuscator(preState.maybeObfuscationMetadata.getOrElse(ObfuscationMetadata.empty()))
+      val postState = parsing.parseQueryPostObfuscator(preState, context, parsingConfig, params)
+
+      val obfuscator = CypherQueryObfuscator(postState.maybeObfuscationMetadata.getOrElse(ObfuscationMetadata.empty()))
       transactionalContextWrapper.kernelTransactionalContext.executingQuery
         .onObfuscatorReady(obfuscator, offset.offset)
 
-      parsing.parseQueryPostObfuscator(preState, context, parsingConfig, params)
+      postState
     }
 
     if (!cacheStrategy.astShouldBeCached) {

@@ -94,10 +94,9 @@ class CypherParsing(
   }
 
   /**
-   * Run the pre-obfuscator portion of the parse pipeline. Returns a [[BaseState]]
-   * with [[BaseState.maybeObfuscationMetadata]] populated. Callers that want the obfuscator
-   * wired onto the [[org.neo4j.kernel.api.query.ExecutingQuery]] before later parse steps
-   * can throw should call this, perform the side-effect, and then call [[parseQueryPostObfuscator]].
+   * Run the pre-obfuscator portion of the parse pipeline. Obfuscation metadata is collected in the
+   * post portion, so the obfuscator should be wired from the state returned by
+   * [[parseQueryPostObfuscator]] once the whole pipeline has succeeded, not from this one.
    */
   def parseQueryPreObfuscator(
     queryText: String,
@@ -148,11 +147,11 @@ class CypherParsing(
       .transform(preState, context)
 
   /**
-   * Java-friendly variant of [[parseQuery]] that invokes `onObfuscatorReady` with the
-   * collected [[ObfuscationMetadata]] between the pre- and post-obfuscator halves. Lets
-   * callers wire the obfuscator onto an [[org.neo4j.kernel.api.query.ExecutingQuery]]
-   * (or any other consumer) before later parse steps can throw, so that failures
-   * during the post-half carry the query text into the debug/query log.
+   * Java-friendly variant of [[parseQuery]] that invokes `onObfuscatorReady` with the collected
+   * [[ObfuscationMetadata]] only after the whole parse pipeline (including semantic analysis) has
+   * succeeded. Lets callers wire the obfuscator onto an [[org.neo4j.kernel.api.query.ExecutingQuery]]
+   * (or any other consumer); if parsing or semantic analysis throws, the obfuscator is never wired,
+   * so the query text is withheld from the debug/query log under obfuscation.
    */
   def parseQueryWithObfuscatorCallback(
     queryText: String,
@@ -185,8 +184,9 @@ class CypherParsing(
       isScopeQuery,
       shadowedFunctions
     )
-    onObfuscatorReady.accept(preState.maybeObfuscationMetadata.getOrElse(ObfuscationMetadata.empty()))
-    parseQueryPostObfuscator(preState, context, parsingConfig, params)
+    val postState = parseQueryPostObfuscator(preState, context, parsingConfig, params)
+    onObfuscatorReady.accept(postState.maybeObfuscationMetadata.getOrElse(ObfuscationMetadata.empty()))
+    postState
   }
 
   private def prepareParsingContext(
