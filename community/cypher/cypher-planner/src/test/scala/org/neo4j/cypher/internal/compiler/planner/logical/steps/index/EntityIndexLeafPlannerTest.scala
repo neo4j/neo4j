@@ -260,7 +260,7 @@ class EntityIndexLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlan
         )
         implicitPredicates.size should be(2)
         implicitPredicates.foreach(predicate =>
-          predicate.predicate should matchPatternLike {
+          predicate.predicate should matchPattern {
             case IsNotNull(_) => ()
           }
         )

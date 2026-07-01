@@ -119,7 +119,7 @@ class ResolveCallablesTest extends CypherPlannerTestSuite with AstConstructionTe
     val rewrittenTry =
       Try(tryResolveCallables(makeResolver(procSignatureLookup = _ => throw new Exception("not found")), original))
 
-    rewrittenTry should matchPatternLike { case Success(`original`) => }
+    rewrittenTry should matchPattern { case Success(`original`) => }
   }
 
   test("TryResolveCallables should return original for unresolved functions") {

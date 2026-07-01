@@ -30,7 +30,7 @@ class ApplyPlanningIntegrationTest extends CypherPlannerTestSuite with LogicalPl
   test("does not use Apply for aggregation and order by") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (n) RETURN DISTINCT n.name")
-    no(plan.flatten(CancellationChecker.neverCancelled())) should matchPatternLike {
+    no(plan.flatten(CancellationChecker.neverCancelled())) should matchPattern {
       case _: Apply =>
     }
   }

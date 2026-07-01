@@ -96,7 +96,7 @@ class SelectHasLabelWithJoinTest extends CypherPlannerTestSuite with LogicalPlan
 
     inside(plan._1) {
       case Selection(Ands(exprs), ProcedureCall(Argument(_), _)) =>
-        exprs.toList should matchPatternLike {
+        exprs.toList should matchPattern {
           case List(HasLabels(_, _)) => ()
         }
     }

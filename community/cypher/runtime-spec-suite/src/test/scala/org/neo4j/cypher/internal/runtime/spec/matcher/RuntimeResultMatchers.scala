@@ -94,7 +94,7 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
   }
 
   def matching(func: PartialFunction[Any, _]): RowsMatcher = {
-    CustomRowsMatcher(matchPatternLike(func))
+    CustomRowsMatcher(matchPattern(func))
   }
 
   def groupedBy(columns: String*): RowOrderMatcher = new GroupBy(None, None, columns: _*)

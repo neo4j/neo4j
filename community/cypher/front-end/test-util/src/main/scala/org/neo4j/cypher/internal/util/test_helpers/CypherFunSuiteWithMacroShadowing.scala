@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadow
 import org.scalatest.Assertion
 import org.scalatest.matchers.BeMatcher
 import org.scalatest.matchers.MatchResult
-import org.scalatest.matchers.Matcher
 import org.scalatest.matchers.TypeMatcherHelper
 import org.scalatest.matchers.dsl.BeWord
 import org.scalatest.matchers.dsl.ResultOfBeWordForAType
@@ -47,9 +46,6 @@ trait CypherFunSuiteWithMacroShadowing extends CypherFunSuite {
 
   @nowarn
   protected def an[A: ClassTag](implicit d: DummyImplicit): ATypeMatcher[A] = ATypeMatcher[A]()
-
-  // couldn't find a way to shadow `val matchPattern`
-  def matchPatternLike(pf: PartialFunction[Any, ?]): Matcher[Any] = matchPattern.apply(pf)
 
   implicit final protected def `Disable ScalaTest Position macro`: org.scalactic.source.Position =
     defaultPosition
