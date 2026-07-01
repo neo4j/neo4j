@@ -164,9 +164,9 @@
     <opencypher.version>1.0.0-M23</opencypher.version>
     <caffeine.version>3.1.8</caffeine.version>
     <required.maven.version>3.8.2</required.maven.version>
-    <jackson.version>2.21.1</jackson.version>
-    <jackson-databind.version>2.21.1</jackson-databind.version>
-    <jackson.annotation.version>2.21</jackson.annotation.version>
+    <jackson.version>2.22.0</jackson.version>
+    <jackson-databind.version>2.22.0</jackson-databind.version>
+    <jackson.annotation.version>2.22</jackson.annotation.version>
     <amazon-sdk.version>1.12.772</amazon-sdk.version>
     <awssdk.version>2.31.20</awssdk.version>
     <guava.version>33.3.1-jre</guava.version>
