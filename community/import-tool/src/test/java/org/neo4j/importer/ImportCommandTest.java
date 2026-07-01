@@ -70,7 +70,7 @@ class ImportCommandTest {
     @Test
     void readBufferSizeDefaultShouldBeSet() {
         // We want "--help" to print the default value that is applied when we don't use
-        // "--super-fast", for now. This will have to be changed later.
+        // "--skidbladnir", for now. This will have to be changed later.
         final var command = new ImportCommand.Full(getExecutionContext());
         final var help = getUsageHelp(command);
         Object readBufferSizeDefault =

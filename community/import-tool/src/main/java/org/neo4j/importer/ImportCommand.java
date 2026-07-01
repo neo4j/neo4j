@@ -189,14 +189,14 @@ public class ImportCommand {
         private boolean dryRun;
 
         @Option(
-                names = "--super-fast",
+                names = "--skidbladnir",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
                 fallbackValue = "true",
                 description = "Zzzing",
                 hidden = true)
-        private boolean superFast;
+        private boolean skidbladnir;
 
         @Option(
                 names = "--schema",
@@ -699,7 +699,7 @@ public class ImportCommand {
                     } else {
                         try (var ignore = maybeLockChecker().maybeCheckLock(databaseLayout)) {
                             importContext.preamble(ctx.out());
-                            importer.doImport(this, superFast);
+                            importer.doImport(this, skidbladnir);
                             postImport(fileSystem, databaseConfig, importContext, databaseLayout);
                         }
                     }
@@ -813,7 +813,7 @@ public class ImportCommand {
                 Monitor monitor)
                 throws IOException;
 
-        protected abstract void doSuperFastImport(
+        protected abstract void doSkidbladnirImport(
                 FileSystemAbstraction fileSystem,
                 DatabaseLayout databaseLayout,
                 boolean force,
@@ -976,9 +976,9 @@ public class ImportCommand {
 
             if (bufferSize == DEFAULT_CSV_CONFIG.bufferSize()) {
                 // Use default value
-                if (superFast) {
+                if (skidbladnir) {
                     builder.withBufferSize(
-                            org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SUPER_FAST);
+                            org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR);
                 } else {
                     builder.withBufferSize(DEFAULT_CSV_CONFIG.bufferSize());
                 }
@@ -1056,7 +1056,7 @@ public class ImportCommand {
 
                 @Override
                 public int intermediaryBufferSize() {
-                    if (superFast) {
+                    if (skidbladnir) {
                         return (int) ByteUnit.mebiBytes(1);
                     }
                     return super.intermediaryBufferSize();
@@ -1286,7 +1286,7 @@ public class ImportCommand {
         }
 
         @Override
-        protected void doSuperFastImport(
+        protected void doSkidbladnirImport(
                 FileSystemAbstraction fileSystem,
                 DatabaseLayout databaseLayout,
                 boolean force,
@@ -1335,7 +1335,7 @@ public class ImportCommand {
                             shardingArguments == null ? null : shardingArguments.additionalArguments,
                             DatabaseCreationOptions.EMPTY_CREATION_OPTIONS,
                             HardwareValidation.WARNING)
-                    .doSuperFastImport(input, encoding, nodeFileGroupsByAdditionalLabels);
+                    .doSkidbladnirImport(input, encoding, nodeFileGroupsByAdditionalLabels);
         }
 
         @Override

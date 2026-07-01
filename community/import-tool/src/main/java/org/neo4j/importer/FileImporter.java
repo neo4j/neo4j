@@ -221,7 +221,7 @@ public class FileImporter {
         }
     }
 
-    public void doImport(ImportCommand.Base type, boolean superFast) throws IOException {
+    public void doImport(ImportCommand.Base type, boolean skidbladnir) throws IOException {
         if (force) {
             fileSystem.deleteRecursively(
                     databaseLayout.databaseDirectory(), path -> !path.equals(databaseLayout.databaseLockFile()));
@@ -230,7 +230,7 @@ public class FileImporter {
 
         try (var badCollector = getBadCollector();
                 var input = importInput()) {
-            doImport(input, badCollector, type, superFast);
+            doImport(input, badCollector, type, skidbladnir);
         }
     }
 
@@ -282,7 +282,7 @@ public class FileImporter {
         };
     }
 
-    private void doImport(Input input, Collector badCollector, ImportCommand.Base type, boolean superFast) {
+    private void doImport(Input input, Collector badCollector, ImportCommand.Base type, boolean skidbladnir) {
         boolean success = false;
 
         printOverview(false);
@@ -302,8 +302,8 @@ public class FileImporter {
                     new SimpleLogService(logProvider),
                     pageCacheTracer,
                     contextFactory);
-            if (superFast) {
-                type.doSuperFastImport(
+            if (skidbladnir) {
+                type.doSkidbladnirImport(
                         fileSystem,
                         databaseLayout,
                         force,

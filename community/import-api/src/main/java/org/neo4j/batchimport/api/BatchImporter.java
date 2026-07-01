@@ -48,10 +48,10 @@ public interface BatchImporter extends Closeable {
 
     void doImport(Input input) throws IOException;
 
-    default void doSuperFastImport(
+    default void doSkidbladnirImport(
             Input input, Charset encoding, Map<Set<String>, List<FileGroup>> nodeFileGroupsByAdditionalLabels)
             throws IOException {
-        throw new UnsupportedOperationException("Super-fast import is not supported like this.");
+        throw new UnsupportedOperationException("Skidbladnir import is not supported like this.");
     }
 
     @Override
