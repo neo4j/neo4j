@@ -93,6 +93,7 @@ public class SignpostStack {
         this.dgLength = dgLength;
         this.nodeSourceSignpostIndices.add(-1);
         this.dgLengthToTarget = 0;
+        this.signpostTracking.onInitialized(this);
     }
 
     /**

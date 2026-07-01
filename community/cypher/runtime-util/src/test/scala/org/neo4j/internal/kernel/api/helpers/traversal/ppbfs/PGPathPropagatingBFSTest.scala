@@ -1736,6 +1736,41 @@ class PGPathPropagatingBFSTest extends CypherFunSuite with PGPathPropagatingBFST
       .assertExpected()
   }
 
+  test("acyclic filters paths where an intermediate node revisits the target") {
+    // Exactly mirrors GitHub #13834: MATCH p = SHORTEST 1 ACYCLIC ()-->()-->()-->() RETURN p
+    // Graph: a->b, b->c, c->b — every 3-hop walk from a revisits b, so none should be acyclic.
+    val threeFixedHops: Nfa = nfa("(s) ()-->()-->()-->() (t)") { sb =>
+      val s = sb.newState("s", isStartState = true)
+      val x = sb.newState("x")
+      val y = sb.newState("y")
+      val z = sb.newState("z")
+      val t = sb.newState("t", isFinalState = true)
+
+      s.addNodeJuxtaposition(x)
+      x.addRelationshipExpansion(y)
+      y.addRelationshipExpansion(z)
+      z.addRelationshipExpansion(t)
+    }
+
+    val g = InMemoryGraph.builder
+    val a = g.node()
+    val b = g.node()
+    val c = g.node()
+    g.rel(a, b)
+    g.rel(b, c)
+    g.rel(c, b)
+    val graph = g.build()
+
+    val paths = fixture()
+      .withGraph(graph)
+      .from(a)
+      .withNfa(threeFixedHops)
+      .withPathMode(TraversalPathMode.Acyclic)
+      .paths()
+
+    paths shouldBe empty
+  }
+
   test("acyclic undirected 3-node chain — source n1") {
     val graph = `(n1)-->(n2)-->(n3)`
     fixture()

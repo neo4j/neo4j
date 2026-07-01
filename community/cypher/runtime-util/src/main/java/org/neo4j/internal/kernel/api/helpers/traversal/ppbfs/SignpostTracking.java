@@ -32,6 +32,11 @@ public interface SignpostTracking {
 
     void onPopped(TwoWaySignpost signpost, SignpostStack stack);
 
+    /** Called once the stack's target node has been set, before any signposts are pushed. */
+    default void onInitialized(SignpostStack stack) {
+        // do nothing
+    }
+
     boolean validate(SignpostStack stack);
 
     void clear();
@@ -199,6 +204,11 @@ public interface SignpostTracking {
         }
 
         @Override
+        public void onInitialized(SignpostStack stack) {
+            nodePresence.add(stack.target().id(), 0);
+        }
+
+        @Override
         public boolean canAbandonTraceBranch(SignpostStack stack) {
             var head = stack.headSignpost();
             if (!(head instanceof TwoWaySignpost.RelSignpost)) return false;
@@ -247,6 +257,8 @@ public interface SignpostTracking {
 
         @Override
         public boolean validate(SignpostStack stack) {
+            long targetId = stack.target().id();
+            boolean valid = true;
             int sourceLength = 0;
             for (int i = stack.size() - 1; i >= 0; i--) {
                 TwoWaySignpost signpost = stack.signpost(i);
@@ -258,6 +270,21 @@ public interface SignpostTracking {
                         hooks.invalid(stack);
                         return false;
                     }
+
+                    // Position 1 (i == 0) sits directly against the target and, for quantified
+                    // patterns, may be a state-only signpost (no relationship consumed) whose
+                    // prevNode is the target itself — that's the accepting-state transition into
+                    // the target, not a revisit. Any other position sharing the target's id, or a
+                    // genuine relationship signpost at position 1 (e.g. a self-loop), IS a revisit
+                    // of the target and must be rejected. Keep bookkeeping for the rest of the
+                    // stack going (matching the loop's normal per-signpost side effects below)
+                    // rather than returning immediately, since other in-flight traces rely on the
+                    // validated-length bookkeeping this loop produces for shared signposts/nodes.
+                    boolean isRealStep = signpost instanceof TwoWaySignpost.RelSignpost;
+                    if (signpost.prevNode.id() == targetId && (i > 0 || isRealStep)) {
+                        hooks.invalid(stack);
+                        valid = false;
+                    }
                 }
 
                 if (!signpost.isValidatedAtLength(sourceLength)) {
@@ -267,7 +294,7 @@ public interface SignpostTracking {
                     }
                 }
             }
-            return true;
+            return valid;
         }
 
         @Override
