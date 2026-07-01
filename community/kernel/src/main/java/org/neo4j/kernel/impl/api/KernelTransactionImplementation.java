@@ -29,6 +29,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_m
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
+import static org.neo4j.io.pagecache.context.CursorContext.INITIALIZATION_SENTINEL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.api.TransactionIdSequence.TRANSACTION_SEQUENCE_INITIAL_VALUE;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
@@ -684,7 +686,7 @@ public class KernelTransactionImplementation
         assert transactionMemoryPool.usedHeap() == 0;
         assert transactionMemoryPool.usedNative() == 0;
         assert !failedCleanup : "This transaction should not be reused since it did not close properly";
-        CURSOR_CONTEXT_HANDLE.setRelease(this, contextFactory.create(TRANSACTION_TAG));
+        initializeCursorContext();
         this.transactionalCursors.reset(cursorContext);
         this.accessCapability = accessCapabilityFactory.newAccessCapability(readOnlyDatabaseChecker);
         this.monitor = KernelTransaction.NO_MONITOR;
@@ -726,6 +728,16 @@ public class KernelTransactionImplementation
         this.closing = false;
         this.closed = false;
         return this;
+    }
+
+    private void initializeCursorContext() {
+        CURSOR_CONTEXT_HANDLE.setRelease(this, INITIALIZATION_SENTINEL_CONTEXT);
+        try {
+            CURSOR_CONTEXT_HANDLE.setRelease(this, contextFactory.create(TRANSACTION_TAG));
+        } catch (Throwable t) {
+            CURSOR_CONTEXT_HANDLE.setRelease(this, NULL_CONTEXT);
+            throw t;
+        }
     }
 
     private ExecutionContextFactory createExecutionContextFactory(

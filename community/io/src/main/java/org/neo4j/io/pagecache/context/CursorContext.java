@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class CursorContext implements AutoCloseable {
     public static final CursorContext NULL_CONTEXT = new NullCursorContext();
+    public static final CursorContext INITIALIZATION_SENTINEL_CONTEXT = new InitializationCursorContext();
 
     private final PageCursorTracer cursorTracer;
     private final VersionContext versionContext;
@@ -109,6 +110,17 @@ public class CursorContext implements AutoCloseable {
         @Override
         public String toString() {
             return "!!!THIS IS THE NULL CURSOR CONTEXT!!!";
+        }
+    }
+
+    private static class InitializationCursorContext extends CursorContext {
+        private InitializationCursorContext() {
+            super(NULL_CONTEXT_FACTORY, PageCursorTracer.NULL, EMPTY_VERSION_CONTEXT);
+        }
+
+        @Override
+        public String toString() {
+            return "CONTEXT IS INITIALIZING... PLEASE COME BACK SOON";
         }
     }
 }

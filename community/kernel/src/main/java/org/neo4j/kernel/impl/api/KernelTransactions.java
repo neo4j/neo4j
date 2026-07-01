@@ -59,6 +59,7 @@ import org.neo4j.internal.kernel.api.security.DatabaseAccessMode;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -604,7 +605,15 @@ public class KernelTransactions extends LifecycleAdapter
     }
 
     TransactionMonitoringRecord createMonitoringRecord(KernelTransactionImplementation tx) {
-        return new TransactionMonitoringRecord(tx, tx.concurrentCursorContextLookup());
+        return new TransactionMonitoringRecord(tx, lookupInitializedContext(tx));
+    }
+
+    private static CursorContext lookupInitializedContext(KernelTransactionImplementation tx) {
+        CursorContext cursorContext;
+        do {
+            cursorContext = tx.concurrentCursorContextLookup();
+        } while (cursorContext == CursorContext.INITIALIZATION_SENTINEL_CONTEXT);
+        return cursorContext;
     }
 
     private void assertRunning() {

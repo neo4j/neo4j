@@ -32,13 +32,8 @@ public class TransactionMonitoringRecord {
     public TransactionMonitoringRecord(KernelTransactionImplementation tx, CursorContext cursorContext) {
         this.tx = tx;
         VersionContext versionContext = cursorContext.getVersionContext();
-        if (CursorContext.NULL_CONTEXT != versionContext) {
-            this.highestGapFreeTxId = versionContext.highestGapFree();
-            this.transactionHorizon = transactionHorizon(versionContext);
-        } else {
-            this.highestGapFreeTxId = Long.MIN_VALUE;
-            this.transactionHorizon = Long.MAX_VALUE;
-        }
+        this.highestGapFreeTxId = versionContext.highestGapFree();
+        this.transactionHorizon = transactionHorizon(versionContext);
     }
 
     private static long transactionHorizon(VersionContext versionContext) {
