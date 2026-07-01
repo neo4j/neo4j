@@ -16,21 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
-import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
-import org.neo4j.cypher.internal.util.test_helpers.TestName
-import org.scalactic.anyvals.PosInt
-import org.scalatest.Args
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.Status
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-trait CypherParserTestSuite extends CypherFunSuiteWithMacroShadowing
-    with CypherScalaCheckDrivenPropertyChecks
-    with TestName
-    with BeforeAndAfterEach {
-
-  def minSuccessful(n: Int): PropertyCheckConfigParam = MinSuccessful(PosInt.ensuringValid(n))
-
-  override protected def runTest(testName: String, args: Args): Status = super.runTest(testName, args)
-
-}
+trait CypherParserTestSuite extends CypherFunSuite

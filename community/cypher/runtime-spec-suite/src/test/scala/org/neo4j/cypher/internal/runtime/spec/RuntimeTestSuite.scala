@@ -74,7 +74,6 @@ import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.DurationValue
 import org.neo4j.values.storable.PointValue
 import org.neo4j.values.storable.Value
-import org.scalactic.source.Position
 import org.scalatest.Args
 import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfterAll
@@ -535,9 +534,6 @@ abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](
     with BeforeAndAfterAll {
 
   def shouldSetup: Boolean
-
-  // resolves the conflicting overrides of AnyFunSuiteLike and BeforeAndAfterAll; can be removed with ScalaTest 3
-  override def run(testName: Option[String], args: Args): Status = super.run(testName, args)
 
   override protected def beforeEach(): Unit = {
     if (shouldSetup) {

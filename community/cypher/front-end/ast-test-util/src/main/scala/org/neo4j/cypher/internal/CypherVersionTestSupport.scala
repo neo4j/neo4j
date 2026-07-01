@@ -18,9 +18,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
-import org.scalatest.Assertions
-import org.scalatest.funsuite.AnyFunSuiteLike
-import org.scalatest.matchers.should.Matchers
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.util.Random
 
@@ -59,28 +57,15 @@ object CypherVersionHelpers {
 }
 
 trait CypherVersionTestSupport {
-  // CypherFunSuite (2.13) and CypherFunSuite3 both satisfy this while front-end is still on 2.13.
-  self: AnyFunSuiteLike with Assertions with Matchers =>
+  self: CypherFunSuite =>
 
-  // Remove after Scala 3 migration is complete
-  private lazy val scalaTest2TestMethod = this.getClass.getMethods.find(_.getName == "test")
-
-  // Remove after Scala 3 migration is complete
-  private def registerNewTest(testName: String)(f: => Any)(implicit pos: org.scalactic.source.Position): Unit = {
-    scalaTest2TestMethod match {
-      case Some(testMethod) => testMethod.invoke(this, testName, Seq.empty, () => f, pos)
-      case None             => test(testName)(f)
-    }
-  }
-
-  def testVersions(testName: String)(f: CypherVersion => Any)(implicit pos: org.scalactic.source.Position): Unit =
-    registerNewTest(testName) {
+  def testVersions(testName: String)(f: CypherVersion => Any): Unit =
+    test(testName) {
       CypherVersion.values().foreach(v => withClue(s"CYPHER $v\n")(f(v)))
     }
 
-  def testVersionsExcept5(testName: String)(f: CypherVersion => Any)(implicit
-    pos: org.scalactic.source.Position): Unit =
-    registerNewTest(testName) {
+  def testVersionsExcept5(testName: String)(f: CypherVersion => Any): Unit =
+    test(testName) {
       versionsExcept5Iterable.foreach(v =>
         withClue(s"CYPHER $v\n")(f(v))
       )

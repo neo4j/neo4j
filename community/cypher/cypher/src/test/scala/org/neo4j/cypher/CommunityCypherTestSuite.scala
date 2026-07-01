@@ -19,16 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
-import org.scalatest.Args
-import org.scalatest.BeforeAndAfter
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Status
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-trait CommunityCypherTestSuite extends CypherFunSuiteWithMacroShadowing
-    with BeforeAndAfterAll
-    with BeforeAndAfter // these, along with overrides below, can be removed after Scala 3 migration is complete
-    {
-  override protected def runTest(testName: String, args: Args): Status = super.runTest(testName, args)
-  override def run(testName: Option[String], args: Args): Status = super.run(testName, args)
-}
+trait CommunityCypherTestSuite extends CypherFunSuite
