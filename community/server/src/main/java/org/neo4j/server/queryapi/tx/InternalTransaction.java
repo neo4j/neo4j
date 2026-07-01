@@ -17,10 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.response;
+package org.neo4j.server.queryapi.tx;
 
-import org.neo4j.driver.Result;
-import org.neo4j.server.queryapi.tx.Transaction;
+import java.util.concurrent.TimeUnit;
+import org.neo4j.driver.AuthToken;
 
-public record QueryResponseTxManaged(
-        Result result, Transaction transaction, boolean requireSummaryCounters, boolean requiresCommit) {}
+interface InternalTransaction extends Transaction {
+    /**
+     * Release transaction, session and all other state.
+     */
+    void close();
+
+    /**
+     * Lock this transaction
+     */
+    boolean tryAcquire();
+
+    boolean tryAcquire(long timeout, TimeUnit timeUnit);
+
+    void release();
+
+    String databaseName();
+
+    AuthToken authToken();
+}

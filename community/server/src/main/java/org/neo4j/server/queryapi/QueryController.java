@@ -37,6 +37,7 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionConfig;
@@ -106,28 +107,18 @@ public class QueryController {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
         Session session = driver.session(Session.class, sessionConfig, sessionAuthToken);
-        var txCleanUpAction = TxHandling.CLOSE;
-
+        Transaction transaction;
         try {
-            var queryTransaction = transactionManager.begin(
+            transaction = transactionManager.begin(
                     txId, session, sessionAuthToken, databaseName, buildTxConfig(request), request.txType());
-            if (request.statement() != null && !request.statement().isEmpty()) {
-                queryTransaction.runQuery(request.statement(), request.parameters());
-                txCleanUpAction = TxHandling.KEEP_OPEN;
-                return successWithResultResponse(queryTransaction, request.includeCounters(), false);
-            } else {
-                // todo for extra peace of mind, we can release after the writer has done
-                txCleanUpAction = TxHandling.RETURN;
-                return transactionInfoOnlyResponse(queryTransaction);
-            }
         } catch (QueryApiException | Neo4jException queryApiException) {
             throw queryApiException;
         } catch (Exception exception) {
             log.error("Local driver failed to execute query", exception);
             throw exception;
-        } finally {
-            cleanUp(txId, txCleanUpAction);
         }
+
+        return executeStatement(request, transaction, false);
     }
 
     public Response continueTransaction(
@@ -175,21 +166,26 @@ public class QueryController {
             throw new TransactionNotFoundException(txId);
         }
 
+        return executeStatement(request, queryAPITransaction, requiresCommit);
+    }
+
+    private Response executeStatement(QueryRequest request, Transaction transaction, boolean requiresCommit)
+            throws QueryApiException {
         var txCleanUpAction = TxHandling.CLOSE;
 
         try {
-            if (request.statement() != null) {
-                queryAPITransaction.runQuery(request.statement(), request.parameters());
+            if (request.statement() != null && !request.statement().isEmpty()) {
+                var result = transaction.run(request.statement(), request.parameters());
                 txCleanUpAction = TxHandling.KEEP_OPEN;
-                return successWithResultResponse(queryAPITransaction, request.includeCounters(), requiresCommit);
+                return successWithResultResponse(result, transaction, request.includeCounters(), requiresCommit);
             } else {
                 if (requiresCommit) {
-                    var bookmarks = queryAPITransaction.commit();
+                    var bookmarks = transaction.commit();
                     return bookmarksOnlyResponse(bookmarks);
                 } else {
-                    queryAPITransaction.extendTimeout();
+                    transaction.extendTimeout();
                     txCleanUpAction = TxHandling.RETURN;
-                    return transactionInfoOnlyResponse(queryAPITransaction);
+                    return transactionInfoOnlyResponse(transaction);
                 }
             }
         } catch (Neo4jException neo4jException) {
@@ -198,7 +194,7 @@ public class QueryController {
             log.error("Local driver failed to execute query", exception);
             throw exception;
         } finally {
-            cleanUp(txId, txCleanUpAction);
+            cleanUp(transaction.id(), txCleanUpAction);
         }
     }
 
@@ -271,9 +267,9 @@ public class QueryController {
     }
 
     private static Response successWithResultResponse(
-            Transaction transaction, boolean requireCounters, boolean requiresCommit) {
+            Result result, Transaction transaction, boolean requireCounters, boolean requiresCommit) {
         return Response.accepted()
-                .entity(new QueryResponseTxManaged(transaction, requireCounters, requiresCommit))
+                .entity(new QueryResponseTxManaged(result, transaction, requireCounters, requiresCommit))
                 .build();
     }
 

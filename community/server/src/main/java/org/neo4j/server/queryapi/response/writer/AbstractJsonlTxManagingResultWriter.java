@@ -65,24 +65,22 @@ abstract class AbstractJsonlTxManagingResultWriter implements MessageBodyWriter<
         var jsonGenerator = jsonFactory.createGenerator(entityStream);
         var formatter = new QueryBodyFormatter(jsonGenerator, entityStream);
         try {
-            var result = container.transaction().retrieveResults();
-            var keys = result != null ? result.keys() : null;
+            var keys = container.result().keys();
             success = formatter.jsonl(jsonl -> {
                 jsonl.header(keys);
-                if (result != null) {
-                    while (result.hasNext()) {
-                        jsonl.record(result.next());
-                        entityStream.flush();
-                    }
+                while (container.result().hasNext()) {
+                    jsonl.record(container.result().next());
+                    entityStream.flush();
                 }
+
+                var summary = container.result().consume();
                 if (container.requiresCommit()) {
                     var bookmarks = container.transaction().commit();
-                    jsonl.summary(
-                            container.transaction().resultSummary(), bookmarks, container.requireSummaryCounters());
+                    jsonl.summary(summary, bookmarks, container.requireSummaryCounters());
                 } else {
                     container.transaction().extendTimeout();
                     jsonl.summary(
-                            container.transaction().resultSummary(),
+                            summary,
                             null,
                             container.transaction().id(),
                             container.transaction().expiresAt(),

@@ -22,17 +22,12 @@ package org.neo4j.server.queryapi.tx;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.summary.ResultSummary;
 
 public interface Transaction {
 
-    void runQuery(String statement, Map<String, Object> parameters);
-
-    Result retrieveResults();
+    Result run(String statement, Map<String, Object> parameters);
 
     Set<Bookmark> commit();
 
@@ -40,29 +35,9 @@ public interface Transaction {
 
     boolean isOpen();
 
-    /**
-     * Release transaction, session and all other state.
-     */
-    void close();
-
-    /**
-     * Lock this transaction
-     */
-    boolean tryAcquire();
-
-    boolean tryAcquire(long timeout, TimeUnit timeUnit);
-
-    void release();
-
     Instant expiresAt();
-
-    String id();
 
     void extendTimeout();
 
-    ResultSummary resultSummary();
-
-    String databaseName();
-
-    AuthToken authToken();
+    String id();
 }

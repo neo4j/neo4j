@@ -74,20 +74,16 @@ abstract class AbstractTxManagingResultWriter implements MessageBodyWriter<Query
         var formatter = new QueryBodyFormatter(jsonGenerator, outputStream);
         try {
             success = formatter.json((singleBodyFormatter) -> {
-                singleBodyFormatter.data(result.transaction().retrieveResults());
+                singleBodyFormatter.data(result.result());
 
+                var summary = result.result().consume();
                 if (result.requiresCommit()) {
                     var bookmarks = result.transaction().commit();
-                    singleBodyFormatter.metadata(
-                            result.transaction().resultSummary(),
-                            bookmarks,
-                            null,
-                            null,
-                            result.requireSummaryCounters());
+                    singleBodyFormatter.metadata(summary, bookmarks, null, null, result.requireSummaryCounters());
                 } else {
                     result.transaction().extendTimeout();
                     singleBodyFormatter.metadata(
-                            result.transaction().resultSummary(),
+                            summary,
                             null,
                             result.transaction().id(),
                             result.transaction().expiresAt(),

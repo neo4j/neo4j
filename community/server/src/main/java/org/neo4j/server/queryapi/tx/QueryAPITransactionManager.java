@@ -42,7 +42,7 @@ import org.neo4j.util.VisibleForTesting;
 
 public class QueryAPITransactionManager implements TransactionManager {
 
-    private final Map<String, Transaction> transactions = new ConcurrentHashMap<>();
+    private final Map<String, InternalTransaction> transactions = new ConcurrentHashMap<>();
     private final Duration timeout;
     private final QueryAPIMetricsMonitor monitor;
 
@@ -124,9 +124,7 @@ public class QueryAPITransactionManager implements TransactionManager {
 
         if (tx != null) {
             transactions.remove(txId);
-            if (tx.isOpen()) {
-                tx.close();
-            }
+            tx.close();
             monitor.closeTransaction();
             tx.release();
         }
