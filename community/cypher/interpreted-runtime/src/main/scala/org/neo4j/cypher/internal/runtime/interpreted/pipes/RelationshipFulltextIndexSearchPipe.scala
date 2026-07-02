@@ -29,9 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipFulltextIndexSearchPipe.fulltextSearchCursor
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.operations.CypherFunctions
-import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexReadSession
-import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
@@ -299,17 +297,9 @@ object RelationshipFulltextIndexSearchPipe {
     if (l == 0) {
       RelationshipValueIndexCursor.EMPTY
     } else {
-      val analyzerOrNull = analyzer.map(_.apply(row, state)) match {
-        case Some(value) if value ne NO_VALUE => CypherFunctions.asTextValue(value).stringValue()
-        case _                                => null
-      }
-      var constraints = IndexQueryConstraints.unconstrained().limit(l)
-      skip.foreach(s => constraints = constraints.skip(CypherFunctions.asNonNegativeIntExact(s(row, state))))
-      query.relationshipFulltextIndexSeek(
-        index,
-        constraints,
-        PropertyIndexQuery.fulltextSearch(CypherFunctions.asTextValue(queryString).stringValue(), analyzerOrNull)
-      )
+      val (constraints, predicate) =
+        NodeFulltextIndexSearchPipe.fulltextSearchQuery(queryString, l, analyzer, skip, row, state)
+      query.relationshipFulltextIndexSeek(index, constraints, predicate)
     }
   }
 }

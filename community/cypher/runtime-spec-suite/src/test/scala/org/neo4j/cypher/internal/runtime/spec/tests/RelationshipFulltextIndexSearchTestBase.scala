@@ -37,6 +37,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Values.longValue
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import scala.collection.mutable.ArrayBuffer
 
 abstract class RelationshipFulltextIndexSearchTestBase[CONTEXT <: RuntimeContext](
@@ -477,6 +479,60 @@ abstract class RelationshipFulltextIndexSearchTestBase[CONTEXT <: RuntimeContext
     execute(query(analyzer = Some("'whitespace'")), runtime) should beColumns("r").withNoRows()
   }
 
+  test("should fall back to the default analyzer when the analyzer expression is null") {
+    givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Foo"), "prop")
+      relationshipGraph(1, "Foo").foreach(_.setProperty("prop", "Hello world"))
+    }
+
+    // a null analyzer means "no override": it must behave exactly like analyzer = None and fall back to the index
+    // default analyzer (which lowercases and so matches the capitalized query token), unlike the case-sensitive
+    // 'whitespace' analyzer which would not match
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .relationshipFulltextIndexSearch(
+        "()-[r]->()",
+        typeNames = Seq("Foo"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "'Hello'",
+        limit = "20",
+        analyzer = Some("NULL")
+      )
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("r").withRows(rowCount(1))
+  }
+
+  test("should support a per-argument analyzer expression on the RHS of an Apply") {
+    givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Foo"), "prop")
+      relationshipGraph(1, "Foo").foreach(_.setProperty("prop", "Hello world"))
+    }
+
+    // the analyzer is supplied per input row as an argument: a null argument falls back to the default analyzer
+    // (matching the Foo relationship), while the case-sensitive 'whitespace' analyzer does not match
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .apply()
+      .|.relationshipFulltextIndexSearch(
+        "()-[r]->()",
+        typeNames = Seq("Foo"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "'Hello'",
+        limit = "20",
+        analyzer = Some("analyzerArg"),
+        argumentIds = Set("analyzerArg")
+      )
+      .input(variables = Seq("analyzerArg"))
+      .build()
+
+    // null analyzer -> default analyzer -> 1 match; 'whitespace' -> 0 matches => 1 row total
+    val input = inputValues(Array[Any](null), Array[Any]("whitespace"))
+    execute(logicalQuery, runtime, input) should beColumns("r").withRows(rowCount(1))
+  }
+
   test("should apply the index analyzer's stemming and honor a query-time analyzer override") {
     givenGraph {
       // the english analyzer stems at index time, so "running" is stored as "run"
@@ -563,6 +619,29 @@ abstract class RelationshipFulltextIndexSearchTestBase[CONTEXT <: RuntimeContext
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("r", "score").withNoRows()
+  }
+
+  test("should return empty for a null query string even with a negative limit") {
+    givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Foo"), "prop")
+      relationshipGraph(1, "Foo").foreach(_.setProperty("prop", "the cat sat on the mat"))
+    }
+
+    // a null queryString must short-circuit to empty before the limit is validated, so a negative limit must not
+    // throw — consistent across interpreted, slotted, pipelined and parallel
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .relationshipFulltextIndexSearch(
+        "()-[r]->()",
+        typeNames = Seq("Foo"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "NULL",
+        limit = "-1"
+      )
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("r").withNoRows()
   }
 
   test("should fail if query string has the wrong type") {
@@ -911,5 +990,170 @@ abstract class RelationshipFulltextIndexSearchTestBase[CONTEXT <: RuntimeContext
     // then: union returns every Bar relationship (LHS) plus every matching Foo relationship (RHS)
     val expected = (fooRels ++ barRels).map(r => Array[Any](r))
     execute(logicalQuery, runtime) should beColumns("r").withRows(expected)
+  }
+
+  test("should produce correct row count under LIMIT-above-Apply") {
+    // given: every Foo relationship matches "cat", so each input query matches all `matches` rels
+    val matches = 5
+    givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Foo"), "prop")
+      relationshipGraph(matches, "Foo").foreach(_.setProperty("prop", "the cat sat on the mat"))
+    }
+
+    // when: LIMIT sits above the Apply; the prober counts every row that reaches LIMIT
+    val numInputRows = 50
+    val rowsBelowLimit = new AtomicInteger(0)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .limit(5)
+      .prober(countingProbe(rowsBelowLimit))
+      .apply()
+      .|.relationshipFulltextIndexSearch(
+        "()-[r]->()",
+        typeNames = Seq("Foo"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "queryString",
+        limit = "10000000",
+        argumentIds = Set("queryString")
+      )
+      .input(variables = Seq("queryString"))
+      .build()
+
+    // then
+    val input = inputValues((0 until numInputRows).map(_ => Array[Any]("cat")): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("r").withRows(rowCount(5))
+
+    // LIMIT cancellation propagates upstream across the Apply in every non-Parallel runtime: without it
+    // all numInputRows * matches rows reach LIMIT; with it only the first argument's in-flight rows do.
+    if (runtimeUsed != Parallel) {
+      rowsBelowLimit.get() should be < numInputRows
+    }
+  }
+
+  test("should not emit more rows than limit, when on RHS of Apply (undirected)") {
+    // given: every Foo relationship matches "cat"; an undirected search re-emits each match in both
+    // directions, so a single argument yields many continuations
+    val numValues = 20
+    val perValue = 30
+    val morselSize = 4
+    givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Foo"), "prop")
+      relationshipGraph(perValue, "Foo").foreach(_.setProperty("prop", "the cat sat on the mat"))
+    }
+
+    // when: LIMIT(1) sits directly on the RHS of the Apply, so each argument is cancelled after one row
+    val emissions = new AtomicInteger(0)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .apply()
+      .|.limit(1)
+      .|.prober(countingProbe(emissions))
+      .|.relationshipFulltextIndexSearch(
+        "(a)-[r]-(b)",
+        typeNames = Seq("Foo"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "queryString",
+        limit = "10000000",
+        argumentIds = Set("queryString")
+      )
+      .input(variables = Seq("queryString"))
+      .withMorselSize(morselSize)
+      .build()
+
+    // then
+    val input = inputValues((0 until numValues).map(_ => Array[Any]("cat")): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("r").withRows(rowCount(numValues))
+
+    // A correct operator emits at most one morsel per argument before that argument is cancelled,
+    // even though the undirected re-emit doubles the per-match rows. Parallel limit propagation is racy.
+    if (runtimeUsed != Parallel) {
+      emissions.get() should be <= numValues * morselSize * 2
+    }
+  }
+
+  test("should not corrupt rows under heavy LIMIT cancellation with multi-match continuation (undirected)") {
+    // given: many Foo relationships all matching "cat", each tagged with a unique id so we can verify the identity
+    // of every emitted row; each input query therefore matches a large fraction of them
+    val graphSize = 200
+    givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Foo"), "prop")
+      relationshipGraph(graphSize, "Foo").zipWithIndex.foreach {
+        case (r, i) =>
+          r.setProperty("id", i)
+          r.setProperty("prop", "the cat sat on the mat")
+      }
+    }
+
+    // when: many input rows, each forcing heavy (doubled) continuation, under a LIMIT above the Apply
+    val limit = 5
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("r.id AS id")
+      .limit(limit)
+      .apply()
+      .|.relationshipFulltextIndexSearch(
+        "(a)-[r]-(b)",
+        typeNames = Seq("Foo"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "queryString",
+        limit = "10000000",
+        argumentIds = Set("queryString")
+      )
+      .input(variables = Seq("queryString"))
+      .build()
+
+    // then: the LIMIT must yield exactly `limit` uncorrupted rows — each a real Foo id from the graph. A corrupted
+    // reference (out-of-range id) from morsel reuse during the doubled undirected continuation would fail this.
+    // Ids may legitimately repeat: an undirected match emits the same relationship in both directions.
+    val input = inputValues((0 until graphSize).map(_ => Array[Any]("cat")): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("id").withRows(matching {
+      case rows: Seq[_]
+        if rows.size == limit &&
+          rows.forall {
+            case Array(id: NumberValue) => id.longValue() >= 0 && id.longValue() < graphSize
+            case _                      => false
+          } =>
+    })
+  }
+
+  test("should emit both directions across continuations under small morsels (undirected)") {
+    // given: many matching relationships between distinct node pairs (no self-loops)
+    val size = 50
+    val triples = givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Foo"), "prop")
+      (0 until size).map { _ =>
+        val a = tx.createNode()
+        val b = tx.createNode()
+        val r = a.createRelationshipTo(b, RelationshipType.withName("Foo"))
+        r.setProperty("prop", "the cat sat on the mat")
+        (a, r, b)
+      }
+    }
+
+    // when: a single argument matches every relationship; a small morsel forces continuations, so the
+    // bidirectional re-emit (forward then reverse) must survive morsel boundaries
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "r", "b")
+      .relationshipFulltextIndexSearch(
+        "(a)-[r]-(b)",
+        typeNames = Seq("Foo"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "'cat'",
+        limit = "10000000"
+      )
+      .withMorselSize(4)
+      .build()
+
+    // then: each relationship is emitted once per direction
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = triples.flatMap { case (a, r, b) => Seq(Array[Any](a, r, b), Array[Any](b, r, a)) }
+    runtimeResult should beColumns("a", "r", "b").withRows(expected, listInAnyOrder = true)
   }
 }

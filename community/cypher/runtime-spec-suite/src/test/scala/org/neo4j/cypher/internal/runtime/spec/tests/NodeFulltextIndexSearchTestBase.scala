@@ -34,6 +34,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Values.longValue
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import scala.collection.mutable.ArrayBuffer
 
 abstract class NodeFulltextIndexSearchTestBase[CONTEXT <: RuntimeContext](
@@ -357,6 +359,60 @@ abstract class NodeFulltextIndexSearchTestBase[CONTEXT <: RuntimeContext](
     execute(query(analyzer = Some("'whitespace'")), runtime) should beColumns("n").withNoRows()
   }
 
+  test("should fall back to the default analyzer when the analyzer expression is null") {
+    givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "prop")
+      nodeGraph(1, "Doc").foreach(_.setProperty("prop", "Hello world"))
+    }
+
+    // a null analyzer means "no override": it must behave exactly like analyzer = None and fall back to the index
+    // default analyzer (which lowercases and so matches the capitalized query token), unlike the case-sensitive
+    // 'whitespace' analyzer which would not match
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "'Hello'",
+        limit = "20",
+        analyzer = Some("NULL")
+      )
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("n").withRows(rowCount(1))
+  }
+
+  test("should support a per-argument analyzer expression on the RHS of an Apply") {
+    givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "prop")
+      nodeGraph(1, "Doc").foreach(_.setProperty("prop", "Hello world"))
+    }
+
+    // the analyzer is supplied per input row as an argument: a null argument falls back to the default analyzer
+    // (matching the Doc), while the case-sensitive 'whitespace' analyzer does not match the capitalized token
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "'Hello'",
+        limit = "20",
+        analyzer = Some("analyzerArg"),
+        argumentIds = Set("analyzerArg")
+      )
+      .input(variables = Seq("analyzerArg"))
+      .build()
+
+    // null analyzer -> default analyzer -> 1 match; 'whitespace' -> 0 matches => 1 row total
+    val input = inputValues(Array[Any](null), Array[Any]("whitespace"))
+    execute(logicalQuery, runtime, input) should beColumns("n").withRows(rowCount(1))
+  }
+
   test("should be able to query the index with multiple inputs from a property") {
     givenGraph {
       nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "prop")
@@ -410,6 +466,29 @@ abstract class NodeFulltextIndexSearchTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n", "score").withNoRows()
+  }
+
+  test("should return empty for a null query string even with a negative limit") {
+    givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "prop")
+      nodeGraph(1, "Doc").foreach(_.setProperty("prop", "the cat sat on the mat"))
+    }
+
+    // a null queryString must short-circuit to empty before the limit is validated, so a negative limit must not
+    // throw — consistent across interpreted, slotted, pipelined and parallel
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "NULL",
+        limit = "-1"
+      )
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("n").withNoRows()
   }
 
   test("should fail if query string has the wrong type") {
@@ -774,6 +853,209 @@ abstract class NodeFulltextIndexSearchTestBase[CONTEXT <: RuntimeContext](
     // then: union returns every Bar node (LHS) plus every matching Foo node (RHS)
     val expected = (fooNodes ++ barNodes).map(n => Array[Any](n))
     execute(logicalQuery, runtime) should beColumns("n").withRows(expected)
+  }
+
+  test("should produce correct row count under LIMIT-above-Apply") {
+    // given: every Doc matches "cat", so each input query matches all `matches` docs
+    val matches = 5
+    givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "prop")
+      nodeGraph(matches, "Doc").foreach(_.setProperty("prop", "the cat sat on the mat"))
+    }
+
+    // when: LIMIT sits above the Apply; the prober counts every row that reaches LIMIT
+    val numInputRows = 50
+    val rowsBelowLimit = new AtomicInteger(0)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .limit(5)
+      .prober(countingProbe(rowsBelowLimit))
+      .apply()
+      .|.nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "queryString",
+        limit = "10000000",
+        argumentIds = Set("queryString")
+      )
+      .input(variables = Seq("queryString"))
+      .build()
+
+    // then
+    val input = inputValues((0 until numInputRows).map(_ => Array[Any]("cat")): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("n").withRows(rowCount(5))
+
+    // LIMIT cancellation propagates upstream across the Apply in every non-Parallel runtime: without it
+    // all numInputRows * matches rows reach LIMIT; with it only the first argument's in-flight rows do.
+    if (runtimeUsed != Parallel) {
+      rowsBelowLimit.get() should be < numInputRows
+    }
+  }
+
+  test("should not emit more rows than limit, when on RHS of Apply") {
+    // given: every Doc matches "cat", so a single argument yields many continuations
+    val numValues = 20
+    val perValue = 30
+    val morselSize = 4
+    givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "prop")
+      nodeGraph(perValue, "Doc").foreach(_.setProperty("prop", "the cat sat on the mat"))
+    }
+
+    // when: LIMIT(1) sits directly on the RHS of the Apply, so each argument is cancelled after one row
+    val emissions = new AtomicInteger(0)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.limit(1)
+      .|.prober(countingProbe(emissions))
+      .|.nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "queryString",
+        limit = "10000000",
+        argumentIds = Set("queryString")
+      )
+      .input(variables = Seq("queryString"))
+      .withMorselSize(morselSize)
+      .build()
+
+    // then
+    val input = inputValues((0 until numValues).map(_ => Array[Any]("cat")): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("n").withRows(rowCount(numValues))
+
+    // A correct operator emits at most one morsel per argument before that argument is cancelled.
+    // Parallel limit propagation is racy.
+    if (runtimeUsed != Parallel) {
+      emissions.get() should be <= numValues * morselSize * 2
+    }
+  }
+
+  test("should not corrupt rows under heavy LIMIT cancellation with multi-match continuation") {
+    // given: many Docs all matching "cat", each tagged with a unique id so we can verify the identity of every
+    // emitted row; each input query therefore matches a large fraction of the graph
+    val graphSize = 200
+    givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "prop")
+      nodeGraph(graphSize, "Doc").zipWithIndex.foreach {
+        case (n, i) =>
+          n.setProperty("id", i)
+          n.setProperty("prop", "the cat sat on the mat")
+      }
+    }
+
+    // when: many input rows, each forcing heavy continuation, under a LIMIT above the Apply
+    val limit = 5
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .limit(limit)
+      .apply()
+      .|.nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "queryString",
+        limit = "10000000",
+        argumentIds = Set("queryString")
+      )
+      .input(variables = Seq("queryString"))
+      .build()
+
+    // then: the LIMIT must yield exactly `limit` uncorrupted rows — each a real Doc id from the graph. A corrupted
+    // reference (an out-of-range id) from morsel reuse during continuation would fail this. Ids may legitimately
+    // repeat: every input argument queries "cat" and matches the same Docs, so the LIMIT can take rows from several.
+    val input = inputValues((0 until graphSize).map(_ => Array[Any]("cat")): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("id").withRows(matching {
+      case rows: Seq[_]
+        if rows.size == limit &&
+          rows.forall {
+            case Array(id: NumberValue) => id.longValue() >= 0 && id.longValue() < graphSize
+            case _                      => false
+          } =>
+    })
+  }
+
+  test("should skip cancelled interior arguments on the RHS of a nodeHashJoin") {
+    // given: half the Docs carry an lhsKey that matches their argument value, half carry -1
+    val nValues = 20
+    val nodes = givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "prop")
+      nodeGraph(nValues, "Doc").zipWithIndex.map {
+        case (n, i) =>
+          n.setProperty("prop", "the cat sat on the mat")
+          n.setProperty("lhsKey", if (i % 2 == 0) i else -1)
+          n
+      }
+    }
+
+    // when: the hash-join build side is empty for odd arguments, cancelling the search for those
+    // interior arguments while even arguments (the FulltextIndexSearch probe side) still produce rows.
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.nodeHashJoin("x")
+      .|.|.nodeFulltextIndexSearch(
+        node = "x",
+        labelNames = Seq("Doc"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "'cat'",
+        limit = "10000000"
+      )
+      .|.filter("x.lhsKey = value")
+      .|.allNodeScan("x", "value")
+      .input(variables = Seq("value"))
+      .build()
+
+    // then: one row per even-indexed node; odd arguments are cancelled and contribute nothing
+    val input = inputValues((0 until nValues).map(v => Array[Any](v)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    val expected = nodes.zipWithIndex.collect { case (n, i) if i % 2 == 0 => Array[Any](n) }
+    runtimeResult should beColumns("x").withRows(expected, listInAnyOrder = true)
+  }
+
+  test("should handle multiple matches per input argument under small morsels") {
+    // given: a single query matches many Docs, forcing several continuations at a small morsel size
+    val matches = 50
+    val nodes = givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "prop")
+      nodeGraph(matches, "Doc").map { n =>
+        n.setProperty("prop", "the cat sat on the mat")
+        n
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("prop"),
+        indexName = "FulltextIndex",
+        queryString = "queryString",
+        limit = "10000000",
+        argumentIds = Set("queryString")
+      )
+      .input(variables = Seq("queryString"))
+      .withMorselSize(4)
+      .build()
+
+    // then: every matching node is returned for the single argument, across continuations
+    val input = inputValues(Array[Any]("cat"))
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    val expected = nodes.map(n => Array[Any](n))
+    runtimeResult should beColumns("n").withRows(expected, listInAnyOrder = true)
   }
 
 }

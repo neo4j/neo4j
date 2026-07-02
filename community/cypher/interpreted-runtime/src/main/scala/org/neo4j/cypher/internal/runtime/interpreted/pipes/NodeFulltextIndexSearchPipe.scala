@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeFulltextIndexSearchPipe.fulltextSearchCursor
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -140,17 +141,33 @@ object NodeFulltextIndexSearchPipe {
     if (l == 0) {
       NodeValueIndexCursor.EMPTY
     } else {
-      val analyzerOrNull = analyzer.map(_.apply(row, state)) match {
-        case Some(value) if value ne NO_VALUE => CypherFunctions.asTextValue(value).stringValue()
-        case _                                => null
-      }
-      var constraints = IndexQueryConstraints.unconstrained().limit(l)
-      skip.foreach(s => constraints = constraints.skip(CypherFunctions.asNonNegativeIntExact(s(row, state))))
-      query.nodeFulltextIndexSeek(
-        index,
-        constraints,
-        PropertyIndexQuery.fulltextSearch(CypherFunctions.asTextValue(queryString).stringValue(), analyzerOrNull)
-      )
+      val (constraints, predicate) = fulltextSearchQuery(queryString, l, analyzer, skip, row, state)
+      query.nodeFulltextIndexSeek(index, constraints, predicate)
     }
+  }
+
+  /**
+   * The index seek is performed separately, because the node and relationship read APIs differ.
+   *
+   * A NO_VALUE analyzer means "no override": it resolves to null and the index's default analyzer is used.
+   */
+  def fulltextSearchQuery(
+    queryString: AnyValue,
+    limit: Int,
+    analyzer: Option[Expression],
+    skip: Option[Expression],
+    row: ReadableRow,
+    state: QueryState
+  ): (IndexQueryConstraints, PropertyIndexQuery.FulltextSearchPredicate) = {
+    val analyzerOrNull = analyzer.map(_.apply(row, state)) match {
+      case Some(value) if value ne NO_VALUE => CypherFunctions.asTextValue(value).stringValue()
+      case _                                => null
+    }
+    var constraints = IndexQueryConstraints.unconstrained().limit(limit)
+    skip.foreach(s => constraints = constraints.skip(CypherFunctions.asNonNegativeIntExact(s(row, state))))
+    (
+      constraints,
+      PropertyIndexQuery.fulltextSearch(CypherFunctions.asTextValue(queryString).stringValue(), analyzerOrNull)
+    )
   }
 }
