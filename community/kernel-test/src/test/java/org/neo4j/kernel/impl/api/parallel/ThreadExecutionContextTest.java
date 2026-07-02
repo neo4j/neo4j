@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.impl.api.KernelTransactionResourceFactory;
@@ -89,6 +90,7 @@ class ThreadExecutionContextTest {
                 mock(LockTracer.class),
                 mock(ElementIdMapper.class),
                 mock(KernelTransaction.class),
+                mock(KernelVersionProvider.class),
                 mock(Supplier.class),
                 List.of(storageReader, lockClient),
                 mock(ProcedureView.class),

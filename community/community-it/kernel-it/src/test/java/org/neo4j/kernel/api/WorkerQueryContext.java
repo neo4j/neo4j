@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -49,6 +50,11 @@ public class WorkerQueryContext implements QueryContext {
     @Override
     public ReadableTransactionState getTransactionStateOrNull() {
         return delegate.getTransactionStateOrNull();
+    }
+
+    @Override
+    public KernelVersion kernelVersion() {
+        return delegate.kernelVersion();
     }
 
     @Override

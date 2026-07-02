@@ -77,6 +77,8 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaCommand.ConstraintCommand
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.io.pagecache.context.CursorContext
+import org.neo4j.kernel.KernelVersion
+import org.neo4j.kernel.KernelVersionProvider
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
@@ -133,7 +135,7 @@ trait QueryContext extends ReadQueryContext with WriteQueryContext with Mutation
   ): Unit = {}
 }
 
-trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable {
+trait ReadQueryContext extends ReadTokenContext with DbAccess with KernelVersionProvider with AutoCloseable {
   type ProcedureIterator = ResourceRawIterator[Array[AnyValue], ProcedureException]
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
@@ -141,6 +143,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
     throw new UnsupportedOperationException("Not supported with parallel runtime.")
 
   def transactionalContext: QueryTransactionalContext
+
+  override def kernelVersion: KernelVersion = transactionalContext.kernelVersion
 
   def resources: ResourceManager
 
@@ -788,7 +792,7 @@ trait RelationshipWriteOperations extends WriteOperations[VirtualRelationshipVal
 trait RelationshipOperations extends Operations[VirtualRelationshipValue, RelationshipScanCursor]
     with RelationshipReadOperations with RelationshipWriteOperations
 
-trait QueryTransactionalContext extends CloseableResource {
+trait QueryTransactionalContext extends KernelVersionProvider with CloseableResource {
 
   def transactionHeapHighWaterMark: Long
   def commitTransaction(): Unit
@@ -796,6 +800,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def kernelExecutionContext: ExecutionContext
 
   def kernelQueryContext: org.neo4j.internal.kernel.api.QueryContext
+
+  override def kernelVersion: KernelVersion = kernelQueryContext.kernelVersion
 
   def cursors: CursorFactory
 

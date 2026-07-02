@@ -22,25 +22,26 @@ package org.neo4j.internal.schema;
 import java.util.Collections;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.function.Supplier;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexSettingRecord.Valid;
 
 public class NotFoundIndexSettingsValidator implements IndexSettingsValidator {
-    protected final InvalidArgumentException exception;
+    protected final Supplier<InvalidArgumentException> exception;
 
-    public NotFoundIndexSettingsValidator(InvalidArgumentException exception) {
+    public NotFoundIndexSettingsValidator(Supplier<InvalidArgumentException> exception) {
         this.exception = exception;
     }
 
     @Override
     public IndexSettingRecordsByState validate(SettingsAccessor accessor) {
-        throw exception;
+        throw exception.get();
     }
 
     @Override
     public SortedSet<Valid> interpretAuthoritative(SettingsAccessor accessor) {
-        throw exception;
+        throw exception.get();
     }
 
     @Override

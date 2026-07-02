@@ -25,6 +25,8 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -32,6 +34,7 @@ public final class ThreadExecutionQueryContext implements QueryContext {
 
     private final Supplier<Read> read;
     private final CursorFactory cursorFactory;
+    private final KernelVersionProvider kernelVersionProvider;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private final IndexMonitor indexMonitor;
@@ -39,11 +42,13 @@ public final class ThreadExecutionQueryContext implements QueryContext {
     public ThreadExecutionQueryContext(
             Supplier<Read> read,
             CursorFactory cursorFactory,
+            KernelVersionProvider kernelVersionProvider,
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
             IndexMonitor indexMonitor) {
         this.read = read;
         this.cursorFactory = cursorFactory;
+        this.kernelVersionProvider = kernelVersionProvider;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
         this.indexMonitor = indexMonitor;
@@ -62,6 +67,11 @@ public final class ThreadExecutionQueryContext implements QueryContext {
     @Override
     public ReadableTransactionState getTransactionStateOrNull() {
         return null;
+    }
+
+    @Override
+    public KernelVersion kernelVersion() {
+        return kernelVersionProvider.kernelVersion();
     }
 
     @Override
