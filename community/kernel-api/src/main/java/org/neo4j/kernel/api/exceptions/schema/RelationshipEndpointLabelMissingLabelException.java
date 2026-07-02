@@ -74,7 +74,7 @@ public final class RelationshipEndpointLabelMissingLabelException extends Constr
     @Override
     public String getUserMessage(TokenNameLookup tokenNameLookup) {
         return format(
-                "Relationship(%s) with type %s requires it's %s Node(%s) to have label %s",
+                "Relationship(%s) with type %s requires its %s Node(%s) to have label %s",
                 relationshipReference,
                 tokenNameLookup.relationshipTypeGetName(descriptor.schema().getRelTypeId()),
                 descriptor.endpointType().name().toLowerCase(Locale.ROOT),
