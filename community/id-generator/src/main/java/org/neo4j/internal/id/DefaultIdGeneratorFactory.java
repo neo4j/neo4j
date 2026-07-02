@@ -23,7 +23,6 @@ import static org.neo4j.internal.id.indexed.LoggingIndexedIdGeneratorMonitor.def
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -36,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
@@ -103,7 +103,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
     @Override
     public IdGenerator open(
             PageCache pageCache,
-            Path filename,
+            StoreFile storeFile,
             IdType idType,
             LongSupplier highIdScanner,
             long maxId,
@@ -117,7 +117,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 fs,
                 pageCache,
                 recoveryCleanupWorkCollector,
-                filename,
+                storeFile,
                 highIdScanner,
                 maxId,
                 idType,
@@ -135,7 +135,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             FileSystemAbstraction fs,
             PageCache pageCache,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            Path fileName,
+            StoreFile storeFile,
             LongSupplier highIdSupplier,
             long maxValue,
             IdType idType,
@@ -149,7 +149,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
         return new IndexedIdGenerator(
                 pageCache,
                 fs,
-                fileName,
+                storeFile,
                 recoveryCleanupWorkCollector,
                 idType,
                 allowLargeIdCaches,
@@ -159,7 +159,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 config,
                 databaseName,
                 contextFactory,
-                monitor != null ? monitor : defaultIdMonitor(fs, fileName, config),
+                monitor != null ? monitor : defaultIdMonitor(fs, storeFile, config),
                 openOptions,
                 slotDistribution,
                 pageCacheTracer,
@@ -175,7 +175,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
     @Override
     public IdGenerator create(
             PageCache pageCache,
-            Path fileName,
+            StoreFile storeFile,
             IdType idType,
             long highId,
             boolean throwIfFileExists,
@@ -188,14 +188,12 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             throws IOException {
         // For the potential scenario where there's no store (of course this is where this method will be called),
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.
-        if (fs.fileExists(fileName)) {
-            fs.deleteFile(fileName);
-        }
+        storeFile.delete(fs);
 
         IndexedIdGenerator generator = new IndexedIdGenerator(
                 pageCache,
                 fs,
-                fileName,
+                storeFile,
                 recoveryCleanupWorkCollector,
                 idType,
                 allowLargeIdCaches,
@@ -205,7 +203,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 config,
                 databaseName,
                 contextFactory,
-                monitor != null ? monitor : defaultIdMonitor(fs, fileName, config),
+                monitor != null ? monitor : defaultIdMonitor(fs, storeFile, config),
                 openOptions,
                 slotDistribution,
                 pageCacheTracer,

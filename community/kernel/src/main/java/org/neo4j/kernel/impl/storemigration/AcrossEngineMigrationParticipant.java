@@ -290,8 +290,12 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
         storeFiles.add(vectors);
         storeFiles.add(profiles);
         // If migrating from <5 the legacy token indexes are not in the index folder
-        storeFiles.add(sourceDatabaseLayout.file(TokenIndexMigrator.LEGACY_LABEL_INDEX_STORE));
-        storeFiles.add(sourceDatabaseLayout.file(TokenIndexMigrator.LEGACY_RELATIONSHIP_TYPE_INDEX_STORE));
+        storeFiles.addAll(sourceDatabaseLayout
+                .file(TokenIndexMigrator.LEGACY_LABEL_INDEX_STORE)
+                .allSegments(fileSystem));
+        storeFiles.addAll(sourceDatabaseLayout
+                .file(TokenIndexMigrator.LEGACY_RELATIONSHIP_TYPE_INDEX_STORE)
+                .allSegments(fileSystem));
         fileOperation(
                 DELETE_INCLUDING_DIRS,
                 fileSystem,

@@ -36,6 +36,7 @@ import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 /**
@@ -152,7 +153,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
         if (structureWriteLog != null) {
             return structureWriteLog;
         }
-        return LoggingStructureWriteLog.forGBPTree(fileSystem, path);
+        return LoggingStructureWriteLog.forGBPTree(fileSystem, new StoreFile(path));
     }
 
     public GBPTree<KEY, VALUE> build() {
@@ -160,7 +161,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
         return new GBPTree<>(
                 pageCache,
                 fileSystem,
-                path,
+                new StoreFile(path),
                 dataLayout,
                 monitor,
                 headerReader,
@@ -181,7 +182,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
         return new MultiRootGBPTree<>(
                 pageCache,
                 fileSystem,
-                path,
+                new StoreFile(path),
                 dataLayout,
                 monitor,
                 headerReader,

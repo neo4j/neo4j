@@ -66,6 +66,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -96,8 +97,8 @@ class CommonAbstractStoreTest {
     private final PagedFile pageFile = mock(PagedFile.class);
     private final PageCache mockedPageCache = mock(PageCache.class);
     private final Config config = Config.defaults();
-    private final Path storeFile = Path.of("store");
-    private final Path idStoreFile = Path.of("isStore");
+    private final StoreFile storeFile = new StoreFile(Path.of("store"));
+    private final StoreFile idStoreFile = new StoreFile(Path.of("isStore"));
     private final RecordFormat<TheRecord> recordFormat = mock(RecordFormat.class);
     private final RecordIdType idType = RecordIdType.RELATIONSHIP; // whatever
 
@@ -118,7 +119,7 @@ class CommonAbstractStoreTest {
         when(recordFormat.getFilePageSize(anyInt(), anyInt())).thenReturn(Long.SIZE);
         when(idGeneratorFactory.create(
                         any(),
-                        any(Path.class),
+                        any(StoreFile.class),
                         eq(idType),
                         anyLong(),
                         anyBoolean(),
@@ -151,8 +152,8 @@ class CommonAbstractStoreTest {
 
     @Test
     void failStoreInitializationWhenHeaderRecordCantBeRead() throws IOException {
-        Path storeFile = dir.file("a");
-        Path idFile = dir.file("idFile");
+        StoreFile storeFile = new StoreFile(dir.file("a"));
+        StoreFile idFile = new StoreFile(dir.file("idFile"));
         PageCache pageCache = mock(PageCache.class);
         PagedFile pagedFile = mock(PagedFile.class);
         PageCursor pageCursor = mock(PageCursor.class);
@@ -180,9 +181,7 @@ class CommonAbstractStoreTest {
                 immutable.empty())) {
             StoreNotFoundException storeNotFoundException =
                     assertThrows(StoreNotFoundException.class, () -> dynamicArrayStore.initialise(CONTEXT_FACTORY));
-            assertEquals(
-                    "Fail to read header record of store file: " + storeFile.toAbsolutePath(),
-                    storeNotFoundException.getMessage());
+            assertEquals("Fail to read header record of store file: " + storeFile, storeNotFoundException.getMessage());
         }
     }
 
@@ -228,8 +227,8 @@ class CommonAbstractStoreTest {
     @Test
     void shouldDeleteOnCloseIfOpenOptionsSaysSo() throws IOException {
         // GIVEN
-        Path nodeStore = databaseLayout.nodeStore();
-        Path idFile = databaseLayout
+        var nodeStore = databaseLayout.nodeStore();
+        var idFile = databaseLayout
                 .idFile(RecordDatabaseFile.NODE_STORE)
                 .orElseThrow(() -> new IllegalStateException("Node store id file not found."));
         TheStore store = new TheStore(
@@ -245,15 +244,15 @@ class CommonAbstractStoreTest {
                 immutable.with(DELETE_ON_CLOSE));
         store.initialise(CONTEXT_FACTORY);
         store.start(NULL_CONTEXT);
-        assertTrue(fs.fileExists(nodeStore));
-        assertTrue(fs.fileExists(idFile));
+        assertTrue(nodeStore.exists(fs));
+        assertTrue(idFile.exists(fs));
 
         // WHEN
         store.close();
 
         // THEN
-        assertFalse(fs.fileExists(nodeStore));
-        assertFalse(fs.fileExists(idFile));
+        assertFalse(nodeStore.exists(fs));
+        assertFalse(idFile.exists(fs));
     }
 
     @Test
@@ -267,7 +266,7 @@ class CommonAbstractStoreTest {
 
         // then
         LogAssertions.assertThat(logProvider)
-                .containsMessages(format("%s[%s]: used=0 high=0", TheStore.TYPE_DESCRIPTOR, storeFile.getFileName()));
+                .containsMessages(format("%s[%s]: used=0 high=0", TheStore.TYPE_DESCRIPTOR, storeFile.baseSegment()));
     }
 
     private TheStore newStore() {
@@ -296,8 +295,8 @@ class CommonAbstractStoreTest {
 
         TheStore(
                 FileSystemAbstraction fileSystem,
-                Path file,
-                Path idFile,
+                StoreFile storeFile,
+                StoreFile idStoreFile,
                 Config configuration,
                 RecordIdType idType,
                 IdGeneratorFactory idGeneratorFactory,
@@ -307,8 +306,8 @@ class CommonAbstractStoreTest {
                 ImmutableSet<OpenOption> openOptions) {
             super(
                     fileSystem,
-                    file,
-                    idFile,
+                    storeFile,
+                    idStoreFile,
                     configuration,
                     idType,
                     idGeneratorFactory,

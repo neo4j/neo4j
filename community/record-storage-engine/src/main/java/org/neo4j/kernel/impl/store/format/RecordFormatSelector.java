@@ -27,7 +27,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.concat;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +38,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.impl.store.LegacyMetadataHandler;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
@@ -112,11 +112,11 @@ public class RecordFormatSelector {
             PageCache pageCache,
             InternalLogProvider logProvider,
             CursorContextFactory contextFactory) {
-        Path neoStoreFile = databaseLayout.metadataStore();
-        if (fs.fileExists(neoStoreFile)) {
+        StoreFile metadataStoreFile = databaseLayout.metadataStore();
+        if (metadataStoreFile.exists(fs)) {
             try (var cursorContext = contextFactory.create(STORE_SELECTION_TAG)) {
                 var filedAccess = MetaDataStore.getFieldAccess(
-                        pageCache, neoStoreFile, databaseLayout.getDatabaseName(), cursorContext);
+                        pageCache, metadataStoreFile, databaseLayout.getDatabaseName(), cursorContext);
                 StoreId storeId;
                 if (filedAccess.isLegacyFieldValid()) {
                     storeId = filedAccess.readStoreId();

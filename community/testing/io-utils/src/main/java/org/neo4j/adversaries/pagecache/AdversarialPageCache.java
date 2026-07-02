@@ -24,7 +24,6 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,6 +34,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.util.VisibleForTesting;
@@ -57,7 +57,7 @@ public class AdversarialPageCache extends DelegatingPageCache {
 
     @Override
     public PagedFile map(
-            Path path,
+            StoreFile storeFile,
             int pageSize,
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
@@ -71,14 +71,14 @@ public class AdversarialPageCache extends DelegatingPageCache {
             adversary.injectFailure(NoSuchFileException.class, IOException.class, SecurityException.class);
         }
         PagedFile pagedFile = getDelegate()
-                .map(path, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage);
+                .map(storeFile, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage);
         return new AdversarialPagedFile(pagedFile, adversary);
     }
 
     @Override
-    public Optional<PagedFile> getExistingMapping(Path path) throws IOException {
+    public Optional<PagedFile> getExistingMapping(StoreFile storeFile) throws IOException {
         adversary.injectFailure(IOException.class, SecurityException.class);
-        final Optional<PagedFile> optional = getDelegate().getExistingMapping(path);
+        final Optional<PagedFile> optional = getDelegate().getExistingMapping(storeFile);
         return optional.map(pagedFile -> new AdversarialPagedFile(pagedFile, adversary));
     }
 

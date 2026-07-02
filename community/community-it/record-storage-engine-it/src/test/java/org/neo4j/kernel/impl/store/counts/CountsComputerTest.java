@@ -523,7 +523,7 @@ class CountsComputerTest {
     }
 
     private Path countsStoreFile() {
-        return databaseLayout.countStore();
+        return databaseLayout.countStore().baseSegment();
     }
 
     private static long getLastTxId(GraphDatabaseAPI db) {

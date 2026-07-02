@@ -245,8 +245,8 @@ public class StoreMigrator {
     }
 
     private static MigrationStructures getMigrationStructures(DatabaseLayout databaseLayout) {
-        DatabaseLayout migrationStructure = DatabaseLayout.ofFlat(databaseLayout.file(MIGRATION_DIRECTORY));
-        return new MigrationStructures(migrationStructure, migrationStructure.file(MIGRATION_STATUS_FILE));
+        DatabaseLayout migrationStructure = DatabaseLayout.ofFlat(databaseLayout.path(MIGRATION_DIRECTORY));
+        return new MigrationStructures(migrationStructure, migrationStructure.path(MIGRATION_STATUS_FILE));
     }
 
     private void doMigrate(

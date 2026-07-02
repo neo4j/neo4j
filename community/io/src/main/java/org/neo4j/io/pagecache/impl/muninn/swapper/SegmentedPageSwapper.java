@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn.swapper;
 
 import static java.lang.Long.numberOfTrailingZeros;
 import static java.util.Arrays.copyOfRange;
+import static org.neo4j.io.pagecache.impl.muninn.StoreFile.segmentPath;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 import java.io.IOException;
@@ -576,15 +577,6 @@ public final class SegmentedPageSwapper implements PageSwapper {
                 swapperSet);
     }
 
-    private static Path segmentPath(Path baseFile, int segmentIndex) {
-        if (segmentIndex == 0) {
-            return baseFile;
-        }
-        Path parent = baseFile.getParent();
-        String name = baseFile.getFileName() + "." + segmentIndex;
-        return parent.resolve(name);
-    }
-
     private void closeAndDeleteSegments(PageSwapper[] segments, int initialIndex) throws IOException {
         IOException closeAndDeleteException = null;
         for (int i = initialIndex; i < segments.length; i++) {
@@ -609,7 +601,6 @@ public final class SegmentedPageSwapper implements PageSwapper {
     }
 
     private void deleteSegmentFileIfExists(int segmentIndex) throws IOException {
-        Path path = segmentPath(basePath, segmentIndex);
-        fs.deleteFile(path);
+        fs.deleteFile(segmentPath(basePath, segmentIndex));
     }
 }

@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.utils.TestDirectory;
@@ -60,7 +61,9 @@ abstract class PageCacheExtensionTestBase {
     void pageCacheCanFindFileCreatedByTestDirectory() throws IOException {
         Path testFile = testDirectory.createFile("testFile");
         try (PagedFile map = pageCache.map(
-                testFile, 4096, testDirectory.homePath().getFileName().toString())) {
+                new StoreFile(testFile),
+                4096,
+                testDirectory.homePath().getFileName().toString())) {
             assertThat(map).isNotNull();
         }
     }
@@ -73,7 +76,7 @@ abstract class PageCacheExtensionTestBase {
 
         Path testFile = testDirectory.createFile("testFile");
         try (PagedFile map = pageCache.map(
-                testFile,
+                new StoreFile(testFile),
                 PageCache.PAGE_SIZE,
                 testDirectory.homePath().getFileName().toString())) {
             try (PageCursor cursor = map.io(0, PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT)) {

@@ -34,7 +34,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +49,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -77,8 +77,8 @@ class PropertyStoreTest {
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
-    private Path storeFile;
-    private Path idFile;
+    private StoreFile storeFile;
+    private StoreFile idFile;
 
     @BeforeEach
     void setup() {

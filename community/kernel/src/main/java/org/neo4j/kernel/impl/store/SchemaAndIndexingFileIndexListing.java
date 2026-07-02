@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 
 public class SchemaAndIndexingFileIndexListing {
@@ -34,8 +35,8 @@ public class SchemaAndIndexingFileIndexListing {
         this.indexingService = indexingService;
     }
 
-    Resource gatherSchemaIndexFiles(Collection<Path> targetFiles) throws IOException {
-        ResourceIterator<Path> snapshot = indexingService.snapshotIndexFiles();
+    Resource gatherSchemaIndexFiles(FileSystemAbstraction fs, Collection<Path> targetFiles) throws IOException {
+        ResourceIterator<Path> snapshot = indexingService.snapshotIndexFiles(fs);
         getSnapshotFilesMetadata(snapshot, targetFiles);
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.

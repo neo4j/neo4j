@@ -38,6 +38,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
@@ -109,7 +110,7 @@ class ConfiguringPageCacheFactoryTest {
 
         Path testFile = testDirectory.createFile("a");
         try (var cache = factory.getOrCreatePageCache();
-                var file = cache.map(testFile, PAGE_SIZE, "foo");
+                var file = cache.map(new StoreFile(testFile), PAGE_SIZE, "foo");
                 var io = file.io(1024, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             int bigPageToExpand = 20021;
             assertDoesNotThrow(() -> io.next(bigPageToExpand));

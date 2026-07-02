@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,6 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 
 /**
@@ -39,15 +39,15 @@ public class IndexFiles {
 
     private final FileSystemAbstraction fs;
     private final Path directory;
-    private final Path storeFile;
+    private final StoreFile storeFile;
 
     public IndexFiles(FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId) {
         this.fs = fs;
         this.directory = directoryStructure.directoryForIndex(indexId);
-        this.storeFile = directory.resolve(indexFileName(indexId));
+        this.storeFile = new StoreFile(directory.resolve(indexFileName(indexId)));
     }
 
-    public Path getStoreFile() {
+    public StoreFile getStoreFile() {
         return storeFile;
     }
 
@@ -94,6 +94,6 @@ public class IndexFiles {
     }
 
     public ResourceIterator<Path> snapshot() {
-        return asResourceIterator(iterator(getStoreFile()));
+        return asResourceIterator(getStoreFile().allSegments(fs));
     }
 }

@@ -126,6 +126,7 @@ import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.OldestVisibilityHorizonFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -183,7 +184,7 @@ class IndexedIdGeneratorTest {
         return new IndexedIdGenerator(
                 pageCache,
                 fileSystem,
-                customization.file,
+                new StoreFile(customization.file),
                 immediate(),
                 customization.idType,
                 false,
@@ -724,7 +725,7 @@ class IndexedIdGeneratorTest {
         idGenerator = new IndexedIdGenerator(
                 pageCache,
                 fileSystem,
-                file,
+                new StoreFile(file),
                 immediate(),
                 TestIdType.TEST,
                 false,
@@ -761,7 +762,7 @@ class IndexedIdGeneratorTest {
         idGenerator = new IndexedIdGenerator(
                 pageCache,
                 fileSystem,
-                file,
+                new StoreFile(file),
                 immediate(),
                 TestIdType.TEST,
                 false,

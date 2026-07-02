@@ -77,6 +77,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -179,7 +180,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.internalLogProvider = logService.getInternalLogProvider();
         this.userLogProvider = logService.getUserLogProvider();
         this.databaseLayout = databaseLayout;
-        this.temporaryDatabaseLayout = RecordDatabaseLayout.ofFlat(databaseLayout.file(TEMP_STORE_NAME));
+        this.temporaryDatabaseLayout = RecordDatabaseLayout.ofFlat(databaseLayout.path(TEMP_STORE_NAME));
         this.neo4jConfig = neo4jConfig;
         this.pageCache = pageCache;
         this.ioTracer = ioTracer;
@@ -221,9 +222,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     private void deleteCountsStore() throws IOException {
-        if (fileSystem.fileExists(databaseLayout.countStore())) {
-            fileSystem.deleteFile(databaseLayout.countStore());
-        }
+        databaseLayout.countStore().delete(fileSystem);
     }
 
     public void assertDatabaseIsNonExistent() throws DirectoryNotEmptyException {
@@ -243,8 +242,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     private boolean hasExistingDatabaseContents() {
-        Path metaDataFile = databaseLayout.metadataStore();
-        try (PagedFile pagedFile = pageCache.map(metaDataFile, databaseName, immutable.of(READ))) {
+        try (PagedFile pagedFile = pageCache.map(databaseLayout.metadataStore(), databaseName, immutable.of(READ))) {
             // OK so the db probably exists
         } catch (IOException e) {
             // It's OK
@@ -277,7 +275,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         for (StoreType type : StoreType.STORE_TYPES) {
             if (!storesToKeep.test(type)) {
                 DatabaseFile databaseFile = type.getDatabaseFile();
-                databaseLayout.allFiles(databaseFile).forEach(uncheckedConsumer(fileSystem::deleteFile));
+                databaseLayout.allFiles(databaseFile).forEach(uncheckedConsumer(sf -> sf.delete(fileSystem)));
             }
         }
     }
@@ -580,11 +578,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private Closeable rebuildNodeIdFile() throws IOException {
         var idGeneratorFactory = new DefaultIdGeneratorFactory(
                 fileSystem, immediate(), pageCacheTracer, databaseLayout.getDatabaseName());
-        var idFile = databaseLayout.idFile(RecordDatabaseFile.NODE_STORE).get();
+        var idFile = databaseLayout.idFile(RecordDatabaseFile.NODE_STORE).get().baseSegment();
         var rebuiltIdFile = idFile.resolveSibling("rebuilt-node.db.id");
         try (var idGenerator = idGeneratorFactory.open(
                         pageCache,
-                        rebuiltIdFile,
+                        new StoreFile(rebuiltIdFile),
                         RecordIdType.NODE,
                         () -> neoStores.getNodeStore().getNumberOfReservedLowIds(),
                         Long.MAX_VALUE,

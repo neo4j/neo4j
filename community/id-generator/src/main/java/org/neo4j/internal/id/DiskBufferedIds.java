@@ -41,6 +41,7 @@ import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
@@ -75,10 +76,10 @@ class DiskBufferedIds implements BufferedIds {
     private volatile Position<PhysicalFlushableChannel> writePosition;
     private volatile Position<ReadAheadChannel<StoreChannel>> readPosition;
 
-    DiskBufferedIds(FileSystemAbstraction fs, Path basePath, MemoryTracker memoryTracker, int segmentSize)
+    DiskBufferedIds(FileSystemAbstraction fs, StoreFile storeFile, MemoryTracker memoryTracker, int segmentSize)
             throws IOException {
         this.fs = fs;
-        this.basePath = basePath;
+        this.basePath = storeFile.baseSegment();
         this.memoryTracker = memoryTracker;
         this.segmentSize = segmentSize;
 

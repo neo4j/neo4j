@@ -44,6 +44,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.InputStreamReadableChannel;
 import org.neo4j.io.fs.OutputStreamWritableChannel;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
@@ -69,11 +70,12 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     /**
      * Looks at feature toggle and instantiates a LoggingMonitor if enabled, otherwise a no-op monitor.
      */
-    public static IndexedIdGenerator.Monitor defaultIdMonitor(FileSystemAbstraction fs, Path idFile, Config config) {
+    public static IndexedIdGenerator.Monitor defaultIdMonitor(
+            FileSystemAbstraction fs, StoreFile idFile, Config config) {
         if (config.get(GraphDatabaseInternalSettings.id_generator_log_enabled)) {
             return new LoggingIndexedIdGeneratorMonitor(
                     fs,
-                    idFile.resolveSibling(idFile.getFileName() + ".log"),
+                    idFile.baseSegment().resolveSibling(idFile.storeBaseFileName() + ".log"),
                     Clocks.nanoClock(),
                     config.get(GraphDatabaseInternalSettings.id_generator_log_rotation_threshold),
                     ByteUnit.Byte,

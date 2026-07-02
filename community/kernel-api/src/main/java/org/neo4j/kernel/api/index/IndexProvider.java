@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
@@ -37,6 +36,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -108,21 +108,21 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     public interface Monitor {
         void failedToOpenIndex(IndexDescriptor index, String action, Exception cause);
 
-        void recoveryCleanupRegistered(Path indexFile, IndexDescriptor index);
+        void recoveryCleanupRegistered(StoreFile indexFile, IndexDescriptor index);
 
-        void recoveryCleanupStarted(Path indexFile, IndexDescriptor index);
+        void recoveryCleanupStarted(StoreFile indexFile, IndexDescriptor index);
 
         void recoveryCleanupFinished(
-                Path indexFile,
+                StoreFile indexFile,
                 IndexDescriptor index,
                 long numberOfPagesVisited,
                 long numberOfTreeNodes,
                 long numberOfCleanedCrashPointers,
                 long durationMillis);
 
-        void recoveryCleanupClosed(Path indexFile, IndexDescriptor index);
+        void recoveryCleanupClosed(StoreFile indexFile, IndexDescriptor index);
 
-        void recoveryCleanupFailed(Path indexFile, IndexDescriptor index, Throwable throwable);
+        void recoveryCleanupFailed(StoreFile indexFile, IndexDescriptor index, Throwable throwable);
     }
 
     public static final IndexProvider EMPTY =

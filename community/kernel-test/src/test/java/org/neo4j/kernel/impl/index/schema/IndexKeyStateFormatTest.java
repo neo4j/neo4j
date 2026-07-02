@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.test.FormatCompatibilityVerifier;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.values.storable.Value;
@@ -124,8 +125,8 @@ abstract class IndexKeyStateFormatTest<KEY extends NativeIndexKey<KEY>> extends 
             openOptions = openOptions.newWith(CREATE);
         }
         try (PageCache pageCache = PageCacheSupportExtension.getPageCache(globalFs, config());
-                PagedFile pagedFile =
-                        pageCache.map(storeFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, openOptions);
+                PagedFile pagedFile = pageCache.map(
+                        new StoreFile(storeFile), pageCache.pageSize(), DEFAULT_DATABASE_NAME, openOptions);
                 PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT)) {
             cursor.next();
             cursorConsumer.accept(cursor);

@@ -20,11 +20,11 @@
 package org.neo4j.io.pagecache.checking;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 
 /**
  * Wraps a {@link PageCache} and ensures that read {@link PageCursor} i.e. page cursors which are created
@@ -39,7 +39,7 @@ public class AccessCheckingPageCache extends DelegatingPageCache {
     }
 
     @Override
-    public PagedFile map(Path path, int pageSize, String databaseName) throws IOException {
-        return new AccessCheckingPagedFile(super.map(path, pageSize, databaseName));
+    public PagedFile map(StoreFile storeFile, int pageSize, String databaseName) throws IOException {
+        return new AccessCheckingPagedFile(super.map(storeFile, pageSize, databaseName));
     }
 }

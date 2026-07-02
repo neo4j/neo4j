@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 /**
@@ -99,12 +100,12 @@ public class PlainDatabaseLayout implements DatabaseLayout {
     }
 
     @Override
-    public Path metadataStore() {
+    public StoreFile metadataStore() {
         throw new IllegalStateException("Can not get the metadata store for a PlainDatabaseLayout.");
     }
 
     @Override
-    public Path indexStatisticsStore() {
+    public StoreFile indexStatisticsStore() {
         throw new IllegalStateException("Can not get the metadata store for a PlainDatabaseLayout.");
     }
 
@@ -114,28 +115,33 @@ public class PlainDatabaseLayout implements DatabaseLayout {
     }
 
     @Override
-    public Path pathForStore(CommonDatabaseStores store) {
+    public StoreFile pathForStore(CommonDatabaseStores store) {
         throw new IllegalStateException(
                 "Can not get the path for the %s store from a PlainDatabaseLayout.".formatted(store.name()));
     }
 
     @Override
-    public Optional<Path> idFile(DatabaseFile file) {
+    public Optional<StoreFile> idFile(DatabaseFile file) {
         return file.hasIdFile() ? Optional.of(idFile(file.getName())) : Optional.empty();
     }
 
     @Override
-    public Path file(String name) {
+    public StoreFile file(String name) {
+        return new StoreFile(databaseDirectory.resolve(name));
+    }
+
+    @Override
+    public Path path(String name) {
         return databaseDirectory.resolve(name);
     }
 
     @Override
-    public Path file(DatabaseFile databaseFile) {
+    public StoreFile file(DatabaseFile databaseFile) {
         return file(databaseFile.getName());
     }
 
     @Override
-    public Stream<Path> allFiles(DatabaseFile databaseFile) {
+    public Stream<StoreFile> allFiles(DatabaseFile databaseFile) {
         return Stream.concat(idFile(databaseFile).stream(), Stream.of(file(databaseFile)));
     }
 
@@ -145,7 +151,7 @@ public class PlainDatabaseLayout implements DatabaseLayout {
                         .formatted(file.getName()));
     }
 
-    private Path idFile(String name) {
+    private StoreFile idFile(String name) {
         return file(idFileName(name));
     }
 

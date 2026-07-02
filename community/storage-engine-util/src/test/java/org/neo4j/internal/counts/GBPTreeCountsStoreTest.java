@@ -38,7 +38,6 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
 import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +47,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLogProvider;
@@ -242,11 +242,11 @@ class GBPTreeCountsStoreTest {
     }
 
     private void deleteCountsStore() throws IOException {
-        directory.getFileSystem().deleteFile(countsStoreFile());
+        countsStoreFile().delete(directory.getFileSystem());
     }
 
-    private Path countsStoreFile() {
-        return directory.file("counts.db");
+    private StoreFile countsStoreFile() {
+        return new StoreFile(directory.file("counts.db"));
     }
 
     private void openCountsStore(CountsBuilder builder) throws IOException {

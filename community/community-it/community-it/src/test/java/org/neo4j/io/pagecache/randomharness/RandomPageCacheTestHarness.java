@@ -50,6 +50,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
@@ -362,7 +363,7 @@ public class RandomPageCacheTestHarness implements Closeable {
         Map<Path, PagedFile> fileMap = HashMap.newHashMap(files.length);
         for (int i = 0; i < Math.min(files.length, initialMappedFiles); i++) {
             Path file = files[i];
-            fileMap.put(file, cache.map(file, filePageSize, DEFAULT_DATABASE_NAME, openOptions));
+            fileMap.put(file, cache.map(new StoreFile(file), filePageSize, DEFAULT_DATABASE_NAME, openOptions));
         }
 
         plan = plan(cache, files, fileMap);

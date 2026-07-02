@@ -95,7 +95,7 @@ class FileWatchIT {
     void notifyAboutStoreFileDeletion() throws IOException, InterruptedException {
         String fileName = databaseLayout
                 .pathForStore(CommonDatabaseStores.METADATA)
-                .getFileName()
+                .storeBaseFileName()
                 .toString();
         FileWatcher fileWatcher = getFileWatcher(database);
         CheckPointer checkpointer = getCheckpointer(database);
@@ -248,7 +248,7 @@ class FileWatchIT {
             }
         });
 
-        FileUtils.deleteFile(databaseLayout.metadataStore());
+        databaseLayout.metadataStore().delete(testDirectory.getFileSystem());
         assertThat(logProvider)
                 .containsMessagesEventually(
                         TimeUnit.MINUTES.toMillis(1),

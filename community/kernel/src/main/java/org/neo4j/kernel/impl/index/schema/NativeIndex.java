@@ -86,7 +86,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
         ensureDirectoryExist();
         MultiRootGBPTree.Monitor monitor = treeMonitor();
-        Path storeFile = indexFiles.getStoreFile();
+        var storeFile = indexFiles.getStoreFile();
         tree = new GBPTree<>(
                 pageCache,
                 fileSystem,

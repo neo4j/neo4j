@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 
 /**
  * File layout representation of the particular database. Facade for any kind of file lookup for a particular database storage implementation.
@@ -75,24 +76,26 @@ public interface DatabaseLayout {
 
     Path vectorStoresDirectory();
 
-    Path metadataStore();
+    StoreFile metadataStore();
 
-    Path indexStatisticsStore();
+    StoreFile indexStatisticsStore();
 
     Path pathForExistsMarker();
 
-    Path pathForStore(CommonDatabaseStores store);
+    StoreFile pathForStore(CommonDatabaseStores store);
 
-    Optional<Path> idFile(DatabaseFile file);
+    Optional<StoreFile> idFile(DatabaseFile file);
 
     /**
      * Resolves the file path against the database directory and returns that path.
      */
-    Path file(String name);
+    StoreFile file(String name);
 
-    Path file(DatabaseFile databaseFile);
+    Path path(String name);
 
-    Stream<Path> allFiles(DatabaseFile databaseFile);
+    StoreFile file(DatabaseFile databaseFile);
+
+    Stream<StoreFile> allFiles(DatabaseFile databaseFile);
 
     default boolean isIdFile(Path file) {
         return file.getFileName().toString().endsWith(ID_FILE_SUFFIX);

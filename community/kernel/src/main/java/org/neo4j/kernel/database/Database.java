@@ -1227,7 +1227,7 @@ public class Database extends AbstractDatabase {
                 transactionExecutionMonitor);
 
         final StoreFileListing fileListing =
-                new StoreFileListing(databaseLayout, logFiles, indexingService, storageEngine);
+                new StoreFileListing(databaseLayout, fs, logFiles, indexingService, storageEngine);
         databaseDependencies.satisfyDependency(fileListing);
 
         return new DatabaseKernelModule(

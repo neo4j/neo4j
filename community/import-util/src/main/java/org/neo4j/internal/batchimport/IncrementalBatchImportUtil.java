@@ -62,6 +62,7 @@ import org.neo4j.io.locker.Locker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -103,12 +104,12 @@ public class IncrementalBatchImportUtil {
             DatabaseLayout toLayout,
             DatabaseFile... databaseFiles)
             throws IOException {
-        var paths = new ArrayList<Path>();
+        var paths = new ArrayList<StoreFile>();
         for (var databaseFile : databaseFiles) {
             paths.add(fromLayout.file(databaseFile));
             fromLayout.idFile(databaseFile).ifPresent(paths::add);
         }
-        copyStoreFiles(fileSystem, toLayout, paths.toArray(new Path[0]));
+        copyStoreFiles(fileSystem, toLayout, paths.toArray(new StoreFile[0]));
     }
 
     /**
@@ -117,10 +118,12 @@ public class IncrementalBatchImportUtil {
      * @param paths a list of (absolute) paths that can be relativized using {@code from.databaseDirectory().relativize}
      *              to obtain a valid path relative to the database directory.
      */
-    public static void copyStoreFiles(FileSystemAbstraction fileSystem, DatabaseLayout into, Path... paths)
+    public static void copyStoreFiles(FileSystemAbstraction fileSystem, DatabaseLayout into, StoreFile... paths)
             throws IOException {
-        for (Path path : paths) {
-            fileSystem.copyFile(path, into.file(path.getFileName().toString()));
+        for (StoreFile path : paths) {
+            for (Path segment : path.allSegments(fileSystem)) {
+                fileSystem.copyFile(segment, into.path(segment.getFileName().toString()));
+            }
         }
     }
 

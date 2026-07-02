@@ -52,6 +52,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -98,7 +99,7 @@ class CommonAbstractStoreBehaviourTest {
         }
         if (store != null) {
             store.close();
-            fs.deleteFile(store.getStorageFile());
+            store.getStoreFile().delete(fs);
             store = null;
         }
         nextPageOffset.clear();
@@ -262,7 +263,7 @@ class CommonAbstractStoreBehaviourTest {
         int pageSize = store.pagedFile.pageSize();
         store.close();
         store.pageCache
-                .map(store.getStorageFile(), pageSize, DEFAULT_DATABASE_NAME, immutable.of(TRUNCATE_EXISTING))
+                .map(store.getStoreFile(), pageSize, DEFAULT_DATABASE_NAME, immutable.of(TRUNCATE_EXISTING))
                 .close();
         createStore();
     }
@@ -443,8 +444,8 @@ class CommonAbstractStoreBehaviourTest {
         MyStore(Config config, PageCache pageCache, MyFormat format) {
             super(
                     fs,
-                    Path.of(STORE_FILENAME),
-                    Path.of(ID_FILENAME),
+                    new StoreFile(Path.of(STORE_FILENAME)),
+                    new StoreFile(Path.of(ID_FILENAME)),
                     config,
                     RecordIdType.NODE,
                     new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME),

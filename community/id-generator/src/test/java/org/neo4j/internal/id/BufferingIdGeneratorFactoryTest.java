@@ -58,6 +58,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
@@ -101,7 +102,7 @@ class BufferingIdGeneratorFactoryTest {
         Config config = Config.defaults(GraphDatabaseInternalSettings.buffered_ids_offload, offHeap);
         bufferingIdGeneratorFactory.initialize(
                 fs,
-                directory.file("tmp-ids"),
+                new StoreFile(directory.file("tmp-ids")),
                 config,
                 boundaries,
                 boundaries,
@@ -109,7 +110,7 @@ class BufferingIdGeneratorFactoryTest {
                 dbMemoryPool.getPoolMemoryTracker());
         idGenerator = bufferingIdGeneratorFactory.open(
                 pageCache,
-                Path.of("doesnt-matter"),
+                new StoreFile(Path.of("doesnt-matter")),
                 TestIdType.TEST,
                 () -> 0L,
                 Integer.MAX_VALUE,
@@ -281,7 +282,7 @@ class BufferingIdGeneratorFactoryTest {
         @Override
         public IdGenerator open(
                 PageCache pageCache,
-                Path filename,
+                StoreFile storeFile,
                 IdType idType,
                 LongSupplier highIdScanner,
                 long maxId,
@@ -303,7 +304,7 @@ class BufferingIdGeneratorFactoryTest {
         @Override
         public IdGenerator create(
                 PageCache pageCache,
-                Path filename,
+                StoreFile storeFile,
                 IdType idType,
                 long highId,
                 boolean throwIfFileExists,
@@ -315,7 +316,7 @@ class BufferingIdGeneratorFactoryTest {
                 IdSlotDistribution slotDistribution) {
             return open(
                     pageCache,
-                    filename,
+                    storeFile,
                     idType,
                     () -> highId,
                     maxId,

@@ -44,6 +44,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -100,7 +101,7 @@ class BufferedIdControllerTest {
                 NullLogService.getInstance());
         controller.initialize(
                 filesystem,
-                testDirectory.file("buffer"),
+                new StoreFile(testDirectory.file("buffer")),
                 globalConfig,
                 () -> new IdController.TransactionSnapshot(10, 0, 0),
                 new IdController.VisibilityHorizonVisibilityBoundary() {
@@ -136,7 +137,7 @@ class BufferedIdControllerTest {
 
         try (var idGenerator = idGeneratorFactory.create(
                 pageCache,
-                testDirectory.file("foo"),
+                new StoreFile(testDirectory.file("foo")),
                 TestIdType.TEST,
                 100L,
                 true,
@@ -173,7 +174,7 @@ class BufferedIdControllerTest {
         life.start();
         try (var idGenerator = idGeneratorFactory.create(
                 pageCache,
-                testDirectory.file("foo"),
+                new StoreFile(testDirectory.file("foo")),
                 TestIdType.TEST,
                 100L,
                 true,
@@ -212,7 +213,7 @@ class BufferedIdControllerTest {
         life.start();
         try (var idGenerator = idGeneratorFactory.create(
                 pageCache,
-                testDirectory.file("foo"),
+                new StoreFile(testDirectory.file("foo")),
                 TestIdType.TEST,
                 100L,
                 true,
@@ -249,7 +250,7 @@ class BufferedIdControllerTest {
         life.start();
         try (var idGenerator = idGeneratorFactory.create(
                 pageCache,
-                testDirectory.file("foo"),
+                new StoreFile(testDirectory.file("foo")),
                 TestIdType.TEST,
                 100L,
                 true,
@@ -289,7 +290,7 @@ class BufferedIdControllerTest {
         setUp(CursorContextFactory.NULL_CONTEXT_FACTORY, fs, monitor);
         try (var idGenerator = idGeneratorFactory.create(
                 pageCache,
-                testDirectory.file("foo"),
+                new StoreFile(testDirectory.file("foo")),
                 TestIdType.TEST,
                 0,
                 false,

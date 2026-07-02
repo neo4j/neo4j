@@ -53,6 +53,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -79,13 +80,13 @@ class AbstractDynamicStoreTest {
     @Inject
     RandomSupport random;
 
-    protected final Path storeFile = Path.of("store");
-    private final Path idFile = Path.of("idStore");
+    protected final StoreFile storeFile = new StoreFile(Path.of("store"));
+    private final StoreFile idFile = new StoreFile(Path.of("idStore"));
     private final RecordFormats formats = defaultFormat();
 
     @BeforeEach
     void before() throws IOException {
-        try (StoreChannel channel = fs.write(storeFile)) {
+        try (StoreChannel channel = fs.write(storeFile.baseSegment())) {
             var buffer = ByteBuffers.allocate(pageCache.pageSize(), getByteOrder(), INSTANCE);
             buffer.putInt(BLOCK_SIZE);
             while (buffer.hasRemaining()) {

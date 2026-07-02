@@ -19,10 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 
 /**
  * Internal log for capturing changes to the structural changes happening to a GBPTree as part of writers
@@ -43,9 +43,9 @@ public interface StructureWriteLog extends AutoCloseable {
     @Override
     void close();
 
-    static StructureWriteLog structureWriteLog(FileSystemAbstraction fs, Path gbpTreeFile, Config config) {
+    static StructureWriteLog structureWriteLog(FileSystemAbstraction fs, StoreFile storeFile, Config config) {
         if (config.get(GraphDatabaseInternalSettings.gbptree_structure_log_enabled)) {
-            return LoggingStructureWriteLog.forGBPTree(fs, gbpTreeFile);
+            return LoggingStructureWriteLog.forGBPTree(fs, storeFile);
         }
         return EMPTY;
     }

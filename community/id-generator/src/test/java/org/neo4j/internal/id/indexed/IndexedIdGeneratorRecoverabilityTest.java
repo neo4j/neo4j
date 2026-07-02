@@ -47,6 +47,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -302,7 +303,7 @@ class IndexedIdGeneratorRecoverabilityTest {
         return new IndexedIdGenerator(
                 pageCache,
                 fs,
-                testDirectory.file(ID_FILE_NAME),
+                new StoreFile(testDirectory.file(ID_FILE_NAME)),
                 immediate(),
                 ID_TYPE,
                 true,

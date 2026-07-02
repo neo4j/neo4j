@@ -25,7 +25,6 @@ import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
 import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -44,6 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -79,8 +79,8 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRecord, IntStoreHeader> {
     public AbstractDynamicStore(
             FileSystemAbstraction fileSystem,
-            Path path,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             Config conf,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -95,8 +95,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             ImmutableSet<OpenOption> openOptions) {
         super(
                 fileSystem,
-                path,
-                idFile,
+                storeFile,
+                idStoreFile,
                 conf,
                 idType,
                 idGeneratorFactory,
@@ -195,7 +195,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
 
     @Override
     public String toString() {
-        return super.toString() + "[fileName:" + storageFile.getFileName() + ", blockSize:" + getRecordDataSize() + "]";
+        return super.toString() + "[storePath:" + storeFile + ", blockSize:" + getRecordDataSize() + "]";
     }
 
     HeavyRecordData readFullByteArray(

@@ -50,6 +50,7 @@ import org.neo4j.index.internal.gbptree.FreelistIdProvider.Monitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -82,7 +83,10 @@ class FreeListIdProviderTest {
     @BeforeEach
     void setUpPagedFile() throws IOException {
         pagedFile = pageCache.map(
-                directory.file("freelist"), PAYLOAD_SIZE, "db", Sets.immutable.of(StandardOpenOption.CREATE));
+                new StoreFile(directory.file("freelist")),
+                PAYLOAD_SIZE,
+                "db",
+                Sets.immutable.of(StandardOpenOption.CREATE));
         freelist = new FreelistIdProvider(pagedFile, monitor);
         freelist.initialize(BASE_ID + 1, BASE_ID + 1, BASE_ID + 1, 0, 0);
     }

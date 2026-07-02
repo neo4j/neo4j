@@ -35,7 +35,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -53,6 +52,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -84,10 +84,10 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
 
     @BeforeEach
     void setUp() throws IOException {
-        Path file = dir.file("label-tokens.db");
-        Path idFile = dir.file("label-tokens.db.id");
-        Path namesFile = dir.file("label-tokens.db.names");
-        Path namesIdFile = dir.file("label-tokens.db.names.id");
+        StoreFile file = new StoreFile(dir.file("label-tokens.db"));
+        StoreFile idFile = new StoreFile(dir.file("label-tokens.db.id"));
+        StoreFile namesFile = new StoreFile(dir.file("label-tokens.db.names"));
+        StoreFile namesIdFile = new StoreFile(dir.file("label-tokens.db.names.id"));
 
         IdGeneratorFactory generatorFactory =
                 new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME);
@@ -126,8 +126,8 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
 
     protected abstract TokenStore<R> instantiateStore(
             FileSystemAbstraction fileSystem,
-            Path file,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             IdGeneratorFactory generatorFactory,
             PageCache pageCache,
             InternalLogProvider logProvider,

@@ -79,6 +79,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.OldestVisibilityHorizonFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.util.Preconditions;
@@ -250,7 +251,7 @@ public class IndexedIdGenerator implements IdGenerator {
     private final AtomicLong highestWrittenId = new AtomicLong();
 
     private final FileSystemAbstraction fileSystem;
-    private final Path path;
+    private final StoreFile storeFile;
 
     /**
      * {@code false} after construction and before a call to {@link IdGenerator#start(FreeIds, CursorContext)},
@@ -279,7 +280,7 @@ public class IndexedIdGenerator implements IdGenerator {
     public IndexedIdGenerator(
             PageCache pageCache,
             FileSystemAbstraction fileSystem,
-            Path path,
+            StoreFile storeFile,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             IdType idType,
             boolean allowLargeIdCaches,
@@ -296,7 +297,7 @@ public class IndexedIdGenerator implements IdGenerator {
             boolean allocationEnabled,
             boolean useDirectToCache) {
         this.fileSystem = fileSystem;
-        this.path = path;
+        this.storeFile = storeFile;
         this.readOnly = readOnly;
         this.contextFactory = contextFactory;
         this.slotDistribution = slotDistribution;
@@ -319,7 +320,7 @@ public class IndexedIdGenerator implements IdGenerator {
         HeaderReader header = new HeaderReader();
         this.tree = instantiateTree(
                 pageCache,
-                path,
+                storeFile,
                 header,
                 recoveryCleanupWorkCollector,
                 readOnly,
@@ -379,7 +380,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     private GBPTree<IdRangeKey, IdRange> instantiateTree(
             PageCache pageCache,
-            Path path,
+            StoreFile storeFile,
             HeaderReader headerReader,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean readOnly,
@@ -391,7 +392,7 @@ public class IndexedIdGenerator implements IdGenerator {
             return new GBPTree<>(
                     pageCache,
                     fileSystem,
-                    path,
+                    storeFile,
                     layout,
                     MultiRootGBPTree.NO_MONITOR,
                     headerReader,
@@ -404,11 +405,11 @@ public class IndexedIdGenerator implements IdGenerator {
                     pageCacheTracer,
                     EmptyDependencyResolver.EMPTY_RESOLVER,
                     TreeNodeLayoutFactory.getInstance(),
-                    structureWriteLog(fileSystem, path, config));
+                    structureWriteLog(fileSystem, storeFile, config));
         } catch (TreeFileNotFoundException e) {
             throw new IllegalStateException(
-                    "Id generator file could not be found, most likely this database needs to be recovered, file:"
-                            + path,
+                    "Id generator file could not be found, most likely this database needs to be recovered, store path:"
+                            + storeFile,
                     e);
         }
     }
@@ -866,8 +867,8 @@ public class IndexedIdGenerator implements IdGenerator {
         return highestWrittenId.get();
     }
 
-    public Path path() {
-        return path;
+    public StoreFile storeFile() {
+        return storeFile;
     }
 
     /**
@@ -906,7 +907,7 @@ public class IndexedIdGenerator implements IdGenerator {
         try (GBPTree<IdRangeKey, IdRange> tree = new GBPTree<>(
                 pageCache,
                 fileSystem,
-                path,
+                new StoreFile(path),
                 layout,
                 MultiRootGBPTree.NO_MONITOR,
                 NO_HEADER_READER,
@@ -1080,7 +1081,7 @@ public class IndexedIdGenerator implements IdGenerator {
     }
 
     private void assertNotReadOnly() {
-        Preconditions.checkState(!readOnly, "ID generator '%s' is read-only", path);
+        Preconditions.checkState(!readOnly, "ID generator '%s' is read-only", storeFile);
     }
 
     private static boolean isMultiVersioned(ImmutableSet<OpenOption> openOptions) {

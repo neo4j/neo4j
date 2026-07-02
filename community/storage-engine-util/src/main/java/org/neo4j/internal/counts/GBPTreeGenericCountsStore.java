@@ -69,6 +69,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
@@ -125,7 +126,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
 
     public GBPTreeGenericCountsStore(
             PageCache pageCache,
-            Path file,
+            StoreFile storeFile,
             FileSystemAbstraction fileSystem,
             RecoveryCleanupWorkCollector recoveryCollector,
             Rebuilder rebuilder,
@@ -155,7 +156,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
         try {
             instantiatedTree = instantiateTree(
                     pageCache,
-                    file,
+                    storeFile,
                     recoveryCollector,
                     readOnly,
                     headerReader,
@@ -164,11 +165,11 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
                     openOptions);
         } catch (MetadataMismatchException e) {
             // Corrupt, delete and rebuild
-            fileSystem.deleteFileOrThrow(file);
+            storeFile.delete(fileSystem);
             headerReader = CountsHeader.reader();
             instantiatedTree = instantiateTree(
                     pageCache,
-                    file,
+                    storeFile,
                     recoveryCollector,
                     readOnly,
                     headerReader,
@@ -204,7 +205,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
 
     private GBPTree<CountsKey, CountsValue> instantiateTree(
             PageCache pageCache,
-            Path file,
+            StoreFile storeFile,
             RecoveryCleanupWorkCollector recoveryCollector,
             boolean readOnly,
             CountsHeader.Reader headerReader,
@@ -215,7 +216,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
             return new GBPTree<>(
                     pageCache,
                     fileSystem,
-                    file,
+                    storeFile,
                     layout,
                     MultiRootGBPTree.NO_MONITOR,
                     headerReader,
@@ -229,7 +230,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
         } catch (TreeFileNotFoundException e) {
             throw new IllegalStateException(
                     "Counts store file could not be found, most likely this database needs to be recovered, file:"
-                            + file,
+                            + storeFile,
                     e);
         }
     }
@@ -622,7 +623,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
      *
      * @param pageCache {@link PageCache} to use to map the counts store file into.
      * @param fileSystem
-     * @param file {@link Path} pointing out the counts store.
+     * @param storeFile {@link Path} pointing out the counts store.
      * @param out to print to.
      * @param databaseName name of the database tree belongs to.
      * @param name of the {@link GBPTree}.
@@ -634,7 +635,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
     protected static void dump(
             PageCache pageCache,
             FileSystemAbstraction fileSystem,
-            Path file,
+            StoreFile storeFile,
             PrintStream out,
             String databaseName,
             String name,
@@ -647,14 +648,14 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
         // throw if not found
         CountsHeader.Reader headerReader = CountsHeader.reader();
         try (var cursorContext = contextFactory.create("dump")) {
-            MultiRootGBPTree.readHeader(pageCache, file, headerReader, databaseName, cursorContext, openOptions);
+            MultiRootGBPTree.readHeader(pageCache, storeFile, headerReader, databaseName, cursorContext, openOptions);
         }
 
         // Now open it and dump its contents
         try (GBPTree<CountsKey, CountsValue> tree = new GBPTree<>(
                 pageCache,
                 fileSystem,
-                file,
+                storeFile,
                 new CountsLayout(),
                 MultiRootGBPTree.NO_MONITOR,
                 headerReader,

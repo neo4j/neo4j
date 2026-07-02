@@ -124,6 +124,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.CommonDatabaseStores;
@@ -132,6 +133,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
@@ -1864,7 +1866,7 @@ class RecoveryIT {
     void failRecoveryWithMissingStoreFile() throws Exception {
         GraphDatabaseAPI database = createDatabase();
         generateSomeData(database);
-        Path storeFile = getStoreFile(database);
+        Path storeFile = getStoreFile(database, fileSystem);
         managementService.shutdown();
         fileSystem.deleteFileOrThrow(storeFile);
 
@@ -1887,7 +1889,7 @@ class RecoveryIT {
     void failRecoveryWithMissingStoreFileAndIdFile() throws Exception {
         GraphDatabaseAPI database = createDatabase();
         generateSomeData(database);
-        Path storeFile = getStoreFile(database);
+        Path storeFile = getStoreFile(database, fileSystem);
         Path idFile = getIdFile(database);
         managementService.shutdown();
 
@@ -1983,7 +1985,7 @@ class RecoveryIT {
                 new DefaultIdGeneratorFactory(fileSystem, immediate(), PageCacheTracer.NULL, "my db");
         try (IdGenerator idGenerator = idGeneratorFactory.open(
                 pageCache,
-                idFile,
+                new StoreFile(idFile),
                 TEST_NODE_TYPE,
                 () -> 0L /*will not be used*/,
                 10_000,
@@ -2734,7 +2736,7 @@ class RecoveryIT {
                 new DefaultIdGeneratorFactory(fileSystem, immediate(), PageCacheTracer.NULL, "my db");
         try (IdGenerator idGenerator = idGeneratorFactory.open(
                 pageCache,
-                path,
+                new StoreFile(path),
                 TEST_NODE_TYPE,
                 () -> 0L /*will not be used*/,
                 10_000,
@@ -3002,13 +3004,14 @@ class RecoveryIT {
                 .listStorageFiles(new StorageFileSelection(false, false, true));
     }
 
-    private static Path getStoreFile(GraphDatabaseAPI db) {
+    private static Path getStoreFile(GraphDatabaseAPI db, FileSystemAbstraction fs) {
         Set<Path> files = new HashSet<>(db.getDependencyResolver()
                 .resolveDependency(StorageEngine.class)
                 .listStorageFiles(new StorageFileSelection(true, true, false)));
         var layout = db.databaseLayout();
-        files.remove(layout.pathForStore(CommonDatabaseStores.METADATA));
-        files.remove(layout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS));
+        files.removeAll(layout.pathForStore(CommonDatabaseStores.METADATA).allSegments(fs));
+        files.removeAll(
+                layout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS).allSegments(fs));
         return getFirstSortedOnName(files);
     }
 

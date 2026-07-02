@@ -43,7 +43,6 @@ import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
@@ -73,6 +72,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.prefetch.PagePrefetcher;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -933,7 +933,7 @@ public final class Recovery {
     }
 
     static void checkIfUnrecoverable(StorageFilesState state) {
-        final List<Path> missingFiles = state.missingFiles();
+        final List<StoreFile> missingFiles = state.missingFiles();
         if (missingFiles != null && !missingFiles.isEmpty()) {
             final boolean plural = missingFiles.size() > 1;
             throw new RuntimeException(

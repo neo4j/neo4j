@@ -86,7 +86,7 @@ public class MultiVersionTokenIndexPopulator implements IndexPopulator {
         tokenIndex.instantiateTree(RecoveryCleanupWorkCollector.immediate());
         tokenIndex.instantiateUpdater();
         tokenIndex.indexFiles.ensureDirectoryExist();
-        Path storeFile = tokenIndex.indexFiles.getStoreFile();
+        Path storeFile = tokenIndex.indexFiles.getStoreFile().baseSegment();
         Path externalUpdatesFile = storeFile.resolveSibling(storeFile.getFileName() + ".ext");
         external = new MultiVersionTokenIndexUpdateStorage(fs, externalUpdatesFile, memoryTracker);
     }
@@ -251,6 +251,4 @@ public class MultiVersionTokenIndexPopulator implements IndexPopulator {
     public ResourceIterator<Path> snapshotFiles() {
         return tokenIndex.snapshotFiles();
     }
-
-    private record VersionedTokenUpdate(TokenIndexEntryUpdate update, long version) {}
 }

@@ -47,6 +47,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheTestSupport;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.randomharness.Command;
 import org.neo4j.io.pagecache.randomharness.PageCountRecordFormat;
 import org.neo4j.io.pagecache.randomharness.Phase;
@@ -109,7 +110,8 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             additionalDisabledCommands().forEach(harness::disableCommands);
             harness.setPreparation((cache, fs, filesTouched) -> {
                 Path file = filesTouched.iterator().next();
-                try (var pf = cache.map(file, cache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
+                try (var pf = cache.map(
+                                new StoreFile(file), cache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
                         var cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                     for (int pageId = 0; pageId < filePageCount; pageId++) {
                         cursor.next();
@@ -219,7 +221,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
         return (cache, fs1, filesTouched) -> {
             for (Path file : filesTouched) {
                 var openOptions = getOpenOptions();
-                try (var pf = cache.map(file, cache.pageSize(), DEFAULT_DATABASE_NAME, openOptions);
+                try (var pf = cache.map(new StoreFile(file), cache.pageSize(), DEFAULT_DATABASE_NAME, openOptions);
                         var cursor = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                     for (int pageId = 0; pageId < filePageCount && cursor.next(); pageId++) {
                         try {

@@ -76,6 +76,7 @@ import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -369,11 +370,6 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     public static final Header.Reader NO_HEADER_READER = headerData -> {};
 
     /**
-     * No-op header writer.
-     */
-    public static final Consumer<PageCursor> NO_HEADER_WRITER = pc -> {};
-
-    /**
      * Paged file in a {@link PageCache} providing the means of storage.
      */
     protected final PagedFile pagedFile;
@@ -466,7 +462,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     private final PageCacheTracer pageCacheTracer;
 
     /**
-     * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(Path, int, String, ImmutableSet)}
+     * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(StoreFile, int, String, ImmutableSet)}
      * at open/create. When initially creating the file an array consisting of {@link StandardOpenOption#CREATE}
      * concatenated with the contents of this array is passed into the map call.
      */
@@ -556,7 +552,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      *
      * @param pageCache                    {@link PageCache} to use to map index file
      * @param fileSystem                   {@link FileSystemAbstraction} which the index file is mapped in
-     * @param indexFile                    {@link Path} containing the actual index
+     * @param storeFile                    {@link StoreFile} containing the actual index
      * @param layout                       {@link Layout} to use in the tree, this must match the existing layout
      *                                     we're just opening the index
      * @param monitor                      {@link Monitor} for monitoring {@link GBPTree}.
@@ -573,7 +569,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     public MultiRootGBPTree(
             PageCache pageCache,
             FileSystemAbstraction fileSystem,
-            Path indexFile,
+            StoreFile storeFile,
             Layout<KEY, VALUE> layout,
             Monitor monitor,
             Reader headerReader,
@@ -590,7 +586,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             StructureWriteLog structureWriteLog,
             boolean preserveUnstableGeneration)
             throws MetadataMismatchException {
-        this.indexFile = indexFile;
+        this.indexFile = storeFile.baseSegment();
         this.monitor = monitor;
         this.readOnly = readOnly;
         this.contextFactory = contextFactory;
@@ -601,7 +597,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         this.structureWriteLog = structureWriteLog;
 
         try (var cursorContext = contextFactory.create(INDEX_INTERNAL_TAG)) {
-            var openResult = openOrCreate(fileSystem, pageCache, indexFile, databaseName, openOptions);
+            var openResult = openOrCreate(fileSystem, pageCache, storeFile, databaseName, openOptions);
             boolean created = openResult.created;
             this.pagedFile = openResult.pagedFile;
             closed = false;
@@ -693,12 +689,12 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     private OpenResult openOrCreate(
             FileSystemAbstraction fs,
             PageCache pageCache,
-            Path indexFile,
+            StoreFile indexFile,
             String databaseName,
             ImmutableSet<OpenOption> openOptions)
             throws IOException, TreeFileNotFoundException {
         openOptions = openOptions.newWithoutAll(asList(GBPTreeOpenOptions.values()));
-        if (!fs.fileExists(indexFile)) {
+        if (!indexFile.exists(fs)) {
             if (readOnly) {
                 throw new TreeFileNotFoundException(
                         "Can not create new tree file '" + indexFile + "' in read only mode.");
@@ -766,7 +762,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
 
     private static PagedFile openExistingIndexFile(
             PageCache pageCache,
-            Path indexFile,
+            StoreFile indexFile,
             CursorContext cursorContext,
             String databaseName,
             ImmutableSet<OpenOption> openOptions)
@@ -884,7 +880,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      */
     public static void readHeader(
             PageCache pageCache,
-            Path indexFile,
+            StoreFile indexFile,
             Header.Reader headerReader,
             String databaseName,
             CursorContext cursorContext,
@@ -998,7 +994,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     @VisibleForTesting
     public static void overwriteHeader(
             PageCache pageCache,
-            Path indexFile,
+            StoreFile indexFile,
             Consumer<PageCursor> headerWriter,
             String databaseName,
             CursorContext cursorContext,

@@ -23,13 +23,13 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERT
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -44,8 +44,8 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord> {
 
     public PropertyKeyTokenStore(
             FileSystemAbstraction fileSystem,
-            Path path,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -58,8 +58,8 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord> {
             ImmutableSet<OpenOption> openOptions) {
         super(
                 fileSystem,
-                path,
-                idFile,
+                storeFile,
+                idStoreFile,
                 config,
                 RecordIdType.PROPERTY_KEY_TOKEN,
                 idGeneratorFactory,

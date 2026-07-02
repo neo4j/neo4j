@@ -56,6 +56,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileMappedListener;
@@ -81,7 +82,7 @@ class DatabasePageCacheTest {
     void setUp() throws IOException {
         globalPageCache = mock(PageCache.class);
         pagedFileMapper = new PagedFileAnswer();
-        when(globalPageCache.map(any(Path.class), eq(PAGE_SIZE), any(), any(), any(), any(), any()))
+        when(globalPageCache.map(any(StoreFile.class), eq(PAGE_SIZE), any(), any(), any(), any(), any()))
                 .then(pagedFileMapper);
         databasePageCache = createPageCache();
     }
@@ -96,19 +97,27 @@ class DatabasePageCacheTest {
     @Test
     void mapDatabaseFile() throws IOException {
         Path mapFile = testDirectory.createFile("mapFile");
-        PagedFile pagedFile = databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME, immutable.empty());
+        PagedFile pagedFile =
+                databasePageCache.map(new StoreFile(mapFile), PAGE_SIZE, DATABASE_NAME, immutable.empty());
 
         assertNotNull(pagedFile);
         verify(globalPageCache)
-                .map(mapFile, PAGE_SIZE, DATABASE_NAME, immutable.empty(), DISABLED, ALWAYS_ALLOW, EMPTY_STORAGE);
+                .map(
+                        new StoreFile(mapFile),
+                        PAGE_SIZE,
+                        DATABASE_NAME,
+                        immutable.empty(),
+                        DISABLED,
+                        ALWAYS_ALLOW,
+                        EMPTY_STORAGE);
     }
 
     @Test
     void listExistingDatabaseMappings() throws IOException {
         Path mapFile1 = testDirectory.createFile("mapFile1");
         Path mapFile2 = testDirectory.createFile("mapFile2");
-        PagedFile pagedFile = databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
-        PagedFile pagedFile2 = databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
+        PagedFile pagedFile = databasePageCache.map(new StoreFile(mapFile1), PAGE_SIZE, DATABASE_NAME);
+        PagedFile pagedFile2 = databasePageCache.map(new StoreFile(mapFile2), PAGE_SIZE, DATABASE_NAME);
 
         List<PagedFile> pagedFiles = databasePageCache.listExistingMappings();
         assertThat(pagedFiles).hasSize(2);
@@ -123,10 +132,10 @@ class DatabasePageCacheTest {
             Path mapFile2 = testDirectory.createFile("mapFile2");
             Path mapFile3 = testDirectory.createFile("mapFile3");
             Path mapFile4 = testDirectory.createFile("mapFile4");
-            PagedFile pagedFile = databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
-            PagedFile pagedFile2 = databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
-            PagedFile pagedFile3 = anotherDatabaseCache.map(mapFile3, PAGE_SIZE, DATABASE_NAME);
-            PagedFile pagedFile4 = anotherDatabaseCache.map(mapFile4, PAGE_SIZE, DATABASE_NAME);
+            PagedFile pagedFile = databasePageCache.map(new StoreFile(mapFile1), PAGE_SIZE, DATABASE_NAME);
+            PagedFile pagedFile2 = databasePageCache.map(new StoreFile(mapFile2), PAGE_SIZE, DATABASE_NAME);
+            PagedFile pagedFile3 = anotherDatabaseCache.map(new StoreFile(mapFile3), PAGE_SIZE, DATABASE_NAME);
+            PagedFile pagedFile4 = anotherDatabaseCache.map(new StoreFile(mapFile4), PAGE_SIZE, DATABASE_NAME);
 
             List<PagedFile> pagedFiles = databasePageCache.listExistingMappings();
             assertThat(pagedFiles).hasSize(2);
@@ -145,20 +154,36 @@ class DatabasePageCacheTest {
             Path mapFile2 = testDirectory.createFile("mapFile2");
             Path mapFile3 = testDirectory.createFile("mapFile3");
             Path mapFile4 = testDirectory.createFile("mapFile4");
-            databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
-            databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
-            anotherDatabaseCache.map(mapFile3, PAGE_SIZE, DATABASE_NAME);
-            anotherDatabaseCache.map(mapFile4, PAGE_SIZE, DATABASE_NAME);
+            databasePageCache.map(new StoreFile(mapFile1), PAGE_SIZE, DATABASE_NAME);
+            databasePageCache.map(new StoreFile(mapFile2), PAGE_SIZE, DATABASE_NAME);
+            anotherDatabaseCache.map(new StoreFile(mapFile3), PAGE_SIZE, DATABASE_NAME);
+            anotherDatabaseCache.map(new StoreFile(mapFile4), PAGE_SIZE, DATABASE_NAME);
 
-            assertTrue(databasePageCache.getExistingMapping(mapFile1).isPresent());
-            assertTrue(databasePageCache.getExistingMapping(mapFile2).isPresent());
-            assertFalse(databasePageCache.getExistingMapping(mapFile3).isPresent());
-            assertFalse(databasePageCache.getExistingMapping(mapFile4).isPresent());
+            assertTrue(databasePageCache
+                    .getExistingMapping(new StoreFile(mapFile1))
+                    .isPresent());
+            assertTrue(databasePageCache
+                    .getExistingMapping(new StoreFile(mapFile2))
+                    .isPresent());
+            assertFalse(databasePageCache
+                    .getExistingMapping(new StoreFile(mapFile3))
+                    .isPresent());
+            assertFalse(databasePageCache
+                    .getExistingMapping(new StoreFile(mapFile4))
+                    .isPresent());
 
-            assertFalse(anotherDatabaseCache.getExistingMapping(mapFile1).isPresent());
-            assertFalse(anotherDatabaseCache.getExistingMapping(mapFile2).isPresent());
-            assertTrue(anotherDatabaseCache.getExistingMapping(mapFile3).isPresent());
-            assertTrue(anotherDatabaseCache.getExistingMapping(mapFile4).isPresent());
+            assertFalse(anotherDatabaseCache
+                    .getExistingMapping(new StoreFile(mapFile1))
+                    .isPresent());
+            assertFalse(anotherDatabaseCache
+                    .getExistingMapping(new StoreFile(mapFile2))
+                    .isPresent());
+            assertTrue(anotherDatabaseCache
+                    .getExistingMapping(new StoreFile(mapFile3))
+                    .isPresent());
+            assertTrue(anotherDatabaseCache
+                    .getExistingMapping(new StoreFile(mapFile4))
+                    .isPresent());
         }
     }
 
@@ -176,10 +201,10 @@ class DatabasePageCacheTest {
             Path mapFile2 = testDirectory.createFile("mapFile2");
             Path mapFile3 = testDirectory.createFile("mapFile3");
             Path mapFile4 = testDirectory.createFile("mapFile4");
-            databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
-            databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
-            anotherDatabaseCache.map(mapFile3, PAGE_SIZE, DATABASE_NAME);
-            anotherDatabaseCache.map(mapFile4, PAGE_SIZE, DATABASE_NAME);
+            databasePageCache.map(new StoreFile(mapFile1), PAGE_SIZE, DATABASE_NAME);
+            databasePageCache.map(new StoreFile(mapFile2), PAGE_SIZE, DATABASE_NAME);
+            anotherDatabaseCache.map(new StoreFile(mapFile3), PAGE_SIZE, DATABASE_NAME);
+            anotherDatabaseCache.map(new StoreFile(mapFile4), PAGE_SIZE, DATABASE_NAME);
 
             databasePageCache.flushAndForce(DatabaseFlushEvent.NULL);
 
@@ -203,10 +228,10 @@ class DatabasePageCacheTest {
             Path mapFile2 = testDirectory.createFile("mapFile2");
             Path mapFile3 = testDirectory.createFile("mapFile3");
             Path mapFile4 = testDirectory.createFile("mapFile4");
-            databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
-            databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
-            anotherDatabaseCache.map(mapFile3, PAGE_SIZE, DATABASE_NAME);
-            anotherDatabaseCache.map(mapFile4, PAGE_SIZE, DATABASE_NAME);
+            databasePageCache.map(new StoreFile(mapFile1), PAGE_SIZE, DATABASE_NAME);
+            databasePageCache.map(new StoreFile(mapFile2), PAGE_SIZE, DATABASE_NAME);
+            anotherDatabaseCache.map(new StoreFile(mapFile3), PAGE_SIZE, DATABASE_NAME);
+            anotherDatabaseCache.map(new StoreFile(mapFile4), PAGE_SIZE, DATABASE_NAME);
 
             databasePageCache.flushAndForce(DatabaseFlushEvent.NULL);
 
@@ -227,8 +252,8 @@ class DatabasePageCacheTest {
     void closingFileCloseCacheMapping() throws IOException {
         Path mapFile1 = testDirectory.createFile("mapFile1");
         Path mapFile2 = testDirectory.createFile("mapFile2");
-        PagedFile pagedFile1 = databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
-        PagedFile pagedFile2 = databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
+        PagedFile pagedFile1 = databasePageCache.map(new StoreFile(mapFile1), PAGE_SIZE, DATABASE_NAME);
+        PagedFile pagedFile2 = databasePageCache.map(new StoreFile(mapFile2), PAGE_SIZE, DATABASE_NAME);
 
         assertEquals(2, databasePageCache.listExistingMappings().size());
 
@@ -248,15 +273,15 @@ class DatabasePageCacheTest {
         Path mapFile3 = testDirectory.createFile("mapFile3");
         Path mapFile4 = testDirectory.createFile("mapFile4");
 
-        var mappedFile1 = databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
+        var mappedFile1 = databasePageCache.map(new StoreFile(mapFile1), PAGE_SIZE, DATABASE_NAME);
 
         var mapListener1 = new TestFileMappedListener();
         var mapListener2 = new TestFileMappedListener();
         databasePageCache.registerFileMappedListener(mapListener1);
         databasePageCache.registerFileMappedListener(mapListener2);
 
-        var mappedFile2 = databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
-        var mappedFile4 = databasePageCache.map(mapFile4, PAGE_SIZE, DATABASE_NAME);
+        var mappedFile2 = databasePageCache.map(new StoreFile(mapFile2), PAGE_SIZE, DATABASE_NAME);
+        var mappedFile4 = databasePageCache.map(new StoreFile(mapFile4), PAGE_SIZE, DATABASE_NAME);
 
         assertThat(mapListener1.getMappedHistory()).containsExactly(mappedFile2, mappedFile4);
         assertThat(mapListener2.getMappedHistory()).containsExactly(mappedFile2, mappedFile4);
@@ -284,8 +309,8 @@ class DatabasePageCacheTest {
         Path mapFile1 = testDirectory.createFile("mapFile1");
         Path mapFile2 = testDirectory.createFile("mapFile2");
 
-        PagedFile pf1 = databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
-        PagedFile pf2 = databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
+        PagedFile pf1 = databasePageCache.map(new StoreFile(mapFile1), PAGE_SIZE, DATABASE_NAME);
+        PagedFile pf2 = databasePageCache.map(new StoreFile(mapFile2), PAGE_SIZE, DATABASE_NAME);
         List<PagedFile> pagedFiles = pagedFileMapper.getPagedFiles();
         PagedFile originalPagedFile1 = findPagedFile(pagedFiles, mapFile1);
         PagedFile originalPagedFile2 = findPagedFile(pagedFiles, mapFile2);
@@ -309,8 +334,8 @@ class DatabasePageCacheTest {
         Path mapFile1 = testDirectory.createFile("mapFile1");
         Path mapFile2 = testDirectory.createFile("mapFile2");
 
-        databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
-        databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
+        databasePageCache.map(new StoreFile(mapFile1), PAGE_SIZE, DATABASE_NAME);
+        databasePageCache.map(new StoreFile(mapFile2), PAGE_SIZE, DATABASE_NAME);
         List<PagedFile> pagedFiles = pagedFileMapper.getPagedFiles();
         PagedFile originalPagedFile1 = findPagedFileByMappingOrder(0, pagedFiles);
         PagedFile originalPagedFile2 = findPagedFileByMappingOrder(1, pagedFiles);
@@ -336,8 +361,8 @@ class DatabasePageCacheTest {
         Path mapFile1 = testDirectory.createFile("mapFile1");
         Path mapFile2 = testDirectory.createFile("mapFile2");
 
-        PagedFile pf = databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
-        databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
+        PagedFile pf = databasePageCache.map(new StoreFile(mapFile1), PAGE_SIZE, DATABASE_NAME);
+        databasePageCache.map(new StoreFile(mapFile2), PAGE_SIZE, DATABASE_NAME);
         List<PagedFile> pagedFiles = pagedFileMapper.getPagedFiles();
         PagedFile originalPagedFile1 = findPagedFile(pagedFiles, mapFile1);
         PagedFile originalPagedFile2 = findPagedFile(pagedFiles, mapFile2);
@@ -361,11 +386,11 @@ class DatabasePageCacheTest {
         var mapFile = testDirectory.createFile("mapFile");
         var listener = new TestFileMappedListener();
         databasePageCache.registerFileMappedListener(listener);
-        var firstMapping = databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
+        var firstMapping = databasePageCache.map(new StoreFile(mapFile), PAGE_SIZE, DATABASE_NAME);
         assertThat(listener.mappedHistory).isEqualTo(List.of(firstMapping));
 
         // When
-        databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
+        databasePageCache.map(new StoreFile(mapFile), PAGE_SIZE, DATABASE_NAME);
 
         // Then
         assertThat(listener.mappedHistory).isEqualTo(List.of(firstMapping));
@@ -377,8 +402,8 @@ class DatabasePageCacheTest {
         var mapFile = testDirectory.createFile("mapFile");
         var listener = new TestFileMappedListener();
         databasePageCache.registerFileMappedListener(listener);
-        var firstMapping = databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
-        var secondMapping = databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
+        var firstMapping = databasePageCache.map(new StoreFile(mapFile), PAGE_SIZE, DATABASE_NAME);
+        var secondMapping = databasePageCache.map(new StoreFile(mapFile), PAGE_SIZE, DATABASE_NAME);
         firstMapping.close();
         assertThat(listener.mappedHistory).isEqualTo(List.of(firstMapping));
         assertThat(listener.unmappedHistory).isEmpty();
@@ -394,8 +419,8 @@ class DatabasePageCacheTest {
     void shouldCloseMultipleMappingsOnSameFileOnPageCacheClose() throws IOException {
         // Given
         var mapFile = testDirectory.createFile("mapFile");
-        databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
-        databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
+        databasePageCache.map(new StoreFile(mapFile), PAGE_SIZE, DATABASE_NAME);
+        databasePageCache.map(new StoreFile(mapFile), PAGE_SIZE, DATABASE_NAME);
         assertThat(pagedFileMapper.pagedFiles).hasSize(1);
 
         // When
@@ -439,15 +464,15 @@ class DatabasePageCacheTest {
         public PagedFile answer(InvocationOnMock invocation) {
             // This behaviour makes this mocked page cache behave like MuninnPageCache regarding mapping
             // a file multiple times
-            Path path = invocation.getArgument(0);
+            StoreFile storeFile = invocation.getArgument(0);
             for (PagedFile pagedFile : pagedFiles) {
-                if (pagedFile.path().equals(path)) {
+                if (pagedFile.path().equals(storeFile.baseSegment())) {
                     return pagedFile;
                 }
             }
 
             PagedFile pagedFile = mock(PagedFile.class);
-            when(pagedFile.path()).thenReturn(path);
+            when(pagedFile.path()).thenReturn(storeFile.baseSegment());
             pagedFiles.add(pagedFile);
             return pagedFile;
         }

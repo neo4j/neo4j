@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.util.concurrent.Futures;
 
@@ -73,8 +74,8 @@ public class PageCacheStresser {
         var format = new RecordFormat(numberOfThreads, pageCache.pagePayloadSize(openOptions));
         int filePageSize = format.getFilePayloadSize() + pageCache.pageReservedBytes(openOptions);
 
-        try (var pagedFile =
-                pageCache.map(file, filePageSize, prefix, openOptions.newWith(StandardOpenOption.DELETE_ON_CLOSE))) {
+        try (var pagedFile = pageCache.map(
+                new StoreFile(file), filePageSize, prefix, openOptions.newWith(StandardOpenOption.DELETE_ON_CLOSE))) {
             var recordStressers = prepare(condition, pagedFile, format, cacheTracer);
             verifyResults(format, pagedFile, recordStressers);
             execute(recordStressers);

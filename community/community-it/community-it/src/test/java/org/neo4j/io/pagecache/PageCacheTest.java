@@ -105,6 +105,7 @@ import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.muninn.CacheLiveLockException;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapperFactory;
@@ -133,7 +134,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     protected PagedFile map(PageCache pageCache, Path file, int filePageSize, ImmutableSet<OpenOption> options)
             throws IOException {
         return pageCache.map(
-                file, filePageSize, DEFAULT_DATABASE_NAME, getOpenOptions().newWithAll(options));
+                new StoreFile(file),
+                filePageSize,
+                DEFAULT_DATABASE_NAME,
+                getOpenOptions().newWithAll(options));
     }
 
     protected PagedFile map(PageCache pageCache, Path file, int filePageSize) throws IOException {
@@ -248,8 +252,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void pagedFileFlushAndForceMustThrowOnNullIOPSLimiter() {
         configureStandardPageCache();
         assertThrows(NullPointerException.class, () -> {
-            try (PagedFile pf =
-                    pageCache.map(file("a"), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), null)) {
+            try (PagedFile pf = pageCache.map(
+                    new StoreFile(file("a")), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), null)) {
                 // empty
             }
         });
@@ -265,10 +269,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         AtomicInteger callbackCounter = new AtomicInteger();
         AtomicInteger ioCounter = new AtomicInteger();
         PageCacheIOController ioController = new PageCacheIOController(ioCounter, pagesPerFlush, callbackCounter);
-        PagedFile pfA =
-                cache.map(existingFile("a"), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController);
-        PagedFile pfB =
-                cache.map(existingFile("b"), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController);
+        PagedFile pfA = cache.map(
+                new StoreFile(existingFile("a")), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController);
+        PagedFile pfB = cache.map(
+                new StoreFile(existingFile("b")), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController);
 
         dirtyManyPages(pfA, pagesToDirty);
         dirtyManyPages(pfB, pagesToDirty);
@@ -293,7 +297,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         AtomicInteger ioCounter = new AtomicInteger();
         PageCacheIOController ioController = new PageCacheIOController(ioCounter, pagesPerFlush, callbackCounter);
 
-        PagedFile pf = cache.map(file("a"), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController);
+        PagedFile pf = cache.map(
+                new StoreFile(file("a")), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController);
 
         // Dirty a bunch of data
         dirtyManyPages(pf, pagesToDirty);
@@ -377,8 +382,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     super.maybeLimitIO(recentlyCompletedIOs, affectedPages, flushEvent);
                 }
             };
-            try (PagedFile pfA =
-                    pageCache.map(a, filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController)) {
+            try (PagedFile pfA = pageCache.map(
+                    new StoreFile(a), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController)) {
                 // Dirty a bunch of pages.
                 try (PageCursor cursor = pfA.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                     for (int i = 0; i < maxPages; i++) {
@@ -397,7 +402,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 map(pageCache, b, filePageSize).close();
                 // We should be able to get and list existing mappings.
                 pageCache.listExistingMappings();
-                pageCache.getExistingMapping(a).ifPresent(PagedFile::close);
+                pageCache.getExistingMapping(new StoreFile(a)).ifPresent(PagedFile::close);
 
                 limiterBlockLatch.release();
                 flusher.get();
@@ -417,10 +422,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         var ioController = new LatchedIOController(closeFilesLatch, limiterBlockLatch);
         List<Future<?>> flushers = new ArrayList<>();
 
-        try (PagedFile pfA = pageCache.map(a, filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController);
-                PagedFile pfB = pageCache.map(b, filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController);
-                PagedFile pfC =
-                        pageCache.map(c, filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController)) {
+        try (PagedFile pfA = pageCache.map(
+                        new StoreFile(a), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController);
+                PagedFile pfB = pageCache.map(
+                        new StoreFile(b), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController);
+                PagedFile pfC = pageCache.map(
+                        new StoreFile(c), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController)) {
             // Dirty a bunch of pages.
             try (PageCursor cursor = pfA.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 assertTrue(cursor.next());
@@ -918,7 +925,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void flushAndForceAfterCloseAndEvictionMustNotGetStuckOnEvictedPages() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             configureStandardPageCache();
-            PagedFile pagedFile = pageCache.map(file("a"), pageCachePageSize, DEFAULT_DATABASE_NAME);
+            PagedFile pagedFile = pageCache.map(new StoreFile(file("a")), pageCachePageSize, DEFAULT_DATABASE_NAME);
             try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 for (int i = 0; i < 20; i++) {
                     cursor.next();
@@ -926,7 +933,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
             pagedFile.close();
-            try (PagedFile b = pageCache.map(existingFile("b"), pageCachePageSize, DEFAULT_DATABASE_NAME);
+            try (PagedFile b =
+                            pageCache.map(new StoreFile(existingFile("b")), pageCachePageSize, DEFAULT_DATABASE_NAME);
                     PageCursor cursor = b.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 for (int i = 0; i < 200; i++) {
                     cursor.next();
@@ -1395,7 +1403,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
         final Path file = file("a");
         try (PagedFile pf = map(file, filePageSize)) {
-            final Optional<PagedFile> optional = pageCache.getExistingMapping(file);
+            final Optional<PagedFile> optional = pageCache.getExistingMapping(new StoreFile(file));
             assertTrue(optional.isPresent());
             final PagedFile actual = optional.get();
             assertThat(actual).isSameAs(pf);
@@ -1406,7 +1414,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void tryMappedPagedFileShouldReportNonMappedFileNotPresent() throws Exception {
         configureStandardPageCache();
-        final Optional<PagedFile> dontExist = pageCache.getExistingMapping(Path.of("dont_exist"));
+        final Optional<PagedFile> dontExist = pageCache.getExistingMapping(new StoreFile(Path.of("dont_exist")));
         assertFalse(dontExist.isPresent());
     }
 
@@ -4653,7 +4661,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         Path file = file("a");
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory(fs, flushCounter, cacheTracer);
         try (PageCache cache = createPageCache(fs, maxPages, cacheTracer, swapperFactory);
-                PagedFile pf = cache.map(file, filePageSize, DEFAULT_DATABASE_NAME, immutable.of(DELETE_ON_CLOSE));
+                PagedFile pf = cache.map(
+                        new StoreFile(file), filePageSize, DEFAULT_DATABASE_NAME, immutable.of(DELETE_ON_CLOSE));
                 PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             writeRecords(cursor);
             assertTrue(cursor.next());
@@ -4668,7 +4677,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory(fs, flushCounter, cacheTracer);
         Path file = file("a");
         try (PageCache cache = createPageCache(fs, maxPages, cacheTracer, swapperFactory);
-                PagedFile pf = cache.map(file, filePageSize, DEFAULT_DATABASE_NAME);
+                PagedFile pf = cache.map(new StoreFile(file), filePageSize, DEFAULT_DATABASE_NAME);
                 PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             writeRecords(cursor);
             assertTrue(cursor.next());

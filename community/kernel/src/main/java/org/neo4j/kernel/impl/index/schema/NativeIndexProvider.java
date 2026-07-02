@@ -23,7 +23,6 @@ import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
@@ -44,6 +43,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
@@ -219,7 +219,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
                 contextFactory);
     }
 
-    private Path storeFile(IndexDescriptor descriptor) {
+    private StoreFile storeFile(IndexDescriptor descriptor) {
         IndexFiles indexFiles = indexFiles(descriptor);
         return indexFiles.getStoreFile();
     }

@@ -29,7 +29,6 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -46,6 +45,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
@@ -165,8 +165,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
 
     public PropertyStore(
             FileSystemAbstraction fileSystem,
-            Path path,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             Config configuration,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -181,8 +181,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
             ImmutableSet<OpenOption> openOptions) {
         super(
                 fileSystem,
-                path,
-                idFile,
+                storeFile,
+                idStoreFile,
                 configuration,
                 RecordIdType.PROPERTY,
                 idGeneratorFactory,

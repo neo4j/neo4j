@@ -269,7 +269,7 @@ class CsvInputEstimateCalculationIT {
     }
 
     private long sizeOf(RecordDatabaseFile file) throws IOException {
-        return Files.size(databaseLayout.file(file));
+        return databaseLayout.file(file).size(testDirectory.getFileSystem());
     }
 
     private Input generateData() throws IOException {

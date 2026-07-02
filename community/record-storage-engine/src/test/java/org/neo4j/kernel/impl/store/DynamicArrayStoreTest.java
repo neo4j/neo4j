@@ -48,6 +48,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLogProvider;
@@ -65,8 +66,8 @@ class DynamicArrayStoreTest {
     @Inject
     private PageCache pageCache;
 
-    private final Path storeFile = Path.of("store");
-    private final Path idFile = Path.of("idStore");
+    private final StoreFile storeFile = new StoreFile(Path.of("store"));
+    private final StoreFile idFile = new StoreFile(Path.of("idStore"));
 
     private static Stream<Supplier<Object>> data() {
         return Stream.of(

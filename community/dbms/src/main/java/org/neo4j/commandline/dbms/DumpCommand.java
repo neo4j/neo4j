@@ -189,7 +189,7 @@ public class DumpCommand extends AbstractAdminCommand {
                         throw new CommandFailedException("Database does not exist: " + databaseName, e);
                     }
 
-                    if (fs.fileExists(databaseLayout.file(StoreMigrator.MIGRATION_DIRECTORY))) {
+                    if (fs.fileExists(databaseLayout.path(StoreMigrator.MIGRATION_DIRECTORY))) {
                         throw new CommandFailedException(
                                 "Store migration folder detected - A dump can not be taken during a store migration. Make sure "
                                         + "store migration is completed before trying again.");

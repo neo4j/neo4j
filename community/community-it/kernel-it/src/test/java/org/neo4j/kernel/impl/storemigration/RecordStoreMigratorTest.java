@@ -82,7 +82,7 @@ class RecordStoreMigratorTest {
     }
 
     @AfterEach
-    void tearDown() throws Exception {
+    void tearDown() {
         jobScheduler.close();
     }
 

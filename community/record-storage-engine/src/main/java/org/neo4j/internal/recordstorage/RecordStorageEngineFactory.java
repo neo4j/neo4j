@@ -97,6 +97,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.prefetch.PagePrefetcher;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -316,6 +317,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
 
         return Arrays.stream(RecordDatabaseFile.values())
                 .flatMap(databaseLayout::allFiles)
+                .flatMap(storePath -> storePath.allSegments(fileSystem).stream())
                 .filter(fileSystem::fileExists)
                 .toList();
     }
@@ -703,22 +705,22 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             boolean isDirty) {
         RecordDatabaseLayout recordLayout = formatSpecificDatabaseLayout(databaseLayout);
 
-        Set<Path> storeFiles = Arrays.stream(RecordDatabaseFile.values())
+        Set<StoreFile> storeFiles = Arrays.stream(RecordDatabaseFile.values())
                 .filter(f -> !recordLayout.isRecoverableStore(f))
                 .map(recordLayout::file)
                 .collect(Collectors.toSet());
-        boolean allStoreFilesExist = storeFiles.stream().allMatch(fs::fileExists);
+        boolean allStoreFilesExist = storeFiles.stream().allMatch(sf -> sf.exists(fs));
         if (!allStoreFilesExist) {
             return StorageFilesState.unrecoverableState(
-                    storeFiles.stream().filter(file -> !fs.fileExists(file)).toList());
+                    storeFiles.stream().filter(sp -> !sp.exists(fs)).toList());
         }
 
-        Set<Path> idFiles = Arrays.stream(RecordDatabaseFile.values())
+        Set<StoreFile> idFiles = Arrays.stream(RecordDatabaseFile.values())
                 .map(recordLayout::idFile)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());
-        boolean allIdFilesExist = idFiles.stream().allMatch(fs::fileExists);
+        boolean allIdFilesExist = idFiles.stream().allMatch(sf -> sf.exists(fs));
         if (!allIdFilesExist) {
             return StorageFilesState.recoverableState();
         }
@@ -869,7 +871,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     public long optimalAvailableConsistencyCheckerMemory(
             FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache) {
         RecordDatabaseLayout databaseLayout = formatSpecificDatabaseLayout(layout);
-        CursorContextFactory contextFactory = NULL_CONTEXT_FACTORY;
         var idGeneratorFactory = new DefaultIdGeneratorFactory(
                 fs, immediate(), false, PageCacheTracer.NULL, layout.getDatabaseName(), true, true, null);
         try (NeoStores neoStores = new StoreFactory(
@@ -880,7 +881,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         PageCacheTracer.NULL,
                         fs,
                         NullLogProvider.getInstance(),
-                        contextFactory,
+                        NULL_CONTEXT_FACTORY,
                         true,
                         DatabaseCreationOptions.EMPTY_CREATION_OPTIONS)
                 .openNeoStores(StoreType.NODE_LABEL, StoreType.NODE, StoreType.RELATIONSHIP)) {

@@ -392,8 +392,7 @@ class RecordStorageMigratorIT {
         migrator.postMigration(databaseLayout, versionToMigrateTo, txIdBeforeMigration, txIdAfterMigration);
 
         // THEN starting the new store should be successful
-        assertThat(testDirectory.getFileSystem().fileExists(databaseLayout.relationshipGroupDegreesStore()))
-                .isTrue();
+        assertThat(databaseLayout.relationshipGroupDegreesStore().exists(fs)).isTrue();
         var migratedStoreOpenOptions = engineFactory.getStoreOpenOptions(fs, pageCache, databaseLayout, contextFactory);
         var noCountsRebuildAssertion = new CountsBuilder() {
             @Override
@@ -500,8 +499,7 @@ class RecordStorageMigratorIT {
         migrator.postMigration(databaseLayout, versionToMigrateTo, txIdBeforeMigration, txIdAfterMigration);
 
         // THEN starting the new store should be successful
-        assertThat(testDirectory.getFileSystem().fileExists(databaseLayout.relationshipGroupDegreesStore()))
-                .isTrue();
+        assertThat(databaseLayout.relationshipGroupDegreesStore().exists(fs)).isTrue();
         var countsStoreNeedsRebuild = new MutableBoolean();
         var countsRebuildAssertion = new CountsBuilder() {
             @Override

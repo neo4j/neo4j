@@ -40,6 +40,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 
@@ -169,7 +170,7 @@ class CommandPrimer {
         return new Action(Command.MapFile, "[file=%s]", file) {
             @Override
             public void perform() throws Exception {
-                fileMap.put(file, cache.map(file, filePageSize, DEFAULT_DATABASE_NAME, openOptions));
+                fileMap.put(file, cache.map(new StoreFile(file), filePageSize, DEFAULT_DATABASE_NAME, openOptions));
             }
         };
     }

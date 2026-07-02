@@ -26,7 +26,6 @@ import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -42,6 +41,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleExcept
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -105,8 +105,8 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
 
     public SchemaStore(
             FileSystemAbstraction fileSystem,
-            Path path,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             Config conf,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -120,8 +120,8 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
             ImmutableSet<OpenOption> openOptions) {
         super(
                 fileSystem,
-                path,
-                idFile,
+                storeFile,
+                idStoreFile,
                 conf,
                 idType,
                 idGeneratorFactory,

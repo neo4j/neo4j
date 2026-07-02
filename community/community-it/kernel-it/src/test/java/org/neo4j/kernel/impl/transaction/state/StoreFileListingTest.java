@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -47,6 +48,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.StoreFileListing;
@@ -87,13 +89,15 @@ class StoreFileListingTest {
         String indexDir = "indexes";
         IndexingService indexingService = mock(IndexingService.class);
         DatabaseLayout databaseLayout = mock(DatabaseLayout.class);
-        when(databaseLayout.pathForStore(eq(CommonDatabaseStores.METADATA))).thenReturn(mock(Path.class));
+        StoreFile storeFile = mock(StoreFile.class, RETURNS_MOCKS);
+        when(databaseLayout.pathForStore(eq(CommonDatabaseStores.METADATA))).thenReturn(storeFile);
         LogFiles logFiles = mock(LogFiles.class);
         StorageEngine storageEngine = mock(StorageEngine.class);
-        StoreFileListing fileListing = new StoreFileListing(databaseLayout, logFiles, indexingService, storageEngine);
+        StoreFileListing fileListing = new StoreFileListing(
+                databaseLayout, testDirectory.getFileSystem(), logFiles, indexingService, storageEngine);
 
-        ResourceIterator<Path> indexSnapshot =
-                indexFilesAre(indexingService, new String[] {indexDir + "/mock/my.index"});
+        ResourceIterator<Path> indexSnapshot = indexFilesAre(
+                testDirectory.getFileSystem(), indexingService, new String[] {indexDir + "/mock/my.index"});
 
         ResourceIterator<Path> result = fileListing.builder().excludeLogFiles().build();
 
@@ -107,13 +111,21 @@ class StoreFileListingTest {
     @Test
     void shouldListMetaDataStoreLast() throws Exception {
         Path fileMetadata = Iterators.last(database.listStoreFiles(false));
-        assertEquals(fileMetadata, database.getDatabaseLayout().pathForStore(CommonDatabaseStores.METADATA));
+        assertEquals(
+                fileMetadata,
+                database.getDatabaseLayout()
+                        .pathForStore(CommonDatabaseStores.METADATA)
+                        .baseSegment());
     }
 
     @Test
     void shouldListMetaDataStoreLastWithTxLogs() throws Exception {
         Path fileMetadata = Iterators.last(database.listStoreFiles(true));
-        assertEquals(fileMetadata, database.getDatabaseLayout().pathForStore(CommonDatabaseStores.METADATA));
+        assertEquals(
+                fileMetadata,
+                database.getDatabaseLayout()
+                        .pathForStore(CommonDatabaseStores.METADATA)
+                        .baseSegment());
     }
 
     @Test
@@ -144,14 +156,13 @@ class StoreFileListingTest {
             while (storeFiles.hasNext()) {
                 files.add(storeFiles.next());
             }
-            assertThat(files).contains(layout.metadataStore());
+            assertThat(files).contains(layout.metadataStore().baseSegment());
             assertThat(files.size()).isGreaterThan(1);
         }
     }
 
     @Test
     void shouldListIdFiles() throws Exception {
-        final var layout = database.getDatabaseLayout();
         final var fileListingBuilder = database.getStoreFileListing().builder();
         fileListingBuilder.excludeAll();
         fileListingBuilder.includeIdFiles();
@@ -176,18 +187,18 @@ class StoreFileListingTest {
         }
     }
 
-    private static ResourceIterator<Path> indexFilesAre(IndexingService indexingService, String[] fileNames)
-            throws IOException {
+    private static ResourceIterator<Path> indexFilesAre(
+            FileSystemAbstraction fs, IndexingService indexingService, String[] fileNames) throws IOException {
         List<Path> files = new ArrayList<>();
         mockFiles(fileNames, files, false);
         ResourceIterator<Path> snapshot = spy(asResourceIterator(files.iterator()));
-        when(indexingService.snapshotIndexFiles()).thenReturn(snapshot);
+        when(indexingService.snapshotIndexFiles(fs)).thenReturn(snapshot);
         return snapshot;
     }
 
     private void createIndexDbFile() throws IOException {
         DatabaseLayout databaseLayout = db.databaseLayout();
-        final Path indexFile = databaseLayout.file("index.db");
+        final Path indexFile = databaseLayout.file("index.db").baseSegment();
         filesystem.write(indexFile).close();
     }
 

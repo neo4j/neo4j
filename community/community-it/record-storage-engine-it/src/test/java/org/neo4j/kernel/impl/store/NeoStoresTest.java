@@ -75,6 +75,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.prefetch.PagePrefetcher;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
@@ -191,7 +192,10 @@ class NeoStoresTest {
         var e = assertThrows(IllegalArgumentException.class, () -> {
             try (NeoStores neoStores = sf.openNeoStores()) {
                 neoStores.createDynamicArrayStore(
-                        Path.of("someStore"), Path.of("someIdFile"), RecordIdType.ARRAY_BLOCK, -2);
+                        new StoreFile(Path.of("someStore")),
+                        new StoreFile(Path.of("someIdFile")),
+                        RecordIdType.ARRAY_BLOCK,
+                        -2);
             }
         });
         assertEquals("Block size of dynamic array store should be positive integer.", e.getMessage());
@@ -336,7 +340,7 @@ class NeoStoresTest {
             neoStores.getMetaDataStore();
             neoStores.flush(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         }
-        fileSystem.deleteFile(databaseLayout.metadataStore());
+        databaseLayout.metadataStore().delete(fileSystem);
 
         assertThrows(StoreNotFoundException.class, () -> {
             var readOnlyFactory = getStoreFactory(config, databaseLayout, fileSystem, LOG_PROVIDER, true);
@@ -642,7 +646,7 @@ class NeoStoresTest {
                 FileSystemAbstraction fs,
                 PageCache pageCache,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                Path fileName,
+                StoreFile storeFile,
                 LongSupplier highIdSupplier,
                 long maxValue,
                 IdType idType,
@@ -657,7 +661,7 @@ class NeoStoresTest {
                 return new IndexedIdGenerator(
                         pageCache,
                         fs,
-                        fileName,
+                        storeFile,
                         immediate(),
                         idType,
                         allowLargeIdCaches,
@@ -684,7 +688,7 @@ class NeoStoresTest {
                     fs,
                     pageCache,
                     recoveryCleanupWorkCollector,
-                    fileName,
+                    storeFile,
                     highIdSupplier,
                     maxValue,
                     idType,

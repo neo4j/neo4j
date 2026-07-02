@@ -56,6 +56,7 @@ import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
@@ -142,7 +143,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             //                linearTracers.getCursorTracerSupplier() );
             getPageCache(fs, cachePages, PageCacheTracer.NULL);
             final int pageSize = getReservedBytes(pageCache) + threadCount * 4;
-            try (var pagedFile = pageCache.map(file("a"), pageSize, DEFAULT_DATABASE_NAME, getOpenOptions())) {
+            try (var pagedFile =
+                    pageCache.map(new StoreFile(file("a")), pageSize, DEFAULT_DATABASE_NAME, getOpenOptions())) {
                 ensureAllPagesExists(filePages, pagedFile);
 
                 var futures = new ArrayList<Future<UpdateResult>>();
@@ -283,7 +285,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
             getPageCache(fs, cachePages, PageCacheTracer.NULL);
             final int pageSize = getReservedBytes(pageCache) + threadCount * 4;
-            try (PagedFile pagedFile = pageCache.map(file("a"), pageSize, DEFAULT_DATABASE_NAME, getOpenOptions())) {
+            try (PagedFile pagedFile =
+                    pageCache.map(new StoreFile(file("a")), pageSize, DEFAULT_DATABASE_NAME, getOpenOptions())) {
 
                 ensureAllPagesExists(filePages, pagedFile);
 
@@ -381,7 +384,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                     getReservedBytes(pageCache),
                     pageCachePageSize);
 
-            final PagedFile pf = pageCache.map(file, filePageSize, DEFAULT_DATABASE_NAME, getOpenOptions());
+            final PagedFile pf =
+                    pageCache.map(new StoreFile(file), filePageSize, DEFAULT_DATABASE_NAME, getOpenOptions());
             final CountDownLatch hasLockLatch = new CountDownLatch(1);
             final CountDownLatch unlockLatch = new CountDownLatch(1);
             final CountDownLatch secondThreadGotLockLatch = new CountDownLatch(1);
@@ -477,10 +481,13 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             LinearTracers linearTracers = pageCacheTracer();
             getPageCache(fs, maxPages, linearTracers.getPageCacheTracer());
 
-            try (PagedFile pfA =
-                            pageCache.map(existingFile("a"), filePageSize, DEFAULT_DATABASE_NAME, getOpenOptions());
+            try (PagedFile pfA = pageCache.map(
+                            new StoreFile(existingFile("a")), filePageSize, DEFAULT_DATABASE_NAME, getOpenOptions());
                     PagedFile pfB = pageCache.map(
-                            existingFile("b"), filePageSize / 2 + 1, DEFAULT_DATABASE_NAME, getOpenOptions())) {
+                            new StoreFile(existingFile("b")),
+                            filePageSize / 2 + 1,
+                            DEFAULT_DATABASE_NAME,
+                            getOpenOptions())) {
                 adversary.enableAdversary(true);
 
                 for (int i = 0; i < 1000; i++) {
@@ -586,7 +593,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         Path file = file("a");
         int iterations = Short.MAX_VALUE * 3;
         for (int i = 0; i < iterations; i++) {
-            try (PagedFile pagedFile = pageCache.map(file, filePageSize, DEFAULT_DATABASE_NAME, getOpenOptions())) {
+            try (PagedFile pagedFile =
+                    pageCache.map(new StoreFile(file), filePageSize, DEFAULT_DATABASE_NAME, getOpenOptions())) {
                 try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                     assertTrue(cursor.next());
                 }

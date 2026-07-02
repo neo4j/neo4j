@@ -838,7 +838,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         }
 
         if (formatsHaveDifferentStoreCapabilities) {
-            fileSystem.delete(recordLayout.indexStatisticsStore());
+            recordLayout.indexStatisticsStore().delete(fileSystem);
         }
     }
 

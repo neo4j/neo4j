@@ -48,6 +48,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
@@ -82,7 +83,7 @@ public class DatabasePageCache implements PageCache {
 
     @Override
     public synchronized PagedFile map(
-            Path path,
+            StoreFile storeFile,
             int pageSize,
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
@@ -90,13 +91,14 @@ public class DatabasePageCache implements PageCache {
             EvictionBouncer evictionBouncer,
             VersionStorage ignoredVersionStorage)
             throws IOException {
+        Path path = storeFile.baseSegment();
         // no one should call this version of map method with emptyDatabaseName != null,
         // since it is this class that is decorating map calls with the name of the database
         if (useSnapshotEngine) {
             openOptions = openOptions.newWith(CONTEXT_VERSION_UPDATES);
         }
         PagedFile pagedFile = globalPageCache.map(
-                path, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage);
+                storeFile, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage);
         // Our default page cache handles mapping a file multiple times, where additional mappings for the
         // same file just returns the existing mapping. The DatabasePageCache needs to keep track of when
         // a file is mapped the first time _for this particular instance_ tho, so that listeners can be
@@ -113,8 +115,8 @@ public class DatabasePageCache implements PageCache {
     }
 
     @Override
-    public Optional<PagedFile> getExistingMapping(Path path) {
-        Path canonicalFile = path.normalize();
+    public Optional<PagedFile> getExistingMapping(StoreFile storeFile) {
+        Path canonicalFile = storeFile.baseSegment().normalize();
         return uniqueDatabasePagedFiles.values().stream()
                 .filter(pagedFile -> pagedFile.path().equals(canonicalFile))
                 .map(pf -> (PagedFile) pf)

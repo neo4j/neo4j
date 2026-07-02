@@ -198,7 +198,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             indexFiles.archiveIndex();
         }
         super.create();
-        Path storeFile = indexFiles.getStoreFile();
+        Path storeFile = indexFiles.getStoreFile().baseSegment();
         Path externalUpdatesFile = storeFile.resolveSibling(storeFile.getFileName() + ".ext");
         validator = instantiateValueValidator();
         externalUpdates = new IndexUpdateStorage<>(
@@ -296,7 +296,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                 return;
             }
             phaseTracker.enterPhase(PhaseTracker.Phase.BUILD);
-            Path storeFile = indexFiles.getStoreFile();
+            Path storeFile = indexFiles.getStoreFile().baseSegment();
             Path duplicatesFile = storeFile.resolveSibling(storeFile.getFileName() + ".dup");
             int readBufferSize = smallerBufferSize();
             try (Allocator allocator = bufferFactory.newLocalAllocator();
@@ -662,7 +662,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
 
         ThreadLocalBlockStorage(int id) throws IOException {
             super(monitor);
-            Path storeFile = indexFiles.getStoreFile();
+            Path storeFile = indexFiles.getStoreFile().baseSegment();
             Path blockFile = storeFile.resolveSibling(storeFile.getFileName() + ".scan-" + id);
             this.blockStorage = new BlockStorage<>(layout, bufferFactory, fileSystem, blockFile, this, memoryTracker);
         }

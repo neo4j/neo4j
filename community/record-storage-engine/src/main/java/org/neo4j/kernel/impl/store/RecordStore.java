@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSequence;
@@ -28,6 +27,7 @@ import org.neo4j.io.async.AsyncBlockAccessor;
 import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -52,9 +52,9 @@ import org.neo4j.storageengine.util.IdUpdateListener;
  */
 public interface RecordStore<RECORD extends AbstractBaseRecord> {
     /**
-     * @return the {@link Path} that backs this store.
+     * @return the {@link StoreFile} that backs this store.
      */
-    Path getStorageFile();
+    StoreFile getStoreFile();
 
     IdGenerator getIdGenerator();
 

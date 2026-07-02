@@ -28,6 +28,7 @@ import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.PlainDatabaseLayout;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class RecordDatabaseLayout extends PlainDatabaseLayout {
@@ -63,11 +64,11 @@ public class RecordDatabaseLayout extends PlainDatabaseLayout {
 
     @Override
     public Path pathForExistsMarker() {
-        return file(RecordDatabaseFile.EXISTS_MARKER);
+        return file(RecordDatabaseFile.EXISTS_MARKER).baseSegment();
     }
 
     @Override
-    public Path pathForStore(CommonDatabaseStores store) {
+    public StoreFile pathForStore(CommonDatabaseStores store) {
         return switch (store) {
             case NODE -> nodeStore();
             case COUNTS -> countStore();
@@ -80,133 +81,133 @@ public class RecordDatabaseLayout extends PlainDatabaseLayout {
         };
     }
 
-    public Path countStore() {
+    public StoreFile countStore() {
         return file(RecordDatabaseFile.COUNTS_STORE);
     }
 
-    public Path relationshipGroupDegreesStore() {
+    public StoreFile relationshipGroupDegreesStore() {
         return file(RecordDatabaseFile.RELATIONSHIP_GROUP_DEGREES_STORE);
     }
 
-    public Path propertyStringStore() {
+    public StoreFile propertyStringStore() {
         return file(RecordDatabaseFile.PROPERTY_STRING_STORE);
     }
 
-    public Path relationshipStore() {
+    public StoreFile relationshipStore() {
         return file(RecordDatabaseFile.RELATIONSHIP_STORE);
     }
 
-    public Path propertyStore() {
+    public StoreFile propertyStore() {
         return file(RecordDatabaseFile.PROPERTY_STORE);
     }
 
-    public Path nodeStore() {
+    public StoreFile nodeStore() {
         return file(RecordDatabaseFile.NODE_STORE);
     }
 
-    public Path nodeLabelStore() {
+    public StoreFile nodeLabelStore() {
         return file(RecordDatabaseFile.NODE_LABEL_STORE);
     }
 
-    public Path propertyArrayStore() {
+    public StoreFile propertyArrayStore() {
         return file(RecordDatabaseFile.PROPERTY_ARRAY_STORE);
     }
 
-    public Path propertyKeyTokenStore() {
+    public StoreFile propertyKeyTokenStore() {
         return file(RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE);
     }
 
-    public Path propertyKeyTokenNamesStore() {
+    public StoreFile propertyKeyTokenNamesStore() {
         return file(RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE);
     }
 
-    public Path relationshipTypeTokenStore() {
+    public StoreFile relationshipTypeTokenStore() {
         return file(RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE);
     }
 
-    public Path relationshipTypeTokenNamesStore() {
+    public StoreFile relationshipTypeTokenNamesStore() {
         return file(RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE);
     }
 
-    public Path labelTokenStore() {
+    public StoreFile labelTokenStore() {
         return file(RecordDatabaseFile.LABEL_TOKEN_STORE);
     }
 
-    public Path schemaStore() {
+    public StoreFile schemaStore() {
         return file(RecordDatabaseFile.SCHEMA_STORE);
     }
 
-    public Path relationshipGroupStore() {
+    public StoreFile relationshipGroupStore() {
         return file(RecordDatabaseFile.RELATIONSHIP_GROUP_STORE);
     }
 
-    public Path labelTokenNamesStore() {
+    public StoreFile labelTokenNamesStore() {
         return file(RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE);
     }
 
     @Override
-    public Path indexStatisticsStore() {
+    public StoreFile indexStatisticsStore() {
         return file(RecordDatabaseFile.INDEX_STATISTICS_STORE);
     }
 
     @Override
-    public Path metadataStore() {
+    public StoreFile metadataStore() {
         return file(RecordDatabaseFile.METADATA_STORE);
     }
 
-    public Path idNodeStore() {
+    public StoreFile idNodeStore() {
         return idFile(RecordDatabaseFile.NODE_STORE).get();
     }
 
-    public Path idNodeLabelStore() {
+    public StoreFile idNodeLabelStore() {
         return idFile(RecordDatabaseFile.NODE_LABEL_STORE).get();
     }
 
-    public Path idPropertyStore() {
+    public StoreFile idPropertyStore() {
         return idFile(RecordDatabaseFile.PROPERTY_STORE).get();
     }
 
-    public Path idPropertyKeyTokenStore() {
+    public StoreFile idPropertyKeyTokenStore() {
         return idFile(RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE).get();
     }
 
-    public Path idPropertyKeyTokenNamesStore() {
+    public StoreFile idPropertyKeyTokenNamesStore() {
         return idFile(RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE).get();
     }
 
-    public Path idPropertyStringStore() {
+    public StoreFile idPropertyStringStore() {
         return idFile(RecordDatabaseFile.PROPERTY_STRING_STORE).get();
     }
 
-    public Path idPropertyArrayStore() {
+    public StoreFile idPropertyArrayStore() {
         return idFile(RecordDatabaseFile.PROPERTY_ARRAY_STORE).get();
     }
 
-    public Path idRelationshipStore() {
+    public StoreFile idRelationshipStore() {
         return idFile(RecordDatabaseFile.RELATIONSHIP_STORE).get();
     }
 
-    public Path idRelationshipGroupStore() {
+    public StoreFile idRelationshipGroupStore() {
         return idFile(RecordDatabaseFile.RELATIONSHIP_GROUP_STORE).get();
     }
 
-    public Path idRelationshipTypeTokenStore() {
+    public StoreFile idRelationshipTypeTokenStore() {
         return idFile(RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE).get();
     }
 
-    public Path idRelationshipTypeTokenNamesStore() {
+    public StoreFile idRelationshipTypeTokenNamesStore() {
         return idFile(RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE).get();
     }
 
-    public Path idLabelTokenStore() {
+    public StoreFile idLabelTokenStore() {
         return idFile(RecordDatabaseFile.LABEL_TOKEN_STORE).get();
     }
 
-    public Path idLabelTokenNamesStore() {
+    public StoreFile idLabelTokenNamesStore() {
         return idFile(RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE).get();
     }
 
-    public Path idSchemaStore() {
+    public StoreFile idSchemaStore() {
         return idFile(RecordDatabaseFile.SCHEMA_STORE).get();
     }
 

@@ -134,7 +134,9 @@ class MuninnPageCacheExplicitPreallocateTest {
 
     private PagedFile mapFile(PageCache pageCache) throws IOException {
         return pageCache.map(
-                neo4jLayout.databasesDirectory().resolve("a"), pageCache.pageSize(), DEFAULT_DATABASE_NAME);
+                new StoreFile(neo4jLayout.databasesDirectory().resolve("a")),
+                pageCache.pageSize(),
+                DEFAULT_DATABASE_NAME);
     }
 
     private MuninnPageCache createPageCache(boolean automaticPreAllocation) {

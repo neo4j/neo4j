@@ -1250,7 +1250,8 @@ class RecoveryCorruptedTransactionLogIT {
         }
         // When
         removeLastCheckpointRecordFromLastLogFile();
-        Path schemaStore = databaseLayout.pathForStore(CommonDatabaseStores.SCHEMAS);
+        Path schemaStore =
+                databaseLayout.pathForStore(CommonDatabaseStores.SCHEMAS).baseSegment();
 
         byte[] data = FileSystemUtils.readAllBytes(fileSystem, schemaStore, INSTANCE);
         int numPages = data.length / PAGE_SIZE;

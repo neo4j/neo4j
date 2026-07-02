@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 
 class AccessCheckingPageCacheTest {
     private PageCache pageCache;
@@ -45,10 +46,10 @@ class AccessCheckingPageCacheTest {
         PagedFile mockedPagedFile = mock(PagedFile.class);
         PageCursor mockedCursor = mock(PageCursor.class);
         when(mockedPagedFile.io(anyLong(), anyInt(), any())).thenReturn(mockedCursor);
-        when(mockedPageCache.map(any(Path.class), anyInt(), any(), any(), any(), any(), any()))
+        when(mockedPageCache.map(any(StoreFile.class), anyInt(), any(), any(), any(), any(), any()))
                 .thenReturn(mockedPagedFile);
         pageCache = new AccessCheckingPageCache(mockedPageCache);
-        PagedFile file = pageCache.map(Path.of("some file"), 512, "database");
+        PagedFile file = pageCache.map(new StoreFile(Path.of("some file")), 512, "database");
         cursor = file.io(0, PagedFile.PF_SHARED_READ_LOCK, CursorContext.NULL_CONTEXT);
     }
 

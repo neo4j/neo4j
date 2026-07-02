@@ -181,8 +181,8 @@ class SegmentedPageSwapperIT {
     void singleFileWhenOptionAbsentBehavesUnchanged() throws IOException {
         Path file = directory.file("legacy");
         try (PageCache pageCache = newPageCache()) {
-            try (PagedFile pagedFile =
-                            pageCache.map(file, PAGE_SIZE, DEFAULT_DATABASE_NAME, Sets.immutable.of(CREATE));
+            try (PagedFile pagedFile = pageCache.map(
+                            new StoreFile(file), PAGE_SIZE, DEFAULT_DATABASE_NAME, Sets.immutable.of(CREATE));
                     PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 cursor.next(7);
                 cursor.putLong(42L);
@@ -1556,7 +1556,7 @@ class SegmentedPageSwapperIT {
 
     private void assertSegmentContainsMarkerAtPage(Path segmentFile, int page, long expectedMarker) throws IOException {
         try (PageCache pageCache = newPageCache();
-                PagedFile pagedFile = pageCache.map(segmentFile, DEFAULT_DATABASE_NAME);
+                PagedFile pagedFile = pageCache.map(new StoreFile(segmentFile), DEFAULT_DATABASE_NAME);
                 PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
             assertThat(cursor.next(page))
                     .as("segment file %s missing physical page %d", segmentFile, page)
@@ -1572,7 +1572,7 @@ class SegmentedPageSwapperIT {
                 .as("segment file %s must exist", segmentFile)
                 .isTrue();
         try (PageCache pageCache = newPageCache();
-                PagedFile pagedFile = pageCache.map(segmentFile, DEFAULT_DATABASE_NAME);
+                PagedFile pagedFile = pageCache.map(new StoreFile(segmentFile), DEFAULT_DATABASE_NAME);
                 PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
             while (cursor.next()) {
                 if (cursor.getCurrentPageId() == 0) {
@@ -1595,7 +1595,7 @@ class SegmentedPageSwapperIT {
     private PagedFile mapSegmented(PageCache pageCache, Path baseFile, StandardOpenOption... extra) throws IOException {
         var options = Sets.mutable.<OpenOption>of(new SegmentedOpenOption(PAGES_PER_SEGMENT));
         Collections.addAll(options, extra);
-        return pageCache.map(baseFile, PAGE_SIZE, DEFAULT_DATABASE_NAME, options.toImmutable());
+        return pageCache.map(new StoreFile(baseFile), PAGE_SIZE, DEFAULT_DATABASE_NAME, options.toImmutable());
     }
 
     private static Path segment(Path baseFile, int index) {

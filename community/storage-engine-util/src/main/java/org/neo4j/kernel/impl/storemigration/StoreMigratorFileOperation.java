@@ -49,8 +49,11 @@ public final class StoreMigratorFileOperation {
             throws IOException {
         for (DatabaseFile databaseStore : databaseFiles) {
             Path[] files = includeIdFile
-                    ? fromLayout.allFiles(databaseStore).toArray(Path[]::new)
-                    : new Path[] {fromLayout.file(databaseStore)};
+                    ? fromLayout
+                            .allFiles(databaseStore)
+                            .flatMap(s -> s.allSegments(fs).stream())
+                            .toArray(Path[]::new)
+                    : fromLayout.file(databaseStore).allSegments(fs).toArray(Path[]::new);
             perform(operation, fs, fromLayout, toLayout, allowSkipNonExistentFiles, existingTargetStrategy, files);
         }
     }

@@ -24,7 +24,6 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
@@ -850,8 +849,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             DatabaseFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
             throws IOException {
         try (var fileFlushEvent = flushEvent.beginFileFlush()) {
-            internalLog.debug(
-                    "Checkpointing %s", indexStatisticsStore.storeFile().getFileName());
+            internalLog.debug("Checkpointing %s", indexStatisticsStore.storeFile());
             indexStatisticsStore.checkpoint(fileFlushEvent, asyncBlockAccessor, cursorContext);
         }
         indexMapRef.indexMapSnapshot().forEachIndexProxy(indexProxyOperation("force", proxy -> {
@@ -896,9 +894,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         }
     }
 
-    public ResourceIterator<Path> snapshotIndexFiles() throws IOException {
+    public ResourceIterator<Path> snapshotIndexFiles(FileSystemAbstraction fs) throws IOException {
         Collection<ResourceIterator<Path>> snapshots = new ArrayList<>();
-        snapshots.add(asResourceIterator(iterator(indexStatisticsStore.storeFile())));
+        snapshots.add(asResourceIterator(
+                indexStatisticsStore.storeFile().allSegments(fs).iterator()));
         for (IndexProxy indexProxy : indexMapRef.getAllIndexProxies()) {
             snapshots.add(indexProxy.snapshotFiles());
         }

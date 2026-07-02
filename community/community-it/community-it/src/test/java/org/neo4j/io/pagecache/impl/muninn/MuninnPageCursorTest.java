@@ -94,7 +94,7 @@ class MuninnPageCursorTest {
         };
         try (PageCache pageCache = startPageCache(customSwapper(defaultPageSwapperFactory(), onReadAction));
                 PagedFile pagedFile = pageCache.map(
-                        file,
+                        new StoreFile(file),
                         PageCache.PAGE_SIZE,
                         DEFAULT_DATABASE_NAME,
                         Sets.immutable.of(StandardOpenOption.CREATE))) {
@@ -126,8 +126,8 @@ class MuninnPageCursorTest {
     private void testByteOrder(ByteOrder byteOrder) throws IOException {
         Path file = directory.file("file" + byteOrder);
         try (PageCache pageCache = startPageCache()) {
-            try (PagedFile pagedFile =
-                    pageCache.map(file, PageCache.PAGE_SIZE, DEFAULT_DATABASE_NAME, getOpenOptions(byteOrder))) {
+            try (PagedFile pagedFile = pageCache.map(
+                    new StoreFile(file), PageCache.PAGE_SIZE, DEFAULT_DATABASE_NAME, getOpenOptions(byteOrder))) {
                 // Write cursor
                 try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                     assertThat(cursor.getByteOrder()).isEqualTo(byteOrder);
@@ -162,7 +162,7 @@ class MuninnPageCursorTest {
     private void createSomeData(Path file) throws IOException {
         try (PageCache pageCache = startPageCache();
                 PagedFile pagedFile = pageCache.map(
-                        file,
+                        new StoreFile(file),
                         PageCache.PAGE_SIZE,
                         DEFAULT_DATABASE_NAME,
                         Sets.immutable.of(StandardOpenOption.CREATE));

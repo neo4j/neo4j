@@ -48,6 +48,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -95,7 +96,7 @@ class IndexStatisticsStoreTest {
         var statisticsStore = new IndexStatisticsStore(
                 pageCache,
                 fileSystem,
-                testDirectory.file(fileName),
+                new StoreFile(testDirectory.file(fileName)),
                 immediate(),
                 false,
                 DEFAULT_DATABASE_NAME,
@@ -281,7 +282,7 @@ class IndexStatisticsStoreTest {
                 () -> new IndexStatisticsStore(
                         pageCache,
                         fileSystem,
-                        testDirectory.file("non-existing"),
+                        new StoreFile(testDirectory.file("non-existing")),
                         immediate(),
                         true,
                         DEFAULT_DATABASE_NAME,

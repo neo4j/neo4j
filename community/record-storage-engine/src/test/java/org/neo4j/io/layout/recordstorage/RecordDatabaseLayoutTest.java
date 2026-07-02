@@ -22,16 +22,16 @@ package org.neo4j.io.layout.recordstorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.io.layout.CommonDatabaseStores.METADATA;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
-import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
@@ -50,107 +50,123 @@ class RecordDatabaseLayoutTest {
 
     @Test
     void storeFilesHaveExpectedNames() {
-        assertEquals("neostore", layout.metadataStore().getFileName().toString());
-        assertEquals("neostore.counts.db", layout.countStore().getFileName().toString());
+        assertEquals("neostore", layout.metadataStore().storeBaseFileName().toString());
+        assertEquals(
+                "neostore.counts.db", layout.countStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.labeltokenstore.db",
-                layout.labelTokenStore().getFileName().toString());
+                layout.labelTokenStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.labeltokenstore.db.names",
-                layout.labelTokenNamesStore().getFileName().toString());
-        assertEquals("neostore.nodestore.db", layout.nodeStore().getFileName().toString());
+                layout.labelTokenNamesStore().storeBaseFileName().toString());
+        assertEquals(
+                "neostore.nodestore.db", layout.nodeStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.nodestore.db.labels",
-                layout.nodeLabelStore().getFileName().toString());
+                layout.nodeLabelStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.propertystore.db",
-                layout.propertyStore().getFileName().toString());
+                layout.propertyStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.propertystore.db.arrays",
-                layout.propertyArrayStore().getFileName().toString());
+                layout.propertyArrayStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.propertystore.db.index",
-                layout.propertyKeyTokenStore().getFileName().toString());
+                layout.propertyKeyTokenStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.propertystore.db.index.keys",
-                layout.propertyKeyTokenNamesStore().getFileName().toString());
+                layout.propertyKeyTokenNamesStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.propertystore.db.strings",
-                layout.propertyStringStore().getFileName().toString());
+                layout.propertyStringStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.relationshipgroupstore.db",
-                layout.relationshipGroupStore().getFileName().toString());
+                layout.relationshipGroupStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.relationshipstore.db",
-                layout.relationshipStore().getFileName().toString());
+                layout.relationshipStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.relationshiptypestore.db",
-                layout.relationshipTypeTokenStore().getFileName().toString());
+                layout.relationshipTypeTokenStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.relationshiptypestore.db.names",
-                layout.relationshipTypeTokenNamesStore().getFileName().toString());
+                layout.relationshipTypeTokenNamesStore()
+                        .baseSegment()
+                        .getFileName()
+                        .toString());
         assertEquals(
-                "neostore.schemastore.db", layout.schemaStore().getFileName().toString());
+                "neostore.schemastore.db",
+                layout.schemaStore().storeBaseFileName().toString());
     }
 
     @Test
     void idFilesHaveExpectedNames() {
         assertEquals(
                 "neostore.labeltokenstore.db.id",
-                layout.idLabelTokenStore().getFileName().toString());
+                layout.idLabelTokenStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.labeltokenstore.db.names.id",
-                layout.idLabelTokenNamesStore().getFileName().toString());
+                layout.idLabelTokenNamesStore().storeBaseFileName().toString());
         assertEquals(
-                "neostore.nodestore.db.id", layout.idNodeStore().getFileName().toString());
+                "neostore.nodestore.db.id",
+                layout.idNodeStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.nodestore.db.labels.id",
-                layout.idNodeLabelStore().getFileName().toString());
+                layout.idNodeLabelStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.propertystore.db.arrays.id",
-                layout.idPropertyArrayStore().getFileName().toString());
+                layout.idPropertyArrayStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.propertystore.db.id",
-                layout.idPropertyStore().getFileName().toString());
+                layout.idPropertyStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.propertystore.db.index.id",
-                layout.idPropertyKeyTokenStore().getFileName().toString());
+                layout.idPropertyKeyTokenStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.propertystore.db.index.keys.id",
-                layout.idPropertyKeyTokenNamesStore().getFileName().toString());
+                layout.idPropertyKeyTokenNamesStore()
+                        .baseSegment()
+                        .getFileName()
+                        .toString());
         assertEquals(
                 "neostore.propertystore.db.strings.id",
-                layout.idPropertyStringStore().getFileName().toString());
+                layout.idPropertyStringStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.relationshipgroupstore.db.id",
-                layout.idRelationshipGroupStore().getFileName().toString());
+                layout.idRelationshipGroupStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.relationshipstore.db.id",
-                layout.idRelationshipStore().getFileName().toString());
+                layout.idRelationshipStore().storeBaseFileName().toString());
         assertEquals(
                 "neostore.relationshiptypestore.db.id",
-                layout.idRelationshipTypeTokenStore().getFileName().toString());
+                layout.idRelationshipTypeTokenStore()
+                        .baseSegment()
+                        .getFileName()
+                        .toString());
         assertEquals(
                 "neostore.relationshiptypestore.db.names.id",
-                layout.idRelationshipTypeTokenNamesStore().getFileName().toString());
+                layout.idRelationshipTypeTokenNamesStore()
+                        .baseSegment()
+                        .getFileName()
+                        .toString());
         assertEquals(
                 "neostore.schemastore.db.id",
-                layout.idSchemaStore().getFileName().toString());
+                layout.idSchemaStore().storeBaseFileName().toString());
     }
 
     @Test
     void allFilesContainsStoreFiles() {
         RecordDatabaseFile nodeStore = RecordDatabaseFile.NODE_STORE;
-        List<Path> allNodeStoreFile = layout.allFiles(nodeStore).toList();
-        Path nodeStoreStoreFile = layout.file(nodeStore);
+        List<StoreFile> allNodeStoreFile = layout.allFiles(nodeStore).toList();
+        StoreFile nodeStoreStoreFile = layout.file(nodeStore);
         assertThat(allNodeStoreFile).contains(nodeStoreStoreFile);
     }
 
     @Test
     void allFilesContainsIdFileIfPresent() {
         RecordDatabaseFile nodeStore = RecordDatabaseFile.NODE_STORE;
-        List<Path> allNodeStoreFile = layout.allFiles(nodeStore).toList();
-        Path nodeStoreIdFile = layout.idFile(nodeStore).orElseThrow();
+        List<StoreFile> allNodeStoreFile = layout.allFiles(nodeStore).toList();
+        StoreFile nodeStoreIdFile = layout.idFile(nodeStore).orElseThrow();
         assertThat(allNodeStoreFile).contains(nodeStoreIdFile);
     }
 
@@ -161,15 +177,15 @@ class RecordDatabaseLayoutTest {
             assertNotNull(layout.file(databaseFile));
         }
 
-        Path metadata = layout.pathForStore(CommonDatabaseStores.METADATA);
-        assertEquals("neostore", metadata.getFileName().toString());
+        assertEquals(
+                "neostore", layout.pathForStore(METADATA).storeBaseFileName().toString());
     }
 
     @Test
     void lookupIdFileByDatabaseFile() {
         RecordDatabaseFile[] databaseFiles = RecordDatabaseFile.values();
         for (RecordDatabaseFile databaseFile : databaseFiles) {
-            Optional<Path> idFile = layout.idFile(databaseFile);
+            Optional<StoreFile> idFile = layout.idFile(databaseFile);
             assertEquals(databaseFile.hasIdFile(), idFile.isPresent());
         }
     }

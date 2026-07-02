@@ -493,7 +493,7 @@ public class MuninnPageCache implements PageCache {
 
     @Override
     public synchronized PagedFile map(
-            Path path,
+            StoreFile storeFile,
             int filePageSize,
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
@@ -507,7 +507,7 @@ public class MuninnPageCache implements PageCache {
             throw new IllegalArgumentException("Cannot map files with a filePageSize (" + filePageSize
                     + ") that is greater than the cachePageSize (" + cachePageSize + ")");
         }
-        path = path.normalize();
+        Path path = storeFile.baseSegment().normalize();
         boolean createIfNotExists = false;
         boolean truncateExisting = false;
         boolean deleteOnClose = false;
@@ -616,11 +616,11 @@ public class MuninnPageCache implements PageCache {
     }
 
     @Override
-    public synchronized Optional<PagedFile> getExistingMapping(Path path) throws IOException {
+    public synchronized Optional<PagedFile> getExistingMapping(StoreFile storeFile) throws IOException {
         assertHealthy();
         ensureThreadsInitialised();
 
-        path = path.normalize();
+        Path path = storeFile.baseSegment().normalize();
         MuninnPagedFile pagedFile = tryGetMappingOrNull(path);
         if (pagedFile != null) {
             pagedFile.incrementRefCount();

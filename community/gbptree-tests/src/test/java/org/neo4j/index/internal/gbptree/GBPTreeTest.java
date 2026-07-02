@@ -104,6 +104,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapperFactory;
@@ -439,7 +440,8 @@ class GBPTreeTest {
             index(pageCache).build().close();
 
             int payloadSize;
-            try (PagedFile pagedFile = pageCache.map(indexFile, pageSize, DEFAULT_DATABASE_NAME, getOpenOptions());
+            try (PagedFile pagedFile =
+                            pageCache.map(new StoreFile(indexFile), pageSize, DEFAULT_DATABASE_NAME, getOpenOptions());
                     PageCursor cursor = pagedFile.io(IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 payloadSize = pagedFile.payloadSize();
                 assertTrue(cursor.next());
@@ -742,7 +744,7 @@ class GBPTreeTest {
             random.nextBytes(newHeader);
             GBPTree.overwriteHeader(
                     pageCache,
-                    indexFile,
+                    new StoreFile(indexFile),
                     pc -> pc.putBytes(newHeader),
                     DEFAULT_DATABASE_NAME,
                     NULL_CONTEXT,
@@ -800,7 +802,13 @@ class GBPTreeTest {
 
         // WHEN
         // Read separate
-        GBPTree.readHeader(pageCache, indexFile, headerReader, DEFAULT_DATABASE_NAME, NULL_CONTEXT, getOpenOptions());
+        GBPTree.readHeader(
+                pageCache,
+                new StoreFile(indexFile),
+                headerReader,
+                DEFAULT_DATABASE_NAME,
+                NULL_CONTEXT,
+                getOpenOptions());
 
         assertEquals(expectedHeader.length, length.get());
         assertArrayEquals(expectedHeader, readHeader);
@@ -813,7 +821,7 @@ class GBPTreeTest {
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
             assertThatThrownBy(() -> GBPTree.readHeader(
                             pageCache,
-                            doesNotExist,
+                            new StoreFile(doesNotExist),
                             NO_HEADER_READER,
                             DEFAULT_DATABASE_NAME,
                             NULL_CONTEXT,
@@ -828,7 +836,7 @@ class GBPTreeTest {
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
             pageCache
                     .map(
-                            indexFile,
+                            new StoreFile(indexFile),
                             pageCache.pageSize(),
                             DEFAULT_DATABASE_NAME,
                             getOpenOptions().newWith(CREATE))
@@ -836,7 +844,7 @@ class GBPTreeTest {
 
             assertThatThrownBy(() -> GBPTree.readHeader(
                             pageCache,
-                            indexFile,
+                            new StoreFile(indexFile),
                             NO_HEADER_READER,
                             DEFAULT_DATABASE_NAME,
                             NULL_CONTEXT,
@@ -855,7 +863,7 @@ class GBPTreeTest {
 
             assertThatThrownBy(() -> GBPTree.readHeader(
                             pageCache,
-                            indexFile,
+                            new StoreFile(indexFile),
                             NO_HEADER_READER,
                             DEFAULT_DATABASE_NAME,
                             NULL_CONTEXT,
@@ -879,7 +887,7 @@ class GBPTreeTest {
 
             assertThatThrownBy(() -> GBPTree.readHeader(
                             pageCache,
-                            indexFile,
+                            new StoreFile(indexFile),
                             NO_HEADER_READER,
                             DEFAULT_DATABASE_NAME,
                             NULL_CONTEXT,
@@ -905,7 +913,12 @@ class GBPTreeTest {
                 headerData.get(readHeader);
             };
             GBPTree.readHeader(
-                    pageCache, indexFile, headerReader, DEFAULT_DATABASE_NAME, NULL_CONTEXT, getOpenOptions());
+                    pageCache,
+                    new StoreFile(indexFile),
+                    headerReader,
+                    DEFAULT_DATABASE_NAME,
+                    NULL_CONTEXT,
+                    getOpenOptions());
 
             // THEN
             assertEquals(headerBytes.length, length.get());
@@ -1725,7 +1738,10 @@ class GBPTreeTest {
 
             // a tree state pointing to root with valid successor
             try (PagedFile pagedFile = specificPageCache.map(
-                            indexFile, specificPageCache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
+                            new StoreFile(indexFile),
+                            specificPageCache.pageSize(),
+                            DEFAULT_DATABASE_NAME,
+                            getOpenOptions());
                     PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 Pair<TreeState, TreeState> treeStates =
                         TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B);
@@ -2103,7 +2119,8 @@ class GBPTreeTest {
     }
 
     private void corruptTheChild(PageCache pageCache, long corruptChild) throws IOException {
-        try (PagedFile pagedFile = pageCache.map(indexFile, defaultPageSize, DEFAULT_DATABASE_NAME, getOpenOptions());
+        try (PagedFile pagedFile = pageCache.map(
+                        new StoreFile(indexFile), defaultPageSize, DEFAULT_DATABASE_NAME, getOpenOptions());
                 PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             assertTrue(cursor.next(corruptChild));
             assertTrue(TreeNodeUtil.isLeaf(cursor));
@@ -2278,7 +2295,8 @@ class GBPTreeTest {
             boolean errorClosingTree = false;
             try (var tree = index(pageCache).with(structureWriteLog).build()) {
                 // when Intentional messing about by closing the page cache before closing the tree
-                var backingMappedFile = pageCache.map(indexFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME);
+                var backingMappedFile =
+                        pageCache.map(new StoreFile(indexFile), pageCache.pageSize(), DEFAULT_DATABASE_NAME);
                 // a cheeky way of finding the mapped file backing this tree and closing it
                 // - once for the mapping we just did, and
                 // - once for the "actual" mapping that the tree did
@@ -2341,7 +2359,7 @@ class GBPTreeTest {
             // The "otherWrites" below will (quite deterministically) make it so that B gets evicted, but not A
             var otherWrites = executor.submit(() -> {
                 try (var pagedFile = pageCache.map(
-                        testDirectory.file("other"),
+                        new StoreFile(testDirectory.file("other")),
                         defaultPageSize,
                         "test",
                         Sets.immutable.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE))) {
@@ -2442,9 +2460,9 @@ class GBPTreeTest {
     private PageCache pageCacheThatThrowExceptionWhenToldTo(final IOException e, final AtomicBoolean throwOnNextIO) {
         return new DelegatingPageCache(createPageCache(defaultPageSize)) {
             @Override
-            public PagedFile map(Path path, String databaseName, ImmutableSet<OpenOption> openOptions)
+            public PagedFile map(StoreFile storeFile, String databaseName, ImmutableSet<OpenOption> openOptions)
                     throws IOException {
-                return new DelegatingPagedFile(super.map(path, databaseName, openOptions)) {
+                return new DelegatingPagedFile(super.map(storeFile, databaseName, openOptions)) {
                     @Override
                     public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {
                         maybeThrow();
@@ -2480,9 +2498,9 @@ class GBPTreeTest {
     private PageCache pageCacheThatBlockWhenToldTo(final Barrier barrier, final AtomicBoolean blockOnNextIO) {
         return new DelegatingPageCache(createPageCache(defaultPageSize)) {
             @Override
-            public PagedFile map(Path path, String databaseName, ImmutableSet<OpenOption> openOptions)
+            public PagedFile map(StoreFile storeFile, String databaseName, ImmutableSet<OpenOption> openOptions)
                     throws IOException {
-                return new DelegatingPagedFile(super.map(path, databaseName, openOptions)) {
+                return new DelegatingPagedFile(super.map(storeFile, databaseName, openOptions)) {
                     @Override
                     public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {
                         maybeBlock();
@@ -2501,8 +2519,8 @@ class GBPTreeTest {
 
     private Pair<TreeState, TreeState> readTreeStates(PageCache pageCache) throws IOException {
         Pair<TreeState, TreeState> treeStatesBeforeOverwrite;
-        try (PagedFile pagedFile =
-                        pageCache.map(indexFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
+        try (PagedFile pagedFile = pageCache.map(
+                        new StoreFile(indexFile), pageCache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
                 PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             treeStatesBeforeOverwrite =
                     TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B);
@@ -2576,9 +2594,9 @@ class GBPTreeTest {
     private PageCache pageCacheWithBarrierInClose(final AtomicBoolean enabled, final Barrier.Control barrier) {
         return new DelegatingPageCache(createPageCache(defaultPageSize * 4)) {
             @Override
-            public PagedFile map(Path path, String databaseName, ImmutableSet<OpenOption> openOptions)
+            public PagedFile map(StoreFile storeFile, String databaseName, ImmutableSet<OpenOption> openOptions)
                     throws IOException {
-                return new DelegatingPagedFile(super.map(path, databaseName, openOptions)) {
+                return new DelegatingPagedFile(super.map(storeFile, databaseName, openOptions)) {
                     @Override
                     public void close() {
                         if (enabled.get()) {

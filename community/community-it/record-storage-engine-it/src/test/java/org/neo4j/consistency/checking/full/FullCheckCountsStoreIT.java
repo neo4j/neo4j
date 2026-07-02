@@ -68,7 +68,7 @@ public class FullCheckCountsStoreIT {
                     Files.delete(path);
                     return true;
                 },
-                RecordDatabaseLayout::countStore,
+                layout -> layout.countStore().baseSegment(),
                 "Counts store is missing, broken or of an older format");
     }
 
@@ -76,7 +76,7 @@ public class FullCheckCountsStoreIT {
     void shouldReportBrokenCountsStore() throws Exception {
         shouldReportBadCountsStore(
                 FullCheckCountsStoreIT::corruptFileIfExists,
-                RecordDatabaseLayout::countStore,
+                layout -> layout.countStore().baseSegment(),
                 "Counts store is missing, broken or of an older format");
     }
 
@@ -87,7 +87,7 @@ public class FullCheckCountsStoreIT {
                     Files.delete(path);
                     return true;
                 },
-                RecordDatabaseLayout::relationshipGroupDegreesStore,
+                layout -> layout.relationshipGroupDegreesStore().baseSegment(),
                 "Relationship group degrees store is missing, broken or of an older format");
     }
 
@@ -95,7 +95,7 @@ public class FullCheckCountsStoreIT {
     void shouldReportBrokenGroupDegreesStore() throws Exception {
         shouldReportBadCountsStore(
                 FullCheckCountsStoreIT::corruptFileIfExists,
-                RecordDatabaseLayout::relationshipGroupDegreesStore,
+                layout -> layout.relationshipGroupDegreesStore().baseSegment(),
                 "Relationship group degrees store is missing, broken or of an older format");
     }
 

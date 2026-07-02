@@ -30,7 +30,6 @@ import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -56,6 +55,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -99,13 +99,14 @@ public class MetaDataStoreTest {
         pageCacheWithFakeOverflow = new DelegatingPageCache(pageCache) {
             @Override
             public PagedFile map(
-                    Path path,
+                    StoreFile storeFile,
                     int pageSize,
                     String databaseName,
                     ImmutableSet<OpenOption> openOptions,
                     IOController ioController)
                     throws IOException {
-                return new DelegatingPagedFile(super.map(path, pageSize, databaseName, openOptions, ioController)) {
+                return new DelegatingPagedFile(
+                        super.map(storeFile, pageSize, databaseName, openOptions, ioController)) {
                     @Override
                     public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {
                         return new DelegatingPageCursor(super.io(pageId, pf_flags, context)) {
@@ -156,7 +157,7 @@ public class MetaDataStoreTest {
     void canReadStoreVersionWithDifferentEndiannessFormats(RecordFormats recordFormats) throws IOException {
         try (var metaDataStore = newMetaDataStore(recordFormats)) {
             var access = MetaDataStore.getFieldAccess(
-                    pageCache, metaDataStore.getStorageFile(), databaseLayout.getDatabaseName(), NULL_CONTEXT);
+                    pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), NULL_CONTEXT);
             var storeId = access.readStoreId();
             assertThat(storeId.getFormatName())
                     .isEqualTo(recordFormats.getFormatFamily().name());
@@ -217,7 +218,7 @@ public class MetaDataStoreTest {
         var cursorContext = contextFactory.create("tracePageCacheAccessOnSetRecord");
         try (var metaDataStore = newMetaDataStore()) {
             var fieldAccess = MetaDataStore.getFieldAccess(
-                    pageCache, metaDataStore.getStorageFile(), databaseLayout.getDatabaseName(), cursorContext);
+                    pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorContext);
             fieldAccess.writeStoreId(StoreId.generateNew("engine-1", "format-1", 1, 1));
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
@@ -233,7 +234,7 @@ public class MetaDataStoreTest {
         var cursorContext = contextFactory.create("tracePageCacheAccessOnGetRecord");
         try (var metaDataStore = newMetaDataStore()) {
             var fieldAccess = MetaDataStore.getFieldAccess(
-                    pageCache, metaDataStore.getStorageFile(), databaseLayout.getDatabaseName(), cursorContext);
+                    pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorContext);
             fieldAccess.readStoreId();
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();

@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.impl.store.LegacyMetadataHandler;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -35,13 +35,13 @@ import org.neo4j.storageengine.api.StoreVersionIdentifier;
 
 public class RecordStoreVersionCheck implements StoreVersionCheck {
     private final PageCache pageCache;
-    private final Path metaDataFile;
+    private final StoreFile metaDataStoreFile;
     private final Config config;
     private final String databaseName;
 
     public RecordStoreVersionCheck(PageCache pageCache, RecordDatabaseLayout databaseLayout, Config config) {
         this.pageCache = pageCache;
-        this.metaDataFile = databaseLayout.metadataStore();
+        this.metaDataStoreFile = databaseLayout.metadataStore();
         this.databaseName = databaseLayout.getDatabaseName();
         this.config = config;
     }
@@ -66,12 +66,12 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
     }
 
     private StoreVersionIdentifier readVersion(CursorContext cursorContext) throws IOException {
-        var fieldAccess = MetaDataStore.getFieldAccess(pageCache, metaDataFile, databaseName, cursorContext);
+        var fieldAccess = MetaDataStore.getFieldAccess(pageCache, metaDataStoreFile, databaseName, cursorContext);
         if (fieldAccess.isLegacyFieldValid()) {
             return fieldAccess.readStoreId();
         }
 
-        return LegacyMetadataHandler.readMetadata44FromStore(pageCache, metaDataFile, databaseName, cursorContext)
+        return LegacyMetadataHandler.readMetadata44FromStore(pageCache, metaDataStoreFile, databaseName, cursorContext)
                 .storeId();
     }
 

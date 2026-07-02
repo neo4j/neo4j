@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -134,7 +135,7 @@ class DatabaseShutdownTest {
                             return new DelegatingPageCache(pageCache) {
                                 @Override
                                 public PagedFile map(
-                                        Path path,
+                                        StoreFile storePath,
                                         int pageSize,
                                         String databaseName,
                                         ImmutableSet<OpenOption> openOptions,
@@ -143,7 +144,7 @@ class DatabaseShutdownTest {
                                         VersionStorage versionStorage)
                                         throws IOException {
                                     PagedFile pagedFile = super.map(
-                                            path,
+                                            storePath,
                                             pageSize,
                                             databaseName,
                                             openOptions,

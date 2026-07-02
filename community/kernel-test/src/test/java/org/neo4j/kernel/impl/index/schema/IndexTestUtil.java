@@ -121,15 +121,15 @@ public abstract class IndexTestUtil<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE
     }
 
     GBPTree<KEY, VALUE> getTree() {
-        return new GBPTreeBuilder<>(pageCache, fs, indexFiles.getStoreFile(), layout).build();
+        return new GBPTreeBuilder<>(pageCache, fs, indexFiles.getStoreFile().baseSegment(), layout).build();
     }
 
     void assertFilePresent() {
-        assertTrue(fs.fileExists(indexFiles.getStoreFile()));
+        assertTrue(indexFiles.getStoreFile().exists(fs));
     }
 
     void assertFileNotPresent() {
-        assertFalse(fs.fileExists(indexFiles.getStoreFile()));
+        assertFalse(indexFiles.getStoreFile().exists(fs));
     }
 
     // Useful when debugging

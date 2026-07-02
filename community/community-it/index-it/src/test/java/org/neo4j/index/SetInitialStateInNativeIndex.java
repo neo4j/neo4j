@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.Configuration;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.NativeIndexHeaderWriter;
@@ -88,7 +89,8 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction {
         try {
             // Try and read initial state, if we succeed then we know this file is a native index file
             // and we overwrite initial state with target.
-            NativeIndexes.readState(pageCache, fileOrDir, DEFAULT_DATABASE_NAME, NULL_CONTEXT, openOptions);
+            NativeIndexes.readState(
+                    pageCache, new StoreFile(fileOrDir), DEFAULT_DATABASE_NAME, NULL_CONTEXT, openOptions);
             return true;
         } catch (Throwable t) {
             return false;
@@ -98,6 +100,7 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction {
     private static void overwriteState(
             PageCache pageCache, Path indexFile, byte state, ImmutableSet<OpenOption> openOptions) throws IOException {
         NativeIndexHeaderWriter stateWriter = new NativeIndexHeaderWriter(state);
-        GBPTree.overwriteHeader(pageCache, indexFile, stateWriter, DEFAULT_DATABASE_NAME, NULL_CONTEXT, openOptions);
+        GBPTree.overwriteHeader(
+                pageCache, new StoreFile(indexFile), stateWriter, DEFAULT_DATABASE_NAME, NULL_CONTEXT, openOptions);
     }
 }

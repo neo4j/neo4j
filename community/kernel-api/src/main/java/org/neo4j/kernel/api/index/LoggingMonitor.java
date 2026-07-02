@@ -21,10 +21,10 @@ package org.neo4j.kernel.api.index;
 
 import static org.neo4j.internal.helpers.Format.duration;
 
-import java.nio.file.Path;
 import java.util.StringJoiner;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.logging.InternalLog;
 
 public class LoggingMonitor implements IndexProvider.Monitor {
@@ -44,18 +44,18 @@ public class LoggingMonitor implements IndexProvider.Monitor {
     }
 
     @Override
-    public void recoveryCleanupRegistered(Path indexFile, IndexDescriptor index) {
+    public void recoveryCleanupRegistered(StoreFile indexFile, IndexDescriptor index) {
         log.info("Schema index cleanup job registered: " + indexDescription(indexFile, index));
     }
 
     @Override
-    public void recoveryCleanupStarted(Path indexFile, IndexDescriptor index) {
+    public void recoveryCleanupStarted(StoreFile indexFile, IndexDescriptor index) {
         log.info("Schema index cleanup job started: " + indexDescription(indexFile, index));
     }
 
     @Override
     public void recoveryCleanupFinished(
-            Path indexFile,
+            StoreFile indexFile,
             IndexDescriptor index,
             long numberOfPagesVisited,
             long numberOfTreeNodes,
@@ -71,18 +71,19 @@ public class LoggingMonitor implements IndexProvider.Monitor {
     }
 
     @Override
-    public void recoveryCleanupClosed(Path indexFile, IndexDescriptor index) {
+    public void recoveryCleanupClosed(StoreFile indexFile, IndexDescriptor index) {
         log.info("Schema index cleanup job closed: " + indexDescription(indexFile, index));
     }
 
     @Override
-    public void recoveryCleanupFailed(Path indexFile, IndexDescriptor index, Throwable throwable) {
+    public void recoveryCleanupFailed(StoreFile indexFile, IndexDescriptor index, Throwable throwable) {
         log.error(String.format(
                 "Schema index cleanup job failed: %s.%nCaused by: %s",
                 indexDescription(indexFile, index), ExceptionUtils.getStackTrace(throwable)));
     }
 
-    private static String indexDescription(Path indexFile, IndexDescriptor indexDescriptor) {
-        return "descriptor=" + indexDescriptor + ", indexFile=" + indexFile.toAbsolutePath();
+    private static String indexDescription(StoreFile indexFile, IndexDescriptor indexDescriptor) {
+        return "descriptor=" + indexDescriptor + ", indexFile="
+                + indexFile.baseSegment().toAbsolutePath();
     }
 }

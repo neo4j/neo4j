@@ -37,6 +37,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.impl.storemigration.StoreMigrator.MIGRATION_DIRECTORY;
 import static org.neo4j.kernel.impl.storemigration.StoreVersionStateChecker.checkVersionSupportedAndNoBlockingInterruptedMigration;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -502,8 +503,7 @@ class StoreMigratorTest {
     }
 
     private boolean migrationDirPresent() {
-        var path = databaseLayout.file(StoreMigrator.MIGRATION_DIRECTORY);
-        return Files.exists(path);
+        return Files.exists(databaseLayout.path(MIGRATION_DIRECTORY));
     }
 
     private void verifyDbStartAndFormat(RecordFormats expectedStoreFormat) throws IOException {

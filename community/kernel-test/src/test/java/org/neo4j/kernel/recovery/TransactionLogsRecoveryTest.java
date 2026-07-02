@@ -76,6 +76,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.api.ChunkedTransactionTracker;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
@@ -496,8 +497,8 @@ class TransactionLogsRecoveryTest {
                             mock(InternalLog.class),
                             false,
                             contextFactory,
-                            recovering ->
-                                    StorageFilesState.unrecoverableState(List.of(Path.of("store_file_should_be_here"))),
+                            recovering -> StorageFilesState.unrecoverableState(
+                                    List.of(new StoreFile(Path.of("store_file_should_be_here")))),
                             config),
                     logPruner,
                     schemaLife,
@@ -590,8 +591,8 @@ class TransactionLogsRecoveryTest {
                             mock(InternalLog.class),
                             false,
                             contextFactory,
-                            recovering ->
-                                    StorageFilesState.unrecoverableState(List.of(Path.of("store_file_should_be_here"))),
+                            recovering -> StorageFilesState.unrecoverableState(
+                                    List.of(new StoreFile(Path.of("store_file_should_be_here")))),
                             config),
                     logPruner,
                     schemaLife,

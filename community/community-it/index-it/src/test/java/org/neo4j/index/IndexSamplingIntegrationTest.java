@@ -19,7 +19,6 @@
  */
 package org.neo4j.index;
 
-import static java.nio.file.Files.delete;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -42,6 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -58,6 +58,9 @@ import org.neo4j.test.extension.SkipOnSpd;
 class IndexSamplingIntegrationTest {
     @Inject
     private Neo4jLayout layout;
+
+    @Inject
+    private FileSystemAbstraction fs;
 
     private static final String TOKEN = "Person";
     private static final String PROPERTY = "name";
@@ -161,7 +164,7 @@ class IndexSamplingIntegrationTest {
             databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
         }
 
-        triggerIndexResamplingOnNextStartup(databaseLayout);
+        triggerIndexResamplingOnNextStartup(databaseLayout, fs);
     }
 
     private static IndexDescriptor indexId(KernelTransaction tx) {
@@ -180,9 +183,10 @@ class IndexSamplingIntegrationTest {
         }
     }
 
-    private static void triggerIndexResamplingOnNextStartup(DatabaseLayout layout) throws IOException {
+    private static void triggerIndexResamplingOnNextStartup(DatabaseLayout layout, FileSystemAbstraction fs)
+            throws IOException {
         // Trigger index resampling on next at startup
-        delete(layout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS));
+        layout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS).delete(fs);
     }
 
     private enum Entity {

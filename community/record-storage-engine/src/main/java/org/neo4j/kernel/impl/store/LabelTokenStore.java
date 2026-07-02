@@ -23,13 +23,13 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_T
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
 
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -43,8 +43,8 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord> {
 
     public LabelTokenStore(
             FileSystemAbstraction fileSystem,
-            Path path,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -57,8 +57,8 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord> {
             ImmutableSet<OpenOption> openOptions) {
         super(
                 fileSystem,
-                path,
-                idFile,
+                storeFile,
+                idStoreFile,
                 config,
                 RecordIdType.LABEL_TOKEN,
                 idGeneratorFactory,

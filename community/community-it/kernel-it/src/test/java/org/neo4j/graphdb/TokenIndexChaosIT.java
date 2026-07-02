@@ -219,7 +219,8 @@ public class TokenIndexChaosIT {
                         return indexFiles.getStoreFile();
                     })
                     .findAny()
-                    .get();
+                    .get()
+                    .baseSegment();
         }
     }
 }

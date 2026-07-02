@@ -22,7 +22,6 @@ package org.neo4j.internal.id;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -32,6 +31,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
@@ -131,7 +131,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     @Override
     public void initialize(
             FileSystemAbstraction fs,
-            Path baseBufferPath,
+            StoreFile storeFile,
             Config config,
             Supplier<TransactionSnapshot> snapshotSupplier,
             VisibilityHorizonVisibilityBoundary visibilityBoundary,
@@ -140,7 +140,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
             DatabaseReadOnlyChecker databaseReadOnlyChecker)
             throws IOException {
         bufferingIdGeneratorFactory.initialize(
-                fs, baseBufferPath, config, snapshotSupplier, visibilityBoundary, condition, memoryTracker);
+                fs, storeFile, config, snapshotSupplier, visibilityBoundary, condition, memoryTracker);
         this.databaseReadOnlyChecker = databaseReadOnlyChecker;
     }
 

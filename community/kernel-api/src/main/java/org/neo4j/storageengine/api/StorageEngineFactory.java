@@ -620,7 +620,7 @@ public interface StorageEngineFactory {
     private static void validateNotKnownFormat(FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
         if (fs.isDirectory(databaseLayout.databaseDirectory())) {
             assert selectStorageEngine(fs, databaseLayout).isEmpty();
-            if (fs.fileExists(databaseLayout.file(BlockDatabaseExistMarker.INSTANCE))) {
+            if (databaseLayout.file(BlockDatabaseExistMarker.INSTANCE).exists(fs)) {
                 throw new IllegalArgumentException("Block format detected for database "
                         + databaseLayout.getDatabaseName() + " but unavailable in this edition.");
             }

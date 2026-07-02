@@ -35,7 +35,6 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -54,6 +53,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -79,8 +79,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     protected final InternalLog log;
     protected final RecordFormat<RECORD> recordFormat;
     private final FileSystemAbstraction fileSystem;
-    final Path storageFile;
-    private final Path idFile;
+    final StoreFile storeFile;
+    private final StoreFile idStoreFile;
     private final String typeDescriptor;
     protected final boolean readOnly;
     protected PagedFile pagedFile;
@@ -114,8 +114,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
      */
     public CommonAbstractStore(
             FileSystemAbstraction fileSystem,
-            Path path,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             Config configuration,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -129,8 +129,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         this.fileSystem = fileSystem;
-        this.storageFile = path;
-        this.idFile = idFile;
+        this.storeFile = storeFile;
+        this.idStoreFile = idStoreFile;
         this.configuration = configuration;
         this.idGeneratorFactory = idGeneratorFactory;
         this.pageCache = pageCache;
@@ -182,7 +182,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     private boolean checkAndLoadStorage(CursorContextFactory contextFactory) {
         try (var cursorContext = contextFactory.create("checkAndLoadStorage")) {
             try {
-                if (!readOnly && !fileSystem.fileExists(storageFile)) {
+                if (!readOnly && !storeFile.exists(fileSystem)) {
                     if (createNewStoreFile(contextFactory, cursorContext)) {
                         // store file was not there, and we just created it.
                         return true;
@@ -191,7 +191,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                     return true; // <-- successfully created and initialized
                 }
             } catch (IOException e) {
-                throw new UnderlyingStorageException("Unable to open store file: " + storageFile, e);
+                throw new UnderlyingStorageException("Unable to open store file: " + storeFile, e);
             }
             return false;
         }
@@ -210,7 +210,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                 // configured
                 // header value.
                 HEADER defaultHeader = storeHeaderFormat.generateHeader();
-                pagedFile = pageCache.map(storageFile, filePageSize, databaseName, openOptions.newWith(ANY_PAGE_SIZE));
+                pagedFile = pageCache.map(storeFile, filePageSize, databaseName, openOptions.newWith(ANY_PAGE_SIZE));
                 HEADER readHeader = readStoreHeaderAndDetermineRecordSize(pagedFile, cursorContext);
                 if (!defaultHeader.equals(readHeader)) {
                     // The header that we read was different from the default one so unmap
@@ -221,7 +221,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
 
             if (pagedFile == null) {
                 // Map the file with the correct page size
-                pagedFile = pageCache.map(storageFile, filePageSize, databaseName, openOptions);
+                pagedFile = pageCache.map(storeFile, filePageSize, databaseName, openOptions);
             }
             determineRecordsPerPage();
         } catch (NoSuchFileException | StoreNotFoundException e) {
@@ -243,7 +243,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
             if (e instanceof StoreNotFoundException) {
                 throw (StoreNotFoundException) e;
             }
-            throw new StoreNotFoundException("Store file not found: " + storageFile, e);
+            throw new StoreNotFoundException("Store file not found: " + storeFile, e);
         }
         return false;
     }
@@ -257,7 +257,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         // initializing their store
         idGenerator = idGeneratorFactory.create(
                 pageCache,
-                idFile,
+                idStoreFile,
                 idType,
                 getNumberOfReservedLowIds(),
                 false,
@@ -269,7 +269,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                 SINGLE_IDS);
 
         // Map the file (w/ the CREATE flag) and initialize the header
-        pagedFile = pageCache.map(storageFile, filePageSize, databaseName, openOptions.newWith(CREATE));
+        pagedFile = pageCache.map(storeFile, filePageSize, databaseName, openOptions.newWith(CREATE));
         try (FileFlushEvent flushEvent = pageCacheTracer.beginFileFlush()) {
             initialiseNewStoreFile(flushEvent, AsyncBlockAccessor.EMPTY_ASYNC_BLOCK_ACCESSOR, cursorContext);
         }
@@ -314,7 +314,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                 }
                 return readHeader;
             } else {
-                throw new StoreNotFoundException("Fail to read header record of store file: " + storageFile);
+                throw new StoreNotFoundException("Fail to read header record of store file: " + storeFile);
             }
         }
     }
@@ -453,7 +453,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     private void checkIdScanCursorBounds(PageCursor cursor) {
         if (cursor.checkAndClearBoundsFlag()) {
             throw new UnderlyingStorageException("Out of bounds access on page " + cursor.getCurrentPageId()
-                    + " detected while scanning the " + storageFile + " file for deleted records");
+                    + " detected while scanning the " + storeFile + " file for deleted records");
         }
     }
 
@@ -557,8 +557,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
      * @return The name of this store
      */
     @Override
-    public Path getStorageFile() {
-        return storageFile;
+    public StoreFile getStoreFile() {
+        return storeFile;
     }
 
     /**
@@ -572,7 +572,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     private void openIdGenerator(CursorContextFactory contextFactory) throws IOException {
         idGenerator = idGeneratorFactory.open(
                 pageCache,
-                idFile,
+                idStoreFile,
                 getIdType(),
                 () -> {
                     try (var cursorContext = contextFactory.create("highIdScan")) {
@@ -625,7 +625,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
 
             return getNumberOfReservedLowIds();
         } catch (IOException e) {
-            throw new UnderlyingStorageException("Unable to find high id by scanning backwards " + getStorageFile(), e);
+            throw new UnderlyingStorageException("Unable to find high id by scanning backwards " + getStoreFile(), e);
         }
     }
 
@@ -675,7 +675,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         try {
             closeStoreFile();
         } catch (IllegalStateException e) {
-            throw new UnderlyingStorageException("Failed to close store file: " + getStorageFile(), e);
+            throw new UnderlyingStorageException("Failed to close store file: " + getStoreFile(), e);
         }
     }
 
@@ -719,7 +719,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         logger.log(format(
                 "%s[%s]: used=%s high=%s",
                 getTypeDescriptor(),
-                getStorageFile().getFileName(),
+                getStoreFile().storeBaseFileName(),
                 getIdGenerator().getHighId(),
                 getHighestPossibleIdInUse(cursorContext)));
     }
@@ -870,22 +870,17 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         record.setId(recordId);
         long pageId = pageIdForRecord(recordId);
         int offset = offsetForId(recordId);
-        throw new UnderlyingStorageException(buildOutOfBoundsExceptionMessage(
-                record,
-                pageId,
-                offset,
-                recordSize,
-                pagedFile.pageSize(),
-                storageFile.toAbsolutePath().toString()));
+        throw new UnderlyingStorageException(
+                buildOutOfBoundsExceptionMessage(record, pageId, offset, recordSize, pagedFile.pageSize(), storeFile));
     }
 
     static String buildOutOfBoundsExceptionMessage(
-            AbstractBaseRecord record, long pageId, int offset, int recordSize, int pagePayload, String filename) {
+            AbstractBaseRecord record, long pageId, int offset, int recordSize, int pagePayload, StoreFile storeFile) {
         return "Access to record " + record + " went out of bounds of the page. The record size is " + recordSize
                 + " bytes, and the access was at offset " + offset + " bytes into page " + pageId
                 + ", and the pages have a capacity of " + pagePayload + " bytes. "
                 + "The mapped store file in question is "
-                + filename;
+                + storeFile;
     }
 
     private void verifyAfterReading(RECORD record, RecordLoad mode) {

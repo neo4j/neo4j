@@ -24,7 +24,6 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +44,7 @@ import org.neo4j.internal.schema.SchemaPatternMatchingType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -117,8 +117,8 @@ public class SchemaStore44Reader implements AutoCloseable {
             PropertyStore propertyStore,
             TokenHolders tokenHolders,
             KernelVersion kernelVersion,
-            Path schemaStoreLocation,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             Config conf,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -134,8 +134,8 @@ public class SchemaStore44Reader implements AutoCloseable {
         this.kernelVersion = kernelVersion;
         this.schemaStore = new SchemaStore44(
                 fileSystem,
-                schemaStoreLocation,
-                idFile,
+                storeFile,
+                idStoreFile,
                 conf,
                 idType,
                 idGeneratorFactory,
@@ -442,8 +442,8 @@ public class SchemaStore44Reader implements AutoCloseable {
 
         SchemaStore44(
                 FileSystemAbstraction fileSystem,
-                Path path,
-                Path idFile,
+                StoreFile storeFile,
+                StoreFile idStoreFile,
                 Config conf,
                 IdType idType,
                 IdGeneratorFactory idGeneratorFactory,
@@ -456,8 +456,8 @@ public class SchemaStore44Reader implements AutoCloseable {
                 ImmutableSet<OpenOption> openOptions) {
             super(
                     fileSystem,
-                    path,
-                    idFile,
+                    storeFile,
+                    idStoreFile,
                     conf,
                     idType,
                     idGeneratorFactory,

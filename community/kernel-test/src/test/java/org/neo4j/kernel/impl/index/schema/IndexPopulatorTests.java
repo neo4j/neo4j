@@ -36,7 +36,6 @@ import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -92,16 +91,16 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
     void createShouldClearExistingFile() throws Exception {
         // given
         byte[] someBytes = fileWithContent();
-        Path storeFile = indexFiles.getStoreFile();
-        assertThat(fs.fileExists(storeFile)).isTrue();
-        assertThat(fs.getFileSize(storeFile)).isEqualTo(someBytes.length);
+        var storeFile = indexFiles.getStoreFile();
+        assertThat(storeFile.exists(fs)).isTrue();
+        assertThat(storeFile.size(fs)).isEqualTo(someBytes.length);
 
         // when
         populator.create();
 
         // then
-        assertThat(fs.fileExists(storeFile)).isTrue();
-        assertThat(fs.getFileSize(storeFile)).isEqualTo(0);
+        assertThat(storeFile.exists(fs)).isTrue();
+        assertThat(storeFile.size(fs)).isEqualTo(0);
 
         populator.close(true, NULL_CONTEXT);
     }
@@ -366,7 +365,8 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
     private void assertHeader(InternalIndexState expectedState, String failureMessage, boolean messageTruncated)
             throws IOException {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader(failureByte());
-        try (GBPTree<KEY, VALUE> ignored = new GBPTreeBuilder<>(pageCache, fs, indexFiles.getStoreFile(), layout)
+        try (GBPTree<KEY, VALUE> ignored = new GBPTreeBuilder<>(
+                        pageCache, fs, indexFiles.getStoreFile().baseSegment(), layout)
                 .with(headerReader)
                 .build()) {
             switch (expectedState) {
@@ -410,7 +410,7 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
     private byte[] fileWithContent() throws IOException {
         int size = 1000;
         indexFiles.ensureDirectoryExist();
-        try (StoreChannel storeChannel = fs.write(indexFiles.getStoreFile())) {
+        try (StoreChannel storeChannel = fs.write(indexFiles.getStoreFile().baseSegment())) {
             byte[] someBytes = new byte[size];
             new Random().nextBytes(someBytes);
             storeChannel.writeAll(ByteBuffer.wrap(someBytes));

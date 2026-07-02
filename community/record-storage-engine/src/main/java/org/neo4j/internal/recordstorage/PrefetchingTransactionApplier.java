@@ -112,7 +112,7 @@ public class PrefetchingTransactionApplier extends TransactionApplier.Adapter {
             int index = storeType.ordinal();
             var pages = checkedPages[index];
             if (pages != null) {
-                prefetcher.submit(neoStores.getRecordStore(storeType).getStorageFile(), pages.toSortedArray());
+                prefetcher.submit(neoStores.getRecordStore(storeType).getStoreFile(), pages.toSortedArray());
             }
         }
     }

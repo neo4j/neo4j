@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -53,7 +54,8 @@ public class FreeListIdProviderTracersTest {
         var cursorContext = contextFactory.create("trackPageCacheAccessOnInitialize");
         assertZeroCursor(cursorContext);
 
-        try (var freeListFile = pageCache.map(testDirectory.createFile("init"), pageCache.pageSize(), DATABASE_NAME)) {
+        try (var freeListFile =
+                pageCache.map(new StoreFile(testDirectory.createFile("init")), pageCache.pageSize(), DATABASE_NAME)) {
             FreelistIdProvider listIdProvider = new FreelistIdProvider(freeListFile);
             listIdProvider.initializeAfterCreation(
                     bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext), 0);
@@ -67,7 +69,8 @@ public class FreeListIdProviderTracersTest {
         var cursorContext = contextFactory.create("trackPageCacheAccessOnNewIdGeneration");
         assertZeroCursor(cursorContext);
 
-        try (var freeListFile = pageCache.map(testDirectory.createFile("newId"), pageCache.pageSize(), DATABASE_NAME)) {
+        try (var freeListFile =
+                pageCache.map(new StoreFile(testDirectory.createFile("newId")), pageCache.pageSize(), DATABASE_NAME)) {
             FreelistIdProvider listIdProvider = new FreelistIdProvider(freeListFile);
             var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
             listIdProvider.initializeAfterCreation(cursorCreator, 0);
@@ -85,8 +88,8 @@ public class FreeListIdProviderTracersTest {
         var cursorContext = contextFactory.create("trackPageCacheAccessOnIdReleaseOnTheSamePage");
         assertZeroCursor(cursorContext);
 
-        try (var freeListFile =
-                pageCache.map(testDirectory.createFile("releaseId"), pageCache.pageSize(), DATABASE_NAME)) {
+        try (var freeListFile = pageCache.map(
+                new StoreFile(testDirectory.createFile("releaseId")), pageCache.pageSize(), DATABASE_NAME)) {
             FreelistIdProvider listIdProvider = new FreelistIdProvider(freeListFile);
             var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
             listIdProvider.initializeAfterCreation(cursorCreator, 0);
@@ -105,8 +108,8 @@ public class FreeListIdProviderTracersTest {
         var cursorContext = contextFactory.create("trackPageCacheAccessOnIdReleaseOnDifferentPage");
         assertZeroCursor(cursorContext);
 
-        try (var freeListFile =
-                pageCache.map(testDirectory.createFile("differentReleaseId"), pageCache.pageSize(), DATABASE_NAME)) {
+        try (var freeListFile = pageCache.map(
+                new StoreFile(testDirectory.createFile("differentReleaseId")), pageCache.pageSize(), DATABASE_NAME)) {
             FreelistIdProvider listIdProvider = new FreelistIdProvider(freeListFile);
             listIdProvider.initialize(0, 1, 0, listIdProvider.entriesPerPage() - 1, 0);
             var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
@@ -127,8 +130,8 @@ public class FreeListIdProviderTracersTest {
         var cursorContext = contextFactory.create("trackPageCacheAccessOnFreeListTraversal");
         assertZeroCursor(cursorContext);
 
-        try (var freeListFile =
-                pageCache.map(testDirectory.createFile("traversal"), pageCache.pageSize(), DATABASE_NAME)) {
+        try (var freeListFile = pageCache.map(
+                new StoreFile(testDirectory.createFile("traversal")), pageCache.pageSize(), DATABASE_NAME)) {
             FreelistIdProvider listIdProvider = new FreelistIdProvider(freeListFile);
             listIdProvider.initialize(100, 0, 1, listIdProvider.entriesPerPage() - 1, 0);
             var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);

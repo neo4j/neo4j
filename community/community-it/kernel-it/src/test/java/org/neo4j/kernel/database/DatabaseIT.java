@@ -67,6 +67,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -355,7 +356,8 @@ class DatabaseIT {
         PageCache pageCache = database.getDependencyResolver().resolveDependency(PageCache.class);
         MutableSet<OpenOption> openOptions = mutable.empty();
         try {
-            PagedFile pagedFile = pageCache.getExistingMapping(storeFile).orElseThrow();
+            PagedFile pagedFile =
+                    pageCache.getExistingMapping(new StoreFile(storeFile)).orElseThrow();
             try (PageCursor cursor = pagedFile.io(
                     0, PagedFile.PF_SHARED_READ_LOCK | PagedFile.PF_NO_FAULT, CursorContext.NULL_CONTEXT)) {
                 if (Objects.equals(cursor.getByteOrder(), ByteOrder.BIG_ENDIAN)) {
@@ -411,7 +413,7 @@ class DatabaseIT {
 
         @Override
         public PagedFile map(
-                Path path,
+                StoreFile storeFile,
                 int pageSize,
                 String databaseName,
                 ImmutableSet<OpenOption> openOptions,
@@ -420,7 +422,14 @@ class DatabaseIT {
                 VersionStorage versionStorage)
                 throws IOException {
             PageFileWrapper pageFileWrapper = new PageFileWrapper(
-                    super.map(path, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage),
+                    super.map(
+                            storeFile,
+                            pageSize,
+                            databaseName,
+                            openOptions,
+                            ioController,
+                            evictionBouncer,
+                            versionStorage),
                     fileFlushes,
                     ioController,
                     disabledIOController,

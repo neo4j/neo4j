@@ -21,8 +21,8 @@ package org.neo4j.storageengine.api;
 
 import static java.util.Collections.emptyList;
 
-import java.nio.file.Path;
 import java.util.List;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 
 /// Holds information about storage files for a specific store.
 ///
@@ -32,7 +32,7 @@ import java.util.List;
 ///   It may be possible to recover in some situations, such as the creation occurring since the last checkpoint.
 /// * [RecoveryState#UNRECOVERABLE], where some stores files are missing or broken, and should be specified in its
 ///   [#unrecoverableState(java.util.List)] factory method.
-public record StorageFilesState(RecoveryState recoveryState, List<Path> missingFiles) {
+public record StorageFilesState(RecoveryState recoveryState, List<StoreFile> missingFiles) {
 
     public static StorageFilesState recoveredState() {
         return new StorageFilesState(RecoveryState.RECOVERED, emptyList());
@@ -42,7 +42,7 @@ public record StorageFilesState(RecoveryState recoveryState, List<Path> missingF
         return new StorageFilesState(RecoveryState.RECOVERABLE, emptyList());
     }
 
-    public static StorageFilesState unrecoverableState(List<Path> missingFiles) {
+    public static StorageFilesState unrecoverableState(List<StoreFile> missingFiles) {
         return new StorageFilesState(RecoveryState.UNRECOVERABLE, missingFiles);
     }
 }

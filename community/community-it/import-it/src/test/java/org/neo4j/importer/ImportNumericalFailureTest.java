@@ -78,7 +78,7 @@ class ImportNumericalFailureTest {
         assertThatThrownBy(() -> runImport(
                         databaseLayout.databaseDirectory().toAbsolutePath(),
                         "--report-file",
-                        databaseLayout.file("import.report").toAbsolutePath().toString(),
+                        databaseLayout.path("import.report").toAbsolutePath().toString(),
                         "--quote",
                         "'",
                         "--nodes",
@@ -87,7 +87,7 @@ class ImportNumericalFailureTest {
     }
 
     private static Path file(DatabaseLayout databaseLayout, String name) {
-        return databaseLayout.file(name);
+        return databaseLayout.path(name);
     }
 
     private static void runImport(Path homeDir, String... arguments) {

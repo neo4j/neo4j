@@ -67,8 +67,9 @@ class CommunityEditionModuleIntegrationTest {
     @Test
     void fileWatcherFileNameFilter() {
         Predicate<String> filter = ModularDatabaseCreationContext.defaultFileWatcherFilter();
-        assertFalse(filter.test(databaseLayout.metadataStore().getFileName().toString()));
-        assertFalse(filter.test(databaseLayout.nodeStore().getFileName().toString()));
+        assertFalse(
+                filter.test(databaseLayout.metadataStore().storeBaseFileName().toString()));
+        assertFalse(filter.test(databaseLayout.nodeStore().storeBaseFileName().toString()));
         assertTrue(filter.test(TransactionLogFilesHelper.DEFAULT_NAME + ".1"));
         assertTrue(filter.test(TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".1"));
     }

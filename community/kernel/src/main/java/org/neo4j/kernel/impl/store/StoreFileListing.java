@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -42,6 +43,7 @@ import org.neo4j.storageengine.api.StorageFileSelection;
 
 public class StoreFileListing implements FileStoreProviderRegistry {
     private final DatabaseLayout databaseLayout;
+    private final FileSystemAbstraction fs;
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
     private final SchemaAndIndexingFileIndexListing fileIndexListing;
@@ -49,10 +51,12 @@ public class StoreFileListing implements FileStoreProviderRegistry {
 
     public StoreFileListing(
             DatabaseLayout databaseLayout,
+            FileSystemAbstraction fs,
             LogFiles logFiles,
             IndexingService indexingService,
             StorageEngine storageEngine) {
         this.databaseLayout = databaseLayout;
+        this.fs = fs;
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
         this.fileIndexListing = new SchemaAndIndexingFileIndexListing(indexingService);
@@ -71,7 +75,10 @@ public class StoreFileListing implements FileStoreProviderRegistry {
     private void placeMetaDataStoreLast(List<Path> files) {
         int index = 0;
         for (Path file : files) {
-            if (databaseLayout.pathForStore(CommonDatabaseStores.METADATA).equals(file)) {
+            if (databaseLayout
+                    .pathForStore(CommonDatabaseStores.METADATA)
+                    .baseSegment()
+                    .equals(file)) {
                 break;
             }
             index++;
@@ -187,7 +194,7 @@ public class StoreFileListing implements FileStoreProviderRegistry {
                         !excludeAtomicStorageFiles, !excludeReplayableStorageFiles, !excludeIdFiles)));
 
                 if (!excludeSchemaIndexStoreFiles) {
-                    resources.add(fileIndexListing.gatherSchemaIndexFiles(files));
+                    resources.add(fileIndexListing.gatherSchemaIndexFiles(fs, files));
                 }
                 if (!excludeAdditionalProviders) {
                     for (StoreFileProvider additionalProvider : additionalProviders) {

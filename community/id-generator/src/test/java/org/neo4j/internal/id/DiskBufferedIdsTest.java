@@ -46,6 +46,7 @@ import org.neo4j.internal.id.IdController.TransactionSnapshot;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -76,7 +77,7 @@ class DiskBufferedIdsTest {
     }
 
     private void openBuffer(FileSystemAbstraction fs) throws IOException {
-        buffer = new DiskBufferedIds(fs, basePath, INSTANCE, (int) ByteUnit.kibiBytes(500));
+        buffer = new DiskBufferedIds(fs, new StoreFile(basePath), INSTANCE, (int) ByteUnit.kibiBytes(500));
     }
 
     @AfterEach

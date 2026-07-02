@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.store.NoStoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -156,7 +157,7 @@ class PageCachePrefetchingTest {
 
     private void writeToFile(Path file, CursorContext cursorContext, int additionalPfFlags) throws IOException {
         try (PagedFile pagedFile = pageCache.map(
-                file,
+                new StoreFile(file),
                 PageCache.PAGE_SIZE,
                 DEFAULT_DATABASE_NAME,
                 immutable.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {

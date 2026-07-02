@@ -25,19 +25,19 @@ import static org.neo4j.kernel.impl.index.schema.TokenIndex.POPULATING;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 
 public final class TokenIndexes {
     private TokenIndexes() {}
 
     public static InternalIndexState readState(
             PageCache pageCache,
-            Path indexFile,
+            StoreFile indexFile,
             String databaseName,
             CursorContext cursorContext,
             ImmutableSet<OpenOption> openOptions)
@@ -54,7 +54,7 @@ public final class TokenIndexes {
 
     static String readFailureMessage(
             PageCache pageCache,
-            Path indexFile,
+            StoreFile indexFile,
             String databaseName,
             CursorContext cursorContext,
             ImmutableSet<OpenOption> openOptions)

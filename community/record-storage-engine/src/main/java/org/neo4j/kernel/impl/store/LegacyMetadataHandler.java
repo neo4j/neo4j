@@ -27,7 +27,6 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.allFormats
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 import org.neo4j.internal.helpers.Numbers;
@@ -38,6 +37,7 @@ import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
@@ -61,7 +61,7 @@ public class LegacyMetadataHandler {
             "HL4.3.0", StoreVersion.HIGH_LIMIT_V4_3);
 
     public static Metadata44 readMetadata44FromStore(
-            PageCache pageCache, Path metadataStore, String databaseName, CursorContext cursorContext)
+            PageCache pageCache, StoreFile metadataStore, String databaseName, CursorContext cursorContext)
             throws IOException {
         try (PagedFile pagedFile =
                 pageCache.map(metadataStore, databaseName, immutable.of(PageCacheOpenOptions.BIG_ENDIAN), DISABLED)) {

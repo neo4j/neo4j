@@ -141,6 +141,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -228,12 +229,14 @@ class IndexingServiceTest {
     private final StorageEngine storageEngine = mock(StorageEngine.class);
     private final FakeClock clock = Clocks.fakeClock();
     private final Config config = Config.defaults();
+    private DefaultFileSystemAbstraction fs;
 
     @BeforeEach
     void setUp() throws IndexNotFoundKernelException {
+        fs = new DefaultFileSystemAbstraction();
         when(populator.sample(any(CursorContext.class))).thenReturn(new IndexSample());
         when(indexStatisticsStore.indexSample(anyLong())).thenReturn(new IndexSample());
-        when(indexStatisticsStore.storeFile()).thenReturn(Path.of("foo"));
+        when(indexStatisticsStore.storeFile()).thenReturn(new StoreFile(Path.of("foo")));
         when(storeViewFactory.createTokenIndexStoreView(any())).thenReturn(storeView);
         ValueIndexReader indexReader = mock(ValueIndexReader.class);
         IndexSampler indexSampler = mock(IndexSampler.class);
@@ -246,6 +249,7 @@ class IndexingServiceTest {
 
     @AfterEach
     void tearDown() {
+        fs.close();
         life.shutdown();
     }
 
@@ -589,12 +593,15 @@ class IndexingServiceTest {
         life.start();
 
         // WHEN
-        ResourceIterator<Path> files = indexing.snapshotIndexFiles();
+        ResourceIterator<Path> files = indexing.snapshotIndexFiles(fs);
 
         // THEN
         // We get a snapshot per online / failed index
-        assertThat(asCollection(files))
-                .isEqualTo(asCollection(iterator(indexStatisticsStore.storeFile(), theFile, theFile, theFile)));
+        var expectedFiles = new ArrayList<>(indexStatisticsStore.storeFile().allSegments(fs));
+        expectedFiles.add(theFile);
+        expectedFiles.add(theFile);
+        expectedFiles.add(theFile);
+        assertThat(asCollection(files)).isEqualTo(expectedFiles);
     }
 
     @Test
@@ -618,13 +625,15 @@ class IndexingServiceTest {
         life.start();
 
         // WHEN
-        ResourceIterator<Path> files = indexing.snapshotIndexFiles();
+        ResourceIterator<Path> files = indexing.snapshotIndexFiles(fs);
         populatorLatch.countDown(); // only now, after the snapshot, is the population job allowed to finish
         waitForIndexesToComeOnline(indexing, index1, index2);
 
         // THEN
         // We get a snapshot from the online index, but no snapshot from the populating one
-        assertThat(asCollection(files)).isEqualTo(asCollection(iterator(indexStatisticsStore.storeFile(), theFile)));
+        var expectedFiles = new ArrayList<>(indexStatisticsStore.storeFile().allSegments(fs));
+        expectedFiles.add(theFile);
+        assertThat(asCollection(files)).isEqualTo(expectedFiles);
     }
 
     @Test
@@ -1727,7 +1736,7 @@ class IndexingServiceTest {
         clock.forward(1, SECONDS);
         var readerTimeMillis = clock.millis();
         try (var reader = proxy.newTokenReader();
-                var client = new SimpleEntityTokenClient(); ) {
+                var client = new SimpleEntityTokenClient()) {
             reader.query(client, IndexQueryConstraints.unconstrained(), new TokenPredicate(0), NULL_CONTEXT);
         }
         indexingService.reportUsageStatistics();

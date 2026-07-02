@@ -25,7 +25,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsUpdater;
@@ -36,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.InternalLogProvider;
@@ -91,7 +91,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
 
     public GBPTreeCountsStore(
             PageCache pageCache,
-            Path file,
+            StoreFile storeFile,
             FileSystemAbstraction fileSystem,
             RecoveryCleanupWorkCollector recoveryCollector,
             CountsBuilder initialCountsBuilder,
@@ -106,7 +106,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
             throws IOException {
         super(
                 pageCache,
-                file,
+                storeFile,
                 fileSystem,
                 recoveryCollector,
                 new InitialCountsRebuilder(initialCountsBuilder),
@@ -192,7 +192,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     public static void dump(
             PageCache pageCache,
             FileSystemAbstraction fileSystem,
-            Path file,
+            StoreFile storeFile,
             PrintStream out,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
@@ -201,7 +201,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         GBPTreeGenericCountsStore.dump(
                 pageCache,
                 fileSystem,
-                file,
+                storeFile,
                 out,
                 DEFAULT_DATABASE_NAME,
                 NAME,

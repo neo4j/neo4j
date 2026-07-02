@@ -80,6 +80,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -141,7 +142,7 @@ class GBPTreeGenericCountsStoreTest {
         CursorContextFactory cursorContextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (var counts = new GBPTreeCountsStore(
                 pageCache,
-                file,
+                new StoreFile(file),
                 directory.getFileSystem(),
                 immediate(),
                 CountsBuilder.EMPTY,
@@ -536,7 +537,7 @@ class GBPTreeGenericCountsStoreTest {
         assertThatExceptionOfType(IllegalStateException.class)
                 .isThrownBy(() -> new GBPTreeCountsStore(
                         pageCache,
-                        file,
+                        new StoreFile(file),
                         fs,
                         immediate(),
                         CountsBuilder.EMPTY,
@@ -615,7 +616,13 @@ class GBPTreeGenericCountsStoreTest {
         // when
         assertThatExceptionOfType(NoSuchFileException.class)
                 .isThrownBy(() -> GBPTreeCountsStore.dump(
-                        pageCache, fs, file, System.out, CONTEXT_FACTORY, PageCacheTracer.NULL, immutable.empty()));
+                        pageCache,
+                        fs,
+                        new StoreFile(file),
+                        System.out,
+                        CONTEXT_FACTORY,
+                        PageCacheTracer.NULL,
+                        immutable.empty()));
 
         // then
         assertThat(fs.fileExists(file)).isFalse();
@@ -950,7 +957,7 @@ class GBPTreeGenericCountsStoreTest {
             throws IOException {
         countsStore = new GBPTreeGenericCountsStore(
                 pageCache,
-                countsStoreFile(),
+                new StoreFile(countsStoreFile()),
                 fs,
                 immediate(),
                 builder,

@@ -163,7 +163,7 @@ class RebuildCountsTest {
     }
 
     private void deleteCounts(FileSystemAbstraction snapshot) throws IOException {
-        snapshot.deleteFile(databaseLayout.countStore());
+        databaseLayout.countStore().delete(snapshot);
     }
 
     private FileSystemAbstraction shutdown() {

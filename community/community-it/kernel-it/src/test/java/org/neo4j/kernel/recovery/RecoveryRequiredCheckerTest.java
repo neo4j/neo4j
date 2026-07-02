@@ -268,9 +268,11 @@ class RecoveryRequiredCheckerTest {
                     getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
 
-            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.COUNTS));
-            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.SCHEMAS));
-            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.RELATIONSHIP_TYPE_TOKENS));
+            databaseLayout.pathForStore(CommonDatabaseStores.COUNTS).delete(fileSystem);
+            databaseLayout.pathForStore(CommonDatabaseStores.SCHEMAS).delete(fileSystem);
+            databaseLayout
+                    .pathForStore(CommonDatabaseStores.RELATIONSHIP_TYPE_TOKENS)
+                    .delete(fileSystem);
 
             assertTrue(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
@@ -287,7 +289,7 @@ class RecoveryRequiredCheckerTest {
                     getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
 
-            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.COUNTS));
+            databaseLayout.pathForStore(CommonDatabaseStores.COUNTS).delete(fileSystem);
 
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
@@ -304,7 +306,7 @@ class RecoveryRequiredCheckerTest {
                     getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
 
-            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS));
+            databaseLayout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS).delete(fileSystem);
 
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
@@ -430,9 +432,11 @@ class RecoveryRequiredCheckerTest {
                     RecoveryPredicate.untilPosition(latestCheckpoint.transactionLogPosition()));
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
 
-            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.COUNTS));
-            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.SCHEMAS));
-            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.RELATIONSHIP_TYPE_TOKENS));
+            databaseLayout.pathForStore(CommonDatabaseStores.COUNTS).delete(fileSystem);
+            databaseLayout.pathForStore(CommonDatabaseStores.SCHEMAS).delete(fileSystem);
+            databaseLayout
+                    .pathForStore(CommonDatabaseStores.RELATIONSHIP_TYPE_TOKENS)
+                    .delete(fileSystem);
 
             assertTrue(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
@@ -448,11 +452,10 @@ class RecoveryRequiredCheckerTest {
                             DatabaseLayout.of(config, databaseLayout.getDatabaseName()), INSTANCE))
                     .isEqualTo(true);
 
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(storeDir)
+            try (DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(storeDir)
                     .setFileSystem(ephemeralFs)
                     .setConfig(config)
-                    .build();
-            managementService.shutdown();
+                    .build()) {}
 
             assertThat(recoveryChecker.isRecoveryRequiredAt(databaseLayout, INSTANCE))
                     .isEqualTo(false);

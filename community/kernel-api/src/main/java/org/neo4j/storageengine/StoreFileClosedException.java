@@ -20,9 +20,14 @@
 package org.neo4j.storageengine;
 
 import java.nio.file.Path;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 
 public class StoreFileClosedException extends RuntimeException {
     public StoreFileClosedException(Path storageFile) {
         super("Store for file '" + storageFile + "' is closed");
+    }
+
+    public StoreFileClosedException(StoreFile storeFile) {
+        this(storeFile.baseSegment());
     }
 }

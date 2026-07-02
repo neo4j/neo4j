@@ -26,7 +26,6 @@ import static org.neo4j.kernel.impl.api.index.stats.IndexStatisticsKey.TYPE_USAG
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +47,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -68,7 +68,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fileSystem;
-    private final Path path;
+    private final StoreFile storeFile;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final String databaseName;
     private final PageCacheTracer pageCacheTracer;
@@ -104,7 +104,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
     public IndexStatisticsStore(
             PageCache pageCache,
             FileSystemAbstraction fileSystem,
-            Path path,
+            StoreFile storeFile,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean readOnly,
             String databaseName,
@@ -114,7 +114,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
             throws IOException {
         this.pageCache = pageCache;
         this.fileSystem = fileSystem;
-        this.path = path;
+        this.storeFile = storeFile;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.databaseName = databaseName;
         this.pageCacheTracer = pageCacheTracer;
@@ -129,7 +129,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
             tree = new GBPTree<>(
                     pageCache,
                     fileSystem,
-                    path,
+                    storeFile,
                     layout,
                     MultiRootGBPTree.NO_MONITOR,
                     MultiRootGBPTree.NO_HEADER_READER,
@@ -145,8 +145,8 @@ public class IndexStatisticsStore extends LifecycleAdapter
             }
         } catch (TreeFileNotFoundException e) {
             throw new IllegalStateException(
-                    "Index statistics store file could not be found, most likely this database needs to be recovered, file:"
-                            + path,
+                    "Index statistics store file could not be found, "
+                            + "most likely this database needs to be recovered, file:" + storeFile,
                     e);
         }
     }
@@ -337,8 +337,8 @@ public class IndexStatisticsStore extends LifecycleAdapter
         }
     }
 
-    public Path storeFile() {
-        return path;
+    public StoreFile storeFile() {
+        return storeFile;
     }
 
     @Override

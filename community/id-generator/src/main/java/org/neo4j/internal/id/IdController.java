@@ -20,13 +20,13 @@
 package org.neo4j.internal.id;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.OldestVisibilityHorizonFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryTracker;
 
@@ -86,7 +86,7 @@ public interface IdController extends Lifecycle {
 
     void initialize(
             FileSystemAbstraction fs,
-            Path baseBufferPath,
+            StoreFile storeFile,
             Config config,
             Supplier<TransactionSnapshot> snapshotSupplier,
             VisibilityHorizonVisibilityBoundary visibilityBoundary,

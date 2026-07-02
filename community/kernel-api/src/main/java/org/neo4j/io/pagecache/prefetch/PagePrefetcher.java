@@ -20,8 +20,8 @@
 package org.neo4j.io.pagecache.prefetch;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -42,24 +42,24 @@ public interface PagePrefetcher extends Lifecycle {
         public void shutdown() {}
 
         @Override
-        public void submit(Path path, PagesSupplier pages) {}
+        public void submit(StoreFile storeFile, PagesSupplier pages) {}
     };
 
     /**
      * Ask prefetcher to load file pages for specific file. Sorted array is preferred.
-     * @param path file path
+     * @param storeFile file path
      * @param pages page numbers
      */
-    default void submit(Path path, long[] pages) {
-        submit(path, ctx -> pages);
+    default void submit(StoreFile storeFile, long[] pages) {
+        submit(storeFile, ctx -> pages);
     }
 
     /**
      * Ask prefetcher to load file pages for specific file. Sorted array is preferred.
-     * @param path file path
+     * @param storeFile file path
      * @param pages supplier of page numbers
      */
-    void submit(Path path, PagesSupplier pages);
+    void submit(StoreFile storeFile, PagesSupplier pages);
 
     @FunctionalInterface
     interface PagesSupplier {

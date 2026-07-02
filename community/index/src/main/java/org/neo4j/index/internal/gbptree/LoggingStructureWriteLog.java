@@ -39,14 +39,15 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.InputStreamReadableChannel;
 import org.neo4j.io.fs.OutputStreamWritableChannel;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
 class LoggingStructureWriteLog implements StructureWriteLog {
     private static final int ENTRY_HEADER_SIZE = Byte.BYTES + Long.BYTES * 3;
 
-    private static final Function<Path, Path> PATH_FUNCTION =
-            gbptreePath -> gbptreePath.resolveSibling(gbptreePath.getFileName() + ".slog");
+    private static final Function<StoreFile, Path> STORE_PATH_FUNCTION =
+            gbptreePath -> gbptreePath.baseSegment().resolveSibling(gbptreePath.storeBaseFileName() + ".slog");
 
     private final FileSystemAbstraction fs;
     private final Path path;
@@ -72,8 +73,8 @@ class LoggingStructureWriteLog implements StructureWriteLog {
         }
     }
 
-    public static LoggingStructureWriteLog forGBPTree(FileSystemAbstraction fs, Path gbptreeFile) {
-        return new LoggingStructureWriteLog(fs, PATH_FUNCTION.apply(gbptreeFile), mebiBytes(50));
+    public static LoggingStructureWriteLog forGBPTree(FileSystemAbstraction fs, StoreFile storeFile) {
+        return new LoggingStructureWriteLog(fs, STORE_PATH_FUNCTION.apply(storeFile), mebiBytes(50));
     }
 
     @Override

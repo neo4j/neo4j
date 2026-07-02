@@ -51,9 +51,9 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -82,6 +82,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DatabaseCreationOptions;
@@ -316,7 +317,7 @@ class NodeStoreTest {
                 PageCache customPageCache = new DelegatingPageCache(pageCache) {
                     @Override
                     public PagedFile map(
-                            Path path,
+                            StoreFile storePath,
                             int pageSize,
                             String databaseName,
                             ImmutableSet<OpenOption> openOptions,
@@ -324,12 +325,22 @@ class NodeStoreTest {
                             EvictionBouncer evictionGuard,
                             VersionStorage versionStorage)
                             throws IOException {
-                        if (path.getFileName().toString().toLowerCase().endsWith(ID_FILE_SUFFIX)) {
+                        if (storePath
+                                .storeBaseFileName()
+                                .toString()
+                                .toLowerCase(Locale.ROOT)
+                                .endsWith(ID_FILE_SUFFIX)) {
                             fired.setTrue();
                             throw new IOException("Proving a point here");
                         }
                         return super.map(
-                                path, pageSize, databaseName, openOptions, ioController, evictionGuard, versionStorage);
+                                storePath,
+                                pageSize,
+                                databaseName,
+                                openOptions,
+                                ioController,
+                                evictionGuard,
+                                versionStorage);
                     }
                 };
 
@@ -524,7 +535,7 @@ class NodeStoreTest {
                             FileSystemAbstraction fs,
                             PageCache pageCache,
                             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                            Path fileName,
+                            StoreFile storePath,
                             LongSupplier highIdSupplier,
                             long maxValue,
                             IdType idType,
@@ -538,7 +549,7 @@ class NodeStoreTest {
                                 fs,
                                 pageCache,
                                 recoveryCleanupWorkCollector,
-                                fileName,
+                                storePath,
                                 highIdSupplier,
                                 maxValue,
                                 idType,

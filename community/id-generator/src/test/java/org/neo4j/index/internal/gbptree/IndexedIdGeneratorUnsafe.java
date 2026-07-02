@@ -31,6 +31,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 
 /**
  * Test utility for {@link org.neo4j.internal.id.indexed.IndexedIdGenerator}, which uses the "unsafe" functionality
@@ -44,7 +45,7 @@ public class IndexedIdGeneratorUnsafe {
             ImmutableSet<OpenOption> openOptions,
             GBPTreeUnsafe<KEY, VALUE> unsafe)
             throws IOException {
-        try (var pagedFile = pageCache.map(file, pageCache.pageSize(), "db", openOptions)) {
+        try (var pagedFile = pageCache.map(new StoreFile(file), pageCache.pageSize(), "db", openOptions)) {
             TreeState treeState;
             try (var cursor = pagedFile.io(0, PagedFile.PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                 treeState = selectNewestValidState(readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B));

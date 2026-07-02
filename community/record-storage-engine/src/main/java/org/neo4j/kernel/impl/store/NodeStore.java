@@ -24,7 +24,6 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_S
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.Arrays;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
@@ -34,6 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -67,8 +67,8 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
 
     public NodeStore(
             FileSystemAbstraction fileSystem,
-            Path path,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -81,8 +81,8 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
             ImmutableSet<OpenOption> openOptions) {
         super(
                 fileSystem,
-                path,
-                idFile,
+                storeFile,
+                idStoreFile,
                 config,
                 RecordIdType.NODE,
                 idGeneratorFactory,

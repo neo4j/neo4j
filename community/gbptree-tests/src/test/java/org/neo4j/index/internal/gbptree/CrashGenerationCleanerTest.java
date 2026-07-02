@@ -53,6 +53,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.RandomSupport;
@@ -129,7 +130,10 @@ class CrashGenerationCleanerTest {
         pageCache = PageCacheSupportExtension.getPageCache(
                 fileSystem, config().withPageSize(PAGE_SIZE).withAccessChecks(true));
         pagedFile = pageCache.map(
-                testDirectory.file(FILE_NAME), PAGE_SIZE, DATABASE_NAME, immutable.of(CREATE, DELETE_ON_CLOSE));
+                new StoreFile(testDirectory.file(FILE_NAME)),
+                PAGE_SIZE,
+                DATABASE_NAME,
+                immutable.of(CREATE, DELETE_ON_CLOSE));
     }
 
     @AfterEach

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -175,7 +174,7 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
 
     @Override
     public ResourceIterator<Path> snapshotFiles() {
-        return asResourceIterator(iterator(indexFiles.getStoreFile()));
+        return asResourceIterator(indexFiles.getStoreFile().allSegments(fs));
     }
 
     @Override

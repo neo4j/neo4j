@@ -126,7 +126,7 @@ class StoreFactoryTest {
     @Test
     void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception {
         StoreFactory storeFactory = storeFactory(defaults());
-        fileSystem.write(databaseLayout.file("neostore.nodestore.db.labels"));
+        fileSystem.write(databaseLayout.file("neostore.nodestore.db.labels").baseSegment());
         storeFactory.openAllNeoStores().close();
     }
 
@@ -135,7 +135,8 @@ class StoreFactoryTest {
         StoreFactory storeFactory = storeFactory(defaults());
         storeFactory.openAllNeoStores().close();
         for (Path f : fileSystem.listFiles(databaseLayout.databaseDirectory())) {
-            if (!f.getFileName().toString().endsWith(ID_FILE_SUFFIX) && !f.equals(databaseLayout.metadataStore())) {
+            if (!f.getFileName().toString().endsWith(ID_FILE_SUFFIX)
+                    && !f.equals(databaseLayout.metadataStore().baseSegment())) {
                 fileSystem.truncate(f, 0);
             }
         }

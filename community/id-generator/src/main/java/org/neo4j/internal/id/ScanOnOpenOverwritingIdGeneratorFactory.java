@@ -23,13 +23,13 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 /**
@@ -49,7 +49,7 @@ public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorF
     @Override
     public IdGenerator open(
             PageCache pageCache,
-            Path filename,
+            StoreFile storeFile,
             IdType idType,
             LongSupplier highIdScanner,
             long maxId,
@@ -63,7 +63,7 @@ public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorF
         long highId = highIdScanner.getAsLong();
         return create(
                 pageCache,
-                filename,
+                storeFile,
                 idType,
                 highId,
                 true,

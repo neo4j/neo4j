@@ -51,6 +51,7 @@ import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseIdContext;
@@ -113,21 +114,21 @@ class IdContextFactoryBuilderTest {
         ((BufferingIdGeneratorFactory) bufferedGeneratorFactory)
                 .initialize(
                         fs,
-                        testDirectory.file("buffer"),
+                        new StoreFile(testDirectory.file("buffer")),
                         config,
                         () -> new IdController.TransactionSnapshot(10, 0, 0),
                         new TestVisibilityHorizonVisibilityBoundary(),
                         s -> true,
                         EmptyMemoryTracker.INSTANCE);
         life.add(idContext.getIdController());
-        Path file = testDirectory.file("a");
+        StoreFile storeFile = new StoreFile(testDirectory.file("a"));
         RecordIdType idType = RecordIdType.NODE;
         LongSupplier highIdSupplier = () -> 0;
         int maxId = 100;
 
         idGeneratorFactory.open(
                 pageCache,
-                file,
+                storeFile,
                 idType,
                 highIdSupplier,
                 maxId,
@@ -140,7 +141,7 @@ class IdContextFactoryBuilderTest {
         verify(idGeneratorFactory)
                 .open(
                         pageCache,
-                        file,
+                        storeFile,
                         idType,
                         highIdSupplier,
                         maxId,
@@ -187,7 +188,7 @@ class IdContextFactoryBuilderTest {
         var idController = idContext.getIdController();
         idController.initialize(
                 fs,
-                testDirectory.file("buffer"),
+                new StoreFile(testDirectory.file("buffer")),
                 config,
                 () -> new IdController.TransactionSnapshot(10, 0, 0),
                 new TestVisibilityHorizonVisibilityBoundary(),
@@ -200,7 +201,17 @@ class IdContextFactoryBuilderTest {
         RecordIdType idType = RecordIdType.NODE;
 
         try (IdGenerator idGenerator = idGeneratorFactory.create(
-                pageCache, file, idType, 1, false, 100, false, config, contextFactory, immutable.empty(), SINGLE_IDS)) {
+                pageCache,
+                new StoreFile(file),
+                idType,
+                1,
+                false,
+                100,
+                false,
+                config,
+                contextFactory,
+                immutable.empty(),
+                SINGLE_IDS)) {
             idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
             try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
                 marker.markDeleted(1);

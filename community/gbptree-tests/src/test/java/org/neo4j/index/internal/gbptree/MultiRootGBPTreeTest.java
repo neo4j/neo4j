@@ -68,6 +68,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.Race;
@@ -105,7 +106,7 @@ class MultiRootGBPTreeTest {
     @BeforeEach
     void start() throws Exception {
         PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
-        var path = directory.file("tree");
+        var path = new StoreFile(directory.file("tree"));
         openOptions = Sets.immutable.empty();
         dependencyResolver = EmptyDependencyResolver.EMPTY_RESOLVER;
         tree = new MultiRootGBPTree<>(
@@ -149,7 +150,7 @@ class MultiRootGBPTreeTest {
 
         PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         var layoutWithBadHashes = new MinimalHashCodeEntriesLayout();
-        var path = directory.file("tree");
+        var path = new StoreFile(directory.file("tree"));
         try (var badHashesTree = new MultiRootGBPTree<>(
                 pageCache,
                 fileSystem,
@@ -588,7 +589,7 @@ class MultiRootGBPTreeTest {
         assertThatThrownBy(() -> new MultiRootGBPTree<>(
                         pageCache,
                         fileSystem,
-                        directory.file("tree"),
+                        new StoreFile(directory.file("tree")),
                         layout,
                         NO_MONITOR,
                         NO_HEADER_READER,
@@ -619,7 +620,7 @@ class MultiRootGBPTreeTest {
         assertThatThrownBy(() -> new MultiRootGBPTree<>(
                         pageCache,
                         fileSystem,
-                        directory.file("tree"),
+                        new StoreFile(directory.file("tree")),
                         wrongDataLayout,
                         NO_MONITOR,
                         NO_HEADER_READER,
@@ -650,7 +651,7 @@ class MultiRootGBPTreeTest {
             new MultiRootGBPTree<>(
                             pageCache,
                             fileSystem,
-                            file,
+                            new StoreFile(file),
                             dataLayout,
                             NO_MONITOR,
                             NO_HEADER_READER,

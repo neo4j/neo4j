@@ -25,7 +25,6 @@ import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -39,6 +38,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -61,8 +61,8 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
 
     public TokenStore(
             FileSystemAbstraction fileSystem,
-            Path path,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             Config configuration,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -79,8 +79,8 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
             ImmutableSet<OpenOption> openOptions) {
         super(
                 fileSystem,
-                path,
-                idFile,
+                storeFile,
+                idStoreFile,
                 configuration,
                 idType,
                 idGeneratorFactory,

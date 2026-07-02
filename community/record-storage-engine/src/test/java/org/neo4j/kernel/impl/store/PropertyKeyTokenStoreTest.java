@@ -23,7 +23,6 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 
-import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordCursorTypes;
@@ -31,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -53,8 +53,8 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
     @Override
     protected TokenStore<PropertyKeyTokenRecord> instantiateStore(
             FileSystemAbstraction fileSystem,
-            Path file,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             IdGeneratorFactory generatorFactory,
             PageCache pageCache,
             InternalLogProvider logProvider,
@@ -63,8 +63,8 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
             Config config) {
         return new PropertyKeyTokenStore(
                 fileSystem,
-                file,
-                idFile,
+                storeFile,
+                idStoreFile,
                 config,
                 generatorFactory,
                 pageCache,

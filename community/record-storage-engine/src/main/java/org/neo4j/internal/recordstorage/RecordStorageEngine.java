@@ -670,18 +670,18 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     public Collection<Path> listStorageFiles(StorageFileSelection selection) {
         List<Path> files = new ArrayList<>();
         if (selection.includeAtomicStoreFiles() && selection.includeRecoverableFiles()) {
-            files.add(databaseLayout.countStore());
-            files.add(databaseLayout.relationshipGroupDegreesStore());
+            files.addAll(databaseLayout.countStore().allSegments(neoStores.getFileSystem()));
+            files.addAll(databaseLayout.relationshipGroupDegreesStore().allSegments(neoStores.getFileSystem()));
         }
         if (selection.includeReplayableStoreFiles()) {
             for (StoreType type : StoreType.STORE_TYPES) {
                 final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore(type);
-                files.add(recordStore.getStorageFile());
+                files.addAll(recordStore.getStoreFile().allSegments(neoStores.getFileSystem()));
             }
         }
         if (selection.includeIdFiles()) {
             for (var file : RecordDatabaseFile.values()) {
-                databaseLayout.idFile(file).ifPresent(files::add);
+                databaseLayout.idFile(file).ifPresent(sp -> files.addAll(sp.allSegments(neoStores.getFileSystem())));
             }
         }
         return files;

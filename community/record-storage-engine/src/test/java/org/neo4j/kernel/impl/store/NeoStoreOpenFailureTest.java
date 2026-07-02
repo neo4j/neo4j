@@ -29,8 +29,8 @@ import static org.neo4j.kernel.DatabaseCreationOptions.EMPTY_CREATION_OPTIONS;
 import static org.neo4j.kernel.impl.store.StoreType.STORE_TYPES;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
+import java.io.File;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
@@ -87,12 +87,13 @@ class NeoStoreOpenFailureTest {
                 STORE_TYPES,
                 openOptions,
                 EMPTY_CREATION_OPTIONS);
-        Path schemaStore = neoStores.getSchemaStore().getStorageFile();
+        var schemaStore = neoStores.getSchemaStore().getStoreFile();
         neoStores.close();
 
         // Make the schema store inaccessible, to sabotage the next initialisation we'll do.
-        assumeTrue(schemaStore.toFile().setReadable(false));
-        assumeTrue(schemaStore.toFile().setWritable(false));
+        File baseSegmentFile = schemaStore.baseSegment().toFile();
+        assumeTrue(baseSegmentFile.setReadable(false));
+        assumeTrue(baseSegmentFile.setWritable(false));
 
         assertThrows(
                 RuntimeException.class,

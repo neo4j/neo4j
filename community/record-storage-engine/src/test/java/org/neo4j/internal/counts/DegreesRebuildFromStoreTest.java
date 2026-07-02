@@ -44,6 +44,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -135,7 +136,8 @@ class DegreesRebuildFromStoreTest {
         }
 
         // when
-        directory.getFileSystem().deleteFile(layout.relationshipGroupDegreesStore());
+        FileSystemAbstraction fileSystem = directory.getFileSystem();
+        layout.relationshipGroupDegreesStore().delete(fileSystem);
         rebuildAndVerify(layout, config, expectedDegrees);
     }
 
@@ -164,7 +166,8 @@ class DegreesRebuildFromStoreTest {
         }
 
         // when
-        directory.getFileSystem().deleteFile(layout.relationshipGroupDegreesStore());
+        FileSystemAbstraction fileSystem = directory.getFileSystem();
+        layout.relationshipGroupDegreesStore().delete(fileSystem);
         rebuildAndVerify(layout, config, expectedDegrees);
     }
 

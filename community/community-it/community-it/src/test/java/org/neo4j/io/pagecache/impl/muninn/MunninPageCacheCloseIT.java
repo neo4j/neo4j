@@ -62,7 +62,7 @@ class MunninPageCacheCloseIT {
             AtomicBoolean success = new AtomicBoolean(false);
             Thread thread = new Thread(
                     () -> {
-                        try (PagedFile pagedFile = pageCache.map(file, 10, DEFAULT_DATABASE_NAME)) {
+                        try (PagedFile pagedFile = pageCache.map(new StoreFile(file), 10, DEFAULT_DATABASE_NAME)) {
                             // Write something
                             try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                                 if (cursor.next()) {

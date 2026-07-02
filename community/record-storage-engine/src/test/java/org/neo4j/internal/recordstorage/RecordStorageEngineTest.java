@@ -34,6 +34,7 @@ import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -155,13 +156,15 @@ class RecordStorageEngineTest {
 
         // then
         Set<Path> allPossibleFiles =
-                new HashSet<>(new HashSet<>(engine.listStorageFiles(new StorageFileSelection(true, true, false))));
-        allPossibleFiles.remove(databaseLayout.indexStatisticsStore());
+                new HashSet<>(engine.listStorageFiles(new StorageFileSelection(true, true, false)));
+        allPossibleFiles.removeAll(databaseLayout.indexStatisticsStore().allSegments(fs));
 
         assertEquals(allPossibleFiles, currentFiles);
         Collection<Path> atomicFiles = engine.listStorageFiles(new StorageFileSelection(true, false, false));
-        assertThat(new HashSet<>(atomicFiles))
-                .isEqualTo(Set.of(databaseLayout.countStore(), databaseLayout.relationshipGroupDegreesStore()));
+        var expectedAtomicFiles = new ArrayList<>(databaseLayout.countStore().allSegments(fs));
+        expectedAtomicFiles.addAll(
+                databaseLayout.relationshipGroupDegreesStore().allSegments(fs));
+        assertThat(atomicFiles).containsOnlyOnceElementsOf(expectedAtomicFiles);
     }
 
     @Test

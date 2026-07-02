@@ -25,7 +25,6 @@ import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -40,6 +39,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -106,8 +106,8 @@ public class DynamicArrayStore extends AbstractDynamicStore {
 
     public DynamicArrayStore(
             FileSystemAbstraction fileSystem,
-            Path path,
-            Path idFile,
+            StoreFile storeFile,
+            StoreFile idStoreFile,
             Config configuration,
             RecordIdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -121,8 +121,8 @@ public class DynamicArrayStore extends AbstractDynamicStore {
             ImmutableSet<OpenOption> openOptions) {
         super(
                 fileSystem,
-                path,
-                idFile,
+                storeFile,
+                idStoreFile,
                 configuration,
                 idType,
                 idGeneratorFactory,

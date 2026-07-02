@@ -35,7 +35,7 @@ public class AbstractDynamicStoreLETest extends AbstractDynamicStoreTest {
     @BeforeEach
     @Override
     void before() throws IOException {
-        try (StoreChannel channel = fs.write(storeFile)) {
+        try (StoreChannel channel = fs.write(storeFile.baseSegment())) {
             var buffer = ByteBuffers.allocate(pageCache.pageSize(), getByteOrder(), INSTANCE);
             // keep reserved bytes as zeros
             buffer.position(pageCache.pageReservedBytes(getOpenOptions()));

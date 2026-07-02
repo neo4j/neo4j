@@ -30,7 +30,6 @@ import static org.neo4j.io.pagecache.context.OldestVisibilityHorizonFactory.EMPT
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +47,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
@@ -68,7 +68,7 @@ public class BufferingIdGeneratorFactory extends AbstractBufferingIdGeneratorFac
 
     private final Map<IdType, BufferingIdGenerator> overriddenIdGenerators = new ConcurrentHashMap<>();
     private FileSystemAbstraction fs;
-    private Path bufferBasePath;
+    private StoreFile storeFile;
     private Config config;
     private Supplier<IdController.TransactionSnapshot> snapshotSupplier;
     private IdController.IdFreeCondition condition;
@@ -85,7 +85,7 @@ public class BufferingIdGeneratorFactory extends AbstractBufferingIdGeneratorFac
     @Override
     public void initialize(
             FileSystemAbstraction fs,
-            Path bufferBasePath,
+            StoreFile storeFile,
             Config config,
             Supplier<IdController.TransactionSnapshot> snapshotSupplier,
             IdController.VisibilityHorizonVisibilityBoundary visibilityBoundary,
@@ -93,7 +93,7 @@ public class BufferingIdGeneratorFactory extends AbstractBufferingIdGeneratorFac
             MemoryTracker memoryTracker)
             throws IOException {
         this.fs = fs;
-        this.bufferBasePath = bufferBasePath;
+        this.storeFile = storeFile;
         this.config = config;
         this.snapshotSupplier = snapshotSupplier;
         this.condition = condition;
@@ -181,7 +181,7 @@ public class BufferingIdGeneratorFactory extends AbstractBufferingIdGeneratorFac
     @Override
     public void init() throws Exception {
         this.bufferQueue = config.get(GraphDatabaseInternalSettings.buffered_ids_offload)
-                ? new DiskBufferedIds(fs, bufferBasePath, memoryTracker, DEFAULT_SEGMENT_SIZE)
+                ? new DiskBufferedIds(fs, storeFile, memoryTracker, DEFAULT_SEGMENT_SIZE)
                 : new HeapBufferedIds();
     }
 

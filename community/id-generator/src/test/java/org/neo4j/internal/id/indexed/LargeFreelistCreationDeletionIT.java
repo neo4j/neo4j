@@ -42,6 +42,7 @@ import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.Race;
@@ -85,7 +86,7 @@ class LargeFreelistCreationDeletionIT {
             try (var freelist = new IndexedIdGenerator(
                     pageCache,
                     fileSystem,
-                    directory.file("file.id"),
+                    new StoreFile(directory.file("file.id")),
                     immediate(),
                     TestIdType.TEST,
                     false,

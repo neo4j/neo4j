@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -155,11 +156,11 @@ class CommandPrefetchIT {
         private final ConcurrentLinkedQueue<Path> tasks = new ConcurrentLinkedQueue<>();
 
         @Override
-        public void submit(Path path, PagesSupplier pages) {
+        public void submit(StoreFile path, PagesSupplier pages) {
             if (path.toString().contains(NamedDatabaseId.SYSTEM_DATABASE_NAME)) {
                 return;
             }
-            tasks.offer(path);
+            tasks.offer(path.baseSegment());
         }
     }
 }

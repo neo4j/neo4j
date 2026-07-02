@@ -29,7 +29,6 @@ import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.R
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -46,6 +45,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -105,7 +105,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
 
     MetaDataStore(
             FileSystemAbstraction fileSystem,
-            Path file,
+            StoreFile storeFile,
             Config conf,
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
@@ -117,7 +117,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             Supplier<StoreIds> storeIdFactory) {
         super(
                 fileSystem,
-                file,
+                storeFile,
                 null,
                 conf,
                 null,
@@ -225,7 +225,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
 
     private void assertNotClosed() {
         if (closed) {
-            throw new StoreFileClosedException(storageFile);
+            throw new StoreFileClosedException(storeFile);
         }
     }
 
@@ -334,7 +334,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
      * Obtaining access to read or write fields when the store is not started.
      */
     public static FieldAccess getFieldAccess(
-            PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext) {
+            PageCache pageCache, StoreFile neoStore, String databaseName, CursorContext cursorContext) {
 
         return new FieldAccess(pageCache, neoStore, databaseName, cursorContext);
     }
@@ -348,11 +348,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
      */
     public static class FieldAccess {
         private final PageCache pageCache;
-        private final Path neoStore;
+        private final StoreFile neoStore;
         private final String databaseName;
         private final CursorContext cursorContext;
 
-        private FieldAccess(PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext) {
+        private FieldAccess(PageCache pageCache, StoreFile neoStore, String databaseName, CursorContext cursorContext) {
             this.pageCache = pageCache;
             this.neoStore = neoStore;
             this.databaseName = databaseName;

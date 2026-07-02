@@ -282,13 +282,11 @@ public class ConsistencyCheckServiceIntegrationTest {
     void shouldSkipNonExistentIndexStatisticsStore() throws Exception {
         // given
         fixture.close();
-        testDirectory
-                .getFileSystem()
-                .deleteFile(RecordDatabaseLayout.convert(databaseLayout).indexStatisticsStore());
+        RecordDatabaseLayout.convert(databaseLayout).indexStatisticsStore().delete(fs);
 
         // when
         var result = new ConsistencyCheckService(fixture.databaseLayout())
-                .with(testDirectory.getFileSystem())
+                .with(fs)
                 .with(Config.defaults(settings()))
                 .runFullConsistencyCheck();
 
@@ -326,7 +324,7 @@ public class ConsistencyCheckServiceIntegrationTest {
     }
 
     private static Path findFile(DatabaseLayout databaseLayout, String fielName) {
-        Path file = databaseLayout.file(fielName);
+        Path file = databaseLayout.file(fielName).baseSegment();
         if (Files.notExists(file)) {
             fail("Could not find file " + fielName);
         }

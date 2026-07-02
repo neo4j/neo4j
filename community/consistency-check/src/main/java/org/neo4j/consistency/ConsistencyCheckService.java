@@ -313,7 +313,9 @@ public class ConsistencyCheckService {
 
             if (consistencyFlags.checkIndexes()
                     && consistencyFlags.checkStructure()
-                    && fileSystem.fileExists(databaseLayout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS))) {
+                    && databaseLayout
+                            .pathForStore(CommonDatabaseStores.INDEX_STATISTICS)
+                            .exists(fileSystem)) {
                 var openOptions =
                         storageEngineFactory.getStoreOpenOptions(fileSystem, pageCache, databaseLayout, contextFactory);
                 final var statisticsStore = new IndexStatisticsStore(

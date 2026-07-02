@@ -23,7 +23,6 @@ import static org.apache.commons.lang3.ArrayUtils.contains;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -42,6 +41,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DatabaseCreationOptions;
@@ -166,7 +166,7 @@ public class NeoStores implements AutoCloseable {
             DatabaseFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
             throws IOException {
         visitStores(store -> {
-            log.debug("Checkpointing %s", store.storageFile.getFileName());
+            log.debug("Checkpointing %s", store.storeFile.storeBaseFileName());
             try (var fileFlushEvent = flushEvent.beginFileFlush()) {
                 store.getIdGenerator().checkpoint(fileFlushEvent, asyncBlockAccessor, cursorContext);
             }
@@ -551,21 +551,21 @@ public class NeoStores implements AutoCloseable {
                 contextFactory);
     }
 
-    private CommonAbstractStore createDynamicStringStore(Path storeFile, Path idFile) {
+    private CommonAbstractStore createDynamicStringStore(StoreFile storeFile, StoreFile idStoreFile) {
         return createDynamicStringStore(
                 storeFile,
-                idFile,
+                idStoreFile,
                 RecordIdType.STRING_BLOCK,
                 config.get(GraphDatabaseInternalSettings.string_block_size));
     }
 
     private CommonAbstractStore createDynamicStringStore(
-            Path storeFile, Path idFile, RecordIdType idType, int blockSize) {
+            StoreFile storeFile, StoreFile idStoreFile, RecordIdType idType, int blockSize) {
         return initialize(
                 new DynamicStringStore(
                         fileSystem,
                         storeFile,
-                        idFile,
+                        idStoreFile,
                         config,
                         idType,
                         idGeneratorFactory,
@@ -581,11 +581,12 @@ public class NeoStores implements AutoCloseable {
     }
 
     private CommonAbstractStore createDynamicArrayStore(
-            Path storeFile, Path idFile, RecordIdType idType, Setting<Integer> blockSizeProperty) {
-        return createDynamicArrayStore(storeFile, idFile, idType, config.get(blockSizeProperty));
+            StoreFile storeFile, StoreFile idStoreFile, RecordIdType idType, Setting<Integer> blockSizeProperty) {
+        return createDynamicArrayStore(storeFile, idStoreFile, idType, config.get(blockSizeProperty));
     }
 
-    CommonAbstractStore createDynamicArrayStore(Path storeFile, Path idFile, RecordIdType idType, int blockSize) {
+    CommonAbstractStore createDynamicArrayStore(
+            StoreFile storeFile, StoreFile idStoreFile, RecordIdType idType, int blockSize) {
         if (blockSize <= 0) {
             throw new IllegalArgumentException("Block size of dynamic array store should be positive integer.");
         }
@@ -593,7 +594,7 @@ public class NeoStores implements AutoCloseable {
                 new DynamicArrayStore(
                         fileSystem,
                         storeFile,
-                        idFile,
+                        idStoreFile,
                         config,
                         idType,
                         idGeneratorFactory,
