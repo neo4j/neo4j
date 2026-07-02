@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.lock.LockType;
+import org.neo4j.memory.HeapEstimator;
 
 /**
  * A Forseti share lock. Can be upgraded to an update lock, which will block new attempts at acquiring shared lock,
@@ -43,6 +44,23 @@ class SharedLock implements ForsetiLockManager.Lock {
      * makes the reference counting code much mode complicated. May be worth revisiting.
      */
     private static final int UPDATE_LOCK_FLAG = 1 << 31;
+
+    /** Default initial table capacity of the {@link ConcurrentHashMap} backing {@link #clientsHoldingThisLock}. */
+    private static final int DEFAULT_CONCURRENT_HASH_MAP_CAPACITY = 16;
+
+    /**
+     * Estimated heap footprint of a {@link SharedLock} together with the {@link ConcurrentHashMap}-backed holder set
+     * it allocates eagerly in its constructor, sized for a single holder. Unlike {@link ExclusiveLock} (a single
+     * re-used instance per client), a distinct {@link SharedLock} is allocated for every shared-locked resource, so
+     * this footprint must be reported to the transaction memory tracker. Otherwise a transaction acquiring a very
+     * large number of shared locks (e.g. {@code DETACH DELETE} of a super-node) can exhaust the heap without ever
+     * reaching the transaction memory limit.
+     */
+    static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(SharedLock.class)
+            + HeapEstimator.shallowSizeOfInstance(ConcurrentHashMap.class)
+            + HeapEstimator.shallowSizeOfInstance(ConcurrentHashMap.KeySetView.class)
+            + HeapEstimator.shallowSizeOfObjectArray(DEFAULT_CONCURRENT_HASH_MAP_CAPACITY)
+            + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE;
 
     @SuppressWarnings("FieldMayBeFinal")
     private volatile int refCount = 1;

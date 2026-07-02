@@ -145,6 +145,18 @@ public class ForsetiClient implements LockManager.Client {
     private final long clientId;
     private volatile DeferredScopedMemoryTracker memoryTracker;
     private static final long CONCURRENT_NODE_SIZE = HeapEstimator.LONG_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE;
+    /**
+     * Memory reported when this client installs a shared-lock entry in a global lock map: the global map node
+     * ({@link #CONCURRENT_NODE_SIZE}) plus the {@link SharedLock} instance and its holder set ({@link
+     * SharedLock#SHALLOW_SIZE}). Exclusive locks re-use {@link #myExclusiveLock} and so only report {@link
+     * #CONCURRENT_NODE_SIZE}.
+     * <p>
+     * A multi-holder {@link SharedLock} is a single shared instance, yet every holder reports the full size: a
+     * deliberate overestimate that keeps each transaction's accounting self-contained and never undercounts. For
+     * single-holder locks — the flood scenario this guards against — the estimate is exact.
+     */
+    private static final long SHARED_LOCK_SIZE = CONCURRENT_NODE_SIZE + SharedLock.SHALLOW_SIZE;
+
     private volatile long prepareThreadId;
 
     public ForsetiClient(
@@ -206,7 +218,7 @@ public class ForsetiClient implements LockManager.Client {
                     continue;
                 }
 
-                memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
+                memoryTracker.allocateHeap(SHARED_LOCK_SIZE);
 
                 // We don't hold the lock, so we need to grab it via the global lock map
                 int tries = 0;
@@ -430,7 +442,7 @@ public class ForsetiClient implements LockManager.Client {
                 return true;
             }
 
-            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
+            memoryTracker.allocateHeap(SHARED_LOCK_SIZE);
             long waitStartNano = clock.nanos();
             while (true) {
                 assertValid(waitStartNano, resourceType, resourceId);
@@ -450,11 +462,11 @@ public class ForsetiClient implements LockManager.Client {
                         // Success!
                         break;
                     } else if (sharedLock.isUpdateLock()) {
-                        memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
+                        memoryTracker.releaseHeap(SHARED_LOCK_SIZE);
                         return false;
                     }
                 } else if (existingLock instanceof ExclusiveLock) {
-                    memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
+                    memoryTracker.releaseHeap(SHARED_LOCK_SIZE);
                     return false;
                 } else {
                     throw new UnsupportedOperationException("Unknown lock type: " + existingLock);
@@ -514,7 +526,10 @@ public class ForsetiClient implements LockManager.Client {
                                     + "to exclusive before attempt to release it. Lock: " + this);
                         }
                     } else {
-                        // in case if current lock is exclusive we swap it to new shared lock
+                        // in case if current lock is exclusive we swap it to new shared lock. The global map node was
+                        // already reported when the exclusive lock was taken, so only the SharedLock instance and its
+                        // holder set are new here.
+                        memoryTracker.allocateHeap(SharedLock.SHALLOW_SIZE);
                         SharedLock sharedLock = new SharedLock(this);
                         resourceTypeLocks.put(resourceId, sharedLock);
                     }
@@ -704,7 +719,7 @@ public class ForsetiClient implements LockManager.Client {
         } else if (lock instanceof SharedLock sharedLock && sharedLock.release(this)) {
             // We were the last to hold this lock
             lockMap.remove(resourceId);
-            memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
+            memoryTracker.releaseHeap(SHARED_LOCK_SIZE);
         }
         activeLockCount.decrementAndGet();
     }
@@ -738,10 +753,10 @@ public class ForsetiClient implements LockManager.Client {
         int tries = 0;
         boolean holdsSharedLock = getSharedLockCount(resourceType).containsKey(resourceId);
         if (!holdsSharedLock) {
-            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
+            memoryTracker.allocateHeap(SHARED_LOCK_SIZE);
             // We don't hold the shared lock, we need to grab it to upgrade it to an exclusive one
             if (!sharedLock.acquire(this)) {
-                memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
+                memoryTracker.releaseHeap(SHARED_LOCK_SIZE);
                 return false;
             }
             activeLockCount.incrementAndGet();
