@@ -36,6 +36,11 @@ import org.neo4j.values.virtual.RelationshipValue;
 
 public interface VersionedValueWriter {
 
+    /**
+     * Metadata map key under which an unsupported type's optional message is carried on the wire.
+     */
+    String UNSUPPORTED_TYPE_MESSAGE_KEY = "message";
+
     default void writePoint(WriterContext ctx, CoordinateReferenceSystem crs, double[] coords) {
         ctx.firePoint(crs, coords);
     }
@@ -138,7 +143,8 @@ public interface VersionedValueWriter {
         ctx.fireUUID(msb, lsb);
     }
 
-    default void writeUnsupportedType(WriterContext ctx, String typeName, ProtocolVersion supportedSinceVersion) {
-        ctx.fireUnsupportedType(typeName, supportedSinceVersion);
+    default void writeUnsupportedType(
+            WriterContext ctx, String typeName, ProtocolVersion supportedSinceVersion, String message) {
+        ctx.fireUnsupportedType(typeName, supportedSinceVersion, message);
     }
 }

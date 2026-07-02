@@ -436,12 +436,19 @@ public final class DefaultVersionedValueWriter extends UtcVersionedValueWriter i
     }
 
     @Override
-    public void writeUnsupportedType(WriterContext ctx, String typeName, ProtocolVersion supportedSinceVersion) {
+    public void writeUnsupportedType(
+            WriterContext ctx, String typeName, ProtocolVersion supportedSinceVersion, String message) {
         UNSUPPORTED.writeHeader(ctx);
 
         ctx.buffer().writeString(typeName);
         ctx.buffer().writeInt(supportedSinceVersion.major());
         ctx.buffer().writeInt(supportedSinceVersion.minor());
-        ctx.buffer().writeMapHeader(0);
+        if (message == null) {
+            ctx.buffer().writeMapHeader(0);
+        } else {
+            ctx.buffer().writeMapHeader(1);
+            ctx.buffer().writeString(UNSUPPORTED_TYPE_MESSAGE_KEY);
+            ctx.buffer().writeString(message);
+        }
     }
 }

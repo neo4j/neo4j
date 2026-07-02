@@ -38,6 +38,6 @@ public class UnsupportedUUIDTypeVersionedValueWriter extends AbstractUnknownType
 
     @Override
     public void writeUUID(WriterContext ctx, long msb, long lsb) {
-        ctx.fireUnsupportedType(typeName(), BoltProtocolV61.VERSION);
+        ctx.fireUnsupportedType(typeName(), BoltProtocolV61.VERSION, null);
     }
 }

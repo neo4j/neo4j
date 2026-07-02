@@ -355,6 +355,11 @@ public class WriterPipeline {
         }
 
         @Override
+        public void writeUnsupportedType(String typeName, ProtocolVersion supportedSinceVersion, String message) {
+            this.write(writer -> writer.writeUnsupportedType(this, typeName, supportedSinceVersion, message));
+        }
+
+        @Override
         public void firePoint(CoordinateReferenceSystem crs, double[] coords) {
             this.fire("point", writer -> writer.writePoint(this, crs, coords));
         }
@@ -473,8 +478,10 @@ public class WriterPipeline {
         }
 
         @Override
-        public void fireUnsupportedType(String typeName, ProtocolVersion supportedSinceVersion) {
-            this.fire("unsupported_type", writer -> writer.writeUnsupportedType(this, typeName, supportedSinceVersion));
+        public void fireUnsupportedType(String typeName, ProtocolVersion supportedSinceVersion, String message) {
+            this.fire(
+                    "unsupported_type",
+                    writer -> writer.writeUnsupportedType(this, typeName, supportedSinceVersion, message));
         }
     }
 }

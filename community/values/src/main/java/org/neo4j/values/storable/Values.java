@@ -464,6 +464,10 @@ public final class Values {
         return new UUIDArray(values);
     }
 
+    public static UnsupportedValue unsupportedValue(String name, String minProtocolVersion, String message) {
+        return new UnsupportedValue(name, minProtocolVersion, message);
+    }
+
     // BOXED FACTORY METHODS
 
     /**

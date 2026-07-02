@@ -215,6 +215,6 @@ public enum CypherTypes {
                 "Type \"%s\" is not supported by the Query API driver. Minimum Bolt version: %s.%s",
                 value.name(),
                 value.minProtocolVersion(),
-                value.message().map(" %"::formatted).orElse(""));
+                value.message().map(" %s"::formatted).orElse(""));
     }
 }

@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.value.PackstreamValueWriter;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -142,5 +143,24 @@ public class PipelineAnyValueWriter extends PackstreamValueWriter {
     @Override
     public void writeUUID(long msb, long lsb) throws RuntimeException {
         this.context.writeUUID(msb, lsb);
+    }
+
+    @Override
+    public void writeUnsupported(String typeName, String minProtocolVersion, String message) throws RuntimeException {
+        this.context.writeUnsupportedType(typeName, parseProtocolVersion(minProtocolVersion), message);
+    }
+
+    private static ProtocolVersion parseProtocolVersion(String version) {
+        var separator = version.indexOf('.');
+        if (separator < 0) {
+            throw new IllegalArgumentException("Malformed protocol version: " + version);
+        }
+        try {
+            var major = Integer.parseInt(version, 0, separator, 10);
+            var minor = Integer.parseInt(version, separator + 1, version.length(), 10);
+            return new ProtocolVersion(major, minor);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Malformed protocol version: " + version, e);
+        }
     }
 }

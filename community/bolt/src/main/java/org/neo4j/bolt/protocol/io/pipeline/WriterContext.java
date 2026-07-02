@@ -82,5 +82,5 @@ public interface WriterContext extends PipelineContext {
 
     void fireUUID(long msb, long lsb);
 
-    void fireUnsupportedType(String typeName, ProtocolVersion supportedSinceVersion);
+    void fireUnsupportedType(String typeName, ProtocolVersion supportedSinceVersion, String message);
 }

@@ -123,6 +123,20 @@ public interface ValueWriter<E extends Exception> {
 
     void writeUUID(long msb, long lsb) throws E;
 
+    /**
+     * Writes a value of a type that this server does not understand, but which a downstream/remote instance produced.
+     * Such values flow in through the bundled driver (Fabric / server-side routing) and are surfaced back to the
+     * client verbatim so a newer driver can still interpret them.
+     *
+     * @param typeName the remote type name (e.g. {@code "UUID"}).
+     * @param minProtocolVersion the lowest Bolt protocol version that understands this type (e.g. {@code "6.1"}).
+     * @param message an optional human-readable description, or {@code null} if none was provided.
+     */
+    default void writeUnsupported(String typeName, String minProtocolVersion, String message) throws E {
+        throw new UnsupportedOperationException(
+                "Writing unsupported-type values is not supported by this writer: " + typeName);
+    }
+
     class Adapter<E extends Exception> implements ValueWriter<E> {
         @Override
         public void writeNull() throws E {}
@@ -204,5 +218,8 @@ public interface ValueWriter<E extends Exception> {
 
         @Override
         public void writeUUID(long msb, long lsb) throws E {}
+
+        @Override
+        public void writeUnsupported(String typeName, String minProtocolVersion, String message) throws E {}
     }
 }

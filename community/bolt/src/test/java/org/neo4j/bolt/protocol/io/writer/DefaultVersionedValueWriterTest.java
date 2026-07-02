@@ -558,7 +558,7 @@ class DefaultVersionedValueWriterTest {
         Mockito.doReturn(buf).when(ctx).buffer();
 
         DefaultVersionedValueWriter.getInstance()
-                .writeUnsupportedType(ctx, "NewFangledType", new ProtocolVersion(43, 12));
+                .writeUnsupportedType(ctx, "NewFangledType", new ProtocolVersion(43, 12), null);
 
         var header = buf.readStructHeader();
         var typeName = buf.readString();
@@ -573,6 +573,33 @@ class DefaultVersionedValueWriterTest {
         assertThat(majorVersion).isEqualTo(43);
         assertThat(minorVersion).isEqualTo(12);
         assertThat(map).isEqualTo(Map.of());
+
+        assertThat(buf.raw().isReadable()).isFalse();
+    }
+
+    @Test
+    void shouldWriteUnsupportedTypeWithMessage() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var ctx = Mockito.mock(WriterContext.class);
+
+        Mockito.doReturn(buf).when(ctx).buffer();
+
+        DefaultVersionedValueWriter.getInstance()
+                .writeUnsupportedType(ctx, "NewFangledType", new ProtocolVersion(43, 12), "not supported here");
+
+        var header = buf.readStructHeader();
+        var typeName = buf.readString();
+        var majorVersion = buf.readInt();
+        var minorVersion = buf.readInt();
+        var map = buf.readMap(PackstreamBuf::readString);
+
+        assertThat(header.length()).isEqualTo(4);
+        assertThat(header.tag()).isEqualTo(StructType.UNSUPPORTED.getTag());
+
+        assertThat(typeName).isEqualTo("NewFangledType");
+        assertThat(majorVersion).isEqualTo(43);
+        assertThat(minorVersion).isEqualTo(12);
+        assertThat(map).isEqualTo(Map.of("message", "not supported here"));
 
         assertThat(buf.raw().isReadable()).isFalse();
     }

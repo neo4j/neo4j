@@ -25,6 +25,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.values.AnyValue;
@@ -89,4 +90,6 @@ public interface PipelineContext {
     void writeVector(double[] values);
 
     void writeUUID(long msb, long lsb);
+
+    void writeUnsupportedType(String typeName, ProtocolVersion supportedSinceVersion, String message);
 }
