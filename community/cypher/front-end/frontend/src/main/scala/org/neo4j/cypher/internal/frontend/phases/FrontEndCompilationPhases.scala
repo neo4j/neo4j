@@ -64,9 +64,9 @@ trait FrontEndCompilationPhases {
     features.map(SemanticFeature.fromString).toSeq
 
   /**
-   * Steps in the parse pipeline that complete before the obfuscator is ready.
-   * On failure within these steps, the debug log entry will not carry the `query` field
-   * because ExecutingQuery.onObfuscatorReady is wired up at the boundary that follows.
+   * Steps in the parse pipeline that run before the obfuscator is ready. The obfuscator is
+   * wired onto the ExecutingQuery only after the post steps (including semantic analysis) complete,
+   * so on failure anywhere before that not carry the `query` field in the logs.
    */
   private def parsingBasePre(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
     Parse andThen ScopeSurveyor andThen
@@ -75,8 +75,10 @@ trait FrontEndCompilationPhases {
       ParsePipelineTransformer.getPreObfuscatorTransformer(config)
 
   /**
-   * Steps in the parse pipeline that run after the obfuscator has been wired onto the
-   * ExecutingQuery. Failures here carry the query text into the debug log.
+   * Steps in the parse pipeline that include semantic analysis, semantics-dependent rewriting, and
+   * obfuscation metadata collection. These run before the obfuscator is wired onto the
+   * ExecutingQuery, so a failure here (e.g. a semantic error) leaves the query text withheld from
+   * the debug log under obfuscation.
    */
   private def parsingBasePost(
     config: ParsingConfig,
