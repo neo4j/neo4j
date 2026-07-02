@@ -337,7 +337,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
       testVersions(
         s"property rules with more than one property should fail semantic checking ($qualifierDescription)"
       ) { version =>
-        val privilege = new GrantPrivilege(
+        val privilege = GrantPrivilege(
           GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
           false,
           None,
@@ -371,7 +371,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using WHERE syntax with multiple predicates via AND should fail semantic checking ($qualifierDescription)($operator)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -404,7 +404,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using WHERE syntax with multiple predicates via OR should fail semantic checking ($qualifierDescription)($operator)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -436,7 +436,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using n.prop $operator NULL should fail semantic checking ($qualifierDescription)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -456,7 +456,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using NULL $operator n.prop should fail semantic checking ($qualifierDescription)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -476,7 +476,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using NOT n.prop $operator NULL should fail semantic checking ($qualifierDescription)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -496,7 +496,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using NOT NULL $operator n.prop should fail semantic checking ($qualifierDescription)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -516,7 +516,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using n.prop $operator NaN should fail semantic checking ($qualifierDescription)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -546,7 +546,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using NaN $operator n.prop should fail semantic checking ($qualifierDescription)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -574,7 +574,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using WHERE syntax with non-literal predicates should fail semantic checking ($qualifierDescription)($operator)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -600,7 +600,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using WHERE syntax with sub functions of temporal functions should fail semantic checking ($qualifierDescription)($operator)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -629,7 +629,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using WHERE syntax with an allow-listed built-in function should pass semantic checking ($qualifierDescription)($operator)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -655,7 +655,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
             ("POINT", function("POINT", mapOfInt("x" -> 1, "y" -> 2)))
           ).foreach { case (name, call) =>
             withClue(s"$name: ") {
-              val privilege = new GrantPrivilege(
+              val privilege = GrantPrivilege(
                 GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
                 false,
                 None,
@@ -684,7 +684,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
             ("coalesce", function("coalesce", literalString("a"), literalString("b")))
           ).foreach { case (name, call) =>
             withClue(s"$name: ") {
-              val privilege = new GrantPrivilege(
+              val privilege = GrantPrivilege(
                 GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
                 false,
                 None,
@@ -715,7 +715,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using WHERE syntax with a namespaced user-defined function should fail semantic checking on DENY ($qualifierDescription)($operator)"
         ) { version =>
-          val privilege = new DenyPrivilege(
+          val privilege = DenyPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -744,7 +744,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using WHERE syntax with a namespaced user-defined function shadowing a temporal name should fail semantic checking ($qualifierDescription)($operator)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -773,7 +773,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules using WHERE syntax with a shadowed allow-listed built-in function should fail semantic checking ($qualifierDescription)($operator)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -886,7 +886,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
             op(prop(varFor("n"), "prop1"), mixedList) // n.prop = [1, 's', 1.1, false, $value1]
           ).foreach { expression =>
             withClue(expressionStringifier(expression)) {
-              val privilege = new GrantPrivilege(
+              val privilege = GrantPrivilege(
                 GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
                 false,
                 None,
@@ -980,7 +980,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
             ) // n.prop = [$value]
           ).foreach { expression =>
             withClue(expressionStringifier(expression)) {
-              val privilege = new GrantPrivilege(
+              val privilege = GrantPrivilege(
                 GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
                 false,
                 None,
@@ -1007,7 +1007,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"using more than one NOT keyword combined with an '$operator' should fail semantic checking ($qualifierDescription)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -1033,7 +1033,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         testVersions(
           s"property rules having n.prop on right hand side of operator $operator should fail semantic checking ($qualifierDescription)"
         ) { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
             None,
@@ -1057,7 +1057,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
       testVersions(
         s"property rules NULL in map syntax should fail semantic checking ($qualifierDescription)"
       ) { version =>
-        val privilege = new GrantPrivilege(
+        val privilege = GrantPrivilege(
           GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
           false,
           None,
@@ -1074,7 +1074,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
       testVersions(
         s"property rules using map syntax with non-literal predicates should fail semantic checking ($qualifierDescription)"
       ) { version =>
-        val privilege = new GrantPrivilege(
+        val privilege = GrantPrivilege(
           GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
           false,
           None,
@@ -1202,7 +1202,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
         ).foreach { expression =>
           withClue(expressionStringifier(expression)) {
-            val privilege = new GrantPrivilege(
+            val privilege = GrantPrivilege(
               GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
               false,
               None,
@@ -1277,7 +1277,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
           MapExpression(Seq((propName("prop1"), listOf(parameter("value", CTAny)))))(p) // {prop1: [$value]}
         ).foreach { expression =>
           withClue(expressionStringifier(expression)) {
-            val privilege = new GrantPrivilege(
+            val privilege = GrantPrivilege(
               GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
               false,
               None,
@@ -1344,7 +1344,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
           Not(In(prop(varFor("n"), "prop1"), parameter("value", CTList(CTAny)))(p))(p) // NOT n.prop IN $paramList
         ).foreach { expression =>
           withClue(expressionStringifier(expression)) {
-            val privilege = new GrantPrivilege(
+            val privilege = GrantPrivilege(
               GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
               false,
               None,
@@ -1421,7 +1421,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
         ).foreach { expression =>
           withClue(expressionStringifier(expression)) {
-            val privilege = new GrantPrivilege(
+            val privilege = GrantPrivilege(
               GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
               false,
               None,
@@ -1449,7 +1449,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
             listOf(literalInt(1), listOfString("stringValue"))
           )(p) // n.prop IN [1, ['stringValue']]
 
-        val privilege = new GrantPrivilege(
+        val privilege = GrantPrivilege(
           GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
           false,
           None,
@@ -1480,7 +1480,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
       testVersions(
         s"property rules using WHERE syntax using two different variable names should fail semantic checking ($qualifierDescription)"
       ) { version =>
-        val privilege = new GrantPrivilege(
+        val privilege = GrantPrivilege(
           GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
           false,
           None,
@@ -1503,7 +1503,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
       testVersions(
         s"property rules using WHERE syntax with no variable should fail semantic checking ($qualifierDescription)"
       ) { version =>
-        val privilege = new GrantPrivilege(
+        val privilege = GrantPrivilege(
           GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
           false,
           None,
@@ -1526,7 +1526,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
       testVersions(
         s"Valid property rule, extra (foo) gets parsed as a function and should fail semantic checking ($qualifierDescription)"
       ) { version =>
-        val privilege = new GrantPrivilege(
+        val privilege = GrantPrivilege(
           GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
           false,
           None,
@@ -1559,7 +1559,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
       testVersions(
         s"EXIST MATCH pattern in property rule should fail semantic checking ($qualifierDescription)"
       ) { version =>
-        val privilege = new GrantPrivilege(
+        val privilege = GrantPrivilege(
           GraphPrivilege(ReadAction, AllGraphsScope()(p))(p),
           false,
           None,
@@ -1627,7 +1627,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         WriteAction
       ).foreach(invalidAction => {
         testVersions(s"invalid actions: $invalidAction for property rules ($qualifierDescription)") { version =>
-          val privilege = new GrantPrivilege(
+          val privilege = GrantPrivilege(
             GraphPrivilege(invalidAction, HomeGraphScope()(p))(p),
             false,
             None,
