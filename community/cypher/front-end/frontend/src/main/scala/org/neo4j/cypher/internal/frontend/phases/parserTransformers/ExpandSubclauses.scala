@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.FreeProjection
+import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.GroupingNone
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ProjectionClause
@@ -51,7 +52,9 @@ import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.Foldable.TreeAny
 import org.neo4j.cypher.internal.util.Ref
+import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.RewriterStopper
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -95,16 +98,40 @@ case object ExpandSubclauses extends StatementRewriter
     anonVarGen: AnonymousVariableNameGenerator
   ): Rewrites = {
 
+    def subExpressionRewriter(spec: ProjectionSpecification): Rewriter =
+      topDown(
+        Rewriter.lift { case subExpr: Expression => spec.substituteSubExpression(subExpr, scopeState) },
+        stopper = RewriterStopper.stopOn[ScopeExpression]
+      )
+
+    def shadowedByScope(e: Expression): Set[String] = e match {
+      case _: FullSubqueryExpression =>
+        scopeState.scopeOfOpt(e).map(_.collectAllDeclarations.iterator.map(_.value.name).toSet).getOrElse(Set.empty)
+      case _: ScopeExpression =>
+        scopeState.scopeOfOpt(e).map(_.declared.allSymbols.iterator.map(_.name).toSet).getOrElse(Set.empty)
+      case _ => Set.empty
+    }
+
+    def groupingKeyRewriter(spec: ProjectionSpecification): Rewriter = {
+      def rewrite(spec: ProjectionSpecification)(node: AnyRef): AnyRef = node match {
+        case e: Expression =>
+          spec.recognizeInNonAggregatingItem(e, isSubExpression = true).flatMap(_.alias) match {
+            case Some(alias) => alias.withPosition(e.position)
+            case None =>
+              val innerSpec = spec.shadowGroupingKeys(shadowedByScope(e))
+              Rewritable.dupAny(e, e.treeChildren.map(rewrite(innerSpec)).toSeq)
+          }
+        case other => Rewritable.dupAny(other, other.treeChildren.map(rewrite(spec)).toSeq)
+      }
+      Rewriter.fromFunction1(rewrite(spec))
+    }
+
     def extractAndReplaceAggregatingExpressions(
       subclauses: Subclauses,
       spec: ProjectionSpecification
     ): (Seq[AliasedReturnItem], Option[OrderBy], Option[Where]) = {
 
-      val substituteSubExpressions: Rewriter =
-        topDown(
-          Rewriter.lift { case subExpr: Expression => spec.substituteSubExpression(subExpr, scopeState) },
-          stopper = RewriterStopper.stopOn[ScopeExpression]
-        )
+      val substituteSubExpressions: Rewriter = subExpressionRewriter(spec)
 
       def extractSubclauseExpression(
         expr: Expression,
@@ -221,10 +248,15 @@ case object ExpandSubclauses extends StatementRewriter
             val groupingAndAggregatingClause =
               With(needsExplicitDistinct, groupAndAggItems, None, None, None, None, None, AddedInRewriteGeneral())(pos)
 
+            val substituteGroupingKeys: Rewriter = groupingKeyRewriter(updatedSpec)
             val projectingItems = items.mapItems(_.map(ri => {
               val alias = ri.alias.get
               if (groupAndAggAliases contains alias) AliasedReturnItem(alias)
-              else ri
+              else ri match {
+                case ari: AliasedReturnItem =>
+                  ari.copy(expression = ari.expression.endoRewrite(substituteGroupingKeys))(ari.position)
+                case other => other
+              }
             }))
 
             val projectingClause = p.copyProjection(

@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping
 
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.ExplicitGroupingElements
 import org.neo4j.cypher.internal.ast.FullSubqueryExpression
+import org.neo4j.cypher.internal.ast.GroupBy
 import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.ProjectionClause.Elements
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
@@ -26,6 +28,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.scoping.AggregatingPart
 import org.neo4j.cypher.internal.ast.semantics.scoping.AggregatingSubclausePart
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionScope
+import org.neo4j.cypher.internal.ast.semantics.scoping.GroupByPart
 import org.neo4j.cypher.internal.ast.semantics.scoping.NonAggregatingPart
 import org.neo4j.cypher.internal.ast.semantics.scoping.NonAggregatingSubclausePart
 import org.neo4j.cypher.internal.ast.semantics.scoping.ProjectionExpressionContext
@@ -35,22 +38,27 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Ref
 
 /**
  * Runs all checks requiring the resolution of callables to be complete.
  *
  * Checked error codes:
  *   - 42I18,
+ *   - 42I80,
  *   - 42N44,
  *   - 42N23
  */
 
 case object AggregationChecker extends VariableCheckerUtil {
 
+  private val expressionStringifier = ExpressionStringifier.apply()
+
   // 42N23
   private def invalidUseOfAggregation(expr: Expression): Option[SemanticError] =
     Option.when(expr.containsAggregate)(
-      SemanticError.aggregateExpressionsInOrderBy(Seq(ExpressionStringifier.apply().apply(expr)), expr.position)
+      SemanticError.aggregateExpressionsInOrderBy(Seq(expressionStringifier(expr)), expr.position)
     )
 
   // 42N44
@@ -113,6 +121,44 @@ case object AggregationChecker extends VariableCheckerUtil {
     case _ => Set.empty
   }
 
+  private case class InvalidGroupingElement(error: SemanticError, exemptItemExprs: Set[Ref[ASTNode]])
+
+  // 42I80
+  private def invalidGroupingElement(scope: WorkingScope): Option[InvalidGroupingElement] = scope match {
+    case ExpressionScope(e: Expression, ctx: ProjectionExpressionContext, referenced, _, _) =>
+      val spec = ctx.projectionSpecification
+      val aggregatingVar =
+        referenced.filterTargets(spec.aggregatingItems.flatMap(_.alias)).getVariables.minByOption(_.name)
+      val groupingVars =
+        referenced.filterTargets(spec.nonAggregatingItems.flatMap(_.alias)).getVariables
+      val exemptItemExprs: Set[Ref[ASTNode]] =
+        if (groupingVars.isEmpty) Set.empty
+        else {
+          val referencedNames = groupingVars.iterator.map(_.name).toSet
+          spec.nonAggregatingItems
+            .filter(_.alias.exists(a => referencedNames(a.name)))
+            .map(item => Ref[ASTNode](item.expression))
+        }
+      def element = expressionStringifier(e)
+      def result(referencedName: String, referencesAggregation: Boolean) =
+        InvalidGroupingElement(
+          SemanticError.invalidGroupingElement(element, referencedName, referencesAggregation, e.position),
+          exemptItemExprs
+        )
+      aggregatingVar
+        .map(v => result(v.name, referencesAggregation = true))
+        .orElse(
+          Option.when(!e.isInstanceOf[LogicalVariable])(groupingVars.minByOption(_.name)).flatten
+            .map(v => result(v.name, referencesAggregation = false))
+        )
+    case _ => None
+  }
+
+  private def isExplicitGroupBy(scope: WorkingScope): Boolean = scope.astNode match {
+    case GroupBy(_: ExplicitGroupingElements) => true
+    case _                                    => false
+  }
+
   private def checkScope(
     scope: WorkingScope,
     check: SimpleVariableCheck,
@@ -145,17 +191,31 @@ case object AggregationChecker extends VariableCheckerUtil {
       case _                                             => NonAggregatingPart
     })
 
-    val invalidReferencesInAggregationItems =
-      groups.getOrElse(AggregatingPart, Seq.empty[WorkingScope]).flatMap(s =>
-        findAllInvalidReferences(s, AggregatingPart, inSubExpression = false).toSeq
-      )
+    def scopesFor(part: ProjectionPart): Seq[WorkingScope] = groups.getOrElse(part, Seq.empty)
+    def invalidRefsIn(scopes: Seq[WorkingScope], part: ProjectionPart): Seq[LogicalVariable] =
+      scopes.flatMap(s => findAllInvalidReferences(s, part, inSubExpression = false))
 
-    val invalidReferencesInSubclauseAggregations =
-      groups.getOrElse(AggregatingSubclausePart, Seq.empty).flatMap(s =>
-        findAllInvalidReferences(s, AggregatingSubclausePart, inSubExpression = false).toSeq
-      ).toSeq
+    // 42I80: only explicit grouping elements can be invalid grouping elements.
+    val invalidGroupingElementResults =
+      scopesFor(GroupByPart).filter(isExplicitGroupBy).flatMap(_.children).flatMap(invalidGroupingElement)
 
-    val invalidReferences = invalidReferencesInAggregationItems ++ invalidReferencesInSubclauseAggregations
+    // Items referenced by an invalid grouping element are the user's grouping keys, suppress their cascading 42I18.
+    val cascadeExemptItemExprs: Set[Ref[ASTNode]] = invalidGroupingElementResults.flatMap(_.exemptItemExprs).toSet
+
+    // 42I18: with GROUP BY, every non-aggregating item must derive from the grouping keys.
+    val nonAggregatingItemScopes =
+      scopesFor(NonAggregatingPart).filter(_.incoming match {
+        case ctx: ProjectionExpressionContext => ctx.projectionSpecification.hasGroupBy
+        case _                                => false
+      })
+    val nonAggregatingToCheck =
+      if (cascadeExemptItemExprs.isEmpty) nonAggregatingItemScopes
+      else nonAggregatingItemScopes.filterNot(s => cascadeExemptItemExprs(Ref(s.astNode)))
+
+    val invalidReferences =
+      invalidRefsIn(scopesFor(AggregatingPart), AggregatingPart) ++
+        invalidRefsIn(scopesFor(AggregatingSubclausePart), AggregatingSubclausePart) ++
+        invalidRefsIn(nonAggregatingToCheck, NonAggregatingPart)
 
     val ambiguousReferences =
       Option.when(invalidReferences.nonEmpty) {
@@ -165,12 +225,12 @@ case object AggregationChecker extends VariableCheckerUtil {
         )
       }
 
-    val subclausesScopes = groups.getOrElse(NonAggregatingSubclausePart, Seq.empty)
+    // 42N44: variables referenced in sort/WHERE subclauses must be accessible in this part.
     val subclauseInaccessibleVariable =
-      subclausesScopes.flatMap(s => checkScope(s, inaccessibleVariable(clauseName, from, groupBySupported)))
+      scopesFor(NonAggregatingSubclausePart)
+        .flatMap(s => checkScope(s, inaccessibleVariable(clauseName, from, groupBySupported)))
 
-    (ambiguousReferences ++ subclauseInaccessibleVariable).toSet
-
+    (ambiguousReferences ++ subclauseInaccessibleVariable ++ invalidGroupingElementResults.map(_.error)).toSet
   }
 
   def legacyIllegalAggregationCheck(clause: ProjectionClause): Set[SemanticError] = {

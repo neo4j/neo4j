@@ -93,7 +93,7 @@ class GQL_42I18_ReferenceToNonGroupingSubExpressionTest extends VariableChecking
       """MATCH (a {name: 'Andres'})<-[:FATHER]-(child)
         |RETURN child.name, {foo: a.name='Andres', kids: collect(child.name)}""".stripMargin,
       E42I18("a"),
-      Seq("`child.name`", "{foo: a.name='Andres', kids: collect(child.name)}")
+      Seq("`child.name`", "`{foo: a.name='Andres', kids: collect(child.name)}`")
     ),
     TestQuery(
       """MATCH (a) RETURN COUNT { (a)--(b) } + count(a)""".stripMargin,
@@ -105,6 +105,20 @@ class GQL_42I18_ReferenceToNonGroupingSubExpressionTest extends VariableChecking
         |RETURN map.b.c, map.b.c + count(*)""".stripMargin,
       E42I18("map"),
       Seq("`map.b.c`", "`map.b.c + count(*)`")
+    ),
+    TestQuery(
+      """WITH {p: 1} AS a, 2 AS b
+        |RETURN a, b AS m, count(*) AS cnt
+        |  GROUP BY a""".stripMargin,
+      ignoreBeforeCypher25(E42I18("b")),
+      Seq("a", "m", "cnt")
+    ),
+    TestQuery(
+      """WITH 1 AS a, 2 AS b, 3 AS c
+        |RETURN a, b + sum(c) AS s
+        |  GROUP BY ALL""".stripMargin,
+      ignoreBeforeCypher25(E42I18("b")),
+      Seq("a", "s")
     ),
 
     // Positive tests

@@ -231,7 +231,7 @@ trait VariableCheckerUtil {
 
 object VariableCheckerUtil {
 
-  protected type SimpleVariableCheck = PartialFunction[WorkingScope, Set[SemanticError]]
+  type SimpleVariableCheck = PartialFunction[WorkingScope, Set[SemanticError]]
 
   object Scope {
 

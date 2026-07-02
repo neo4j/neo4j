@@ -502,27 +502,25 @@ object pegClause {
 
     val spec = incoming.projectionSpecification
 
+    def scopeGroupingElement(element: Expression): ExpressionScope = {
+      val elementScoped = pegExpression(element, incoming).asInstanceOf[ExpressionScope]
+
+      val referencedAliases = elementScoped.referenced.filterTargets(spec.aliases).getVariables
+
+      val transitiveScopeReferences =
+        referencedAliases
+          .flatMap(spec.getUnderlyingExpression)
+          .map(expr => pegExpression(expr, itemIncoming))
+          .map(_.referenced)
+
+      elementScoped.copy(referenced = elementScoped.referenced union transitiveScopeReferences)
+    }
+
     val children = groupBy.groupingElements match {
       case ExplicitGroupingElements(elements) =>
-        elements.map { e =>
-          val elementScoped = pegExpression(e, incoming).asInstanceOf[ExpressionScope]
-
-          val referencedAliases = elementScoped.referenced.filterTargets(spec.aliases).getVariables
-
-          // Gathers the references from underlying expressions
-          // RETURN n.x AS a GROUP BY a ==> Referenced: n, a
-          val transitiveScopeReferences =
-            referencedAliases
-              .flatMap(spec.getUnderlyingExpression)
-              .map(expr => pegExpression(expr, itemIncoming))
-              .map(_.referenced)
-
-          elementScoped.copy(referenced = elementScoped.referenced union transitiveScopeReferences)
-        }
+        elements.map(scopeGroupingElement)
       case GroupingAll() =>
-        spec.groupingKeys.map(key => {
-          pegExpression(key.expression, incoming)
-        }).toSeq
+        spec.groupingKeys.map(key => pegExpression(key.expression, incoming)).toSeq
       case GroupingNone() => Seq()
     }
 
@@ -690,7 +688,9 @@ object pegClause {
     val remappedItems = items.map(remapPassThroughAlias)
 
     val projectionItems =
-      remappedItems.map(ri => (ri.expression, ri.alias)) ++ includedIncomingVariables.map(iiv => iiv -> Some(iiv))
+      remappedItems.map(ri => (ri.expression, ri.alias)) ++ includedIncomingVariables.map(iiv =>
+        iiv.copyId -> Some(iiv)
+      )
 
     val (aggregatingItems, groupingItems) = remappedItems.partition(_.directlyContainsAggregate)
 

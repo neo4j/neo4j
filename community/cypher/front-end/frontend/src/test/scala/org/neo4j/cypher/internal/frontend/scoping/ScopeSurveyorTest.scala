@@ -5360,21 +5360,21 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
         ),
         ExpectedWorkingScope(
           Ast("GROUP BY p, a.x"),
-          ProjectionIncoming(constants = Set("a", "p"), groupingKeys = Set(gk("p"), gk("a.x"))),
-          Outgoing(constants = Set("a", "p")),
+          ProjectionIncoming(constants = Set("a", "p", "value"), groupingKeys = Set(gk("p"), gk("a.x"))),
+          Outgoing(constants = Set("a", "p", "value")),
           Referenced(Set("a", "p")),
           ExpectedWorkingScope(
             Ast("p"),
-            ProjectionIncoming(constants = Set("a", "p"), groupingKeys = Set(gk("p"), gk("a.x"))),
+            ProjectionIncoming(constants = Set("a", "p", "value"), groupingKeys = Set(gk("p"), gk("a.x"))),
             Referenced(Set("a", "p"))
           ),
           ExpectedWorkingScope(
             Ast("a.x"),
-            ProjectionIncoming(constants = Set("a", "p"), groupingKeys = Set(gk("p"), gk("a.x"))),
+            ProjectionIncoming(constants = Set("a", "p", "value"), groupingKeys = Set(gk("p"), gk("a.x"))),
             Referenced(Set("a")),
             ExpectedWorkingScope.varProjExp(
               "a",
-              incomingConstants = Set("a", "p"),
+              incomingConstants = Set("a", "p", "value"),
               incomingKeys = Set(gk("p"), gk("a.x"))
             )
           )
@@ -5480,14 +5480,18 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
         ),
         ExpectedWorkingScope(
           Ast("GROUP BY ALL"),
-          ProjectionIncoming(constants = Set("a", "p"), groupingKeys = Set(gk("p"))),
-          Outgoing(constants = Set("a", "p")),
+          ProjectionIncoming(constants = Set("a", "p", "value"), groupingKeys = Set(gk("p"))),
+          Outgoing(constants = Set("a", "p", "value")),
           Referenced(Set("a")),
           ExpectedWorkingScope(
             Ast("a.p"),
-            ProjectionIncoming(constants = Set("a", "p"), groupingKeys = Set(gk("p"))),
+            ProjectionIncoming(constants = Set("a", "p", "value"), groupingKeys = Set(gk("p"))),
             Referenced(Set("a")),
-            ExpectedWorkingScope.varProjExp("a", incomingConstants = Set("a", "p"), incomingKeys = Set(gk("p")))
+            ExpectedWorkingScope.varProjExp(
+              "a",
+              incomingConstants = Set("a", "p", "value"),
+              incomingKeys = Set(gk("p"))
+            )
           )
         ),
         ExpectedWorkingScope.varProjExp("p", incomingConstants = Set("p", "value"), incomingKeys = Set(gk("p"))),
@@ -5568,8 +5572,8 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
         ),
         ExpectedWorkingScope(
           Ast("GROUP BY ()"),
-          ProjectionIncoming(constants = Set("a")),
-          Outgoing(constants = Set("a"))
+          ProjectionIncoming(constants = Set("a", "value")),
+          Outgoing(constants = Set("a", "value"))
         ),
         ExpectedWorkingScope.varProjExp("value", incomingConstants = Set("value")),
         ExpectedWorkingScope(
@@ -5657,21 +5661,21 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
         ),
         ExpectedWorkingScope(
           Ast("GROUP BY p, a.x + 1"),
-          ProjectionIncoming(constants = Set("a", "p"), groupingKeys = Set(gk("p"), gk("a.x + 1"))),
-          Outgoing(constants = Set("a", "p")),
+          ProjectionIncoming(constants = Set("a", "p", "value"), groupingKeys = Set(gk("p"), gk("a.x + 1"))),
+          Outgoing(constants = Set("a", "p", "value")),
           Referenced(Set("a", "p")),
           ExpectedWorkingScope(
             Ast("p"),
-            ProjectionIncoming(constants = Set("a", "p"), groupingKeys = Set(gk("p"), gk("a.x + 1"))),
+            ProjectionIncoming(constants = Set("a", "p", "value"), groupingKeys = Set(gk("p"), gk("a.x + 1"))),
             Referenced(Set("a", "p"))
           ),
           ExpectedWorkingScope(
             Ast("a.x + 1"),
-            ProjectionIncoming(constants = Set("a", "p"), groupingKeys = Set(gk("p"), gk("a.x + 1"))),
+            ProjectionIncoming(constants = Set("a", "p", "value"), groupingKeys = Set(gk("p"), gk("a.x + 1"))),
             Referenced(Set("a")),
             ExpectedWorkingScope.varProjExp(
               "a",
-              incomingConstants = Set("a", "p"),
+              incomingConstants = Set("a", "p", "value"),
               incomingKeys = Set(gk("p"), gk("a.x + 1"))
             )
           )

@@ -828,6 +828,20 @@ class GQL_42N62_VariableNotDefinedTest extends VariableCheckingWithLocalCallable
       ignoreBeforeCypher25(E42N62("x")),
       Seq("x")
     ),
+    TestQuery(
+      """WITH 1 AS x
+        |RETURN x + y AS a, count(*) AS c
+        |  GROUP BY ALL""".stripMargin,
+      ignoreBeforeCypher25(E42N62("y")),
+      Seq("a", "c")
+    ),
+    TestQuery(
+      """WITH 1 AS x
+        |RETURN x AS a, y AS b, count(*) AS c
+        |  GROUP BY ALL""".stripMargin,
+      ignoreBeforeCypher25(E42N62("y")),
+      Seq("a", "b", "c")
+    ),
 
     // Positive tests
     TestQuery(
@@ -1434,6 +1448,35 @@ class GQL_42N62_VariableNotDefinedTest extends VariableCheckingWithLocalCallable
         |  GROUP BY x, y""".stripMargin,
       ignoreBeforeCypher25(Passes),
       Seq("x", "y", "z")
+    ),
+    TestQuery(
+      """WITH 1 AS a, 2 AS b
+        |RETURN *, count(*) AS cnt
+        |  GROUP BY a, b""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq("a", "b", "cnt")
+    ),
+    TestQuery(
+      """WITH 1 AS a, 2 AS b
+        |RETURN *, count(*) AS cnt
+        |  GROUP BY ALL""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq("a", "b", "cnt")
+    ),
+    TestQuery(
+      """WITH 1 AS a, 2 AS b
+        |RETURN *
+        |  GROUP BY a, b""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq("a", "b")
+    ),
+    TestQuery(
+      """WITH 1 AS a, 2 AS b
+        |WITH *, count(*) AS cnt
+        |  GROUP BY a, b
+        |RETURN cnt""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq("cnt")
     ),
     TestQuery(
       """UNWIND [1, 2, 3] AS x

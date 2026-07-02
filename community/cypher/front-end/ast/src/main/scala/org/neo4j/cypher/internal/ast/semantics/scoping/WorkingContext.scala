@@ -396,7 +396,7 @@ case class ProjectionExpressionContext(
   }
 
   def groupByContext(): ProjectionExpressionContext = {
-    val visibleSymbols = constants ++ variables ++ projectionSpecification.nonAggregatingItems.flatMap(_.alias)
+    val visibleSymbols = constants ++ variables ++ projectionSpecification.aliases
     ProjectionExpressionContext(visibleSymbols, Set.empty, localCallables, projectionSpecification, projectionPart)
   }
 

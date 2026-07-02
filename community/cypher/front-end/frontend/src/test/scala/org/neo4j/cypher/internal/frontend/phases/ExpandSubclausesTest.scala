@@ -175,6 +175,153 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
     )
   }
 
+  test("RETURN: non-aggregating item over an inset complex grouping key uses the hoisted alias") {
+    assertRewritten(
+      """WITH {p: 1} AS a
+        |RETURN a.p + 1 AS x, count(*) AS cnt
+        |  GROUP BY a.p""".stripMargin,
+      """WITH {p: 1} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN `  UNNAMED0` + 1 AS x, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: projection and ORDER BY over an inset complex grouping key both use the hoisted alias") {
+    assertRewritten(
+      """WITH {p: 1} AS a
+        |RETURN a.p + 1 AS x, count(*) AS cnt
+        |  GROUP BY a.p
+        |  ORDER BY 2 + a.p + 1""".stripMargin,
+      """WITH {p: 1} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN `  UNNAMED0` + 1 AS x, cnt
+        |  ORDER BY 2 + `  UNNAMED0` + 1""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WITH: non-aggregating item over an inset complex grouping key uses the hoisted alias") {
+    assertRewritten(
+      """WITH {p: 1} AS a
+        |WITH a.p + 1 AS x, count(*) AS cnt
+        |  GROUP BY a.p
+        |RETURN x, cnt""".stripMargin,
+      """WITH {p: 1} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |WITH `  UNNAMED0` + 1 AS x, cnt
+        |RETURN x, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: inset complex grouping key inside a list comprehension is rewritten in source and inner scope") {
+    assertRewritten(
+      """WITH {p: [1, 2, 3]} AS a
+        |RETURN [y IN a.p WHERE y < size(a.p) | y * size(a.p)] AS l, count(*) AS cnt
+        |  GROUP BY a.p""".stripMargin,
+      """WITH {p: [1, 2, 3]} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN [y IN `  UNNAMED0` WHERE y < size(`  UNNAMED0`) | y * size(`  UNNAMED0`)] AS l, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: a grouping-key reference shadowed by a list comprehension's variable is not rewritten") {
+    assertRewritten(
+      """WITH {p: 1} AS a
+        |RETURN [a IN [{p: 10}] WHERE a.p > 5 | a.p] AS l, count(*) AS cnt
+        |  GROUP BY a.p""".stripMargin,
+      """WITH {p: 1} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN [a IN [{p: 10}] WHERE a.p > 5 | a.p] AS l, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: inset complex grouping key inside an `any` predicate uses the hoisted alias") {
+    assertRewritten(
+      """WITH {p: [1, 2, 3]} AS a
+        |RETURN any(y IN a.p WHERE y < size(a.p)) AS b, count(*) AS cnt
+        |  GROUP BY a.p""".stripMargin,
+      """WITH {p: [1, 2, 3]} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN any(y IN `  UNNAMED0` WHERE y < size(`  UNNAMED0`)) AS b, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: inset complex grouping key inside a reduce uses the hoisted alias") {
+    assertRewritten(
+      """WITH {p: [1, 2, 3]} AS a
+        |RETURN reduce(acc = 0, y IN a.p | acc + y + size(a.p)) AS r, count(*) AS cnt
+        |  GROUP BY a.p""".stripMargin,
+      """WITH {p: [1, 2, 3]} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN reduce(acc = 0, y IN `  UNNAMED0` | acc + y + size(`  UNNAMED0`)) AS r, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: inset complex grouping key inside a pattern comprehension uses the hoisted alias") {
+    assertRewritten(
+      """WITH {p: [1, 2, 3]} AS a
+        |RETURN [(n)-->(m) WHERE m.v = size(a.p) | m.v] AS l, count(*) AS cnt
+        |  GROUP BY a.p""".stripMargin,
+      """WITH {p: [1, 2, 3]} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN [(n)-->(m) WHERE m.v = size(`  UNNAMED0`) | m.v] AS l, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: inset complex grouping key inside a COUNT subquery uses the hoisted alias") {
+    assertRewritten(
+      """WITH {p: [1, 2, 3]} AS a
+        |RETURN COUNT { MATCH (n) WHERE n.v = size(a.p) } AS c, count(*) AS cnt
+        |  GROUP BY a.p""".stripMargin,
+      """WITH {p: [1, 2, 3]} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN COUNT { MATCH (n) WHERE n.v = size(`  UNNAMED0`) } AS c, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: inset complex grouping key inside an allreduce uses the hoisted alias") {
+    assertRewritten(
+      """WITH {p: [1, 2, 3]} AS a
+        |RETURN allreduce(acc = 0, y IN a.p | acc + y + size(a.p), acc < size(a.p)) AS r, count(*) AS cnt
+        |  GROUP BY a.p""".stripMargin,
+      """WITH {p: [1, 2, 3]} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN allreduce(acc = 0, y IN `  UNNAMED0` | acc + y + size(`  UNNAMED0`), acc < size(`  UNNAMED0`)) AS r, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: a grouping-key reference shadowed by an allreduce's variable is not rewritten") {
+    assertRewritten(
+      """WITH {p: 1} AS a
+        |RETURN allreduce(acc = 0, a IN [{p: 10}] | acc + a.p, a.p > 0) AS r, count(*) AS cnt
+        |  GROUP BY a.p""".stripMargin,
+      """WITH {p: 1} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN allreduce(acc = 0, a IN [{p: 10}] | acc + a.p, a.p > 0) AS r, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
   // 4. GROUP BY () and GROUP BY <key>: project the aggregations, then re-add constant items.
 
   test("WITH: GROUP BY () projects aggregations first, then re-adds constants") {
@@ -1271,6 +1418,274 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |WITH *, n.prop AS prop WHERE n.foo > 10
         |RETURN prop AS prop
       """.stripMargin
+    )
+  }
+
+  // 9. GROUP BY lowering: additional RETURN shapes and nested scopes.
+
+  test("RETURN: multiple aggregations with all GROUP BY keys projected drops GROUP BY") {
+    assertRewritten(
+      """WITH 1 AS a, 2 AS b
+        |RETURN a, count(*) AS cnt, sum(b) AS s
+        |  GROUP BY a""".stripMargin,
+      """WITH 1 AS a, 2 AS b
+        |RETURN a, count(*) AS cnt, sum(b) AS s""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: GROUP BY () with only an aggregation drops GROUP BY") {
+    assertRewritten(
+      """UNWIND [1, 2] AS x
+        |RETURN count(x) AS c
+        |  GROUP BY ()""".stripMargin,
+      """UNWIND [1, 2] AS x
+        |RETURN count(x) AS c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: GROUP BY inside a CALL subquery is dropped when keys are projected") {
+    assertRewritten(
+      """UNWIND [1, 2, 3] AS x
+        |CALL (x) {
+        |  RETURN x AS gx, count(*) AS c
+        |    GROUP BY x
+        |}
+        |RETURN gx, c""".stripMargin,
+      """UNWIND [1, 2, 3] AS x
+        |CALL (x) {
+        |  RETURN x AS gx, count(*) AS c
+        |}
+        |RETURN gx, c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  // 10. GROUP BY with a WHERE subclause: reuse the aggregation alias, else hoist the aggregating expression.
+
+  test("WITH: GROUP BY with WHERE filtering on the aggregation alias") {
+    assertRewritten(
+      """WITH 1 AS a, 2 AS b
+        |WITH a, count(b) AS cnt
+        |  GROUP BY a
+        |  WHERE cnt > 0
+        |RETURN a, cnt""".stripMargin,
+      """WITH 1 AS a, 2 AS b
+        |WITH a, count(b) AS cnt
+        |  WHERE cnt > 0
+        |RETURN a, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WITH: GROUP BY with an aggregating WHERE expression is hoisted") {
+    assertRewritten(
+      """WITH 1 AS a, 2 AS b
+        |WITH a, count(b) AS cnt
+        |  GROUP BY a
+        |  WHERE sum(b) > 0
+        |RETURN a, cnt""".stripMargin,
+      """WITH 1 AS a, 2 AS b
+        |WITH a AS a, count(b) AS cnt, sum(b) > 0 AS `  UNNAMED0`
+        |WITH a AS a, cnt AS cnt
+        |  WHERE `  UNNAMED0`
+        |RETURN a, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  // 11. GROUP BY combined with RETURN * / WITH *. No withUpdate() here: it would
+  //     normalize away the AdditiveProjection (`*`) and hide the actual lowering.
+
+  test("RETURN *: explicit GROUP BY is dropped when all keys are projected") {
+    assertRewritten(
+      """WITH 1 AS a, 2 AS b
+        |RETURN *, count(*) AS cnt
+        |  GROUP BY a, b""".stripMargin,
+      """WITH 1 AS a, 2 AS b
+        |RETURN *, count(*) AS cnt""".stripMargin
+    )
+  }
+
+  test("RETURN *: GROUP BY ALL is dropped") {
+    assertRewritten(
+      """WITH 1 AS a, 2 AS b
+        |RETURN *, count(*) AS cnt
+        |  GROUP BY ALL""".stripMargin,
+      """WITH 1 AS a, 2 AS b
+        |RETURN *, count(*) AS cnt""".stripMargin
+    )
+  }
+
+  test("WITH *: explicit GROUP BY is dropped when all keys are projected") {
+    assertRewritten(
+      """WITH 1 AS a, 2 AS b
+        |WITH *, count(*) AS cnt
+        |  GROUP BY a, b
+        |RETURN cnt""".stripMargin,
+      """WITH 1 AS a, 2 AS b
+        |WITH *, count(*) AS cnt
+        |RETURN cnt""".stripMargin
+    )
+  }
+
+  test("RETURN *: GROUP BY without aggregation becomes RETURN DISTINCT") {
+    assertRewritten(
+      """WITH 1 AS a, 2 AS b
+        |RETURN *
+        |  GROUP BY a, b""".stripMargin,
+      """WITH 1 AS a, 2 AS b
+        |RETURN DISTINCT *""".stripMargin
+    )
+  }
+
+  test("RETURN *: shadowing explicit item with GROUP BY ALL is dropped") {
+    assertRewritten(
+      """WITH 1 AS x, 2 AS y
+        |RETURN *, 10 AS x, count(*) AS cnt
+        |  GROUP BY ALL""".stripMargin,
+      """WITH 1 AS x, 2 AS y
+        |RETURN *, 10 AS x, count(*) AS cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN *: shadowing explicit item, GROUP BY dropped and ORDER BY on the shadowing alias intact") {
+    assertRewritten(
+      """WITH 1 AS x, 2 AS y
+        |RETURN *, 10 AS x, count(*) AS cnt
+        |  GROUP BY x, y
+        |  ORDER BY x""".stripMargin,
+      """WITH 1 AS x, 2 AS y
+        |RETURN *, 10 AS x, count(*) AS cnt
+        |  ORDER BY x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  // 12. GROUP BY: an ORDER BY referencing a grouping key reuses the key's column alias,
+  //     using the scope survey so an unambiguous key is rewritten while a shadowed one is left alone.
+
+  test("RETURN: ORDER BY an inset (non-projected) grouping key reuses the generated grouping alias") {
+    assertRewritten(
+      """WITH {p: 1} AS a
+        |RETURN count(*) AS cnt
+        |  GROUP BY a.p
+        |  ORDER BY a.p""".stripMargin,
+      """WITH {p: 1} AS a
+        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
+        |RETURN cnt
+        |  ORDER BY `  UNNAMED0`""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: ORDER BY a projected grouping key reuses its alias") {
+    assertRewritten(
+      """WITH {p: 1} AS a
+        |RETURN a.p AS p, count(*) AS cnt
+        |  GROUP BY a.p
+        |  ORDER BY a.p""".stripMargin,
+      """WITH {p: 1} AS a
+        |RETURN a.p AS p, count(*) AS cnt
+        |  ORDER BY p""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: ORDER BY a complex grouping key reuses its alias (AST-equal)") {
+    assertRewritten(
+      """WITH 1 AS b
+        |RETURN b + 1 AS b1, count(*) AS cnt
+        |  GROUP BY b + 1
+        |  ORDER BY b + 1""".stripMargin,
+      """WITH 1 AS b
+        |RETURN b + 1 AS b1, count(*) AS cnt
+        |  ORDER BY b1""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  // Counter-case: a shadowing alias `a` makes `a.p` in ORDER BY ambiguous,
+  // so the full expression must NOT be substituted to the grouping-key alias `p`.
+  test("RETURN: ORDER BY an ambiguous grouping-key reference is not substituted") {
+    assertRewritten(
+      """WITH {p: 1} AS a
+        |RETURN a.p AS p, {p: -1} AS a, count(*) AS cnt
+        |  GROUP BY a.p
+        |  ORDER BY a.p""".stripMargin,
+      """WITH {p: 1} AS a
+        |RETURN a.p AS p, {p: -1} AS a, count(*) AS cnt
+        |  ORDER BY a.p""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: ORDER BY a list-comprehension grouping key reuses its alias") {
+    assertRewritten(
+      """WITH [1, 2, 3] AS a
+        |RETURN [x IN a | x] AS l, count(*) AS cnt
+        |  GROUP BY [x IN a | x]
+        |  ORDER BY [x IN a | x]""".stripMargin,
+      """WITH [1, 2, 3] AS a
+        |RETURN [x IN a | x] AS l, count(*) AS cnt
+        |  ORDER BY l""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: ORDER BY a shadowed list-comprehension grouping key is not substituted") {
+    assertRewritten(
+      """WITH [1, 2, 3] AS a
+        |RETURN [x IN a | x] AS l, [-1] AS a, count(*) AS cnt
+        |  GROUP BY [x IN a | x]
+        |  ORDER BY [x IN a | x]""".stripMargin,
+      """WITH [1, 2, 3] AS a
+        |RETURN [x IN a | x] AS l, [-1] AS a, count(*) AS cnt
+        |  ORDER BY [x IN a | x]""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: ORDER BY a COUNT-subquery grouping key reuses its alias") {
+    assertRewritten(
+      """WITH 1 AS a
+        |RETURN COUNT { RETURN a } AS c, count(*) AS cnt
+        |  GROUP BY COUNT { RETURN a }
+        |  ORDER BY COUNT { RETURN a }""".stripMargin,
+      """WITH 1 AS a
+        |RETURN COUNT { RETURN a } AS c, count(*) AS cnt
+        |  ORDER BY c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: ORDER BY a shadowed COUNT-subquery grouping key is not substituted") {
+    assertRewritten(
+      """WITH 1 AS a
+        |RETURN COUNT { RETURN a } AS c, 2 AS a, count(*) AS cnt
+        |  GROUP BY COUNT { RETURN a }
+        |  ORDER BY COUNT { RETURN a }""".stripMargin,
+      """WITH 1 AS a
+        |RETURN COUNT { RETURN a } AS c, 2 AS a, count(*) AS cnt
+        |  ORDER BY COUNT { RETURN a }""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
     )
   }
 }

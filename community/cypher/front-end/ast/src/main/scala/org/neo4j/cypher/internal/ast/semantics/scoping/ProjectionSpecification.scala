@@ -230,9 +230,9 @@ case class ProjectionSpecification(
     LazyVal(firstWinsMap(groupingKeys.iterator.flatMap(gk => gk.alias.iterator.map(_ -> gk))))
   private def groupingKeyByAlias: Map[LogicalVariable, GroupingKey] = groupingKeyByAliasLazy.value
 
-  private val allItemByExpressionLazy: LazyVal[Map[Expression, ProjectionItem]] =
+  private val allItemsByExpressionLazy: LazyVal[Map[Expression, ProjectionItem]] =
     LazyVal(firstWinsMap(allItems.iterator.map(i => i.expression -> i)))
-  private def allItemByExpression: Map[Expression, ProjectionItem] = allItemByExpressionLazy.value
+  private def allItemsByExpression: Map[Expression, ProjectionItem] = allItemsByExpressionLazy.value
 
   private def firstWinsMap[K, V](pairs: Iterator[(K, V)]): Map[K, V] =
     pairs.foldLeft(Map.empty[K, V]) { case (m, (k, v)) => if (m.contains(k)) m else m.updated(k, v) }
@@ -278,7 +278,7 @@ case class ProjectionSpecification(
   // Recognizes expressions according to recognition rules defined in CIP-248
   def recognizeInSubclause(that: Expression, isSubExpression: Boolean): Option[ProjectionItem] =
     if (hasGroupBy && containsDeclaration(that)) None
-    else allItemByExpression.get(that).filter(item => !isSubExpression || !hasGroupBy || item.isConstantOrReference)
+    else allItemsByExpression.get(that).filter(item => !isSubExpression || !hasGroupBy || item.isConstantOrReference)
 
   // An Inset key is a grouping key that is not present in the projection items.
   def hasInsetKeys: Boolean =
@@ -288,8 +288,14 @@ case class ProjectionSpecification(
 
   private val nonPassthroughAliases = items.filterNot(_.isPassthrough) ++ groupingKeys
 
+  private val nonPassthroughAliasSetLazy: LazyVal[Set[LogicalVariable]] =
+    LazyVal(nonPassthroughAliases.iterator.flatMap(_.alias).toSet)
+
   def isNonPassthroughAlias(that: Expression): Boolean =
-    nonPassthroughAliases.flatMap(_.alias).exists(_ == that)
+    that match {
+      case lv: LogicalVariable => nonPassthroughAliasSetLazy.value.contains(lv)
+      case _                   => false
+    }
 
   def containsNonPassthroughAlias(variables: Set[LogicalVariable]): Boolean =
     variables.exists(isNonPassthroughAlias)
@@ -321,6 +327,26 @@ case class ProjectionSpecification(
   def substituteSubExpression(that: Expression, scopeState: ScopeState): Expression =
     substituteExpression(that, scopeState).getOrElse(that)
 
+  /**
+   * Full-expression substitution for the GROUP BY case: a subclause expression equal to a grouping key
+   * is rewritten to that key's alias, except when ambiguous — it references a variable shadowed by a
+   * non-passthrough projection alias of the same name, in which case the alias wins and the expression
+   * is kept as written.
+   */
+  private def substituteFullExpressionWithGroupBy(that: Expression, scopeState: ScopeState): Option[Expression] =
+    that match {
+      case lv: LogicalVariable if isNonPassthroughAlias(lv) => Some(lv)
+      case _ =>
+        allItemsByExpression.get(that) match {
+          case Some(item) if shadowedByOtherAlias(item, that, scopeState) => Some(that)
+          case Some(item) => item.alias.map(_.withPosition(that.position))
+          case None       => None
+        }
+    }
+
+  private def shadowedByOtherAlias(item: ProjectionItem, that: Expression, scopeState: ScopeState): Boolean =
+    scopeState.referenceTargets(that).exists(t => !item.alias.contains(t) && isNonPassthroughAlias(t))
+
   def substituteFullExpression(
     that: Expression,
     useLegacySubstitution: Boolean,
@@ -334,10 +360,11 @@ case class ProjectionSpecification(
           case None       => None
         }
     }
-    else substituteExpression(that, scopeState)
+    else substituteFullExpressionWithGroupBy(that, scopeState)
 
-  def getIntroducedSymbols: Set[LogicalVariable] =
-    items.filterNot(_.isPassthrough).flatMap(_.alias)
+  private val introducedSymbolsLazy: LazyVal[Set[LogicalVariable]] =
+    LazyVal(items.iterator.filterNot(_.isPassthrough).flatMap(_.alias).toSet)
+  def getIntroducedSymbols: Set[LogicalVariable] = introducedSymbolsLazy.value
 
   def getShadowingDeclarations(incomingSymbols: Set[LogicalVariable]): Set[LogicalVariable] =
     incomingSymbols intersect getIntroducedSymbols

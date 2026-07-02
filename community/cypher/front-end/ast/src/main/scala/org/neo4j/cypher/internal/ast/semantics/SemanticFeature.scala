@@ -152,7 +152,8 @@ object SemanticFeature {
     AllowClauseWithMixedLabelSyntax,
     AttributeBasedAccessControl,
     ExpandHints,
-    UserTags
+    UserTags,
+    GroupByClause
   )
 
   def fromString(str: String): SemanticFeature =

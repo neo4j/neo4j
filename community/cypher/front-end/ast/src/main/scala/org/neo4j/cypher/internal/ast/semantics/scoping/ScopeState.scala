@@ -54,6 +54,14 @@ case class ScopeState(
   def getReferenced(ast: ASTNode, default: Set[LogicalVariable]): Set[LogicalVariable] =
     scopeOfOpt(ast).map(_.referenced.getVariables.map(_.copyId).toSet).getOrElse(default)
 
+  /**
+   * The declarations that `ast`'s references resolve to (empty when `ast` has no recorded scope) are
+   * used by the GROUP BY subclause substitution to detect when an expression is shadowed by a
+   * projection alias.
+   */
+  def referenceTargets(ast: ASTNode): Set[LogicalVariable] =
+    scopeOfOpt(ast).map(_.referenced.references.values.map(_.value).toSet).getOrElse(Set.empty)
+
   def getResultCols(ast: ASTNode): Seq[LogicalVariable] = scopeOf(ast).result match {
     case TableResult(cols) => cols
     case _                 => Seq.empty
