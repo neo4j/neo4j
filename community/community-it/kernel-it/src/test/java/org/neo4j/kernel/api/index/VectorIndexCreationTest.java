@@ -33,6 +33,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.SequencedCollection;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -777,7 +778,11 @@ public class VectorIndexCreationTest {
         @Nested
         class QuantizationTypes extends TestBase {
             private static final IndexSetting SETTING = IndexSetting.vector_Quantization_Type();
-            private static final Value DEFAULT_VALUE = Values.utf8Value(VectorQuantizationType.SCALAR.name());
+            private static final Map<Optional<Boolean>, Value> DEFAULT_VALUES = Map.ofEntries(
+                    entry(Optional.empty(), Values.utf8Value(VectorQuantizationType.SCALAR.name())),
+                    entry(Optional.of(false), Values.utf8Value(VectorQuantizationType.NONE.name())),
+                    entry(Optional.of(true), Values.utf8Value(VectorQuantizationType.SCALAR.name())));
+            private static final Value DEFAULT_VALUE = DEFAULT_VALUES.get(Optional.<Boolean>empty());
 
             QuantizationTypes() {
                 super(
@@ -900,6 +905,43 @@ public class VectorIndexCreationTest {
                 assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
                 // config via schema store
                 assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
+            }
+
+            @ParameterizedTest
+            @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
+            void shouldAcceptMissingSettingWithConflictingDependentSetting(VectorIndexVersion version) {
+                VectorIndexSettings settings =
+                        defaultSettings().unset(SETTING).set(IndexSetting.vector_Quantization_Enabled(), false);
+
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
+                IndexDescriptor index = ref.get();
+
+                Value defautValue = DEFAULT_VALUES.get(Optional.of(false));
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), defautValue);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), defautValue);
+            }
+
+            @Test
+            @EnabledIf("latestIsValid")
+            void shouldAcceptMissingSettingWithConflictingDependentSettingCoreAPI() {
+                VectorIndexSettings settings =
+                        defaultSettings().unset(SETTING).set(IndexSetting.vector_Quantization_Enabled(), false);
+
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
+                IndexDescriptor index = ref.get();
+
+                Value defautValue = DEFAULT_VALUES.get(Optional.of(false));
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), defautValue);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), defautValue);
             }
         }
 

@@ -27,6 +27,8 @@ import org.neo4j.internal.schema.IndexSettingRecord.Pending;
 import org.neo4j.internal.schema.IndexSettingRecord.RecordWithSetting;
 import org.neo4j.internal.schema.IndexSettingRecord.Valid;
 import org.neo4j.internal.schema.IndexSettingsRequirements.ClassRequirement;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 /// A [SingleIndexSettingProcessor] that transforms a valid value from one [IndexSetting] to another
 public abstract class SingleIndexSettingMigrator<FROM, TO> extends SingleIndexSettingProcessor {
@@ -46,6 +48,10 @@ public abstract class SingleIndexSettingMigrator<FROM, TO> extends SingleIndexSe
 
     protected abstract TO migrate(FROM value);
 
+    protected Value toStorable(TO value) {
+        return Values.unsafeOf(value, true);
+    }
+
     /// Migrates the value from one [Valid] record to a [Pending] record of a new setting using [#migrate(FROM)].
     /// If a non-valid [RecordWithSetting] is provided an [InvalidValue] will be returned.
     @Override
@@ -54,7 +60,8 @@ public abstract class SingleIndexSettingMigrator<FROM, TO> extends SingleIndexSe
             return new InvalidValue(toSetting, null, new ClassRequirement(toType));
         }
 
-        return new Pending(toSetting, migrate(valid.valueAs(fromType)), null);
+        TO value = migrate(valid.valueAs(fromType));
+        return new Pending(toSetting, value, toStorable(value));
     }
 
     @Override
@@ -63,7 +70,8 @@ public abstract class SingleIndexSettingMigrator<FROM, TO> extends SingleIndexSe
             return new MissingSetting(toSetting);
         }
 
-        return new Valid(toSetting, migrate(valid.valueAs(fromType)), null);
+        TO value = migrate(valid.valueAs(fromType));
+        return new Valid(toSetting, migrate(valid.valueAs(fromType)), toStorable(value));
     }
 
     @Override

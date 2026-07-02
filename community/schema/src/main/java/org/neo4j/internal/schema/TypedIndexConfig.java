@@ -37,6 +37,7 @@ public abstract class TypedIndexConfig {
     private final IndexProviderDescriptor descriptor;
     private final Map<IndexSetting, Object> settings;
     private final IndexConfig config;
+    private final IndexConfig effectiveFullConfig;
     private final Set<IndexSetting> acceptedSettings;
 
     /// @param descriptor the [IndexProviderDescriptor] associate with this configuration
@@ -46,21 +47,24 @@ public abstract class TypedIndexConfig {
     protected TypedIndexConfig(
             IndexProviderDescriptor descriptor, Set<IndexSetting> acceptedSettings, Iterable<Valid> records) {
         SortedMap<IndexSetting, Object> settings = new TreeMap<>(INDEX_SETTING_COMPARATOR);
-        Map<String, Value> storables = new HashMap<>();
+        Map<String, Value> allStorables = new HashMap<>();
+        Map<String, Value> acceptedStorables = new HashMap<>();
         for (Valid record : records) {
             IndexSetting setting = record.setting();
             settings.put(setting, record.value());
-            if (acceptedSettings.contains(setting)) {
-                Value storable = record.storable();
-                if (storable != null && storable != NO_VALUE) {
-                    storables.put(setting.getSettingName(), storable);
+            Value storable = record.storable();
+            if (storable != null && storable != NO_VALUE) {
+                allStorables.put(setting.getSettingName(), storable);
+                if (acceptedSettings.contains(setting)) {
+                    acceptedStorables.put(setting.getSettingName(), storable);
                 }
             }
         }
 
         this.descriptor = descriptor;
         this.settings = Collections.unmodifiableSortedMap(settings);
-        this.config = IndexConfig.with(storables);
+        this.config = IndexConfig.with(acceptedStorables);
+        this.effectiveFullConfig = IndexConfig.with(allStorables);
         this.acceptedSettings = Collections.unmodifiableSet(acceptedSettings);
     }
 
@@ -68,8 +72,15 @@ public abstract class TypedIndexConfig {
         return descriptor;
     }
 
+    /// The [IndexConfig] for the corresponding [IndexProviderDescriptor],
+    /// which may not contain all encapsulated [IndexSetting]s
     public IndexConfig config() {
         return config;
+    }
+
+    /// An [IndexConfig] that contains all encapsulated [IndexSetting]s
+    public IndexConfig effectiveFullConfig() {
+        return effectiveFullConfig;
     }
 
     @SuppressWarnings("unchecked")

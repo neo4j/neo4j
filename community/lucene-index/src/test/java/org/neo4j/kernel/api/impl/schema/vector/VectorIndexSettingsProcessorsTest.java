@@ -50,13 +50,16 @@ import org.neo4j.internal.schema.IndexSettingRecord.RecordWithStorable;
 import org.neo4j.internal.schema.IndexSettingRecord.RecordWithValue;
 import org.neo4j.internal.schema.IndexSettingRecord.Valid;
 import org.neo4j.internal.schema.IndexSettingsProcessor;
+import org.neo4j.internal.schema.IndexSettingsRequirements.ClassRequirement;
 import org.neo4j.internal.schema.IndexSettingsRequirements.IterableRequirement;
 import org.neo4j.internal.schema.KnownIndexSettingRecords;
 import org.neo4j.internal.schema.SingleIndexSettingProcessor;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.MissingDefaultSearchExpansionFactorMaterializer;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.MissingQuantizationTypeMaterializer;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QuantizationTypeLookup;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SimpleQuantizationEnabledToTypeMigrator;
 import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -76,22 +79,17 @@ class VectorIndexSettingsProcessorsTest {
 
     @Nested
     class MissingDefaultSearchExpansionFactorMaterializerTest extends TestBase {
-        private static final Map<VectorQuantizationType, Double> EXPANSION_FACTORS_FOR_AUTHORITATIVE_READ =
-                Map.ofEntries(
-                        entry(VectorQuantizationType.NONE, 1.0),
-                        entry(VectorQuantizationType.SCALAR, 1.1),
-                        entry(VectorQuantizationType.BINARY, 1.2));
         private static final Map<VectorQuantizationType, Double> EXPANSION_FACTORS_FOR_VERIFICATION = Map.ofEntries(
                 entry(VectorQuantizationType.NONE, 1.0),
                 entry(VectorQuantizationType.SCALAR, 2.0),
                 entry(VectorQuantizationType.BINARY, 8.0));
-        private static final IndexSettingsProcessor DEFAULT = MissingDefaultSearchExpansionFactorMaterializer.of(
-                EXPANSION_FACTORS_FOR_AUTHORITATIVE_READ::get, EXPANSION_FACTORS_FOR_VERIFICATION::get);
+        private static final IndexSettingsProcessor DEFAULT =
+                MissingDefaultSearchExpansionFactorMaterializer.of(EXPANSION_FACTORS_FOR_VERIFICATION);
 
         @ParameterizedTest
         @EnumSource
         void existingForVerification(VectorQuantizationType type) {
-            double expansionFactor = EXPANSION_FACTORS_FOR_VERIFICATION.get(type);
+            double expansionFactor = 10.0 * EXPANSION_FACTORS_FOR_VERIFICATION.get(type);
             DoubleValue storable = Values.doubleValue(expansionFactor);
             RecordWithSetting record =
                     records.upsert(new Pending(DEFAULT_SEARCH_EXPANSION_FACTOR, expansionFactor, storable));
@@ -103,7 +101,7 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource
         void existingForAuthoritativeRead(VectorQuantizationType type) {
-            double expansionFactor = EXPANSION_FACTORS_FOR_VERIFICATION.get(type);
+            double expansionFactor = 10.0 * EXPANSION_FACTORS_FOR_VERIFICATION.get(type);
             DoubleValue storable = Values.doubleValue(expansionFactor);
             RecordWithSetting record =
                     records.upsert(new Valid(DEFAULT_SEARCH_EXPANSION_FACTOR, expansionFactor, storable));
@@ -138,19 +136,6 @@ class VectorIndexSettingsProcessorsTest {
                     .asInstanceOf(type(Pending.class))
                     .extracting(HasSetting::setting, RecordWithValue::value, RecordWithStorable::storable)
                     .containsExactly(DEFAULT_SEARCH_EXPANSION_FACTOR, expansionFactor, storable);
-        }
-
-        @ParameterizedTest
-        @EnumSource
-        void useDefaultAuthoritativeRead(VectorQuantizationType type) {
-            double expansionFactor = EXPANSION_FACTORS_FOR_AUTHORITATIVE_READ.get(type);
-            records.upsert(new Valid(QUANTIZATION_TYPE, type, Values.utf8Value(type.name())));
-
-            DEFAULT.updateForAuthoritativeRead(records);
-            assertThat(records.get(DEFAULT_SEARCH_EXPANSION_FACTOR))
-                    .asInstanceOf(type(Valid.class))
-                    .extracting(HasSetting::setting, RecordWithValue::value, RecordWithStorable::storable)
-                    .containsExactly(DEFAULT_SEARCH_EXPANSION_FACTOR, expansionFactor, Values.NO_VALUE);
         }
     }
 
@@ -199,12 +184,13 @@ class VectorIndexSettingsProcessorsTest {
             RecordWithSetting record =
                     records.upsert(new Valid(QUANTIZATION_ENABLED, enabled, Values.booleanValue(enabled)));
             VectorQuantizationType processedValue = enabled ? CORRESPONDING_ENABLED_TYPE : VectorQuantizationType.NONE;
+            Value storable = Values.utf8Value(processedValue.name());
 
             RecordWithSetting processedRecord = MIGRATOR.processForVerification(record);
             assertThat(processedRecord)
                     .asInstanceOf(type(Valid.class))
                     .extracting(HasSetting::setting, RecordWithValue::value, RecordWithStorable::storable)
-                    .containsExactly(QUANTIZATION_TYPE, processedValue, null);
+                    .containsExactly(QUANTIZATION_TYPE, processedValue, storable);
 
             MIGRATOR.updateForVerification(records);
             assertThat(records.get(QUANTIZATION_ENABLED)).isSameAs(record);
@@ -217,16 +203,75 @@ class VectorIndexSettingsProcessorsTest {
             RecordWithSetting record =
                     records.upsert(new Valid(QUANTIZATION_ENABLED, enabled, Values.booleanValue(enabled)));
             VectorQuantizationType processedValue = enabled ? CORRESPONDING_ENABLED_TYPE : VectorQuantizationType.NONE;
+            Value storable = Values.utf8Value(processedValue.name());
 
             RecordWithSetting processedRecord = MIGRATOR.processForAuthoritativeRead(record);
             assertThat(processedRecord)
                     .asInstanceOf(type(Valid.class))
                     .extracting(HasSetting::setting, RecordWithValue::value, RecordWithStorable::storable)
-                    .containsExactly(QUANTIZATION_TYPE, processedValue, null);
+                    .containsExactly(QUANTIZATION_TYPE, processedValue, storable);
 
             MIGRATOR.updateForAuthoritativeRead(records);
             assertThat(records.get(QUANTIZATION_ENABLED)).isSameAs(record);
             assertThat(records.get(QUANTIZATION_TYPE)).isEqualTo(processedRecord);
+        }
+    }
+
+    @Nested
+    class MissingQuantizationTypeMaterializerTest extends TestBase {
+        private static final VectorQuantizationType ENABLED_TYPE = VectorQuantizationType.SCALAR;
+        private static final Map<Optional<Boolean>, String> QUANTIZATION_TYPES_FOR_VERIFICATION = Map.ofEntries(
+                entry(Optional.empty(), ENABLED_TYPE.name()),
+                entry(Optional.of(false), VectorQuantizationType.NONE.name()),
+                entry(Optional.of(true), ENABLED_TYPE.name()));
+
+        private static final IndexSettingsProcessor DEFAULT = MissingQuantizationTypeMaterializer.of(ENABLED_TYPE);
+
+        @ParameterizedTest
+        @EnumSource
+        void existingForVerification(VectorQuantizationType type) {
+            String name = type.name();
+            TextValue storable = Values.utf8Value(name);
+            RecordWithSetting record = records.upsert(new Pending(QUANTIZATION_TYPE, name, storable));
+
+            DEFAULT.updateForVerification(records);
+            assertThat(records.get(QUANTIZATION_TYPE)).isSameAs(record);
+        }
+
+        @ParameterizedTest
+        @EnumSource
+        void existingForAuthoritativeRead(VectorQuantizationType type) {
+            String name = type.name();
+            TextValue storable = Values.utf8Value(name);
+            RecordWithSetting record = records.upsert(new Valid(QUANTIZATION_TYPE, name, storable));
+
+            DEFAULT.updateForAuthoritativeRead(records);
+            assertThat(records.get(QUANTIZATION_TYPE)).isSameAs(record);
+        }
+
+        @Test
+        void invalidValue() {
+            records.upsert(new InvalidValue(
+                    QUANTIZATION_ENABLED, "CLEARLYNOTAQUANTIZATIONTYPE", new ClassRequirement(boolean.class)));
+
+            DEFAULT.updateForVerification(records);
+            assertThat(records.get(QUANTIZATION_TYPE))
+                    .asInstanceOf(type(InvalidValue.class))
+                    .extracting(HasSetting::setting, RecordWithValue::value, TestBase::underlyingRequirement)
+                    .containsExactly(QUANTIZATION_TYPE, null, String.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        @ValueSource(booleans = {false, true})
+        void useDefaultForVerification(Boolean rawEnabled) {
+            Optional<Boolean> enabled = Optional.ofNullable(rawEnabled);
+            String name = QUANTIZATION_TYPES_FOR_VERIFICATION.get(enabled);
+            TextValue storable = Values.utf8Value(name);
+            RecordWithSetting record = records.upsert(new Pending(QUANTIZATION_TYPE, name, storable));
+
+            DEFAULT.updateForVerification(records);
+            assertThat(records.get(QUANTIZATION_TYPE)).isSameAs(record);
         }
     }
 

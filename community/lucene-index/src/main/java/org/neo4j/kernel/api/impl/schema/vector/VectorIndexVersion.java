@@ -78,8 +78,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.DefaultIndexSettingsValidator;
-import org.neo4j.internal.schema.DefaultIndexSettingsValidator.IndexSettingEntry;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexSettingEntry;
 import org.neo4j.internal.schema.IndexSettingExtractors;
 import org.neo4j.internal.schema.IndexSettingRecord.Valid;
 import org.neo4j.internal.schema.IndexSettingsProcessor.ValidatingIndexSettingsProcessor;
@@ -309,17 +309,16 @@ public enum VectorIndexVersion {
                                     similarityFunctionNormalizer(nameToSimilarityFunction()),
                                     OPTIONAL_QUANTIZATION_ENABLED_CONVERTER,
                                     optionalQuantizationEnabledDefault(Optional.empty()),
+                                    QUANTIZATION_ENABLED_VALIDATOR,
                                     QUANTIZATION_TYPE_UPPER_CASE_CONVERTER,
                                     quantizationTypeDefault(VectorQuantizationType.SCALAR),
                                     quantizationTypeLookup(supportedQuantizationTypes()),
                                     REMOVE_QUANTIZATION_ENABLED,
                                     quantizationTypeNormalizer(supportedQuantizationTypes()),
                                     defaultSearchExpansionFactorDefault(
-                                            1.0,
-                                            Map.ofEntries(
-                                                    entry(VectorQuantizationType.NONE, 1.0),
-                                                    entry(VectorQuantizationType.SCALAR, 1.5),
-                                                    entry(VectorQuantizationType.BINARY, 2.0))),
+                                            entry(VectorQuantizationType.NONE, 1.0),
+                                            entry(VectorQuantizationType.SCALAR, 1.5),
+                                            entry(VectorQuantizationType.BINARY, 2.0)),
                                     defaultSearchExpansionFactorValidator(1.0, 10_000.0),
                                     hnswMDefault(16),
                                     hnswMValidator(1, maxHnswM()),

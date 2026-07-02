@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.neo4j.internal.schema.IndexSettingTestUtils.FAKE_VALUE;
 
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.assertj.core.api.ObjectAssert;
@@ -39,10 +40,13 @@ import org.neo4j.internal.schema.IndexSettingRecord.RecordWithSetting;
 import org.neo4j.internal.schema.IndexSettingRecord.RecordWithStorable;
 import org.neo4j.internal.schema.IndexSettingRecord.RecordWithValue;
 import org.neo4j.internal.schema.IndexSettingRecord.Valid;
+import org.neo4j.internal.schema.IndexSettingTestUtils.Lookup;
 import org.neo4j.internal.schema.IndexSettingTestUtils.TestIndexSetting;
 import org.neo4j.internal.schema.IndexSettingsRequirements.ClassRequirement;
+import org.neo4j.internal.schema.IndexSettingsRequirements.IterableRequirement;
 import org.neo4j.internal.schema.SingleIndexSettingProcessor.FinalizePending;
 import org.neo4j.internal.schema.SingleIndexSettingProcessor.MissingSettingMaterializer;
+import org.neo4j.internal.schema.SingleIndexSettingProcessor.RemoveSetting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -198,6 +202,49 @@ public class SingleIndexSettingProcessorTest {
     class MissingSettingMaterializerWithStorableTest extends MissingSettingMaterializerTestBase {
         protected MissingSettingMaterializerWithStorableTest() {
             super(STORABLE_FOR_VERIFICATION);
+        }
+    }
+
+    @Nested
+    class RemoveSettingTest extends SingleProcessorTestBase {
+        private static final IndexSetting SETTING = TestIndexSetting.OBJECT;
+        private static final Valid REMOVED = new Valid(SETTING, null, Values.NO_VALUE);
+
+        protected RemoveSettingTest() {
+            super(RemoveSetting.of(SETTING));
+        }
+
+        @ParameterizedTest
+        @MethodSource
+        void processForVerificationInvalidShouldPassthrough(RecordWithSetting invalid) {
+            assertThat(processor.processForVerification(invalid)).isSameAs(invalid);
+        }
+
+        static Stream<RecordWithSetting> processForVerificationInvalidShouldPassthrough() {
+            return Stream.of(
+                    new MissingSetting(SETTING),
+                    new IncorrectType(SETTING, "pi", double.class),
+                    new InvalidValue(
+                            SETTING, Lookup.FOO, new IterableRequirement(EnumSet.complementOf(EnumSet.of(Lookup.FOO)))),
+                    new Pending(SETTING, 123, Values.NO_VALUE));
+        }
+
+        @ParameterizedTest
+        @MethodSource
+        void processForVerificationShouldRemoveValid(Valid valid) {
+            assertThat(processor.processForVerification(valid)).isEqualTo(REMOVED);
+        }
+
+        static Stream<Valid> processForVerificationShouldRemoveValid() {
+            return Stream.of(
+                    new Valid(SETTING, "foo", Values.utf8Value("foo")),
+                    new Valid(SETTING, true, Values.booleanValue(true)),
+                    new Valid(SETTING, 123, Values.NO_VALUE));
+        }
+
+        @Test
+        void processForAuthoritativeReadShouldPassthrough() {
+            assertThat(processor.processForAuthoritativeRead(REMOVED)).isEqualTo(REMOVED);
         }
     }
 

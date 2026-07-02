@@ -127,7 +127,38 @@ public abstract class SingleIndexSettingProcessor implements IndexSettingsProces
         }
     }
 
-    public static class FinalizePending extends SingleIndexSettingProcessor
+    public static final class RemoveSetting extends SingleIndexSettingProcessor {
+        public static RemoveSetting of(IndexSetting setting) {
+            return new RemoveSetting(setting);
+        }
+
+        private RemoveSetting(IndexSetting setting) {
+            super(setting);
+        }
+
+        @Override
+        public RecordWithSetting processForVerification(RecordWithSetting record) {
+            if (!(record instanceof Valid valid)) {
+                return record;
+            }
+            return new Valid(valid, null, Values.NO_VALUE);
+        }
+
+        @Override
+        public RecordWithSetting processForAuthoritativeRead(RecordWithSetting record) {
+            if (!(record instanceof Valid valid)) {
+                return record;
+            }
+            return new Valid(valid, null, Values.NO_VALUE);
+        }
+
+        @Override
+        public String toString() {
+            return "Remove[%s]".formatted(setting);
+        }
+    }
+
+    public static final class FinalizePending extends SingleIndexSettingProcessor
             implements ValidatingIndexSettingsProcessor {
         public static FinalizePending of(IndexSetting setting) {
             return new FinalizePending(setting);
