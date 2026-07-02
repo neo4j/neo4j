@@ -231,6 +231,14 @@ class QueryResourceIT {
         QueryResponseAssertions.assertThat(response).wasSuccessful().hasQueryType(expectedQueryType);
     }
 
+    @ParameterizedTest
+    @MethodSource("queryRequestElements")
+    void shouldHandleRequestFieldsInAnyOrder(List<String> elements) throws IOException, InterruptedException {
+        var response = testClient.sendRaw("{ %s }".formatted(String.join(",", elements)));
+
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
+    }
+
     static Stream<Arguments> queryTypes() {
         return Stream.of(TransactionType.values())
                 .flatMap(type -> Stream.of(
@@ -242,5 +250,25 @@ class QueryResourceIT {
                                 "CREATE CONSTRAINT constraint_name_%d FOR (n:Label) REQUIRE n.property_%d IS UNIQUE"
                                         .formatted(type.ordinal(), type.ordinal()),
                                 "s")));
+    }
+
+    static Stream<Arguments> queryRequestElements() {
+        var includeCounters = """
+                "includeCounters": true""";
+        var parameters = """
+                    "parameters": {
+                      "value": 1
+                    }\
+                """;
+        var statement = """
+                "statement": "RETURN $value AS one\"""";
+        return Stream.of(
+                        List.of(includeCounters, parameters, statement),
+                        List.of(includeCounters, statement, parameters),
+                        List.of(statement, includeCounters, parameters),
+                        List.of(statement, parameters, includeCounters),
+                        List.of(parameters, statement, includeCounters),
+                        List.of(parameters, includeCounters, statement))
+                .map(Arguments::of);
     }
 }

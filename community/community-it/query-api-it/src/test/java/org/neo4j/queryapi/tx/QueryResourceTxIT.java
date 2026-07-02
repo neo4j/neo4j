@@ -24,6 +24,7 @@ import static org.neo4j.queryapi.QueryResponseAssertions.assertThat;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
@@ -34,6 +35,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.queryapi.QueryResponseAssertions;
 import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryApiTestClientException;
@@ -365,6 +367,17 @@ class QueryResourceTxIT {
         testClient.commitTx(res.body().txId());
     }
 
+    @ParameterizedTest
+    @MethodSource("queryRequestElements")
+    void shouldHandleRequestFieldsInAnyOrder(List<String> elements)
+            throws IOException, InterruptedException, QueryApiTestClientException {
+        var response = testClient.sendRawBeginTx("{ %s }".formatted(String.join(",", elements)));
+
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
+
+        testClient.rollbackTx(response.body().txId());
+    }
+
     private int currentNodeCount(String label) throws IOException, InterruptedException {
         return testClient
                 .autoCommit(QueryRequest.newBuilder()
@@ -380,5 +393,25 @@ class QueryResourceTxIT {
 
     public static Stream<Arguments> typedMimes() {
         return Stream.of(QueryContentType.TYPED, QueryContentType.TYPED_V1_0).map(Arguments::of);
+    }
+
+    static Stream<Arguments> queryRequestElements() {
+        var includeCounters = """
+                "includeCounters": true""";
+        var parameters = """
+                    "parameters": {
+                      "value": 1
+                    }\
+                """;
+        var statement = """
+                "statement": "RETURN $value AS one\"""";
+        return Stream.of(
+                        List.of(includeCounters, parameters, statement),
+                        List.of(includeCounters, statement, parameters),
+                        List.of(statement, includeCounters, parameters),
+                        List.of(statement, parameters, includeCounters),
+                        List.of(parameters, statement, includeCounters),
+                        List.of(parameters, includeCounters, statement))
+                .map(Arguments::of);
     }
 }

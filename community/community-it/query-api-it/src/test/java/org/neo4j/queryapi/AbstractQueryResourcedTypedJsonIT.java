@@ -32,6 +32,7 @@ import static org.neo4j.server.queryapi.response.format.Fieldnames._RELATIONSHIP
 import static org.neo4j.server.queryapi.response.format.Fieldnames._START_NODE_ELEMENT_ID;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -446,6 +447,14 @@ abstract class AbstractQueryResourcedTypedJsonIT {
         QueryResponseAssertions.assertThat(response).wasSuccessful().hasQueryType(expectedQueryType);
     }
 
+    @ParameterizedTest
+    @MethodSource("queryRequestElements")
+    void shouldHandleRequestFieldsInAnyOrder(List<String> elements) throws IOException, InterruptedException {
+        var response = testClient.sendRaw("{ %s }".formatted(String.join(",", elements)));
+
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
+    }
+
     static Stream<Arguments> queryTypes() {
         return Stream.of(TransactionType.values())
                 .flatMap(type -> Stream.of(
@@ -457,5 +466,28 @@ abstract class AbstractQueryResourcedTypedJsonIT {
                                 "CREATE CONSTRAINT constraint_name_%d FOR (n:Label) REQUIRE n.property_%d IS UNIQUE"
                                         .formatted(type.ordinal(), type.ordinal()),
                                 "s")));
+    }
+
+    static Stream<Arguments> queryRequestElements() {
+        var includeCounters = """
+                "includeCounters": true""";
+        var parameters = """
+                    "parameters": {
+                      "value": {
+                        "$type": "Integer",
+                        "_value": "1"\s
+                      }
+                    }\
+                """;
+        var statement = """
+                "statement": "RETURN $value AS one\"""";
+        return Stream.of(
+                        List.of(includeCounters, parameters, statement),
+                        List.of(includeCounters, statement, parameters),
+                        List.of(statement, includeCounters, parameters),
+                        List.of(statement, parameters, includeCounters),
+                        List.of(parameters, statement, includeCounters),
+                        List.of(parameters, includeCounters, statement))
+                .map(Arguments::of);
     }
 }
