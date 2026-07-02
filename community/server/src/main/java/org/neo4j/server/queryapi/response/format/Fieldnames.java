@@ -49,11 +49,24 @@ public final class Fieldnames {
     public static final String BOOKMARKS_KEY = "bookmarks";
 
     public static final String NOTIFICATIONS_KEY = "notifications";
-    public static final String QUERY_PLAN_KEY = "queryPlan";
     public static final String COUNTERS_KEY = "counters";
     public static final String QUERY_TYPE = "queryType";
 
+    public static final String QUERY_PLAN_KEY = "queryPlan";
+    public static final String QUERY_PLAN_OPERATOR_TYPE_KEY = "operatorType";
+    public static final String QUERY_PLAN_ARGUMENTS_KEY = "arguments";
+    public static final String QUERY_PLAN_IDENTIFIERS_KEY = "identifiers";
+    public static final String QUERY_PLAN_CHILDREN_KEY = "children";
+
     public static final String PROFILE_KEY = "profiledQueryPlan";
+    public static final String PROFILE_DB_HITS_KEY = "dbHits";
+    public static final String PROFILE_ROWS_KEY = "records";
+    public static final String PROFILE_HAS_PAGE_CACHE_STATS_KEY = "hasPageCacheStats";
+    public static final String PROFILE_PAGE_CACHE_HITS_KEY = "pageCacheHits";
+    public static final String PROFILE_PAGE_CACHE_MISSES_KEY = "pageCacheMisses";
+    public static final String PROFILE_PAGE_CACHE_RATION_KEY = "pageCacheHitRatio";
+    public static final String PROFILE_TIME_KEY = "time";
+    public static final String PROFILE_CHILDREN_KEY = "children";
 
     public static final String ERRORS_KEY = "errors";
     public static final String TRANSACTION_KEY = "transaction";

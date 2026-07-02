@@ -335,7 +335,7 @@ public final class QueryResponseAssertions
         Assertions.assertThat(profiledQueryPlan.get("identifiers").size()).isEqualTo(1);
         Assertions.assertThat(profiledQueryPlan.get("identifiers").get(0).asText())
                 .isEqualTo("`1`");
-        Assertions.assertThat(profiledQueryPlan.get("time").asInt()).isEqualTo(0);
+        Assertions.assertThat(profiledQueryPlan.get("time")).isNull();
 
         var childProfile = profiledQueryPlan.get("children");
 
@@ -350,7 +350,7 @@ public final class QueryResponseAssertions
                 .isEqualTo(0);
         Assertions.assertThat(childProfile.get(0).get("pageCacheHitRatio").asDouble())
                 .isEqualTo(0);
-        Assertions.assertThat(childProfile.get(0).get("time").asInt()).isEqualTo(0);
+        Assertions.assertThat(childProfile.get(0).get("time")).isNull();
         Assertions.assertThat(childProfile.get(0).get("operatorType").asText()).startsWith("Projection@neo4j");
         assertNotNull(childProfile.get(0).get("arguments"));
         Assertions.assertThat(childProfile.get(0).get("identifiers").size()).isEqualTo(1);

@@ -209,7 +209,7 @@ class QueryResourceConfigJsonlIT {
                     assertThat(profiledQueryPlan.get("identifiers").size()).isEqualTo(1);
                     assertThat(profiledQueryPlan.get("identifiers").get(0).asText())
                             .isEqualTo("`1`");
-                    assertThat(profiledQueryPlan.get("time").asInt()).isEqualTo(0);
+                    assertThat(profiledQueryPlan.get("time")).isNull();
                     assertNotNull(profiledQueryPlan);
 
                     var childProfile = profiledQueryPlan.get("children");
@@ -225,7 +225,7 @@ class QueryResourceConfigJsonlIT {
                             .isEqualTo(0);
                     assertThat(childProfile.get(0).get("pageCacheHitRatio").asDouble())
                             .isEqualTo(0);
-                    assertThat(childProfile.get(0).get("time").asInt()).isEqualTo(0);
+                    assertThat(childProfile.get(0).get("time")).isNull();
                     assertThat(childProfile.get(0).get("operatorType").asText()).isEqualTo("Projection@" + dbName);
                     assertNotNull(childProfile.get(0).get("arguments"));
                     assertThat(childProfile.get(0).get("identifiers").size()).isEqualTo(1);

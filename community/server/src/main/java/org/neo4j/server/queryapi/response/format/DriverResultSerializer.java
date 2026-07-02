@@ -27,8 +27,20 @@ import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERRORS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.NOTIFICATIONS_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.PROFILE_CHILDREN_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.PROFILE_DB_HITS_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.PROFILE_HAS_PAGE_CACHE_STATS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.PROFILE_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.PROFILE_PAGE_CACHE_HITS_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.PROFILE_PAGE_CACHE_MISSES_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.PROFILE_PAGE_CACHE_RATION_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.PROFILE_ROWS_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.PROFILE_TIME_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_PLAN_ARGUMENTS_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_PLAN_CHILDREN_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_PLAN_IDENTIFIERS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_PLAN_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_PLAN_OPERATOR_TYPE_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_TYPE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.TRANSACTION_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.TX_EXPIRY_KEY;
@@ -47,6 +59,8 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.summary.Notification;
+import org.neo4j.driver.summary.Plan;
+import org.neo4j.driver.summary.QueryProfile;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.server.queryapi.exception.ExceptionsUnwrapper;
@@ -210,17 +224,92 @@ class DriverResultSerializer {
     }
 
     public void writeProfile(ResultSummary resultSummary) throws IOException {
-        if (resultSummary.hasPlan() && resultSummary.hasProfile()) {
+        if (resultSummary.queryProfile().isPresent()) {
             jsonGenerator.writeFieldName(PROFILE_KEY);
-            jsonGenerator.writeObject(resultSummary.profile());
+            writeProfile(resultSummary.queryProfile().get());
         }
     }
 
+    private void writeProfile(QueryProfile queryProfile) throws IOException {
+        object(() -> {
+            writeQueryPlanFieldsWithoutChildren(queryProfile);
+
+            if (queryProfile.dbHits().isPresent()) {
+                jsonGenerator.writeFieldName(PROFILE_DB_HITS_KEY);
+                jsonGenerator.writeNumber(queryProfile.dbHits().getAsLong());
+            }
+
+            if (queryProfile.rows().isPresent()) {
+                jsonGenerator.writeFieldName(PROFILE_ROWS_KEY);
+                jsonGenerator.writeNumber(queryProfile.rows().getAsLong());
+            }
+
+            // Follows the same logic on the ProfiledPlan method on the JavaDriver.
+            var hasPageCacheStats = false;
+
+            if (queryProfile.pageCacheHits().isPresent()) {
+                jsonGenerator.writeFieldName(PROFILE_PAGE_CACHE_HITS_KEY);
+                jsonGenerator.writeNumber(queryProfile.pageCacheHits().getAsLong());
+                hasPageCacheStats = queryProfile.pageCacheHits().getAsLong() > 0;
+            }
+
+            if (queryProfile.pageCacheMisses().isPresent()) {
+                jsonGenerator.writeFieldName(PROFILE_PAGE_CACHE_MISSES_KEY);
+                jsonGenerator.writeNumber(queryProfile.pageCacheMisses().getAsLong());
+                hasPageCacheStats =
+                        hasPageCacheStats || queryProfile.pageCacheMisses().getAsLong() > 0;
+            }
+
+            if (queryProfile.pageCacheHitRatio().isPresent()) {
+                jsonGenerator.writeFieldName(PROFILE_PAGE_CACHE_RATION_KEY);
+                jsonGenerator.writeNumber(queryProfile.pageCacheHitRatio().getAsDouble());
+                hasPageCacheStats =
+                        hasPageCacheStats || queryProfile.pageCacheHitRatio().getAsDouble() > 0;
+            }
+
+            jsonGenerator.writeFieldName(PROFILE_HAS_PAGE_CACHE_STATS_KEY);
+            jsonGenerator.writeBoolean(hasPageCacheStats);
+
+            if (queryProfile.time().isPresent()) {
+                jsonGenerator.writeFieldName(PROFILE_TIME_KEY);
+                jsonGenerator.writeNumber(queryProfile.time().get().toNanos());
+            }
+
+            array(PROFILE_CHILDREN_KEY, () -> {
+                for (var child : queryProfile.children()) {
+                    writeProfile(child);
+                }
+            });
+        });
+    }
+
     public void writeQueryPlan(ResultSummary resultSummary) throws IOException {
-        if (resultSummary.hasPlan() && !resultSummary.hasProfile()) {
+        if (resultSummary.queryProfile().isEmpty() && resultSummary.queryPlan().isPresent()) {
             jsonGenerator.writeFieldName(QUERY_PLAN_KEY);
-            jsonGenerator.writeObject(resultSummary.plan());
+            writeQueryPlan(resultSummary.queryPlan().get());
         }
+    }
+
+    private void writeQueryPlan(Plan queryPlan) throws IOException {
+        object(() -> {
+            writeQueryPlanFieldsWithoutChildren(queryPlan);
+            array(QUERY_PLAN_CHILDREN_KEY, () -> {
+                for (var child : queryPlan.children()) {
+                    writeQueryPlan(child);
+                }
+            });
+        });
+    }
+
+    private void writeQueryPlanFieldsWithoutChildren(Plan queryPlan) throws IOException {
+        jsonGenerator.writeFieldName(QUERY_PLAN_OPERATOR_TYPE_KEY);
+        jsonGenerator.writeString(queryPlan.operatorType());
+
+        jsonGenerator.writeFieldName(QUERY_PLAN_ARGUMENTS_KEY);
+        jsonGenerator.writeObject(queryPlan.arguments());
+
+        jsonGenerator.writeFieldName(QUERY_PLAN_IDENTIFIERS_KEY);
+        jsonGenerator.writeObject(queryPlan.identifiers());
     }
 
     public void writeBookmarks(Collection<Bookmark> bookmarks) throws IOException {

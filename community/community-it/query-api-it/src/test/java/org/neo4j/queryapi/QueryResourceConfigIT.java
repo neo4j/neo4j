@@ -196,7 +196,7 @@ class QueryResourceConfigIT {
         assertThat(parsedJson.get(PROFILE_KEY).get("identifiers")).hasSize(1);
         assertThat(parsedJson.get(PROFILE_KEY).get("identifiers").get(0).asText())
                 .isEqualTo("`1`");
-        assertThat(parsedJson.get(PROFILE_KEY).get("time").asInt()).isEqualTo(0);
+        assertThat(parsedJson.get(PROFILE_KEY).get("time")).isNull();
         assertThat(parsedJson.get(PROFILE_KEY)).isNotNull();
 
         var childProfile = parsedJson.get(PROFILE_KEY).get("children");
@@ -209,7 +209,7 @@ class QueryResourceConfigIT {
         assertThat(childProfile.get(0).get("pageCacheHits").asInt()).isEqualTo(0);
         assertThat(childProfile.get(0).get("pageCacheMisses").asInt()).isEqualTo(0);
         assertThat(childProfile.get(0).get("pageCacheHitRatio").asDouble()).isEqualTo(0);
-        assertThat(childProfile.get(0).get("time").asInt()).isEqualTo(0);
+        assertThat(childProfile.get(0).get("time")).isNull();
         assertThat(childProfile.get(0).get("operatorType").asText()).isEqualTo("Projection@" + dbName);
         assertThat(childProfile.get(0).get("arguments")).isNotNull();
         assertThat(childProfile.get(0).get("identifiers")).hasSize(1);
