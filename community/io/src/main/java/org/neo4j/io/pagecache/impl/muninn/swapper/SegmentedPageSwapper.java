@@ -398,7 +398,7 @@ public final class SegmentedPageSwapper implements PageSwapper {
             return PageCursor.UNBOUND_PAGE_ID;
         }
         for (int lastSegment = swappers.length - 1; lastSegment >= 0; lastSegment--) {
-            PageSwapper segment = openOrGrow(swappers, lastSegment, true);
+            PageSwapper segment = openOrGrow(lastSegment, true);
             if (segment != null) {
                 long lastPageId = segment.getLastPageId();
                 if (lastPageId == PageCursor.UNBOUND_PAGE_ID) {
@@ -514,11 +514,11 @@ public final class SegmentedPageSwapper implements PageSwapper {
                 return segment;
             }
         }
-        return openOrGrow(segments, index, readOnly);
+        return openOrGrow(index, readOnly);
     }
 
-    private synchronized PageSwapper openOrGrow(PageSwapper[] segments, int targetIndex, boolean readOnly)
-            throws IOException {
+    private synchronized PageSwapper openOrGrow(int targetIndex, boolean readOnly) throws IOException {
+        PageSwapper[] segments = (PageSwapper[]) SEGMENTS.getAcquire(this);
         if (targetIndex < segments.length) {
             PageSwapper existing = (PageSwapper) SEGMENT_SLOT.getAcquire(segments, targetIndex);
             if (existing != null) {
