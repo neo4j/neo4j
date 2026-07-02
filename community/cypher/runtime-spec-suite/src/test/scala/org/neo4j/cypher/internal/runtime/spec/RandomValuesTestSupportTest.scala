@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class RandomValuesTestSupportTest extends CypherFunSuiteWithMacroShadowing {
+class RandomValuesTestSupportTest extends CypherFunSuite {
 
   test("reproduction clue always contains the seed repro line") {
     val clue = RandomValuesTestSupport.reproductionClue(123L, None)

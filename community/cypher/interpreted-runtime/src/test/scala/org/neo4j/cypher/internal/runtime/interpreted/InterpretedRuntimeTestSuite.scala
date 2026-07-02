@@ -19,6 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-trait InterpretedRuntimeTestSuite extends CypherFunSuiteWithMacroShadowing {}
+trait InterpretedRuntimeTestSuite extends CypherFunSuite {}

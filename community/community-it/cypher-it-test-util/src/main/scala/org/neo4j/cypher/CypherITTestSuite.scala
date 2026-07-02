@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-trait CypherITTestSuite extends CypherFunSuiteWithMacroShadowing {
+trait CypherITTestSuite extends CypherFunSuite {
   // allows using shouldBe matcher with Object on LHS and primitve type on RHS
   given CanEqual[AnyRef, AnyVal] = CanEqual.derived
 }

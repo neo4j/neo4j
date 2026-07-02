@@ -20,9 +20,9 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.completion.CodeCompletionCore
 import org.neo4j.cypher.internal.ast.factory.neo4j.completion.CodeCompletionCore.CandidatesCollection
 import org.neo4j.cypher.internal.parser.CypherErrorVocabulary
 import org.neo4j.cypher.internal.parser.v25.Cypher25Parser
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class Cypher25VocabularyTest extends CypherFunSuiteWithMacroShadowing {
+class Cypher25VocabularyTest extends CypherFunSuite {
   val conf = new Cypher25ErrorStrategyConf
   val vocab = new CypherErrorVocabulary(conf)
 

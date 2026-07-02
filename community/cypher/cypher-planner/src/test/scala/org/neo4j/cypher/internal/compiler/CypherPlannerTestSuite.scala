@@ -19,6 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-trait CypherPlannerTestSuite extends CypherFunSuiteWithMacroShadowing
+trait CypherPlannerTestSuite extends CypherFunSuite

@@ -69,11 +69,11 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.schema.EndpointType
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
-class CardinalityCalculatorTest extends CypherFunSuiteWithMacroShadowing with AstConstructionTestSupport {
+class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val defaultSourceCardinality = Cardinality(123)
 

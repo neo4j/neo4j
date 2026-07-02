@@ -50,7 +50,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.TransactionRetryTestBase.Exp
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionRetryTestBase.ExpectedRange.AtMost
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionRetryTestBase.ExpectedRange.Exactly
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionRetryTestBase.ExpectedRange.NoExpectation
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing.defaultPosition
 import org.neo4j.cypher.internal.util.test_helpers.TimeLimitedCypherTest
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.exceptions.TransactionRetryAbortedException
@@ -1242,8 +1241,6 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
 
 object TransactionRetryTestBase {
   final val DEFAULT_RETRY_TIMEOUT_SECONDS: Double = 0.1
-
-  implicit private val position: org.scalactic.source.Position = defaultPosition
 
   sealed trait ExpectedRange {
     def assert(value: Long, clue: String = ""): Unit

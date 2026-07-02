@@ -19,6 +19,6 @@
  */
 package org.neo4j.codegen.api
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-trait CodegenTestSuite extends CypherFunSuiteWithMacroShadowing {}
+trait CodegenTestSuite extends CypherFunSuite {}
