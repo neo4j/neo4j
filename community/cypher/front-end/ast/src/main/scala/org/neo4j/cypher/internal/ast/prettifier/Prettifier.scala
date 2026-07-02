@@ -611,8 +611,8 @@ case class Prettifier(
         Prettifier.prettifyRename(x.name, fromUserName, toUserName, ifExists)
 
       case x @ DropUser(userName, ifExists) =>
-        if (ifExists) s"${x.name} ${Prettifier.escapeName(userName)} IF EXISTS"
-        else s"${x.name} ${Prettifier.escapeName(userName)}"
+        val ifExistsString = if (ifExists) " IF EXISTS" else ""
+        s"${x.name} ${Prettifier.escapeName(userName)}$ifExistsString"
 
       case x @ AlterUser(userName, userOptions, ifExists, externalAuths, nativeAuth, removeAuth, tags) =>
         val userNameString = Prettifier.escapeName(userName)
@@ -695,32 +695,6 @@ case class Prettifier(
       case x @ SetOwnPassword(newPassword, currentPassword) =>
         s"${x.name} FROM ${expr.escapePassword(currentPassword)} TO ${expr.escapePassword(newPassword)}"
 
-      // Role commands
-
-      case x @ ShowRoles(withUsers, withAuthRules, _, asCommands, yields, _) =>
-        val (y: String, r: String) = showClausesAsString(yields)
-        val asCommandString = if (asCommands) " AS COMMANDS" else ""
-        s"${x.name}${if (withUsers) " WITH USERS" else ""}${
-            if (withAuthRules) " WITH AUTH RULES" else ""
-          }$asCommandString$y$r"
-
-      case x @ CreateRole(roleName, _, None, ifExistsDo) =>
-        ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax =>
-            s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS"
-          case _ => s"${x.name} ${Prettifier.escapeName(roleName)}"
-        }
-
-      case x @ CreateRole(roleName, _, Some(fromRole), ifExistsDo) =>
-        ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax =>
-            s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS AS COPY OF ${Prettifier.escapeName(fromRole)}"
-          case _ => s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
-        }
-
-      case x @ RenameRole(fromRoleName, toRoleName, ifExists) =>
-        Prettifier.prettifyRename(x.name, fromRoleName, toRoleName, ifExists)
-
       // Auth rule commands
 
       case x @ ShowAuthRules(yields, _, asCommands) =>
@@ -730,12 +704,11 @@ case class Prettifier(
 
       case x @ CreateAuthRule(authRuleName, ifExistsDo, setClauses) =>
         val setClausesString = authRuleSetClausesToString(setClauses)(expr)
-
-        ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax =>
-            s"${x.name} ${Prettifier.escapeName(authRuleName)} IF NOT EXISTS $setClausesString"
-          case _ => s"${x.name} ${Prettifier.escapeName(authRuleName)} $setClausesString"
+        val ifExists = ifExistsDo match {
+          case IfExistsInvalidSyntax | IfExistsDoNothing => " IF NOT EXISTS"
+          case _                                         => ""
         }
+        s"${x.name} ${Prettifier.escapeName(authRuleName)}$ifExists $setClausesString"
 
       case x @ AlterAuthRule(authRuleName, ifExists, setClauses) =>
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
@@ -745,12 +718,32 @@ case class Prettifier(
         Prettifier.prettifyRename(x.name, fromAuthRuleName, toAuthRuleName, ifExists)
 
       case x @ DropAuthRule(ruleName, ifExists) =>
-        if (ifExists) s"${x.name} ${Prettifier.escapeName(ruleName)} IF EXISTS"
-        else s"${x.name} ${Prettifier.escapeName(ruleName)}"
+        val ifExistsString = if (ifExists) " IF EXISTS" else ""
+        s"${x.name} ${Prettifier.escapeName(ruleName)}$ifExistsString"
+
+      // Role commands
+
+      case x @ ShowRoles(withUsers, withAuthRules, _, asCommands, yields, _) =>
+        val (y: String, r: String) = showClausesAsString(yields)
+        val asCommandString = if (asCommands) " AS COMMANDS" else ""
+        val withUsersString = if (withUsers) " WITH USERS" else ""
+        val withAuthRulesString = if (withAuthRules) " WITH AUTH RULES" else ""
+        s"${x.name}$withUsersString$withAuthRulesString$asCommandString$y$r"
+
+      case x @ CreateRole(roleName, _, fromRole, ifExistsDo) =>
+        val ifExists = ifExistsDo match {
+          case IfExistsInvalidSyntax | IfExistsDoNothing => " IF NOT EXISTS"
+          case _                                         => ""
+        }
+        val asCopyOf = fromRole.map(r => s" AS COPY OF ${Prettifier.escapeName(r)}").getOrElse("")
+        s"${x.name} ${Prettifier.escapeName(roleName)}$ifExists$asCopyOf"
+
+      case x @ RenameRole(fromRoleName, toRoleName, ifExists) =>
+        Prettifier.prettifyRename(x.name, fromRoleName, toRoleName, ifExists)
 
       case x @ DropRole(roleName, ifExists) =>
-        if (ifExists) s"${x.name} ${Prettifier.escapeName(roleName)} IF EXISTS"
-        else s"${x.name} ${Prettifier.escapeName(roleName)}"
+        val ifExistsString = if (ifExists) " IF EXISTS" else ""
+        s"${x.name} ${Prettifier.escapeName(roleName)}$ifExistsString"
 
       case x @ GrantRolesToUsers(roleNames, userNames) =>
         val start = if (roleNames.length > 1) s"${x.name}S" else x.name
@@ -882,12 +875,11 @@ case class Prettifier(
         val maybeTopologyString = topology.map(Prettifier.extractTopology).getOrElse("")
         val maybeShardString = shardDef.map(Prettifier.extractShardDefinition).getOrElse("")
         val maybeCypherVersion = defaultCypherVersion.map(cv => s" DEFAULT LANGUAGE ${cv.description}").getOrElse("")
-        ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax =>
-            s"${x.name} ${Prettifier.escapeDatabaseName(dbName)} IF NOT EXISTS$maybeCypherVersion$maybeTopologyString$formattedOptions${waitUntilComplete.name}"
-          case _ =>
-            s"${x.name} ${Prettifier.escapeDatabaseName(dbName)}$maybeCypherVersion$maybeTopologyString$maybeShardString$formattedOptions${waitUntilComplete.name}"
+        val ifExists = ifExistsDo match {
+          case IfExistsInvalidSyntax | IfExistsDoNothing => " IF NOT EXISTS"
+          case _                                         => ""
         }
+        s"${x.name} ${Prettifier.escapeDatabaseName(dbName)}$ifExists$maybeCypherVersion$maybeTopologyString$maybeShardString$formattedOptions${waitUntilComplete.name}"
 
       case x @ CreateCompositeDatabase(name, ifExistsDo, options, waitUntilComplete, defaultCypherVersion) =>
         val formattedOptions = stringifyOptions(options)(expr)
@@ -932,14 +924,15 @@ case class Prettifier(
       case x @ StopDatabase(dbName, waitUntilComplete) =>
         s"${x.name} ${Prettifier.escapeDatabaseName(dbName)}${waitUntilComplete.name}"
 
+      // Alias commands
+
       case x @ CreateLocalDatabaseAlias(aliasName, targetName, ifExistsDo, properties) =>
         val propertiesString = propertiesMapToString("PROPERTIES", properties)
-        ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax =>
-            s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} IF NOT EXISTS FOR DATABASE ${Prettifier.escapeDatabaseName(targetName)}$propertiesString"
-          case _ =>
-            s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} FOR DATABASE ${Prettifier.escapeDatabaseName(targetName)}$propertiesString"
+        val ifExists = ifExistsDo match {
+          case IfExistsInvalidSyntax | IfExistsDoNothing => " IF NOT EXISTS"
+          case _                                         => ""
         }
+        s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)}$ifExists FOR DATABASE ${Prettifier.escapeDatabaseName(targetName)}$propertiesString"
 
       case x @ CreateRemoteDatabaseAlias(
           aliasName,
@@ -965,25 +958,22 @@ case class Prettifier(
           case OidcCredentialForwarding() => "OIDC CREDENTIAL FORWARDING"
         }
 
-        ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax =>
-            s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} IF NOT EXISTS FOR DATABASE ${Prettifier.escapeDatabaseName(targetName)} AT $urlString " +
-              credentials + driverSettingsString + defaultLanguageString + propertiesString
-          case _ =>
-            s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} FOR DATABASE ${Prettifier.escapeDatabaseName(targetName)} AT $urlString " +
-              credentials + driverSettingsString + defaultLanguageString + propertiesString
+        val ifExists = ifExistsDo match {
+          case IfExistsInvalidSyntax | IfExistsDoNothing => " IF NOT EXISTS"
+          case _                                         => ""
         }
+        s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)}$ifExists FOR DATABASE ${Prettifier.escapeDatabaseName(targetName)} AT $urlString " +
+          credentials + driverSettingsString + defaultLanguageString + propertiesString
 
       case x @ DropDatabaseAlias(aliasName, ifExists) =>
-        if (ifExists) s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} IF EXISTS FOR DATABASE"
-        else s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} FOR DATABASE"
+        val ifExistsString = if (ifExists) " IF EXISTS" else ""
+        s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)}$ifExistsString FOR DATABASE"
 
       case x @ AlterLocalDatabaseAlias(aliasName, targetName, ifExists, properties) =>
         val target = targetName.map(tgt => "TARGET " + Prettifier.escapeDatabaseName(tgt)).getOrElse("")
         val propertiesString = propertiesMapToString("PROPERTIES", properties)
-        if (ifExists)
-          s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} IF EXISTS SET DATABASE $target$propertiesString"
-        else s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} SET DATABASE $target$propertiesString"
+        val ifExistsString = if (ifExists) " IF EXISTS" else ""
+        s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)}$ifExistsString SET DATABASE $target$propertiesString"
 
       case x @ AlterRemoteDatabaseAlias(
           aliasName,
@@ -1022,16 +1012,15 @@ case class Prettifier(
         val driverSettingsString = propertiesMapToString("DRIVER", driverSettings)
         val propertiesString = propertiesMapToString("PROPERTIES", properties)
         val defaultLanguageString = defaultLanguage.map(cv => s" DEFAULT LANGUAGE ${cv.description}").getOrElse("")
-
-        if (ifExists)
-          s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} IF EXISTS SET DATABASE$targetString$userString$passwordString$driverSettingsString$defaultLanguageString$propertiesString"
-        else
-          s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} SET DATABASE$targetString$userString$passwordString$driverSettingsString$defaultLanguageString$propertiesString"
+        val ifExistsString = if (ifExists) " IF EXISTS" else ""
+        s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)}$ifExistsString SET DATABASE$targetString$userString$passwordString$driverSettingsString$defaultLanguageString$propertiesString"
 
       case x @ ShowAliases(aliasName, yields, _) =>
         val an = aliasName.map(an => s" ${escapeDatabaseName(an)}").getOrElse("")
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$an FOR DATABASE$y$r"
+
+      // Server commands
 
       case x @ EnableServer(serverName, options) =>
         val name = serverName match {
@@ -1081,8 +1070,8 @@ case class Prettifier(
         s"$dryRunString$commandString ${names.mkString(", ")}"
 
       case x @ ReallocateDatabases(dryRun) =>
-        if (dryRun) s"DRYRUN ${x.name}"
-        else x.name
+        val dryRunString = if (dryRun) "DRYRUN " else ""
+        s"$dryRunString${x.name}"
 
       case command => throw new InternalError(s"Unexpected command $command")
     }

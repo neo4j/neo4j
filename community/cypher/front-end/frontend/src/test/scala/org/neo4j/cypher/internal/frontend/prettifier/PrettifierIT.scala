@@ -3561,16 +3561,16 @@ class PrettifierIT extends AbstractPrettifierTest {
       "CREATE DATABASE foo PROPERTY SHARD {COUNT 2 TOPOLOGY 3 REPLICAS}"
     ),
     FailsInCypher5(
-      "create database foo set graph shard { topology 1 primary} property shard {count 2 topology $r replicas}",
-      "CREATE DATABASE foo GRAPH SHARD {TOPOLOGY 1 PRIMARY} PROPERTY SHARD {COUNT 2 TOPOLOGY $r REPLICAS}"
+      "create database foo if not exists set graph shard { topology 1 primary} property shard {count 2 topology $r replicas}",
+      "CREATE DATABASE foo IF NOT EXISTS GRAPH SHARD {TOPOLOGY 1 PRIMARY} PROPERTY SHARD {COUNT 2 TOPOLOGY $r REPLICAS}"
     ),
     FailsInCypher5(
       "create database foo graph shard { topology 2 primary 3 secondary} set property shard {count 2 topology 3 replicas}",
       "CREATE DATABASE foo GRAPH SHARD {TOPOLOGY 2 PRIMARIES 3 SECONDARIES} PROPERTY SHARD {COUNT 2 TOPOLOGY 3 REPLICAS}"
     ),
     FailsInCypher5(
-      "create database foo graph shard { topology 2 primary 3 secondary} set property shard {count 2 topology 3 replicas} options {seedUri: 'niceUri'}",
-      "CREATE DATABASE foo GRAPH SHARD {TOPOLOGY 2 PRIMARIES 3 SECONDARIES} PROPERTY SHARD {COUNT 2 TOPOLOGY 3 REPLICAS} OPTIONS {seedUri: \"niceUri\"}"
+      "create or replace database foo graph shard { topology 2 primary 3 secondary} set property shard {count 2 topology 3 replicas} options {seedUri: 'niceUri'}",
+      "CREATE OR REPLACE DATABASE foo GRAPH SHARD {TOPOLOGY 2 PRIMARIES 3 SECONDARIES} PROPERTY SHARD {COUNT 2 TOPOLOGY 3 REPLICAS} OPTIONS {seedUri: \"niceUri\"}"
     ),
     "DROP database foO_Bar_42" ->
       "DROP DATABASE foO_Bar_42 RESTRICT DESTROY DATA",
@@ -3663,8 +3663,8 @@ class PrettifierIT extends AbstractPrettifierTest {
       "ALTER DATABASE spd SET GRAPH SHARD {SET TOPOLOGY 1 PRIMARY 2 SECONDARIES} SET DEFAULT LANGUAGE CYPHER 25"
     ),
     FailsInCypher5(
-      "alter database `spd-shard` set topology 2 replica",
-      "ALTER DATABASE `spd-shard` SET TOPOLOGY 2 REPLICAS"
+      "alter database `spd-shard` if exists set topology 2 replica",
+      "ALTER DATABASE `spd-shard` IF EXISTS SET TOPOLOGY 2 REPLICAS"
     ),
     "start database $foo" ->
       "START DATABASE $foo",
@@ -3721,8 +3721,8 @@ class PrettifierIT extends AbstractPrettifierTest {
       "CREATE ALIAS `composite.alias.mine` FOR DATABASE database",
     "create or replace alias alias FOR database database properties {foo:7}" ->
       "CREATE OR REPLACE ALIAS alias FOR DATABASE database PROPERTIES {foo: 7}",
-    "create or replace alias alias FOR database database properties { foo : $param }" ->
-      "CREATE OR REPLACE ALIAS alias FOR DATABASE database PROPERTIES {foo: $param}",
+    "create alias alias if not exists FOR database database properties { foo : $param }" ->
+      "CREATE ALIAS alias IF NOT EXISTS FOR DATABASE database PROPERTIES {foo: $param}",
     "create alias alias FOR database database at 'url' user user password 'password'" ->
       """CREATE ALIAS alias FOR DATABASE database AT "url" USER user PASSWORD '******'""",
     "create alias alias IF NOT EXISTS FOR database database at 'url' user user password 'password'" ->
@@ -3742,8 +3742,8 @@ class PrettifierIT extends AbstractPrettifierTest {
       """CREATE ALIAS $alias IF NOT EXISTS FOR DATABASE $database AT $url USER $user PASSWORD $password PROPERTIES {foo: "bar"}""",
     "create alias alias FOR database database at 'url' user user password 'password' default language cypher 5" ->
       """CREATE ALIAS alias FOR DATABASE database AT "url" USER user PASSWORD '******' DEFAULT LANGUAGE CYPHER 5""",
-    "create alias $alias if not exists FOR database $database at $url user $user password $password driver { } default LANGUAGE cypher 25 properties { }" ->
-      """CREATE ALIAS $alias IF NOT EXISTS FOR DATABASE $database AT $url USER $user PASSWORD $password DRIVER {} DEFAULT LANGUAGE CYPHER 25 PROPERTIES {}""",
+    "create or replace alias $alias FOR database $database at $url user $user password $password driver { } default LANGUAGE cypher 25 properties { }" ->
+      """CREATE OR REPLACE ALIAS $alias FOR DATABASE $database AT $url USER $user PASSWORD $password DRIVER {} DEFAULT LANGUAGE CYPHER 25 PROPERTIES {}""",
     FailsInCypher5(
       "create alias alias FOR database database at 'url' oidc credential forwarding",
       """CREATE ALIAS alias FOR DATABASE database AT "url" OIDC CREDENTIAL FORWARDING"""
