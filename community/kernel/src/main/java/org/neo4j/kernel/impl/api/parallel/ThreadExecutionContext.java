@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -117,6 +118,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             LockTracer lockTracer,
             ElementIdMapper elementIdMapper,
             KernelTransaction ktx,
+            KernelVersionProvider kernelVersionProvider,
             Supplier<ClockContext> clockContextSupplier,
             List<AutoCloseable> otherResources,
             ProcedureView procedureView,
@@ -137,7 +139,8 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
         this.ktx = new ExecutionContextProcedureKernelTransaction(ktx, this);
         this.cursors = resourceFactory.createCursors(
                 storageReader, storageCursors, config, storageEngine.indexingBehaviour(), multiVersioned, true);
-        this.queryContext = new ThreadExecutionQueryContext(this::dataRead, cursors, context, contextTracker, monitor);
+        this.queryContext = new ThreadExecutionQueryContext(
+                this::dataRead, cursors, kernelVersionProvider, context, contextTracker, monitor);
         this.entityLocks = new EntityLocks(
                 storageEngine.createStorageLocks(lockClient), singleton(lockTracer), lockClient, this.ktx);
         this.procedures = resourceFactory.createProcedures(

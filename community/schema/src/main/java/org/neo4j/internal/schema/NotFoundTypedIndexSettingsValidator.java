@@ -19,40 +19,42 @@
  */
 package org.neo4j.internal.schema;
 
+import java.util.function.Supplier;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.schema.IndexSettingRecord.Valid;
 
 public class NotFoundTypedIndexSettingsValidator<CONFIG extends TypedIndexConfig>
         extends TypedIndexSettingsValidator<CONFIG> {
-    protected final InvalidArgumentException exception;
+    protected final Supplier<InvalidArgumentException> exception;
 
-    public NotFoundTypedIndexSettingsValidator(IndexProviderDescriptor descriptor, InvalidArgumentException exception) {
+    public NotFoundTypedIndexSettingsValidator(
+            IndexProviderDescriptor descriptor, Supplier<InvalidArgumentException> exception) {
         super(descriptor, new NotFoundIndexSettingsValidator(exception));
         this.exception = exception;
     }
 
     @Override
     public CONFIG validateToTypedConfig(SettingsAccessor accessor) {
-        throw exception;
+        throw exception.get();
     }
 
     @Override
     public CONFIG validateToTypedConfig(IndexSettingRecordsByState records) {
-        throw exception;
+        throw exception.get();
     }
 
     @Override
     public CONFIG interpretAuthoritativeToTypedConfig(SettingsAccessor accessor) {
-        throw exception;
+        throw exception.get();
     }
 
     @Override
     public CONFIG interpretAuthoritativeToTypedConfig(Iterable<Valid> records) {
-        throw exception;
+        throw exception.get();
     }
 
     @Override
     protected CONFIG toTypedConfig(Iterable<Valid> records) {
-        throw exception;
+        throw exception.get();
     }
 }

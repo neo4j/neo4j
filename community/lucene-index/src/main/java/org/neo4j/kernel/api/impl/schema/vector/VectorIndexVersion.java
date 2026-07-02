@@ -108,7 +108,7 @@ public enum VectorIndexVersion {
                     KernelVersion.EARLIEST,
                     new NotFoundTypedIndexSettingsValidator<>(
                             AllIndexProviderDescriptors.UNDECIDED,
-                            InvalidArgumentException.internalError(
+                            () -> InvalidArgumentException.internalError(
                                     "Validator Not Found",
                                     "Validator not found for '%s'"
                                             .formatted(descriptor().name())))));
@@ -516,7 +516,7 @@ public enum VectorIndexVersion {
         }
         return new NotFoundTypedIndexSettingsValidator<>(
                 descriptor,
-                InvalidArgumentException.internalError(
+                () -> InvalidArgumentException.internalError(
                         "Validator Not Found",
                         "Validator not found for '%s' on '%s'.".formatted(descriptor.name(), kernelVersion)));
     }

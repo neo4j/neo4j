@@ -22,6 +22,8 @@ package org.neo4j.internal.kernel.api;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -31,7 +33,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  * Some index implementations, such as the fulltext schema indexes, prefer to take the transaction state into account themselves, rather than relying on
  * the index cursor implementations to do the transaction state filtering.
  */
-public interface QueryContext {
+public interface QueryContext extends KernelVersionProvider {
     QueryContext NULL_CONTEXT = new QueryContext() {
         @Override
         public Read getRead() {
@@ -45,6 +47,11 @@ public interface QueryContext {
 
         @Override
         public ReadableTransactionState getTransactionStateOrNull() {
+            return null;
+        }
+
+        @Override
+        public KernelVersion kernelVersion() {
             return null;
         }
 

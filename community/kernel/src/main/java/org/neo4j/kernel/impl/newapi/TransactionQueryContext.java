@@ -25,6 +25,8 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -34,6 +36,7 @@ public final class TransactionQueryContext implements QueryContext {
     private final Supplier<Read> read;
     private final CursorFactory cursorFactory;
     private final TxStateHolder txStateHolder;
+    private final KernelVersionProvider kernelVersionProvider;
     private final Supplier<CursorContext> cursorContext;
     private final MemoryTracker memoryTracker;
     private final IndexMonitor indexMonitor;
@@ -42,12 +45,14 @@ public final class TransactionQueryContext implements QueryContext {
             Supplier<Read> read,
             CursorFactory cursorFactory,
             TxStateHolder txStateHolder,
+            KernelVersionProvider kernelVersionProvider,
             Supplier<CursorContext> cursorContext,
             MemoryTracker memoryTracker,
             IndexMonitor indexMonitor) {
         this.read = read;
         this.cursorFactory = cursorFactory;
         this.txStateHolder = txStateHolder;
+        this.kernelVersionProvider = kernelVersionProvider;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
         this.indexMonitor = indexMonitor;
@@ -66,6 +71,11 @@ public final class TransactionQueryContext implements QueryContext {
     @Override
     public ReadableTransactionState getTransactionStateOrNull() {
         return txStateHolder.hasTxStateWithChanges() ? txStateHolder.txState() : null;
+    }
+
+    @Override
+    public KernelVersion kernelVersion() {
+        return kernelVersionProvider.kernelVersion();
     }
 
     @Override

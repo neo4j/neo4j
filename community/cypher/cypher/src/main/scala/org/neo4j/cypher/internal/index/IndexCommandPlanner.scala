@@ -70,7 +70,6 @@ import org.neo4j.graphdb.schema.IndexType.TEXT
 import org.neo4j.graphdb.schema.IndexType.VECTOR
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.schema
-import org.neo4j.kernel.KernelVersion
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.util.Stringifier
 import org.neo4j.values.virtual.MapValue
@@ -472,7 +471,7 @@ object IndexCommandPlanner {
     }
 
   private def vectorIndexVersion(ctx: QueryContext): VectorIndexVersion =
-    VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(ctx.getConfig))
+    VectorIndexVersion.latestSupportedVersion(ctx.kernelVersion)
 
   private def indexInfo(
     indexType: String,

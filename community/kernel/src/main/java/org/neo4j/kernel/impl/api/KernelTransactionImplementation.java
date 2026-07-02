@@ -431,6 +431,7 @@ public class KernelTransactionImplementation
                 this::dataRead,
                 cursorFactory,
                 txStateHolder,
+                kernelVersionProvider,
                 this::cursorContext,
                 memoryTracker,
                 indexingService.getMonitor());
@@ -653,6 +654,7 @@ public class KernelTransactionImplementation
                 lockTracer,
                 elementIdMapper,
                 ktx,
+                kernelVersionProvider,
                 clockContextSupplier,
                 otherResources,
                 procedureView,
