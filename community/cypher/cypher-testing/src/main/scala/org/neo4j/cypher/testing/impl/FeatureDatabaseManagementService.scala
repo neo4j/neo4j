@@ -41,8 +41,7 @@ import org.neo4j.graphdb.schema.IndexDefinition
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.QualifiedName
-import org.neo4j.kernel.api.Kernel
-import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.api.procedure.GlobalProcedures
@@ -133,7 +132,6 @@ case class FeatureDatabaseManagementService(
     else Option.empty
   }
 
-  private lazy val kernel = database.getDependencyResolver.resolveDependency(classOf[Kernel])
   private lazy val globalProcedures = database.getDependencyResolver.provideDependency(classOf[GlobalProcedures]).get()
   private lazy val executionEngine = database.getDependencyResolver.resolveDependency(classOf[QueryExecutionEngine])
 
@@ -147,7 +145,7 @@ case class FeatureDatabaseManagementService(
     case None       => executorFactory.restrictedExecutor()
   }
 
-  def registerProcedure(procedure: BasicProcedure): Unit = kernel.registerProcedure(procedure)
+  def registerProcedure(procedure: CallableProcedure): Unit = globalProcedures.register(procedure)
 
   def registerProcedure(procedure: Class[?]): Unit = globalProcedures.registerProcedure(procedure)
 
@@ -156,7 +154,7 @@ case class FeatureDatabaseManagementService(
   def registerAggregationFunction(function: Class[?]): Unit = globalProcedures.registerAggregationFunction(function)
 
   def registerUserAggregation(function: CallableUserAggregationFunction): Unit =
-    kernel.registerUserAggregationFunction(function)
+    globalProcedures.register(function)
 
   def registerComponent[T](
     cls: Class[T],
