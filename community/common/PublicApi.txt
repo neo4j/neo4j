@@ -172,6 +172,7 @@ org.neo4j.kernel.api.exceptions.Status.Statement::AccessMode org.neo4j.kernel.ap
 org.neo4j.kernel.api.exceptions.Status.Statement::AggregationSkippedNull org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ArgumentError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ArithmeticError org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::CallableShadowing org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::CartesianProduct org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::CodeGenerationFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ConstraintVerificationFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final

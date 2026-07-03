@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.FreeProjection
 import org.neo4j.cypher.internal.ast.Query
@@ -31,37 +30,19 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.frontend.helpers.TestState
-import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.InstrumentedProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.LocalDefinitionsDirectory
-import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.ResolvedNonLocalCall
 import org.neo4j.cypher.internal.frontend.phases.StrictResolveCallables
 import org.neo4j.cypher.internal.frontend.phases.TryResolveCallables
-import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
-import org.neo4j.cypher.internal.planner.spi.DatabaseMode
-import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
-import org.neo4j.cypher.internal.planner.spi.NotImplementedPlanContext
-import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.ProcedureName
-import org.neo4j.cypher.internal.util.symbols.CTInteger
-import org.neo4j.cypher.internal.util.symbols.CTList
-import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.scalatest.Inside
 
 import scala.util.Success
 import scala.util.Try
 
-class ResolveCallablesTest extends CypherPlannerTestSuite with AstConstructionTestSupport with Inside {
-
-  private val name = procedureName("my", "proc", "foo")
-  private val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
-  private val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
-
-  private val signature =
-    ProcedureSignature(name, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
+class ResolveCallablesTest extends ResolveCallablesTestSuite {
 
   test("should resolve standalone procedure calls") {
     val unresolved = UnresolvedCall(name, None, None, isStandalone = true)(pos)
@@ -183,15 +164,6 @@ class ResolveCallablesTest extends CypherPlannerTestSuite with AstConstructionTe
     evaluate(resolver => tryResolveCallables(resolver, original)) shouldBe defined
   }
 
-  def makeResolver(
-    procSignatureLookup: ProcedureName => ProcedureSignature = _ => signature,
-    funcSignatureLookup: FunctionName => Option[UserFunctionSignature] = _ => None
-  ): InstrumentedProcedureSignatureResolver =
-    new InstrumentedProcedureSignatureResolver(new TestSignatureResolvingPlanContext(
-      procSignatureLookup,
-      funcSignatureLookup
-    ))
-
   private val context = TestContext()
 
   def strictResolveCallables(
@@ -219,17 +191,4 @@ class ResolveCallablesTest extends CypherPlannerTestSuite with AstConstructionTe
       TryResolveCallables(resolver).rewriter(ScopeSurveyor.process(from, context), context)
     )
   }
-}
-
-class TestSignatureResolvingPlanContext(
-  procSignatureLookup: ProcedureName => ProcedureSignature,
-  funcSignatureLookup: FunctionName => Option[UserFunctionSignature]
-) extends NotImplementedPlanContext {
-  override def procedureSignature(name: ProcedureName): ProcedureSignature = procSignatureLookup(name)
-
-  override def functionSignature(name: FunctionName): Option[UserFunctionSignature] = funcSignatureLookup(name)
-
-  override def procedureSignatureVersion: Long = -1
-
-  override def databaseMode: DatabaseMode = DatabaseMode.SINGLE
 }

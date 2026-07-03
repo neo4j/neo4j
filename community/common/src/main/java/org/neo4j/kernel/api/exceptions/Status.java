@@ -354,21 +354,30 @@ public interface Status {
                 SeverityLevel.WARNING,
                 NotificationCategory.UNRECOGNIZED),
 
+        // client notifications
         SubqueryVariableShadowing(
                 ClientNotification,
                 "Variable in subquery is shadowing a variable with the same name from the outer scope.",
                 SeverityLevel.INFORMATION,
                 NotificationCategory.GENERIC),
-
         RedundantOptionalProcedure(
                 ClientNotification,
                 "The use of `OPTIONAL` is redundant when `CALL` is a void procedure.",
                 SeverityLevel.INFORMATION,
                 NotificationCategory.GENERIC),
-
         RedundantOptionalSubquery(
                 ClientNotification,
                 "The use of `OPTIONAL` is redundant when `CALL` is a unit subquery.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.GENERIC),
+        IdentifierShadowingVariable(
+                ClientNotification,
+                "An identifier is shadowing a variable in scope.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.GENERIC),
+        CallableShadowing(
+                ClientNotification,
+                "A callable is shadowing another callable in scope.",
                 SeverityLevel.INFORMATION,
                 NotificationCategory.GENERIC),
 
@@ -382,12 +391,7 @@ public interface Status {
                 ClientNotification,
                 "The query uses an insecure protocol. Please consider using 'https' instead.",
                 SeverityLevel.WARNING,
-                NotificationCategory.SECURITY),
-        IdentifierShadowingVariable(
-                ClientNotification,
-                "An identifier is shadowing a variable in scope.",
-                SeverityLevel.INFORMATION,
-                NotificationCategory.GENERIC);
+                NotificationCategory.SECURITY);
 
         private final Code code;
 

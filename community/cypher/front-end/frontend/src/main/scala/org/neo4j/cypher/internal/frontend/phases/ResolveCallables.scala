@@ -21,18 +21,23 @@ import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.FreeProjection
 import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.GraphSelection
+import org.neo4j.cypher.internal.ast.LocalFunctionDefinition
+import org.neo4j.cypher.internal.ast.LocalProcedureDefinition
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.DeprecatedSyntaxReplaced
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.LocalFunctionsResolved
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.LocalProceduresPartiallyResolved
+import org.neo4j.cypher.internal.notification.LocalFunctionShadowsNonLocal
+import org.neo4j.cypher.internal.notification.LocalProcedureShadowsNonLocal
 import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.GQLAliasFunctionNameRewritten
@@ -45,6 +50,7 @@ import org.neo4j.cypher.internal.util.RewriterWithParent
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUpWithParent
 
+import scala.util.Success
 import scala.util.Try
 
 /**
@@ -53,6 +59,8 @@ import scala.util.Try
  * Local procedure calls are handled earlier by ResolveLocalProceduresStep1/2. Subclasses pick
  * the policy for unresolved non-local calls — [[StrictResolveCallables]] throws,
  * [[TryResolveCallables]] leaves them as-is.
+ * Emits notification for local callable definitions whose names resolve with the given resolver,
+ * i.e. shadow non-local callable.
  */
 sealed abstract class ResolveCallables extends Phase[BaseContext, BaseState, BaseState] {
   self: Product =>
@@ -63,6 +71,10 @@ sealed abstract class ResolveCallables extends Phase[BaseContext, BaseState, Bas
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
     val instrumentedResolver = new InstrumentedProcedureSignatureResolver(resolver)
+    // emit notification for local callable definitions whose names resolve with the given resolver, i.e. shadow non-local callable
+    localCallableShadowNotification(from, context, instrumentedResolver)
+
+    // actual procedure and function resolution
     val rewrittenStatement = from.statement().endoRewrite(rewriter(from, context, instrumentedResolver))
 
     from.withStatement(rewrittenStatement)
@@ -70,6 +82,33 @@ sealed abstract class ResolveCallables extends Phase[BaseContext, BaseState, Bas
       // so now we can assign them in the state.
       .withReturnColumns(rewrittenStatement.returnColumns.map(_.name))
       .withProcedureSignatureVersion(instrumentedResolver.signatureVersionIfResolved)
+  }
+
+  private def localCallableShadowNotification(
+    from: BaseState,
+    context: BaseContext,
+    resolver: ScopedProcedureSignatureResolver
+  ): Unit = {
+    from.statement().folder(context.cancellationChecker).treeForeach {
+      case lpd @ LocalProcedureDefinition(name, _, _, _) =>
+        val dummyUnresolvedCall = UnresolvedCall(name)(lpd.position)
+        Try(resolveProcedure(from, resolver, dummyUnresolvedCall)) match {
+          case Success(_) => context.notificationLogger.log(LocalProcedureShadowsNonLocal(name.position, name.fullName))
+          case _          => ()
+        }
+      case lfd @ LocalFunctionDefinition(name, inputSignature, _, _) =>
+        val dummyUnresolvedFunctionInvocation =
+          FunctionInvocation(
+            name,
+            distinct = false,
+            inputSignature.map(_ => Null()(lfd.position.zeroLength)).toIndexedSeq
+          )(lfd.position)
+        resolveFunction(resolver, dummyUnresolvedFunctionInvocation) match {
+          case ResolvedFunctionInvocation(_, Some(_), _, _) =>
+            context.notificationLogger.log(LocalFunctionShadowsNonLocal(name.position, name.fullName))
+          case _ => ()
+        }
+    }
   }
 
   def rewriter(from: BaseState, context: BaseContext, resolver: ScopedProcedureSignatureResolver): Rewriter =
@@ -86,7 +125,7 @@ sealed abstract class ResolveCallables extends Phase[BaseContext, BaseState, Bas
     bottomUpWithParent(
       RewriterWithParent.lift {
         case (unresolved: UnresolvedCall, _) =>
-          resolveProcedure(from, context, resolver, unresolved)
+          resolveProcedure(from, resolver, unresolved)
 
         case (function: FunctionInvocation, Some(_: GraphFunctionReference)) =>
           function
@@ -100,7 +139,6 @@ sealed abstract class ResolveCallables extends Phase[BaseContext, BaseState, Bas
 
   def resolveProcedure(
     from: BaseState,
-    context: BaseContext,
     resolver: ScopedProcedureSignatureResolver,
     unresolved: UnresolvedCall
   ): CallClause = {
@@ -222,11 +260,10 @@ case class TryResolveCallables(resolver: ScopedProcedureSignatureResolver) exten
 
   override def resolveProcedure(
     from: BaseState,
-    context: BaseContext,
     resolver: ScopedProcedureSignatureResolver,
     unresolved: UnresolvedCall
   ): CallClause =
-    Try(super.resolveProcedure(from, context, resolver, unresolved)).getOrElse(unresolved)
+    Try(super.resolveProcedure(from, resolver, unresolved)).getOrElse(unresolved)
 
   override def resolveFunction(
     resolver: ScopedProcedureSignatureResolver,

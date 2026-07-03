@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.notification.InternalNotifications
+import org.neo4j.cypher.internal.util.test_helpers.DiffPrinter
 import org.reflections.Reflections
 import org.reflections.scanners.Scanners
 import org.reflections.util.ConfigurationBuilder
@@ -42,8 +43,44 @@ class InternalNotificationTest extends CypherPlannerTestSuite {
    * accordingly. This set is used for creating corresponding metrics that track the count of issued notifications.
    */
   test("All internal notifications should be listed in InternalNotifications.allNotifications") {
-    InternalNotifications.allNotifications should equal(
-      subTypes(classOf[InternalNotification]).map(_.getSimpleName.stripSuffix("$")).toSet
-    )
+    val actualSet = InternalNotifications.allNotifications
+    val expectedSet = subTypes(classOf[InternalNotification]).map(_.getSimpleName.stripSuffix("$")).toSet
+    if (actualSet != expectedSet) {
+      val actualSeq = actualSet.toSeq.sorted
+      val expectedSeq = expectedSet.toSeq.sorted
+      val maxWidth = Math.max(actualSeq.map(_.length).max, expectedSeq.map(_.length).max) + 10
+      val maxHeightActual = actualSet.size + 10
+      val maxHeightExpected = expectedSet.size + 10
+      fail(
+        s"""Not all internal notifications are listed in InternalNotifications.allNotifications
+           |
+           |Diff condensed (expected -> actual):
+           |------------------------------------
+           |${DiffPrinter.render(
+            pprint.apply(expectedSeq, width = maxWidth, height = maxHeightExpected).render,
+            pprint.apply(actualSeq, width = maxWidth, height = maxHeightActual).render,
+            isCondensed = true
+          )}
+           |
+           |Diff full (expected -> actual):
+           |-------------------------------
+           |${DiffPrinter.render(
+            pprint.apply(expectedSeq, width = maxWidth, height = maxHeightExpected).render,
+            pprint.apply(actualSeq, width = maxWidth, height = maxHeightActual).render,
+            isCondensed = false
+          )}
+           |
+           |---
+           |Actual:
+           |
+           |${pprint.apply(actualSeq, width = maxWidth, height = maxHeightActual)}
+           |---
+           |Expected:
+           |
+           |${pprint.apply(expectedSeq, width = maxWidth, height = maxHeightExpected)}
+           |---
+           |""".stripMargin
+      )
+    }
   }
 }

@@ -70,6 +70,8 @@ import org.neo4j.cypher.internal.notification.InsecureProtocol
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.notification.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.notification.LargeLabelWithLoadCsvNotification
+import org.neo4j.cypher.internal.notification.LocalFunctionShadowsNonLocal
+import org.neo4j.cypher.internal.notification.LocalProcedureShadowsNonLocal
 import org.neo4j.cypher.internal.notification.MissingLabelNotification
 import org.neo4j.cypher.internal.notification.MissingParametersNotification
 import org.neo4j.cypher.internal.notification.MissingPropertyNameNotification
@@ -438,6 +440,20 @@ object NotificationWrapping {
         position.withOffset(offset).asInputPosition,
         identifier,
         clause
+      )
+
+    case LocalProcedureShadowsNonLocal(position, name) =>
+      NotificationCodeWithDescription.callableShadowing(
+        position.withOffset(offset).asInputPosition,
+        "procedure",
+        name
+      )
+
+    case LocalFunctionShadowsNonLocal(position, name) =>
+      NotificationCodeWithDescription.callableShadowing(
+        position.withOffset(offset).asInputPosition,
+        "function",
+        name
       )
 
     case DeprecatedIdentifierWhitespaceUnicode(position, unicode, identifier) =>

@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.notifications.NotificationCodeWithDescription.aggregationSkippedNull;
 import static org.neo4j.notifications.NotificationCodeWithDescription.authProviderNotDefined;
+import static org.neo4j.notifications.NotificationCodeWithDescription.callableShadowing;
 import static org.neo4j.notifications.NotificationCodeWithDescription.cartesianProduct;
 import static org.neo4j.notifications.NotificationCodeWithDescription.codeGenerationFailed;
 import static org.neo4j.notifications.NotificationCodeWithDescription.commandHasNoEffectAssignPrivilege;
@@ -2253,6 +2254,32 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
+    void shouldConstructNotificationsFor_CALLABLE_SHADOWING() {
+        NotificationImplementation notification = callableShadowing(InputPosition.empty, "kind", "callableName");
+
+        verifyNotification(
+                notification,
+                "A callable is shadowing another callable in scope.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Statement.CallableShadowing",
+                "Local kind `callableName` shadows a built-in or external kind with the same name.",
+                NotificationCategory.GENERIC,
+                NotificationClassification.GENERIC,
+                "03N64",
+                new DiagnosticRecord(
+                                info,
+                                NotificationClassification.GENERIC,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of(
+                                        "item",
+                                        "Local kind `callableName` shadows a built-in or external kind with the same name."))
+                        .asMap(),
+                "info: callable shadowing. Local kind `callableName` shadows a built-in or external kind with the same name.");
+    }
+
+    @Test
     void shouldConstructNotificationsFor_IDENTIFIER_SHADOWING_VARIABLE() {
         NotificationImplementation notification =
                 identifierShadowingVariable(InputPosition.empty, "indexName", "VECTOR INDEX");
@@ -2400,8 +2427,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            83, -109, -58, -51, -83, -18, 42, -119, -32, 31, -16, -45, -50, 63, -111, -36, 80, -103, -115, -28, 7, -85,
-            -61, -90, 60, 30, 127, -9, -19, -60, 118, 19
+            20, 79, -17, 97, -97, 117, -92, -77, 59, -39, 89, -35, -103, 10, -74, 65, -114, 57, 43, 45, -33, -76, -74,
+            -42, -107, -111, 97, 41, 56, -63, 27, 119
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

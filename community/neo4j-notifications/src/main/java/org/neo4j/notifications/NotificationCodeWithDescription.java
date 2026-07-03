@@ -453,7 +453,12 @@ public enum NotificationCodeWithDescription {
             Status.Statement.IdentifierShadowingVariable,
             GqlStatusInfoCodes.STATUS_03N63,
             "The identifier `%s` in the `%s` clause has the same name as a variable in scope. "
-                    + "Regardless of what the variable evaluates to, it is the literal `%s` that will be used.");
+                    + "Regardless of what the variable evaluates to, it is the literal `%s` that will be used."),
+
+    CALLABLE_SHADOWING(
+            Status.Statement.CallableShadowing,
+            GqlStatusInfoCodes.STATUS_03N64,
+            "Local %s `%s` shadows a built-in or external %s with the same name.");
 
     private final Status status;
     private final GqlStatusInfoCodes gqlStatusInfo;
@@ -1059,6 +1064,14 @@ public enum NotificationCodeWithDescription {
     public static NotificationImplementation waitServerCaughtUp(String serverName, String boltAddress) {
         return WAIT_SERVER_CAUGHT_UP.notificationWithParameters(
                 InputPosition.empty, new String[] {serverName, boltAddress}, new String[] {serverName, boltAddress});
+    }
+
+    public static NotificationImplementation callableShadowing(
+            InputPosition position, String callableKind, String callableName) {
+        return CALLABLE_SHADOWING.notificationWithParameters(
+                position,
+                new String[] {callableKind, callableName, callableKind},
+                new String[] {callableKind, callableName, callableKind});
     }
 
     private NotificationImplementation notification(InputPosition position) {

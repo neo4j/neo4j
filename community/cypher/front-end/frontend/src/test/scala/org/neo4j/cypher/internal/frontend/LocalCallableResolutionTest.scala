@@ -2932,7 +2932,7 @@ class LocalCallableResolutionTest extends CypherFunSuite with TestName with AstC
       }
     }
 
-    override def functionSignature(name: FunctionName, scope: QueryLanguage): Option[UserFunctionSignature] = ???
+    override def functionSignature(name: FunctionName, scope: QueryLanguage): Option[UserFunctionSignature] = None
 
     override def procedureSignatureVersion: Long = 1
   }

@@ -249,6 +249,13 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             },
             "identifier shadowing variable",
             NotificationClassification.GENERIC),
+    STATUS_03N64(
+            "Local { %s } { %s } shadows a built-in or external { %s } with the same name.",
+            new GqlParams.GqlParam[] {
+                GqlParams.StringParam.item, GqlParams.StringParam.ident, GqlParams.StringParam.item
+            },
+            "callable shadowing",
+            NotificationClassification.GENERIC),
     STATUS_03N85(
             "Server `{ %s }` at address `{ %s }` has caught up.",
             new GqlParams.GqlParam[] {GqlParams.StringParam.server, GqlParams.StringParam.serverAddress},
