@@ -20,6 +20,7 @@
 package org.neo4j.gqlstatus;
 
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * GQLSTATUS is a code that identifies what notable or problematic condition arose during a query execution.
@@ -28,6 +29,9 @@ import java.util.Locale;
  * where the two first characters forms the class code and the three last the subclass code.
  */
 public record GqlStatus(String gqlStatusString) {
+
+    private static final Pattern STATUS_PATTERN = Pattern.compile("[A-Za-z0-9]{5}");
+
     public GqlStatus(String gqlStatusString) {
         this.gqlStatusString = validate(gqlStatusString);
     }
@@ -36,17 +40,16 @@ public record GqlStatus(String gqlStatusString) {
         if (input.isEmpty()) {
             throw new IllegalArgumentException("GQLSTATUS must be 5 characters and alphanumeric, got an empty string.");
         }
-        if (!input.matches("[A-Za-z0-9]{5}")) {
-            throw new IllegalArgumentException(
-                    String.format("GQLSTATUS must be 5 characters and alphanumeric, got: %s.", input));
+        if (!STATUS_PATTERN.matcher(input).matches()) {
+            throw new IllegalArgumentException("GQLSTATUS must be 5 characters and alphanumeric, got: " + input + ".");
         }
         return input.toUpperCase(Locale.ROOT);
     }
 
     @Override
     public boolean equals(Object that) {
-        if (that instanceof GqlStatus otherGqlStatus) {
-            return this.gqlStatusString.equals(otherGqlStatus.gqlStatusString);
+        if (that instanceof GqlStatus(String statusString)) {
+            return this.gqlStatusString.equals(statusString);
         }
         return false;
     }
