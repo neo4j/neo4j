@@ -275,6 +275,54 @@ class CollectSyntaxUsageMetricsTest extends CypherFunSuite with CypherVersionTes
     stats.getSyntaxUsageCount(SyntaxUsageMetricKey.SCOPE_CLAUSE_SUBQUERY) should be(1)
   }
 
+  testVersionsExcept5("should find GROUP BY with explicit grouping elements") { version =>
+    val stats = runPipeline(
+      version,
+      """
+        |UNWIND [{a: 1, b: 2}] AS row
+        |WITH row.a AS a, row.b AS b
+        |RETURN a, count(*) AS cnt
+        |  GROUP BY a
+        |""".stripMargin
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY_EXPLICIT) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY_ALL) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY_NONE) should be(0)
+  }
+
+  testVersionsExcept5("should find GROUP BY ALL") { version =>
+    val stats = runPipeline(
+      version,
+      """
+        |UNWIND [{a: 1, b: 2}] AS row
+        |WITH row.a AS a, row.b AS b
+        |RETURN a, b, count(*) AS cnt
+        |  GROUP BY ALL
+        |""".stripMargin
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY_ALL) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY_EXPLICIT) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY_NONE) should be(0)
+  }
+
+  testVersionsExcept5("should find GROUP BY ()") { version =>
+    val stats = runPipeline(
+      version,
+      """
+        |UNWIND [{a: 1}] AS row
+        |WITH row.a AS a
+        |RETURN count(*) AS cnt
+        |  GROUP BY ()
+        |""".stripMargin
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY_NONE) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY_EXPLICIT) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.GROUP_BY_ALL) should be(0)
+  }
+
   testVersionsExcept5("should find Conditional Query") { version =>
     val stats = runPipeline(
       version,

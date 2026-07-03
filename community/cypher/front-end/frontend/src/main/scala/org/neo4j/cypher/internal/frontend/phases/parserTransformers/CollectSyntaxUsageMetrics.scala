@@ -27,6 +27,10 @@ import org.neo4j.cypher.internal.ast.CreateAuthRule
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.DropAuthRule
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.ExplicitGroupingElements
+import org.neo4j.cypher.internal.ast.GroupBy
+import org.neo4j.cypher.internal.ast.GroupingAll
+import org.neo4j.cypher.internal.ast.GroupingNone
 import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.NextStatement
@@ -124,6 +128,13 @@ case object CollectSyntaxUsageMetrics
           if (sq.inTransactionsParameters.get.concurrencyParams.isDefined) {
             isCallInTxConcurrentQuery = true
           }
+        }
+      case gb: GroupBy =>
+        increaseMetric(SyntaxUsageMetricKey.GROUP_BY)
+        gb.groupingElements match {
+          case _: ExplicitGroupingElements => increaseMetric(SyntaxUsageMetricKey.GROUP_BY_EXPLICIT)
+          case _: GroupingAll              => increaseMetric(SyntaxUsageMetricKey.GROUP_BY_ALL)
+          case _: GroupingNone             => increaseMetric(SyntaxUsageMetricKey.GROUP_BY_NONE)
         }
       case _: ConditionalQueryWhen =>
         increaseMetric(SyntaxUsageMetricKey.CONDITIONAL_QUERY)
