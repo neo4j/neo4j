@@ -134,7 +134,7 @@ public class FileImporter {
     private final boolean force;
     private final InternalLogProvider logProvider;
     private final SchemaCommandSource schemaCommands;
-    private final FileInputType fileImportType;
+    private final FileInputType fileInputType;
     private final ShardingArguments shardingArguments;
     private final Monitor monitor;
 
@@ -166,9 +166,13 @@ public class FileImporter {
         this.logProvider = requireNonNull(b.logProvider);
         this.force = b.force;
         this.schemaCommands = b.schemaCommands;
-        this.fileImportType = b.fileInputType;
+        this.fileInputType = b.fileInputType;
         this.shardingArguments = b.shardingArguments;
         this.monitor = b.monitor;
+    }
+
+    public FileInputType fileInputType() {
+        return fileInputType;
     }
 
     public void dryRun(ImportCommand.Base type) throws IOException {
@@ -251,7 +255,7 @@ public class FileImporter {
 
     private Input importInput(
             Iterable<DataFactory> nodeData, Iterable<DataFactory> relationshipsData, Supplier<ZoneId> defaultTimeZone) {
-        return switch (fileImportType) {
+        return switch (fileInputType) {
             case CSV ->
                 new CsvInput(
                         nodeData,

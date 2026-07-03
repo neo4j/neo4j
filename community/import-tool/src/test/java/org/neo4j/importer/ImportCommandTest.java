@@ -200,7 +200,8 @@ class ImportCommandTest {
         // when/then - using a 3-byte UTF-8 character (€ = U+20AC)
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--relationships=" + rels, "--delimiter=U+20AC");
 
-        assertThatThrownBy(() -> command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem())))
+        assertThatThrownBy(() ->
+                        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
                 .isInstanceOf(CommandLine.ParameterException.class)
                 .hasMessageContaining("Delimiter must be a single byte character (In UTF-8)");
     }
@@ -216,7 +217,7 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--relationships=" + rels, "--delimiter=U+007C");
 
         // then - should not throw
-        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()));
+        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
     }
 
     @Test
@@ -235,7 +236,7 @@ class ImportCommandTest {
                 "--accept-multibyte-delimiter");
 
         // then - should not throw
-        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()));
+        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
     }
 
     private void assertIdTypeAliases(List<String> requiredArgs, List<String> aliases, IdType idType) {

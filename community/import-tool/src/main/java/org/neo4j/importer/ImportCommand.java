@@ -660,7 +660,7 @@ public class ImportCommand {
                 var databaseConfig = importContext.config();
                 var databaseLayout = Neo4jLayout.of(databaseConfig).databaseLayout(database.name());
                 try (var fileSystem = new SchemeFileSystemAbstraction(ctx.fs(), databaseConfig, importContext)) {
-                    preImportValidation(fileSystem);
+                    preImportValidation(fileSystem, databaseConfig.get(GraphDatabaseSettings.db_format));
 
                     final var importerBuilder = configureFileImporterBuilder(FileImporter.builder()
                             .withCsvConfig(csvConfiguration(fileSystem))
@@ -694,6 +694,8 @@ public class ImportCommand {
                         importer = addInputData(fileSystem, importerBuilder).build();
                     }
 
+                    validateInputType(importer.fileInputType());
+
                     if (dryRun) {
                         importer.dryRun(this);
                     } else {
@@ -713,7 +715,15 @@ public class ImportCommand {
             return dryRun;
         }
 
-        protected void preImportValidation(SchemeFileSystemAbstraction fs) throws CommandFailedException {
+        protected boolean isSkidbladnir() {
+            return skidbladnir;
+        }
+
+        /**
+         * @param resolvedDbFormat the format that is either specified in the command line or resolved from the database config
+         */
+        protected void preImportValidation(SchemeFileSystemAbstraction fs, String resolvedDbFormat)
+                throws CommandFailedException {
             if (requiresNodeParameter()) {
                 if (nodes == null) {
                     throw new ParameterException(spec.commandLine(), "Missing required option: '--nodes'");
@@ -743,6 +753,13 @@ public class ImportCommand {
             if (!allowMultibyteDelimiter && String.valueOf(delimiter).getBytes(StandardCharsets.UTF_8).length > 1) {
                 throw new ParameterException(
                         spec.commandLine(), "Delimiter must be a single byte character (In UTF-8)");
+            }
+        }
+
+        protected void validateInputType(FileInputType inputType) {
+            if (isSkidbladnir() && inputType != FileInputType.CSV) {
+                throw new ParameterException(
+                        spec.commandLine(), "ERROR: Skidbladnir import is only supported for CSV input type");
             }
         }
 
@@ -1194,6 +1211,18 @@ public class ImportCommand {
 
         public Full(ExecutionContext ctx) {
             super(ctx);
+        }
+
+        @Override
+        protected void preImportValidation(SchemeFileSystemAbstraction fs, String resolvedDbFormat)
+                throws CommandFailedException {
+            super.preImportValidation(fs, resolvedDbFormat);
+
+            if (isSkidbladnir() && !"block".equals(resolvedDbFormat)) {
+                throw new CommandFailedException(
+                        "ERROR: Skidbladnir import is only supported for the 'block' format, but '%s' was specified."
+                                .formatted(resolvedDbFormat));
+            }
         }
 
         @Override
