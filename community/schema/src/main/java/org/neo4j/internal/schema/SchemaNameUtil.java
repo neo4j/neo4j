@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.schema;
 
+import static org.neo4j.util.Preconditions.requireNonNull;
+
 import java.util.Optional;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.hashing.HashFunction;
@@ -35,22 +37,15 @@ public class SchemaNameUtil {
     }
 
     public static String sanitiseName(String name) {
-        if (name == null) {
-            throw new IllegalArgumentException("Schema rule name cannot be null.");
-        }
+        requireNonNull(name, "Schema rule name cannot be null.");
         name = name.trim();
         if (name.isBlank()) {
             throw new IllegalArgumentException(
                     "Schema rule name cannot be the empty string or only contain whitespace.");
-        } else {
-            int length = name.length();
-            for (int i = 0; i < length; i++) {
-                char ch = name.charAt(i);
-                if (ch == '\0') {
-                    throw new IllegalArgumentException(
-                            "Schema rule names are not allowed to contain null-bytes: '" + name + "'.");
-                }
-            }
+        }
+        if (name.indexOf('\0') != -1) {
+            throw new IllegalArgumentException(
+                    "Schema rule names are not allowed to contain null-bytes: '" + name + "'.");
         }
         if (ReservedSchemaRuleNames.contains(name)) {
             throw new IllegalArgumentException("The index name '" + name + "' is reserved, and cannot be used. "
