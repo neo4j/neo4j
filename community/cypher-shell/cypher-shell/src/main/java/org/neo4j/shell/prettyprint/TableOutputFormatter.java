@@ -22,7 +22,6 @@ package org.neo4j.shell.prettyprint;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyIterator;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.shell.prettyprint.OutputFormatter.repeat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -126,7 +125,7 @@ public class TableOutputFormatter implements OutputFormatter {
 
         StringBuilder builder = new StringBuilder(totalWidth);
         int lineWidth = totalWidth - 2;
-        String dashes = "+" + String.valueOf(repeat('-', lineWidth)) + "+";
+        String dashes = "+" + "-".repeat(lineWidth) + "+";
 
         if (heading != null && !heading.isBlank()) {
             output.printOut(dashes);
@@ -323,10 +322,10 @@ public class TableOutputFormatter implements OutputFormatter {
 
                 // Insert padding
                 if (displayWidthCount < length) {
-                    sb.append(repeat(' ', length - displayWidthCount));
+                    sb.repeat(' ', length - displayWidthCount);
                 }
             } else {
-                sb.append(repeat(' ', length));
+                sb.repeat(' ', length);
             }
             if (i == row.length - 1 || !continuation[i + 1]) {
                 sb.append(" |");

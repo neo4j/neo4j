@@ -38,7 +38,7 @@ public final class ByteCodeUtils {
 
     public static String className(TypeReference reference) {
         StringBuilder builder = new StringBuilder();
-        builder.append("[".repeat(Math.max(0, reference.arrayDepth())));
+        builder.repeat("[", Math.max(0, reference.arrayDepth()));
         if (reference.arrayDepth() > 0) {
             builder.append('L');
         }
@@ -148,7 +148,7 @@ public final class ByteCodeUtils {
 
     private static StringBuilder internalType(StringBuilder builder, TypeReference reference, boolean showErasure) {
         String name = reference.name();
-        builder.append("[".repeat(Math.max(0, reference.arrayDepth())));
+        builder.repeat("[", Math.max(0, reference.arrayDepth()));
         switch (name) {
             case "int":
                 builder.append('I');

@@ -119,12 +119,7 @@ class LinearHistoryTracer {
         }
 
         private String exceptionLinePrefix(int size) {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < size; i++) {
-                sb.append('|');
-            }
-            sb.append(":  ");
-            return sb.toString();
+            return "|".repeat(Math.max(0, size)) + ":  ";
         }
 
         private void putcs(PrintStream out, char c, int count) {

@@ -24,7 +24,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.internal.helpers.NameUtil.escapeName;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -84,20 +83,6 @@ public interface OutputFormatter {
 
     static boolean isNotBlank(String string) {
         return string != null && !string.trim().isEmpty();
-    }
-
-    static char[] repeat(char c, int times) {
-        char[] chars = new char[times];
-        Arrays.fill(chars, c);
-        return chars;
-    }
-
-    static String repeat(String c, int times) {
-        StringBuilder sb = new StringBuilder(times * c.length());
-        for (int i = 0; i < times; i++) {
-            sb.append(c);
-        }
-        return sb.toString();
     }
 
     static String repeatConditionally(String a, String b, int times, Function<Integer, Boolean> condition) {

@@ -498,7 +498,7 @@ class JavaSourceMethodWriter implements MethodWriter, ExpressionVisitor {
                     .append('[')
                     .append(size)
                     .append(']')
-                    .append("[]".repeat(type.arrayDepth()));
+                    .repeat("[]", type.arrayDepth());
         } else {
             append("new ").append(type.fullName()).append('[').append(size).append(']');
         }
@@ -509,7 +509,7 @@ class JavaSourceMethodWriter implements MethodWriter, ExpressionVisitor {
         if (type.isArray()) {
             append("new ").append(type.baseName()).append('[');
             size.accept(this);
-            append("]").append("[]".repeat(type.arrayDepth()));
+            append("]").repeat("[]", type.arrayDepth());
         } else {
             append("new ").append(type.fullName()).append('[');
             size.accept(this);

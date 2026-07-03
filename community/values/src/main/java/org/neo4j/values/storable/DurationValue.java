@@ -680,9 +680,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         int strLength = Long.toString(input).length();
         if (strLength < length) {
             int padLength = sb.length() + length - strLength;
-            while (sb.length() < padLength) {
-                sb.append('0');
-            }
+            sb.repeat('0', padLength - sb.length());
         }
         sb.append(input);
     }
@@ -924,9 +922,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             incIndex(valueLength);
 
             if (previous == DurationToken.FRACTION_TOKEN.ordinal()) {
-                while (value.length() < 9) {
-                    value.append('0');
-                }
+                value.repeat('0', Math.max(0, 9 - value.length()));
             }
 
             seen(previous);

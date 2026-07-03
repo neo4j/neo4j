@@ -23,7 +23,6 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
-import static org.neo4j.shell.prettyprint.OutputFormatter.repeat;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -86,7 +85,7 @@ public class TablePlanFormatter {
             "Details"));
 
     private static void pad(int width, char chr, StringBuilder result) {
-        result.append(OutputFormatter.repeat(chr, width));
+        result.repeat(chr, width);
     }
 
     private static int width(String header, Map<String, Integer> columns) {
@@ -495,12 +494,12 @@ public class TablePlanFormatter {
 
         @Override
         String line() {
-            return repeat("| ", level - 1) + "+";
+            return "| ".repeat(level - 1) + "+";
         }
 
         @Override
         Optional<String> connector() {
-            return Optional.of(repeat("| ", level));
+            return Optional.of("| ".repeat(level));
         }
     }
 
@@ -524,12 +523,12 @@ public class TablePlanFormatter {
 
         @Override
         String line() {
-            return repeat("| ", level - 1) + "+";
+            return "| ".repeat(level - 1) + "+";
         }
 
         @Override
         Optional<String> connector() {
-            return Optional.of(repeat("| ", level - 2) + "|\\");
+            return Optional.of("| ".repeat(level - 2) + "|\\");
         }
     }
 

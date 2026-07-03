@@ -202,7 +202,7 @@ public class ConfigFileMigrator {
                 // it means the previous setting was commented out.
                 // This means that the free lines should be part of the comment
                 // to be between the original previous setting and this one.
-                comment.append(join(COMMENT_LINE_SEPARATOR.repeat(originalFreeLines)));
+                comment.repeat(COMMENT_LINE_SEPARATOR, originalFreeLines);
             } else {
                 leadingEmptyLines = originalFreeLines;
             }

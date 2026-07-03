@@ -38,7 +38,7 @@ abstract class AbstractTablePlanFormatter {
     protected abstract List<String> headers();
 
     private static void pad(int width, char chr, StringBuilder result) {
-        result.append(OutputFormatter.repeat(chr, width));
+        result.repeat(chr, width);
     }
 
     private static int width(String header, Map<String, Integer> columns) {

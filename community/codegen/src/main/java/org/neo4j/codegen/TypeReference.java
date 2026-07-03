@@ -245,9 +245,7 @@ public class TypeReference {
     }
 
     public String simpleName() {
-        StringBuilder builder = new StringBuilder(name);
-        builder.append("[]".repeat(Math.max(0, arrayDepth)));
-        return builder.toString();
+        return name + "[]".repeat(Math.max(0, arrayDepth));
     }
 
     public boolean isPrimitive() {
@@ -378,7 +376,7 @@ public class TypeReference {
 
     StringBuilder writeTo(StringBuilder result) {
         writeBaseType(result);
-        result.append("[]".repeat(Math.max(0, arrayDepth)));
+        result.repeat("[]", Math.max(0, arrayDepth));
         if (!(parameters == null || parameters.length == 0)) {
             result.append('<');
             String sep = "";

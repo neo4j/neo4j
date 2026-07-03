@@ -282,13 +282,13 @@ public class LifeSupport implements Lifecycle, LifecycleStatusProvider {
     }
 
     private void toString(int indent, StringBuilder sb) {
-        sb.append(" ".repeat(Math.max(0, indent)));
-        sb.append("Lifecycle status:" + status.name()).append('\n');
+        sb.repeat(" ", Math.max(0, indent));
+        sb.append("Lifecycle status:").append(status.name()).append('\n');
         for (LifecycleInstance instance : instances) {
             if (instance.instance instanceof LifeSupport) {
                 ((LifeSupport) instance.instance).toString(indent + 3, sb);
             } else {
-                sb.append(" ".repeat(Math.max(0, indent + 3)));
+                sb.repeat(" ", Math.max(0, indent + 3));
                 sb.append(instance).append('\n');
             }
         }
