@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.locking.forseti;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.locking.LockMonitor.EMPTY_LOCK_MONITOR;
 import static org.neo4j.test.Race.throwing;
 
@@ -75,7 +74,7 @@ class ForsetiLockManagerTest {
     }
 
     @Test
-    void testMultipleClientsSameTxId() throws Throwable {
+    void multipleClientsSameTxId() throws Throwable {
         // This tests an issue where using the same transaction id for two concurrently used clients would livelock
         // Having non-unique transaction ids should not happen and be addressed on its own but the LockManager should
         // still not hang
@@ -102,7 +101,7 @@ class ForsetiLockManagerTest {
     }
 
     @Test
-    void testSameThreadMultipleClientCommitDirectDeadlock() {
+    void sameThreadMultipleClientCommitDirectDeadlock() {
         // Given
         try (LockManager.Client client1 = manager.newClient();
                 LockManager.Client client2 = manager.newClient()) {
@@ -121,7 +120,7 @@ class ForsetiLockManagerTest {
     }
 
     @Test
-    void testSameThreadMultipleClientCommitIndirectDeadlock() throws TimeoutException {
+    void sameThreadMultipleClientCommitIndirectDeadlock() throws TimeoutException {
         // Given
         try (OtherThreadExecutor executor1 = new OtherThreadExecutor("test1");
                 OtherThreadExecutor executor2 = new OtherThreadExecutor("test2");
@@ -175,8 +174,7 @@ class ForsetiLockManagerTest {
                     LeaseService.NoLeaseClient.INSTANCE, random.nextLong(), EmptyMemoryTracker.INSTANCE, config));
         }
 
-        allClientsList.forEach(o -> assertTrue(allClientsSet.remove(o)));
-        assertThat(allClientsSet).isEmpty();
+        assertThat(allClientsList).containsExactlyInAnyOrderElementsOf(allClientsSet);
     }
 
     @Test

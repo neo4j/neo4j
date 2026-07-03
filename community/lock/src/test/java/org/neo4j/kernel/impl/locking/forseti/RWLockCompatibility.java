@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.lock.ResourceType.NODE;
 
 import java.nio.file.Path;
@@ -51,18 +51,24 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
     }
 
     @Test
-    void testSingleThread() {
-        assertThrows(
-                Exception.class, () -> clientA.releaseExclusive(NODE, 1L), "Invalid release should throw exception");
-        assertThrows(Exception.class, () -> clientA.releaseShared(NODE, 1L), "Invalid release should throw exception");
+    void singleThread() {
+        assertThatExceptionOfType(Exception.class)
+                .as("Invalid release should throw exception")
+                .isThrownBy(() -> clientA.releaseExclusive(NODE, 1L));
+        assertThatExceptionOfType(Exception.class)
+                .as("Invalid release should throw exception")
+                .isThrownBy(() -> clientA.releaseShared(NODE, 1L));
 
         clientA.acquireShared(LockTracer.NONE, NODE, 1L);
-        assertThrows(
-                Exception.class, () -> clientA.releaseExclusive(NODE, 1L), "Invalid release should throw exception");
+        assertThatExceptionOfType(Exception.class)
+                .as("Invalid release should throw exception")
+                .isThrownBy(() -> clientA.releaseExclusive(NODE, 1L));
         clientA.releaseShared(NODE, 1L);
 
         clientA.acquireExclusive(LockTracer.NONE, NODE, 1L);
-        assertThrows(Exception.class, () -> clientA.releaseShared(NODE, 1L), "Invalid release should throw exception");
+        assertThatExceptionOfType(Exception.class)
+                .as("Invalid release should throw exception")
+                .isThrownBy(() -> clientA.releaseShared(NODE, 1L));
         clientA.releaseExclusive(NODE, 1L);
 
         clientA.acquireShared(LockTracer.NONE, NODE, 1L);
@@ -92,7 +98,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
     }
 
     @Test
-    void testMultipleThreads() throws Exception {
+    void multipleThreads() throws Exception {
         LockWorkerManager workerManager = new LockWorkerManager(locks);
         LockWorker t1 = workerManager.createWorker("T1");
         LockWorker t2 = workerManager.createWorker("T2");
@@ -106,7 +112,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
             Future<Void> t4Wait = t4.getWriteLock(r1, false);
             t3.releaseReadLock(r1);
             t2.releaseReadLock(r1);
-            assertFalse(t4Wait.isDone());
+            assertThat(t4Wait.isDone()).isFalse();
             t1.releaseReadLock(r1);
             // now we can wait for write lock since it can be acquired
             // get write lock
@@ -119,7 +125,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
             t4.releaseReadLock(r1);
             t4.getWriteLock(r1, true);
             t4.releaseWriteLock(r1);
-            assertFalse(t1Wait.isDone());
+            assertThat(t1Wait.isDone()).isFalse();
             t4.releaseWriteLock(r1);
             // get read lock
             t1.awaitFuture(t1Wait);
@@ -277,7 +283,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
     }
 
     @Test
-    void testStressMultipleThreads() throws Exception {
+    void stressMultipleThreads() throws Exception {
         long r1 = 1L;
         int numThreads = 15;
         StressThread[] stressThreads = new StressThread[numThreads];

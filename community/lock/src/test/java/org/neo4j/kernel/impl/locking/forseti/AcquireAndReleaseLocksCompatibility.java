@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.lock.ResourceType.NODE;
 
 import java.util.concurrent.Future;
@@ -93,37 +91,37 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
     @Test
     void shouldTrySharedLock() {
         // Given I've grabbed a share lock
-        assertTrue(clientA.trySharedLock(NODE, 1L));
+        assertThat(clientA.trySharedLock(NODE, 1L)).isTrue();
 
         // Then other clients can't have exclusive locks
-        assertFalse(clientB.tryExclusiveLock(NODE, 1L));
+        assertThat(clientB.tryExclusiveLock(NODE, 1L)).isFalse();
 
         // But they are allowed share locks
-        assertTrue(clientB.trySharedLock(NODE, 1L));
+        assertThat(clientB.trySharedLock(NODE, 1L)).isTrue();
     }
 
     @Test
     void shouldTryExclusiveLock() {
         // Given I've grabbed an exclusive lock
-        assertTrue(clientA.tryExclusiveLock(NODE, 1L));
+        assertThat(clientA.tryExclusiveLock(NODE, 1L)).isTrue();
 
         // Then other clients can't have exclusive locks
-        assertFalse(clientB.tryExclusiveLock(NODE, 1L));
+        assertThat(clientB.tryExclusiveLock(NODE, 1L)).isFalse();
 
         // Nor can they have share locks
-        assertFalse(clientB.trySharedLock(NODE, 1L));
+        assertThat(clientB.trySharedLock(NODE, 1L)).isFalse();
     }
 
     @Test
     void shouldTryUpgradeSharedToExclusive() {
         // Given I've grabbed an exclusive lock
-        assertTrue(clientA.trySharedLock(NODE, 1L));
+        assertThat(clientA.trySharedLock(NODE, 1L)).isTrue();
 
         // Then I can upgrade it to exclusive
-        assertTrue(clientA.tryExclusiveLock(NODE, 1L));
+        assertThat(clientA.tryExclusiveLock(NODE, 1L)).isTrue();
 
         // And other clients are denied it
-        assertFalse(clientB.trySharedLock(NODE, 1L));
+        assertThat(clientB.trySharedLock(NODE, 1L)).isFalse();
     }
 
     @Test
@@ -132,7 +130,7 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.acquireShared(LockTracer.NONE, NODE, 1L);
 
         // When
-        assertTrue(clientA.tryExclusiveLock(NODE, 1L));
+        assertThat(clientA.tryExclusiveLock(NODE, 1L)).isTrue();
 
         // Then I should be able to release it
         clientA.releaseExclusive(NODE, 1L);
@@ -142,22 +140,22 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
     void shouldAcquireMultipleSharedLocks() {
         clientA.acquireShared(LockTracer.NONE, NODE, 10, 100, 1000);
 
-        assertFalse(clientB.tryExclusiveLock(NODE, 10));
-        assertFalse(clientB.tryExclusiveLock(NODE, 100));
-        assertFalse(clientB.tryExclusiveLock(NODE, 1000));
+        assertThat(clientB.tryExclusiveLock(NODE, 10)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 100)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 1000)).isFalse();
 
-        assertEquals(3, lockCount());
+        assertThat(lockCount()).isEqualTo(3);
     }
 
     @Test
     void shouldAcquireMultipleExclusiveLocks() {
         clientA.acquireExclusive(LockTracer.NONE, NODE, 10, 100, 1000);
 
-        assertFalse(clientB.trySharedLock(NODE, 10));
-        assertFalse(clientB.trySharedLock(NODE, 100));
-        assertFalse(clientB.trySharedLock(NODE, 1000));
+        assertThat(clientB.trySharedLock(NODE, 10)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 100)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 1000)).isFalse();
 
-        assertEquals(3, lockCount());
+        assertThat(lockCount()).isEqualTo(3);
     }
 
     @Test
@@ -165,12 +163,12 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.acquireShared(LockTracer.NONE, NODE, 10, 100, 1000);
         clientA.acquireShared(LockTracer.NONE, NODE, 100, 1000, 10000);
 
-        assertFalse(clientB.tryExclusiveLock(NODE, 10));
-        assertFalse(clientB.tryExclusiveLock(NODE, 100));
-        assertFalse(clientB.tryExclusiveLock(NODE, 1000));
-        assertFalse(clientB.tryExclusiveLock(NODE, 10000));
+        assertThat(clientB.tryExclusiveLock(NODE, 10)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 100)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 1000)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 10000)).isFalse();
 
-        assertEquals(4, lockCount());
+        assertThat(lockCount()).isEqualTo(4);
     }
 
     @Test
@@ -178,12 +176,12 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.acquireExclusive(LockTracer.NONE, NODE, 10, 100, 1000);
         clientA.acquireExclusive(LockTracer.NONE, NODE, 100, 1000, 10000);
 
-        assertFalse(clientB.trySharedLock(NODE, 10));
-        assertFalse(clientB.trySharedLock(NODE, 100));
-        assertFalse(clientB.trySharedLock(NODE, 1000));
-        assertFalse(clientB.trySharedLock(NODE, 10000));
+        assertThat(clientB.trySharedLock(NODE, 10)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 100)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 1000)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 10000)).isFalse();
 
-        assertEquals(4, lockCount());
+        assertThat(lockCount()).isEqualTo(4);
     }
 
     @Test
@@ -191,72 +189,72 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.acquireExclusive(LockTracer.NONE, NODE, 10, 100, 1000);
         clientA.acquireShared(LockTracer.NONE, NODE, 100, 1000, 10000);
 
-        assertFalse(clientB.trySharedLock(NODE, 10));
-        assertFalse(clientB.trySharedLock(NODE, 100));
-        assertFalse(clientB.trySharedLock(NODE, 1000));
-        assertFalse(clientB.tryExclusiveLock(NODE, 10000));
+        assertThat(clientB.trySharedLock(NODE, 10)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 100)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 1000)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 10000)).isFalse();
 
-        assertEquals(4, lockCount());
+        assertThat(lockCount()).isEqualTo(4);
     }
 
     @Test
     void shouldReleaseSharedLocksAcquiredInABatch() {
         clientA.acquireShared(LockTracer.NONE, NODE, 1, 10, 100);
-        assertEquals(3, lockCount());
+        assertThat(lockCount()).isEqualTo(3);
 
         clientA.releaseShared(NODE, 1);
-        assertEquals(2, lockCount());
+        assertThat(lockCount()).isEqualTo(2);
 
         clientA.releaseShared(NODE, 10);
-        assertEquals(1, lockCount());
+        assertThat(lockCount()).isEqualTo(1);
 
         clientA.releaseShared(NODE, 100);
-        assertEquals(0, lockCount());
+        assertThat(lockCount()).isEqualTo(0);
     }
 
     @Test
     void shouldReleaseExclusiveLocksAcquiredInABatch() {
         clientA.acquireExclusive(LockTracer.NONE, NODE, 1, 10, 100);
-        assertEquals(3, lockCount());
+        assertThat(lockCount()).isEqualTo(3);
 
         clientA.releaseExclusive(NODE, 1);
-        assertEquals(2, lockCount());
+        assertThat(lockCount()).isEqualTo(2);
 
         clientA.releaseExclusive(NODE, 10);
-        assertEquals(1, lockCount());
+        assertThat(lockCount()).isEqualTo(1);
 
         clientA.releaseExclusive(NODE, 100);
-        assertEquals(0, lockCount());
+        assertThat(lockCount()).isEqualTo(0);
     }
 
     @Test
     void releaseMultipleSharedLocks() {
         clientA.acquireShared(LockTracer.NONE, NODE, 10, 100, 1000);
-        assertEquals(3, lockCount());
+        assertThat(lockCount()).isEqualTo(3);
 
         clientA.releaseShared(NODE, 100, 1000);
-        assertEquals(1, lockCount());
+        assertThat(lockCount()).isEqualTo(1);
 
-        assertFalse(clientB.tryExclusiveLock(NODE, 10));
-        assertTrue(clientB.tryExclusiveLock(NODE, 100));
-        assertTrue(clientB.tryExclusiveLock(NODE, 1000));
+        assertThat(clientB.tryExclusiveLock(NODE, 10)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 100)).isTrue();
+        assertThat(clientB.tryExclusiveLock(NODE, 1000)).isTrue();
     }
 
     @Test
     void releaseMultipleExclusiveLocks() {
         clientA.acquireExclusive(LockTracer.NONE, NODE, 10, 100, 1000);
 
-        assertFalse(clientB.trySharedLock(NODE, 10));
-        assertFalse(clientB.trySharedLock(NODE, 100));
-        assertFalse(clientB.trySharedLock(NODE, 1000));
-        assertEquals(3, lockCount());
+        assertThat(clientB.trySharedLock(NODE, 10)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 100)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 1000)).isFalse();
+        assertThat(lockCount()).isEqualTo(3);
 
         clientA.releaseExclusive(NODE, 10, 100);
-        assertEquals(1, lockCount());
+        assertThat(lockCount()).isEqualTo(1);
 
-        assertTrue(clientB.trySharedLock(NODE, 10));
-        assertTrue(clientB.trySharedLock(NODE, 100));
-        assertFalse(clientB.trySharedLock(NODE, 1000));
+        assertThat(clientB.trySharedLock(NODE, 10)).isTrue();
+        assertThat(clientB.trySharedLock(NODE, 100)).isTrue();
+        assertThat(clientB.trySharedLock(NODE, 1000)).isFalse();
     }
 
     @Test
@@ -265,13 +263,13 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.acquireShared(LockTracer.NONE, NODE, 100, 1000, 10000);
 
         clientA.releaseShared(NODE, 100, 1000);
-        assertEquals(4, lockCount());
+        assertThat(lockCount()).isEqualTo(4);
 
-        assertFalse(clientB.tryExclusiveLock(NODE, 100));
-        assertFalse(clientB.tryExclusiveLock(NODE, 1000));
+        assertThat(clientB.tryExclusiveLock(NODE, 100)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 1000)).isFalse();
 
         clientA.releaseShared(NODE, 100, 1000);
-        assertEquals(2, lockCount());
+        assertThat(lockCount()).isEqualTo(2);
     }
 
     @Test
@@ -280,16 +278,16 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.acquireExclusive(LockTracer.NONE, NODE, 100, 1000, 10000);
 
         clientA.releaseExclusive(NODE, 100, 1000);
-        assertEquals(4, lockCount());
+        assertThat(lockCount()).isEqualTo(4);
 
-        assertFalse(clientB.trySharedLock(NODE, 10));
-        assertFalse(clientB.trySharedLock(NODE, 100));
-        assertFalse(clientB.trySharedLock(NODE, 1000));
-        assertFalse(clientB.trySharedLock(NODE, 10000));
+        assertThat(clientB.trySharedLock(NODE, 10)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 100)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 1000)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 10000)).isFalse();
 
         clientA.releaseExclusive(NODE, 100, 1000);
 
-        assertEquals(2, lockCount());
+        assertThat(lockCount()).isEqualTo(2);
     }
 
     @Test
@@ -297,18 +295,18 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.acquireShared(LockTracer.NONE, NODE, 1);
         clientA.acquireShared(LockTracer.NONE, NODE, 2);
         clientA.acquireShared(LockTracer.NONE, NODE, 3);
-        assertEquals(3, lockCount());
+        assertThat(lockCount()).isEqualTo(3);
 
-        assertFalse(clientB.tryExclusiveLock(NODE, 1));
-        assertFalse(clientB.tryExclusiveLock(NODE, 2));
-        assertFalse(clientB.tryExclusiveLock(NODE, 3));
+        assertThat(clientB.tryExclusiveLock(NODE, 1)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 2)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 3)).isFalse();
 
         clientA.releaseShared(NODE, 1, 2, 3);
 
-        assertEquals(0, lockCount());
-        assertTrue(clientB.tryExclusiveLock(NODE, 1));
-        assertTrue(clientB.tryExclusiveLock(NODE, 2));
-        assertTrue(clientB.tryExclusiveLock(NODE, 3));
+        assertThat(lockCount()).isEqualTo(0);
+        assertThat(clientB.tryExclusiveLock(NODE, 1)).isTrue();
+        assertThat(clientB.tryExclusiveLock(NODE, 2)).isTrue();
+        assertThat(clientB.tryExclusiveLock(NODE, 3)).isTrue();
     }
 
     @Test
@@ -316,18 +314,18 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.acquireExclusive(LockTracer.NONE, NODE, 1);
         clientA.acquireExclusive(LockTracer.NONE, NODE, 2);
         clientA.acquireExclusive(LockTracer.NONE, NODE, 3);
-        assertEquals(3, lockCount());
+        assertThat(lockCount()).isEqualTo(3);
 
-        assertFalse(clientB.trySharedLock(NODE, 1));
-        assertFalse(clientB.trySharedLock(NODE, 2));
-        assertFalse(clientB.trySharedLock(NODE, 3));
+        assertThat(clientB.trySharedLock(NODE, 1)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 2)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 3)).isFalse();
 
         clientA.releaseExclusive(NODE, 1, 2, 3);
 
-        assertEquals(0, lockCount());
-        assertTrue(clientB.trySharedLock(NODE, 1));
-        assertTrue(clientB.trySharedLock(NODE, 2));
-        assertTrue(clientB.trySharedLock(NODE, 3));
+        assertThat(lockCount()).isEqualTo(0);
+        assertThat(clientB.trySharedLock(NODE, 1)).isTrue();
+        assertThat(clientB.trySharedLock(NODE, 2)).isTrue();
+        assertThat(clientB.trySharedLock(NODE, 3)).isTrue();
     }
 
     @Test
@@ -335,20 +333,20 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.acquireExclusive(LockTracer.NONE, NODE, 10, 100, 1000);
         clientA.acquireShared(LockTracer.NONE, NODE, 100, 1000, 10000);
 
-        assertFalse(clientB.trySharedLock(NODE, 10));
-        assertFalse(clientB.trySharedLock(NODE, 100));
-        assertFalse(clientB.trySharedLock(NODE, 1000));
-        assertFalse(clientB.tryExclusiveLock(NODE, 10000));
-        assertEquals(4, lockCount());
+        assertThat(clientB.trySharedLock(NODE, 10)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 100)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 1000)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 10000)).isFalse();
+        assertThat(lockCount()).isEqualTo(4);
 
         clientA.releaseShared(NODE, 100, 1000);
 
-        assertFalse(clientB.trySharedLock(NODE, 10));
-        assertFalse(clientB.trySharedLock(NODE, 100));
-        assertFalse(clientB.trySharedLock(NODE, 1000));
-        assertFalse(clientB.tryExclusiveLock(NODE, 10000));
+        assertThat(clientB.trySharedLock(NODE, 10)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 100)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 1000)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 10000)).isFalse();
 
-        assertEquals(4, lockCount());
+        assertThat(lockCount()).isEqualTo(4);
     }
 
     @Test
@@ -356,20 +354,20 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.acquireShared(LockTracer.NONE, NODE, 100, 1000, 10000);
         clientA.acquireExclusive(LockTracer.NONE, NODE, 10, 100, 1000);
 
-        assertFalse(clientB.trySharedLock(NODE, 10));
-        assertFalse(clientB.trySharedLock(NODE, 100));
-        assertFalse(clientB.trySharedLock(NODE, 1000));
-        assertFalse(clientB.tryExclusiveLock(NODE, 10000));
-        assertEquals(4, lockCount());
+        assertThat(clientB.trySharedLock(NODE, 10)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 100)).isFalse();
+        assertThat(clientB.trySharedLock(NODE, 1000)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 10000)).isFalse();
+        assertThat(lockCount()).isEqualTo(4);
 
         clientA.releaseExclusive(NODE, 100, 1000);
 
-        assertFalse(clientB.trySharedLock(NODE, 10));
-        assertFalse(clientB.tryExclusiveLock(NODE, 100));
-        assertFalse(clientB.tryExclusiveLock(NODE, 1000));
-        assertFalse(clientB.tryExclusiveLock(NODE, 10000));
+        assertThat(clientB.trySharedLock(NODE, 10)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 100)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 1000)).isFalse();
+        assertThat(clientB.tryExclusiveLock(NODE, 10000)).isFalse();
 
-        assertEquals(4, lockCount());
+        assertThat(lockCount()).isEqualTo(4);
     }
 
     private int lockCount() {

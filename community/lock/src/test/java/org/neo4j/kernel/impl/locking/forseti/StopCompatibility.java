@@ -21,13 +21,8 @@ package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.lock.ResourceType.NODE;
 import static org.neo4j.lock.ResourceType.RELATIONSHIP;
 
@@ -126,7 +121,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         // clients entered the prepare phase
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept(lockCountVisitor);
-        assertEquals(0, lockCountVisitor.getLockCount());
+        assertThat(lockCountVisitor.getLockCount()).isEqualTo(0);
     }
 
     @Test
@@ -142,7 +137,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         // The client entered the prepare phase, so it gets to keep its locks
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept(lockCountVisitor);
-        assertEquals(2, lockCountVisitor.getLockCount());
+        assertThat(lockCountVisitor.getLockCount()).isEqualTo(2);
     }
 
     @Test
@@ -157,7 +152,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         // The client was stopped before it could enter the prepare phase, so all of its locks are released
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept(lockCountVisitor);
-        assertEquals(0, lockCountVisitor.getLockCount());
+        assertThat(lockCountVisitor.getLockCount()).isEqualTo(0);
     }
 
     @Test
@@ -175,7 +170,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         // clients entered the prepare phase
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept(lockCountVisitor);
-        assertEquals(0, lockCountVisitor.getLockCount());
+        assertThat(lockCountVisitor.getLockCount()).isEqualTo(0);
     }
 
     @Test
@@ -191,42 +186,49 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         // Stopped essentially has no effect when it comes after the client has entered the prepare phase
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept(lockCountVisitor);
-        assertEquals(2, lockCountVisitor.getLockCount());
+        assertThat(lockCountVisitor.getLockCount()).isEqualTo(2);
     }
 
     @Test
     void prepareMustThrowWhenClientStopped() {
-        assertThrows(LockClientStoppedException.class, () -> stoppedClient().prepareForCommit());
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> stoppedClient().prepareForCommit());
     }
 
     @Test
     void acquireSharedThrowsWhenClientStopped() {
-        assertThrows(LockClientStoppedException.class, () -> stoppedClient().acquireShared(TRACER, NODE, 1));
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> stoppedClient().acquireShared(TRACER, NODE, 1));
     }
 
     @Test
     void acquireExclusiveThrowsWhenClientStopped() {
-        assertThrows(LockClientStoppedException.class, () -> stoppedClient().acquireExclusive(TRACER, NODE, 1));
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> stoppedClient().acquireExclusive(TRACER, NODE, 1));
     }
 
     @Test
     void trySharedLockThrowsWhenClientStopped() {
-        assertThrows(LockClientStoppedException.class, () -> stoppedClient().trySharedLock(NODE, 1));
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> stoppedClient().trySharedLock(NODE, 1));
     }
 
     @Test
     void tryExclusiveLockThrowsWhenClientStopped() {
-        assertThrows(LockClientStoppedException.class, () -> stoppedClient().tryExclusiveLock(NODE, 1));
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> stoppedClient().tryExclusiveLock(NODE, 1));
     }
 
     @Test
     void releaseSharedThrowsWhenClientStopped() {
-        assertThrows(LockClientStoppedException.class, () -> stoppedClient().releaseShared(NODE, 1));
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> stoppedClient().releaseShared(NODE, 1));
     }
 
     @Test
     void releaseExclusiveThrowsWhenClientStopped() {
-        assertThrows(LockClientStoppedException.class, () -> stoppedClient().releaseExclusive(NODE, 1));
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> stoppedClient().releaseExclusive(NODE, 1));
     }
 
     @Test
@@ -556,7 +558,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
 
         Collections.sort(expectedLockedIds);
         Collections.sort(seenLockedIds);
-        assertEquals(expectedLockedIds, seenLockedIds, "unexpected locked resource ids");
+        assertThat(seenLockedIds).as("unexpected locked resource ids").isEqualTo(expectedLockedIds);
     }
 
     private void assertNoLocksHeld() {
@@ -576,34 +578,40 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         for (int i = 0; i < 30 && !suite.isAwaitingLockAcquisition(lockAcquisition.executor); i++) {
             LockSupport.parkNanos(MILLISECONDS.toNanos(100));
         }
-        assertFalse(lockAcquisition.completed(), "locking thread completed");
+        assertThat(lockAcquisition.completed()).as("locking thread completed").isFalse();
     }
 
     private static void assertLockAcquisitionSucceeded(LockAcquisition lockAcquisition) throws Exception {
         boolean completed = false;
         for (int i = 0; i < 30; i++) {
             try {
-                assertNull(lockAcquisition.result());
+                assertThat(lockAcquisition.result()).isNull();
                 completed = true;
             } catch (TimeoutException ignore) {
             }
         }
-        assertTrue(completed, "lock was not acquired in time");
-        assertTrue(lockAcquisition.completed(), "locking thread seem to be still in progress");
+        assertThat(completed).as("lock was not acquired in time").isTrue();
+        assertThat(lockAcquisition.completed())
+                .as("locking thread seem to be still in progress")
+                .isTrue();
     }
 
     private static void assertLockAcquisitionFailed(LockAcquisition lockAcquisition) {
         ExecutionException executionException = null;
         for (int i = 0; i < 30; i++) {
-            Exception e = assertThrows(Exception.class, lockAcquisition::result);
+            Exception e = assertThatExceptionOfType(Exception.class)
+                    .isThrownBy(lockAcquisition::result)
+                    .actual();
             if (e instanceof ExecutionException ee) {
                 executionException = ee;
                 break;
             }
         }
-        assertNotNull(executionException, "execution should fail");
+        assertThat(executionException).as("execution should fail").isNotNull();
         assertThat(executionException.getCause()).isInstanceOf(LockClientStoppedException.class);
-        assertTrue(lockAcquisition.completed(), "locking thread seem to be still in progress");
+        assertThat(lockAcquisition.completed())
+                .as("locking thread seem to be still in progress")
+                .isTrue();
     }
 
     private static void await(CountDownLatch latch) throws InterruptedException {

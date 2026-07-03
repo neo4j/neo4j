@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.lock.ResourceType.NODE;
 
 import org.junit.jupiter.api.Test;
@@ -51,7 +50,7 @@ abstract class CloseCompatibility extends LockCompatibilityTestSupport {
         locks.close();
 
         // THEN
-        assertThrows(IllegalStateException.class, locks::newClient);
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(locks::newClient);
     }
 
     @Test
@@ -75,43 +74,46 @@ abstract class CloseCompatibility extends LockCompatibilityTestSupport {
 
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept(lockCountVisitor);
-        assertEquals(0, lockCountVisitor.getLockCount());
+        assertThat(lockCountVisitor.getLockCount()).isEqualTo(0);
     }
 
     @Test
     void shouldNotBeAbleToAcquireSharedLockFromClosedClient() {
         clientA.close();
-        assertThrows(LockClientStoppedException.class, () -> clientA.acquireShared(LockTracer.NONE, NODE, 1L));
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> clientA.acquireShared(LockTracer.NONE, NODE, 1L));
     }
 
     @Test
     void shouldNotBeAbleToAcquireExclusiveLockFromClosedClient() {
         clientA.close();
-        assertThrows(LockClientStoppedException.class, () -> clientA.acquireExclusive(LockTracer.NONE, NODE, 1L));
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> clientA.acquireExclusive(LockTracer.NONE, NODE, 1L));
     }
 
     @Test
     void shouldNotBeAbleToTryAcquireSharedLockFromClosedClient() {
         clientA.close();
-        assertThrows(LockClientStoppedException.class, () -> clientA.trySharedLock(NODE, 1L));
+        assertThatExceptionOfType(LockClientStoppedException.class).isThrownBy(() -> clientA.trySharedLock(NODE, 1L));
     }
 
     @Test
     void shouldNotBeAbleToTryAcquireExclusiveLockFromClosedClient() {
         clientA.close();
-        assertThrows(LockClientStoppedException.class, () -> clientA.tryExclusiveLock(NODE, 1L));
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> clientA.tryExclusiveLock(NODE, 1L));
     }
 
     @Test
     void releaseTryLocksOnClose() {
-        assertTrue(clientA.trySharedLock(ResourceType.NODE, 1L));
-        assertTrue(clientB.tryExclusiveLock(ResourceType.NODE, 2L));
+        assertThat(clientA.trySharedLock(ResourceType.NODE, 1L)).isTrue();
+        assertThat(clientB.tryExclusiveLock(ResourceType.NODE, 2L)).isTrue();
 
         clientA.close();
         clientB.close();
 
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept(lockCountVisitor);
-        assertEquals(0, lockCountVisitor.getLockCount());
+        assertThat(lockCountVisitor.getLockCount()).isEqualTo(0);
     }
 }

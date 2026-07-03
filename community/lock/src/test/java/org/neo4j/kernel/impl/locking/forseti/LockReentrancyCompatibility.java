@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.lock.ResourceType.NODE;
 
 import java.util.concurrent.Future;
@@ -228,7 +228,8 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport 
         locks.accept(releasedLockExplorer);
 
         // we still hold same lock as before
-        assertEquals(sharedLockExplorer.getLockIdentityHashCode(), releasedLockExplorer.getLockIdentityHashCode());
+        assertThat(releasedLockExplorer.getLockIdentityHashCode())
+                .isEqualTo(sharedLockExplorer.getLockIdentityHashCode());
     }
 
     private static class LockIdentityExplorer implements LockManager.Visitor {

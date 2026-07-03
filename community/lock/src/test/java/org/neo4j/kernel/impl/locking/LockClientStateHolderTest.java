@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.kernel.impl.locking.NoLocksClient.NO_LOCKS_CLIENT;
 
 import org.junit.jupiter.api.Test;
@@ -34,15 +33,15 @@ class LockClientStateHolderTest {
         LockClientStateHolder lockClientStateHolder = new LockClientStateHolder();
 
         // expect
-        assertFalse(lockClientStateHolder.hasActiveClients());
+        assertThat(lockClientStateHolder.hasActiveClients()).isFalse();
         lockClientStateHolder.incrementActiveClients(NO_LOCKS_CLIENT);
-        assertTrue(lockClientStateHolder.hasActiveClients());
+        assertThat(lockClientStateHolder.hasActiveClients()).isTrue();
         lockClientStateHolder.incrementActiveClients(NO_LOCKS_CLIENT);
         lockClientStateHolder.incrementActiveClients(NO_LOCKS_CLIENT);
         lockClientStateHolder.decrementActiveClients();
         lockClientStateHolder.decrementActiveClients();
         lockClientStateHolder.decrementActiveClients();
-        assertFalse(lockClientStateHolder.hasActiveClients());
+        assertThat(lockClientStateHolder.hasActiveClients()).isFalse();
     }
 
     @Test
@@ -54,9 +53,9 @@ class LockClientStateHolderTest {
         lockClientStateHolder.stopClient();
 
         // then
-        assertFalse(lockClientStateHolder.hasActiveClients());
-        assertThrows(
-                LockClientStoppedException.class, () -> lockClientStateHolder.incrementActiveClients(NO_LOCKS_CLIENT));
+        assertThat(lockClientStateHolder.hasActiveClients()).isFalse();
+        assertThatExceptionOfType(LockClientStoppedException.class)
+                .isThrownBy(() -> lockClientStateHolder.incrementActiveClients(NO_LOCKS_CLIENT));
     }
 
     @Test
@@ -71,17 +70,17 @@ class LockClientStateHolderTest {
         lockClientStateHolder.incrementActiveClients(NO_LOCKS_CLIENT);
 
         // expect
-        assertTrue(lockClientStateHolder.hasActiveClients());
+        assertThat(lockClientStateHolder.hasActiveClients()).isTrue();
 
         // and when
         lockClientStateHolder.stopClient();
 
         // expect
-        assertTrue(lockClientStateHolder.hasActiveClients());
+        assertThat(lockClientStateHolder.hasActiveClients()).isTrue();
         lockClientStateHolder.decrementActiveClients();
-        assertTrue(lockClientStateHolder.hasActiveClients());
+        assertThat(lockClientStateHolder.hasActiveClients()).isTrue();
         lockClientStateHolder.decrementActiveClients();
-        assertFalse(lockClientStateHolder.hasActiveClients());
+        assertThat(lockClientStateHolder.hasActiveClients()).isFalse();
     }
 
     @Test
@@ -95,25 +94,25 @@ class LockClientStateHolderTest {
         lockClientStateHolder.decrementActiveClients();
 
         // expect
-        assertTrue(lockClientStateHolder.hasActiveClients());
+        assertThat(lockClientStateHolder.hasActiveClients()).isTrue();
 
         // and when
         lockClientStateHolder.stopClient();
 
         // expect
-        assertTrue(lockClientStateHolder.hasActiveClients());
-        assertTrue(lockClientStateHolder.isStopped());
+        assertThat(lockClientStateHolder.hasActiveClients()).isTrue();
+        assertThat(lockClientStateHolder.isStopped()).isTrue();
 
         // and when
         lockClientStateHolder.reset();
 
         // expect
-        assertFalse(lockClientStateHolder.hasActiveClients());
-        assertFalse(lockClientStateHolder.isStopped());
+        assertThat(lockClientStateHolder.hasActiveClients()).isFalse();
+        assertThat(lockClientStateHolder.isStopped()).isFalse();
 
         // when
         lockClientStateHolder.incrementActiveClients(NO_LOCKS_CLIENT);
-        assertTrue(lockClientStateHolder.hasActiveClients());
-        assertFalse(lockClientStateHolder.isStopped());
+        assertThat(lockClientStateHolder.hasActiveClients()).isTrue();
+        assertThat(lockClientStateHolder.isStopped()).isFalse();
     }
 }

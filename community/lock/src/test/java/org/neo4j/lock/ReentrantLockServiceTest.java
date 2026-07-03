@@ -24,7 +24,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.getBlocker;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 
@@ -79,7 +78,7 @@ class ReentrantLockServiceTest {
         locks.acquireNodeLock(42, EXCLUSIVE).release();
 
         // then
-        assertEquals(0, locks.lockCount());
+        assertThat(locks.lockCount()).isEqualTo(0);
     }
 
     @Test
@@ -96,7 +95,7 @@ class ReentrantLockServiceTest {
             // when
             try (Lock inner = second = locks.acquireNodeLock(666, EXCLUSIVE)) {
                 assertLock(lock, 666, 2, 0);
-                assertEquals(lock.toString(), inner.toString());
+                assertThat(inner).hasToString(lock.toString());
             }
 
             // then

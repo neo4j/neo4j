@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.lock.ResourceType.LABEL;
 import static org.neo4j.lock.ResourceType.NODE;
 import static org.neo4j.lock.ResourceType.RELATIONSHIP;
@@ -47,9 +45,9 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
         clientA.initialize(LeaseService.NO_LEASES.newClient(), 15, EmptyMemoryTracker.INSTANCE, Config.defaults());
         clientA.acquireExclusive(LockTracer.NONE, NODE, 1);
 
-        assertEquals(1, clientA.activeLockCount());
+        assertThat(clientA.activeLockCount()).isEqualTo(1);
         var lock = clientA.activeLocks(EmptyMemoryTracker.INSTANCE).iterator().next();
-        assertEquals(15, lock.transactionId());
+        assertThat(lock.transactionId()).isEqualTo(15);
     }
 
     @Test
@@ -68,11 +66,11 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
                         description,
                         estimatedWaitTime,
                         lockIdentityHashCode) -> {
-                    assertEquals(userTransactionId, transactionId);
-                    assertSame(NODE, resourceType);
+                    assertThat(transactionId).isEqualTo(userTransactionId);
+                    assertThat(resourceType).isSameAs(NODE);
                     observedLocks.increment();
                 });
-        assertEquals(1, observedLocks.intValue());
+        assertThat(observedLocks.intValue()).isEqualTo(1);
     }
 
     @Test
@@ -91,11 +89,11 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
                         description,
                         estimatedWaitTime,
                         lockIdentityHashCode) -> {
-                    assertEquals(userTransactionId, transactionId);
-                    assertSame(NODE, resourceType);
+                    assertThat(transactionId).isEqualTo(userTransactionId);
+                    assertThat(resourceType).isSameAs(NODE);
                     observedLocks.increment();
                 });
-        assertEquals(1, observedLocks.intValue());
+        assertThat(observedLocks.intValue()).isEqualTo(1);
     }
 
     @Test
@@ -122,14 +120,14 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
                         estimatedWaitTime,
                         lockIdentityHashCode) -> {
                     observedTransactions.add(transactionId);
-                    assertSame(NODE, resourceType);
+                    assertThat(resourceType).isSameAs(NODE);
                     observedLocks.increment();
                 });
 
-        assertEquals(2, observedLocks.intValue());
-        assertTrue(
-                observedTransactions.containsAll(userTransactionIdA, userTransactionIdB),
-                "Observer set: " + observedTransactions);
+        assertThat(observedLocks.intValue()).isEqualTo(2);
+        assertThat(observedTransactions.containsAll(userTransactionIdA, userTransactionIdB))
+                .as("Observer set: " + observedTransactions)
+                .isTrue();
     }
 
     @Test
@@ -143,14 +141,13 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
         var locks = clientA.activeLocks(EmptyMemoryTracker.INSTANCE);
 
         // then
-        assertEquals(
-                asList(
+        assertThat(locks)
+                .isEqualTo(asList(
                         new ActiveLock(NODE, LockType.EXCLUSIVE, 1, 1),
                         new ActiveLock(NODE, LockType.EXCLUSIVE, 1, 2),
                         new ActiveLock(NODE, LockType.EXCLUSIVE, 1, 3),
                         new ActiveLock(NODE, LockType.SHARED, 1, 4),
-                        new ActiveLock(NODE, LockType.SHARED, 1, 5)),
-                locks);
+                        new ActiveLock(NODE, LockType.SHARED, 1, 5)));
     }
 
     @Test
@@ -165,6 +162,6 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
         long count = clientA.activeLockCount();
 
         // then
-        assertEquals(3, count);
+        assertThat(count).isEqualTo(3);
     }
 }
