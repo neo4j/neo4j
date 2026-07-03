@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Eagerly
 
-import scala.annotation.nowarn
 import scala.language.implicitConversions
 
 object ASTAnnotationMap {
@@ -50,15 +49,13 @@ object ASTAnnotationMap {
 
     override def toString: String = s"PositionedNode($node@${node.position.offset})"
 
-    @nowarn("msg=eliminated by erasure")
     def canEqual(a: Any): Boolean = {
-      a.isInstanceOf[PositionedNode[N]]
+      a.isInstanceOf[PositionedNode[N @unchecked]]
     }
 
-    @nowarn("msg=eliminated by erasure")
     override def equals(that: Any): Boolean = {
       that match {
-        case that: PositionedNode[N] =>
+        case that: PositionedNode[N @unchecked] =>
           that.canEqual(this) &&
           this.node == that.node &&
           this.node.position == that.node.position

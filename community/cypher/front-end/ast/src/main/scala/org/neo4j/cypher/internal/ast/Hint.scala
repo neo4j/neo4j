@@ -16,18 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOrScan
-import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingIndexHintSpec
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
-import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExpandHints
 import org.neo4j.cypher.internal.ast.semantics.iterableOnceSemanticChecking
 import org.neo4j.cypher.internal.ast.semantics.liftSemanticEitherFunc
-import org.neo4j.cypher.internal.ast.semantics.liftSemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.optionSemanticChecking
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -87,8 +83,8 @@ case class UsingIndexHint(
   variable: Variable,
   labelOrRelType: LabelOrRelTypeName,
   properties: Seq[PropertyKeyName],
-  spec: UsingIndexHintSpec = SeekOrScan,
-  indexType: UsingIndexHintType = UsingAnyIndexType
+  spec: UsingIndexHintSpec = UsingIndexHint.SeekOrScan,
+  indexType: UsingIndexHintType = UsingIndexHint.UsingAnyIndexType
 )(val position: InputPosition) extends LeafPlanHint
 
 object UsingIndexHint {

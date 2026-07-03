@@ -140,16 +140,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <configuration>
-          <args combine.self="append">
-            <arg>-nowarn</arg>
-          </args>
-        </configuration>
-      </plugin>
-
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
@@ -163,30 +153,6 @@
   </build>
 
   <profiles>
-    <profile>
-      <id>scala-fatal-warnings</id>
-      <activation>
-        <property>
-          <name>scalaFatalWarnings</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>net.alchim31.maven</groupId>
-            <artifactId>scala-maven-plugin</artifactId>
-            <configuration>
-              <args combine.children="append">
-                <arg>-nowarn</arg>
-                <arg>-Xfatal-warnings</arg>
-                <arg>-feature</arg>
-              </args>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
     <profile>
       <id>skip-open-cypher-ast</id>
       <activation>

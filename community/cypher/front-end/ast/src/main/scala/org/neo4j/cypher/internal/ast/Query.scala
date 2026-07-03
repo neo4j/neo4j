@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen.msg
-import org.neo4j.cypher.internal.ast.ConditionalQueryWhen.name
 import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier

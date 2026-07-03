@@ -866,10 +866,6 @@ private class DefaultExpressionStringifier(
     ).flatten.mkString("(", " ", ")")
   }
 
-  sealed private trait Binding
-  private val Syntactic: Binding = new Binding {}
-  private case class Precedence(level: Int) extends Binding
-
   private def binding(in: Expression): Binding = in match {
     case _: Or |
       _: Ors =>
@@ -1095,3 +1091,7 @@ object ExpressionStringifier {
     }
   }
 }
+
+sealed private trait Binding
+private case object Syntactic extends Binding
+private case class Precedence(level: Int) extends Binding

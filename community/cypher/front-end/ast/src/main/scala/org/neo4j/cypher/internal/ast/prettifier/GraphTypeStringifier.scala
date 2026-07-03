@@ -59,7 +59,6 @@ object GraphTypeStringifier {
       case (_: NodeType, _)           => -1
       case (x: EdgeType, y: EdgeType) => x.identifyingLabel.name.compareTo(y.identifyingLabel.name)
       case (_: EdgeType, _: NodeType) => 1
-      case (_: EdgeType, _)           => -1
     }
   }
 

@@ -1859,13 +1859,9 @@ object ProjectionClause {
 
   def checkAliasedReturnItems(returnItems: ReturnItems, clauseName: String): SemanticState => Seq[SemanticError] =
     state =>
-      returnItems match {
-        case li: ReturnItems =>
-          li.items.filter(item => item.alias.isEmpty).map(i => {
-            SemanticError.unaliasedReturnItem(clauseName, i.position)
-          })
-        case _ => Seq()
-      }
+      returnItems.items.filter(item => item.alias.isEmpty).map(i => {
+        SemanticError.unaliasedReturnItem(clauseName, i.position)
+      })
 }
 
 sealed trait ProjectionClause extends HorizonClause {

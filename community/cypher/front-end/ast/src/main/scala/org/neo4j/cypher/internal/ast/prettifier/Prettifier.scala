@@ -531,8 +531,6 @@ case class Prettifier(
 
       case AlterCurrentGraphType(graphType, operation, _) =>
         s"ALTER CURRENT GRAPH TYPE ${operation.name()} ${GraphTypeStringifier.apply(graphType)}"
-
-      case _ => throw new IllegalStateException(s"Unknown command: $command")
     }
     useString + commandString
   }
@@ -1725,7 +1723,6 @@ object Prettifier {
         else
           s"ROLES ${escapeNames(names)}"
       case ShowAllPrivileges() => "ALL"
-      case _                   => "<unknown>"
     }
   }
 
