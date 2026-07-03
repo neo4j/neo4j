@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +57,7 @@ import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.batchimport.api.input.PropertySizeCalculator;
 import org.neo4j.batchimport.api.input.ReadableGroups;
+import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Configuration;
@@ -67,6 +69,7 @@ import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.Inputs;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.ByteUnit;
@@ -502,9 +505,13 @@ public class CsvInput implements Input {
                 Header header = null;
                 final var data = dataFactory.create(sampleConfig);
                 try (var decorator = data.decorator()) {
-                    final var stream = data.stream();
+                    RawIterator<CharReadable, IOException> stream = data.stream();
+                    Iterator<Path> originalFiles = Iterators.iterator(dataFactory.files());
                     while (stream.hasNext()) {
                         CharReadable source = stream.next();
+                        // source.file() has undergone "adaptation", see Readables.FromFile.adaptPath.
+                        // But for the headersByPath Map, we want the original file path.
+                        Path originalFile = originalFiles.next();
                         try {
                             final var sourceDescription = source.sourceDescription();
                             if (!seenSourceFiles.add(sourceDescription)) {
@@ -520,7 +527,7 @@ public class CsvInput implements Input {
                                         source, headerFactory, defaultIdType, sampleConfig, groups, monitor);
                                 headerChecker.accept(header, sourceDescription, decorator == NO_DECORATOR);
                             }
-                            headersByPath.put(source.file(), header);
+                            headersByPath.put(originalFile, header);
                         } catch (Throwable t) {
                             source.close();
                             throw t;

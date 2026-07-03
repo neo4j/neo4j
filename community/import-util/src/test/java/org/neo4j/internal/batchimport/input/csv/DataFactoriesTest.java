@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
+import static java.nio.charset.Charset.defaultCharset;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.csv.reader.Readables.wrap;
@@ -27,6 +28,8 @@ import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultForm
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.function.Function;
@@ -36,29 +39,33 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.batchimport.api.input.IdType;
-import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.MultiReadable;
-import org.neo4j.csv.reader.Readables;
-import org.neo4j.function.IOFunctions;
 import org.neo4j.internal.batchimport.input.DuplicateHeaderException;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.InputException;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.CSVHeaderInformation;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TimeValue;
 
+@TestDirectoryExtension
 class DataFactoriesTest {
     private static final int BUFFER_SIZE = 10_000;
     private static final Configuration COMMAS =
             Configuration.COMMAS.toBuilder().withBufferSize(BUFFER_SIZE).build();
     private static final Configuration TABS =
             Configuration.TABS.toBuilder().withBufferSize(BUFFER_SIZE).build();
+
+    @Inject
+    private TestDirectory directory;
 
     private final Groups groups = new Groups();
     private final Group globalGroup = groups.getOrCreate(null);
@@ -280,11 +287,9 @@ class DataFactoriesTest {
     @Test
     void shouldParseHeaderFromFirstLineOfFirstInputFile() throws Exception {
         // GIVEN
-        final CharReadable firstSource = wrap("id:ID\tname:String\tbirth_date:long");
-        final CharReadable secondSource = wrap("0\tThe node\t123456789");
-        DataFactory dataFactory = DataFactories.data(
-                value -> value,
-                () -> new MultiReadable(Readables.iterator(IOFunctions.identity(), firstSource, secondSource)));
+        Path headerFile = writeFile("header", "id:ID\tname:String\tbirth_date:long");
+        Path dataFile = writeFile("data", "0\tThe node\t123456789");
+        DataFactory dataFactory = DataFactories.data(value -> value, defaultCharset(), headerFile, dataFile);
         Header.Factory headerFactory = defaultFormatNodeFileHeader();
         Extractors extractors = new Extractors();
 
@@ -601,6 +606,12 @@ class DataFactoriesTest {
 
     private static CharSeeker seeker(String data) {
         return CharSeekers.charSeeker(wrap(data), SEEKER_CONFIG, false);
+    }
+
+    private Path writeFile(String name, String content) throws IOException {
+        Path file = directory.file(name);
+        Files.writeString(file, content, defaultCharset());
+        return file;
     }
 
     private Header.Entry entry(String name, Type type, Extractor<?> extractor) {

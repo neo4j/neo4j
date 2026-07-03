@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
+import java.nio.file.Path;
 import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.csv.reader.Configuration;
 
@@ -27,4 +28,10 @@ import org.neo4j.csv.reader.Configuration;
  */
 public interface DataFactory {
     Data create(Configuration config);
+
+    /**
+     * The files that were used to construct this factory. For any reading purposes,
+     * use {@link #create(Configuration)} instead.
+     */
+    Path[] files();
 }

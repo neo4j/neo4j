@@ -43,19 +43,15 @@ import static org.neo4j.batchimport.api.input.IdType.INTEGER;
 import static org.neo4j.batchimport.api.input.IdType.STRING;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.csv.reader.Configuration.TABS;
-import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.internal.batchimport.input.csv.CsvInput.NO_MONITOR;
-import static org.neo4j.internal.batchimport.input.csv.Data.undecorated;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.datas;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.internal.helpers.ArrayUtil.union;
-import static org.neo4j.internal.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -67,19 +63,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
@@ -101,13 +93,10 @@ import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.batchimport.api.input.PropertySizeCalculator;
-import org.neo4j.collection.RawIterator;
-import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.csv.reader.Readables;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.batchimport.input.DuplicateHeaderException;
 import org.neo4j.internal.batchimport.input.Groups;
@@ -117,7 +106,6 @@ import org.neo4j.internal.batchimport.input.InputEntityDecorators;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.test.RandomSupport;
@@ -215,48 +203,6 @@ class CsvInputTest {
             assertNextRelationship(relationships, "node1", "node2", "KNOWS", properties("since", 1234567L));
             assertNextRelationship(relationships, "node2", "node10", "HACKS", properties("since", 987654L));
         }
-    }
-
-    @ParameterizedTest
-    @EnumSource(MultilineSetting.class)
-    void shouldCloseDataIteratorsInTheEnd(MultilineSetting setting) throws Exception {
-        // GIVEN
-        CapturingDataFactories nodeData = new CapturingDataFactories(config -> charReader("1"), NO_DECORATOR);
-        CapturingDataFactories relationshipData = new CapturingDataFactories(
-                config -> charReader("1,1"), InputEntityDecorators.defaultRelationshipType("TYPE"));
-
-        IdType idType = IdType.STRING;
-        Input input = new CsvInput(
-                nodeData,
-                header(entry(null, Type.ID, CsvInput.idExtractor(idType, extractors))),
-                relationshipData,
-                header(
-                        entry(null, Type.START_ID, CsvInput.idExtractor(idType, extractors)),
-                        entry(null, Type.END_ID, CsvInput.idExtractor(idType, extractors))),
-                idType,
-                config(setting),
-                false,
-                NO_MONITOR,
-                groups,
-                INSTANCE);
-        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
-        // WHEN
-        try (InputIterator iterator = input.nodes(EMPTY).iterator()) {
-            readNext(iterator);
-        }
-        try (InputIterator iterator = input.relationships(EMPTY).iterator()) {
-            readNext(iterator);
-        }
-
-        // THEN
-        assertClosed(nodeData.last());
-        assertClosed(relationshipData.last());
-    }
-
-    private static void assertClosed(CharReadable reader) {
-        assertThatThrownBy(() -> reader.read(new char[1], 0, 1))
-                .isInstanceOf(IOException.class)
-                .hasMessageContaining("closed");
     }
 
     @ParameterizedTest
@@ -1293,7 +1239,7 @@ class CsvInputTest {
     @EnumSource(MultilineSetting.class)
     void shouldIgnoreNodeEntriesMarkedIgnoreUsingHeader(MultilineSetting setting) throws Exception {
         // GIVEN
-        Iterable<DataFactory> data = datas(CsvInputTest.data("""
+        Iterable<DataFactory> data = datas(data("""
                         :ID,name:IGNORE,other:int,:LABEL
                         1,Mattias,10,Person
                         2,Johan,111,Person
@@ -1323,7 +1269,7 @@ class CsvInputTest {
     @EnumSource(MultilineSetting.class)
     void shouldIgnoreRelationshipEntriesMarkedIgnoreUsingHeader(MultilineSetting setting) throws Exception {
         // GIVEN
-        Iterable<DataFactory> data = datas(CsvInputTest.data("""
+        Iterable<DataFactory> data = datas(data("""
                         :START_ID,:TYPE,:END_ID,prop:IGNORE,other:int
                         1,KNOWS,2,Mattias,10
                         2,KNOWS,3,Johan,111
@@ -1354,7 +1300,7 @@ class CsvInputTest {
     void shouldPropagateExceptionFromFailingDecorator(MultilineSetting setting) {
         // GIVEN
         RuntimeException failure = new RuntimeException("FAILURE");
-        Iterable<DataFactory> data = datas(CsvInputTest.data(":ID,name\n1,Mattias", new FailingNodeDecorator(failure)));
+        Iterable<DataFactory> data = datas(data(":ID,name\n1,Mattias", new FailingNodeDecorator(failure)));
         Input input = new CsvInput(
                 data,
                 defaultFormatNodeFileHeader(),
@@ -1378,7 +1324,7 @@ class CsvInputTest {
     @EnumSource(MultilineSetting.class)
     void shouldNotIncludeEmptyArraysInEntities(MultilineSetting setting) throws Exception {
         // GIVEN
-        Iterable<DataFactory> data = datas(CsvInputTest.data("""
+        Iterable<DataFactory> data = datas(data("""
                         :ID,sprop:String[],lprop:long[]
                         1,,
                         2,a;b,10;20"""));
@@ -1407,7 +1353,7 @@ class CsvInputTest {
     @EnumSource(MultilineSetting.class)
     void shouldTreatEmptyQuotedStringsAsNullIfConfiguredTo(MultilineSetting setting) throws Exception {
         // GIVEN
-        Iterable<DataFactory> data = datas(CsvInputTest.data(":ID,one,two,three\n" + "1,\"\",,value"));
+        Iterable<DataFactory> data = datas(data(":ID,one,two,three\n" + "1,\"\",,value"));
         Configuration config =
                 config(setting).toBuilder().withEmptyQuotedStringsAsNull(true).build();
 
@@ -1435,7 +1381,7 @@ class CsvInputTest {
     @EnumSource(MultilineSetting.class)
     void shouldIgnoreEmptyExtraColumns(MultilineSetting setting) throws Exception {
         // GIVEN
-        Iterable<DataFactory> data = datas(CsvInputTest.data("""
+        Iterable<DataFactory> data = datas(data("""
                 :ID,one
                 1,test,
                 2,test,,additional"""));
@@ -1470,7 +1416,7 @@ class CsvInputTest {
     @EnumSource(MultilineSetting.class)
     void shouldSkipRelationshipValidationIfToldTo(MultilineSetting setting) throws Exception {
         // GIVEN
-        Iterable<DataFactory> data = datas(CsvInputTest.data(":START_ID,:END_ID,:TYPE\n" + ",,"));
+        Iterable<DataFactory> data = datas(data(":START_ID,:END_ID,:TYPE\n" + ",,"));
         Input input = new CsvInput(
                 datas(),
                 defaultFormatNodeFileHeader(),
@@ -1577,20 +1523,9 @@ class CsvInputTest {
     @Test
     void shouldReportDuplicateNodeSourceFiles() throws IOException {
         // given
-        String sourceDescription = "The single data source";
-        Supplier<CharReadable> source = () -> wrap(dataWithSourceDescription(":ID", sourceDescription), 3, null);
-        Iterable<DataFactory> data = datas(config -> new Data() {
-            @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                // Contains two of the same file
-                return asRawIterator(iterator(source.get(), source.get()));
-            }
-
-            @Override
-            public Decorator decorator() {
-                return NO_DECORATOR;
-            }
-        });
+        Path file = writeFile("node-source", ":ID");
+        // The same file is used twice
+        Iterable<DataFactory> data = datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file, file));
         CsvInput.Monitor monitor = mock(CsvInput.Monitor.class);
 
         // when
@@ -1608,27 +1543,15 @@ class CsvInputTest {
                 .validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
 
         // then
-        verify(monitor).duplicateSourceFile(sourceDescription);
+        verify(monitor).duplicateSourceFile(sourceDescription(file));
     }
 
     @Test
     void shouldReportDuplicateRelationshipSourceFiles() throws IOException {
         // given
-        String sourceDescription = "The single data source";
-        Supplier<CharReadable> source =
-                () -> wrap(dataWithSourceDescription(":START_ID,:END_ID,:TYPE", sourceDescription), 3, null);
-        Iterable<DataFactory> data = datas(config -> new Data() {
-            @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                // Contains two of the same file
-                return asRawIterator(iterator(source.get(), source.get()));
-            }
-
-            @Override
-            public Decorator decorator() {
-                return NO_DECORATOR;
-            }
-        });
+        Path file = writeFile("relationship-source", ":START_ID,:END_ID,:TYPE");
+        // The same file is used twice
+        Iterable<DataFactory> data = datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file, file));
         CsvInput.Monitor monitor = mock(CsvInput.Monitor.class);
 
         // when
@@ -1646,39 +1569,19 @@ class CsvInputTest {
                 .validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
 
         // then
-        verify(monitor).duplicateSourceFile(sourceDescription);
+        verify(monitor).duplicateSourceFile(sourceDescription(file));
     }
 
     @Test
     void shouldReportDuplicateSourceFileUsedAsBothNodeAndRelationshipSourceFile() throws IOException {
         // given
-        String sourceDescription = "The single data source";
-        Supplier<CharReadable> nodeHeaderSource = () -> wrap(dataWithSourceDescription(":ID", "node source"), 3, null);
-        Supplier<CharReadable> relationshipHeaderSource =
-                () -> wrap(dataWithSourceDescription(":START_ID,:END_ID,:TYPE", "relationship source"), 10, null);
-        Supplier<CharReadable> source = () -> wrap(dataWithSourceDescription("1,2,3", sourceDescription), 6, null);
-        Iterable<DataFactory> nodeData = datas(config -> new Data() {
-            @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                return asRawIterator(iterator(nodeHeaderSource.get(), source.get()));
-            }
-
-            @Override
-            public Decorator decorator() {
-                return NO_DECORATOR;
-            }
-        });
-        Iterable<DataFactory> relationshipData = datas(config -> new Data() {
-            @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                return asRawIterator(iterator(relationshipHeaderSource.get(), source.get()));
-            }
-
-            @Override
-            public Decorator decorator() {
-                return NO_DECORATOR;
-            }
-        });
+        Path nodeHeader = writeFile("node-source", ":ID");
+        Path relationshipHeader = writeFile("relationship-source", ":START_ID,:END_ID,:TYPE");
+        Path sharedDataFile = writeFile("shared-source", "1,2,3");
+        Iterable<DataFactory> nodeData =
+                datas(DataFactories.data(NO_DECORATOR, defaultCharset(), nodeHeader, sharedDataFile));
+        Iterable<DataFactory> relationshipData =
+                datas(DataFactories.data(NO_DECORATOR, defaultCharset(), relationshipHeader, sharedDataFile));
         CsvInput.Monitor monitor = mock(CsvInput.Monitor.class);
 
         // when
@@ -1696,26 +1599,20 @@ class CsvInputTest {
                 .validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
 
         // then
-        verify(monitor).duplicateSourceFile(sourceDescription);
-    }
-
-    private static Reader dataWithSourceDescription(String data, String sourceDescription) {
-        return new StringReader(data) {
-            @Override
-            public String toString() {
-                return sourceDescription;
-            }
-        };
+        verify(monitor).duplicateSourceFile(sourceDescription(sharedDataFile));
     }
 
     @Test
     void shouldNormalizeTypes() throws IOException {
         // given
+        Path source1 = writeFile("source1", ":ID,shortProp:short,intProp:int");
+        Path source2 = writeFile("source2", ":ID,floatProp:float,doubleProp:double");
+        Path source3 = writeFile("source3", ":START_ID,:END_ID,byteProp:byte,longProp:long");
+        // A non-NO_DECORATOR decorator so that validation doesn't also report missing labels/type
         Iterable<DataFactory> nodeData = datas(
-                data("source1", ":ID,shortProp:short,intProp:int"),
-                data("source2", ":ID,floatProp:float,doubleProp:double"));
-        Iterable<DataFactory> relationshipData =
-                datas(data("source3", ":START_ID,:END_ID,byteProp:byte,longProp:long"));
+                DataFactories.data(value -> value, defaultCharset(), source1),
+                DataFactories.data(value -> value, defaultCharset(), source2));
+        Iterable<DataFactory> relationshipData = datas(DataFactories.data(value -> value, defaultCharset(), source3));
         CsvInput.Monitor monitor = mock(CsvInput.Monitor.class);
 
         // when
@@ -1733,10 +1630,13 @@ class CsvInputTest {
         input.validateAndEstimate((values, NULL, INSTANCE) -> 1 /*doesn't quite matter*/, NUMBER_OF_ESTIMATE_THREADS);
 
         // then
-        verify(monitor, times(1)).typeNormalized("source1", "shortProp", "short", "long");
-        verify(monitor, times(1)).typeNormalized("source1", "intProp", "int", "long");
-        verify(monitor, times(1)).typeNormalized("source2", "floatProp", "float", "double");
-        verify(monitor, times(1)).typeNormalized("source3", "byteProp", "byte", "long");
+        String description1 = sourceDescription(source1);
+        String description2 = sourceDescription(source2);
+        String description3 = sourceDescription(source3);
+        verify(monitor, times(1)).typeNormalized(description1, "shortProp", "short", "long");
+        verify(monitor, times(1)).typeNormalized(description1, "intProp", "int", "long");
+        verify(monitor, times(1)).typeNormalized(description2, "floatProp", "float", "double");
+        verify(monitor, times(1)).typeNormalized(description3, "byteProp", "byte", "long");
         verifyNoMoreInteractions(monitor);
     }
 
@@ -1816,19 +1716,8 @@ class CsvInputTest {
     @Test
     void shouldReportNoNodeLabels() throws IOException {
         // given
-        String sourceDescription = "source";
-        Supplier<CharReadable> headerSource = () -> wrap(dataWithSourceDescription(":ID", sourceDescription), 3, null);
-        Iterable<DataFactory> data = datas(config -> new Data() {
-            @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                return asRawIterator(iterator(headerSource.get()));
-            }
-
-            @Override
-            public Decorator decorator() {
-                return NO_DECORATOR;
-            }
-        });
+        Path file = writeFile("node-source", ":ID");
+        Iterable<DataFactory> data = datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file));
         CsvInput.Monitor monitor = mock(CsvInput.Monitor.class);
 
         // when
@@ -1846,25 +1735,14 @@ class CsvInputTest {
                 .validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
 
         // then
-        verify(monitor).noNodeLabelsSpecified(sourceDescription);
+        verify(monitor).noNodeLabelsSpecified(sourceDescription(file));
     }
 
     @Test
     void shouldNotReportNoNodeLabelsIfDecorated() throws IOException {
         // given
-        String sourceDescription = "source";
-        Supplier<CharReadable> headerSource = () -> wrap(dataWithSourceDescription(":ID", sourceDescription), 3, null);
-        Iterable<DataFactory> data = datas(config -> new Data() {
-            @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                return asRawIterator(iterator(headerSource.get()));
-            }
-
-            @Override
-            public Decorator decorator() {
-                return additiveLabels("MyLabel");
-            }
-        });
+        Path file = writeFile("node-source", ":ID");
+        Iterable<DataFactory> data = datas(DataFactories.data(additiveLabels("MyLabel"), defaultCharset(), file));
         CsvInput.Monitor monitor = mock(CsvInput.Monitor.class);
 
         // when
@@ -1882,26 +1760,14 @@ class CsvInputTest {
                 .validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
 
         // then
-        verify(monitor, never()).noNodeLabelsSpecified(sourceDescription);
+        verify(monitor, never()).noNodeLabelsSpecified(sourceDescription(file));
     }
 
     @Test
     void shouldReportNoRelationshipType() throws IOException {
         // given
-        String sourceDescription = "source";
-        Supplier<CharReadable> headerSource =
-                () -> wrap(dataWithSourceDescription(":START_ID,:END_ID", sourceDescription), 3, null);
-        Iterable<DataFactory> data = datas(config -> new Data() {
-            @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                return asRawIterator(iterator(headerSource.get()));
-            }
-
-            @Override
-            public Decorator decorator() {
-                return NO_DECORATOR;
-            }
-        });
+        Path file = writeFile("relationship-source", ":START_ID,:END_ID");
+        Iterable<DataFactory> data = datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file));
         CsvInput.Monitor monitor = mock(CsvInput.Monitor.class);
 
         // when
@@ -1919,26 +1785,15 @@ class CsvInputTest {
                 .validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
 
         // then
-        verify(monitor).noRelationshipTypeSpecified(sourceDescription);
+        verify(monitor).noRelationshipTypeSpecified(sourceDescription(file));
     }
 
     @Test
     void shouldNotReportNoRelationshipTypeIfDecorated() throws IOException {
         // given
-        String sourceDescription = "source";
-        Supplier<CharReadable> headerSource =
-                () -> wrap(dataWithSourceDescription(":START_ID,:END_ID", sourceDescription), 3, null);
-        Iterable<DataFactory> data = datas(config -> new Data() {
-            @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                return asRawIterator(iterator(headerSource.get()));
-            }
-
-            @Override
-            public Decorator decorator() {
-                return defaultRelationshipType("MyType");
-            }
-        });
+        Path file = writeFile("relationship-source", ":START_ID,:END_ID");
+        Iterable<DataFactory> data =
+                datas(DataFactories.data(defaultRelationshipType("MyType"), defaultCharset(), file));
         CsvInput.Monitor monitor = mock(CsvInput.Monitor.class);
 
         // when
@@ -1956,7 +1811,7 @@ class CsvInputTest {
                 .validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
 
         // then
-        verify(monitor, never()).noRelationshipTypeSpecified(sourceDescription);
+        verify(monitor, never()).noRelationshipTypeSpecified(sourceDescription(file));
     }
 
     @Test
@@ -2123,7 +1978,7 @@ class CsvInputTest {
     @Test
     void shouldStoreIdAsPropertyInSpecificValueType() throws IOException {
         // given nodes w/ IDs as ints
-        var nodeData = datas(CsvInputTest.data("id:ID{id-type:int},prop\n123,val"));
+        var nodeData = datas(data("id:ID{id-type:int},prop\n123,val"));
 
         // The variable groups has a global id space created already without id-type:int.
         // Passing that in would fail.
@@ -3165,13 +3020,13 @@ class CsvInputTest {
             throws IOException {
         Input input = new CsvInput(
                 !nodeDataFiles.isEmpty()
-                        ? dataIterable(config -> undecorated(() -> Readables.individualFiles(
-                                config, defaultCharset(), nodeDataFiles.toArray(Path[]::new))))
+                        ? dataIterable(
+                                DataFactories.data(NO_DECORATOR, defaultCharset(), nodeDataFiles.toArray(Path[]::new)))
                         : emptyList(),
                 defaultFormatNodeFileHeader(),
                 !relationshipDataFiles.isEmpty()
-                        ? dataIterable(config -> undecorated(() -> Readables.individualFiles(
-                                config, defaultCharset(), relationshipDataFiles.toArray(Path[]::new))))
+                        ? dataIterable(DataFactories.data(
+                                NO_DECORATOR, defaultCharset(), relationshipDataFiles.toArray(Path[]::new)))
                         : emptyList(),
                 defaultFormatRelationshipFileHeader(),
                 idType,
@@ -3237,10 +3092,6 @@ class CsvInputTest {
             }
         }
         return file;
-    }
-
-    private static Data dataItem(final CharReadable data, final Decorator decorator) {
-        return DataFactories.data(decorator, () -> data).create(COMMAS /*doesn't matter here in this test*/);
     }
 
     private void assertNextRelationship(
@@ -3370,59 +3221,30 @@ class CsvInputTest {
         return new Header.Entry(name, type, groups.getOrCreate(groupName), extractor);
     }
 
-    private static DataFactory data(String sourceDescription, String data) {
-        return config -> dataItem(charReader(sourceDescription, data), d -> d);
-    }
-
-    private static DataFactory data(String data) {
+    private DataFactory data(String data) {
         return data(data, value -> value);
     }
 
-    private static DataFactory data(final String data, final Decorator decorator) {
-        return config -> dataItem(charReader(data), decorator);
+    private DataFactory data(String data, Decorator decorator) {
+        return DataFactories.data(decorator, defaultCharset(), writeContents(data));
     }
 
-    private static CharReadable charReader(String sourceDescription, String data) {
-        return wrap(sourceDescription, data);
+    private Path writeContents(String contents) {
+        try {
+            Path file = directory.getFileSystem().createTempFile(directory.homePath(), "data-", ".csv");
+            Files.writeString(file, contents, defaultCharset());
+            return file;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
-    private static CharReadable charReader(String data) {
-        return wrap(data);
+    private static String sourceDescription(Path file) {
+        return file.toAbsolutePath().toString();
     }
 
     private static Iterable<DataFactory> dataIterable(DataFactory... data) {
         return Iterables.iterable(data);
-    }
-
-    private static class CapturingDataFactories implements Iterable<DataFactory> {
-        private final Function<Configuration, CharReadable> factory;
-        private CharReadable last;
-        private final Decorator decorator;
-
-        CapturingDataFactories(Function<Configuration, CharReadable> factory, Decorator decorator) {
-            this.factory = factory;
-            this.decorator = decorator;
-        }
-
-        @Override
-        public Iterator<DataFactory> iterator() {
-            return Iterators.iterator(config -> new Data() {
-                @Override
-                public RawIterator<CharReadable, IOException> stream() {
-                    last = factory.apply(config);
-                    return Readables.iterator(in -> in, last);
-                }
-
-                @Override
-                public Decorator decorator() {
-                    return decorator;
-                }
-            });
-        }
-
-        CharReadable last() {
-            return last;
-        }
     }
 
     private static class FailingNodeDecorator implements Decorator {

@@ -23,7 +23,6 @@ import static java.lang.String.format;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Arrays.copyOf;
 import static org.neo4j.csv.reader.Readables.individualFiles;
-import static org.neo4j.csv.reader.Readables.iterator;
 import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
 
 import java.io.IOException;
@@ -58,7 +57,6 @@ import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.csv.reader.VectorExtractor;
-import org.neo4j.function.Factory;
 import org.neo4j.internal.batchimport.input.DuplicateHeaderException;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.HeaderException;
@@ -99,35 +97,25 @@ public class DataFactories {
             throw new IllegalArgumentException("No files specified");
         }
 
-        return config -> new Data() {
+        return new DataFactory() {
             @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                return individualFiles(config, charset, files);
+            public Data create(Configuration config) {
+                return new Data() {
+                    @Override
+                    public RawIterator<CharReadable, IOException> stream() {
+                        return individualFiles(config, charset, files);
+                    }
+
+                    @Override
+                    public Decorator decorator() {
+                        return decorator;
+                    }
+                };
             }
 
             @Override
-            public Decorator decorator() {
-                return decorator;
-            }
-        };
-    }
-
-    /**
-     * @param decorator Decorator for this data.
-     * @param readable we need to have this as a {@link Factory} since one data file may be opened and scanned
-     * multiple times.
-     * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
-     */
-    public static DataFactory data(final Decorator decorator, final Supplier<CharReadable> readable) {
-        return config -> new Data() {
-            @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                return iterator(reader -> reader, readable.get());
-            }
-
-            @Override
-            public Decorator decorator() {
-                return decorator;
+            public Path[] files() {
+                return files;
             }
         };
     }

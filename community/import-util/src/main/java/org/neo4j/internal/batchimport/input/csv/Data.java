@@ -19,10 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
-import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
-
 import java.io.IOException;
-import java.util.function.Supplier;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
@@ -35,20 +32,4 @@ public interface Data {
     RawIterator<CharReadable, IOException> stream();
 
     Decorator decorator();
-
-    abstract class Undecorated implements Data {
-        @Override
-        public Decorator decorator() {
-            return NO_DECORATOR;
-        }
-    }
-
-    static Data undecorated(Supplier<RawIterator<CharReadable, IOException>> streamSupplier) {
-        return new Undecorated() {
-            @Override
-            public RawIterator<CharReadable, IOException> stream() {
-                return streamSupplier.get();
-            }
-        };
-    }
 }
