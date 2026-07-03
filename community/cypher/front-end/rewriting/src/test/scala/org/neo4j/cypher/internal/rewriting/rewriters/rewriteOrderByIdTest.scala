@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.RewriteOrderById
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class rewriteOrderByIdTest extends CypherFunSuite3 with AstRewritingTestSupport {
+class rewriteOrderByIdTest extends CypherFunSuite with AstRewritingTestSupport {
 
   private val prettifier = Prettifier(
     ExpressionStringifier((e: Expression) => e.asCanonicalStringVal)

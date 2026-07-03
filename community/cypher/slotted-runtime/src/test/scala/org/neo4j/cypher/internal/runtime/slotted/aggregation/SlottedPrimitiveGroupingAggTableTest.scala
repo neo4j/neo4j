@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.FakeSlottedPipe
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection.HeapTrackingOrderedAppendMap
 
-class SlottedPrimitiveGroupingAggTableTest extends CypherFunSuite3 {
+class SlottedPrimitiveGroupingAggTableTest extends CypherFunSuite {
 
   test("close should close table") {
     // given

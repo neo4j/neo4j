@@ -42,11 +42,11 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.neo4j.graphdb.schema.IndexType
 
-class LogicalPlanBuilderTest extends CypherFunSuite3 with AstConstructionTestSupport with ProcedureTestSupport {
+class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupport with ProcedureTestSupport {
 
   test("should correctly insert HasLabels/HasTypes/HasLabelsOrTypes in .filter after .input") {
     val plan = new LogicalPlanBuilder()

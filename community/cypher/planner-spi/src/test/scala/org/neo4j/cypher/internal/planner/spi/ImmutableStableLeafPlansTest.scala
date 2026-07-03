@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.planner.spi.LeafStability.MvccNonEmptyTx
 import org.neo4j.cypher.internal.planner.spi.LeafStability.NonMvcc
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ImmutableStableLeafPlansTest extends CypherFunSuite3 {
+class ImmutableStableLeafPlansTest extends CypherFunSuite {
 
   test("immutable stable leaf plans round-trip the stability of each marked leaf") {
     assertImmutableWorks()

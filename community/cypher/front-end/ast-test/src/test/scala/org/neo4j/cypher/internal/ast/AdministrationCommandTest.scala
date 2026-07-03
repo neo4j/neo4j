@@ -65,7 +65,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
@@ -81,7 +81,7 @@ import java.nio.charset.StandardCharsets
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTestSupport with CypherVersionTestSupport {
+class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestSupport with CypherVersionTestSupport {
 
   implicit val seqSemanticErrorEquality: Equality[Seq[SemanticErrorDef]] =
     (a: Seq[SemanticErrorDef], b: Any) =>

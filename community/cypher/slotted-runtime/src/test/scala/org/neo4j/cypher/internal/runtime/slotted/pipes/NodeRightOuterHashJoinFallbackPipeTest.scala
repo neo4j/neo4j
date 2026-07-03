@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.HashJoinSlottedPipeTestHe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.HashJoinSlottedPipeTestHelper.mockPipeFor
 import org.neo4j.cypher.internal.runtime.slotted.pipes.HashJoinSlottedPipeTestHelper.testableResult
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NodeRightOuterHashJoinFallbackPipeTest extends CypherFunSuite3 {
+class NodeRightOuterHashJoinFallbackPipeTest extends CypherFunSuite {
 
   test("should support joining on two different variables") {
     // given

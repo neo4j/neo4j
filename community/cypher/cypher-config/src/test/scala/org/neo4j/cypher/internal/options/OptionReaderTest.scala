@@ -25,13 +25,13 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherParallelRunti
 import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_parallel_runtime_support
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidCypherOption
 import org.neo4j.graphdb.config.Setting
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class OptionReaderTest extends CypherFunSuite3 {
+class OptionReaderTest extends CypherFunSuite {
 
   test("Can read defaults") {
 

@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.BOOL
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.INT
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ParameterTypeValueReplacementTest extends CypherFunSuite3 with AstRewritingTestSupport {
+class ParameterTypeValueReplacementTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("single integer parameter should be rewritten") {
     val params = Map("param" -> INT)

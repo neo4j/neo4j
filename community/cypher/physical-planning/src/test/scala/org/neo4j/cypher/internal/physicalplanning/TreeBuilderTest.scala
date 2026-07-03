@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.mutable.ArrayBuffer
 
-class TreeBuilderTest extends CypherFunSuite3 {
+class TreeBuilderTest extends CypherFunSuite {
 
   implicit val idGen: SequentialIdGen = new SequentialIdGen
 

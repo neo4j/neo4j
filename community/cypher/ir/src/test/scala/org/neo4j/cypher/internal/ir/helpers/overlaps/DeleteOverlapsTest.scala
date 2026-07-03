@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.label_expressions.NodeLabels
 import org.neo4j.cypher.internal.label_expressions.NodeLabels.KnownLabels
 import org.neo4j.cypher.internal.label_expressions.NodeLabels.SomeUnknownLabels
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
 
-class DeleteOverlapsTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class DeleteOverlapsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("MATCH () DELETE () overlaps") {
     expectOverlapOnDelete(Nil, Nil, KnownLabels(Set.empty))

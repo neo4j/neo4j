@@ -22,9 +22,9 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics._
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class OrderTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   case class TestOrderBy(
     sortItems: Seq[SortItem],

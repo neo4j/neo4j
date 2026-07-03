@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.admin.topology
 
 import org.neo4j.configuration.helpers.SocketAddress
 import org.neo4j.cypher.internal.CypherVersion
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.database.DatabaseDetails
 import org.neo4j.dbms.database.DatabaseDetails.TYPE_COMPOSITE
 import org.neo4j.dbms.database.DatabaseDetails.TYPE_PROPERTY_SHARD
@@ -41,7 +41,7 @@ import java.util.Optional
 import java.util.OptionalLong
 import java.util.UUID
 
-class ShowDatabaseResultTest extends CypherFunSuite3 {
+class ShowDatabaseResultTest extends CypherFunSuite {
 
   test("should create ShowDatabaseResult for regular db") {
     val details = makeDatabaseDetails(TYPE_STANDARD)

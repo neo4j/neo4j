@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.testing.api
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.exceptions.Status
 
-class CypherExecutorExceptionTest extends CypherFunSuite3 {
+class CypherExecutorExceptionTest extends CypherFunSuite {
 
   test("should be able to extract status from executor exception") {
     val originalStatus = Status.Statement.ExecutionFailed

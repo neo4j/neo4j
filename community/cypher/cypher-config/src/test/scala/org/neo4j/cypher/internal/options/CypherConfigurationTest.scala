@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.options
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CypherConfigurationTest extends CypherFunSuite3 {
+class CypherConfigurationTest extends CypherFunSuite {
 
   test("toggledFeatures should add features if set to true in config") {
     val config = Config.defaults(GraphDatabaseInternalSettings.show_setting, java.lang.Boolean.TRUE)

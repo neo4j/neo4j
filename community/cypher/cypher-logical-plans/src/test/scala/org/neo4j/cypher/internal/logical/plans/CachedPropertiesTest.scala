@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.cachedRelProp
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.propName
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CachedPropertiesTest extends CypherFunSuite3 {
+class CachedPropertiesTest extends CypherFunSuite {
 
   test("CachedProperties.empty should contain an empty map") {
     CachedProperties.empty.entries shouldBe empty

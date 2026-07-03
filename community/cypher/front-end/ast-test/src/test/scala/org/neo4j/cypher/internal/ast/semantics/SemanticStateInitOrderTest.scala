@@ -16,12 +16,12 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.TimeUnit
 
-class SemanticStateInitOrderTest extends CypherFunSuite3 {
+class SemanticStateInitOrderTest extends CypherFunSuite {
 
   test("SemanticState initializes when ScopeZipper loads first") {
     val javaBin = ProcessHandle.current.info.command.orElseThrow()

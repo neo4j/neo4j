@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ColumnOrderTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class ColumnOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("Column Order should return correct dependencies when no projections") {
     val columnOrder = Asc(v"a", projections = Map.empty)

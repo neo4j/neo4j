@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationBuilder
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection.DistinctSet
 
-class OrderedDistinctSlottedPrimitivePipeTest extends CypherFunSuite3 {
+class OrderedDistinctSlottedPrimitivePipeTest extends CypherFunSuite {
 
   test("exhaust should close seen set") {
     val monitor = QueryStateHelper.trackClosedMonitor

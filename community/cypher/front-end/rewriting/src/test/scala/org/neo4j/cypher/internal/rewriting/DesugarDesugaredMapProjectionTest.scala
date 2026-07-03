@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.Normal
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class DesugarDesugaredMapProjectionTest extends CypherFunSuite3 with AstRewritingTestSupport {
+class DesugarDesugaredMapProjectionTest extends CypherFunSuite with AstRewritingTestSupport {
 
   assertRewrite(
     "match (n) return n{k:42} as x",

@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class FoldConstantsTest extends CypherFunSuite3 with RewriteTest {
+class FoldConstantsTest extends CypherFunSuite with RewriteTest {
   val exceptionFactory = Neo4jCypherExceptionFactory(null, None)
 
   val rewriterUnderTest: Rewriter = fixedPoint(CancellationChecker.neverCancelled())(

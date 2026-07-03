@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.reflections.Reflections
 
 import java.lang.reflect.Field
@@ -45,7 +45,7 @@ import scala.jdk.CollectionConverters.SetHasAsScala
  * Tries to make sure we don't introduce variable references as strings in logical plans.
  * This implementation is far from complete, for example it ignores everything with generic types like collections.
  */
-class LogicalPlanStringTest extends CypherFunSuite3 {
+class LogicalPlanStringTest extends CypherFunSuite {
   private val reflections = new Reflections("org.neo4j")
 
   test("expressions are not allowed to refer to variables by string") {

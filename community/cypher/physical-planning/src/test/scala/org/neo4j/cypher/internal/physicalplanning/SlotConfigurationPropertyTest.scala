@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.physicalplanning
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlotKey
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable.ArrayBuffer
 
-class SlotConfigurationPropertyTest extends CypherFunSuite3 with CypherScalaCheckDrivenPropertyChecks {
+class SlotConfigurationPropertyTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
 
   private val types = ArraySeq(CTNode, CTRelationship)
 

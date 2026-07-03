@@ -27,13 +27,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerTypes
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor
 import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain
 
-class ExpandAllSlottedPipeTest extends CypherFunSuite3 {
+class ExpandAllSlottedPipeTest extends CypherFunSuite {
 
   test("exhaust should close cursor") {
     val monitor = QueryStateHelper.trackClosedMonitor

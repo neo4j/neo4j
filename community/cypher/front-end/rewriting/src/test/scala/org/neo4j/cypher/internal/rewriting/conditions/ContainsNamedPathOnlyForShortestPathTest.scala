@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.util.CancellationChecker
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val condition: Any => Seq[String] =
     ContainsNamedPathOnlyForShortestPath.check(_)(CancellationChecker.NeverCancelled)

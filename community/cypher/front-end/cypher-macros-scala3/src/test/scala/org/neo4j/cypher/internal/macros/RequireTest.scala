@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.macros
 
 import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.util.AssertionRunner.ASSERTIONS_ENABLED
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class RequireTest extends CypherFunSuite3 {
+class RequireTest extends CypherFunSuite {
 
   test("require with message") {
     assume(ASSERTIONS_ENABLED)

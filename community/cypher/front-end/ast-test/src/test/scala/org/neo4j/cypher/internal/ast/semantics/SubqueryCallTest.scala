@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaul
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.LoneElement.convertToCollectionLoneElementWrapper
 
 //noinspection ZeroIndexToHead
-class SubqueryCallTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val clean =
     SemanticState.clean

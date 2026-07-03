@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class DistinctnessTest extends CypherFunSuite3 {
+class DistinctnessTest extends CypherFunSuite {
 
   implicit private val idGen: SequentialIdGen = new SequentialIdGen()
 

@@ -36,12 +36,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.NonLockingSeek
 import org.neo4j.cypher.internal.runtime.slotted.SlottedCypherRowFactory
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 
-class NodeIndexSeekSlottedPipeTest extends CypherFunSuite3 {
+class NodeIndexSeekSlottedPipeTest extends CypherFunSuite {
 
   test("exhaust should close cursor") {
     val monitor = QueryStateHelper.trackClosedMonitor

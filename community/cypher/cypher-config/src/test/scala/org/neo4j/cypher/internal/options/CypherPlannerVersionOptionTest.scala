@@ -23,9 +23,9 @@ import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherPlannerVersionOption._
 import org.neo4j.cypher.internal.options.OptionReader.Input
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CypherPlannerVersionOptionTest extends CypherFunSuite3 {
+class CypherPlannerVersionOptionTest extends CypherFunSuite {
 
   private val emptyConfig: CypherConfiguration = CypherConfiguration.fromConfig(Config.defaults())
 

@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.util.symbols.IntegerType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ExpressionStringifierTest extends CypherFunSuite3 with PrecedenceLevelsTestBase {
+class ExpressionStringifierTest extends CypherFunSuite with PrecedenceLevelsTestBase {
 
   test("Meta: On level 1 all expression arguments should be syntactically delimited") {
     precedenceLevel.last.foreach(op =>

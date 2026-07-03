@@ -20,9 +20,9 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ExpressionCanonicalStringValTest extends CypherFunSuite3 {
+class ExpressionCanonicalStringValTest extends CypherFunSuite {
 
   protected val pos: InputPosition.Range = InputPosition.NONE
   def varFor(name: String): Variable = Variable(name)(pos, Variable.isIsolatedDefault)

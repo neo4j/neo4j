@@ -21,9 +21,9 @@ import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PredicateExpressionsTest extends CypherFunSuite3 {
+class PredicateExpressionsTest extends CypherFunSuite {
 
   test("Ands.apply should leave ListSet untouched") {
     // GIVEN

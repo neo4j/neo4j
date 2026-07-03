@@ -33,12 +33,12 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.HashJoinSlottedPipeTestHe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SingleKeyOffset
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMapping
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection.LongProbeTable
 
 import scala.collection.immutable
 
-class NodeHashJoinSlottedSingleNodePipeTest extends CypherFunSuite3 {
+class NodeHashJoinSlottedSingleNodePipeTest extends CypherFunSuite {
 
   private val node0 = 0
   private val NULL = -1

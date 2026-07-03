@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.mutable.ArrayBuffer
 
-class LogicalPlansTest extends CypherFunSuite3 {
+class LogicalPlansTest extends CypherFunSuite {
 
   private val pos = InputPosition.withLength(1, 1, 1, 1)
 

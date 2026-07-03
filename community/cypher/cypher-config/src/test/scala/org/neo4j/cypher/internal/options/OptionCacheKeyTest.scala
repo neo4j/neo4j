@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.options
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class OptionCacheKeyTest extends CypherFunSuite3 {
+class OptionCacheKeyTest extends CypherFunSuite {
 
   case class MyOuter(inner: MyInner, someInt: Int)
   case class MyInner(someString: String, anotherString: String)

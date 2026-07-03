@@ -35,9 +35,9 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ExpressionCallTypeCheckerTest extends CypherFunSuite3 {
+class ExpressionCallTypeCheckerTest extends CypherFunSuite {
 
   test("should accept a specified type") {
     typeCheckSuccess(Seq(TypeSignature(Vector(CTInteger), CTInteger)), Seq(CTInteger), CTInteger)

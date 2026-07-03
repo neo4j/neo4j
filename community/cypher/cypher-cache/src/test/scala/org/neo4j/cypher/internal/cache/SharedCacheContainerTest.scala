@@ -23,7 +23,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import org.mockito.Mockito
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.verifyNoMoreInteractions
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import java.util.Collections
 import java.util.concurrent.Executor
@@ -34,7 +34,7 @@ import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-class SharedCacheContainerTest extends CypherFunSuite3 {
+class SharedCacheContainerTest extends CypherFunSuite {
 
   case class TestData(
     cacheContainer0: SharedCacheContainer[String, String],

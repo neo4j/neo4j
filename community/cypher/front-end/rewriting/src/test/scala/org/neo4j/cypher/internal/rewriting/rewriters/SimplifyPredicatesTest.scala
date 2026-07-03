@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 
-class SimplifyPredicatesTest extends CypherFunSuite3 with Matchers with RewriteTest
+class SimplifyPredicatesTest extends CypherFunSuite with Matchers with RewriteTest
     with AstRewritingTestSupport {
 
   test("should rewrite simple any with literal") {

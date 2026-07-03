@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.CombineSetProperty
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CombineSetPropertyTest extends CypherFunSuite3 with AstRewritingTestSupport {
+class CombineSetPropertyTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("should not rewrite set operation update") {
     // given

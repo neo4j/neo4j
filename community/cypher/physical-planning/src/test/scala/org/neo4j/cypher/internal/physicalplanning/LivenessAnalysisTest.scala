@@ -42,9 +42,9 @@ import org.neo4j.cypher.internal.util.Namespace
 import org.neo4j.cypher.internal.util.ProcedureName
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.AnyType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LivenessAnalysisTest extends CypherFunSuite3 {
+class LivenessAnalysisTest extends CypherFunSuite {
 
   test("ensure leaf plans copy their variables to parent plans") {
     // https://github.com/neo4j/neo4j/issues/13568

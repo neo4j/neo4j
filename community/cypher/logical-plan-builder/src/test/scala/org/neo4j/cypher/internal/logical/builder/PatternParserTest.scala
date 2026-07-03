@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.logical.builder.PatternParser.Pattern
 import org.neo4j.cypher.internal.logical.builder.PatternParser.Unused
 import org.neo4j.cypher.internal.logical.builder.PatternParser.Used
 import org.neo4j.cypher.internal.util.InputPosition.NONE
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class PatternParserTest extends CypherFunSuite3 with TestName {
+class PatternParserTest extends CypherFunSuite with TestName {
   private def patternParser = new PatternParser
 
   test("(a)--(b)") {

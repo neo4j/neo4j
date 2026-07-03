@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.runtime.slotted.Ascending
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContextOrdering
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class OrderedUnionSlottedPipeTest extends CypherFunSuite3 {
+class OrderedUnionSlottedPipeTest extends CypherFunSuite {
 
   test("Close should close RHS and LHS.") {
     val slots = SlotConfigurationBuilder.empty

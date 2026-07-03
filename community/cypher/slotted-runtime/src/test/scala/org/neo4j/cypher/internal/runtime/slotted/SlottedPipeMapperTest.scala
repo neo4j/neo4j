@@ -127,14 +127,14 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.virtual.VirtualValues
 
 //noinspection NameBooleanParameters
-class SlottedPipeMapperTest extends CypherFunSuite3 with AstConstructionTestSupport with FakeEntityTestSupport {
+class SlottedPipeMapperTest extends CypherFunSuite with AstConstructionTestSupport with FakeEntityTestSupport {
   implicit val idGen: IdGen = new SequentialIdGen()
   implicit private val table: CachableSemanticTable = CachableSemanticTable(SemanticTable())
 

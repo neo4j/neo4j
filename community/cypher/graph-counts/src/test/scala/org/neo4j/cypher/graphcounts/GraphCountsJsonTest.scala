@@ -26,7 +26,7 @@ import org.json4s.jvalue2extractable
 import org.json4s.native.Json
 import org.json4s.native.JsonMethods
 import org.neo4j.cypher.graphcounts.GraphCountsJson.allFormats
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.EndpointType
 import org.neo4j.internal.schema.IndexProviderDescriptor
@@ -34,7 +34,7 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.scalatest.prop.TableDrivenPropertyChecks
 
-class GraphCountsJsonTest extends CypherFunSuite3 {
+class GraphCountsJsonTest extends CypherFunSuite {
 
   implicit val formats: Formats = allFormats
   implicit val jsonInputConverter: AsJsonInput[StringInput] = AsJsonInput.fromFunction(identity)
@@ -333,7 +333,7 @@ class GraphCountsJsonTest extends CypherFunSuite3 {
   }
 }
 
-class ConstraintsJsonTest extends CypherFunSuite3 with TableDrivenPropertyChecks {
+class ConstraintsJsonTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
   private val constraints: List[(String, Constraint)] =
     List(

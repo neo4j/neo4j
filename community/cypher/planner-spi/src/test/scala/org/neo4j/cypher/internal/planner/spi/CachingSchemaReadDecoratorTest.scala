@@ -23,12 +23,12 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.index.IndexSample
 
-class CachingSchemaReadDecoratorTest extends CypherFunSuite3 {
+class CachingSchemaReadDecoratorTest extends CypherFunSuite {
 
   test("should cache index sample") {
     val mockDelegate = mock[SchemaRead]

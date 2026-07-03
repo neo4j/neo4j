@@ -38,10 +38,10 @@ import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InternalException
 
-class SlotConfigurationTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("allocating same variable name with compatible type but different nullability should increase nullability 1") {
     // given

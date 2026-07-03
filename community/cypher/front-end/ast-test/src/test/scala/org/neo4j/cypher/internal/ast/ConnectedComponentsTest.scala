@@ -20,9 +20,9 @@ import org.neo4j.cypher.internal.ast.connectedComponents.ComponentPart
 import org.neo4j.cypher.internal.ast.connectedComponents.ConnectedComponent
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ConnectedComponentsTest extends CypherFunSuite3 {
+class ConnectedComponentsTest extends CypherFunSuite {
 
   test("(a)->(b), (c)->(d) has two connected components") {
     val disconnected = connectedComponents(Vector(

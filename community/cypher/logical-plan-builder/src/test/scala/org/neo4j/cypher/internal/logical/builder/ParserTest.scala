@@ -40,10 +40,10 @@ import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.Namespace
 import org.neo4j.cypher.internal.util.ProcedureName
 import org.neo4j.cypher.internal.util.ProcedureOutput
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class ParserTest extends CypherFunSuite3 with TestName with AstConstructionTestSupport {
+class ParserTest extends CypherFunSuite with TestName with AstConstructionTestSupport {
 
   test("a AS b") {
     Parser.Latest.parseProjections(testName) should be(Map("b" -> varFor("a")))

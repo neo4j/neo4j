@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.ir.helpers
 
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction.CacheKey
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.scalactic.Equality
 
@@ -28,7 +28,7 @@ import java.io.ByteArrayOutputStream
 
 import scala.annotation.unused
 
-class CachedFunctionTest extends CypherFunSuite3 {
+class CachedFunctionTest extends CypherFunSuite {
 
   test("1 argument") {
     var i = 0

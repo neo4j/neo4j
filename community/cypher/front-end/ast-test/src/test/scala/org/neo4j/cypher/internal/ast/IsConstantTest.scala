@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class IsConstantTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class IsConstantTest extends CypherFunSuite with AstConstructionTestSupport {
 
   Map(
     literalInt(5) -> true,

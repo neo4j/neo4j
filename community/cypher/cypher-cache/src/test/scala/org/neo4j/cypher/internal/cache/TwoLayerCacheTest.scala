@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.cache
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.Ticker
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import java.time.Duration
 import java.util
 import java.util.concurrent.atomic.AtomicLong
 
-class TwoLayerCacheTest extends CypherFunSuite3 {
+class TwoLayerCacheTest extends CypherFunSuite {
 
   test("should put a value") {
     val (cache, _, _, _) = setup()

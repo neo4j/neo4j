@@ -39,14 +39,14 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.TopSlottedPipeTestSupport
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TopSlottedPipeTestSupport.singleColumnTopWithInput
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TopSlottedPipeTestSupport.twoColumnTopWithInput
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InternalException
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 
 import scala.util.Random
 
-class TopSlottedPipeTest extends CypherFunSuite3 {
+class TopSlottedPipeTest extends CypherFunSuite {
 
   test("returning top 10 from 5 possible should return all") {
     val input = randomlyShuffledIntDataFromZeroUntil(5)

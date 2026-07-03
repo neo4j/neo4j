@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.cache.SharedCachePropertyTest.ReplaceExisting
 import org.neo4j.cypher.internal.cache.SharedCachePropertyTest.StringCache
 import org.neo4j.cypher.internal.cache.SharedCachePropertyTest.TestTicker
 import org.neo4j.cypher.internal.cache.SharedCachePropertyTest.TestedCache
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
@@ -57,7 +57,7 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.util.Random
 import scala.util.Using
 
-class SharedCachePropertyTest extends CypherFunSuite3 with ScalaFutures {
+class SharedCachePropertyTest extends CypherFunSuite with ScalaFutures {
   val rand = new Random()
 
   test("estimatedSize after random operations") {

@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.AssertionRunner.isAssertionsEnabled
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -44,7 +44,7 @@ import org.neo4j.values.virtual.VirtualValues
 // TODO: Extract abstract base class in physical planning module, with subclass tests for both slotted and pipelined runtimes
 
 // If this test class gets in your way you can just delete it
-class SlotConfigurationUtilsTest extends CypherFunSuite3 {
+class SlotConfigurationUtilsTest extends CypherFunSuite {
 
   private val slots = SlotConfigurationBuilder.empty
     .newLong("n1", nullable = false, CTNode)

@@ -88,7 +88,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.graphdb.schema.IndexType
@@ -104,7 +104,7 @@ import scala.util.DynamicVariable
  * If you reference something new and a type was not found an import needs to be added to [[interpretPlanBuilder]]
  */
 class LogicalPlanToPlanBuilderStringTest
-    extends CypherFunSuite3
+    extends CypherFunSuite
     with TestName
     with AstConstructionTestSupport
     with QueryExpressionConstructionTestSupport {

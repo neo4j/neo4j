@@ -34,7 +34,7 @@ import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.matchers.should.Matchers
 
 trait RewriteTest extends AstRewritingTestSupport {
-  // CypherFunSuite (2.13) and CypherFunSuite3 both satisfy this while front-end is still on 2.13.
+  // CypherFunSuite (2.13) and CypherFunSuite both satisfy this while front-end is still on 2.13.
   self: AnyFunSuiteLike with Assertions with Matchers =>
 
   def sendStatementToRewriterConstructor: Boolean = false

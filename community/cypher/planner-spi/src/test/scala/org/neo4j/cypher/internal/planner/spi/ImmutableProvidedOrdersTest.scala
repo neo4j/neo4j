@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFact
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ImmutableProvidedOrdersTest extends CypherFunSuite3 {
+class ImmutableProvidedOrdersTest extends CypherFunSuite {
 
   test("immutable provided order") {
     assertImmutableWorks()

@@ -52,7 +52,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.values.AnyValue
@@ -74,7 +74,7 @@ import scala.util.Random
 import scala.util.Success
 import scala.util.Try
 
-class SlottedRowTest extends CypherFunSuite3 {
+class SlottedRowTest extends CypherFunSuite {
 
   private def slots(longs: Int, refs: Int) = mutableSlots(longs, refs).build()
 

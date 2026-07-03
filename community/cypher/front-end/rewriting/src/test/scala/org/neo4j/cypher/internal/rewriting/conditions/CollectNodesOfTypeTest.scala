@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CancellationChecker
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CollectNodesOfTypeTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val collector: Any => Seq[Variable] =
     CollectNodesOfType[Variable]().apply(_)(CancellationChecker.NeverCancelled)

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D
@@ -39,7 +39,7 @@ import org.neo4j.values.virtual.VirtualValues.map
 import java.lang.Math.PI
 import java.lang.Math.sin
 
-class SimpleInternalExpressionEvaluatorTest extends CypherFunSuite3 {
+class SimpleInternalExpressionEvaluatorTest extends CypherFunSuite {
 
   val evaluator = new SimpleInternalExpressionEvaluator
 

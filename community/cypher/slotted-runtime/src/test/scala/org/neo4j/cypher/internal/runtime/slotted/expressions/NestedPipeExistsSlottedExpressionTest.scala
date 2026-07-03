@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.slotted.pipes.FakeSlottedPipe
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NestedPipeExistsSlottedExpressionTest extends CypherFunSuite3 {
+class NestedPipeExistsSlottedExpressionTest extends CypherFunSuite {
 
   test("Should close pipe results.") {
     // given

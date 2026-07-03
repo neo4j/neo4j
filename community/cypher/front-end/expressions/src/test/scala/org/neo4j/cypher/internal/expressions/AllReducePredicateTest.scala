@@ -20,9 +20,9 @@ import org.neo4j.cypher.internal.expressions.AllReducePredicate.AllReduceScope
 import org.neo4j.cypher.internal.expressions.AllReducePredicate.ReductionStepVariableScope
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class AllReducePredicateTest extends CypherFunSuite3 {
+class AllReducePredicateTest extends CypherFunSuite {
 
   test("dependencies are calculated correctly") {
     val pos = InputPosition.NONE

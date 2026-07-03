@@ -28,14 +28,14 @@ import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.cypher.internal.util.symbols.VectorType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
 import org.neo4j.gqlstatus.GqlParams
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 
 import scala.collection.immutable.ArraySeq
 
-class SchemaCommandTest extends CypherFunSuite3 with AstConstructionTestSupport with CypherVersionTestSupport {
+class SchemaCommandTest extends CypherFunSuite with AstConstructionTestSupport with CypherVersionTestSupport {
 
   private val initialState = SemanticState.clean.withFeature(SemanticFeature.GraphTypes)
 

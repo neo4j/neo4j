@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NameAllPattern
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class AddVarLengthBoundPredicatesTest extends CypherFunSuite3 with RewriteTest with AstConstructionTestSupport {
+class AddVarLengthBoundPredicatesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
 
   test("should add predicates for simple var-length") {
     assertRewrite(

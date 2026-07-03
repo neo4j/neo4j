@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class FunctionInvocationTest extends CypherFunSuite3 {
+class FunctionInvocationTest extends CypherFunSuite {
 
   private val pos = InputPosition.NONE
 

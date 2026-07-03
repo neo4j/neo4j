@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationBuilder
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
 
-class EagerSlottedPipeTest extends CypherFunSuite3 {
+class EagerSlottedPipeTest extends CypherFunSuite {
 
   test("exhaust should close buffer") {
     val monitor = QueryStateHelper.trackClosedMonitor

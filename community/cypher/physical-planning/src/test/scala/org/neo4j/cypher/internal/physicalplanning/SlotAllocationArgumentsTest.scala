@@ -48,10 +48,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 //noinspection NameBooleanParameters
-class SlotAllocationArgumentsTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class SlotAllocationArgumentsTest extends CypherFunSuite with AstConstructionTestSupport {
   implicit val idGen: IdGen = new SequentialIdGen()
   private val semanticTable = CachableSemanticTable(SemanticTable())
   private val NO_EXPR_VARS = new AvailableExpressionVariables()

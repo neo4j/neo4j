@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.stringSymbol
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeZipper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 //noinspection ZeroIndexToHead
-class ScopeTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def symbolUses(name: String, uses: Int): SymbolUses = {
     val v = varFor(name)

@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.util.symbols.Integer32Type
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.VectorType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.scalatest.Assertion
 
 import scala.collection.immutable.ArraySeq
 
-class GraphTypeStringifierTest extends CypherFunSuite3 with AstGraphTypeConstructionTestSupport {
+class GraphTypeStringifierTest extends CypherFunSuite with AstGraphTypeConstructionTestSupport {
 
   test("Running example RE-1 canonicalised") {
     graphType(

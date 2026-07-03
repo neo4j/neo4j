@@ -19,10 +19,10 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.FixedLengthShortestToAllRewriter
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class FixedLengthShortestToAllRewriterTest extends CypherFunSuite3 with RewriteTest with TestName {
+class FixedLengthShortestToAllRewriterTest extends CypherFunSuite with RewriteTest with TestName {
   override def rewriterUnderTest: Rewriter = FixedLengthShortestToAllRewriter.instance
 
   test("MATCH ANY SHORTEST (a) RETURN count(*)") {

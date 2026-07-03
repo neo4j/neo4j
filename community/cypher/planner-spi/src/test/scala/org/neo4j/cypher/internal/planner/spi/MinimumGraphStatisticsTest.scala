@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.Selectivity
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class MinimumGraphStatisticsTest extends CypherFunSuite3 {
+class MinimumGraphStatisticsTest extends CypherFunSuite {
 
   test("should return the actual isNotNull selectivity when node count is above minimum") {
     // Given

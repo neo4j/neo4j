@@ -26,12 +26,12 @@ import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.Matcher
 
 import java.nio.charset.StandardCharsets
 
-class SensitiveLiteralReplacementTest extends CypherFunSuite3 with AstRewritingTestSupport {
+class SensitiveLiteralReplacementTest extends CypherFunSuite with AstRewritingTestSupport {
 
   private val exceptionFactory = Neo4jCypherExceptionFactory(null, None)
 

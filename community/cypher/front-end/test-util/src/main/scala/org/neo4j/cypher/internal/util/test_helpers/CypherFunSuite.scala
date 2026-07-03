@@ -122,5 +122,3 @@ trait TestNameWithCaretPosition extends Suite {
     }
   }
 }
-
-type CypherFunSuite3 = CypherFunSuite

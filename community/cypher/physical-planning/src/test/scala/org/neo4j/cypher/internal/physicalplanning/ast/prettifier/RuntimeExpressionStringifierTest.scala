@@ -87,7 +87,7 @@ import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.IntegerType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.reflections.Reflections
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -96,7 +96,7 @@ import java.lang.reflect.Modifier
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class RuntimeExpressionStringifierTest extends CypherFunSuite3 with AstConstructionTestSupport
+class RuntimeExpressionStringifierTest extends CypherFunSuite with AstConstructionTestSupport
     with TableDrivenPropertyChecks {
 
   private val slots: SlotConfiguration = SlotConfigurationBuilder.empty

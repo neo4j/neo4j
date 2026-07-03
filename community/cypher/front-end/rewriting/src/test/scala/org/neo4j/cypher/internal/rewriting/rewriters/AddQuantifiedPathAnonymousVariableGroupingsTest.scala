@@ -22,9 +22,9 @@ import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.AddQuantifiedP
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NameAllPatternElements
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.inSequence
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class AddQuantifiedPathAnonymousVariableGroupingsTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class AddQuantifiedPathAnonymousVariableGroupingsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def rewrite(qpp: QuantifiedPath): QuantifiedPath = {
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()

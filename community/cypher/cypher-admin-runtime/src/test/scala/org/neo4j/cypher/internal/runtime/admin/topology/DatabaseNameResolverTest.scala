@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.kernel.database.DatabaseIdFactory
 import org.neo4j.kernel.database.DatabaseReferenceImpl
@@ -40,7 +40,7 @@ import java.util.UUID
 
 import scala.jdk.CollectionConverters.SetHasAsJava
 
-class DatabaseNameResolverTest extends CypherFunSuite3 {
+class DatabaseNameResolverTest extends CypherFunSuite {
 
   private val pos = InputPosition.NONE
 

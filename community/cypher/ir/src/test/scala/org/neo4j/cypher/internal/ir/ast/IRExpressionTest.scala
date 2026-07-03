@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.topDown
 
-class IRExpressionTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("ListIRExpression should return the correct dependencies") {
     val e = ListIRExpression(

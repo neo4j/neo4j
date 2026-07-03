@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SlottedPipelineBreakingPolicyTest extends CypherFunSuite3 {
+class SlottedPipelineBreakingPolicyTest extends CypherFunSuite {
 
   test("pipes that calls SlottedRow.compact is breaking") {
     implicit val idGen = new SequentialIdGen()

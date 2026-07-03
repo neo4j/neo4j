@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.topDown
 
-class EagernessReasonTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class EagernessReasonTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val rewriter: Rewriter = topDown(identity)
 

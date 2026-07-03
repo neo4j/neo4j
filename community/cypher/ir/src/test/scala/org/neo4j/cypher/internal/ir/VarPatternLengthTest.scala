@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class VarPatternLengthTest extends CypherFunSuite3 {
+class VarPatternLengthTest extends CypherFunSuite {
 
   test("intersect should give the right result") {
     val defaultLength = VarPatternLength(1, None)

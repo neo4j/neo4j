@@ -31,9 +31,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.slotted.expressions.ReferenceFromSlot
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNumber
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class RollUpApplySlottedPipeTest extends CypherFunSuite3 with FakeEntityTestSupport {
+class RollUpApplySlottedPipeTest extends CypherFunSuite with FakeEntityTestSupport {
 
   private val slots =
     SlotConfigurationBuilder

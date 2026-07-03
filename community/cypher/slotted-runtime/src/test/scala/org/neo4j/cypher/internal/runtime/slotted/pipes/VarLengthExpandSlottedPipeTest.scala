@@ -34,12 +34,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.virtual.RelationshipValue
 
-class VarLengthExpandSlottedPipeTest extends CypherFunSuite3 {
+class VarLengthExpandSlottedPipeTest extends CypherFunSuite {
 
   private trait WasClosed {
     def wasClosed: Boolean

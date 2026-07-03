@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class UnionSlottedPipeTest extends CypherFunSuite3 {
+class UnionSlottedPipeTest extends CypherFunSuite {
 
   test("close should close rhs and lhs when exhausted") {
     val slots = SlotConfigurationBuilder.empty

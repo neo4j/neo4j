@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CancellationChecker
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ContainsNoNodesOfTypeTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val condition: Any => Seq[String] =
     ContainsNoNodesOfType[UnaliasedReturnItem]().apply(_)(CancellationChecker.NeverCancelled)

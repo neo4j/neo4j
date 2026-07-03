@@ -31,11 +31,11 @@ import org.neo4j.cypher.internal.ir.CreatesUnknownPropertyKeys
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps.NodeLabelsOverlap
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps.PropertiesOverlap
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
 import org.scalatest.OptionValues.convertOptionToValuable
 
-class CreateOverlapsTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class CreateOverlapsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("MATCH () CREATE () overlaps") {
     val predicatesOnRead = Nil

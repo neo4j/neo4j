@@ -20,9 +20,9 @@ import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NameAllPattern
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class nameAllPatternElementsTest extends CypherFunSuite3 with AstRewritingTestSupport {
+class nameAllPatternElementsTest extends CypherFunSuite with AstRewritingTestSupport {
 
   private val exceptionFactory = Neo4jCypherExceptionFactory(null, None)
 

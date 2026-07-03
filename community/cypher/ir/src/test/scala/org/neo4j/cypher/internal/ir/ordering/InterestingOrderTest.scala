@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class InterestingOrderTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should reverse project property to variable (ascending)") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("xfoo")))

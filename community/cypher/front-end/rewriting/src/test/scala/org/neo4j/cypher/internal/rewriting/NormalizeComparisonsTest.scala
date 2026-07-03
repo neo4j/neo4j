@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NormalizeComparisons
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NormalizeComparisonsTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val expression = varFor("foo")
 

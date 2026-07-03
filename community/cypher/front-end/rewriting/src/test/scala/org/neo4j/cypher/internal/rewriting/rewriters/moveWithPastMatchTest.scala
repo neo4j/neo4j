@@ -21,9 +21,9 @@ import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.MoveWithPastMatch
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class moveWithPastMatchTest extends CypherFunSuite3 with RewriteTest {
+class moveWithPastMatchTest extends CypherFunSuite with RewriteTest {
 
   val rewriterUnderTest: Rewriter = MoveWithPastMatch(CancellationChecker.neverCancelled()).instance
 

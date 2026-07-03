@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PropertyExistsToIsNotNullTest extends CypherFunSuite3 with RewriteTest {
+class PropertyExistsToIsNotNullTest extends CypherFunSuite with RewriteTest {
 
   override val rewriterUnderTest: Rewriter =
     PropertyExistsToIsNotNull.getRewriter(

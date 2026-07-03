@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.rewriting.rewriters.InliningContext
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class InliningContextTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val identN = varFor("n")
   private val identM = varFor("m")

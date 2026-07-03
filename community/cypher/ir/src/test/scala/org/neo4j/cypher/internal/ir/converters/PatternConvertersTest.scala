@@ -45,9 +45,9 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PatternConvertersTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def convertPatternParts(patternParts: PrefixedPatternPart*): List[PathPattern] =
     new PatternConverters(new AnonymousVariableNameGenerator())

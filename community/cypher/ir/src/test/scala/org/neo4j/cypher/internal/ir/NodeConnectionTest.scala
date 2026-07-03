@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.ir.SelectivePathPattern.CountInteger
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NodeConnectionTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val `(foo)-[x]->(start)` = PatternRelationship(
     v"x",

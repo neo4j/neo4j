@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class QueryExpressionStringifierTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class QueryExpressionStringifierTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val defaultStringifier = new QueryExpressionStringifier(ExpressionStringifier())
   private val cypherStringifier = new QueryExpressionStringifier(ExpressionStringifier(), dialect = Dialect.Cypher)

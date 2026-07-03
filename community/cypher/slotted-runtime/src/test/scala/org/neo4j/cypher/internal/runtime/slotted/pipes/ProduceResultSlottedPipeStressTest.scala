@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.values.AnyValue
 
@@ -41,7 +41,7 @@ import java.util.concurrent.Future
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 
-class ProduceResultSlottedPipeStressTest extends CypherFunSuite3 {
+class ProduceResultSlottedPipeStressTest extends CypherFunSuite {
 
   private val slotConfig = SlotConfigurationBuilder.empty.newLong("n", nullable = false, CTNode).build()
 

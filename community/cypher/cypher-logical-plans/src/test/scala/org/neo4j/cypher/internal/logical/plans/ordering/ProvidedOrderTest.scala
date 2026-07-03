@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.NoSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ProvidedOrderTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class ProvidedOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   implicit val noPlan: Option[LogicalPlan] = None
   implicit val poFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory

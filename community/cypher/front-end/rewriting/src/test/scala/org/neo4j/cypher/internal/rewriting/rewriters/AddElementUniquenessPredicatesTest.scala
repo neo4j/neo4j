@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
@@ -49,7 +49,7 @@ import org.scalactic.anyvals.PosZInt
 
 import scala.annotation.tailrec
 
-class AddElementUniquenessPredicatesTest extends CypherFunSuite3 with RewriteTest with AstConstructionTestSupport {
+class AddElementUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
 
   private def disjoint(lhs: String, rhs: String, unnamedOffset: Int = 0): String =
     s"NONE(`  UNNAMED$unnamedOffset` IN $lhs WHERE `  UNNAMED$unnamedOffset` IN $rhs)"
@@ -704,7 +704,7 @@ class AddElementUniquenessPredicatesTest extends CypherFunSuite3 with RewriteTes
     )
 }
 
-class AddElementUniquenessPredicatesPropertyTest extends CypherFunSuite3 with CypherScalaCheckDrivenPropertyChecks
+class AddElementUniquenessPredicatesPropertyTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks
     with RelationshipTypeExpressionGenerators with AstConstructionTestSupport {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =

@@ -17,9 +17,9 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.rewriting.rewriters.Anonymizer
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-abstract class AnonymizerTestBase extends CypherFunSuite3 with RewriteTest {
+abstract class AnonymizerTestBase extends CypherFunSuite with RewriteTest {
 
   def anonymizer: Anonymizer
 

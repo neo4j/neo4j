@@ -65,7 +65,7 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 object SlottedRewriterTest {
 
@@ -87,7 +87,7 @@ object SlottedRewriterTest {
   }
 }
 
-class SlottedRewriterTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
   implicit val idGen: SequentialIdGen = new SequentialIdGen()
   private val xProp = prop("x", "prop")
   private val xPropKey = prop("x", "propertyKey")

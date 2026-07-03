@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ApplySlottedPipeTest extends CypherFunSuite3 {
+class ApplySlottedPipeTest extends CypherFunSuite {
 
   test("Close should close current RHS and LHS.") {
     val slots = SlotConfigurationBuilder.empty

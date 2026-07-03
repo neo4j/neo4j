@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LiteralReplacementTest extends CypherFunSuite3 with AstRewritingTestSupport {
+class LiteralReplacementTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("should extract starts with patterns") {
     assertRewrite(
