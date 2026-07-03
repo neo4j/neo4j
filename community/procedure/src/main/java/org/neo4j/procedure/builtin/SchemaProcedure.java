@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.collection.trackable.HeapTracking;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
@@ -45,6 +44,8 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.core.AbstractVirtualNode;
+import org.neo4j.kernel.impl.core.AbstractVirtualRelationship;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.procedure.Description;
@@ -252,9 +253,7 @@ public class SchemaProcedure {
         return new VirtualNodeHack(label, properties);
     }
 
-    private static class VirtualRelationshipHack implements Relationship {
-
-        private static final AtomicLong MIN_ID = new AtomicLong(-100);
+    private static class VirtualRelationshipHack extends AbstractVirtualRelationship {
 
         private final long id;
         private final Node startNode;
@@ -301,9 +300,6 @@ public class SchemaProcedure {
         }
 
         @Override
-        public void delete() {}
-
-        @Override
         public Node getOtherNode(Node node) {
             return null;
         }
@@ -334,14 +330,6 @@ public class SchemaProcedure {
         }
 
         @Override
-        public void setProperty(String key, Object value) {}
-
-        @Override
-        public Object removeProperty(String key) {
-            return null;
-        }
-
-        @Override
         public Iterable<String> getPropertyKeys() {
             return null;
         }
@@ -357,11 +345,10 @@ public class SchemaProcedure {
         }
     }
 
-    private static class VirtualNodeHack implements Node {
+    private static class VirtualNodeHack extends AbstractVirtualNode {
 
         private final Map<String, Object> propertyMap = new HashMap<>();
 
-        private static final AtomicLong MIN_ID = new AtomicLong(-100);
         private final long id;
         private final Label label;
 
@@ -391,9 +378,6 @@ public class SchemaProcedure {
         public Iterable<Label> getLabels() {
             return Collections.singletonList(label);
         }
-
-        @Override
-        public void delete() {}
 
         @Override
         public ResourceIterable<Relationship> getRelationships() {
@@ -441,11 +425,6 @@ public class SchemaProcedure {
         }
 
         @Override
-        public Relationship createRelationshipTo(Node otherNode, RelationshipType type) {
-            return null;
-        }
-
-        @Override
         public Iterable<RelationshipType> getRelationshipTypes() {
             return null;
         }
@@ -471,12 +450,6 @@ public class SchemaProcedure {
         }
 
         @Override
-        public void addLabel(Label label) {}
-
-        @Override
-        public void removeLabel(Label label) {}
-
-        @Override
         public boolean hasLabel(Label label) {
             return false;
         }
@@ -493,14 +466,6 @@ public class SchemaProcedure {
 
         @Override
         public Object getProperty(String key, Object defaultValue) {
-            return null;
-        }
-
-        @Override
-        public void setProperty(String key, Object value) {}
-
-        @Override
-        public Object removeProperty(String key) {
             return null;
         }
 
