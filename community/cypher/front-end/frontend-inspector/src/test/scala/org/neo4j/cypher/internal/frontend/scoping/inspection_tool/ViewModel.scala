@@ -68,6 +68,10 @@ object ViewModel {
   ) extends ContentViewModel
   case class VariableListContentViewModel(label: String, values: Seq[LogicalVariable]) extends ContentViewModel
 
+  /** A list of reference -> declaration connections, e.g. for the `referenced` channels. */
+  case class ReferenceListContentViewModel(label: String, values: Seq[(LogicalVariable, LogicalVariable)])
+      extends ContentViewModel
+
   case class CallableSignatureListContentViewModel(label: String, values: Seq[LocalCallableScopeSignature])
       extends ContentViewModel
   case class CallableNameListContentViewModel(values: Seq[CallableName]) extends ContentViewModel
@@ -179,13 +183,17 @@ object ViewModel {
       )
     }
 
-    private def buildReferencedCard(references: References): CardViewModel =
+    private def buildReferencedCard(references: References): CardViewModel = {
+      def pairs(channel: Map[Ref[LogicalVariable], Ref[LogicalVariable]]): Seq[(LogicalVariable, LogicalVariable)] =
+        channel.iterator.map { case (reference, declaration) => (reference.value, declaration.value) }.distinct.toSeq
+      val hiddenContents =
+        if (references.hidden.nonEmpty) Seq(ReferenceListContentViewModel("hidden", pairs(references.hidden)))
+        else Seq.empty
       CardViewModel(
         title = "referenced",
-        contents = Seq(
-          VariableListContentViewModel("variables", references.references.keysIterator.map(_.value).distinct.toSeq)
-        )
+        contents = ReferenceListContentViewModel("references", pairs(references.references)) +: hiddenContents
       )
+    }
 
     private def buildDeclarationsCard(labelText: String, declarations: Declarations): CardViewModel =
       CardViewModel(

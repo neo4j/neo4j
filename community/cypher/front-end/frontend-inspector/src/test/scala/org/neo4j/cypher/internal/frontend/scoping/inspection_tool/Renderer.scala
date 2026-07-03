@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.scoping.inspection_tool.ViewModel.Erro
 import org.neo4j.cypher.internal.frontend.scoping.inspection_tool.ViewModel.InspectionViewModel
 import org.neo4j.cypher.internal.frontend.scoping.inspection_tool.ViewModel.NestedCardContentViewModel
 import org.neo4j.cypher.internal.frontend.scoping.inspection_tool.ViewModel.ProjectionItemListContentViewModel
+import org.neo4j.cypher.internal.frontend.scoping.inspection_tool.ViewModel.ReferenceListContentViewModel
 import org.neo4j.cypher.internal.frontend.scoping.inspection_tool.ViewModel.ScalarContentViewModel
 import org.neo4j.cypher.internal.frontend.scoping.inspection_tool.ViewModel.ScopeNodeViewModel
 import org.neo4j.cypher.internal.frontend.scoping.inspection_tool.ViewModel.VariableListContentViewModel
@@ -198,6 +199,8 @@ object Renderer {
       renderScalar(label, if (italic) em(value) else frag(value), preserveWhitespace)
     case VariableListContentViewModel(label, values) =>
       renderVariableList(label, values)
+    case ReferenceListContentViewModel(label, values) =>
+      renderReferenceList(label, values)
     case CallableSignatureListContentViewModel(label, values) =>
       renderCallableSignatureList(label, values)
     case CallableNameListContentViewModel(values) =>
@@ -227,6 +230,14 @@ object Renderer {
 
   private def renderVariableList(label: String, values: Seq[LogicalVariable]): Frag = {
     val formatted = values.sortBy(v => (v.position.offset, v.name)).map(formatVariable)
+    renderScalar(label, if (formatted.nonEmpty) joinFragsWithBreaks(formatted) else frag("-"))
+  }
+
+  private def renderReferenceList(label: String, values: Seq[(LogicalVariable, LogicalVariable)]): Frag = {
+    val formatted = values.sortBy { case (reference, _) => (reference.position.offset, reference.name) }.map {
+      case (reference, declaration) =>
+        frag(formatVariable(reference), span(cls := "reference-arrow")("→"), formatVariable(declaration))
+    }
     renderScalar(label, if (formatted.nonEmpty) joinFragsWithBreaks(formatted) else frag("-"))
   }
 

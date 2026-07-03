@@ -332,6 +332,11 @@ object Assets {
       |  color: #aaaaaa;
       |}
       |
+      |.reference-arrow {
+      |  margin: 0 0.6em;
+      |  color: #888888;
+      |}
+      |
       |.error-position {
       |  margin-left: 1em;
       |  color: #aaaaaa;
