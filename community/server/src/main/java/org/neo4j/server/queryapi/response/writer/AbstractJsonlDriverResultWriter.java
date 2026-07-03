@@ -70,7 +70,13 @@ abstract class AbstractJsonlDriverResultWriter implements MessageBodyWriter<Quer
                     jsonl.record(result.next());
                     outputStream.flush();
                 }
-                jsonl.summary(result.consume(), session.lastBookmarks(), container.requireSummaryCounters());
+                container.timers().notifyResultConsumed();
+                jsonl.summary(
+                        result.consume(),
+                        container.timers().resultAvailableAfter(),
+                        container.timers().resultConsumedAfter(),
+                        session.lastBookmarks(),
+                        container.requireSummaryCounters());
             });
         } catch (IOException ex) {
             ExceptionsUnwrapper.unwrapAndThrowNeo4jAndQueryApiExceptions(ex);

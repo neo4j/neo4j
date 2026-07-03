@@ -54,8 +54,14 @@ abstract class AbstractDriverResultWriter implements MessageBodyWriter<QueryResp
         try (var session = result.session()) {
             formatter.json((singleBodyFormatter) -> {
                 singleBodyFormatter.data(result.result());
+                result.timers().notifyResultConsumed();
                 var resultSummary = result.result().consume();
-                singleBodyFormatter.metadata(resultSummary, session.lastBookmarks(), result.requireSummaryCounters());
+                singleBodyFormatter.metadata(
+                        resultSummary,
+                        result.timers().resultAvailableAfter(),
+                        result.timers().resultConsumedAfter(),
+                        session.lastBookmarks(),
+                        result.requireSummaryCounters());
             });
         } catch (IOException ex) {
             ExceptionsUnwrapper.unwrapAndThrowNeo4jAndQueryApiExceptions(ex);

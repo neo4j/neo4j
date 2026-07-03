@@ -77,13 +77,23 @@ abstract class AbstractTxManagingResultWriter implements MessageBodyWriter<Query
                 singleBodyFormatter.data(result.result());
 
                 var summary = result.result().consume();
+                result.timers().notifyResultConsumed();
                 if (result.requiresCommit()) {
                     var bookmarks = result.transaction().commit();
-                    singleBodyFormatter.metadata(summary, bookmarks, null, null, result.requireSummaryCounters());
+                    singleBodyFormatter.metadata(
+                            summary,
+                            result.timers().resultAvailableAfter(),
+                            result.timers().resultConsumedAfter(),
+                            bookmarks,
+                            null,
+                            null,
+                            result.requireSummaryCounters());
                 } else {
                     result.transaction().extendTimeout();
                     singleBodyFormatter.metadata(
                             summary,
+                            result.timers().resultAvailableAfter(),
+                            result.timers().resultConsumedAfter(),
                             null,
                             result.transaction().id(),
                             result.transaction().expiresAt(),

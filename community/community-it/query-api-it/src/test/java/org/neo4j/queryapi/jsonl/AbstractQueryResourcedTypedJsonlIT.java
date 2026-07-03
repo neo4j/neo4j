@@ -115,7 +115,7 @@ abstract class AbstractQueryResourcedTypedJsonlIT {
     }
 
     @Test
-    void duration() throws IOException, InterruptedException {
+    void vnwduration() throws IOException, InterruptedException {
         var response = testClient.autoCommitJsonl(QueryRequest.newBuilder()
                 .statement("RETURN duration('P14DT16H12M') AS theDuration")
                 .build());
@@ -493,7 +493,7 @@ abstract class AbstractQueryResourcedTypedJsonlIT {
                 .wasSuccessful()
                 .receivesHeader(fields)
                 .receivesTypedRecord(valuesAssertions)
-                .receivesSummary()
+                .receivesSummary(QueryResponseJsonlAssertions.SummaryAssertions::hasTimers)
                 .hasNoRemainingEvents();
     }
 

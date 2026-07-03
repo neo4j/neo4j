@@ -76,6 +76,7 @@ class QueryResourceTxIT {
         assertThat(startTx).wasSuccessful();
         assertThat(startTx).hasRecord();
         assertThat(startTx).hasTransaction();
+        assertThat(startTx).hasTimers();
         testClient.commitTx(startTx.body().txId());
     }
 
@@ -85,6 +86,7 @@ class QueryResourceTxIT {
 
         assertThat(startTx).wasSuccessful();
         assertThat(startTx).hasTransaction();
+        assertThat(startTx).hasNoTimers();
         testClient.commitTx(startTx.body().txId());
     }
 
@@ -98,6 +100,7 @@ class QueryResourceTxIT {
         assertThat(res).wasSuccessful();
         assertThat(res).hasRecord();
         assertThat(res).hasTransaction();
+        assertThat(res).hasTimers();
         testClient.commitTx(res.body().txId());
     }
 
@@ -130,6 +133,7 @@ class QueryResourceTxIT {
         assertThat(continueTx).wasSuccessful();
         assertThat(continueTx).hasRecord();
         assertThat(continueTx).hasTransaction();
+        assertThat(continueTx).hasTimers();
         testClient.commitTx(continueTx.body().txId());
     }
 
@@ -143,6 +147,7 @@ class QueryResourceTxIT {
 
         assertThat(continueTx).wasSuccessful();
         assertThat(continueTx).hasTransaction();
+        assertThat(continueTx).hasTimers();
         Assertions.assertThat(currentNodeCount("ContinueNode")).isEqualTo(nodeCount);
         testClient.commitTx(continueTx.body().txId());
         Assertions.assertThat(currentNodeCount("ContinueNode")).isEqualTo(nodeCount + 1);
@@ -156,6 +161,7 @@ class QueryResourceTxIT {
 
         assertThat(continueTx).wasSuccessful();
         assertThat(continueTx).hasTransaction();
+        assertThat(continueTx).hasNoTimers();
         testClient.commitTx(continueTx.body().txId());
     }
 
@@ -194,6 +200,7 @@ class QueryResourceTxIT {
         assertThat(commit).wasSuccessful();
         assertThat(commit).hasNoTransaction();
         assertThat(commit).hasBookmark();
+        assertThat(commit).hasTimers();
 
         // verify node created
         var newNodeCheck = testClient.autoCommit(QueryRequest.newBuilder()
@@ -210,6 +217,7 @@ class QueryResourceTxIT {
 
         assertThat(commitRes).wasSuccessful();
         assertThat(commitRes).hasBookmark();
+        assertThat(commitRes).hasNoTimers();
         assertThat(commitRes).hasNoTransaction();
 
         // verify node created

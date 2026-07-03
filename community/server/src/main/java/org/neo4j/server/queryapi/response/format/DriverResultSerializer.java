@@ -41,7 +41,9 @@ import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_PLAN_CH
 import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_PLAN_IDENTIFIERS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_PLAN_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_PLAN_OPERATOR_TYPE_KEY;
-import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_TYPE;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_TYPE_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.RESULT_AVAILABLE_AFTER_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.RESULT_CONSUMED_AFTER_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.TRANSACTION_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.TX_EXPIRY_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.TX_ID_KEY;
@@ -184,13 +186,14 @@ class DriverResultSerializer {
         }
     }
 
-    public void writeMetadata(ResultSummary resultSummary, Set<Bookmark> bookmarks, boolean requireCounters)
-            throws IOException {
-        writeMetadata(resultSummary, bookmarks, null, null, requireCounters);
-    }
-
     public void writeMetadata(
-            ResultSummary resultSummary, Set<Bookmark> bookmarks, String txId, Instant timeout, boolean requireCounters)
+            ResultSummary resultSummary,
+            Long resultAvailableAfter,
+            Long resultConsumedAfter,
+            Set<Bookmark> bookmarks,
+            String txId,
+            Instant timeout,
+            boolean requireCounters)
             throws IOException {
         if (resultSummary != null) {
             writeNotifications(resultSummary.notifications());
@@ -199,8 +202,24 @@ class DriverResultSerializer {
             writeQueryPlan(resultSummary);
             writeQueryType(resultSummary);
         }
+        writeResultAvailableAfter(resultAvailableAfter);
+        writeResultConsumeAfter(resultConsumedAfter);
         writeBookmarks(bookmarks);
         writeTxInfo(txId, timeout);
+    }
+
+    public void writeResultConsumeAfter(Long resultConsumedAfter) throws IOException {
+        if (resultConsumedAfter != null) {
+            jsonGenerator.writeFieldName(RESULT_CONSUMED_AFTER_KEY);
+            jsonGenerator.writeNumber(resultConsumedAfter);
+        }
+    }
+
+    public void writeResultAvailableAfter(Long resultAvailableAfter) throws IOException {
+        if (resultAvailableAfter != null) {
+            jsonGenerator.writeFieldName(RESULT_AVAILABLE_AFTER_KEY);
+            jsonGenerator.writeNumber(resultAvailableAfter);
+        }
     }
 
     public void writeQueryType(ResultSummary resultSummary) throws IOException {
@@ -212,7 +231,7 @@ class DriverResultSerializer {
                     case QueryType.SCHEMA_WRITE -> "s";
                 };
 
-        jsonGenerator.writeFieldName(QUERY_TYPE);
+        jsonGenerator.writeFieldName(QUERY_TYPE_KEY);
         jsonGenerator.writeString(queryType);
     }
 

@@ -360,6 +360,30 @@ public class QueryResponseJsonlAssertions
             return this;
         }
 
+        public SummaryAssertions hasTimers() {
+            Assertions.assertThat(this.actual.resultAvailableAfter())
+                    .as("Should have result available after greater or equal to 0")
+                    .isGreaterThanOrEqualTo(0);
+
+            Assertions.assertThat(this.actual.resultConsumedAfter())
+                    .as("Should have result consumed after greater or equal to resultAvailableAfter")
+                    .isGreaterThanOrEqualTo(this.actual.resultAvailableAfter());
+
+            return this;
+        }
+
+        public SummaryAssertions doesNotHaveTimers() {
+            Assertions.assertThat(this.actual.resultAvailableAfter())
+                    .as("Should not have result available after")
+                    .isNull();
+
+            Assertions.assertThat(this.actual.resultConsumedAfter())
+                    .as("Should not have result consumed after")
+                    .isNull();
+
+            return this;
+        }
+
         public SummaryAssertions hasBookmarksNotEqualTo(List<String> bookmarks) {
             Assertions.assertThat(this.actual.bookmarks())
                     .as("Should have bookmarks")
@@ -536,6 +560,8 @@ public class QueryResponseJsonlAssertions
             JsonNode queryPlan,
             List<String> bookmarks,
             SummaryEventBodyTransaction transaction,
+            Long resultAvailableAfter,
+            Long resultConsumedAfter,
             String queryType) {}
 
     private record ErrorEventBody(String code, String message) {}

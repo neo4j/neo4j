@@ -51,6 +51,7 @@ class QueryResourcePlainJsonIT {
 
         QueryResponseAssertions.assertThat(response)
                 .wasSuccessful()
+                .hasTimers()
                 .hasFieldNames("bool", "number", "float", "string")
                 .hasRecords(List.of(List.of(true, 1, 1.23f, "hello")));
     }
@@ -60,7 +61,7 @@ class QueryResourcePlainJsonIT {
         var response = testClient.autoCommit(
                 QueryRequest.newBuilder().statement("RETURN null as aNull").build());
 
-        QueryResponseAssertions.assertThat(response).wasSuccessful().hasFieldNames("aNull");
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasTimers().hasFieldNames("aNull");
 
         assertThat(response.body().data().get(VALUES_KEY).get(0).get(0).isNull());
     }
@@ -79,6 +80,7 @@ class QueryResourcePlainJsonIT {
 
         QueryResponseAssertions.assertThat(response)
                 .wasSuccessful()
+                .hasTimers()
                 .hasFieldNames(
                         "theOffsetDateTime",
                         "theZonedDateTime",
@@ -111,7 +113,7 @@ class QueryResourcePlainJsonIT {
                         + "point({longitude: 56.7, latitude: 12.78, height: 8})")
                 .build());
 
-        QueryResponseAssertions.assertThat(response).wasSuccessful();
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasTimers();
 
         var results = response.body().data().get(VALUES_KEY).get(0);
         assertThat(results.get(0).asText()).isEqualTo("SRID=7203;POINT (2.3 4.5)");
@@ -130,7 +132,7 @@ class QueryResourcePlainJsonIT {
                 .statement("RETURN duration('P14DT16H12M') AS theDuration")
                 .build());
 
-        QueryResponseAssertions.assertThat(response).wasSuccessful().hasFieldNames("theDuration");
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasTimers().hasFieldNames("theDuration");
 
         var results = response.body().data().get(VALUES_KEY);
         assertThat(results.get(0).get(0).asText()).isEqualTo("P14DT16H12M");
@@ -146,7 +148,7 @@ class QueryResourcePlainJsonIT {
         var response = testClient.autoCommit(
                 QueryRequest.newBuilder().statement("MATCH (n:FindMe) return n").build());
 
-        QueryResponseAssertions.assertThat(response).wasSuccessful();
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasTimers();
 
         var results = response.body().data().get(VALUES_KEY);
         assertThat(results.get(0)
@@ -163,7 +165,7 @@ class QueryResourcePlainJsonIT {
                 .statement("RETURN {key: 'Value', listKey: [{inner: 'Map1'}, {inner: 'Map2'}]} AS map")
                 .build());
 
-        QueryResponseAssertions.assertThat(response).wasSuccessful().hasFieldNames("map");
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasTimers().hasFieldNames("map");
 
         var values = response.body().data().get(VALUES_KEY);
         assertThat(values.get(0).get(0).get("key").asText()).isEqualTo("Value");
@@ -179,7 +181,7 @@ class QueryResourcePlainJsonIT {
                 .statement("RETURN [1,true,'hello',date('+2015-W13-4')] as list")
                 .build());
 
-        QueryResponseAssertions.assertThat(response).wasSuccessful().hasFieldNames("list");
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasTimers().hasFieldNames("list");
 
         var resultArray = response.body().data().get(VALUES_KEY).get(0).get(0);
         assertThat(resultArray.size()).isEqualTo(4);
@@ -195,7 +197,7 @@ class QueryResourcePlainJsonIT {
                 .statement("CREATE (n:MyLabel {aNumber: 1234}) RETURN n")
                 .build());
 
-        QueryResponseAssertions.assertThat(response).wasSuccessful();
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasTimers();
 
         var node = response.body().data().get(VALUES_KEY).get(0).get(0);
         assertThat(node.get("elementId").asText()).isNotBlank();
@@ -210,7 +212,7 @@ class QueryResourcePlainJsonIT {
                 .statement("CREATE (a)-[r:RELTYPE {onFire: true}]->(b) RETURN r")
                 .build());
 
-        QueryResponseAssertions.assertThat(response).wasSuccessful();
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasTimers();
 
         var rel = response.body().data().get(VALUES_KEY).get(0).get(0);
         assertThat(rel.get("elementId").asText()).isNotBlank();

@@ -61,6 +61,8 @@ abstract class AbstractJsonTxInfoWriter implements MessageBodyWriter<QueryRespon
         formatter.json(bodyFormatter -> bodyFormatter.metadata(
                 null,
                 null,
+                null,
+                null,
                 queryResponseTxInfo.transaction().id(),
                 queryResponseTxInfo.transaction().expires(),
                 false));

@@ -23,4 +23,8 @@ import org.neo4j.driver.Result;
 import org.neo4j.server.queryapi.tx.Transaction;
 
 public record QueryResponseTxManaged(
-        Result result, Transaction transaction, boolean requireSummaryCounters, boolean requiresCommit) {}
+        Result result,
+        Transaction transaction,
+        QueryResponseTimers timers,
+        boolean requireSummaryCounters,
+        boolean requiresCommit) {}

@@ -77,19 +77,38 @@ public class QueryBodyFormatter {
             this.serializer.writeData(result);
         }
 
+        public void metadata(
+                ResultSummary resultSummary,
+                Long resultAvailableAfter,
+                Long resultConsumedAfter,
+                Set<Bookmark> bookmarks,
+                boolean requireCounters)
+                throws IOException {
+            metadata(resultSummary, resultAvailableAfter, resultConsumedAfter, bookmarks, null, null, requireCounters);
+        }
+
         public void metadata(ResultSummary resultSummary, Set<Bookmark> bookmarks, boolean requireCounters)
                 throws IOException {
-            metadata(resultSummary, bookmarks, null, null, requireCounters);
+            metadata(resultSummary, null, null, bookmarks, null, null, requireCounters);
         }
 
         public void metadata(
                 ResultSummary resultSummary,
+                Long resultAvailableAfter,
+                Long resultConsumedAfter,
                 Set<Bookmark> bookmarks,
                 String txId,
                 Instant timeout,
                 boolean requireCounters)
                 throws IOException {
-            this.serializer.writeMetadata(resultSummary, bookmarks, txId, timeout, requireCounters);
+            this.serializer.writeMetadata(
+                    resultSummary,
+                    resultAvailableAfter,
+                    resultConsumedAfter,
+                    bookmarks,
+                    txId,
+                    timeout,
+                    requireCounters);
         }
     }
 
@@ -118,13 +137,21 @@ public class QueryBodyFormatter {
             });
         }
 
-        public void summary(ResultSummary resultSummary, Set<Bookmark> bookmarks, boolean requireCounters)
+        public void summary(
+                ResultSummary resultSummary,
+                Long resultAvailableAfter,
+                Long resultConsumedAfter,
+                Set<Bookmark> bookmarks,
+                boolean requireCounters)
                 throws IOException {
-            this.summary(resultSummary, bookmarks, null, null, requireCounters);
+            this.summary(
+                    resultSummary, resultAvailableAfter, resultConsumedAfter, bookmarks, null, null, requireCounters);
         }
 
         public void summary(
                 ResultSummary resultSummary,
+                Long resultAvailableAfter,
+                Long resultConsumedAfter,
                 Set<Bookmark> bookmarks,
                 String txId,
                 Instant timeout,
@@ -138,6 +165,8 @@ public class QueryBodyFormatter {
                     this.serializer.writeQueryPlan(resultSummary);
                     this.serializer.writeBookmarks(bookmarks);
                     this.serializer.writeQueryType(resultSummary);
+                    this.serializer.writeResultAvailableAfter(resultAvailableAfter);
+                    this.serializer.writeResultConsumeAfter(resultConsumedAfter);
                     this.serializer.writeTxInfo(txId, timeout);
                 });
             });

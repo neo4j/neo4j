@@ -50,7 +50,9 @@ public final class Fieldnames {
 
     public static final String NOTIFICATIONS_KEY = "notifications";
     public static final String COUNTERS_KEY = "counters";
-    public static final String QUERY_TYPE = "queryType";
+    public static final String QUERY_TYPE_KEY = "queryType";
+    public static final String RESULT_AVAILABLE_AFTER_KEY = "resultAvailableAfter";
+    public static final String RESULT_CONSUMED_AFTER_KEY = "resultConsumedAfter";
 
     public static final String QUERY_PLAN_KEY = "queryPlan";
     public static final String QUERY_PLAN_OPERATOR_TYPE_KEY = "operatorType";

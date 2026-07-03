@@ -49,6 +49,7 @@ import org.neo4j.server.queryapi.exception.TransactionConcurrentAccessException;
 import org.neo4j.server.queryapi.exception.TransactionNotFoundException;
 import org.neo4j.server.queryapi.request.QueryRequest;
 import org.neo4j.server.queryapi.response.QueryResponseAutoCommit;
+import org.neo4j.server.queryapi.response.QueryResponseTimers;
 import org.neo4j.server.queryapi.response.QueryResponseTxManaged;
 import org.neo4j.server.queryapi.tx.Transaction;
 import org.neo4j.server.queryapi.tx.TransactionManager;
@@ -88,8 +89,10 @@ public class QueryController {
 
         var txConfig = buildTxConfig(request);
         try {
+            var timers = QueryResponseTimers.start();
             var result = session.run(request.statement(), request.parametersOrSupplied(Map::of), txConfig);
-            var resultContainer = new QueryResponseAutoCommit(result, session, request.includeCounters());
+            timers.notifyResultAvailable();
+            var resultContainer = new QueryResponseAutoCommit(result, session, timers, request.includeCounters());
             return Response.accepted(resultContainer).build();
         } catch (Neo4jException neo4jException) {
             throw neo4jException;
@@ -175,9 +178,12 @@ public class QueryController {
 
         try {
             if (request.statement() != null && !request.statement().isEmpty()) {
+                var timers = QueryResponseTimers.start();
                 var result = transaction.run(request.statement(), request.parameters());
+                timers.notifyResultAvailable();
                 txCleanUpAction = TxHandling.KEEP_OPEN;
-                return successWithResultResponse(result, transaction, request.includeCounters(), requiresCommit);
+                return successWithResultResponse(
+                        result, transaction, timers, request.includeCounters(), requiresCommit);
             } else {
                 if (requiresCommit) {
                     var bookmarks = transaction.commit();
@@ -267,9 +273,13 @@ public class QueryController {
     }
 
     private static Response successWithResultResponse(
-            Result result, Transaction transaction, boolean requireCounters, boolean requiresCommit) {
+            Result result,
+            Transaction transaction,
+            QueryResponseTimers timers,
+            boolean requireCounters,
+            boolean requiresCommit) {
         return Response.accepted()
-                .entity(new QueryResponseTxManaged(result, transaction, requireCounters, requiresCommit))
+                .entity(new QueryResponseTxManaged(result, transaction, timers, requireCounters, requiresCommit))
                 .build();
     }
 

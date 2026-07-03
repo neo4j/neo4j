@@ -75,7 +75,8 @@ class QueryResourceTxJsonlIT {
                 .wasSuccessful()
                 .receivesHeader("1")
                 .receivesRecord(1)
-                .receivesSummary(that -> that.hasTransaction(txIdCapture.capture()))
+                .receivesSummary(
+                        that -> that.hasTransaction(txIdCapture.capture()).hasTimers())
                 .hasNoRemainingEvents();
 
         commitCaptured(txIdCapture);
@@ -102,7 +103,8 @@ class QueryResourceTxJsonlIT {
                 .wasSuccessful()
                 .receivesHeader("1")
                 .receivesRecord(1)
-                .receivesSummary(that -> that.hasTransaction(txIdCapture.capture()))
+                .receivesSummary(
+                        that -> that.hasTransaction(txIdCapture.capture()).hasTimers())
                 .hasNoRemainingEvents();
 
         commitCaptured(txIdCapture);
@@ -148,7 +150,8 @@ class QueryResourceTxJsonlIT {
                 .wasSuccessful()
                 .receivesHeader("1")
                 .receivesRecord(1)
-                .receivesSummary(that -> that.hasTransaction(txIdCapture.capture()))
+                .receivesSummary(
+                        that -> that.hasTransaction(txIdCapture.capture()).hasTimers())
                 .hasNoRemainingEvents();
 
         commitCaptured(txIdCapture);
@@ -166,8 +169,9 @@ class QueryResourceTxJsonlIT {
                 .hasContentType(QueryContentType.UNTYPED_L)
                 .wasSuccessful()
                 .receivesHeader(QueryResponseJsonlAssertions.HeaderAssertions::hasFields)
-                .receivesSummary(that ->
-                        that.hasTransaction(capturedTxIdCapture.getCaptured().getFirst()))
+                .receivesSummary(that -> that.hasTransaction(
+                                capturedTxIdCapture.getCaptured().getFirst())
+                        .hasTimers())
                 .hasNoRemainingEvents();
 
         Assertions.assertThat(currentNodeCount("ContinueNode")).isEqualTo(nodeCount);
@@ -186,8 +190,9 @@ class QueryResourceTxJsonlIT {
                 .hasContentType(QueryContentType.UNTYPED_L)
                 .wasSuccessful()
                 .receivesHeader(QueryResponseJsonlAssertions.HeaderAssertions::doesNotHaveFields)
-                .receivesSummary(that ->
-                        that.hasTransaction(capturedTxIdCapture.getCaptured().getFirst()))
+                .receivesSummary(that -> that.hasTransaction(
+                                capturedTxIdCapture.getCaptured().getFirst())
+                        .doesNotHaveTimers())
                 .hasNoRemainingEvents();
 
         commitCaptured(capturedTxIdCapture);
@@ -237,7 +242,8 @@ class QueryResourceTxJsonlIT {
                 .hasContentType(QueryContentType.UNTYPED_L)
                 .wasSuccessful()
                 .receivesHeader(QueryResponseJsonlAssertions.HeaderAssertions::hasFields)
-                .receivesSummary(that -> that.doesNotHaveTransaction().hasBookmarks())
+                .receivesSummary(
+                        that -> that.doesNotHaveTransaction().hasBookmarks().hasTimers())
                 .hasNoRemainingEvents();
 
         // verify node createdX
@@ -256,7 +262,8 @@ class QueryResourceTxJsonlIT {
                 .hasContentType(QueryContentType.UNTYPED_L)
                 .wasSuccessful()
                 .receivesHeader(assertions -> assertions.hasFields())
-                .receivesSummary(that -> that.hasTransaction(txIdCapture.capture()))
+                .receivesSummary(
+                        that -> that.hasTransaction(txIdCapture.capture()).hasTimers())
                 .hasNoRemainingEvents();
 
         var commitRes = testClient.commitTxJsonl(txIdCapture.getCaptured().getFirst());
@@ -265,7 +272,8 @@ class QueryResourceTxJsonlIT {
                 .hasContentType(QueryContentType.UNTYPED_L)
                 .wasSuccessful()
                 .receivesHeader(QueryResponseJsonlAssertions.HeaderAssertions::doesNotHaveFields)
-                .receivesSummary(that -> that.doesNotHaveTransaction().hasBookmarks())
+                .receivesSummary(
+                        that -> that.doesNotHaveTransaction().hasBookmarks().doesNotHaveTimers())
                 .hasNoRemainingEvents();
 
         // verify node created
@@ -285,7 +293,8 @@ class QueryResourceTxJsonlIT {
                 .hasContentType(QueryContentType.UNTYPED_L)
                 .wasSuccessful()
                 .receivesHeader(QueryResponseJsonlAssertions.HeaderAssertions::hasFields)
-                .receivesSummary(that -> that.hasTransaction(txIdCapture.capture()))
+                .receivesSummary(
+                        that -> that.hasTransaction(txIdCapture.capture()).hasTimers())
                 .hasNoRemainingEvents();
 
         var commitRes = testClient.commitTxJsonl(
@@ -351,7 +360,8 @@ class QueryResourceTxJsonlIT {
                 .hasContentType(QueryContentType.UNTYPED_L)
                 .wasSuccessful()
                 .receivesHeader(QueryResponseJsonlAssertions.HeaderAssertions::hasFields)
-                .receivesSummary(that -> that.hasTransaction(txIdCapture.capture()))
+                .receivesSummary(
+                        that -> that.hasTransaction(txIdCapture.capture()).hasTimers())
                 .hasNoRemainingEvents();
 
         var rollback = testClient.rollbackTxJsonl(txIdCapture.getCaptured().getFirst());
@@ -504,7 +514,8 @@ class QueryResourceTxJsonlIT {
                 .hasContentType(QueryContentType.UNTYPED_L)
                 .wasSuccessful()
                 .receivesHeader(QueryResponseJsonlAssertions.HeaderAssertions::doesNotHaveFields)
-                .receivesSummary(that -> that.hasTransaction(txIdCapture.capture()))
+                .receivesSummary(
+                        that -> that.hasTransaction(txIdCapture.capture()).doesNotHaveTimers())
                 .hasNoRemainingEvents();
         return txIdCapture;
     }
@@ -516,7 +527,7 @@ class QueryResourceTxJsonlIT {
                 .hasContentType(QueryContentType.UNTYPED_L)
                 .wasSuccessful()
                 .receivesHeader(QueryResponseJsonlAssertions.HeaderAssertions::doesNotHaveFields)
-                .receivesSummary(QueryResponseJsonlAssertions.SummaryAssertions::doesNotHaveTransaction)
+                .receivesSummary(that -> that.doesNotHaveTransaction().doesNotHaveTimers())
                 .hasNoRemainingEvents();
     }
 

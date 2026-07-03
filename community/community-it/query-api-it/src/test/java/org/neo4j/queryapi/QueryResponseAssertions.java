@@ -368,6 +368,19 @@ public final class QueryResponseAssertions
         Assertions.assertThat(queryResponse.body().queryType()).isEqualTo(queryType);
     }
 
+    public QueryResponseAssertions hasTimers() {
+        Assertions.assertThat(queryResponse.body().resultAvailableAfter()).isGreaterThanOrEqualTo(0);
+        Assertions.assertThat(queryResponse.body().resultConsumedAfter())
+                .isGreaterThanOrEqualTo(queryResponse.body().resultAvailableAfter());
+        return this;
+    }
+
+    public QueryResponseAssertions hasNoTimers() {
+        Assertions.assertThat(queryResponse.body().resultAvailableAfter()).isNull();
+        Assertions.assertThat(queryResponse.body().resultConsumedAfter()).isNull();
+        return this;
+    }
+
     private Object unwrapValue(JsonNode responseRecord, Object expectedRecord) {
         Object unwrapped = null;
         switch (responseRecord.getNodeType()) {

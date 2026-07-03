@@ -65,7 +65,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())
                 .wasSuccessful()
-                .hasFieldNames("bool", "number", "float", "string");
+                .hasFieldNames("bool", "number", "float", "string")
+                .hasTimers();
 
         var parsedJson = response.body().data();
 
@@ -86,7 +87,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())
                 .wasSuccessful()
-                .hasFieldNames("aNull");
+                .hasFieldNames("aNull")
+                .hasTimers();
 
         assertThat(response.body()
                 .data()
@@ -115,7 +117,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())
                 .wasSuccessful()
-                .hasFieldNames("float", "negativeFloat", "nan", "infinity", "negativeInfinity");
+                .hasFieldNames("float", "negativeFloat", "nan", "infinity", "negativeInfinity")
+                .hasTimers();
 
         var parsedJson = response.body().data();
 
@@ -148,7 +151,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
                         "theLocalDateTime",
                         "theDate",
                         "theTime",
-                        "theLocalTime");
+                        "theLocalTime")
+                .hasTimers();
 
         var parsedJson = response.body().data();
 
@@ -174,7 +178,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())
                 .wasSuccessful()
-                .hasFieldNames("theDuration");
+                .hasFieldNames("theDuration")
+                .hasTimers();
 
         QueryAssertions.assertThat(response.body().data()).hasTypedResultAt(0, "Duration", "P14DT16H12M");
     }
@@ -191,7 +196,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
 
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())
-                .wasSuccessful();
+                .wasSuccessful()
+                .hasTimers();
 
         var parsedJson = response.body().data();
         var results = parsedJson.get(VALUES_KEY);
@@ -214,7 +220,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
 
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())
-                .wasSuccessful();
+                .wasSuccessful()
+                .hasTimers();
         var parsedJson = response.body().data();
 
         var results = parsedJson.get(VALUES_KEY).get(0);
@@ -237,7 +244,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())
                 .wasSuccessful()
-                .hasFieldNames("map");
+                .hasFieldNames("map")
+                .hasTimers();
 
         var parsedJson = response.body().data();
 
@@ -288,7 +296,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())
                 .wasSuccessful()
-                .hasFieldNames("list");
+                .hasFieldNames("list")
+                .hasTimers();
 
         var parsedJson = response.body().data();
 
@@ -330,7 +339,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
 
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())
-                .wasSuccessful();
+                .wasSuccessful()
+                .hasTimers();
 
         var parsedJson = response.body().data();
 
@@ -351,7 +361,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
 
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())
-                .wasSuccessful();
+                .wasSuccessful()
+                .hasTimers();
 
         var parsedJson = response.body().data();
         var rel = parsedJson.get(VALUES_KEY).get(0).get(0);
@@ -407,7 +418,8 @@ abstract class AbstractQueryResourcedTypedJsonIT {
 
         QueryResponseAssertions.assertThat(createPathReq)
                 .hasContentType(contentType())
-                .wasSuccessful();
+                .wasSuccessful()
+                .hasTimers();
         var response = testClient.autoCommit(QueryRequest.newBuilder()
                 .statement("MATCH p=(a:LabelA)-[rel1:RELAB]->(b:LabelB)<-[rel2:RELCB]-(c:LabelC) RETURN p")
                 .build());

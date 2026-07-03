@@ -72,15 +72,23 @@ abstract class AbstractJsonlTxManagingResultWriter implements MessageBodyWriter<
                     jsonl.record(container.result().next());
                     entityStream.flush();
                 }
+                container.timers().notifyResultConsumed();
 
                 var summary = container.result().consume();
                 if (container.requiresCommit()) {
                     var bookmarks = container.transaction().commit();
-                    jsonl.summary(summary, bookmarks, container.requireSummaryCounters());
+                    jsonl.summary(
+                            summary,
+                            container.timers().resultAvailableAfter(),
+                            container.timers().resultConsumedAfter(),
+                            bookmarks,
+                            container.requireSummaryCounters());
                 } else {
                     container.transaction().extendTimeout();
                     jsonl.summary(
                             summary,
+                            container.timers().resultAvailableAfter(),
+                            container.timers().resultConsumedAfter(),
                             null,
                             container.transaction().id(),
                             container.transaction().expiresAt(),

@@ -26,4 +26,5 @@ import org.neo4j.driver.Session;
  * A wrapper for a driver result and session. Needed so that the serialization logic can close the session when it has either:
  * - consumed all the results, or - an error has occurred and the session needs to be closed.
  */
-public record QueryResponseAutoCommit(Result result, Session session, boolean requireSummaryCounters) {}
+public record QueryResponseAutoCommit(
+        Result result, Session session, QueryResponseTimers timers, boolean requireSummaryCounters) {}
