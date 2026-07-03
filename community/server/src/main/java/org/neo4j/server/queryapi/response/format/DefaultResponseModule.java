@@ -283,41 +283,43 @@ public final class DefaultResponseModule extends SimpleModule {
             super(Value.class);
             // The value which are serialized as strings
             this.stringTypes = new HashMap<>();
-            stringTypes.put(typeSystem.BYTES(), CypherTypes.Base64);
-            stringTypes.put(typeSystem.BOOLEAN(), CypherTypes.Boolean);
-            stringTypes.put(typeSystem.INTEGER(), CypherTypes.Integer);
-            stringTypes.put(typeSystem.NULL(), CypherTypes.Null);
-            stringTypes.put(typeSystem.FLOAT(), CypherTypes.Float);
-            stringTypes.put(typeSystem.STRING(), CypherTypes.String);
-            stringTypes.put(typeSystem.DATE(), CypherTypes.Date);
-            stringTypes.put(typeSystem.TIME(), CypherTypes.Time);
-            stringTypes.put(typeSystem.LOCAL_TIME(), CypherTypes.LocalTime);
-            stringTypes.put(typeSystem.DATE_TIME(), CypherTypes.DateTime);
-            stringTypes.put(typeSystem.LOCAL_DATE_TIME(), CypherTypes.LocalDateTime);
-            stringTypes.put(typeSystem.DURATION(), CypherTypes.Duration);
-            stringTypes.put(typeSystem.POINT(), CypherTypes.Point);
-            if (view.equals(View.TYPED_JSON_V1x1)) {
-                stringTypes.put(typeSystem.UNSUPPORTED(), CypherTypes.Unsupported);
-            }
+
+            putIfViewSupports(stringTypes, typeSystem.BYTES(), CypherTypes.Base64);
+            putIfViewSupports(stringTypes, typeSystem.BOOLEAN(), CypherTypes.Boolean);
+            putIfViewSupports(stringTypes, typeSystem.INTEGER(), CypherTypes.Integer);
+            putIfViewSupports(stringTypes, typeSystem.NULL(), CypherTypes.Null);
+            putIfViewSupports(stringTypes, typeSystem.FLOAT(), CypherTypes.Float);
+            putIfViewSupports(stringTypes, typeSystem.STRING(), CypherTypes.String);
+            putIfViewSupports(stringTypes, typeSystem.DATE(), CypherTypes.Date);
+            putIfViewSupports(stringTypes, typeSystem.TIME(), CypherTypes.Time);
+            putIfViewSupports(stringTypes, typeSystem.LOCAL_TIME(), CypherTypes.LocalTime);
+            putIfViewSupports(stringTypes, typeSystem.DATE_TIME(), CypherTypes.DateTime);
+            putIfViewSupports(stringTypes, typeSystem.LOCAL_DATE_TIME(), CypherTypes.LocalDateTime);
+            putIfViewSupports(stringTypes, typeSystem.DURATION(), CypherTypes.Duration);
+            putIfViewSupports(stringTypes, typeSystem.POINT(), CypherTypes.Point);
+            putIfViewSupports(stringTypes, typeSystem.UUID(), CypherTypes.UUID);
+            putIfViewSupports(stringTypes, typeSystem.UNSUPPORTED(), CypherTypes.Unsupported);
 
             // all the supported values
             this.supportedTypes = new HashMap<>(stringTypes);
-            supportedTypes.put(typeSystem.RELATIONSHIP(), CypherTypes.Relationship);
-            supportedTypes.put(typeSystem.NODE(), CypherTypes.Node);
-            supportedTypes.put(typeSystem.PATH(), CypherTypes.Path);
-            supportedTypes.put(typeSystem.LIST(), CypherTypes.List);
-            supportedTypes.put(typeSystem.MAP(), CypherTypes.Map);
+            putIfViewSupports(supportedTypes, typeSystem.RELATIONSHIP(), CypherTypes.Relationship);
+            putIfViewSupports(supportedTypes, typeSystem.NODE(), CypherTypes.Node);
+            putIfViewSupports(supportedTypes, typeSystem.PATH(), CypherTypes.Path);
+            putIfViewSupports(supportedTypes, typeSystem.LIST(), CypherTypes.List);
+            putIfViewSupports(supportedTypes, typeSystem.MAP(), CypherTypes.Map);
+            putIfViewSupports(supportedTypes, typeSystem.VECTOR(), CypherTypes.Vector);
+        }
 
-            if (!view.equals(View.TYPED_JSON)) {
-                supportedTypes.put(typeSystem.VECTOR(), CypherTypes.Vector);
+        private void putIfViewSupports(Map<Type, CypherTypes> map, Type type, CypherTypes cypherTypes) {
+            if (view.supports(cypherTypes)) {
+                map.put(type, cypherTypes);
             }
         }
 
         @Override
         public void serialize(Value value, JsonGenerator json, SerializerProvider serializers) throws IOException {
-            var isTypedJson = view.equals(View.TYPED_JSON) || view.equals(View.TYPED_JSON_V1x1);
             if (value.hasType(typeSystem.LIST())) {
-                if (isTypedJson) {
+                if (view.isTyped()) {
                     json.writeStartObject();
                     json.writeStringField(Fieldnames.CYPHER_TYPE, CypherTypes.List.getValue());
                     json.writeFieldName(Fieldnames.CYPHER_VALUE);
@@ -331,13 +333,13 @@ public final class DefaultResponseModule extends SimpleModule {
                 }
                 json.writeEndArray();
 
-                if (isTypedJson) {
+                if (view.isTyped()) {
                     json.writeEndObject();
                 }
             } else if (value.hasType(typeSystem.MAP())
                     && !(value.hasType(typeSystem.NODE()) || value.hasType(typeSystem.RELATIONSHIP()))) {
 
-                if (isTypedJson) {
+                if (view.isTyped()) {
                     json.writeStartObject();
                     json.writeStringField(Fieldnames.CYPHER_TYPE, CypherTypes.Map.getValue());
                     json.writeFieldName(Fieldnames.CYPHER_VALUE);
@@ -348,81 +350,89 @@ public final class DefaultResponseModule extends SimpleModule {
                     serialize(value.get(key), json, serializers);
                 }
                 json.writeEndObject();
-                if (isTypedJson) {
+                if (view.isTyped()) {
                     json.writeEndObject();
                 }
-            } else if (view == View.PLAIN_JSON) {
-                renderSimpleValue(value, json, serializers);
-            } else if (isTypedJson) {
+            } else if (view.isTyped()) {
                 renderNewFormat(value, json, serializers);
+            } else {
+                renderSimpleValue(value, json, serializers);
             }
         }
 
         private void renderNewFormat(Value value, JsonGenerator json, SerializerProvider serializers)
                 throws IOException {
 
-            if (stringTypes.containsKey(value.type())) {
-                var cypherType = stringTypes.get(value.type());
-                json.writeStartObject();
-                if (value.hasType(typeSystem.DATE_TIME())) {
-                    if (value.asZonedDateTime().getZone() instanceof ZoneOffset) {
-                        json.writeStringField(Fieldnames.CYPHER_TYPE, "OffsetDateTime");
+            if (supportedTypes.containsKey(value.type())) {
+                if (stringTypes.containsKey(value.type())) {
+                    var cypherType = stringTypes.get(value.type());
+                    json.writeStartObject();
+                    if (value.hasType(typeSystem.DATE_TIME())) {
+                        if (value.asZonedDateTime().getZone() instanceof ZoneOffset) {
+                            json.writeStringField(Fieldnames.CYPHER_TYPE, "OffsetDateTime");
+                        } else {
+                            json.writeStringField(Fieldnames.CYPHER_TYPE, "ZonedDateTime");
+                        }
+                        json.writeStringField(
+                                Fieldnames.CYPHER_VALUE,
+                                stringTypes.get(value.type()).getWriter().apply(value));
                     } else {
-                        json.writeStringField(Fieldnames.CYPHER_TYPE, "ZonedDateTime");
+                        json.writeStringField(Fieldnames.CYPHER_TYPE, cypherType.getValue());
+                        json.writeFieldName(Fieldnames.CYPHER_VALUE);
+                        if (cypherType.equals(CypherTypes.Null)) { // use json types?
+                            json.writeNull();
+                        } else if (cypherType.equals(CypherTypes.Boolean)) {
+                            json.writeBoolean(value.asBoolean());
+                        } else {
+                            json.writeString(cypherType.getWriter().apply(value));
+                        }
                     }
-                    json.writeStringField(
-                            Fieldnames.CYPHER_VALUE,
-                            stringTypes.get(value.type()).getWriter().apply(value));
-                } else {
-                    json.writeStringField(Fieldnames.CYPHER_TYPE, cypherType.getValue());
+                    json.writeEndObject();
+                    return;
+                } else if (value.hasType(typeSystem.POINT())) {
+                    renderPoint(value, json, true);
+                    return;
+                } else if (value.hasType(typeSystem.NODE())) {
+                    writeNode(value.asNode(), json, serializers, view);
+                    return;
+                } else if (value.hasType(typeSystem.RELATIONSHIP())) {
+                    writeRelationship(value.asRelationship(), json, serializers, view);
+                    return;
+                } else if (value.hasType(typeSystem.PATH())) {
+                    json.writeStartObject();
+                    json.writeStringField(Fieldnames.CYPHER_TYPE, CypherTypes.Path.getValue());
                     json.writeFieldName(Fieldnames.CYPHER_VALUE);
-                    if (cypherType.equals(CypherTypes.Null)) { // use json types?
-                        json.writeNull();
-                    } else if (cypherType.equals(CypherTypes.Boolean)) {
-                        json.writeBoolean(value.asBoolean());
-                    } else {
-                        json.writeString(cypherType.getWriter().apply(value));
+                    json.writeStartArray();
+                    var path = value.asPath();
+                    for (Path.Segment element : path) {
+                        writeNode(element.start(), json, serializers, view);
+                        writeRelationship(element.relationship(), json, serializers, view);
                     }
+                    writeNode(path.end(), json, serializers, view);
+                    json.writeEndArray();
+                    json.writeEndObject();
+                    return;
+                } else if (value.hasType(typeSystem.VECTOR())) {
+                    renderVectorInTypeJson(value, json);
+                    return;
                 }
-                json.writeEndObject();
-            } else if (value.hasType(typeSystem.POINT())) {
-                renderPoint(value, json, true);
-            } else if (value.hasType(typeSystem.NODE())) {
-                writeNode(value.asNode(), json, serializers, view);
-            } else if (value.hasType(typeSystem.RELATIONSHIP())) {
-                writeRelationship(value.asRelationship(), json, serializers, view);
-            } else if (value.hasType(typeSystem.PATH())) {
-                json.writeStartObject();
-                json.writeStringField(Fieldnames.CYPHER_TYPE, CypherTypes.Path.getValue());
-                json.writeFieldName(Fieldnames.CYPHER_VALUE);
-                json.writeStartArray();
-                var path = value.asPath();
-                for (Path.Segment element : path) {
-                    writeNode(element.start(), json, serializers, view);
-                    writeRelationship(element.relationship(), json, serializers, view);
-                }
-                writeNode(path.end(), json, serializers, view);
-                json.writeEndArray();
-                json.writeEndObject();
-            } else if (value.hasType(typeSystem.VECTOR()) && view.equals(View.TYPED_JSON_V1x1)) {
-                renderVectorInTypeJsonV1x1(value, json);
-            } else {
-                if (!supportedTypes.containsKey(typeSystem.UNSUPPORTED())) {
-                    throw new UnsupportedTypeException(
-                            value.toString(),
-                            supportedTypes.keySet().stream().map(Type::name).toList(),
-                            value.type().name());
-                }
-
-                renderUnsupportedType(
-                        json,
-                        String.format(
-                                "Type \"%s\" is not supported in the current MimeType.",
-                                value.type().name()));
             }
+
+            if (!supportedTypes.containsKey(typeSystem.UNSUPPORTED())) {
+                throw new UnsupportedTypeException(
+                        value.toString(),
+                        supportedTypes.keySet().stream().map(Type::name).toList(),
+                        value.type().name());
+            }
+
+            renderUnsupportedType(
+                    json,
+                    String.format(
+                            "Type \"%s\" is not supported in the current MimeType.",
+                            value.type().name()));
         }
 
-        private void renderVectorInTypeJsonV1x1(Value value, JsonGenerator json) throws IOException {
+        private void renderVectorInTypeJson(Value value, JsonGenerator json) throws IOException {
             var vectorRenderFactory = new VectorRenderFactory(json);
             var vector = value.as(Vector.class);
             switch (vector) {
@@ -579,6 +589,8 @@ public final class DefaultResponseModule extends SimpleModule {
                 json.writeStartArray();
                 writeVector(json, vector);
                 json.writeEndArray();
+            } else if (value.hasType(typeSystem.UUID())) {
+                json.writeString(CypherTypes.UUID.getWriter().apply(value));
             } else {
                 throw new UnsupportedTypeException(
                         value.toString(),
@@ -645,10 +657,9 @@ public final class DefaultResponseModule extends SimpleModule {
         private void writeNode(Node node, JsonGenerator json, SerializerProvider serializers, View view)
                 throws IOException {
 
-            var isTyped = view.equals(View.TYPED_JSON) || view.equals(View.TYPED_JSON_V1x1);
             json.writeStartObject();
 
-            if (isTyped) {
+            if (view.isTyped()) {
                 json.writeStringField(Fieldnames.CYPHER_TYPE, CypherTypes.Node.name());
                 json.writeFieldName(Fieldnames.CYPHER_VALUE);
                 json.writeStartObject();
@@ -666,7 +677,7 @@ public final class DefaultResponseModule extends SimpleModule {
 
             json.writeEndObject();
 
-            if (isTyped) {
+            if (view.isTyped()) {
                 json.writeEndObject();
             }
         }
@@ -674,10 +685,9 @@ public final class DefaultResponseModule extends SimpleModule {
         private void writeRelationship(
                 Relationship relationship, JsonGenerator json, SerializerProvider serializers, View view)
                 throws IOException {
-            var isTyped = view.equals(View.TYPED_JSON) || view.equals(View.TYPED_JSON_V1x1);
             json.writeStartObject();
 
-            if (isTyped) {
+            if (view.isTyped()) {
                 json.writeStringField(Fieldnames.CYPHER_TYPE, CypherTypes.Relationship.name());
                 json.writeFieldName(Fieldnames.CYPHER_VALUE);
                 json.writeStartObject();
@@ -691,7 +701,7 @@ public final class DefaultResponseModule extends SimpleModule {
             writeEntityProperties(View.properties(view), relationship, json, serializers);
             json.writeEndObject();
 
-            if (isTyped) {
+            if (view.isTyped()) {
                 json.writeEndObject();
             }
         }

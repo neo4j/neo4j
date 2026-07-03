@@ -58,8 +58,7 @@ class QueryResourceTypedJsonIT extends AbstractQueryResourcedTypedJsonIT {
                         202,
                         Status.Request.Invalid,
                         value -> assertThat(value)
-                                .matches(Predicate.isEqual("Type \"UUID\" is not supported in the current MimeType.")
-                                        .or(Predicate.isEqual("Type UNSUPPORTED is not supported."))
-                                        .or(Predicate.isEqual("Type UUID is not supported."))));
+                                .matches(Predicate.isEqual("Type UUID is not supported.")
+                                        .or(Predicate.isEqual("Type UNSUPPORTED is not supported."))));
     }
 }

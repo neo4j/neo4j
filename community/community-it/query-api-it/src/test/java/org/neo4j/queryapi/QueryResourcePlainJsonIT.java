@@ -29,10 +29,11 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
+import org.neo4j.queryapi.testclient.QueryContentType;
 import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.server.queryapi.response.format.Fieldnames;
 
-@QueryAPITestExtension
+@QueryAPITestExtension(enabledFeatureFlagForUUID = true)
 class QueryResourcePlainJsonIT {
 
     private final DatabaseManagementService dbms;
@@ -240,5 +241,18 @@ class QueryResourcePlainJsonIT {
         assertThat(path.get(2).get("labels").get(0).asText()).isEqualTo("LabelB");
         assertThat(path.get(3).get("type").asText()).isEqualTo("RELCB");
         assertThat(path.get(4).get("labels").get(0).asText()).isEqualTo("LabelC");
+    }
+
+    @Test
+    void uuid() throws IOException, InterruptedException {
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN UUID('ca3d9a43-09e3-4b66-9384-87ea25e27d01') AS theUUID")
+                .build());
+
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.UNTYPED)
+                .wasSuccessful()
+                .hasFieldNames("theUUID")
+                .hasRecords(List.of(List.of("ca3d9a43-09e3-4b66-9384-87ea25e27d01")));
     }
 }

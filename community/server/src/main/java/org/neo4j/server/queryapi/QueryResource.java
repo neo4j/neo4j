@@ -44,15 +44,18 @@ import org.neo4j.server.queryapi.request.QueryRequest;
     QueryMimeTypes.TYPED_JSON,
     QueryMimeTypes.TYPED_JSON_V1x0,
     QueryMimeTypes.TYPED_JSON_V1x1,
+    QueryMimeTypes.TYPED_JSON_V1x2,
     QueryMimeTypes.PLAIN_JSONL,
     QueryMimeTypes.TYPED_JSONL_V1x0,
-    QueryMimeTypes.TYPED_JSONL_V1x1
+    QueryMimeTypes.TYPED_JSONL_V1x1,
+    QueryMimeTypes.TYPED_JSONL_V1x2,
 })
 @Consumes({
     QueryMimeTypes.PLAIN_JSON,
     QueryMimeTypes.TYPED_JSON,
     QueryMimeTypes.TYPED_JSON_V1x0,
-    QueryMimeTypes.TYPED_JSON_V1x1
+    QueryMimeTypes.TYPED_JSON_V1x1,
+    QueryMimeTypes.TYPED_JSON_V1x2,
 })
 public class QueryResource {
 

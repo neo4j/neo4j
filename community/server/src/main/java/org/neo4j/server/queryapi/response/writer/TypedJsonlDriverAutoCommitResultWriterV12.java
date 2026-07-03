@@ -25,15 +25,10 @@ import org.neo4j.server.queryapi.QueryMimeTypes;
 import org.neo4j.server.queryapi.response.format.View;
 
 @Provider
-@Produces({
-    QueryMimeTypes.TYPED_JSON,
-    QueryMimeTypes.TYPED_JSON_V1x0,
-    QueryMimeTypes.TYPED_JSON_V1x1,
-    QueryMimeTypes.TYPED_JSON_V1x2
-})
-public class TypedJsonBookmarkWriter extends AbstractBookmarkWriter {
+@Produces({QueryMimeTypes.TYPED_JSONL_V1x2})
+public class TypedJsonlDriverAutoCommitResultWriterV12 extends AbstractJsonlDriverResultWriter {
 
-    public TypedJsonBookmarkWriter() {
-        super(View.TYPED_JSON);
+    public TypedJsonlDriverAutoCommitResultWriterV12() {
+        super(View.TYPED_JSON_V1x2);
     }
 }

@@ -25,7 +25,12 @@ import org.neo4j.server.queryapi.QueryMimeTypes;
 import org.neo4j.server.queryapi.response.format.View;
 
 @Provider
-@Produces({QueryMimeTypes.TYPED_JSON, QueryMimeTypes.TYPED_JSON_V1x0, QueryMimeTypes.TYPED_JSON_V1x1})
+@Produces({
+    QueryMimeTypes.TYPED_JSON,
+    QueryMimeTypes.TYPED_JSON_V1x0,
+    QueryMimeTypes.TYPED_JSON_V1x1,
+    QueryMimeTypes.TYPED_JSON_V1x2
+})
 public class TypedJsonTxInfoWriter extends AbstractJsonTxInfoWriter {
     public TypedJsonTxInfoWriter() {
         super(View.TYPED_JSON);

@@ -27,6 +27,8 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Stream;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.ListValue;
@@ -41,10 +43,15 @@ import org.neo4j.server.queryapi.types.CypherTypes;
 public class ValueDeserializer extends StdDeserializer<Value> {
 
     private final View view;
+    private final List<String> supportedTypes;
 
     public ValueDeserializer(View view) {
         super(Value.class);
         this.view = view;
+        this.supportedTypes = Stream.of(CypherTypes.values())
+                .filter(view::supports)
+                .map(CypherTypes::name)
+                .toList();
     }
 
     @Override
@@ -58,39 +65,44 @@ public class ValueDeserializer extends StdDeserializer<Value> {
 
             if (nextToken.equals(JsonToken.FIELD_NAME) && p.currentName().equals(Fieldnames.CYPHER_VALUE)) {
                 p.nextToken();
-                if (typeString.equals(CypherTypes.List.name())) {
-                    var listValue = p.readValueAs(ListValue.class);
-                    p.nextToken();
-                    return listValue;
-                } else if (typeString.equals(CypherTypes.Map.name())) {
-                    var mapValue = p.readValueAs(MapValue.class);
-                    p.nextToken();
-                    return mapValue;
-                } else if (typeString.equals(CypherTypes.Boolean.name())) {
-                    var boolValue = BooleanValue.fromBoolean(p.getBooleanValue());
-                    p.nextToken();
-                    return boolValue;
-                } else if (typeString.equals(CypherTypes.Null.name())) {
-                    if (p.currentToken().equals(JsonToken.VALUE_NULL)) {
+                var cypherType = CypherTypes.safeValueOf(typeString);
+                if (cypherType.map(view::supports).orElse(false)) {
+                    if (typeString.equals(CypherTypes.List.name())) {
+                        var listValue = p.readValueAs(ListValue.class);
                         p.nextToken();
-                        return NullValue.NULL;
+                        return listValue;
+                    } else if (typeString.equals(CypherTypes.Map.name())) {
+                        var mapValue = p.readValueAs(MapValue.class);
+                        p.nextToken();
+                        return mapValue;
+                    } else if (typeString.equals(CypherTypes.Boolean.name())) {
+                        var boolValue = BooleanValue.fromBoolean(p.getBooleanValue());
+                        p.nextToken();
+                        return boolValue;
+                    } else if (typeString.equals(CypherTypes.Null.name())) {
+                        if (p.currentToken().equals(JsonToken.VALUE_NULL)) {
+                            p.nextToken();
+                            return NullValue.NULL;
+                        } else {
+                            throw new JsonParseException("Expected 'null' value");
+                        }
+                    } else if (typeString.equals(CypherTypes.Vector.name())) {
+                        var vectorValue = p.readValueAs(VectorValue.class);
+                        p.nextToken();
+                        return vectorValue;
                     } else {
-                        throw new JsonParseException("Expected 'null' value");
+                        var stringValue = p.getValueAsString();
+                        var parser = cypherType
+                                .map(CypherTypes::getReader)
+                                .orElseThrow(
+                                        () -> new UnsupportedTypeException(stringValue, supportedTypes, typeString));
+                        p.nextToken();
+                        return parser.apply(stringValue);
                     }
-                } else if (typeString.equals(CypherTypes.Vector.name()) && view.equals(View.TYPED_JSON_V1x1)) {
-                    var vectorValue = p.readValueAs(VectorValue.class);
-                    p.nextToken();
-                    return vectorValue;
-                } else {
-                    var stringValue = p.getValueAsString();
-                    var parser = CypherTypes.safeValueOf(typeString)
-                            .map(CypherTypes::getReader)
-                            .orElseThrow(() ->
-                                    new UnsupportedTypeException(stringValue, CypherTypes.getTypeNames(), typeString));
-
-                    p.nextToken();
-                    return parser.apply(stringValue);
                 }
+                var stringValue = p.getValueAsString();
+                throw new UnsupportedTypeException(stringValue, supportedTypes, typeString);
+
             } else {
                 throw new JsonParseException(format("Expecting field %s", Fieldnames.CYPHER_VALUE));
             }

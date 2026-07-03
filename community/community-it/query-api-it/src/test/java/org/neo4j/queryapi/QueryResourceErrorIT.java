@@ -195,7 +195,13 @@ class QueryResourceErrorIT {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {QueryMimeTypes.TYPED_JSON, QueryMimeTypes.TYPED_JSON_V1x0, QueryMimeTypes.TYPED_JSON_V1x1})
+    @ValueSource(
+            strings = {
+                QueryMimeTypes.TYPED_JSON,
+                QueryMimeTypes.TYPED_JSON_V1x0,
+                QueryMimeTypes.TYPED_JSON_V1x1,
+                QueryMimeTypes.TYPED_JSON_V1x2
+            })
     void invalidTypedCypher(String mimeType) throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder()
                 .uri(URI.create(queryEndpoint.replace("{databaseName}", "neo4j")))

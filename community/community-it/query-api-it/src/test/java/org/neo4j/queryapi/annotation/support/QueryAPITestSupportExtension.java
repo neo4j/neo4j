@@ -46,8 +46,6 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.database.DbmsRuntimeVersion;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.annotation.BoltTransportType;
@@ -85,6 +83,7 @@ public class QueryAPITestSupportExtension
                             transportType == BoltTransportType.LOCAL_CHANNEL_POJO)
                     .setConfig(GraphDatabaseSettings.auth_enabled, annotation.authEnabled())
                     .setConfig(BoltConnector.enabled, true)
+                    .setConfig(GraphDatabaseSettings.default_language, GraphDatabaseSettings.CypherVersion.Cypher25)
                     .impermanent();
 
             if (annotation.queryApiTransactionTimeoutInSeconds() > -1) {
@@ -105,18 +104,8 @@ public class QueryAPITestSupportExtension
             }
 
             if (annotation.enabledFeatureFlagForUUID()) {
-                builder.setConfig(GraphDatabaseSettings.default_language, GraphDatabaseSettings.CypherVersion.Cypher25);
                 builder.setConfig(
                         GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features, Set.of("UUIDType"));
-                builder.setConfig(
-                        GraphDatabaseInternalSettings.latest_kernel_version,
-                        KernelVersion.VERSION_UUID_VALUE_INTRODUCED.version());
-                builder.setConfig(
-                        GraphDatabaseInternalSettings.latest_runtime_version,
-                        DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion());
-                builder.setConfig(
-                        BoltConnectorInternalSettings.max_protocol_version,
-                        new BoltConnectorInternalSettings.ConfiguredProtocolVersion(6, 1));
             }
 
             var dbms = builder.build();

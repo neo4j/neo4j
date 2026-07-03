@@ -484,6 +484,18 @@ abstract class AbstractQueryResourcedTypedJsonlIT {
                                 "s")));
     }
 
+    @Test
+    void uuid() throws IOException, InterruptedException {
+        var response = testClient.autoCommitJsonl(QueryRequest.newBuilder()
+                .statement("RETURN UUID('ca3d9a43-09e3-4b66-9384-87ea25e27d01') AS theUUID")
+                .build());
+
+        assertResponseWithValues(
+                response,
+                fields("theUUID"),
+                recordValues(hasTypeAndValue("UUID", "ca3d9a43-09e3-4b66-9384-87ea25e27d01")));
+    }
+
     private void assertResponseWithValues(
             HttpResponse<Stream<String>> response, String[] fields, Consumer<CypherValueAssertions>[] valuesAssertions)
             throws IOException {

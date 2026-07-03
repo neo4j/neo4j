@@ -296,7 +296,7 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
             newBuilder(
                             "internal.dbms.bolt.local_object_protocol_version",
                             PROTOCOL_VERSION,
-                            ConfiguredProtocolVersion.fromString("6.0"))
+                            ConfiguredProtocolVersion.fromString("6.1"))
                     .build();
 
     @Internal

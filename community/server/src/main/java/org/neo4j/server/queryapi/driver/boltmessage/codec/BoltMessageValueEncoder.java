@@ -99,6 +99,9 @@ public class BoltMessageValueEncoder {
             case NULL -> {
                 return Values.NO_VALUE;
             }
+            case UUID -> {
+                return Values.uuidValue(driverValue.asUUID());
+            }
             default ->
                 throw new UnsupportedOperationException("Unsupported value type: " + driverValue.boltValueType());
         }

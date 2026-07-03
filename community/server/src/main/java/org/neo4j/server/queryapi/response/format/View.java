@@ -19,11 +19,35 @@
  */
 package org.neo4j.server.queryapi.response.format;
 
+import java.util.Arrays;
+import java.util.List;
+import org.neo4j.server.queryapi.types.CypherTypes;
+
 public enum View {
     PLAIN_JSON,
-    TYPED_JSON,
-    TYPED_JSON_V1x1,
-    ;
+    TYPED_JSON(true, CypherTypes.Unsupported, CypherTypes.Vector, CypherTypes.UUID),
+    TYPED_JSON_V1x1(true, CypherTypes.UUID),
+    TYPED_JSON_V1x2(true);
+
+    private final List<CypherTypes> unsupportedTypes;
+    private final boolean typed;
+
+    View(CypherTypes... unsupportedTypes) {
+        this(false, unsupportedTypes);
+    }
+
+    View(boolean typed, CypherTypes... unsupportedTypes) {
+        this.unsupportedTypes = Arrays.asList(unsupportedTypes);
+        this.typed = typed;
+    }
+
+    public boolean supports(CypherTypes type) {
+        return !unsupportedTypes.contains(type);
+    }
+
+    public boolean isTyped() {
+        return typed;
+    }
 
     public static String labels(View view) {
         if (view.equals(PLAIN_JSON)) {

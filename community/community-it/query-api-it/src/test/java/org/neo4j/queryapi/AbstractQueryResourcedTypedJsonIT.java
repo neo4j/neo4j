@@ -449,6 +449,22 @@ abstract class AbstractQueryResourcedTypedJsonIT {
         assertThat(path.get(4).get(CYPHER_VALUE).get(_LABELS).get(0).asText()).isEqualTo("LabelC");
     }
 
+    @Test
+    void uuid() throws IOException, InterruptedException {
+
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN UUID('ca3d9a43-09e3-4b66-9384-87ea25e27d01') AS theUUID")
+                .build());
+
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(contentType())
+                .wasSuccessful()
+                .hasFieldNames("theUUID");
+
+        QueryAssertions.assertThat(response.body().data())
+                .hasTypedResultAt(0, "UUID", "ca3d9a43-09e3-4b66-9384-87ea25e27d01");
+    }
+
     @ParameterizedTest
     @MethodSource("queryTypes")
     void shouldReturnQueryType(TransactionType transactionType, String statement, String expectedQueryType)

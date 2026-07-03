@@ -322,6 +322,19 @@ abstract class AbstractQueryResourceTypedJsonlParametersIT {
                 .hasNoRemainingEvents();
     }
 
+    @Test
+    void uuid() throws IOException, InterruptedException {
+        var response = testClient.sendRawJsonl(format(
+                "{\"statement\": \"RETURN $parameter\","
+                        + "\"parameters\": {\"parameter\": {\"$type\":\"%s\",\"_value\": \"%s\"}}}}}",
+                "UUID", "ca3d9a43-09e3-4b66-9384-87ea25e27d01"));
+
+        assertResponseWithValues(
+                response,
+                fields("$parameter"),
+                recordValues(hasTypeAndValue("UUID", "ca3d9a43-09e3-4b66-9384-87ea25e27d01")));
+    }
+
     private static String[] fields(String... fields) {
         return fields;
     }

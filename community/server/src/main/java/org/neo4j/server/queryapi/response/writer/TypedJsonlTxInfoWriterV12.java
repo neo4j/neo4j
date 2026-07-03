@@ -20,20 +20,16 @@
 package org.neo4j.server.queryapi.response.writer;
 
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.Provider;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.server.queryapi.QueryMimeTypes;
 import org.neo4j.server.queryapi.response.format.View;
 
 @Provider
-@Produces({
-    QueryMimeTypes.TYPED_JSON,
-    QueryMimeTypes.TYPED_JSON_V1x0,
-    QueryMimeTypes.TYPED_JSON_V1x1,
-    QueryMimeTypes.TYPED_JSON_V1x2
-})
-public class TypedJsonBookmarkWriter extends AbstractBookmarkWriter {
-
-    public TypedJsonBookmarkWriter() {
-        super(View.TYPED_JSON);
+@Produces(QueryMimeTypes.TYPED_JSONL_V1x2)
+public class TypedJsonlTxInfoWriterV12 extends AbstractJsonlTxInfoWriter {
+    protected TypedJsonlTxInfoWriterV12(@Context InternalLog log) {
+        super(log, View.TYPED_JSON_V1x2);
     }
 }

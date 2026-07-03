@@ -115,7 +115,8 @@ public enum CypherTypes {
     Vector,
 
     Unsupported(null, value -> serializeUnsupportedType(value.asUnsupportedType())),
-    ;
+
+    UUID(java.util.UUID::fromString, value -> value.asUUID().toString());
 
     private final String value;
 

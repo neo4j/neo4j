@@ -37,7 +37,8 @@ import org.neo4j.server.queryapi.response.format.Fieldnames;
 
 @QueryAPITestExtension(
         contentType = QueryContentType.UNTYPED,
-        acceptedContentTypes = {QueryContentType.UNTYPED_L})
+        acceptedContentTypes = {QueryContentType.UNTYPED_L},
+        enabledFeatureFlagForUUID = true)
 class QueryResourcePlainJsonlIT {
 
     private final DatabaseManagementService dbms;
@@ -429,6 +430,21 @@ class QueryResourcePlainJsonlIT {
                                                         .isEqualTo(Map.of()),
                                                 Index.atIndex(2)),
                                 Index.atIndex(4)))
+                .receivesSummary()
+                .hasNoRemainingEvents();
+    }
+
+    @Test
+    void uuid() throws IOException, InterruptedException {
+        var response = testClient.autoCommitJsonl(QueryRequest.newBuilder()
+                .statement("RETURN UUID('ca3d9a43-09e3-4b66-9384-87ea25e27d01') AS theUUID")
+                .build());
+
+        QueryResponseJsonlAssertions.assertThat(response)
+                .hasContentType(QueryContentType.UNTYPED_L)
+                .wasSuccessful()
+                .receivesHeader("theUUID")
+                .receivesRecord("ca3d9a43-09e3-4b66-9384-87ea25e27d01")
                 .receivesSummary()
                 .hasNoRemainingEvents();
     }

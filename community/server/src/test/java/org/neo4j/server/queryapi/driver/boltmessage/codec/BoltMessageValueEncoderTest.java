@@ -31,6 +31,7 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -66,6 +67,7 @@ import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
+import org.neo4j.driver.internal.value.UUIDValue;
 import org.neo4j.driver.internal.value.VectorValue;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -136,7 +138,10 @@ public class BoltMessageValueEncoderTest {
                                 .build()),
                 Arguments.of(
                         new MapValue(Map.of("mappy", new IntegerValue(1))),
-                        VirtualValues.map(new String[] {"mappy"}, new AnyValue[] {Values.longValue(1)})));
+                        VirtualValues.map(new String[] {"mappy"}, new AnyValue[] {Values.longValue(1)})),
+                Arguments.of(
+                        new UUIDValue(UUID.fromString("1a9cc6fb-1a27-46ce-aba8-cd692a2baf09")),
+                        Values.uuidValue("1a9cc6fb-1a27-46ce-aba8-cd692a2baf09")));
     }
 
     public static Stream<Arguments> unsupportedValues() {

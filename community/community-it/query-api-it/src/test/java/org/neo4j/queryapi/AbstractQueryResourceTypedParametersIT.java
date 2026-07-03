@@ -418,4 +418,23 @@ abstract class AbstractQueryResourceTypedParametersIT {
     void shouldNotAcceptOutOfRangeNumbers() {
         // todo - needs additional validation in object mapper.
     }
+
+    @Test
+    void uuid() throws IOException, InterruptedException {
+        var response = testClient.sendRaw(
+                "{\"statement\": \"RETURN $parameter\","
+                        + "\"parameters\": {\"parameter\": {\"$type\":\"UUID\",\"_value\": \"ca3d9a43-09e3-4b66-9384-87ea25e27d01\"}}}}}");
+
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(contentType())
+                .wasSuccessful();
+
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE).asText())
+                .isEqualTo("ca3d9a43-09e3-4b66-9384-87ea25e27d01");
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).asText())
+                .isEqualTo("UUID");
+    }
 }

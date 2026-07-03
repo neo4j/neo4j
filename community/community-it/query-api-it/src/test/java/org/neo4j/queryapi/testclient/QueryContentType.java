@@ -24,9 +24,11 @@ public enum QueryContentType {
     TYPED("application/vnd.neo4j.query", true, false),
     TYPED_V1_0("application/vnd.neo4j.query.v1.0", true, false),
     TYPED_V1_1("application/vnd.neo4j.query.v1.1", true, false),
+    TYPED_V1_2("application/vnd.neo4j.query.v1.2", true, false),
     UNTYPED_L("application/jsonl", false, true),
     TYPED_L_V1_0("application/vnd.neo4j.query.v1.0+jsonl", true, true),
-    TYPED_L_V1_1("application/vnd.neo4j.query.v1.1+jsonl", true, true);
+    TYPED_L_V1_1("application/vnd.neo4j.query.v1.1+jsonl", true, true),
+    TYPED_L_V1_2("application/vnd.neo4j.query.v1.2+jsonl", true, true);
 
     private final String mimeType;
     private final boolean typed;
