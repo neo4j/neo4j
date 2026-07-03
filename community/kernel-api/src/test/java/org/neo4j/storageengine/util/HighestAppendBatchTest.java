@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
@@ -45,7 +44,7 @@ class HighestAppendBatchTest {
         highest.set(1, new LogPosition(1, 28));
 
         // THEN
-        assertEquals(new AppendBatchInfo(1, new LogPosition(1, 28)), highest.get());
+        assertThat(highest.get()).isEqualTo(new AppendBatchInfo(1, new LogPosition(1, 28)));
     }
 
     @Test
@@ -70,7 +69,7 @@ class HighestAppendBatchTest {
             for (int i = 0; i < 100000; i++) {
                 var update = randomSupport.random().nextLong();
                 highestAppendBatch.offer(update, LogPosition.UNSPECIFIED);
-                assertTrue(highestAppendBatch.get().appendIndex() >= update);
+                assertThat(highestAppendBatch.get().appendIndex()).isGreaterThanOrEqualTo(update);
             }
         });
 
@@ -80,13 +79,13 @@ class HighestAppendBatchTest {
     private static void assertAccepted(HighestAppendBatch highest, long appendIndex) {
         AppendBatchInfo current = highest.get();
         highest.offer(appendIndex, LogPosition.UNSPECIFIED);
-        assertEquals(highest.get().appendIndex(), appendIndex);
-        assertTrue(appendIndex > current.appendIndex());
+        assertThat(highest.get().appendIndex()).isEqualTo(appendIndex);
+        assertThat(appendIndex).isGreaterThan(current.appendIndex());
     }
 
     private static void assertRejected(HighestAppendBatch highest, long txId) {
         AppendBatchInfo current = highest.get();
         highest.offer(txId, LogPosition.UNSPECIFIED);
-        assertEquals(current, highest.get());
+        assertThat(highest.get()).isEqualTo(current);
     }
 }

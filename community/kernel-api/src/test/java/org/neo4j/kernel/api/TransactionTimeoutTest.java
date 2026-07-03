@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
 
@@ -36,7 +36,7 @@ class TransactionTimeoutTest {
         var duration = Duration.ofSeconds(SAFE_SECOND_BOUNDARY - 1);
         var timeout = new TransactionTimeout(duration, TransactionTimedOut);
 
-        assertEquals(duration.toNanos(), timeout.timeoutNanos());
+        assertThat(timeout.timeoutNanos()).isEqualTo(duration.toNanos());
     }
 
     @Test
@@ -44,7 +44,7 @@ class TransactionTimeoutTest {
         var duration = Duration.ofSeconds(SAFE_SECOND_BOUNDARY - 1).plusNanos(999_999_999);
         var timeout = new TransactionTimeout(duration, TransactionTimedOut);
 
-        assertEquals(duration.toNanos(), timeout.timeoutNanos());
+        assertThat(timeout.timeoutNanos()).isEqualTo(duration.toNanos());
     }
 
     @Test
@@ -52,7 +52,7 @@ class TransactionTimeoutTest {
         var duration = Duration.ofSeconds(SAFE_SECOND_BOUNDARY);
         var timeout = new TransactionTimeout(duration, TransactionTimedOut);
 
-        assertEquals(Long.MAX_VALUE, timeout.timeoutNanos());
+        assertThat(timeout.timeoutNanos()).isEqualTo(Long.MAX_VALUE);
     }
 
     @Test
@@ -60,7 +60,7 @@ class TransactionTimeoutTest {
         Duration duration = Duration.ofSeconds(SAFE_SECOND_BOUNDARY + 2);
         TransactionTimeout timeout = new TransactionTimeout(duration, TransactionTimedOut);
 
-        assertEquals(Long.MAX_VALUE, timeout.timeoutNanos());
-        assertThrows(ArithmeticException.class, duration::toNanos);
+        assertThat(timeout.timeoutNanos()).isEqualTo(Long.MAX_VALUE);
+        assertThatThrownBy(duration::toNanos).isInstanceOf(ArithmeticException.class);
     }
 }

@@ -21,9 +21,7 @@ package org.neo4j.storageengine.util;
 
 import static java.lang.Math.max;
 import static java.lang.Runtime.getRuntime;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,7 +40,7 @@ class HighestTransactionIdTest {
         highest.set(8, 9, DEFAULT_BOOTSTRAP_VERSION, 1299128, 42, 43);
 
         // THEN
-        assertEquals(new TransactionId(8, 9, DEFAULT_BOOTSTRAP_VERSION, 1299128, 42, 43), highest.get());
+        assertThat(highest.get()).isEqualTo(new TransactionId(8, 9, DEFAULT_BOOTSTRAP_VERSION, 1299128, 42, 43));
     }
 
     @Test
@@ -80,19 +78,21 @@ class HighestTransactionIdTest {
         race.go();
 
         // THEN
-        assertTrue(accepted.get() > 0);
-        assertEquals(updaters, highest.get().id());
+        assertThat(accepted.get()).isGreaterThan(0);
+        assertThat(highest.get().id()).isEqualTo(updaters);
     }
 
     private static void assertAccepted(HighestTransactionId highest, long txId) {
         TransactionId current = highest.get();
-        assertTrue(highest.offer(txId, txId + 7, DEFAULT_BOOTSTRAP_VERSION, -1, -1, -1));
-        assertTrue(txId > current.id());
+        assertThat(highest.offer(txId, txId + 7, DEFAULT_BOOTSTRAP_VERSION, -1, -1, -1))
+                .isTrue();
+        assertThat(txId).isGreaterThan(current.id());
     }
 
     private static void assertRejected(HighestTransactionId highest, long txId) {
         TransactionId current = highest.get();
-        assertFalse(highest.offer(txId, txId + 5, DEFAULT_BOOTSTRAP_VERSION, -1, -1, -1));
-        assertEquals(current, highest.get());
+        assertThat(highest.offer(txId, txId + 5, DEFAULT_BOOTSTRAP_VERSION, -1, -1, -1))
+                .isFalse();
+        assertThat(highest.get()).isEqualTo(current);
     }
 }

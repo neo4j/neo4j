@@ -20,10 +20,6 @@
 package org.neo4j.storageengine.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 import java.util.stream.IntStream;
@@ -46,7 +42,7 @@ class DirectedTypesTest {
 
             dt.addUntyped(dir);
 
-            assertEquals(dir, dt.computeDirection());
+            assertThat(dt.computeDirection()).isEqualTo(dir);
         }
     }
 
@@ -58,7 +54,7 @@ class DirectedTypesTest {
 
             dt.addTypes(new int[] {1}, dir);
 
-            assertEquals(dir, dt.computeDirection());
+            assertThat(dt.computeDirection()).isEqualTo(dir);
         }
     }
 
@@ -68,7 +64,7 @@ class DirectedTypesTest {
 
         dt.addUntyped(Direction.OUTGOING);
 
-        assertTrue(dt.hasOutgoing(1));
+        assertThat(dt.hasOutgoing(1)).isTrue();
     }
 
     @Test
@@ -77,7 +73,7 @@ class DirectedTypesTest {
 
         dt.addUntyped(Direction.OUTGOING);
 
-        assertTrue(dt.allowsAllOutgoing());
+        assertThat(dt.allowsAllOutgoing()).isTrue();
     }
 
     @Test
@@ -86,9 +82,9 @@ class DirectedTypesTest {
 
         dt.addUntyped(Direction.OUTGOING);
 
-        assertFalse(dt.allowsAllIncoming());
-        assertFalse(dt.hasIncoming(1));
-        assertFalse(dt.hasSomeIncoming());
+        assertThat(dt.allowsAllIncoming()).isFalse();
+        assertThat(dt.hasIncoming(1)).isFalse();
+        assertThat(dt.hasSomeIncoming()).isFalse();
     }
 
     @Test
@@ -97,7 +93,7 @@ class DirectedTypesTest {
 
         dt.addUntyped(Direction.OUTGOING);
 
-        assertFalse(dt.hasTypesInBothDirections());
+        assertThat(dt.hasTypesInBothDirections()).isFalse();
     }
 
     @Test
@@ -107,7 +103,7 @@ class DirectedTypesTest {
         dt.addTypes(new int[] {1}, Direction.OUTGOING);
         dt.addUntyped(Direction.OUTGOING);
 
-        assertEquals(1, dt.numberOfCriteria());
+        assertThat(dt.numberOfCriteria()).isEqualTo(1);
     }
 
     @Test
@@ -116,7 +112,7 @@ class DirectedTypesTest {
         dt.addTypes(new int[] {99}, Direction.OUTGOING);
         dt.addUntyped(Direction.INCOMING);
 
-        assertEquals(99, dt.criterionType(0));
+        assertThat(dt.criterionType(0)).isEqualTo(99);
     }
 
     @Test
@@ -125,7 +121,7 @@ class DirectedTypesTest {
         dt.addTypes(new int[] {99}, Direction.OUTGOING);
         dt.addUntyped(Direction.INCOMING);
 
-        assertEquals(ANY_RELATIONSHIP_TYPE, dt.criterionType(1));
+        assertThat(dt.criterionType(1)).isEqualTo(ANY_RELATIONSHIP_TYPE);
     }
 
     @Test
@@ -134,7 +130,7 @@ class DirectedTypesTest {
         dt.addTypes(new int[] {99}, Direction.OUTGOING);
         dt.addUntyped(Direction.INCOMING);
 
-        assertEquals(2, dt.numberOfCriteria());
+        assertThat(dt.numberOfCriteria()).isEqualTo(2);
 
         var specificCriterionDirection = IntStream.range(0, dt.numberOfCriteria())
                 .filter(i -> dt.criterionType(i) == 99)
@@ -142,7 +138,7 @@ class DirectedTypesTest {
                 .findFirst()
                 .get();
 
-        assertEquals(Direction.OUTGOING, specificCriterionDirection);
+        assertThat(specificCriterionDirection).isEqualTo(Direction.OUTGOING);
     }
 
     @Test
@@ -151,7 +147,7 @@ class DirectedTypesTest {
         dt.addTypes(new int[] {99}, Direction.BOTH);
         dt.addUntyped(Direction.INCOMING);
 
-        assertEquals(2, dt.numberOfCriteria());
+        assertThat(dt.numberOfCriteria()).isEqualTo(2);
 
         var specificCriterionDirection = IntStream.range(0, dt.numberOfCriteria())
                 .filter(i -> dt.criterionType(i) == 99)
@@ -159,7 +155,7 @@ class DirectedTypesTest {
                 .findFirst()
                 .get();
 
-        assertEquals(Direction.BOTH, specificCriterionDirection);
+        assertThat(specificCriterionDirection).isEqualTo(Direction.BOTH);
     }
 
     @Test
@@ -168,7 +164,7 @@ class DirectedTypesTest {
         dt.addTypes(new int[] {99}, Direction.OUTGOING);
         dt.addUntyped(Direction.INCOMING);
 
-        assertEquals(Direction.INCOMING, dt.criterionDirection(1));
+        assertThat(dt.criterionDirection(1)).isEqualTo(Direction.INCOMING);
     }
 
     @Test
@@ -177,8 +173,8 @@ class DirectedTypesTest {
         dt.addTypes(new int[] {99}, Direction.OUTGOING);
         dt.addUntyped(Direction.INCOMING);
 
-        assertTrue(dt.hasOutgoing(99));
-        assertTrue(dt.hasIncoming(99));
+        assertThat(dt.hasOutgoing(99)).isTrue();
+        assertThat(dt.hasIncoming(99)).isTrue();
     }
 
     @Test
@@ -189,7 +185,7 @@ class DirectedTypesTest {
 
             dt.addUntyped(dir);
 
-            assertEquals(1, dt.numberOfCriteria());
+            assertThat(dt.numberOfCriteria()).isEqualTo(1);
         }
     }
 
@@ -202,7 +198,7 @@ class DirectedTypesTest {
             dt.addUntyped(dir);
             dt.addTypes(new int[] {1}, dir);
 
-            assertEquals(1, dt.numberOfCriteria());
+            assertThat(dt.numberOfCriteria()).isEqualTo(1);
         }
     }
 
@@ -211,13 +207,13 @@ class DirectedTypesTest {
         DirectedTypes dt = new DirectedTypes(NO_TRACKING);
         dt.addTypes(new int[] {1}, Direction.OUTGOING);
 
-        assertTrue(dt.hasOutgoing(1));
+        assertThat(dt.hasOutgoing(1)).isTrue();
 
         dt.clear();
         dt.addTypes(new int[] {1}, Direction.INCOMING);
 
-        assertFalse(dt.hasOutgoing(1));
-        assertTrue(dt.hasIncoming(1));
+        assertThat(dt.hasOutgoing(1)).isFalse();
+        assertThat(dt.hasIncoming(1)).isTrue();
     }
 
     @Test
@@ -225,13 +221,13 @@ class DirectedTypesTest {
         DirectedTypes dt = new DirectedTypes(NO_TRACKING);
         dt.addUntyped(Direction.OUTGOING);
 
-        assertTrue(dt.hasOutgoing(1));
+        assertThat(dt.hasOutgoing(1)).isTrue();
 
         dt.clear();
         dt.addUntyped(Direction.INCOMING);
 
-        assertFalse(dt.hasOutgoing(1));
-        assertTrue(dt.hasIncoming(1));
+        assertThat(dt.hasOutgoing(1)).isFalse();
+        assertThat(dt.hasIncoming(1)).isTrue();
     }
 
     @Test
@@ -242,11 +238,10 @@ class DirectedTypesTest {
             dt.addTypes(new int[] {1, 1}, dir);
             dt.addTypes(new int[] {1}, dir);
 
-            assertEquals(1, dt.numberOfCriteria());
+            assertThat(dt.numberOfCriteria()).isEqualTo(1);
             int[] types = dt.typesWithoutDirections();
-            assertNotEquals(null, types);
-            assertEquals(1, types.length);
-            assertEquals(1, types[0]);
+            assertThat(types).isNotNull();
+            assertThat(types).containsExactly(1);
         }
     }
 
@@ -257,16 +252,15 @@ class DirectedTypesTest {
         dt.addTypes(new int[] {1, 1}, Direction.INCOMING);
         dt.addTypes(new int[] {1}, Direction.OUTGOING);
 
-        assertEquals(Direction.BOTH, dt.computeDirection());
-        assertTrue(dt.hasTypesInBothDirections());
-        assertTrue(dt.hasIncoming(1));
-        assertTrue(dt.hasOutgoing(1));
+        assertThat(dt.computeDirection()).isEqualTo(Direction.BOTH);
+        assertThat(dt.hasTypesInBothDirections()).isTrue();
+        assertThat(dt.hasIncoming(1)).isTrue();
+        assertThat(dt.hasOutgoing(1)).isTrue();
 
-        assertEquals(1, dt.numberOfCriteria());
+        assertThat(dt.numberOfCriteria()).isEqualTo(1);
         int[] types = dt.typesWithoutDirections();
-        assertNotEquals(null, types);
-        assertEquals(1, types.length);
-        assertEquals(1, types[0]);
+        assertThat(types).isNotNull();
+        assertThat(types).containsExactly(1);
     }
 
     @Test
@@ -275,18 +269,18 @@ class DirectedTypesTest {
         dt.addUntyped(Direction.OUTGOING);
 
         var reversed = dt.reverse();
-        assertEquals(Direction.INCOMING, reversed.computeDirection());
-        assertTrue(reversed.hasSomeIncoming());
-        assertTrue(reversed.allowsAllIncoming());
-        assertFalse(reversed.hasSomeOutgoing());
-        assertFalse(reversed.allowsAllOutgoing());
+        assertThat(reversed.computeDirection()).isEqualTo(Direction.INCOMING);
+        assertThat(reversed.hasSomeIncoming()).isTrue();
+        assertThat(reversed.allowsAllIncoming()).isTrue();
+        assertThat(reversed.hasSomeOutgoing()).isFalse();
+        assertThat(reversed.allowsAllOutgoing()).isFalse();
 
         var rereversed = reversed.reverse();
-        assertEquals(Direction.OUTGOING, rereversed.computeDirection());
-        assertTrue(rereversed.hasSomeOutgoing());
-        assertTrue(rereversed.allowsAllOutgoing());
-        assertFalse(rereversed.hasSomeIncoming());
-        assertFalse(rereversed.allowsAllIncoming());
+        assertThat(rereversed.computeDirection()).isEqualTo(Direction.OUTGOING);
+        assertThat(rereversed.hasSomeOutgoing()).isTrue();
+        assertThat(rereversed.allowsAllOutgoing()).isTrue();
+        assertThat(rereversed.hasSomeIncoming()).isFalse();
+        assertThat(rereversed.allowsAllIncoming()).isFalse();
     }
 
     @Test
@@ -296,10 +290,10 @@ class DirectedTypesTest {
 
         var reversed = dt.reverse();
 
-        assertEquals(Direction.INCOMING, reversed.computeDirection());
-        assertEquals(1, reversed.numberOfCriteria());
-        assertFalse(reversed.allowsAll());
-        assertTrue(reversed.allowsAllIncoming());
+        assertThat(reversed.computeDirection()).isEqualTo(Direction.INCOMING);
+        assertThat(reversed.numberOfCriteria()).isEqualTo(1);
+        assertThat(reversed.allowsAll()).isFalse();
+        assertThat(reversed.allowsAllIncoming()).isTrue();
     }
 
     @Test
@@ -309,8 +303,8 @@ class DirectedTypesTest {
 
         var reversed = dt.reverse();
 
-        assertEquals(1, reversed.numberOfCriteria());
-        assertTrue(reversed.allowsAll());
+        assertThat(reversed.numberOfCriteria()).isEqualTo(1);
+        assertThat(reversed.allowsAll()).isTrue();
     }
 
     @Test
@@ -319,7 +313,7 @@ class DirectedTypesTest {
         dt.addUntyped(Direction.INCOMING);
         dt.addUntyped(Direction.OUTGOING);
 
-        assertTrue(dt.allowsAll());
+        assertThat(dt.allowsAll()).isTrue();
     }
 
     @Test
@@ -328,13 +322,13 @@ class DirectedTypesTest {
 
         dt.addUntyped(Direction.BOTH);
 
-        assertTrue(dt.hasOutgoing(1));
-        assertTrue(dt.hasSomeOutgoing());
-        assertTrue(dt.allowsAllOutgoing());
+        assertThat(dt.hasOutgoing(1)).isTrue();
+        assertThat(dt.hasSomeOutgoing()).isTrue();
+        assertThat(dt.allowsAllOutgoing()).isTrue();
 
-        assertTrue(dt.hasIncoming(2));
-        assertTrue(dt.hasSomeIncoming());
-        assertTrue(dt.allowsAllIncoming());
+        assertThat(dt.hasIncoming(2)).isTrue();
+        assertThat(dt.hasSomeIncoming()).isTrue();
+        assertThat(dt.allowsAllIncoming()).isTrue();
     }
 
     @Test
@@ -344,7 +338,7 @@ class DirectedTypesTest {
         dt.addTypes(new int[] {1}, Direction.OUTGOING);
         dt.addUntyped(Direction.OUTGOING);
 
-        assertEquals(null, dt.typesWithoutDirections());
+        assertThat(dt.typesWithoutDirections()).isNull();
     }
 
     @Test
@@ -375,7 +369,7 @@ class DirectedTypesTest {
         int numberOfUndirectedCriteria = 4;
 
         int noCriteria = numberOfOutgoingCriteria + numberOfIncomingCriteria + numberOfUndirectedCriteria;
-        assertEquals(noCriteria, dt.numberOfCriteria());
+        assertThat(dt.numberOfCriteria()).isEqualTo(noCriteria);
 
         IntArrayList outgoing = new IntArrayList();
         IntArrayList both = new IntArrayList();
@@ -385,33 +379,33 @@ class DirectedTypesTest {
             switch (dir) {
                 case OUTGOING -> outgoing.add(type);
                 case BOTH -> both.add(type);
-                case INCOMING -> assertEquals(ANY_RELATIONSHIP_TYPE, type);
+                case INCOMING -> assertThat(type).isEqualTo(ANY_RELATIONSHIP_TYPE);
             }
         }
         outgoing.sortThis();
         both.sortThis();
 
-        assertEquals(numberOfOutgoingCriteria, outgoing.size());
-        assertEquals(numberOfUndirectedCriteria, both.size());
+        assertThat(outgoing.size()).isEqualTo(numberOfOutgoingCriteria);
+        assertThat(both.size()).isEqualTo(numberOfUndirectedCriteria);
 
         IntArrayList expectedOutgoing = new IntArrayList(new int[] {4});
         IntArrayList expectedBoth = new IntArrayList(1, 2, 5, 6);
 
         for (int i = 0; i < numberOfOutgoingCriteria; i++) {
-            assertEquals(outgoing.get(i), expectedOutgoing.get(i));
+            assertThat(outgoing.get(i)).isEqualTo(expectedOutgoing.get(i));
         }
         for (int i = 0; i < numberOfUndirectedCriteria; i++) {
-            assertEquals(both.get(i), expectedBoth.get(i));
+            assertThat(both.get(i)).isEqualTo(expectedBoth.get(i));
         }
 
-        assertTrue(dt.hasOutgoing(1));
-        assertTrue(dt.hasOutgoing(2));
-        assertFalse(dt.hasOutgoing(3));
-        assertTrue(dt.hasOutgoing(4));
-        assertTrue(dt.hasOutgoing(5));
-        assertTrue(dt.hasOutgoing(6));
+        assertThat(dt.hasOutgoing(1)).isTrue();
+        assertThat(dt.hasOutgoing(2)).isTrue();
+        assertThat(dt.hasOutgoing(3)).isFalse();
+        assertThat(dt.hasOutgoing(4)).isTrue();
+        assertThat(dt.hasOutgoing(5)).isTrue();
+        assertThat(dt.hasOutgoing(6)).isTrue();
 
-        assertTrue(dt.allowsAllIncoming());
+        assertThat(dt.allowsAllIncoming()).isTrue();
     }
 
     @Test
@@ -420,49 +414,46 @@ class DirectedTypesTest {
 
         dt.addTypes(new int[] {1, 2, 3}, Direction.OUTGOING);
 
-        assertEquals(dt.computeDirection(), Direction.OUTGOING);
+        assertThat(dt.computeDirection()).isEqualTo(Direction.OUTGOING);
 
-        assertTrue(dt.hasSomeOutgoing());
-        assertFalse(dt.hasSomeIncoming());
-        assertFalse(dt.hasTypesInBothDirections());
+        assertThat(dt.hasSomeOutgoing()).isTrue();
+        assertThat(dt.hasSomeIncoming()).isFalse();
+        assertThat(dt.hasTypesInBothDirections()).isFalse();
 
-        assertTrue(dt.isTypeLimited());
+        assertThat(dt.isTypeLimited()).isTrue();
 
-        assertTrue(dt.hasOutgoing(1));
-        assertTrue(dt.hasOutgoing(2));
-        assertTrue(dt.hasOutgoing(3));
-        assertFalse(dt.hasOutgoing(4));
+        assertThat(dt.hasOutgoing(1)).isTrue();
+        assertThat(dt.hasOutgoing(2)).isTrue();
+        assertThat(dt.hasOutgoing(3)).isTrue();
+        assertThat(dt.hasOutgoing(4)).isFalse();
 
-        assertFalse(dt.hasIncoming(1));
-        assertFalse(dt.hasIncoming(2));
-        assertFalse(dt.hasIncoming(3));
-        assertFalse(dt.hasIncoming(4));
+        assertThat(dt.hasIncoming(1)).isFalse();
+        assertThat(dt.hasIncoming(2)).isFalse();
+        assertThat(dt.hasIncoming(3)).isFalse();
+        assertThat(dt.hasIncoming(4)).isFalse();
 
-        assertTrue(dt.hasEither(1));
-        assertTrue(dt.hasEither(2));
-        assertTrue(dt.hasEither(3));
-        assertFalse(dt.hasEither(4));
+        assertThat(dt.hasEither(1)).isTrue();
+        assertThat(dt.hasEither(2)).isTrue();
+        assertThat(dt.hasEither(3)).isTrue();
+        assertThat(dt.hasEither(4)).isFalse();
 
-        assertFalse(dt.allowsAll());
-        assertFalse(dt.allowsAllOutgoing());
-        assertFalse(dt.allowsAllIncoming());
+        assertThat(dt.allowsAll()).isFalse();
+        assertThat(dt.allowsAllOutgoing()).isFalse();
+        assertThat(dt.allowsAllIncoming()).isFalse();
 
         int[] types = dt.typesWithoutDirections();
-        assertNotEquals(types, null);
-        assertEquals(3, types.length);
-        for (int i = 1; i <= 3; i++) {
-            assertEquals(i, types[i - 1]);
-        }
+        assertThat(types).isNotNull();
+        assertThat(types).containsExactly(1, 2, 3);
 
-        assertEquals(3, dt.numberOfCriteria());
+        assertThat(dt.numberOfCriteria()).isEqualTo(3);
 
-        assertEquals(1, dt.criterionType(0));
-        assertEquals(2, dt.criterionType(1));
-        assertEquals(3, dt.criterionType(2));
+        assertThat(dt.criterionType(0)).isEqualTo(1);
+        assertThat(dt.criterionType(1)).isEqualTo(2);
+        assertThat(dt.criterionType(2)).isEqualTo(3);
 
-        assertEquals(Direction.OUTGOING, dt.criterionDirection(0));
-        assertEquals(Direction.OUTGOING, dt.criterionDirection(1));
-        assertEquals(Direction.OUTGOING, dt.criterionDirection(2));
+        assertThat(dt.criterionDirection(0)).isEqualTo(Direction.OUTGOING);
+        assertThat(dt.criterionDirection(1)).isEqualTo(Direction.OUTGOING);
+        assertThat(dt.criterionDirection(2)).isEqualTo(Direction.OUTGOING);
     }
 
     @Test
@@ -472,49 +463,46 @@ class DirectedTypesTest {
         dt.addTypes(new int[] {1, 2, 3, 2, 3}, Direction.OUTGOING);
         dt.addTypes(new int[] {2, 1, 3}, Direction.OUTGOING);
 
-        assertEquals(dt.computeDirection(), Direction.OUTGOING);
+        assertThat(dt.computeDirection()).isEqualTo(Direction.OUTGOING);
 
-        assertTrue(dt.hasSomeOutgoing());
-        assertFalse(dt.hasSomeIncoming());
-        assertFalse(dt.hasTypesInBothDirections());
+        assertThat(dt.hasSomeOutgoing()).isTrue();
+        assertThat(dt.hasSomeIncoming()).isFalse();
+        assertThat(dt.hasTypesInBothDirections()).isFalse();
 
-        assertTrue(dt.isTypeLimited());
+        assertThat(dt.isTypeLimited()).isTrue();
 
-        assertTrue(dt.hasOutgoing(1));
-        assertTrue(dt.hasOutgoing(2));
-        assertTrue(dt.hasOutgoing(3));
-        assertFalse(dt.hasOutgoing(4));
+        assertThat(dt.hasOutgoing(1)).isTrue();
+        assertThat(dt.hasOutgoing(2)).isTrue();
+        assertThat(dt.hasOutgoing(3)).isTrue();
+        assertThat(dt.hasOutgoing(4)).isFalse();
 
-        assertFalse(dt.hasIncoming(1));
-        assertFalse(dt.hasIncoming(2));
-        assertFalse(dt.hasIncoming(3));
-        assertFalse(dt.hasIncoming(4));
+        assertThat(dt.hasIncoming(1)).isFalse();
+        assertThat(dt.hasIncoming(2)).isFalse();
+        assertThat(dt.hasIncoming(3)).isFalse();
+        assertThat(dt.hasIncoming(4)).isFalse();
 
-        assertTrue(dt.hasEither(1));
-        assertTrue(dt.hasEither(2));
-        assertTrue(dt.hasEither(3));
-        assertFalse(dt.hasEither(4));
+        assertThat(dt.hasEither(1)).isTrue();
+        assertThat(dt.hasEither(2)).isTrue();
+        assertThat(dt.hasEither(3)).isTrue();
+        assertThat(dt.hasEither(4)).isFalse();
 
-        assertFalse(dt.allowsAll());
-        assertFalse(dt.allowsAllOutgoing());
-        assertFalse(dt.allowsAllIncoming());
+        assertThat(dt.allowsAll()).isFalse();
+        assertThat(dt.allowsAllOutgoing()).isFalse();
+        assertThat(dt.allowsAllIncoming()).isFalse();
 
         int[] types = dt.typesWithoutDirections();
-        assertNotEquals(types, null);
-        assertEquals(3, types.length);
-        for (int i = 1; i <= 3; i++) {
-            assertEquals(i, types[i - 1]);
-        }
+        assertThat(types).isNotNull();
+        assertThat(types).containsExactly(1, 2, 3);
 
-        assertEquals(3, dt.numberOfCriteria());
+        assertThat(dt.numberOfCriteria()).isEqualTo(3);
 
-        assertEquals(1, dt.criterionType(0));
-        assertEquals(2, dt.criterionType(1));
-        assertEquals(3, dt.criterionType(2));
+        assertThat(dt.criterionType(0)).isEqualTo(1);
+        assertThat(dt.criterionType(1)).isEqualTo(2);
+        assertThat(dt.criterionType(2)).isEqualTo(3);
 
-        assertEquals(Direction.OUTGOING, dt.criterionDirection(0));
-        assertEquals(Direction.OUTGOING, dt.criterionDirection(1));
-        assertEquals(Direction.OUTGOING, dt.criterionDirection(2));
+        assertThat(dt.criterionDirection(0)).isEqualTo(Direction.OUTGOING);
+        assertThat(dt.criterionDirection(1)).isEqualTo(Direction.OUTGOING);
+        assertThat(dt.criterionDirection(2)).isEqualTo(Direction.OUTGOING);
     }
 
     @Test

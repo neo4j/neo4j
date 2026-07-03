@@ -21,8 +21,6 @@ package org.neo4j.internal.kernel.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Arrays.array;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -31,7 +29,6 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAmount;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.BoundingBoxPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
@@ -74,7 +71,7 @@ class IndexQueryTest {
                         true,
                         array(false, true))
                 .map(value -> test(allEntries, value))
-                .forEach(Assertions::assertTrue);
+                .forEach(b -> assertThat(b).isTrue());
     }
 
     // EXISTS
@@ -83,29 +80,31 @@ class IndexQueryTest {
     void testExists() {
         ExistsPredicate p = PropertyIndexQuery.exists(propId);
 
-        assertTrue(test(p, "string"));
-        assertTrue(test(p, 1));
-        assertTrue(test(p, 1.0));
-        assertTrue(test(p, true));
-        assertTrue(test(p, new long[] {1L}));
-        assertTrue(test(p, pointValue(CoordinateReferenceSystem.WGS_84, 12.3, 45.6)));
+        assertThat(test(p, "string")).isTrue();
+        assertThat(test(p, 1)).isTrue();
+        assertThat(test(p, 1.0)).isTrue();
+        assertThat(test(p, true)).isTrue();
+        assertThat(test(p, new long[] {1L})).isTrue();
+        assertThat(test(p, pointValue(CoordinateReferenceSystem.WGS_84, 12.3, 45.6)))
+                .isTrue();
 
-        assertFalse(test(p, null));
+        assertThat(test(p, null)).isFalse();
     }
 
     @Test
     void testNotExists() {
         NotExistsPredicate p = PropertyIndexQuery.notExists(propId);
 
-        assertFalse(test(p, "string"));
-        assertFalse(test(p, 1));
-        assertFalse(test(p, 1.0));
-        assertFalse(test(p, true));
-        assertFalse(test(p, new long[] {1L}));
-        assertFalse(test(p, pointValue(CoordinateReferenceSystem.WGS_84, 12.3, 45.6)));
+        assertThat(test(p, "string")).isFalse();
+        assertThat(test(p, 1)).isFalse();
+        assertThat(test(p, 1.0)).isFalse();
+        assertThat(test(p, true)).isFalse();
+        assertThat(test(p, new long[] {1L})).isFalse();
+        assertThat(test(p, pointValue(CoordinateReferenceSystem.WGS_84, 12.3, 45.6)))
+                .isFalse();
 
-        assertTrue(test(p, null));
-        assertTrue(test(p, Values.NO_VALUE));
+        assertThat(test(p, null)).isTrue();
+        assertThat(test(p, Values.NO_VALUE)).isTrue();
     }
 
     // EXACT
@@ -123,7 +122,7 @@ class IndexQueryTest {
     private void assertExactPredicate(Object value) {
         ExactPredicate p = PropertyIndexQuery.exact(propId, value);
 
-        assertTrue(test(p, value));
+        assertThat(test(p, value)).isTrue();
 
         assertFalseForOtherThings(p);
     }
@@ -132,7 +131,7 @@ class IndexQueryTest {
     void testExact_ComparingBigDoublesAndLongs() {
         ExactPredicate p = PropertyIndexQuery.exact(propId, 9007199254740993L);
 
-        assertFalse(test(p, 9007199254740992D));
+        assertThat(test(p, 9007199254740992D)).isFalse();
     }
 
     // NUMERIC RANGE
@@ -148,69 +147,69 @@ class IndexQueryTest {
     void testNumRange_InclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, 11, true, 13, true);
 
-        assertFalse(test(p, 10));
-        assertTrue(test(p, 11));
-        assertTrue(test(p, 12));
-        assertTrue(test(p, 13));
-        assertFalse(test(p, 14));
+        assertThat(test(p, 10)).isFalse();
+        assertThat(test(p, 11)).isTrue();
+        assertThat(test(p, 12)).isTrue();
+        assertThat(test(p, 13)).isTrue();
+        assertThat(test(p, 14)).isFalse();
     }
 
     @Test
     void testNumRange_ExclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, 11, false, 13, false);
 
-        assertFalse(test(p, 11));
-        assertTrue(test(p, 12));
-        assertFalse(test(p, 13));
+        assertThat(test(p, 11)).isFalse();
+        assertThat(test(p, 12)).isTrue();
+        assertThat(test(p, 13)).isFalse();
     }
 
     @Test
     void testNumRange_InclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, 11, true, 13, false);
 
-        assertFalse(test(p, 10));
-        assertTrue(test(p, 11));
-        assertTrue(test(p, 12));
-        assertFalse(test(p, 13));
+        assertThat(test(p, 10)).isFalse();
+        assertThat(test(p, 11)).isTrue();
+        assertThat(test(p, 12)).isTrue();
+        assertThat(test(p, 13)).isFalse();
     }
 
     @Test
     void testNumRange_ExclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, 11, false, 13, true);
 
-        assertFalse(test(p, 11));
-        assertTrue(test(p, 12));
-        assertTrue(test(p, 13));
-        assertFalse(test(p, 14));
+        assertThat(test(p, 11)).isFalse();
+        assertThat(test(p, 12)).isTrue();
+        assertThat(test(p, 13)).isTrue();
+        assertThat(test(p, 14)).isFalse();
     }
 
     @Test
     void testNumRange_LowerNullValue() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, null, true, 13, true);
 
-        assertTrue(test(p, 10));
-        assertTrue(test(p, 11));
-        assertTrue(test(p, 12));
-        assertTrue(test(p, 13));
-        assertFalse(test(p, 14));
+        assertThat(test(p, 10)).isTrue();
+        assertThat(test(p, 11)).isTrue();
+        assertThat(test(p, 12)).isTrue();
+        assertThat(test(p, 13)).isTrue();
+        assertThat(test(p, 14)).isFalse();
     }
 
     @Test
     void testNumRange_UpperNullValue() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, 11, true, null, true);
 
-        assertFalse(test(p, 10));
-        assertTrue(test(p, 11));
-        assertTrue(test(p, 12));
-        assertTrue(test(p, 13));
-        assertTrue(test(p, 14));
+        assertThat(test(p, 10)).isFalse();
+        assertThat(test(p, 11)).isTrue();
+        assertThat(test(p, 12)).isTrue();
+        assertThat(test(p, 13)).isTrue();
+        assertThat(test(p, 14)).isTrue();
     }
 
     @Test
     void testNumRange_ComparingBigDoublesAndLongs() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, 9007199254740993L, true, null, true);
 
-        assertFalse(test(p, 9007199254740992D));
+        assertThat(test(p, 9007199254740992D)).isFalse();
     }
 
     // STRING RANGE
@@ -226,59 +225,59 @@ class IndexQueryTest {
     void testStringRange_InclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, "bbb", true, "bee", true);
 
-        assertFalse(test(p, "bba"));
-        assertTrue(test(p, "bbb"));
-        assertTrue(test(p, "bee"));
-        assertFalse(test(p, "beea"));
-        assertFalse(test(p, "bef"));
+        assertThat(test(p, "bba")).isFalse();
+        assertThat(test(p, "bbb")).isTrue();
+        assertThat(test(p, "bee")).isTrue();
+        assertThat(test(p, "beea")).isFalse();
+        assertThat(test(p, "bef")).isFalse();
     }
 
     @Test
     void testStringRange_ExclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, "bbb", false, "bee", true);
 
-        assertFalse(test(p, "bbb"));
-        assertTrue(test(p, "bbba"));
-        assertTrue(test(p, "bee"));
-        assertFalse(test(p, "beea"));
+        assertThat(test(p, "bbb")).isFalse();
+        assertThat(test(p, "bbba")).isTrue();
+        assertThat(test(p, "bee")).isTrue();
+        assertThat(test(p, "beea")).isFalse();
     }
 
     @Test
     void testStringRange_InclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, "bbb", true, "bee", false);
 
-        assertFalse(test(p, "bba"));
-        assertTrue(test(p, "bbb"));
-        assertTrue(test(p, "bed"));
-        assertFalse(test(p, "bee"));
+        assertThat(test(p, "bba")).isFalse();
+        assertThat(test(p, "bbb")).isTrue();
+        assertThat(test(p, "bed")).isTrue();
+        assertThat(test(p, "bee")).isFalse();
     }
 
     @Test
     void testStringRange_ExclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, "bbb", false, "bee", false);
 
-        assertFalse(test(p, "bbb"));
-        assertTrue(test(p, "bbba"));
-        assertTrue(test(p, "bed"));
-        assertFalse(test(p, "bee"));
+        assertThat(test(p, "bbb")).isFalse();
+        assertThat(test(p, "bbba")).isTrue();
+        assertThat(test(p, "bed")).isTrue();
+        assertThat(test(p, "bee")).isFalse();
     }
 
     @Test
     void testStringRange_UpperUnbounded() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, "bbb", false, null, false);
 
-        assertFalse(test(p, "bbb"));
-        assertTrue(test(p, "bbba"));
-        assertTrue(test(p, "xxxxx"));
+        assertThat(test(p, "bbb")).isFalse();
+        assertThat(test(p, "bbba")).isTrue();
+        assertThat(test(p, "xxxxx")).isTrue();
     }
 
     @Test
     void testStringRange_LowerUnbounded() {
         RangePredicate<?> p = PropertyIndexQuery.range(propId, null, false, "bee", false);
 
-        assertTrue(test(p, ""));
-        assertTrue(test(p, "bed"));
-        assertFalse(test(p, "bee"));
+        assertThat(test(p, "")).isTrue();
+        assertThat(test(p, "bed")).isTrue();
+        assertThat(test(p, "bee")).isFalse();
     }
 
     @Test
@@ -286,12 +285,13 @@ class IndexQueryTest {
         RangePredicate<?> p =
                 PropertyIndexQuery.range(propId, DateValue.date(2014, 7, 7), true, DateValue.date(2017, 3, 7), false);
 
-        assertFalse(test(p, DateValue.date(2014, 6, 8)));
-        assertTrue(test(p, DateValue.date(2014, 7, 7)));
-        assertTrue(test(p, DateValue.date(2016, 6, 8)));
-        assertFalse(test(p, DateValue.date(2017, 3, 7)));
-        assertFalse(test(p, DateValue.date(2017, 3, 8)));
-        assertFalse(test(p, LocalDateTimeValue.localDateTime(2016, 3, 8, 0, 0, 0, 0)));
+        assertThat(test(p, DateValue.date(2014, 6, 8))).isFalse();
+        assertThat(test(p, DateValue.date(2014, 7, 7))).isTrue();
+        assertThat(test(p, DateValue.date(2016, 6, 8))).isTrue();
+        assertThat(test(p, DateValue.date(2017, 3, 7))).isFalse();
+        assertThat(test(p, DateValue.date(2017, 3, 8))).isFalse();
+        assertThat(test(p, LocalDateTimeValue.localDateTime(2016, 3, 8, 0, 0, 0, 0)))
+                .isFalse();
     }
 
     // Duration RANGE
@@ -308,86 +308,86 @@ class IndexQueryTest {
 
         RangePredicate<?> p = range(propId, secs(11), true, secs(13), true);
 
-        assertFalse(test(p, secs(10)));
-        assertFalse(test(p, secs(11)));
-        assertFalse(test(p, secs(12)));
-        assertFalse(test(p, secs(13)));
-        assertFalse(test(p, secs(14)));
+        assertThat(test(p, secs(10))).isFalse();
+        assertThat(test(p, secs(11))).isFalse();
+        assertThat(test(p, secs(12))).isFalse();
+        assertThat(test(p, secs(13))).isFalse();
+        assertThat(test(p, secs(14))).isFalse();
     }
 
     @Test
     void testDurationRange_ExclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = range(propId, secs(11), false, secs(13), false);
 
-        assertFalse(test(p, secs(11)));
-        assertFalse(test(p, secs(12)));
-        assertFalse(test(p, secs(13)));
+        assertThat(test(p, secs(11))).isFalse();
+        assertThat(test(p, secs(12))).isFalse();
+        assertThat(test(p, secs(13))).isFalse();
     }
 
     @Test
     void testDurationRange_InclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = range(propId, secs(11), true, secs(13), false);
 
-        assertFalse(test(p, secs(10)));
-        assertFalse(test(p, secs(11)));
-        assertFalse(test(p, secs(12)));
-        assertFalse(test(p, secs(13)));
+        assertThat(test(p, secs(10))).isFalse();
+        assertThat(test(p, secs(11))).isFalse();
+        assertThat(test(p, secs(12))).isFalse();
+        assertThat(test(p, secs(13))).isFalse();
     }
 
     @Test
     void testDurationRange_ExclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = range(propId, secs(11), false, secs(13), true);
 
-        assertFalse(test(p, secs(11)));
-        assertFalse(test(p, secs(12)));
-        assertFalse(test(p, secs(13)));
-        assertFalse(test(p, secs(14)));
+        assertThat(test(p, secs(11))).isFalse();
+        assertThat(test(p, secs(12))).isFalse();
+        assertThat(test(p, secs(13))).isFalse();
+        assertThat(test(p, secs(14))).isFalse();
     }
 
     @Test
     void testDurationRange_LowerNullValue() {
         RangePredicate<?> p = range(propId, null, true, secs(13), true);
 
-        assertFalse(test(p, secs(10)));
-        assertFalse(test(p, secs(11)));
-        assertFalse(test(p, secs(12)));
-        assertTrue(test(p, secs(13)));
-        assertFalse(test(p, secs(14)));
+        assertThat(test(p, secs(10))).isFalse();
+        assertThat(test(p, secs(11))).isFalse();
+        assertThat(test(p, secs(12))).isFalse();
+        assertThat(test(p, secs(13))).isTrue();
+        assertThat(test(p, secs(14))).isFalse();
     }
 
     @Test
     void testDurationRange_UpperNullValue() {
         RangePredicate<?> p = range(propId, secs(11), true, null, true);
 
-        assertFalse(test(p, secs(10)));
-        assertTrue(test(p, secs(11)));
-        assertFalse(test(p, secs(12)));
-        assertFalse(test(p, secs(13)));
-        assertFalse(test(p, secs(14)));
+        assertThat(test(p, secs(10))).isFalse();
+        assertThat(test(p, secs(11))).isTrue();
+        assertThat(test(p, secs(12))).isFalse();
+        assertThat(test(p, secs(13))).isFalse();
+        assertThat(test(p, secs(14))).isFalse();
     }
 
     @Test
     void testDurationRange_EqualBoundsInclusive() {
         RangePredicate<?> p = range(propId, secs(11), true, secs(11), true);
 
-        assertFalse(test(p, secs(10)));
-        assertTrue(test(p, secs(11)));
-        assertFalse(test(p, secs(12)));
+        assertThat(test(p, secs(10))).isFalse();
+        assertThat(test(p, secs(11))).isTrue();
+        assertThat(test(p, secs(12))).isFalse();
     }
 
     @Test
     void testDurationRange_EqualBoundsNotInclusive() {
         RangePredicate<?> fromInclusive = range(propId, secs(11), true, secs(11), false);
 
-        assertFalse(test(fromInclusive, secs(10)));
-        assertFalse(test(fromInclusive, secs(11)));
-        assertFalse(test(fromInclusive, secs(12)));
+        assertThat(test(fromInclusive, secs(10))).isFalse();
+        assertThat(test(fromInclusive, secs(11))).isFalse();
+        assertThat(test(fromInclusive, secs(12))).isFalse();
 
         RangePredicate<?> toInclusive = range(propId, secs(11), false, secs(11), true);
 
-        assertFalse(test(toInclusive, secs(10)));
-        assertFalse(test(toInclusive, secs(11)));
-        assertFalse(test(toInclusive, secs(12)));
+        assertThat(test(toInclusive, secs(10))).isFalse();
+        assertThat(test(toInclusive, secs(11))).isFalse();
+        assertThat(test(toInclusive, secs(12))).isFalse();
     }
 
     // Point RANGE
@@ -403,86 +403,86 @@ class IndexQueryTest {
     void testPointRange_InclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = range(propId, point(11), true, point(13), true);
 
-        assertFalse(test(p, point(10)));
-        assertFalse(test(p, point(11)));
-        assertFalse(test(p, point(12)));
-        assertFalse(test(p, point(13)));
-        assertFalse(test(p, point(14)));
+        assertThat(test(p, point(10))).isFalse();
+        assertThat(test(p, point(11))).isFalse();
+        assertThat(test(p, point(12))).isFalse();
+        assertThat(test(p, point(13))).isFalse();
+        assertThat(test(p, point(14))).isFalse();
     }
 
     @Test
     void testPointRange_ExclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = range(propId, point(11), false, point(13), false);
 
-        assertFalse(test(p, point(11)));
-        assertFalse(test(p, point(12)));
-        assertFalse(test(p, point(13)));
+        assertThat(test(p, point(11))).isFalse();
+        assertThat(test(p, point(12))).isFalse();
+        assertThat(test(p, point(13))).isFalse();
     }
 
     @Test
     void testPointRange_InclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = range(propId, point(11), true, point(13), false);
 
-        assertFalse(test(p, point(10)));
-        assertFalse(test(p, point(11)));
-        assertFalse(test(p, point(12)));
-        assertFalse(test(p, point(13)));
+        assertThat(test(p, point(10))).isFalse();
+        assertThat(test(p, point(11))).isFalse();
+        assertThat(test(p, point(12))).isFalse();
+        assertThat(test(p, point(13))).isFalse();
     }
 
     @Test
     void testPointRange_ExclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = range(propId, point(11), false, point(13), true);
 
-        assertFalse(test(p, point(11)));
-        assertFalse(test(p, point(12)));
-        assertFalse(test(p, point(13)));
-        assertFalse(test(p, point(14)));
+        assertThat(test(p, point(11))).isFalse();
+        assertThat(test(p, point(12))).isFalse();
+        assertThat(test(p, point(13))).isFalse();
+        assertThat(test(p, point(14))).isFalse();
     }
 
     @Test
     void testPointRange_LowerNullValue() {
         RangePredicate<?> p = range(propId, null, true, point(13), true);
 
-        assertFalse(test(p, point(10)));
-        assertFalse(test(p, point(11)));
-        assertFalse(test(p, point(12)));
-        assertTrue(test(p, point(13)));
-        assertFalse(test(p, point(14)));
+        assertThat(test(p, point(10))).isFalse();
+        assertThat(test(p, point(11))).isFalse();
+        assertThat(test(p, point(12))).isFalse();
+        assertThat(test(p, point(13))).isTrue();
+        assertThat(test(p, point(14))).isFalse();
     }
 
     @Test
     void testPointRange_UpperNullValue() {
         RangePredicate<?> p = range(propId, point(11), true, null, true);
 
-        assertFalse(test(p, point(10)));
-        assertTrue(test(p, point(11)));
-        assertFalse(test(p, point(12)));
-        assertFalse(test(p, point(13)));
-        assertFalse(test(p, point(14)));
+        assertThat(test(p, point(10))).isFalse();
+        assertThat(test(p, point(11))).isTrue();
+        assertThat(test(p, point(12))).isFalse();
+        assertThat(test(p, point(13))).isFalse();
+        assertThat(test(p, point(14))).isFalse();
     }
 
     @Test
     void testPointRange_EqualBounds() {
         RangePredicate<?> p = range(propId, point(11), true, point(11), true);
 
-        assertFalse(test(p, point(10)));
-        assertTrue(test(p, point(11)));
-        assertFalse(test(p, point(12)));
+        assertThat(test(p, point(10))).isFalse();
+        assertThat(test(p, point(11))).isTrue();
+        assertThat(test(p, point(12))).isFalse();
     }
 
     @Test
     void testPointRange_EqualBoundsNotInclusive() {
         RangePredicate<?> fromInclusive = range(propId, point(11), true, point(11), false);
 
-        assertFalse(test(fromInclusive, point(10)));
-        assertFalse(test(fromInclusive, point(11)));
-        assertFalse(test(fromInclusive, point(12)));
+        assertThat(test(fromInclusive, point(10))).isFalse();
+        assertThat(test(fromInclusive, point(11))).isFalse();
+        assertThat(test(fromInclusive, point(12))).isFalse();
 
         RangePredicate<?> toInclusive = range(propId, point(11), false, point(11), true);
 
-        assertFalse(test(toInclusive, point(10)));
-        assertFalse(test(toInclusive, point(11)));
-        assertFalse(test(toInclusive, point(12)));
+        assertThat(test(toInclusive, point(10))).isFalse();
+        assertThat(test(toInclusive, point(11))).isFalse();
+        assertThat(test(toInclusive, point(12))).isFalse();
     }
 
     // Duration Array RANGE
@@ -498,86 +498,86 @@ class IndexQueryTest {
     void testDurationArrayRange_InclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = range(propId, secsArray(11), true, secsArray(13), true);
 
-        assertFalse(test(p, secsArray(10)));
-        assertFalse(test(p, secsArray(11)));
-        assertFalse(test(p, secsArray(12)));
-        assertFalse(test(p, secsArray(13)));
-        assertFalse(test(p, secsArray(14)));
+        assertThat(test(p, secsArray(10))).isFalse();
+        assertThat(test(p, secsArray(11))).isFalse();
+        assertThat(test(p, secsArray(12))).isFalse();
+        assertThat(test(p, secsArray(13))).isFalse();
+        assertThat(test(p, secsArray(14))).isFalse();
     }
 
     @Test
     void testDurationArrayRange_ExclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = range(propId, secsArray(11), false, secsArray(13), false);
 
-        assertFalse(test(p, secsArray(11)));
-        assertFalse(test(p, secsArray(12)));
-        assertFalse(test(p, secsArray(13)));
+        assertThat(test(p, secsArray(11))).isFalse();
+        assertThat(test(p, secsArray(12))).isFalse();
+        assertThat(test(p, secsArray(13))).isFalse();
     }
 
     @Test
     void testDurationArrayRange_InclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = range(propId, secsArray(11), true, secsArray(13), false);
 
-        assertFalse(test(p, secsArray(10)));
-        assertFalse(test(p, secsArray(11)));
-        assertFalse(test(p, secsArray(12)));
-        assertFalse(test(p, secsArray(13)));
+        assertThat(test(p, secsArray(10))).isFalse();
+        assertThat(test(p, secsArray(11))).isFalse();
+        assertThat(test(p, secsArray(12))).isFalse();
+        assertThat(test(p, secsArray(13))).isFalse();
     }
 
     @Test
     void testDurationArrayRange_ExclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = range(propId, secsArray(11), false, secsArray(13), true);
 
-        assertFalse(test(p, secsArray(11)));
-        assertFalse(test(p, secsArray(12)));
-        assertFalse(test(p, secsArray(13)));
-        assertFalse(test(p, secsArray(14)));
+        assertThat(test(p, secsArray(11))).isFalse();
+        assertThat(test(p, secsArray(12))).isFalse();
+        assertThat(test(p, secsArray(13))).isFalse();
+        assertThat(test(p, secsArray(14))).isFalse();
     }
 
     @Test
     void testDurationArrayRange_LowerNullValue() {
         RangePredicate<?> p = range(propId, null, true, secsArray(13), true);
 
-        assertFalse(test(p, secsArray(10)));
-        assertFalse(test(p, secsArray(11)));
-        assertFalse(test(p, secsArray(12)));
-        assertTrue(test(p, secsArray(13)));
-        assertFalse(test(p, secsArray(14)));
+        assertThat(test(p, secsArray(10))).isFalse();
+        assertThat(test(p, secsArray(11))).isFalse();
+        assertThat(test(p, secsArray(12))).isFalse();
+        assertThat(test(p, secsArray(13))).isTrue();
+        assertThat(test(p, secsArray(14))).isFalse();
     }
 
     @Test
     void testDurationArrayRange_UpperNullValue() {
         RangePredicate<?> p = range(propId, secsArray(11), true, null, true);
 
-        assertFalse(test(p, secsArray(10)));
-        assertTrue(test(p, secsArray(11)));
-        assertFalse(test(p, secsArray(12)));
-        assertFalse(test(p, secsArray(13)));
-        assertFalse(test(p, secsArray(14)));
+        assertThat(test(p, secsArray(10))).isFalse();
+        assertThat(test(p, secsArray(11))).isTrue();
+        assertThat(test(p, secsArray(12))).isFalse();
+        assertThat(test(p, secsArray(13))).isFalse();
+        assertThat(test(p, secsArray(14))).isFalse();
     }
 
     @Test
     void testDurationArrayRange_EqualBounds() {
         RangePredicate<?> p = range(propId, secsArray(11), true, secsArray(11), true);
 
-        assertFalse(test(p, secsArray(10)));
-        assertTrue(test(p, secsArray(11)));
-        assertFalse(test(p, secsArray(12)));
+        assertThat(test(p, secsArray(10))).isFalse();
+        assertThat(test(p, secsArray(11))).isTrue();
+        assertThat(test(p, secsArray(12))).isFalse();
     }
 
     @Test
     void testDurationArrayRange_EqualBoundsNotInclusive() {
         RangePredicate<?> fromInclusive = range(propId, secsArray(11), true, secsArray(11), false);
 
-        assertFalse(test(fromInclusive, secsArray(10)));
-        assertFalse(test(fromInclusive, secsArray(11)));
-        assertFalse(test(fromInclusive, secsArray(12)));
+        assertThat(test(fromInclusive, secsArray(10))).isFalse();
+        assertThat(test(fromInclusive, secsArray(11))).isFalse();
+        assertThat(test(fromInclusive, secsArray(12))).isFalse();
 
         RangePredicate<?> toInclusive = range(propId, secsArray(11), false, secsArray(11), true);
 
-        assertFalse(test(toInclusive, secsArray(10)));
-        assertFalse(test(toInclusive, secsArray(11)));
-        assertFalse(test(toInclusive, secsArray(12)));
+        assertThat(test(toInclusive, secsArray(10))).isFalse();
+        assertThat(test(toInclusive, secsArray(11))).isFalse();
+        assertThat(test(toInclusive, secsArray(12))).isFalse();
     }
 
     // Point Array RANGE
@@ -593,86 +593,86 @@ class IndexQueryTest {
     void testPointArrayRange_InclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = range(propId, pointArray(11), true, pointArray(13), true);
 
-        assertFalse(test(p, pointArray(10)));
-        assertFalse(test(p, pointArray(11)));
-        assertFalse(test(p, pointArray(12)));
-        assertFalse(test(p, pointArray(13)));
-        assertFalse(test(p, pointArray(14)));
+        assertThat(test(p, pointArray(10))).isFalse();
+        assertThat(test(p, pointArray(11))).isFalse();
+        assertThat(test(p, pointArray(12))).isFalse();
+        assertThat(test(p, pointArray(13))).isFalse();
+        assertThat(test(p, pointArray(14))).isFalse();
     }
 
     @Test
     void testPointArrayRange_ExclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = range(propId, pointArray(11), false, pointArray(13), false);
 
-        assertFalse(test(p, pointArray(11)));
-        assertFalse(test(p, pointArray(12)));
-        assertFalse(test(p, pointArray(13)));
+        assertThat(test(p, pointArray(11))).isFalse();
+        assertThat(test(p, pointArray(12))).isFalse();
+        assertThat(test(p, pointArray(13))).isFalse();
     }
 
     @Test
     void testPointArrayRange_InclusiveLowerExclusiveUpper() {
         RangePredicate<?> p = range(propId, pointArray(11), true, pointArray(13), false);
 
-        assertFalse(test(p, pointArray(10)));
-        assertFalse(test(p, pointArray(11)));
-        assertFalse(test(p, pointArray(12)));
-        assertFalse(test(p, pointArray(13)));
+        assertThat(test(p, pointArray(10))).isFalse();
+        assertThat(test(p, pointArray(11))).isFalse();
+        assertThat(test(p, pointArray(12))).isFalse();
+        assertThat(test(p, pointArray(13))).isFalse();
     }
 
     @Test
     void testPointArrayRange_ExclusiveLowerInclusiveUpper() {
         RangePredicate<?> p = range(propId, pointArray(11), false, pointArray(13), true);
 
-        assertFalse(test(p, pointArray(11)));
-        assertFalse(test(p, pointArray(12)));
-        assertFalse(test(p, pointArray(13)));
-        assertFalse(test(p, pointArray(14)));
+        assertThat(test(p, pointArray(11))).isFalse();
+        assertThat(test(p, pointArray(12))).isFalse();
+        assertThat(test(p, pointArray(13))).isFalse();
+        assertThat(test(p, pointArray(14))).isFalse();
     }
 
     @Test
     void testPointArrayRange_LowerNullValue() {
         RangePredicate<?> p = range(propId, null, true, pointArray(13), true);
 
-        assertFalse(test(p, pointArray(10)));
-        assertFalse(test(p, pointArray(11)));
-        assertFalse(test(p, pointArray(12)));
-        assertTrue(test(p, pointArray(13)));
-        assertFalse(test(p, pointArray(14)));
+        assertThat(test(p, pointArray(10))).isFalse();
+        assertThat(test(p, pointArray(11))).isFalse();
+        assertThat(test(p, pointArray(12))).isFalse();
+        assertThat(test(p, pointArray(13))).isTrue();
+        assertThat(test(p, pointArray(14))).isFalse();
     }
 
     @Test
     void testPointArrayRange_UpperNullValue() {
         RangePredicate<?> p = range(propId, pointArray(11), true, null, true);
 
-        assertFalse(test(p, pointArray(10)));
-        assertTrue(test(p, pointArray(11)));
-        assertFalse(test(p, pointArray(12)));
-        assertFalse(test(p, pointArray(13)));
-        assertFalse(test(p, pointArray(14)));
+        assertThat(test(p, pointArray(10))).isFalse();
+        assertThat(test(p, pointArray(11))).isTrue();
+        assertThat(test(p, pointArray(12))).isFalse();
+        assertThat(test(p, pointArray(13))).isFalse();
+        assertThat(test(p, pointArray(14))).isFalse();
     }
 
     @Test
     void testPointArrayRange_EqualBounds() {
         RangePredicate<?> p = range(propId, pointArray(11), true, pointArray(11), true);
 
-        assertFalse(test(p, pointArray(10)));
-        assertTrue(test(p, pointArray(11)));
-        assertFalse(test(p, pointArray(12)));
+        assertThat(test(p, pointArray(10))).isFalse();
+        assertThat(test(p, pointArray(11))).isTrue();
+        assertThat(test(p, pointArray(12))).isFalse();
     }
 
     @Test
     void testPointArrayRange_EqualBoundsNotInclusive() {
         RangePredicate<?> fromInclusive = range(propId, pointArray(11), true, pointArray(11), false);
 
-        assertFalse(test(fromInclusive, pointArray(10)));
-        assertFalse(test(fromInclusive, pointArray(11)));
-        assertFalse(test(fromInclusive, pointArray(12)));
+        assertThat(test(fromInclusive, pointArray(10))).isFalse();
+        assertThat(test(fromInclusive, pointArray(11))).isFalse();
+        assertThat(test(fromInclusive, pointArray(12))).isFalse();
 
         RangePredicate<?> toInclusive = range(propId, pointArray(11), false, pointArray(11), true);
 
-        assertFalse(test(toInclusive, pointArray(10)));
-        assertFalse(test(toInclusive, pointArray(11)));
-        assertFalse(test(toInclusive, pointArray(12)));
+        assertThat(test(toInclusive, pointArray(10))).isFalse();
+        assertThat(test(toInclusive, pointArray(11))).isFalse();
+        assertThat(test(toInclusive, pointArray(12))).isFalse();
     }
 
     // BOUNDING BOX
@@ -704,45 +704,45 @@ class IndexQueryTest {
     void testBoundingBox_InclusiveLowerInclusiveUpper() {
         BoundingBoxPredicate p = PropertyIndexQuery.boundingBox(propId, gps2, gps5);
 
-        assertFalse(test(p, gps1));
-        assertTrue(test(p, gps2));
-        assertTrue(test(p, gps5));
-        assertFalse(test(p, gps6));
-        assertFalse(test(p, gps7));
-        assertFalse(test(p, car1));
-        assertFalse(test(p, car2));
-        assertFalse(test(p, car3));
-        assertFalse(test(p, gps1_3d));
+        assertThat(test(p, gps1)).isFalse();
+        assertThat(test(p, gps2)).isTrue();
+        assertThat(test(p, gps5)).isTrue();
+        assertThat(test(p, gps6)).isFalse();
+        assertThat(test(p, gps7)).isFalse();
+        assertThat(test(p, car1)).isFalse();
+        assertThat(test(p, car2)).isFalse();
+        assertThat(test(p, car3)).isFalse();
+        assertThat(test(p, gps1_3d)).isFalse();
     }
 
     @Test
     void testBoundingBox_Cartesian3D() {
         BoundingBoxPredicate p = PropertyIndexQuery.boundingBox(propId, car3, car4);
 
-        assertFalse(test(p, gps1));
-        assertFalse(test(p, gps3));
-        assertFalse(test(p, gps5));
-        assertFalse(test(p, car1));
-        assertFalse(test(p, car2));
-        assertTrue(test(p, car3));
-        assertTrue(test(p, car4));
-        assertFalse(test(p, gps1_3d));
-        assertFalse(test(p, gps2_3d));
+        assertThat(test(p, gps1)).isFalse();
+        assertThat(test(p, gps3)).isFalse();
+        assertThat(test(p, gps5)).isFalse();
+        assertThat(test(p, car1)).isFalse();
+        assertThat(test(p, car2)).isFalse();
+        assertThat(test(p, car3)).isTrue();
+        assertThat(test(p, car4)).isTrue();
+        assertThat(test(p, gps1_3d)).isFalse();
+        assertThat(test(p, gps2_3d)).isFalse();
     }
 
     @Test
     void testBoundingBox_WGS84_3D() {
         BoundingBoxPredicate p = PropertyIndexQuery.boundingBox(propId, gps1_3d, gps2_3d);
 
-        assertFalse(test(p, gps1));
-        assertFalse(test(p, gps3));
-        assertFalse(test(p, gps5));
-        assertFalse(test(p, car1));
-        assertFalse(test(p, car2));
-        assertFalse(test(p, car3));
-        assertFalse(test(p, car4));
-        assertTrue(test(p, gps1_3d));
-        assertTrue(test(p, gps2_3d));
+        assertThat(test(p, gps1)).isFalse();
+        assertThat(test(p, gps3)).isFalse();
+        assertThat(test(p, gps5)).isFalse();
+        assertThat(test(p, car1)).isFalse();
+        assertThat(test(p, car2)).isFalse();
+        assertThat(test(p, car3)).isFalse();
+        assertThat(test(p, car4)).isFalse();
+        assertThat(test(p, gps1_3d)).isTrue();
+        assertThat(test(p, gps2_3d)).isTrue();
     }
 
     // STRING PREFIX
@@ -758,11 +758,11 @@ class IndexQueryTest {
     void testStringPrefix_SomeValues() {
         StringPrefixPredicate p = PropertyIndexQuery.stringPrefix(propId, stringValue("dog"));
 
-        assertFalse(test(p, "doffington"));
-        assertFalse(test(p, "doh, not this again!"));
-        assertTrue(test(p, "dog"));
-        assertTrue(test(p, "doggidog"));
-        assertTrue(test(p, "doggidogdog"));
+        assertThat(test(p, "doffington")).isFalse();
+        assertThat(test(p, "doh, not this again!")).isFalse();
+        assertThat(test(p, "dog")).isTrue();
+        assertThat(test(p, "doggidog")).isTrue();
+        assertThat(test(p, "doggidogdog")).isTrue();
     }
 
     // STRING CONTAINS
@@ -778,12 +778,12 @@ class IndexQueryTest {
     void testStringContains_SomeValues() {
         StringContainsPredicate p = PropertyIndexQuery.stringContains(propId, stringValue("cat"));
 
-        assertFalse(test(p, "dog"));
-        assertFalse(test(p, "cameraman"));
-        assertFalse(test(p, "Cat"));
-        assertTrue(test(p, "cat"));
-        assertTrue(test(p, "bobcat"));
-        assertTrue(test(p, "scatman"));
+        assertThat(test(p, "dog")).isFalse();
+        assertThat(test(p, "cameraman")).isFalse();
+        assertThat(test(p, "Cat")).isFalse();
+        assertThat(test(p, "cat")).isTrue();
+        assertThat(test(p, "bobcat")).isTrue();
+        assertThat(test(p, "scatman")).isTrue();
     }
 
     // STRING SUFFIX
@@ -799,11 +799,11 @@ class IndexQueryTest {
     void testStringSuffix_SomeValues() {
         StringSuffixPredicate p = PropertyIndexQuery.stringSuffix(propId, stringValue("less"));
 
-        assertFalse(test(p, "lesser being"));
-        assertFalse(test(p, "make less noise please..."));
-        assertTrue(test(p, "less"));
-        assertTrue(test(p, "clueless"));
-        assertTrue(test(p, "cluelessly clueless"));
+        assertThat(test(p, "lesser being")).isFalse();
+        assertThat(test(p, "make less noise please...")).isFalse();
+        assertThat(test(p, "less")).isTrue();
+        assertThat(test(p, "clueless")).isTrue();
+        assertThat(test(p, "cluelessly clueless")).isTrue();
     }
 
     // TOKEN
@@ -825,14 +825,14 @@ class IndexQueryTest {
     // HELPERS
 
     private static void assertFalseForOtherThings(PropertyIndexQuery p) {
-        assertFalse(test(p, "other string"));
-        assertFalse(test(p, "string1"));
-        assertFalse(test(p, ""));
-        assertFalse(test(p, -1));
-        assertFalse(test(p, -1.0));
-        assertFalse(test(p, false));
-        assertFalse(test(p, new long[] {-1L}));
-        assertFalse(test(p, null));
+        assertThat(test(p, "other string")).isFalse();
+        assertThat(test(p, "string1")).isFalse();
+        assertThat(test(p, "")).isFalse();
+        assertThat(test(p, -1)).isFalse();
+        assertThat(test(p, -1.0)).isFalse();
+        assertThat(test(p, false)).isFalse();
+        assertThat(test(p, new long[] {-1L})).isFalse();
+        assertThat(test(p, null)).isFalse();
     }
 
     private static boolean test(PropertyIndexQuery p, Object x) {

@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ACCESS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ADMIN;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALIAS_MANAGEMENT;
@@ -172,7 +171,7 @@ class PrivilegeActionTest {
     @Test
     void shouldSatisfySelf() {
         for (var action : PrivilegeAction.values()) {
-            assertTrue(action.satisfies(action));
+            assertThat(action.satisfies(action)).isTrue();
         }
     }
 
@@ -188,7 +187,9 @@ class PrivilegeActionTest {
             if (expected.containsKey(action)) {
                 assertGroupSatisfies(group, expected.get(action));
             }
-            assertTrue(group.satisfies(action), String.format("%s should satisfy %s", group, action));
+            assertThat(group.satisfies(action))
+                    .as(String.format("%s should satisfy %s", group, action))
+                    .isTrue();
         }
     }
 
@@ -196,9 +197,9 @@ class PrivilegeActionTest {
     void shouldNotSatisfy() {
         for (var action : PrivilegeAction.values()) {
             for (var notSatisfied : notChild(action)) {
-                assertFalse(
-                        action.satisfies(notSatisfied),
-                        String.format("%s should not satisfy %s", action, notSatisfied));
+                assertThat(action.satisfies(notSatisfied))
+                        .as(String.format("%s should not satisfy %s", action, notSatisfied))
+                        .isFalse();
             }
         }
     }

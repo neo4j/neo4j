@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,11 +36,11 @@ class IndexConfigProviderTest {
         target.put("a", Values.intValue(1));
         source.put("b", Values.intValue(2));
         IndexConfigProvider.putAllNoOverwrite(target, source);
-        assertEquals(2, target.size());
-        assertEquals(Values.intValue(1), target.get("a"));
-        assertEquals(Values.intValue(2), target.get("b"));
-        assertEquals(1, source.size());
-        assertEquals(Values.intValue(2), source.get("b"));
+        assertThat(target).hasSize(2);
+        assertThat(target).containsEntry("a", Values.intValue(1));
+        assertThat(target).containsEntry("b", Values.intValue(2));
+        assertThat(source).hasSize(1);
+        assertThat(source).containsEntry("b", Values.intValue(2));
     }
 
     @Test
@@ -49,10 +49,9 @@ class IndexConfigProviderTest {
         Map<String, Value> source = new HashMap<>();
         target.put("a", Values.intValue(1));
         source.put("a", Values.intValue(2));
-        IllegalStateException e =
-                assertThrows(IllegalStateException.class, () -> IndexConfigProvider.putAllNoOverwrite(target, source));
-        assertEquals(
-                "Adding config would overwrite existing value: key=a, newValue=Int(2), oldValue=Int(1)",
-                e.getMessage());
+
+        assertThatThrownBy(() -> IndexConfigProvider.putAllNoOverwrite(target, source))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Adding config would overwrite existing value: key=a, newValue=Int(2), oldValue=Int(1)");
     }
 }

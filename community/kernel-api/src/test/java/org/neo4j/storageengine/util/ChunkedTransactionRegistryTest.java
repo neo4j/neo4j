@@ -19,9 +19,8 @@
  */
 package org.neo4j.storageengine.util;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -43,13 +42,13 @@ class ChunkedTransactionRegistryTest {
     void removeNotExistingTransaction() {
         for (int i = 0; i < 10; i++) {
             long txId = i;
-            assertDoesNotThrow(() -> transactionRegistry.removeTransaction(txId));
+            assertThatNoException().isThrownBy(() -> transactionRegistry.removeTransaction(txId));
         }
     }
 
     @Test
     void emptyRegistryOldestOpenInfo() {
-        assertNull(transactionRegistry.oldestOpenTransactionMetadata());
+        assertThat(transactionRegistry.oldestOpenTransactionMetadata()).isNull();
     }
 
     @Test
@@ -59,27 +58,23 @@ class ChunkedTransactionRegistryTest {
         transactionRegistry.registerTransaction(2, 22, new LogPosition(0, 2));
         transactionRegistry.registerTransaction(3, 33, new LogPosition(0, 3));
 
-        assertEquals(
-                new OpenTransactionMetadata(1, 11, new LogPosition(0, 1)),
-                transactionRegistry.oldestOpenTransactionMetadata());
+        assertThat(transactionRegistry.oldestOpenTransactionMetadata())
+                .isEqualTo(new OpenTransactionMetadata(1, 11, new LogPosition(0, 1)));
 
         transactionRegistry.removeTransaction(1);
-        assertEquals(
-                new OpenTransactionMetadata(2, 22, new LogPosition(0, 2)),
-                transactionRegistry.oldestOpenTransactionMetadata());
+        assertThat(transactionRegistry.oldestOpenTransactionMetadata())
+                .isEqualTo(new OpenTransactionMetadata(2, 22, new LogPosition(0, 2)));
 
         transactionRegistry.removeTransaction(2);
-        assertEquals(
-                new OpenTransactionMetadata(3, 33, new LogPosition(0, 3)),
-                transactionRegistry.oldestOpenTransactionMetadata());
+        assertThat(transactionRegistry.oldestOpenTransactionMetadata())
+                .isEqualTo(new OpenTransactionMetadata(3, 33, new LogPosition(0, 3)));
 
         transactionRegistry.removeTransaction(3);
-        assertEquals(
-                new OpenTransactionMetadata(4, 44, new LogPosition(0, 4)),
-                transactionRegistry.oldestOpenTransactionMetadata());
+        assertThat(transactionRegistry.oldestOpenTransactionMetadata())
+                .isEqualTo(new OpenTransactionMetadata(4, 44, new LogPosition(0, 4)));
 
         transactionRegistry.removeTransaction(4);
-        assertNull(transactionRegistry.oldestOpenTransactionMetadata());
+        assertThat(transactionRegistry.oldestOpenTransactionMetadata()).isNull();
     }
 
     @Test
@@ -98,9 +93,8 @@ class ChunkedTransactionRegistryTest {
             }
 
             registrationLatch.await();
-            assertEquals(
-                    new OpenTransactionMetadata(1, 101, new LogPosition(1, 100)),
-                    transactionRegistry.oldestOpenTransactionMetadata());
+            assertThat(transactionRegistry.oldestOpenTransactionMetadata())
+                    .isEqualTo(new OpenTransactionMetadata(1, 101, new LogPosition(1, 100)));
 
             for (int i = 0; i < numberOfWorkers / 2; i++) {
                 long txId = i + 1;
@@ -112,9 +106,8 @@ class ChunkedTransactionRegistryTest {
             }
 
             deletionLatch.await();
-            assertEquals(
-                    new OpenTransactionMetadata(6, 106, new LogPosition(6, 100)),
-                    transactionRegistry.oldestOpenTransactionMetadata());
+            assertThat(transactionRegistry.oldestOpenTransactionMetadata())
+                    .isEqualTo(new OpenTransactionMetadata(6, 106, new LogPosition(6, 100)));
         }
     }
 }

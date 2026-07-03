@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
@@ -34,7 +34,7 @@ public class AbstractSecurityLogTest {
 
         StringBuilder sb = new StringBuilder();
         ll.formatAsString(sb);
-        assertEquals("message", sb.toString());
+        assertThat(sb).hasToString("message");
     }
 
     @Test
@@ -47,7 +47,7 @@ public class AbstractSecurityLogTest {
 
         StringBuilder sb = new StringBuilder();
         ll.formatAsString(sb);
-        assertEquals("[authUser:executingUser]: Exception thrown, 42NFF: message", sb.toString());
+        assertThat(sb).hasToString("[authUser:executingUser]: Exception thrown, 42NFF: message");
     }
 
     @Test
@@ -60,7 +60,7 @@ public class AbstractSecurityLogTest {
 
         StringBuilder sb = new StringBuilder();
         ll.formatAsString(sb);
-        assertEquals("[user]: Exception thrown, 42NFF: message", sb.toString());
+        assertThat(sb).hasToString("[user]: Exception thrown, 42NFF: message");
     }
 
     @Test
@@ -71,7 +71,7 @@ public class AbstractSecurityLogTest {
 
         StringBuilder sb = new StringBuilder();
         ll.formatAsString(sb);
-        assertEquals("message", sb.toString());
+        assertThat(sb).hasToString("message");
     }
 
     @Test
@@ -84,7 +84,7 @@ public class AbstractSecurityLogTest {
 
         StringBuilder sb = new StringBuilder();
         ll.formatAsString(sb);
-        assertEquals("Exception thrown, 42NFF: message", sb.toString());
+        assertThat(sb).hasToString("Exception thrown, 42NFF: message");
     }
 
     @Test
@@ -97,7 +97,7 @@ public class AbstractSecurityLogTest {
 
         StringBuilder sb = new StringBuilder();
         ll.formatAsString(sb);
-        assertEquals("[authUser:executingUser]: message", sb.toString());
+        assertThat(sb).hasToString("[authUser:executingUser]: message");
     }
 
     @Test
@@ -110,6 +110,6 @@ public class AbstractSecurityLogTest {
 
         StringBuilder sb = new StringBuilder();
         ll.formatAsString(sb);
-        assertEquals("[authUser:executingUser]: Exception thrown, 42NFF: message1 message2 message3", sb.toString());
+        assertThat(sb).hasToString("[authUser:executingUser]: Exception thrown, 42NFF: message1 message2 message3");
     }
 }

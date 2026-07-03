@@ -19,7 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.storageengine.api.PropertySelection.selection;
@@ -92,7 +91,8 @@ class PropertySelectionTest {
 
         // then
         for (int key : keys) {
-            assertThat(filteredSelection.test(key)).isEqualTo(!contains(keysToExclude, key));
+            assertThat(filteredSelection.test(key))
+                    .isEqualTo(IntStream.of(keysToExclude).noneMatch(k -> k == key));
         }
     }
 
@@ -107,7 +107,8 @@ class PropertySelectionTest {
         // then
         for (int key : new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}) {
             assertThat(filteredSelection.test(key))
-                    .isEqualTo(!contains(keysToExclude0, key) && !contains(keysToExclude1, key));
+                    .isEqualTo(IntStream.of(keysToExclude0).noneMatch(k -> k == key)
+                            && IntStream.of(keysToExclude1).noneMatch(k -> k == key));
         }
     }
 
@@ -122,7 +123,9 @@ class PropertySelectionTest {
 
         // then
         for (int key = 0; key < 100; key++) {
-            assertThat(filteredSelection.test(key)).isEqualTo(!contains(keysToExclude, key));
+            final int currentKey = key;
+            assertThat(filteredSelection.test(currentKey))
+                    .isEqualTo(IntStream.of(keysToExclude).noneMatch(k -> k == currentKey));
         }
     }
 

@@ -22,7 +22,6 @@ package org.neo4j.storageengine.api;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
@@ -68,8 +67,8 @@ class LogMetadataProviderImplTest {
 
         // EXPECT
         LogPosition logPosition = closedTransaction.logPosition();
-        assertEquals(version, logPosition.getLogVersion());
-        assertEquals(byteOffset, logPosition.getByteOffset());
+        assertThat(logPosition.getLogVersion()).isEqualTo(version);
+        assertThat(logPosition.getByteOffset()).isEqualTo(byteOffset);
 
         var tail = new EmptyLogTailLogVersionsMetadata() {
             @Override
@@ -92,8 +91,8 @@ class LogMetadataProviderImplTest {
         metadataProvider = newMetadataProvider(tail);
         var lastClosedTransaction = metadataProvider.getHighestGapFreeClosedTransaction();
         logPosition = lastClosedTransaction.logPosition();
-        assertEquals(version, logPosition.getLogVersion());
-        assertEquals(byteOffset, logPosition.getByteOffset());
+        assertThat(logPosition.getLogVersion()).isEqualTo(version);
+        assertThat(logPosition.getByteOffset()).isEqualTo(byteOffset);
     }
 
     @Test
@@ -213,26 +212,26 @@ class LogMetadataProviderImplTest {
     @Test
     void accessCheckpointLogVersion() {
         LogMetadataProviderImpl dataStore = newMetadataProvider();
-        assertEquals(0, dataStore.getCheckpointLogVersion());
-        assertEquals(1, dataStore.incrementAndGetCheckpointLogVersion());
-        assertEquals(2, dataStore.incrementAndGetCheckpointLogVersion());
-        assertEquals(3, dataStore.incrementAndGetCheckpointLogVersion());
-        assertEquals(4, dataStore.incrementAndGetCheckpointLogVersion());
-        assertEquals(5, dataStore.incrementAndGetCheckpointLogVersion());
-        assertEquals(5, dataStore.getCheckpointLogVersion());
-        assertEquals(0, dataStore.getCurrentLogVersion());
+        assertThat(dataStore.getCheckpointLogVersion()).isEqualTo(0);
+        assertThat(dataStore.incrementAndGetCheckpointLogVersion()).isEqualTo(1);
+        assertThat(dataStore.incrementAndGetCheckpointLogVersion()).isEqualTo(2);
+        assertThat(dataStore.incrementAndGetCheckpointLogVersion()).isEqualTo(3);
+        assertThat(dataStore.incrementAndGetCheckpointLogVersion()).isEqualTo(4);
+        assertThat(dataStore.incrementAndGetCheckpointLogVersion()).isEqualTo(5);
+        assertThat(dataStore.getCheckpointLogVersion()).isEqualTo(5);
+        assertThat(dataStore.getCurrentLogVersion()).isEqualTo(0);
     }
 
     @Test
     void checkSetCheckpointLogVersion() {
         LogMetadataProviderImpl dataStore = newMetadataProvider();
-        assertEquals(0, dataStore.getCheckpointLogVersion());
+        assertThat(dataStore.getCheckpointLogVersion()).isEqualTo(0);
         dataStore.setCheckpointLogVersion(123);
-        assertEquals(123, dataStore.getCheckpointLogVersion());
+        assertThat(dataStore.getCheckpointLogVersion()).isEqualTo(123);
 
         dataStore.setCheckpointLogVersion(321);
-        assertEquals(321, dataStore.getCheckpointLogVersion());
-        assertEquals(0, dataStore.getCurrentLogVersion());
+        assertThat(dataStore.getCheckpointLogVersion()).isEqualTo(321);
+        assertThat(dataStore.getCurrentLogVersion()).isEqualTo(0);
     }
 
     @Test
@@ -240,11 +239,10 @@ class LogMetadataProviderImplTest {
         LogMetadataProviderImpl metadataProvider = newMetadataProvider();
         metadataProvider.resetLastClosedTransaction(3, 9, DEFAULT_BOOTSTRAP_VERSION, 4, 5, 6, 7, 8);
 
-        assertEquals(3L, metadataProvider.getHighestGapFreeClosedTransactionId());
-        assertEquals(
-                new ClosedTransactionMetadata(
-                        new TransactionId(3, 9, DEFAULT_BOOTSTRAP_VERSION, 6, 7, 8), new LogPosition(4, 5)),
-                metadataProvider.getHighestGapFreeClosedTransaction());
+        assertThat(metadataProvider.getHighestGapFreeClosedTransactionId()).isEqualTo(3L);
+        assertThat(metadataProvider.getHighestGapFreeClosedTransaction())
+                .isEqualTo(new ClosedTransactionMetadata(
+                        new TransactionId(3, 9, DEFAULT_BOOTSTRAP_VERSION, 6, 7, 8), new LogPosition(4, 5)));
     }
 
     @Test
@@ -267,14 +265,12 @@ class LogMetadataProviderImplTest {
         metadataProvider.transactionCommitted(42, 43, DEFAULT_BOOTSTRAP_VERSION, 6666, BASE_TX_COMMIT_TIMESTAMP, 8);
 
         // THEN
-        assertEquals(
-                new TransactionId(42, 43, DEFAULT_BOOTSTRAP_VERSION, 6666, BASE_TX_COMMIT_TIMESTAMP, 8),
-                metadataProvider.getLastCommittedTransaction());
-        assertEquals(
-                new ClosedTransactionMetadata(
+        assertThat(metadataProvider.getLastCommittedTransaction())
+                .isEqualTo(new TransactionId(42, 43, DEFAULT_BOOTSTRAP_VERSION, 6666, BASE_TX_COMMIT_TIMESTAMP, 8));
+        assertThat(metadataProvider.getHighestGapFreeClosedTransaction())
+                .isEqualTo(new ClosedTransactionMetadata(
                         new TransactionId(40, 41, DEFAULT_BOOTSTRAP_VERSION, 4444, BASE_TX_COMMIT_TIMESTAMP, 7),
-                        new LogPosition(0, LogFormat.V9.getHeaderSize())),
-                metadataProvider.getHighestGapFreeClosedTransaction());
+                        new LogPosition(0, LogFormat.V9.getHeaderSize())));
     }
 
     @Test
@@ -296,14 +292,12 @@ class LogMetadataProviderImplTest {
         metadataProvider.transactionCommitted(39, 40, DEFAULT_BOOTSTRAP_VERSION, 3333, BASE_TX_COMMIT_TIMESTAMP, 9);
 
         // THEN
-        assertEquals(
-                new TransactionId(40, 41, DEFAULT_BOOTSTRAP_VERSION, 4444, BASE_TX_COMMIT_TIMESTAMP, 8),
-                metadataProvider.getLastCommittedTransaction());
-        assertEquals(
-                new ClosedTransactionMetadata(
+        assertThat(metadataProvider.getLastCommittedTransaction())
+                .isEqualTo(new TransactionId(40, 41, DEFAULT_BOOTSTRAP_VERSION, 4444, BASE_TX_COMMIT_TIMESTAMP, 8));
+        assertThat(metadataProvider.getHighestGapFreeClosedTransaction())
+                .isEqualTo(new ClosedTransactionMetadata(
                         new TransactionId(40, 41, DEFAULT_BOOTSTRAP_VERSION, 4444, BASE_TX_COMMIT_TIMESTAMP, 8),
-                        new LogPosition(0, LogFormat.V9.getHeaderSize())),
-                metadataProvider.getHighestGapFreeClosedTransaction());
+                        new LogPosition(0, LogFormat.V9.getHeaderSize())));
     }
 
     @Test
