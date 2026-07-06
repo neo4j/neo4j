@@ -81,6 +81,20 @@ object InternalNotifications {
     "ExhaustiveShortestPathForbiddenNotification",
     "ExternalAuthNotEnabled",
     "FixedLengthRelationshipInShortestPath",
+    "DeprecatedGraphReferenceNotification",
+    "DeprecatedRuntimeNotification",
+    "DeprecatedTextIndexProvider",
+    "DeprecatedIdentifierWhitespaceUnicode",
+    "DeprecatedIdentifierUnicode",
+    "UnsatisfiableRelationshipTypeExpression",
+    "RuntimeUnsatisfiableRelationshipTypeExpression",
+    "RepeatedRelationshipReference",
+    "RepeatedVarLengthRelationshipReference",
+    "DeprecatedConnectComponentsPlannerPreParserOption",
+    "DeprecatedEagerAnalyzerPreParserOption",
+    "RetiredPlannerVersionPreParserOption",
+    "AssignPrivilegeCommandHasNoEffectNotification",
+    "RevokePrivilegeCommandHasNoEffectNotification",
     "GrantRoleCommandHasNoEffectNotification",
     "GrantRoleToAuthRuleCommandHasNoEffectNotification",
     "HomeDatabaseNotPresent",
@@ -233,6 +247,7 @@ case class RepeatedVarLengthRelationshipReference(position: InputPosition, relNa
 
 case class DeprecatedConnectComponentsPlannerPreParserOption(position: InputPosition) extends InternalNotification
 case class DeprecatedEagerAnalyzerPreParserOption(position: InputPosition) extends InternalNotification
+case class RetiredPlannerVersionPreParserOption(position: InputPosition, version: String) extends InternalNotification
 
 case class AuthProviderNotDefined(provider: String) extends InternalNotification
 case class ExternalAuthNotEnabled() extends InternalNotification

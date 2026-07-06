@@ -221,6 +221,11 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             new GqlParams.GqlParam[] {GqlParams.StringParam.valueType},
             "client does not support type",
             NotificationClassification.UNSUPPORTED),
+    STATUS_01N84(
+            "The Cypher planner version { %s } is no longer supported. The default planner version is used instead.",
+            new GqlParams.GqlParam[] {GqlParams.StringParam.value},
+            "unsupported planner version",
+            NotificationClassification.UNSUPPORTED),
 
     STATUS_02000("", "", NotificationClassification.UNKNOWN),
     STATUS_02N42("Unknown GQLSTATUS from old server.", "unknown subcondition", NotificationClassification.UNKNOWN),

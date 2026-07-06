@@ -27,6 +27,11 @@ sealed trait Optimisation
 
 object Optimisation {
   case object MergeLabelInfo extends Optimisation
+
+  // Hardcoded manifest of every optimisation. Add new optimisations here so that the
+  // "top-of-chain planner version supports every optimisation" test can guard against any of them
+  // becoming unreachable (for example, being dropped from the chain when a planner version is retired).
+  val values: Set[Optimisation] = Set(MergeLabelInfo)
 }
 
 // This contains all the optimisations that are available in a given planner version.
@@ -75,12 +80,6 @@ object CypherPlannerVersionWithOptimisations {
   case object V2026_04 extends CypherPlannerVersionWithOptimisations {
     override def introducedOptimisations: Set[Optimisation] = Set.empty
 
-    override def previous: Option[CypherPlannerVersionWithOptimisations] = Some(V2026_03)
-  }
-
-  case object V2026_03 extends CypherPlannerVersionWithOptimisations {
-    override def introducedOptimisations: Set[Optimisation] = Set.empty
-
     override def previous: Option[CypherPlannerVersionWithOptimisations] = None
   }
 
@@ -90,7 +89,11 @@ object CypherPlannerVersionWithOptimisations {
       case CypherPlannerVersionOption.next         => Next
       case CypherPlannerVersionOption.v2026_05     => V2026_05
       case CypherPlannerVersionOption.v2026_04     => V2026_04
-      case CypherPlannerVersionOption.v2026_03     => V2026_03
+      // Retired versions have no optimisations entry of their own and are planned with the default planner.
+      case retired if CypherPlannerVersionOption.isRetired(retired.name) =>
+        fromQueryOption(CypherPlannerVersionOption.default)
+      case other =>
+        throw new IllegalStateException(s"Planner version '${other.name}' has no optimisations mapping")
     }
   }
 

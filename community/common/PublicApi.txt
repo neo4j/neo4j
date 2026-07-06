@@ -192,6 +192,7 @@ org.neo4j.kernel.api.exceptions.Status.Statement::NoApplicableIndex org.neo4j.ke
 org.neo4j.kernel.api.exceptions.Status.Statement::NotSystemDatabaseError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ParameterMissing org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ParameterNotProvided org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::PlannerVersionUnsupportedWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::PropertyNotFound org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RedundantOptionalProcedure org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RedundantOptionalSubquery org.neo4j.kernel.api.exceptions.Status.Statement public static final

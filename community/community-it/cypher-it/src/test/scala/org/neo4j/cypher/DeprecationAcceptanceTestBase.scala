@@ -32,6 +32,7 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N51
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N52
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N60
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N62
+import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N84
 import org.neo4j.gqlstatus.NotificationClassification
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
@@ -61,6 +62,7 @@ import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedWhereVa
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedWhereVariableInRelationshipPattern
 import org.neo4j.notifications.NotificationCodeWithDescription.missingLabel
 import org.neo4j.notifications.NotificationCodeWithDescription.procedureWarning
+import org.neo4j.notifications.NotificationCodeWithDescription.retiredPlannerVersionPreParserOption
 import org.neo4j.notifications.NotificationDetail
 import org.neo4j.notifications.NotificationDetail.deprecatedName
 import org.neo4j.notifications.NotificationDetail.deprecationNotificationDetail
@@ -1254,6 +1256,31 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
           "warn: feature deprecated without replacement. eagerAnalyzer is deprecated and will be removed without a replacement.",
           SeverityLevel.WARNING,
           NotificationClassification.DEPRECATION,
+          position
+        ),
+        testOmittedResult
+      )
+    )
+  }
+
+  test("plannerVersion pre parser option is retired and falls back to default") {
+    val version = "v2026_03"
+    val queries = Seq(s"CYPHER plannerVersion=$version RETURN 42")
+    val position = new InputPosition(7, 1, 8)
+
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      version,
+      position,
+      (pos, ver) => retiredPlannerVersionPreParserOption(pos, ver),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N84.getStatusString,
+          s"warn: unsupported planner version. The Cypher planner version $version is no longer supported. " +
+            "The default planner version is used instead.",
+          SeverityLevel.WARNING,
+          NotificationClassification.UNSUPPORTED,
           position
         ),
         testOmittedResult

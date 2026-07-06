@@ -816,9 +816,18 @@ object CypherPlannerVersionOption extends CypherOptionCompanion[CypherPlannerVer
     v2026_03
   )
 
+  // To retire a planner version, add its case object to this set. The pre-parser will then emit a
+  // RetiredPlannerVersionPreParserOption notification and the query will run with the default planner.
+  val retired: Set[CypherPlannerVersionOption] = Set(v2026_03)
+
+  private val retiredCanonicalNames: Set[String] = retired.map(v => OptionReader.canonical(v.name))
+
+  def isRetired(value: String): Boolean = retiredCanonicalNames.contains(OptionReader.canonical(value))
+
   override def fromValue(input: String): CypherPlannerVersionOption = OptionReader.canonical(input) match {
-    case LATEST_ALIAS => latest
-    case _            => super.fromValue(input)
+    case LATEST_ALIAS              => latest
+    case value if isRetired(value) => default
+    case _                         => super.fromValue(input)
   }
 
   implicit val hasDefault: OptionDefault[CypherPlannerVersionOption] = OptionDefault.create(default)

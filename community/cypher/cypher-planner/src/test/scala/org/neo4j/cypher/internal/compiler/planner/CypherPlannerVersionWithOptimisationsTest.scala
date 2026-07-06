@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations.Experimental
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations.Next
-import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations.V2026_03
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations.V2026_04
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations.V2026_05
 import org.neo4j.cypher.internal.compiler.planner.Optimisation.MergeLabelInfo
@@ -35,7 +34,8 @@ class CypherPlannerVersionWithOptimisationsTest extends CypherPlannerTestSuite {
   }
 
   test("fromQueryOption should convert versions correctly") {
-    CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.v2026_03) shouldEqual V2026_03
+    // v2026_03 is retired, so it resolves to the default planner (V2026_05) rather than its own object.
+    CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.v2026_03) shouldEqual V2026_05
     CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.v2026_04) shouldEqual V2026_04
     CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.v2026_05) shouldEqual V2026_05
     CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.latest) shouldEqual V2026_05
@@ -51,20 +51,19 @@ class CypherPlannerVersionWithOptimisationsTest extends CypherPlannerTestSuite {
         Next,
         V2026_05,
         V2026_04,
-        V2026_03
+        // v2026_03 is retired and resolves to the default planner.
+        V2026_05
       )
   }
 
   test("version chain is properly linked") {
-    V2026_03.previous shouldEqual None
-    V2026_04.previous shouldEqual Some(V2026_03)
+    V2026_04.previous shouldEqual None
     V2026_05.previous shouldEqual Some(V2026_04)
     Next.previous shouldEqual Some(V2026_05)
     Experimental.previous shouldEqual Some(Next)
   }
 
   test("allSupportedOptimisations traverses the version chain correctly") {
-    V2026_03.allSupportedOptimisations shouldBe empty
     V2026_04.allSupportedOptimisations shouldBe empty
     V2026_05.allSupportedOptimisations shouldBe empty
     Next.allSupportedOptimisations shouldBe empty
@@ -83,5 +82,12 @@ class CypherPlannerVersionWithOptimisationsTest extends CypherPlannerTestSuite {
     )
     CypherPlannerVersionWithOptimisations.allSupportedOptimisations(CypherPlannerVersionOption.latest) shouldEqual
       CypherPlannerVersionWithOptimisations.allSupportedOptimisations(CypherPlannerVersionOption.v2026_05)
+  }
+
+  test("the top-of-chain planner version supports every optimisation") {
+    // Experimental is the top of the version chain, so it accumulates every optimisation. If a future
+    // retirement drops a version's optimisations from the chain (or a new optimisation is never wired into a
+    // version), this fails and forces the optimisation to be carried over.
+    Experimental.allSupportedOptimisations shouldEqual Optimisation.values
   }
 }

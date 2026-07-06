@@ -91,6 +91,7 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.redundantO
 import static org.neo4j.notifications.NotificationCodeWithDescription.repeatedRelationshipReference;
 import static org.neo4j.notifications.NotificationCodeWithDescription.repeatedVarLengthRelationshipReference;
 import static org.neo4j.notifications.NotificationCodeWithDescription.requestedTopologyMatchedCurrentTopology;
+import static org.neo4j.notifications.NotificationCodeWithDescription.retiredPlannerVersionPreParserOption;
 import static org.neo4j.notifications.NotificationCodeWithDescription.runtimeUnsupported;
 import static org.neo4j.notifications.NotificationCodeWithDescription.serverAlreadyCordoned;
 import static org.neo4j.notifications.NotificationCodeWithDescription.serverAlreadyEnabled;
@@ -1497,6 +1498,31 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
+    void shouldConstructNotificationsFor_RETIRED_PLANNER_VERSION_PRE_PARSER_OPTION() {
+        NotificationImplementation notification = retiredPlannerVersionPreParserOption(InputPosition.empty, "v2026_03");
+
+        verifyNotification(
+                notification,
+                "The requested planner version is no longer supported.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.PlannerVersionUnsupportedWarning",
+                "The Cypher planner version v2026_03 is no longer supported. The default planner version is used instead.",
+                NotificationCategory.UNSUPPORTED,
+                NotificationClassification.UNSUPPORTED,
+                "01N84",
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.UNSUPPORTED,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("value", "v2026_03"))
+                        .asMap(),
+                "warn: unsupported planner version. The Cypher planner version v2026_03 is no longer supported. "
+                        + "The default planner version is used instead.");
+    }
+
+    @Test
     void shouldConstructNotificationsFor_AUTH_PROVIDER_NOT_DEFINED() {
         NotificationImplementation notification = authProviderNotDefined(InputPosition.empty, "foo");
 
@@ -2427,8 +2453,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            20, 79, -17, 97, -97, 117, -92, -77, 59, -39, 89, -35, -103, 10, -74, 65, -114, 57, 43, 45, -33, -76, -74,
-            -42, -107, -111, 97, 41, 56, -63, 27, 119
+            19, 119, 23, -22, 90, -18, 7, -113, 64, 31, 65, 4, -109, 21, 122, -67, 99, 17, 123, -104, 56, -44, 115, -86,
+            55, 116, -86, 112, 61, -89, 72, -93
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

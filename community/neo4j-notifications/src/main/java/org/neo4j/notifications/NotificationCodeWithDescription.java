@@ -307,6 +307,11 @@ public enum NotificationCodeWithDescription {
                     + "The option is ignored, eagerness analysis is systematically performed on the logical plan "
                     + "regardless of the value provided."),
 
+    RETIRED_PLANNER_VERSION_PRE_PARSER_OPTION(
+            Status.Statement.PlannerVersionUnsupportedWarning,
+            GqlStatusInfoCodes.STATUS_01N84,
+            "The Cypher planner version %s is no longer supported. The default planner version is used instead."),
+
     COMMAND_HAS_NO_EFFECT_ASSIGN_PRIVILEGE(
             Status.Security.CommandHasNoEffect,
             GqlStatusInfoCodes.STATUS_00N70,
@@ -897,6 +902,12 @@ public enum NotificationCodeWithDescription {
     public static NotificationImplementation deprecatedEagerAnalyzerPreParserOption(InputPosition position) {
         return DEPRECATED_EAGER_ANALYZER_PRE_PARSER_OPTION.notificationWithParameters(
                 position, new String[] {}, new String[] {"eagerAnalyzer"});
+    }
+
+    public static NotificationImplementation retiredPlannerVersionPreParserOption(
+            InputPosition position, String version) {
+        return RETIRED_PLANNER_VERSION_PRE_PARSER_OPTION.notificationWithParameters(
+                position, new String[] {version}, new String[] {version});
     }
 
     public static NotificationImplementation authProviderNotDefined(InputPosition position, String provider) {

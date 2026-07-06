@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.notification.DeprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.cypher.internal.notification.DeprecatedEagerAnalyzerPreParserOption
 import org.neo4j.cypher.internal.notification.RecordingNotificationLogger
+import org.neo4j.cypher.internal.notification.RetiredPlannerVersionPreParserOption
 import org.neo4j.cypher.internal.notification.devNullLogger
 import org.neo4j.cypher.internal.options.CypherRuntimeOption.slotted
 import org.neo4j.cypher.internal.options.CypherVersionOption.cypher5
@@ -323,6 +324,74 @@ class PreParserTest extends CommunityCypherTestSuite {
     preParsedQuery.notifications shouldEqual List(
       DeprecatedEagerAnalyzerPreParserOption(InputPosition(7, 1, 8))
     )
+  }
+
+  test("should issue a notification for retired planner version v2026_03 and remap to default") {
+    val notificationLogger = new RecordingNotificationLogger()
+    val preParsedQuery = preParser.preParseQuery(
+      "CYPHER plannerVersion=v2026_03 RETURN 42",
+      notificationLogger,
+      CypherVersion.Legacy.legacyVersion()
+    )
+    notificationLogger.notifications shouldEqual Set(
+      RetiredPlannerVersionPreParserOption(InputPosition(7, 1, 8), "v2026_03")
+    )
+    preParsedQuery.notifications shouldEqual List(
+      RetiredPlannerVersionPreParserOption(InputPosition(7, 1, 8), "v2026_03")
+    )
+    preParsedQuery.options.queryOptions.plannerVersionOption shouldBe CypherPlannerVersionOption.default
+  }
+
+  test("should issue a notification for retired planner version with case-insensitive option key") {
+    val notificationLogger = new RecordingNotificationLogger()
+    val preParsedQuery = preParser.preParseQuery(
+      "CYPHER PLANNERVERSION=v2026_03 RETURN 42",
+      notificationLogger,
+      CypherVersion.Legacy.legacyVersion()
+    )
+    notificationLogger.notifications shouldEqual Set(
+      RetiredPlannerVersionPreParserOption(InputPosition(7, 1, 8), "v2026_03")
+    )
+    preParsedQuery.notifications shouldEqual List(
+      RetiredPlannerVersionPreParserOption(InputPosition(7, 1, 8), "v2026_03")
+    )
+    preParsedQuery.options.queryOptions.plannerVersionOption shouldBe CypherPlannerVersionOption.latest
+  }
+
+  test("should issue a notification for retired planner version with case-insensitive option value") {
+    val notificationLogger = new RecordingNotificationLogger()
+    val preParsedQuery = preParser.preParseQuery(
+      "CYPHER plannerVersion=V2026_03 RETURN 42",
+      notificationLogger,
+      CypherVersion.Legacy.legacyVersion()
+    )
+    notificationLogger.notifications shouldEqual Set(
+      RetiredPlannerVersionPreParserOption(InputPosition(7, 1, 8), "V2026_03")
+    )
+    preParsedQuery.notifications shouldEqual List(
+      RetiredPlannerVersionPreParserOption(InputPosition(7, 1, 8), "V2026_03")
+    )
+    preParsedQuery.options.queryOptions.plannerVersionOption shouldBe CypherPlannerVersionOption.latest
+  }
+
+  test("should not issue a retired planner version notification for non-retired versions") {
+    val nonRetiredVersions = Seq("v2026_04", "experimental", "next", "latest")
+    nonRetiredVersions.foreach { version =>
+      withClue(s"plannerVersion=$version") {
+        val notificationLogger = new RecordingNotificationLogger()
+        val preParsedQuery = preParser.preParseQuery(
+          s"CYPHER plannerVersion=$version RETURN 42",
+          notificationLogger,
+          CypherVersion.Legacy.legacyVersion()
+        )
+        notificationLogger.notifications.collect {
+          case n: RetiredPlannerVersionPreParserOption => n
+        } shouldBe empty
+        preParsedQuery.notifications.collect {
+          case n: RetiredPlannerVersionPreParserOption => n
+        } shouldBe empty
+      }
+    }
   }
 
   test("should not allow multiple conflicting replan strategies") {

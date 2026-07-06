@@ -86,6 +86,7 @@ import org.neo4j.cypher.internal.notification.RelationshipIndexLookupUnfulfillab
 import org.neo4j.cypher.internal.notification.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.notification.RepeatedVarLengthRelationshipReference
 import org.neo4j.cypher.internal.notification.RequestedTopologyMatchedCurrentTopology
+import org.neo4j.cypher.internal.notification.RetiredPlannerVersionPreParserOption
 import org.neo4j.cypher.internal.notification.RevokePrivilegeCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.notification.RevokeRoleCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.notification.RevokeRoleFromAuthRuleCommandHasNoEffectNotification
@@ -482,6 +483,12 @@ object NotificationWrapping {
       // This notification is generated from the pre-parser and thus should not be offset.
       NotificationCodeWithDescription
         .deprecatedEagerAnalyzerPreParserOption(position.asInputPosition)
+
+    case RetiredPlannerVersionPreParserOption(position, version) =>
+      // Not using .withOffset(offset) is intentional.
+      // This notification is generated from the pre-parser and thus should not be offset.
+      NotificationCodeWithDescription
+        .retiredPlannerVersionPreParserOption(position.asInputPosition, version)
 
     case DeprecatedOptionInOptionMap(oldOption, newOption) =>
       NotificationCodeWithDescription.deprecatedOptionInOptionMap(oldOption, newOption)

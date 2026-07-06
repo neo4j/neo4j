@@ -31,11 +31,13 @@ import org.neo4j.cypher.internal.notification.DeprecatedConnectComponentsPlanner
 import org.neo4j.cypher.internal.notification.DeprecatedEagerAnalyzerPreParserOption
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
+import org.neo4j.cypher.internal.notification.RetiredPlannerVersionPreParserOption
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherPlanMode
+import org.neo4j.cypher.internal.options.CypherPlannerVersionOption
 import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherVersionOption
@@ -281,6 +283,8 @@ class PreParser(
           Some(DeprecatedConnectComponentsPlannerPreParserOption(option.position))
         case CypherEagerAnalyzerOption.key =>
           Some(DeprecatedEagerAnalyzerPreParserOption(option.position))
+        case CypherPlannerVersionOption.key if CypherPlannerVersionOption.isRetired(option.value) =>
+          Some(RetiredPlannerVersionPreParserOption(option.position, option.value))
         case _ =>
           None
       }

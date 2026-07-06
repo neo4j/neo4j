@@ -330,6 +330,11 @@ public interface Status {
                 "This query is not supported by the chosen runtime.",
                 SeverityLevel.WARNING,
                 NotificationCategory.UNSUPPORTED),
+        PlannerVersionUnsupportedWarning(
+                ClientNotification,
+                "The requested planner version is no longer supported.",
+                SeverityLevel.WARNING,
+                NotificationCategory.UNSUPPORTED),
         FeatureDeprecationWarning(
                 ClientNotification,
                 "This feature is deprecated and will be removed in future versions.",
