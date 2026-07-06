@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.Node
 import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.TraverseAction
+import org.neo4j.cypher.internal.ast.WindowsSemanticErrorDefSeqStringSafe
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
@@ -64,6 +65,8 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes
  * [[org.neo4j.cypher.internal.expressions.FunctionInvocation]] nodes.
  */
 class AdministrationCommandResolvedFunctionSemanticAnalysisTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  implicit val windowsSafe: WindowsSemanticErrorDefSeqStringSafe.type = WindowsSemanticErrorDefSeqStringSafe
 
   private val p = InputPosition.withLength(13, 12, 11, 10)
   private val pos1 = InputPosition(2, 1, 3).withInputLength(2)
