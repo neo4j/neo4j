@@ -100,7 +100,7 @@ class QueryExpressionStringifier(
           case PrefixSeekRangeWrapper(PrefixRange(expression)) =>
             s"${propRef(propNames.head)} STARTS WITH ${stringify(expression)}"
           case InequalitySeekRangeWrapper(range) =>
-            rangeStr(range, propRef(propNames.head), stringify).toString
+            rangeStr(range, propRef(propNames.head), stringify)
           case PointBoundingBoxSeekRangeWrapper(PointBoundingBoxRange(lowerLeft, upperRight)) =>
             val llStr = stringify(lowerLeft)
             val urStr = stringify(upperRight)
@@ -143,6 +143,36 @@ class QueryExpressionStringifier(
     range: InequalitySeekRange[Expression],
     propName: String,
     stringifier: Expression => String
+  ): String = {
+    // One bound rendered as a complete predicate, e.g. "n.prop >= 5".
+    def boundPredicate(bound: Bound[Expression], exclusiveSign: String): String = {
+      val (sign, value) = boundStringifier(bound, exclusiveSign, stringifier)
+      s"$propName $sign $value"
+    }
+
+    // chained form holds one lower & one upper bound, so can only render a range with at most two bounds.
+    // larger ranges must emit every bound as a conjunction, otherwise the extra bounds are silently dropped.
+    range match {
+      case RangeGreaterThan(bounds) if bounds.tail.size <= 1 => chained(range, propName, stringifier).toString
+      case RangeGreaterThan(bounds) => bounds.toIndexedSeq.map(boundPredicate(_, ">")).mkString(" AND ")
+      case RangeLessThan(bounds) if bounds.tail.size <= 1 => chained(range, propName, stringifier).toString
+      case RangeLessThan(bounds) => bounds.toIndexedSeq.map(boundPredicate(_, "<")).mkString(" AND ")
+      case RangeBetween(gt, lt) if gt.bounds.tail.isEmpty && lt.bounds.tail.isEmpty =>
+        chained(range, propName, stringifier).toString
+      case RangeBetween(gt, lt) =>
+        (gt.bounds.toIndexedSeq.map(boundPredicate(_, ">")) ++
+          lt.bounds.toIndexedSeq.map(boundPredicate(_, "<"))).mkString(" AND ")
+    }
+  }
+
+  /**
+   * Renders the chained comparison form ("n.prop > v", "v0 < n.prop > v1", "lo < n.prop < hi").
+   * Valid only for ranges of at most two bounds.
+   */
+  private def chained(
+    range: InequalitySeekRange[Expression],
+    propName: String,
+    stringifier: Expression => String
   ): RangeStr = {
     range match {
       case RangeGreaterThan(bounds) =>
@@ -164,8 +194,12 @@ class QueryExpressionStringifier(
           RangeStr(Some(pre.swap), propName, post)
         }
       case RangeBetween(greaterThan, lessThan) =>
-        val gt = rangeStr(greaterThan, propName, stringifier)
-        val lt = rangeStr(lessThan, propName, stringifier)
+        require(
+          greaterThan.bounds.tail.isEmpty && lessThan.bounds.tail.isEmpty,
+          "Chained supports only single-bound sub-ranges. Multi-bound ranges must use the conjunction form."
+        )
+        val gt = chained(greaterThan, propName, stringifier)
+        val lt = chained(lessThan, propName, stringifier)
         val pre: (String, String) = (gt.post._2, switchInequalitySignString(gt.post._1))
         RangeStr(Some(pre), propName, lt.post)
     }

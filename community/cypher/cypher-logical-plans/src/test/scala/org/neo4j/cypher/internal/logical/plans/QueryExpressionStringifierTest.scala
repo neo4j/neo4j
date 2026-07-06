@@ -273,6 +273,82 @@ class QueryExpressionStringifierTest extends CypherFunSuite with AstConstruction
     defaultStringifier(expr, Seq("prop")) should equal("10 > prop < \"foo\"")
   }
 
+  test("should stringify RangeBetween with multi-bound sub-ranges by emitting all bounds (PlanBuilder)") {
+    val gt = RangeGreaterThan(NonEmptyList(InclusiveBound(literalInt(0)), InclusiveBound(literalInt(5))))
+    val lt = RangeLessThan(NonEmptyList(ExclusiveBound(literalInt(10)), ExclusiveBound(literalInt(100))))
+    val expr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeBetween(gt, lt))(pos))
+    defaultStringifier(expr, Seq("prop")) should equal("prop >= 0 AND prop >= 5 AND prop < 10 AND prop < 100")
+  }
+
+  test("should stringify RangeBetween with multi-bound sub-ranges by emitting all bounds (Cypher)") {
+    val gt = RangeGreaterThan(NonEmptyList(InclusiveBound(literalInt(0)), InclusiveBound(literalInt(5))))
+    val lt = RangeLessThan(NonEmptyList(ExclusiveBound(literalInt(10)), ExclusiveBound(literalInt(100))))
+    val expr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeBetween(gt, lt))(pos))
+    cypherStringifier(expr, Seq("prop")) should equal("prop >= 0 AND prop >= 5 AND prop < 10 AND prop < 100")
+  }
+
+  test("should stringify RangeGreaterThan with three bounds by emitting all bounds") {
+    val range = RangeGreaterThan(NonEmptyList(
+      ExclusiveBound(literalInt(0)),
+      ExclusiveBound(literalInt(5)),
+      ExclusiveBound(literalInt(8))
+    ))
+    val expr = RangeQueryExpression(InequalitySeekRangeWrapper(range)(pos))
+    defaultStringifier(expr, Seq("prop")) should equal("prop > 0 AND prop > 5 AND prop > 8")
+  }
+
+  test("should stringify RangeLessThan with three bounds by emitting all bounds") {
+    val range = RangeLessThan(NonEmptyList(
+      ExclusiveBound(literalInt(10)),
+      ExclusiveBound(literalInt(100)),
+      ExclusiveBound(literalInt(1000))
+    ))
+    val expr = RangeQueryExpression(InequalitySeekRangeWrapper(range)(pos))
+    defaultStringifier(expr, Seq("prop")) should equal("prop < 10 AND prop < 100 AND prop < 1000")
+  }
+
+  test(
+    "should stringify RangeBetween with a multi-bound sub-range and a single-bound sub-range by emitting all bounds"
+  ) {
+    val gt = RangeGreaterThan(NonEmptyList(InclusiveBound(literalInt(0)), InclusiveBound(literalInt(5))))
+    val lt = RangeLessThan(NonEmptyList(ExclusiveBound(literalInt(10))))
+    val expr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeBetween(gt, lt))(pos))
+    defaultStringifier(expr, Seq("prop")) should equal("prop >= 0 AND prop >= 5 AND prop < 10")
+  }
+
+  test("inequality-range rendering is identical across dialects (PlanBuilder == Cypher)") {
+    // guard again future dialect-dependent changes to range rendering
+    val ranges: Seq[InequalitySeekRange[Expression]] = Seq(
+      // >2-bound conjunction branch (RangeGreaterThan / RangeLessThan)
+      RangeGreaterThan(NonEmptyList(
+        ExclusiveBound(literalInt(0)),
+        ExclusiveBound(literalInt(5)),
+        ExclusiveBound(literalInt(8))
+      )),
+      RangeLessThan(NonEmptyList(
+        ExclusiveBound(literalInt(10)),
+        ExclusiveBound(literalInt(100)),
+        ExclusiveBound(literalInt(1000))
+      )),
+      // >2-bound conjunction branch (RangeBetween with a multi-bound sub-range)
+      RangeBetween(
+        RangeGreaterThan(NonEmptyList(InclusiveBound(literalInt(0)), InclusiveBound(literalInt(5)))),
+        RangeLessThan(NonEmptyList(ExclusiveBound(literalInt(10))))
+      ),
+      // chained <=2-bound path
+      RangeBetween(
+        RangeGreaterThan(NonEmptyList(ExclusiveBound(literalInt(10)))),
+        RangeLessThan(NonEmptyList(ExclusiveBound(literalInt(20))))
+      )
+    )
+    ranges.foreach { range =>
+      val expr = RangeQueryExpression(InequalitySeekRangeWrapper(range)(pos))
+      withClue(range.toString) {
+        defaultStringifier(expr, Seq("prop")) should equal(cypherStringifier(expr, Seq("prop")))
+      }
+    }
+  }
+
   // Tests with entity parameter
   test("should stringify SingleQueryExpression with entity") {
     val expr = SingleQueryExpression(parameter("param", CTAny))
