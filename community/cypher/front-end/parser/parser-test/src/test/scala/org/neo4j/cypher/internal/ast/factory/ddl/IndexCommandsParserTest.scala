@@ -4065,7 +4065,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       case Cypher5 => _.withOldSyntax("Invalid index type b-tree, use range, point or text index instead.")
       case _ if failAsCreateCommand =>
         _.withSyntaxErrorContaining(
-          "Invalid input 'BTREE': expected 'ALIAS', 'CONSTRAINT', 'DATABASE', 'COMPOSITE DATABASE', 'IMMUTABLE', 'INDEX', " +
+          "Invalid input 'BTREE': expected 'ALIAS', 'CONSTRAINT', 'DATABASE', 'COMPOSITE DATABASE', 'REPLICA DATABASE', 'IMMUTABLE', 'INDEX', " +
             "'FULLTEXT INDEX', 'LOOKUP INDEX', 'POINT INDEX', 'RANGE INDEX', 'TEXT INDEX', 'VECTOR INDEX', 'ROLE', 'AUTH RULE' or 'USER'"
         )
       case _ => // Since BTREE is no longer part of CREATE INDEX we fall back to regular Cypher CREATE (`CREATE btree=()-[]-()`)

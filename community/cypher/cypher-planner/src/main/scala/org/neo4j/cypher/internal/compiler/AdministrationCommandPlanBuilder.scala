@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.CreateReplicaDatabase
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateUser
@@ -1372,7 +1373,46 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             dbName.asLegacyName,
             options,
             ifExistsDo,
-            isComposite = false,
+            plans.StandardDatabase,
+            topology,
+            cypherVersion
+          ))
+          .map(plans.EnsureValidNumberOfDatabases(_))
+          .map(wrapInWait(_, dbName, waitUntilComplete))
+          .map(plans.LogSystemCommand(_, prettifier.asString(c)))
+
+      // CREATE [OR REPLACE] REPLICA DATABASE foo [IF NOT EXISTS]
+      case c @ CreateReplicaDatabase(dbName, ifExistsDo, options, waitUntilComplete, topology, cypherVersion) =>
+        Some(plans.AssertManagementActionNotBlocked(c.name, CreateDatabaseAction))
+          .map(plans.AssertAllowedDbmsActions(_, CreateDatabaseAction))
+          .flatMap(canCreateCheck =>
+            ifExistsDo match {
+              case IfExistsReplace =>
+                Some(plans.AssertCanDropDatabase(
+                  canCreateCheck,
+                  dbName,
+                  DropDatabaseAction
+                ))
+                  .map(plans.AssertNotShardedDatabase(_, dbName, "DROP DATABASE", "delete"))
+                  .map(plans.EnsureDatabaseSafeToDelete(_, dbName, Restrict))
+                  .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false, Restrict))
+              case IfExistsDoNothing =>
+                Some(canCreateCheck)
+                  .map(plans.DoNothingIfDatabaseExists(
+                    _,
+                    "CREATE REPLICA DATABASE",
+                    dbName
+                  ))
+              case _ =>
+                Some(canCreateCheck)
+            }
+          ).map(plans.EnsureNameIsNotAmbiguous(_, dbName.asLegacyName, isComposite = false))
+          .map(plans.CreateDatabase(
+            _,
+            dbName.asLegacyName,
+            options,
+            ifExistsDo,
+            plans.ReplicaDatabase,
             topology,
             cypherVersion
           ))
@@ -1409,7 +1449,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             dbName.asLegacyName,
             options,
             ifExistsDo,
-            isComposite = true,
+            plans.CompositeDatabase,
             topology = None,
             cypherVersion
           ))

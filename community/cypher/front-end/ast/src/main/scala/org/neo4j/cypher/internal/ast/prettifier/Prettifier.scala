@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.ast.CreateFulltextIndex
 import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.CreateReplicaDatabase
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateSingleLabelPropertyIndex
 import org.neo4j.cypher.internal.ast.CreateUser
@@ -878,6 +879,16 @@ case class Prettifier(
           case _                                         => ""
         }
         s"${x.name} ${Prettifier.escapeDatabaseName(dbName)}$ifExists$maybeCypherVersion$maybeTopologyString$maybeShardString$formattedOptions${waitUntilComplete.name}"
+
+      case x @ CreateReplicaDatabase(dbName, ifExistsDo, options, waitUntilComplete, topology, defaultCypherVersion) =>
+        val formattedOptions = stringifyOptions(options)(expr)
+        val maybeTopologyString = topology.map(Prettifier.extractTopology).getOrElse("")
+        val maybeCypherVersion = defaultCypherVersion.map(cv => s" DEFAULT LANGUAGE ${cv.description}").getOrElse("")
+        val ifExists = ifExistsDo match {
+          case IfExistsDoNothing | IfExistsInvalidSyntax => " IF NOT EXISTS"
+          case _                                         => ""
+        }
+        s"${x.name} ${Prettifier.escapeDatabaseName(dbName)}$ifExists$maybeCypherVersion$maybeTopologyString$formattedOptions${waitUntilComplete.name}"
 
       case x @ CreateCompositeDatabase(name, ifExistsDo, options, waitUntilComplete, defaultCypherVersion) =>
         val formattedOptions = stringifyOptions(options)(expr)

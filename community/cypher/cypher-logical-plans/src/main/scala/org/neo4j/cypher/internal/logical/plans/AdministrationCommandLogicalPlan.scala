@@ -641,6 +641,15 @@ abstract class CreateDatabasePlan(source: AdministrationCommandLogicalPlan)(impl
   def databaseName: Either[String, Parameter]
 }
 
+sealed trait CreateDatabaseType {
+  def isComposite: Boolean = this == CompositeDatabase
+  def isReplica: Boolean = this == ReplicaDatabase
+}
+
+case object StandardDatabase extends CreateDatabaseType
+case object CompositeDatabase extends CreateDatabaseType
+case object ReplicaDatabase extends CreateDatabaseType
+
 case class CreateShardedDatabase(
   source: AdministrationCommandLogicalPlan,
   databaseName: Either[String, Parameter],
@@ -655,7 +664,7 @@ case class CreateDatabase(
   databaseName: Either[String, Parameter],
   options: Options,
   ifExistsDo: IfExistsDo,
-  isComposite: Boolean,
+  databaseType: CreateDatabaseType,
   topology: Option[Topology],
   defaultLanguageVersion: Option[CypherVersion]
 )(implicit idGen: IdGen) extends CreateDatabasePlan(source)

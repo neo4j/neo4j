@@ -980,6 +980,7 @@ createCommand
       | createCompositeDatabase
       | createConstraint
       | createDatabase
+      | createReplicaDatabase
       | createIndex
       | createRole
       | createUser
@@ -1958,6 +1959,10 @@ createCompositeDatabase
 
 createDatabase
    : DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)? (SET? defaultLanguageSpecification)? (topology | shards)? commandOptions? waitClause?
+   ;
+
+createReplicaDatabase
+   : REPLICA DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)? (SET? defaultLanguageSpecification)? topology? commandOptions? waitClause?
    ;
 
 shards

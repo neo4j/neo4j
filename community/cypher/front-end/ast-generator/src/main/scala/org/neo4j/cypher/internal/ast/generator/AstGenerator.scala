@@ -101,6 +101,7 @@ import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.CreateReplicaDatabase
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateUser
@@ -4123,6 +4124,15 @@ class AstGenerator(
     defaultLanguageVersion <- option(_defaultLanguage)
   } yield CreateCompositeDatabase(dbName, ifExistsDo, options, wait, defaultLanguageVersion)(pos)
 
+  def _createReplicaDatabase: Gen[CreateReplicaDatabase] = for {
+    dbName <- _databaseNameNoNamespace
+    ifExistsDo <- _ifExistsDo
+    wait <- _waitUntilComplete
+    options <- _optionsMapAsEitherOrNone
+    topology <- option(_topology)
+    defaultLanguageVersion <- option(_defaultLanguage)
+  } yield CreateReplicaDatabase(dbName, ifExistsDo, options, wait, topology, defaultLanguageVersion)(pos)
+
   def _dropDatabase: Gen[DropDatabase] = for {
     dbName <- _databaseName
     ifExists <- boolean
@@ -4170,14 +4180,27 @@ class AstGenerator(
     wait <- _waitUntilComplete
   } yield StopDatabase(dbName, wait)(pos)
 
-  def _multiDatabaseCommand: Gen[AdministrationCommand] = oneOf(
-    _createDatabase,
-    _createCompositeDatabase,
-    _dropDatabase,
-    _alterDatabase,
-    _startDatabase,
-    _stopDatabase
-  )
+  def _multiDatabaseCommand: Gen[AdministrationCommand] =
+    if (usesCypher5) {
+      oneOf(
+        _createDatabase,
+        _createCompositeDatabase,
+        _dropDatabase,
+        _alterDatabase,
+        _startDatabase,
+        _stopDatabase
+      )
+    } else {
+      oneOf(
+        _createDatabase,
+        _createCompositeDatabase,
+        _createReplicaDatabase,
+        _dropDatabase,
+        _alterDatabase,
+        _startDatabase,
+        _stopDatabase
+      )
+    }
 
   def _access: Gen[Access] = for {
     access <- oneOf(ReadOnlyAccess, ReadWriteAccess)

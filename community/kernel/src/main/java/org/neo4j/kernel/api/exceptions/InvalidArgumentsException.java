@@ -350,6 +350,14 @@ public class InvalidArgumentsException extends GqlException implements Status.Ha
         return invalidInput(input, key, List.of(expectedType), oldMsg);
     }
 
+    public static InvalidArgumentsException missingReplicaConfigForReplicaDatabase() {
+        var message = "CREATE REPLICA DATABASE requires 'replicaConfig' in OPTIONS.";
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N06)
+                .withParam(GqlParams.ListParam.inputList, List.of("replicaConfig"))
+                .build();
+        return new InvalidArgumentsException(gql, message);
+    }
+
     public static InvalidArgumentsException invalidStringOption(String operation, String key, AnyValue input) {
         var oldMsg = String.format("Could not %s with specified %s '%s', String expected.", operation, key, input);
         return invalidInput(input, key, List.of("STRING"), oldMsg);

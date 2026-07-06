@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.CreateReplicaDatabase
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.DatabaseName
@@ -522,6 +523,20 @@ trait DdlCreateBuilder extends Cypher25ParserListener {
       astOpt[Topology](ctx.topology()),
       astOpt[CypherVersion](ctx.defaultLanguageSpecification()),
       astOpt[ShardDefinition](ctx.shards())
+    )(pos(parent))
+  }
+
+  final override def exitCreateReplicaDatabase(
+    ctx: Cypher25Parser.CreateReplicaDatabaseContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+    ctx.ast = CreateReplicaDatabase(
+      ctx.symbolicAliasNameOrParameter().ast(),
+      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
+      astOpt[Options](ctx.commandOptions(), NoOptions),
+      astOpt[WaitUntilComplete](ctx.waitClause(), NoWait()(InputPosition.NONE)),
+      astOpt[Topology](ctx.topology()),
+      astOpt[CypherVersion](ctx.defaultLanguageSpecification())
     )(pos(parent))
   }
 

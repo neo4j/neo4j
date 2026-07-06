@@ -751,6 +751,8 @@ public interface Cypher25ParserListener extends ParseTreeListener {
 
     void exitCreateDatabase(Cypher25Parser.CreateDatabaseContext ctx);
 
+    void exitCreateReplicaDatabase(Cypher25Parser.CreateReplicaDatabaseContext ctx);
+
     void exitShards(Cypher25Parser.ShardsContext ctx);
 
     void exitGraphShard(Cypher25Parser.GraphShardContext ctx);

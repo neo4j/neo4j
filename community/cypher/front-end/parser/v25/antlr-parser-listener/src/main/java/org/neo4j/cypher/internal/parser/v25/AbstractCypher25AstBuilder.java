@@ -580,6 +580,8 @@ public abstract class AbstractCypher25AstBuilder implements Cypher25ParserListen
             case Cypher25Parser.RULE_createCompositeDatabase ->
                 exitCreateCompositeDatabase((Cypher25Parser.CreateCompositeDatabaseContext) ctx);
             case Cypher25Parser.RULE_createDatabase -> exitCreateDatabase((Cypher25Parser.CreateDatabaseContext) ctx);
+            case Cypher25Parser.RULE_createReplicaDatabase ->
+                exitCreateReplicaDatabase((Cypher25Parser.CreateReplicaDatabaseContext) ctx);
             case Cypher25Parser.RULE_shards -> exitShards((Cypher25Parser.ShardsContext) ctx);
             case Cypher25Parser.RULE_graphShard -> exitGraphShard((Cypher25Parser.GraphShardContext) ctx);
             case Cypher25Parser.RULE_propertyShard -> exitPropertyShard((Cypher25Parser.PropertyShardContext) ctx);

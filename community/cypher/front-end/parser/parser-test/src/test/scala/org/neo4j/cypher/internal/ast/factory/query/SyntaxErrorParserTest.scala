@@ -72,7 +72,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
       // ≥ Cypher25
       case _ => (
           "",
-          "a graph pattern, 'ALIAS', 'CONSTRAINT', 'DATABASE', 'COMPOSITE DATABASE', 'IMMUTABLE', 'INDEX', 'FULLTEXT INDEX', 'LOOKUP INDEX', 'POINT INDEX', 'RANGE INDEX', 'TEXT INDEX', 'VECTOR INDEX', 'OR REPLACE', 'ROLE', 'AUTH RULE' or 'USER'",
+          "a graph pattern, 'ALIAS', 'CONSTRAINT', 'DATABASE', 'COMPOSITE DATABASE', 'REPLICA DATABASE', 'IMMUTABLE', 'INDEX', 'FULLTEXT INDEX', 'LOOKUP INDEX', 'POINT INDEX', 'RANGE INDEX', 'TEXT INDEX', 'VECTOR INDEX', 'OR REPLACE', 'ROLE', 'AUTH RULE' or 'USER'",
           6
         )
     })

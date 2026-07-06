@@ -158,6 +158,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowRoles
 import org.neo4j.cypher.internal.logical.plans.ShowServers
 import org.neo4j.cypher.internal.logical.plans.ShowSupportedPrivileges
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
+import org.neo4j.cypher.internal.logical.plans.StandardDatabase
 import org.neo4j.cypher.internal.logical.plans.StartDatabase
 import org.neo4j.cypher.internal.logical.plans.StopDatabase
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
@@ -806,7 +807,7 @@ class AdminLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
   test("Database commands") {
     assertGood(
       attach(
-        CreateDatabase(privLhsLP, util.Left("db1"), NoOptions, IfExistsDoNothing, isComposite = false, None, None),
+        CreateDatabase(privLhsLP, util.Left("db1"), NoOptions, IfExistsDoNothing, StandardDatabase, None, None),
         1.0
       ),
       adminPlanDescription
@@ -1021,7 +1022,7 @@ class AdminLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           util.Left("db1"),
           NoOptions,
           IfExistsDoNothing,
-          isComposite = false,
+          StandardDatabase,
           None,
           None
         )),

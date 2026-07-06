@@ -1953,6 +1953,33 @@ final case class CreateDatabase(
       shards.map(_.semanticCheck(name, "create", position, expectShard = true)).getOrElse(success)
 }
 
+final case class CreateReplicaDatabase(
+  dbName: DatabaseName,
+  ifExistsDo: IfExistsDo,
+  options: Options,
+  waitUntilComplete: WaitUntilComplete,
+  topology: Option[Topology],
+  defaultLanguage: Option[CypherVersion]
+)(val position: InputPosition)
+    extends WaitableAdministrationCommand with TopologyCheck {
+
+  override def name: String = ifExistsDo match {
+    case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE REPLICA DATABASE"
+    case _                                       => "CREATE REPLICA DATABASE"
+  }
+
+  override def semanticCheck: SemanticCheck =
+    (ifExistsDo match {
+      case IfExistsInvalidSyntax =>
+        val name = Prettifier.escapeDatabaseName(dbName)
+        SemanticCheck.error(SemanticError.bothOrReplaceAndIfNotExists("database", name, position))
+      case _ =>
+        super.semanticCheck chain
+          SemanticState.recordCurrentScope(this)
+    }) chain topologyCheck(topology, name, "create", position) chain
+      defaultLanguageVersionCheck(defaultLanguage, name)
+}
+
 case class Topology(primaries: Option[Either[Int, Parameter]], secondaries: Option[Either[Int, Parameter]])
 
 case class ShardDefinition(
