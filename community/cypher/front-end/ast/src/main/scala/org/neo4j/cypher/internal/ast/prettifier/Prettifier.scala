@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AuthRuleCondition
 import org.neo4j.cypher.internal.ast.AuthRuleEnabled
 import org.neo4j.cypher.internal.ast.AuthRuleSetClause
+import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CommaSeparatedNames
 import org.neo4j.cypher.internal.ast.CommandClauseNames
@@ -1178,6 +1179,7 @@ case class Prettifier(
       case i: Insert                      => asString(i)
       case u: Unwind                      => asString(u)
       case u: UnresolvedCall              => asString(u)
+      case c: CallClause                  => asString(c.asUnresolvedCall)
       case s: ShowIndexesClause           => asString(s)
       case s: ShowConstraintsClause       => asString(s)
       case s: ShowCurrentGraphTypeClause  => asString(s)

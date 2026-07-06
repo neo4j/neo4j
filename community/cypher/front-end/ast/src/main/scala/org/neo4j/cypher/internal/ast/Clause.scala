@@ -1727,6 +1727,8 @@ abstract class CallClause extends Clause {
   def optionalState: OptionalState
   def optional: Boolean = optionalState == Optional
 
+  def asUnresolvedCall: UnresolvedCall
+
   def argumentCheck: SemanticCheck
   def resultCheck: SemanticCheck
   def invalidAggregationCheck: SemanticCheck
@@ -1761,6 +1763,8 @@ case class UnresolvedCall(
 )(val position: InputPosition) extends CallClause {
 
   def fullName: String = procedureName.fullName
+
+  override def asUnresolvedCall: UnresolvedCall = this
 
   override def returnVariables: ReturnVariables =
     ReturnVariables(
