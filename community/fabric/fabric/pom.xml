@@ -23,7 +23,6 @@
   <properties>
     <mixed.language.allowed>true</mixed.language.allowed>
     <moduleName>org.neo4j.fabric</moduleName>
-    <scala.binary.version>3</scala.binary.version>
   </properties>
 
   <dependencies>

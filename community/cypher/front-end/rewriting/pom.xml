@@ -22,7 +22,6 @@
 
   <properties>
     <moduleName>org.neo4j.cypher.internal.rewriting</moduleName>
-    <scala.binary.version>3</scala.binary.version>
   </properties>
 
   <dependencies>
