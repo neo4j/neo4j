@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.ddl.privilege
 
 import org.neo4j.cypher.internal.ast.AllGraphsScope
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.Element
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.GraphPrivilege
@@ -58,7 +59,7 @@ import org.scalacheck.Shrink
 
 class TraversePropertyPrivilegeAdministrationCommandParserTest
     extends PropertyPrivilegeAdministrationCommandParserTestBase
-    with CypherScalaCheckDrivenPropertyChecks {
+    with CypherScalaCheckDrivenPropertyChecks with AstConstructionTestSupportWithPosConversion {
   implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny
 
   override protected def ignorePrettifier: Boolean = true

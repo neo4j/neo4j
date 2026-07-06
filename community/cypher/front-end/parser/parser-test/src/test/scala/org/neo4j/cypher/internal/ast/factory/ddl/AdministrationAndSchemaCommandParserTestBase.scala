@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.maybeImmutable
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
@@ -36,7 +37,8 @@ import java.nio.charset.StandardCharsets
 
 import scala.language.implicitConversions
 
-class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
+class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase
+    with AstConstructionTestSupportWithPosConversion {
 
   protected def assertAst(
     expected: ast.Statement,

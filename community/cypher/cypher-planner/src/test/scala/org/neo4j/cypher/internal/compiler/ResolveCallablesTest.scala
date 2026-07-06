@@ -46,7 +46,7 @@ class ResolveCallablesTest extends ResolveCallablesTestSuite {
 
   test("should resolve standalone procedure calls") {
     val unresolved = UnresolvedCall(name, None, None, isStandalone = true)(pos)
-    val original = SingleQuery(Seq(unresolved)) _
+    val original = SingleQuery(Seq(unresolved))(pos)
 
     val resolver = makeResolver()
     val rewritten = strictResolveCallables(resolver, original)

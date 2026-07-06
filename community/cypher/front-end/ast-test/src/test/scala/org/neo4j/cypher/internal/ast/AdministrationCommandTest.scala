@@ -79,7 +79,8 @@ import java.nio.charset.StandardCharsets
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestSupport with CypherVersionTestSupport {
+class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestSupport with CypherVersionTestSupport
+    with AstConstructionTestSupportWithPosConversion {
 
   implicit val windowsSafe: WindowsSemanticErrorDefSeqStringSafe.type = WindowsSemanticErrorDefSeqStringSafe
 

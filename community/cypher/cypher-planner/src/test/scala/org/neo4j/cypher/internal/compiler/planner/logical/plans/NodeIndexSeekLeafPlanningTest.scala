@@ -825,7 +825,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
 
   test("plans index seeks such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)))(pos)
 
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
@@ -850,7 +850,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
 
   test("plans unique index seeks such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)))(pos)
 
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)

@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.helpers.TestCountdownCancellationChecker
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
-import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
@@ -696,7 +695,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
     query.queryGraph.selections should equal(Selections(Set.empty))
     query.horizon should equal(RegularQueryProjection(
       Map(
-        v"p" -> PathExpression(NodePathStep(v"a", NilPathStep()(pos))(pos)) _
+        v"p" -> PathExpression(NodePathStep(v"a", NilPathStep()(pos))(pos))(pos)
       ),
       position = QueryProjection.Position.Final
     ))
@@ -1330,7 +1329,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
     query.queryGraph.patternNodes should equal(Set(v"a"))
     query.horizon should equal(AggregatingQueryProjection(
       Map(v"property" -> prop("a", "prop")),
-      Map(v"count" -> CountStar() _)
+      Map(v"count" -> countStar())
     ))
 
     val tailQg = query.tail.get
@@ -1369,7 +1368,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
         limit should be(empty)
         skip should be(empty)
         where should be(empty)
-        aggregationExpression should equal(Map(v"count(*)" -> CountStar()(pos)))
+        aggregationExpression should equal(Map(v"count(*)" -> countStar()))
 
       case x =>
         fail(s"Expected AggregationProjection, got $x")
@@ -1397,7 +1396,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
         limit should be(empty)
         skip should be(empty)
         where should be(empty)
-        aggregationExpression should equal(Map(v"count(*)" -> CountStar()(pos)))
+        aggregationExpression should equal(Map(v"count(*)" -> countStar()))
 
       case x =>
         fail(s"Expected AggregationProjection, got $x")
@@ -1415,7 +1414,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       v"n",
       labelOrRelTypeName("Awesome"),
       Seq(PropertyKeyName("prop")(pos))
-    ) _))
+    )(pos)))
   }
 
   test("MATCH shortestPath((a)-[r]->(b)) RETURN r") {
@@ -1524,7 +1523,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       queryGraph = QueryGraph(patternNodes = Set(v"owner")),
       horizon = AggregatingQueryProjection(
         groupingExpressions = Map(v"owner" -> v"owner"),
-        aggregationExpressions = Map(v"collected" -> CountStar()(pos)),
+        aggregationExpressions = Map(v"collected" -> countStar()),
         selections = Selections(Set(Predicate(Set(v"owner"), subqueryExpression)))
       ),
       tail = Some(RegularSinglePlannerQuery(

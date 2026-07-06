@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -24,7 +25,8 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NoReferenceEqualityAmongVariablesTest extends CypherFunSuite with AstConstructionTestSupport {
+class NoReferenceEqualityAmongVariablesTest extends CypherFunSuite with AstConstructionTestSupport
+    with AstConstructionTestSupportWithPosConversion {
 
   private val collector: Any => Seq[String] = NoReferenceEqualityAmongVariables(_)(CancellationChecker.NeverCancelled)
 

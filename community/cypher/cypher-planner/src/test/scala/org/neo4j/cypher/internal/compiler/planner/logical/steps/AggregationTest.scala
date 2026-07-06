@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -33,7 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RewrittenExpressions
 
 class AggregationTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport {
-  private val aggregatingMap = Map[LogicalVariable, Expression](v"count(*)" -> CountStar()(pos))
+  private val aggregatingMap = Map[LogicalVariable, Expression](v"count(*)" -> countStar())
 
   test("should introduce aggregation when needed") {
     val projection = AggregatingQueryProjection(

@@ -29,7 +29,8 @@ import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.gqlstatus.GqlHelper.getGql42001_42N07
 
-class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSupport {
+class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSupport
+    with AstConstructionTestSupportWithPosConversion {
 
   test("should introduce variables into scope") {
     // GIVEN WITH "a" as n

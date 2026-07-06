@@ -35,5 +35,9 @@ trait PlanMatchHelp extends AstConstructionTestSupport {
     getValueFromIndex: GetValueFromIndexBehavior,
     entityType: EntityType
   ): IndexedProperty =
-    IndexedProperty(PropertyKeyToken(PropertyKeyName(propName) _, PropertyKeyId(keyId)), getValueFromIndex, entityType)
+    IndexedProperty(
+      PropertyKeyToken(PropertyKeyName(propName)(pos), PropertyKeyId(keyId)),
+      getValueFromIndex,
+      entityType
+    )
 }

@@ -405,8 +405,8 @@ class IdSeekLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlanningT
     val expr = in(id(v"r"), listOfInt(42))
     val from = v"from"
     val end = v"to"
-    val relTypeX = RelTypeName("X") _
-    val relTypeY = RelTypeName("Y") _
+    val relTypeX = RelTypeName("X")(pos)
+    val relTypeY = RelTypeName("Y")(pos)
 
     val semanticTable =
       new SemanticTable(

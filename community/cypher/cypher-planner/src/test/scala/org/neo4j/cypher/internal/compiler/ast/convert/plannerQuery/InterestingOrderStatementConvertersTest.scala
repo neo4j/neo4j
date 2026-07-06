@@ -23,7 +23,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -102,7 +101,7 @@ class InterestingOrderStatementConvertersTest extends CypherPlannerTestSuite wit
         InterestingOrder.required(RequiredOrderCandidate.asc(v"n.prop", Map(v"n.prop" -> prop("n", "prop")))),
       horizon = AggregatingQueryProjection(
         Map(v"n.prop" -> prop("n", "prop")),
-        Map(v"count(*)" -> CountStar()(pos)),
+        Map(v"count(*)" -> countStar()),
         position = QueryProjection.Position.Final
       )
     )

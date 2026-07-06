@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.ActionResourceBase
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.Element
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.GraphAction
@@ -66,7 +67,7 @@ import org.scalactic.anyvals.PosInt
 
 class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
     extends PropertyPrivilegeAdministrationCommandParserTestBase
-    with CypherScalaCheckDrivenPropertyChecks {
+    with CypherScalaCheckDrivenPropertyChecks with AstConstructionTestSupportWithPosConversion {
   implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny
 
   override protected def ignorePrettifier: Boolean = true

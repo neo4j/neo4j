@@ -17,13 +17,15 @@
 package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.ExpressionNames
 import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 
 /* Tests for combining listing and terminating commands with regular Cypher, administration commands and schema commands */
-class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTestBase {
+class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTestBase
+    with AstConstructionTestSupportWithPosConversion {
 
   Seq(
     ("MATCH (n) RETURN n", Seq(match_(nodePat(Some("n"))), return_(variableReturnItem("n")))),

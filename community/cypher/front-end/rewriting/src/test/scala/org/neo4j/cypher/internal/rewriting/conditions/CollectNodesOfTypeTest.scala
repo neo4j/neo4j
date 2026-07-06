@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -25,7 +26,8 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
+class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport
+    with AstConstructionTestSupportWithPosConversion {
 
   private val collector: Any => Seq[Variable] =
     CollectNodesOfType[Variable]().apply(_)(CancellationChecker.NeverCancelled)

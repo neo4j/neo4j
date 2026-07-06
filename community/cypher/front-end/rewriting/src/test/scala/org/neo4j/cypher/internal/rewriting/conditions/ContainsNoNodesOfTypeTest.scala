@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.FreeProjection
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Return
@@ -28,7 +29,8 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
+class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport
+    with AstConstructionTestSupportWithPosConversion {
 
   val condition: Any => Seq[String] =
     ContainsNoNodesOfType[UnaliasedReturnItem]().apply(_)(CancellationChecker.NeverCancelled)

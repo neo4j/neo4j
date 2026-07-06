@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.FreeProjection
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Return
@@ -40,7 +41,8 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstructionTestSupport {
+class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstructionTestSupport
+    with AstConstructionTestSupportWithPosConversion {
 
   private val condition: Any => Seq[String] = NoUnnamedNodesAndRelationships(_)(CancellationChecker.NeverCancelled)
 

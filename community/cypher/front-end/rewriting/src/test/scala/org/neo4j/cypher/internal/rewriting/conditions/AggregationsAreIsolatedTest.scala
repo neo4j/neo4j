@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
@@ -24,7 +25,8 @@ import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTestSupport {
+class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTestSupport
+    with AstConstructionTestSupportWithPosConversion {
 
   private val condition: Any => Seq[String] = AggregationsAreIsolated(_)(CancellationChecker.NeverCancelled)
 

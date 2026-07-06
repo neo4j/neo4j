@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -25,7 +26,8 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.rewriting.rewriters.InliningContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport {
+class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
+    with AstConstructionTestSupportWithPosConversion {
 
   private val identN = varFor("n")
   private val identM = varFor("m")

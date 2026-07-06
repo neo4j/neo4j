@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.AddedInRewriteGeneral
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.FreeProjection
 import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.Match
@@ -64,7 +65,8 @@ import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport with TestName {
+class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport
+    with AstConstructionTestSupportWithPosConversion with TestName {
 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(ProjectNamedPaths)
 

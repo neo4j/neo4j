@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.expressions.functions.Nodes
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
+class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport
+    with AstConstructionTestSupportWithPosConversion {
 
   test("should compute dependencies of simple expressions") {
     varFor("a").dependencies should equal(Set(varFor("a")))

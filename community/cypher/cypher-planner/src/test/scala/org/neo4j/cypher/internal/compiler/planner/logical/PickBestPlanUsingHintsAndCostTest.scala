@@ -53,10 +53,10 @@ class PickBestPlanUsingHintsAndCostTest extends CypherPlannerTestSuite with Logi
   }
 
   private val hint1: UsingIndexHint =
-    UsingIndexHint(v"n", labelOrRelTypeName("Person"), Seq(PropertyKeyName("name") _)) _
+    UsingIndexHint(v"n", labelOrRelTypeName("Person"), Seq(PropertyKeyName("name")(pos)))(pos)
 
   private val hint2: UsingIndexHint =
-    UsingIndexHint(v"n", labelOrRelTypeName("Person"), Seq(PropertyKeyName("age") _)) _
+    UsingIndexHint(v"n", labelOrRelTypeName("Person"), Seq(PropertyKeyName("age")(pos)))(pos)
 
   test("picks the right plan by cost, no matter the cardinality") {
     val a = fakeLogicalPlanFor("a")

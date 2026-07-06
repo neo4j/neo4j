@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AssertIsNode
-import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -716,7 +715,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         ),
         horizon =
           Some(AggregatingQueryProjection(
-            aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+            aggregationExpressions = Map(countVariable -> countStar()),
             importedExposedSymbols = Set(n)
           )),
         None
@@ -763,7 +762,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         ),
         horizon =
           Some(AggregatingQueryProjection(
-            aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+            aggregationExpressions = Map(countVariable -> countStar()),
             importedExposedSymbols = Set(n)
           )),
         None
@@ -810,7 +809,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         ),
         horizon =
           Some(AggregatingQueryProjection(
-            aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+            aggregationExpressions = Map(countVariable -> countStar()),
             importedExposedSymbols = Set(n)
           )),
         None
@@ -865,7 +864,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         tail = Some(
           RegularSinglePlannerQuery(
             horizon = AggregatingQueryProjection(
-              aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+              aggregationExpressions = Map(countVariable -> countStar()),
               importedExposedSymbols = Set(n)
             )
           )
@@ -921,7 +920,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         tail = Some(
           RegularSinglePlannerQuery(
             horizon = AggregatingQueryProjection(
-              aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+              aggregationExpressions = Map(countVariable -> countStar()),
               importedExposedSymbols = Set(n)
             )
           )
@@ -979,7 +978,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         tail = Some(
           RegularSinglePlannerQuery(
             horizon = AggregatingQueryProjection(
-              aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+              aggregationExpressions = Map(countVariable -> countStar()),
               importedExposedSymbols = Set(n)
             )
           )
@@ -1037,7 +1036,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         tail = Some(
           RegularSinglePlannerQuery(
             horizon = AggregatingQueryProjection(
-              aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+              aggregationExpressions = Map(countVariable -> countStar()),
               importedExposedSymbols = Set(n)
             )
           )
@@ -1132,7 +1131,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         tail = Some(
           RegularSinglePlannerQuery(
             horizon = AggregatingQueryProjection(
-              aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+              aggregationExpressions = Map(countVariable -> countStar()),
               importedExposedSymbols = Set(n)
             )
           )
@@ -1248,7 +1247,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         tail = Some(
           RegularSinglePlannerQuery(
             horizon = AggregatingQueryProjection(
-              aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+              aggregationExpressions = Map(countVariable -> countStar()),
               importedExposedSymbols = Set(n)
             )
           )
@@ -1288,7 +1287,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         ),
         horizon =
           Some(AggregatingQueryProjection(
-            aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+            aggregationExpressions = Map(countVariable -> countStar()),
             importedExposedSymbols = Set(n)
           )),
         None
@@ -1320,7 +1319,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         ),
         horizon =
           Some(AggregatingQueryProjection(
-            aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+            aggregationExpressions = Map(countVariable -> countStar()),
             importedExposedSymbols = Set(n)
           )),
         None
@@ -1372,7 +1371,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         ),
         horizon =
           Some(AggregatingQueryProjection(
-            aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+            aggregationExpressions = Map(countVariable -> countStar()),
             importedExposedSymbols = Set(n)
           )),
         None
@@ -1407,7 +1406,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         ),
         horizon =
           Some(AggregatingQueryProjection(
-            aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+            aggregationExpressions = Map(countVariable -> countStar()),
             importedExposedSymbols = Set(m)
           )),
         None
@@ -1440,7 +1439,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         ),
         horizon =
           Some(AggregatingQueryProjection(
-            aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+            aggregationExpressions = Map(countVariable -> countStar()),
             importedExposedSymbols = Set(n)
           )),
         None
@@ -1484,7 +1483,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         ),
         horizon =
           Some(AggregatingQueryProjection(
-            aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+            aggregationExpressions = Map(countVariable -> countStar()),
             importedExposedSymbols = Set(n, o)
           )),
         None

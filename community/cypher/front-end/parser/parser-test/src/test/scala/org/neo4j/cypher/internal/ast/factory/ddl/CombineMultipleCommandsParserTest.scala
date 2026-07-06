@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.CommaSeparatedNames
 import org.neo4j.cypher.internal.ast.CommandClauseNames
 import org.neo4j.cypher.internal.ast.ExpressionNames
@@ -31,7 +32,8 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import scala.util.Random
 
 /* Tests for combining listing and terminating commands */
-class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
+class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase
+    with AstConstructionTestSupportWithPosConversion {
 
   private type CommandClauseWithNames =
     (

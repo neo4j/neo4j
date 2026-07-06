@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast.AddTags
 import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.Auth
 import org.neo4j.cypher.internal.ast.RemoveAllTags
 import org.neo4j.cypher.internal.ast.RemoveAuth
@@ -33,7 +34,8 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 
 import scala.util.Random
 
-class AlterUserAdministrationCommandParserTest extends UserAdministrationCommandParserTestBase {
+class AlterUserAdministrationCommandParserTest extends UserAdministrationCommandParserTestBase
+    with AstConstructionTestSupportWithPosConversion {
 
   override protected def ignorePrettifier: Boolean = true
 

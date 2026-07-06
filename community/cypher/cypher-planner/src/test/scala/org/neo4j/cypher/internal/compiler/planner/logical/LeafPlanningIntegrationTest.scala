@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -1367,7 +1366,7 @@ class LeafPlanningIntegrationTest extends CypherPlannerTestSuite with LogicalPla
           NodeByIdSeek(v"n", ManySeekableArgs(v"arr"), Set(v"arr"))
         ),
         Map(),
-        Map(v"count(*)" -> CountStar() _)
+        Map(v"count(*)" -> countStar())
       )
     )
   }

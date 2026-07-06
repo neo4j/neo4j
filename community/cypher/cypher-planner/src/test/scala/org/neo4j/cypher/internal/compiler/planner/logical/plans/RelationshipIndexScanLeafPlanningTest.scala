@@ -268,7 +268,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherPlannerTestSuite with 
 
   test("plans index scans such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
+      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)))(pos)
 
     new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull).addHints(Some(hint))
@@ -298,7 +298,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherPlannerTestSuite with 
 
   test("index scan does not solve seek hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly) _
+      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly)(pos)
 
     new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull).addHints(Some(hint))
@@ -725,7 +725,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherPlannerTestSuite with 
 
   test("plans index contains scans such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
+      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)))(pos)
 
     new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa).addHints(Some(hint))
@@ -762,7 +762,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherPlannerTestSuite with 
 
   test("index contains scan does not solve seek hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly) _
+      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly)(pos)
 
     new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa).addHints(Some(hint))
@@ -992,7 +992,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherPlannerTestSuite with 
 
   test("plans index ends with scans such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
+      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)))(pos)
 
     new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa).addHints(Some(hint))
@@ -1029,7 +1029,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherPlannerTestSuite with 
 
   test("index ends with scan does not solve seek hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly) _
+      UsingIndexHint(relVar, labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly)(pos)
 
     new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa).addHints(Some(hint))

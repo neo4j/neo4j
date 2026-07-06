@@ -394,7 +394,7 @@ class NodeIndexScanLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
 
   test("plans index scans such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)))(pos)
 
     new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
@@ -418,7 +418,7 @@ class NodeIndexScanLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
 
   test("plans unique index scans such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)))(pos)
 
     new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
@@ -442,7 +442,7 @@ class NodeIndexScanLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
 
   test("index scan does not solve seek hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly)(pos)
 
     new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
@@ -1051,7 +1051,7 @@ class NodeIndexScanLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
 
   test("plans index contains scans such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)))(pos)
 
     new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome).addHints(Some(hint))
@@ -1078,7 +1078,7 @@ class NodeIndexScanLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
 
   test("index contains scan does not solve seek hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly)(pos)
 
     new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome).addHints(Some(hint))
@@ -1105,7 +1105,7 @@ class NodeIndexScanLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
 
   test("plans unique index contains scans such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)))(pos)
 
     new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome).addHints(Some(hint))
@@ -1245,7 +1245,7 @@ class NodeIndexScanLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
 
   test("plans index ends with scans such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)))(pos)
 
     new givenConfig {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome).addHints(Some(hint))
@@ -1270,7 +1270,7 @@ class NodeIndexScanLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
 
   test("index ends with scan does not solve seek hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly)(pos)
 
     new givenConfig {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome).addHints(Some(hint))

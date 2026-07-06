@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupportWithPosConversion
 import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowAuthRules
 import org.neo4j.cypher.internal.ast.ShowColumn
@@ -35,7 +36,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.anonymizeQuery
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
-class AnonymizeQueryTest extends AnonymizerTestBase {
+class AnonymizeQueryTest extends AnonymizerTestBase with AstConstructionTestSupportWithPosConversion {
 
   val anonymizer: Anonymizer = new Anonymizer {
     override def label(name: String): String = "x" + name

@@ -69,12 +69,14 @@ import org.neo4j.exceptions.JoinHintException
 class VerifyBestPlanTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport {
 
   private def newNodeIndexHint(indexType: UsingIndexHintType = UsingAnyIndexType): IrHint =
-    UsingIndexHint(v"a", labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType) _
+    UsingIndexHint(v"a", labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType)(pos)
 
   private def newRelationshipIndexHint(indexType: UsingIndexHintType = UsingAnyIndexType): IrHint =
-    UsingIndexHint(v"r", labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType) _
+    UsingIndexHint(v"r", labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType)(pos)
 
-  private def newJoinHint(variableName: String = "a"): IrHint = { UsingJoinHint(NonEmptyList(varFor(variableName))) _ }
+  private def newJoinHint(variableName: String = "a"): IrHint = {
+    UsingJoinHint(NonEmptyList(varFor(variableName)))(pos)
+  }
 
   private def newQueryWithoutHints() = RegularSinglePlannerQuery(
     QueryGraph(
