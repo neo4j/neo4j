@@ -1275,4 +1275,86 @@ abstract class DynamicRelationshipTypeLookupTestBase[CONTEXT <: RuntimeContext](
           .usingIndexes(2, indexName)
     }
   }
+
+  test("directed seek using an index should support reading relationship properties when endpoint nodes are unused") {
+    givenGraph {
+      relationshipIndex("R")(_.on("prop"))
+      val r = tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
+      r.setProperty("prop", 1)
+    }
+
+    Seq(All, Any).foreach { operator =>
+      val dynamicType = operator match {
+        case All => "$('R')"
+        case Any => "$any('R')"
+      }
+
+      // anonymous endpoint nodes so that only the relationship itself is produced by the lookup
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p")
+        .projection("r.prop AS p")
+        .dynamicRelationshipTypeLookup(
+          "()-[r]->()",
+          dynamicType,
+          propertyPredicates = Map("prop" -> "1")
+        )
+        .build()
+
+      execute(logicalQuery, runtime) should beColumns("p").withSingleRow(1)
+    }
+  }
+
+  test("undirected seek using an index should support reading relationship properties when endpoint nodes are unused") {
+    givenGraph {
+      relationshipIndex("R")(_.on("prop"))
+      val r = tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
+      r.setProperty("prop", 1)
+    }
+
+    Seq(All, Any).foreach { operator =>
+      val dynamicType = operator match {
+        case All => "$('R')"
+        case Any => "$any('R')"
+      }
+
+      // anonymous endpoint nodes so that only the relationship itself is produced by the lookup
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p")
+        .projection("r.prop AS p")
+        .dynamicRelationshipTypeLookup(
+          "()-[r]-()",
+          dynamicType,
+          propertyPredicates = Map("prop" -> "1")
+        )
+        .build()
+
+      execute(logicalQuery, runtime) should beColumns("p").withRows(Seq(Array[Any](1), Array[Any](1)))
+    }
+  }
+
+  test("directed type scan should support reading relationship properties when endpoint nodes are unused") {
+    givenGraph {
+      val r = tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
+      r.setProperty("prop", 1)
+    }
+
+    Seq(All, Any).foreach { operator =>
+      val dynamicType = operator match {
+        case All => "$('R')"
+        case Any => "$any('R')"
+      }
+
+      // anonymous endpoint nodes so that only the relationship itself is produced by the lookup
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p")
+        .projection("r.prop AS p")
+        .dynamicRelationshipTypeLookup(
+          "()-[r]->()",
+          dynamicType
+        )
+        .build()
+
+      execute(logicalQuery, runtime) should beColumns("p").withSingleRow(1)
+    }
+  }
 }
