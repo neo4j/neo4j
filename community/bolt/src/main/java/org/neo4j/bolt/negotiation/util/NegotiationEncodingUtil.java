@@ -60,14 +60,20 @@ public final class NegotiationEncodingUtil {
             buf.readerIndex(readerIndex);
         }
 
-        return false;
+        return true;
     }
 
-    public static BitMask readBitMask(ByteBuf buf) {
+    public static BitMask readBitMask(ByteBuf buf, int limit) {
         var recv = buf.alloc().buffer();
         try {
+            int c = 0;
             byte i;
             do {
+                if (++c > limit) {
+                    throw new IllegalArgumentException(
+                            "Bit mask exceeds maximum permitted length of " + limit + " bytes");
+                }
+
                 i = buf.readByte();
                 recv.writeByte(i);
             } while ((i & 0x80) != 0x00);

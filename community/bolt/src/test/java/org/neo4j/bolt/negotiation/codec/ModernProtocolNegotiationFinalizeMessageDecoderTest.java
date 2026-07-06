@@ -85,12 +85,14 @@ class ModernProtocolNegotiationFinalizeMessageDecoderTest {
     void shouldIgnoreTruncatedPayloads(StrictBufferContext ctx) {
         var channel = ctx.channel(new ModernProtocolNegotiationFinalizeMessageDecoder());
 
-        channel.writeInbound(ctx.buffer().writeByte(0));
+        var payload = ctx.buffer().writeByte(0);
+        channel.writeInbound(payload);
 
         Assertions.assertThat(channel.<ModernProtocolNegotiationFinalizeMessage>readInbound())
                 .isNull();
 
-        channel.writeInbound(ctx.buffer().writeByte(0).writeByte(0).writeByte(0));
+        payload = ctx.buffer().writeByte(0).writeByte(0).writeByte(0);
+        channel.writeInbound(payload);
 
         Assertions.assertThat(channel.<ModernProtocolNegotiationFinalizeMessage>readInbound())
                 .isNull();

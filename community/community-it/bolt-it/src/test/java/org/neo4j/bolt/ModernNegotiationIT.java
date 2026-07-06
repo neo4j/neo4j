@@ -147,6 +147,24 @@ public class ModernNegotiationIT {
     }
 
     @TransportTest
+    void shouldFailIfOversizedCapabilitiesIsGiven(@Connected BoltTestConnection connection) {
+        connection.send(ProtocolVersion.NEGOTIATION_V2);
+
+        BoltConnectionAssertions.assertThat(connection).receivesProtocolProposal();
+
+        var payload = Unpooled.buffer().writeInt(BoltTestConnection.DEFAULT_PROTOCOL_VERSION.encode());
+
+        for (var i = 0; i < 32; ++i) {
+            payload.writeByte(0x80);
+        }
+        payload.writeByte(0x01);
+
+        connection.sendRaw(payload);
+
+        BoltConnectionAssertions.assertThat(connection).isEventuallyTerminated();
+    }
+
+    @TransportTest
     void shouldTimeoutWhenHandshakeIsTransmittedTooSlowly(@Connected BoltTestConnection connection) {
         connection.send(ProtocolVersion.NEGOTIATION_V2);
 
