@@ -58,6 +58,7 @@ import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.storable.Value;
 
 /**
  * There should be a 1:1 match between Reader and file for now.
@@ -324,7 +325,10 @@ class ParquetDataReader implements Closeable {
             }
 
             var object = readTemporalValues(columnReader, logicalType, primitiveType);
-            if (object != null) return object;
+            if (object != null) {
+                columnReader.consume();
+                return object;
+            }
 
             // Primitives
             Object readValue = readPrimitiveType(columnReader, primitiveType);
@@ -435,7 +439,7 @@ class ParquetDataReader implements Closeable {
             var values = new ArrayList<>();
             do {
                 if (columnReader.getCurrentDefinitionLevel() == column.getMaxDefinitionLevel()) {
-                    values.add(readPrimitiveType(columnReader, primitiveType));
+                    values.add(readRepeatedElement(columnReader, primitiveType));
                 }
                 columnReader.consume();
             } while (columnReader.getCurrentRepetitionLevel() > 0);
@@ -452,7 +456,7 @@ class ParquetDataReader implements Closeable {
             var values = new ArrayList<>();
             do {
                 if (columnReader.getCurrentDefinitionLevel() == column.getMaxDefinitionLevel()) {
-                    values.add(readPrimitiveType(columnReader, primitiveType));
+                    values.add(readRepeatedElement(columnReader, primitiveType));
                 } else if (columnReader.getCurrentDefinitionLevel() > 0) {
                     // Entry exists but value is null
                     values.add(null);
@@ -460,6 +464,18 @@ class ParquetDataReader implements Closeable {
                 columnReader.consume();
             } while (columnReader.getCurrentRepetitionLevel() > 0);
             return values;
+        }
+
+        /**
+         * Reads a single element of a repeated group (a list/map member). Unlike scalar columns, the logical
+         * type annotation of a list element lives on the element's primitive type rather than on the top-level
+         * field, so we resolve it from there. Temporal elements are converted to their underlying {@code java.time}
+         * representation so that they end up in a properly typed array; everything else is read as-is.
+         */
+        private Object readRepeatedElement(ColumnReader columnReader, PrimitiveType primitiveType) {
+            var value = readPrimitiveType(columnReader, primitiveType);
+            var temporal = toTemporalValue(value, primitiveType.getLogicalTypeAnnotation());
+            return temporal != null ? temporal : value;
         }
 
         private static boolean isPrimitiveValueNull(ColumnReader columnReader) {
@@ -470,49 +486,54 @@ class ParquetDataReader implements Closeable {
 
         private Object readTemporalValues(
                 ColumnReader columnReader, LogicalTypeAnnotation logicalType, PrimitiveType primitiveType) {
-            // Dates
             var object = readPrimitiveType(columnReader, primitiveType);
+            return toTemporalValue(object, logicalType);
+        }
 
+        /**
+         * Maps an already-read primitive value to its temporal {@link Value} based on the logical type annotation,
+         * or returns {@code null} when the logical type is not a (supported) temporal one. This is the pure
+         * conversion shared by scalar columns and by list/map elements; it does not advance the column reader.
+         * See https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#parquet-logical-type-definitions
+         */
+        private static Value toTemporalValue(Object object, LogicalTypeAnnotation logicalType) {
+            if (object == null || logicalType == null) {
+                return null;
+            }
+            // Dates
             if (LogicalTypeAnnotation.dateType().equals(logicalType)) {
-                columnReader.consume();
                 return DateValue.date(LocalDate.ofEpochDay((int) object));
             }
             // Time UTC true
             if (LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MILLIS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 return TimeValue.time(
                         LocalTime.ofNanoOfDay(((int) object) * 1_000_000L).atOffset(ZoneOffset.UTC));
             }
             if (LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MICROS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 return TimeValue.time(
                         LocalTime.ofNanoOfDay(((long) object) * 1_000L).atOffset(ZoneOffset.UTC));
             }
             if (LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 return TimeValue.time(LocalTime.ofNanoOfDay((long) object).atOffset(ZoneOffset.UTC));
             }
             // Time UTC false
             if (LogicalTypeAnnotation.timeType(false, LogicalTypeAnnotation.TimeUnit.MILLIS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 var seconds = ((int) object) * 1_000_000L / 1_000_000_000L;
                 var nanos = ((int) object) * 1_000_000L % 1_000_000_000L;
                 return LocalTimeValue.localTime(LocalTime.ofSecondOfDay(seconds).plusNanos(nanos));
             }
             if (LogicalTypeAnnotation.timeType(false, LogicalTypeAnnotation.TimeUnit.MICROS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 var seconds = ((long) object) * 1_000L / 1_000_000_000L;
                 var nanos = ((long) object) * 1_000L % 1_000_000_000L;
                 return LocalTimeValue.localTime(LocalTime.ofSecondOfDay(seconds).plusNanos(nanos));
             }
             if (LogicalTypeAnnotation.timeType(false, LogicalTypeAnnotation.TimeUnit.NANOS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 var seconds = ((long) object) / 1_000_000_000L;
                 var nanos = ((long) object) % 1_000_000_000L;
                 return LocalTimeValue.localTime(LocalTime.ofSecondOfDay(seconds).plusNanos(nanos));
@@ -520,7 +541,6 @@ class ParquetDataReader implements Closeable {
             // Timestamp UTC true
             if (LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 var seconds = ((long) object) / 1_000L;
                 var millis = ((long) object) % 1_000L;
                 return DateTimeValue.datetime(ZonedDateTime.of(
@@ -529,7 +549,6 @@ class ParquetDataReader implements Closeable {
             }
             if (LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MICROS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 var seconds = ((long) object) / 1_000_000L;
                 var micros = ((long) object) % 1_000_000L;
                 return DateTimeValue.datetime(ZonedDateTime.of(
@@ -538,7 +557,6 @@ class ParquetDataReader implements Closeable {
             }
             if (LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 var seconds = ((long) object) / 1_000_000_000L;
                 var nanos = ((long) object) % 1_000_000_000L;
                 return DateTimeValue.datetime(ZonedDateTime.of(
@@ -548,7 +566,6 @@ class ParquetDataReader implements Closeable {
             // Timestamp UTC false
             if (LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.MILLIS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 var seconds = ((long) object) / 1_000L;
                 var millis = ((long) object) % 1_000L;
                 return LocalDateTimeValue.localDateTime(
@@ -556,7 +573,6 @@ class ParquetDataReader implements Closeable {
             }
             if (LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.MICROS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 var seconds = ((long) object) / 1_000_000L;
                 var micros = ((long) object) % 1_000_000L;
                 return LocalDateTimeValue.localDateTime(
@@ -564,7 +580,6 @@ class ParquetDataReader implements Closeable {
             }
             if (LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.NANOS)
                     .equals(logicalType)) {
-                columnReader.consume();
                 var seconds = ((long) object) / 1_000_000_000L;
                 var nanos = ((long) object) % 1_000_000_000L;
                 return LocalDateTimeValue.localDateTime(

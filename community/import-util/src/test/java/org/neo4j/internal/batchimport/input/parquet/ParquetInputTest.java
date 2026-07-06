@@ -41,8 +41,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,6 +60,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.parquet.example.data.simple.SimpleGroup;
+import org.apache.parquet.hadoop.example.ExampleParquetWriter;
+import org.apache.parquet.io.LocalOutputFile;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
@@ -813,6 +821,304 @@ class ParquetInputTest {
         // WHEN/THEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             assertNextNode(nodes, 123L, properties("aList", List.of("a"), "name", "Mattias Persson"), labels("HACKER"));
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReadListOfTemporalTypes() throws Exception {
+        // GIVEN
+        var fileUrl = getClass().getResource("/parquet/list_temporal.parquet");
+        var nodeFile = Path.of(fileUrl.toURI());
+        Path headerFile = createHeaderFile(
+                List.of(
+                        ":ID",
+                        "c_list_date",
+                        "c_list_local_time",
+                        "c_list_zoned_time",
+                        "c_list_local_timestamp",
+                        "c_list_offset_timestamp",
+                        "c_list_zoned_timestamp"),
+                List.of(
+                        "id",
+                        "c_list_date",
+                        "c_list_local_time",
+                        "c_list_zoned_time",
+                        "c_list_local_timestamp",
+                        "c_list_offset_timestamp",
+                        "c_list_zoned_timestamp"));
+
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(0, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(
+                    nodes,
+                    1L,
+                    properties(
+                            "c_list_date",
+                                    List.of(
+                                            LocalDate.of(2020, 12, 13),
+                                            LocalDate.of(2021, 1, 15),
+                                            LocalDate.of(2022, 3, 10)),
+                            "c_list_local_time",
+                                    List.of(
+                                            LocalTime.of(22, 56, 57, 997000000),
+                                            LocalTime.of(10, 30, 0),
+                                            LocalTime.of(8, 45, 30)),
+                            "c_list_zoned_time",
+                                    List.of(
+                                            OffsetTime.of(22, 56, 57, 997000000, ZoneOffset.UTC),
+                                            OffsetTime.of(10, 30, 0, 0, ZoneOffset.UTC),
+                                            OffsetTime.of(8, 45, 30, 0, ZoneOffset.UTC)),
+                            "c_list_local_timestamp",
+                                    List.of(
+                                            LocalDateTime.of(2020, 12, 14, 23, 57, 58, 998000000),
+                                            LocalDateTime.of(2021, 6, 15, 12, 30, 0),
+                                            LocalDateTime.of(2022, 3, 10, 8, 45, 30)),
+                            "c_list_offset_timestamp",
+                                    List.of(
+                                            ZonedDateTime.of(2020, 12, 14, 23, 58, 59, 999000000, ZoneOffset.UTC),
+                                            ZonedDateTime.of(2021, 12, 15, 11, 30, 0, 0, ZoneOffset.UTC),
+                                            ZonedDateTime.of(2022, 12, 10, 13, 45, 30, 0, ZoneOffset.UTC)),
+                            "c_list_zoned_timestamp",
+                                    List.of(
+                                            ZonedDateTime.of(2020, 12, 14, 23, 58, 59, 999000000, ZoneOffset.UTC),
+                                            ZonedDateTime.of(2021, 12, 15, 11, 30, 0, 0, ZoneOffset.UTC),
+                                            ZonedDateTime.of(2022, 12, 10, 13, 45, 30, 0, ZoneOffset.UTC))),
+                    labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReadListOfTemporalTypesWithExplicitHeaders() throws Exception {
+        // GIVEN
+        var fileUrl = getClass().getResource("/parquet/list_temporal.parquet");
+        var nodeFile = Path.of(fileUrl.toURI());
+        Path headerFile = createHeaderFile(
+                List.of(
+                        ":ID",
+                        "c_list_date:date[]",
+                        "c_list_local_time:localtime[]",
+                        "c_list_zoned_time:time[]",
+                        "c_list_local_timestamp:localdatetime[]",
+                        "c_list_offset_timestamp:datetime[]",
+                        "c_list_zoned_timestamp:datetime[]"),
+                List.of(
+                        "id",
+                        "c_list_date",
+                        "c_list_local_time",
+                        "c_list_zoned_time",
+                        "c_list_local_timestamp",
+                        "c_list_offset_timestamp",
+                        "c_list_zoned_timestamp"));
+
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(0, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(
+                    nodes,
+                    1L,
+                    properties(
+                            "c_list_date",
+                            List.of(LocalDate.of(2020, 12, 13), LocalDate.of(2021, 1, 15), LocalDate.of(2022, 3, 10)),
+                            "c_list_local_time",
+                            List.of(
+                                    LocalTime.of(22, 56, 57, 997000000),
+                                    LocalTime.of(10, 30, 0),
+                                    LocalTime.of(8, 45, 30)),
+                            "c_list_zoned_time",
+                            List.of(
+                                    OffsetTime.of(22, 56, 57, 997000000, ZoneOffset.UTC),
+                                    OffsetTime.of(10, 30, 0, 0, ZoneOffset.UTC),
+                                    OffsetTime.of(8, 45, 30, 0, ZoneOffset.UTC)),
+                            "c_list_local_timestamp",
+                            List.of(
+                                    LocalDateTime.of(2020, 12, 14, 23, 57, 58, 998000000),
+                                    LocalDateTime.of(2021, 6, 15, 12, 30, 0),
+                                    LocalDateTime.of(2022, 3, 10, 8, 45, 30)),
+                            "c_list_offset_timestamp",
+                            List.of(
+                                    ZonedDateTime.of(2020, 12, 14, 23, 58, 59, 999000000, ZoneOffset.UTC),
+                                    ZonedDateTime.of(2021, 12, 15, 11, 30, 0, 0, ZoneOffset.UTC),
+                                    ZonedDateTime.of(2022, 12, 10, 13, 45, 30, 0, ZoneOffset.UTC)),
+                            "c_list_zoned_timestamp",
+                            List.of(
+                                    ZonedDateTime.of(2020, 12, 14, 23, 58, 59, 999000000, ZoneOffset.UTC),
+                                    ZonedDateTime.of(2021, 12, 15, 11, 30, 0, 0, ZoneOffset.UTC),
+                                    ZonedDateTime.of(2022, 12, 10, 13, 45, 30, 0, ZoneOffset.UTC))),
+                    labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("numericListTemporalTypes")
+    void shouldReadListsOfTemporalTypesFromNumericLists(String mappedType, List<Long> rawValues, List<?> expected)
+            throws Exception {
+        // GIVEN a native LIST<int64> column (no temporal logical annotation) whose raw numeric elements are mapped to
+        // a temporal array through the header. Each element flows through the Number branches of convertType, i.e. the
+        // list-reading counterpart of the scalar shouldParseNumeric*PropertyValues tests.
+        Path nodeFile = createLongListParquetFile("values", rawValues);
+        Path headerFile = createHeaderFile(List.of(":ID", "values:" + mappedType), List.of(":ID", "values"));
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 1L, properties("values", expected), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReadListOfPointsFromDelimitedStringColumn() throws Exception {
+        // GIVEN
+        // Parquet has no native point type, so point arrays can arrive as a delimited string column mapped via the
+        // header. The element values become PointValues, which must be unwrapped before going into a point array.
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT32).named(":ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named("points:point[]")),
+                Collections.singletonList(new Object[] {1, "{x: 1.0, y: 2.0};{x: 3.0, y: 4.0}"}));
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR,
+                Configuration.newBuilder().withArrayDelimiter(';').build());
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(
+                    nodes,
+                    1L,
+                    properties(
+                            "points",
+                            List.of(
+                                    Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1.0, 2.0),
+                                    Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 3.0, 4.0))),
+                    labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReadListOfDurationsFromDelimitedStringColumn() throws Exception {
+        // GIVEN
+        // Parquet has no native duration type, so duration arrays can arrive as a delimited string column mapped via
+        // the header. The element values become DurationValues, which must be unwrapped before going into the array.
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT32).named(":ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named("durations:duration[]")),
+                Collections.singletonList(new Object[] {1, "P3MT13H37M;P-1YT4H20M"}));
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR,
+                Configuration.newBuilder().withArrayDelimiter(';').build());
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(
+                    nodes,
+                    1L,
+                    properties(
+                            "durations",
+                            List.of(
+                                    DurationValue.duration(3, 0, 13 * 3600 + 37 * 60, 0),
+                                    DurationValue.duration(-12, 0, 4 * 3600 + 20 * 60, 0))),
+                    labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReadListOfPointsFromStringListColumn() throws Exception {
+        // GIVEN
+        // A native LIST<string> column whose elements are mapped to points through the header. This exercises the
+        // list-reading branch (as opposed to splitting a delimited string), with each element parsed to a PointValue.
+        Path nodeFile = createStringListParquetFile("points", List.of("{x: 1.0, y: 2.0}", "{x: 3.0, y: 4.0}"));
+        Path headerFile = createHeaderFile(List.of(":ID", "points:point[]"), List.of(":ID", "points"));
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(
+                    nodes,
+                    1L,
+                    properties(
+                            "points",
+                            List.of(
+                                    Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1.0, 2.0),
+                                    Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 3.0, 4.0))),
+                    labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReadListOfDurationsFromStringListColumn() throws Exception {
+        // GIVEN
+        // A native LIST<string> column whose elements are mapped to durations through the header, exercising the
+        // list-reading branch with each element parsed to a DurationValue.
+        Path nodeFile = createStringListParquetFile("durations", List.of("P3MT13H37M", "P-1YT4H20M"));
+        Path headerFile = createHeaderFile(List.of(":ID", "durations:duration[]"), List.of(":ID", "durations"));
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(
+                    nodes,
+                    1L,
+                    properties(
+                            "durations",
+                            List.of(
+                                    DurationValue.duration(3, 0, 13 * 3600 + 37 * 60, 0),
+                                    DurationValue.duration(-12, 0, 4 * 3600 + 20 * 60, 0))),
+                    labels());
             assertThat(readNext(nodes)).isFalse();
         }
     }
@@ -1930,7 +2236,7 @@ class ParquetInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            // 2005-05-24 22:54:33 1116975273000000
+            // 2005-05-24 22:54:33 == 1116975273000000 epoch micros
             assertNextNode(
                     nodes,
                     0L,
@@ -2774,6 +3080,82 @@ class ParquetInputTest {
                     nodes, 0L, properties("name", "Mattias", "time", LocalTimeValue.localTime(13, 37, 0, 0)), labels());
             assertNextNode(
                     nodes, 1L, properties("name", "Johan", "time", LocalTimeValue.localTime(16, 20, 1, 0)), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldParseNumericLocalTimePropertyValues() throws Exception {
+        // GIVEN a raw numeric column (no temporal logical type) explicitly mapped to localtime through the header,
+        // the number is interpreted as nanoseconds of day
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT32).named(":ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named("name"),
+                        Types.optional(PrimitiveType.PrimitiveTypeName.INT64).named("time:LocalTime")),
+                List.of(new Object[] {0, "Mattias", 52397144072000L}, new Object[] {1, "Johan", 52397000000000L}));
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            // THEN
+            assertNextNode(
+                    nodes,
+                    0L,
+                    properties("name", "Mattias", "time", LocalTimeValue.localTime(14, 33, 17, 144072000)),
+                    labels());
+            assertNextNode(
+                    nodes, 1L, properties("name", "Johan", "time", LocalTimeValue.localTime(14, 33, 17, 0)), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldParseNumericDateTimePropertyValues() throws Exception {
+        // GIVEN a raw numeric column (no temporal logical type) explicitly mapped to datetime through the header,
+        // the number is interpreted as epoch microseconds at UTC (sub-second fraction is preserved)
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT32).named(":ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named("name"),
+                        Types.optional(PrimitiveType.PrimitiveTypeName.INT64).named("time:DateTime")),
+                List.of(new Object[] {0, "Mattias", 1116975273123456L}, new Object[] {1, "Johan", 1116975273000000L}));
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            // THEN
+            assertNextNode(
+                    nodes,
+                    0L,
+                    properties(
+                            "name",
+                            "Mattias",
+                            "time",
+                            DateTimeValue.datetime(
+                                    2005, 5, 24, 22, 54, 33, 123456000, ZoneId.of(ZoneOffset.UTC.getId()))),
+                    labels());
+            assertNextNode(
+                    nodes,
+                    1L,
+                    properties(
+                            "name",
+                            "Johan",
+                            "time",
+                            DateTimeValue.datetime(2005, 5, 24, 22, 54, 33, 0, ZoneId.of(ZoneOffset.UTC.getId()))),
+                    labels());
             assertThat(readNext(nodes)).isFalse();
         }
     }
@@ -5400,6 +5782,72 @@ class ParquetInputTest {
         return path;
     }
 
+    /**
+     * Writes a parquet file with a required INT32 {@code :ID} column and a native 3-level {@code LIST<string>} column,
+     * used to exercise reading list-typed columns whose elements need explicit header type mapping (e.g. point/duration
+     * which have no native parquet representation). {@code parquet-floor}'s writer only handles primitive columns, so
+     * the parquet-mr example writer is used here instead.
+     */
+    private Path createStringListParquetFile(String listColumnName, List<String> listValues) throws Exception {
+        MessageType schema = Types.buildMessage()
+                .required(PrimitiveType.PrimitiveTypeName.INT32)
+                .named(":ID")
+                .optionalList()
+                .optionalElement(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.stringType())
+                .named(listColumnName)
+                .named("something");
+        var listGroupType = schema.getType(listColumnName).asGroupType();
+        var repeatedName = listGroupType.getType(0).getName();
+        var elementName = listGroupType.getType(0).asGroupType().getType(0).getName();
+
+        Path path = directory.file("test%d.parquet".formatted(parquetCounter.getAndIncrement()));
+        try (var writer = ExampleParquetWriter.builder(new LocalOutputFile(path))
+                .withType(schema)
+                .build()) {
+            var record = new SimpleGroup(schema);
+            record.add(":ID", 1);
+            var listGroup = record.addGroup(listColumnName);
+            for (String value : listValues) {
+                listGroup.addGroup(repeatedName).add(elementName, value);
+            }
+            writer.write(record);
+        }
+        return path;
+    }
+
+    /**
+     * Writes a parquet file with a required INT32 {@code :ID} column and a native 3-level {@code LIST<int64>} column
+     * with no temporal logical annotation, used to exercise reading a list of raw numeric elements that are mapped to
+     * a temporal array through the header (so each element flows through the {@code Number} branches of convertType).
+     */
+    private Path createLongListParquetFile(String listColumnName, List<Long> listValues) throws Exception {
+        MessageType schema = Types.buildMessage()
+                .required(PrimitiveType.PrimitiveTypeName.INT32)
+                .named(":ID")
+                .optionalList()
+                .optionalElement(PrimitiveType.PrimitiveTypeName.INT64)
+                .named(listColumnName)
+                .named("something");
+        var listGroupType = schema.getType(listColumnName).asGroupType();
+        var repeatedName = listGroupType.getType(0).getName();
+        var elementName = listGroupType.getType(0).asGroupType().getType(0).getName();
+
+        Path path = directory.file("test%d.parquet".formatted(parquetCounter.getAndIncrement()));
+        try (var writer = ExampleParquetWriter.builder(new LocalOutputFile(path))
+                .withType(schema)
+                .build()) {
+            var record = new SimpleGroup(schema);
+            record.add(":ID", 1);
+            var listGroup = record.addGroup(listColumnName);
+            for (Long value : listValues) {
+                listGroup.addGroup(repeatedName).add(elementName, value);
+            }
+            writer.write(record);
+        }
+        return path;
+    }
+
     private Path createHeaderFile(List<String> columnNames, List<String> originalColumnNames) throws Exception {
         return createHeaderFile(columnNames, originalColumnNames, ",");
     }
@@ -5622,6 +6070,36 @@ class ParquetInputTest {
 
     private static Stream<String> groupNames() {
         return Stream.of("", null);
+    }
+
+    private static Stream<Arguments> numericListTemporalTypes() {
+        return Stream.of(
+                Arguments.of(
+                        "date[]",
+                        List.of(18262L, 18793L),
+                        List.of(LocalDate.of(2020, 1, 1), LocalDate.of(2021, 6, 15))),
+                Arguments.of(
+                        "time[]",
+                        List.of(52397144072000L, 0L),
+                        List.of(
+                                OffsetTime.of(14, 33, 17, 144072000, ZoneOffset.UTC),
+                                OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC))),
+                Arguments.of(
+                        "localtime[]",
+                        List.of(52397144072000L, 0L),
+                        List.of(LocalTime.of(14, 33, 17, 144072000), LocalTime.of(0, 0))),
+                Arguments.of(
+                        "datetime[]",
+                        List.of(1116975273123456L, 0L),
+                        List.of(
+                                ZonedDateTime.of(2005, 5, 24, 22, 54, 33, 123456000, ZoneOffset.UTC),
+                                ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))),
+                Arguments.of(
+                        "localdatetime[]",
+                        List.of(1116975273123456L, 0L),
+                        List.of(
+                                LocalDateTime.of(2005, 5, 24, 22, 54, 33, 123456000),
+                                LocalDateTime.of(1970, 1, 1, 0, 0))));
     }
 
     private static Stream<Arguments> listTypes() {
