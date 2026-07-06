@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.neo4j.genai.GenAIConfig;
 import org.neo4j.genai.util.HttpService;
-import org.neo4j.genai.util.monitor.Monitors;
 import org.neo4j.genai.util.provider.NamedProvider;
 import org.neo4j.genai.util.provider.ProviderRow;
 import org.neo4j.kernel.api.QueryLanguage;
@@ -49,9 +48,6 @@ public class TextStructuredCompletion {
     public Providers providers;
 
     @Context
-    public Monitors monitors;
-
-    @Context
     public GenAIConfig genAIConfig;
 
     @NotThreadSafe
@@ -73,7 +69,6 @@ public class TextStructuredCompletion {
             return schema;
         }
         final var provider = providers.configure(providerName, configuration, genAIConfig);
-        monitors.textCompletion().textStructuredCompletionFunctionCalled(provider.metricsName());
         return prompt == null ? null : provider.complete(prompt, schema);
     }
 

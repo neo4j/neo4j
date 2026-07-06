@@ -24,7 +24,6 @@ import static java.util.Objects.requireNonNull;
 import com.knuddels.jtokkit.api.Encoding;
 import java.util.List;
 import org.neo4j.genai.GenAIConfig;
-import org.neo4j.genai.util.monitor.Monitors;
 import org.neo4j.kernel.api.QueryLanguage;
 import org.neo4j.kernel.api.procedure.QueryLanguageScope;
 import org.neo4j.procedure.Context;
@@ -33,9 +32,6 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 
 public class TextChunkByToken {
-
-    @Context
-    public Monitors monitors;
 
     @Context
     public GenAIConfig genAIConfig;
@@ -51,7 +47,6 @@ public class TextChunkByToken {
                     Long overlap) {
         requireNonNull(limit, "'limit' must not be null");
         TextChunkConfig textChunkConfig = new TextChunkConfig(limit, overlap, model);
-        monitors.textToken().textChunkByTokenLimitFunctionCalled();
 
         if (prompt == null) {
             return null;

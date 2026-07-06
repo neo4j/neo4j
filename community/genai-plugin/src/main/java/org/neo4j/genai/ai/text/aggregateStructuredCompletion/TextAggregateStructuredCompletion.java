@@ -24,7 +24,6 @@ import static java.util.Objects.requireNonNull;
 import org.neo4j.genai.GenAIConfig;
 import org.neo4j.genai.ai.text.structuredCompletion.TextStructuredCompletion;
 import org.neo4j.genai.util.HttpService;
-import org.neo4j.genai.util.monitor.Monitors;
 import org.neo4j.genai.util.provider.NamedProvider;
 import org.neo4j.kernel.api.QueryLanguage;
 import org.neo4j.kernel.api.procedure.QueryLanguageScope;
@@ -48,9 +47,6 @@ public class TextAggregateStructuredCompletion {
     public TextStructuredCompletion.Providers providers;
 
     @Context
-    public Monitors monitors;
-
-    @Context
     public GenAIConfig genAIConfig;
 
     @NotThreadSafe
@@ -58,13 +54,12 @@ public class TextAggregateStructuredCompletion {
     @QueryLanguageScope(scope = {QueryLanguage.CYPHER_25})
     @Description("Generate text based on the specified prompt.")
     public CompleteFunction aggregateStructuredComplete() {
-        return new CompleteFunction(providers, monitors, genAIConfig);
+        return new CompleteFunction(providers, genAIConfig);
     }
 
     public static class CompleteFunction {
 
         public TextStructuredCompletion.Providers providers;
-        public Monitors monitors;
         public GenAIConfig genAIConfig;
 
         private final StringBuilder stringBuilder = new StringBuilder();
@@ -72,10 +67,8 @@ public class TextAggregateStructuredCompletion {
         private MapValue configuration;
         private MapValue schema;
 
-        public CompleteFunction(
-                TextStructuredCompletion.Providers providers, Monitors monitors, GenAIConfig genAIConfig) {
+        public CompleteFunction(TextStructuredCompletion.Providers providers, GenAIConfig genAIConfig) {
             this.providers = providers;
-            this.monitors = monitors;
             this.genAIConfig = genAIConfig;
         }
 
@@ -110,7 +103,6 @@ public class TextAggregateStructuredCompletion {
             requireNonNull(providerName, "'provider' must not be null");
             requireNonNull(configuration, "'configuration' must not be null");
             final var provider = providers.configure(providerName, configuration, genAIConfig);
-            monitors.textCompletion().textAggregationStructuredCompletionFunctionCalled(provider.metricsName());
             if (schema.isEmpty()) {
                 // A result cannot be contained within the schema, so return an empty map
                 return schema;

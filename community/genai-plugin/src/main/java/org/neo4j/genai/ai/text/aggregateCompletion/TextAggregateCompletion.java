@@ -24,7 +24,6 @@ import static java.util.Objects.requireNonNull;
 import org.neo4j.genai.GenAIConfig;
 import org.neo4j.genai.ai.text.completion.TextCompletion;
 import org.neo4j.genai.util.HttpService;
-import org.neo4j.genai.util.monitor.Monitors;
 import org.neo4j.genai.util.provider.NamedProvider;
 import org.neo4j.kernel.api.QueryLanguage;
 import org.neo4j.kernel.api.procedure.QueryLanguageScope;
@@ -47,31 +46,26 @@ public class TextAggregateCompletion {
     public TextCompletion.Providers providers;
 
     @Context
-    public Monitors monitors;
-
-    @Context
     public GenAIConfig genAIConfig;
 
     @UserAggregationFunction(name = "ai.text.aggregateCompletion")
     @QueryLanguageScope(scope = {QueryLanguage.CYPHER_25})
     @Description("Generate text based on the specified prompt.")
     public CompleteFunction aggregateComplete() {
-        return new CompleteFunction(providers, monitors, genAIConfig);
+        return new CompleteFunction(providers, genAIConfig);
     }
 
     public static class CompleteFunction {
 
         public TextCompletion.Providers providers;
-        public Monitors monitors;
         public GenAIConfig genAIConfig;
 
         private final StringBuilder stringBuilder = new StringBuilder();
         private String providerName;
         private MapValue configuration;
 
-        public CompleteFunction(TextCompletion.Providers providers, Monitors monitors, GenAIConfig genAIConfig) {
+        public CompleteFunction(TextCompletion.Providers providers, GenAIConfig genAIConfig) {
             this.providers = providers;
-            this.monitors = monitors;
             this.genAIConfig = genAIConfig;
         }
 
@@ -103,7 +97,6 @@ public class TextAggregateCompletion {
             requireNonNull(providerName, "'provider' must not be null");
             requireNonNull(configuration, "'configuration' must not be null");
             final var provider = providers.configure(providerName, configuration, genAIConfig);
-            monitors.textCompletion().textAggregationCompletionFunctionCalled(provider.metricsName());
 
             var newPrompt = stringBuilder.toString();
             return provider.complete(newPrompt);

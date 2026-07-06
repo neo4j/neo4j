@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.neo4j.genai.GenAIConfig;
 import org.neo4j.genai.util.HttpService;
-import org.neo4j.genai.util.monitor.Monitors;
 import org.neo4j.genai.util.provider.NamedProvider;
 import org.neo4j.genai.util.provider.ProviderRow;
 import org.neo4j.kernel.api.QueryLanguage;
@@ -50,9 +49,6 @@ public class TextChat {
     public Providers providers;
 
     @Context
-    public Monitors monitors;
-
-    @Context
     public GenAIConfig genAIConfig;
 
     @UserFunction(name = "ai.text.chat")
@@ -71,7 +67,6 @@ public class TextChat {
         requireNonNull(providerName, "'provider' must not be null");
         requireNonNull(configuration, "'configuration' must not be null");
         final var provider = providers.configure(providerName, configuration, genAIConfig);
-        monitors.textCompletion().textChatFunctionCalled(provider.metricsName());
         if (prompt == null) return null;
         final var result = provider.chat(prompt, Optional.ofNullable(previousResponseId));
         return Map.of(

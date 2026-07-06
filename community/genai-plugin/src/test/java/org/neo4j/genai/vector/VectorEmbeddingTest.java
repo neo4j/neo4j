@@ -21,7 +21,6 @@ package org.neo4j.genai.vector;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.List;
@@ -31,9 +30,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import org.neo4j.genai.util.ParametersTest;
-import org.neo4j.genai.util.monitor.Monitors;
 import org.neo4j.genai.vector.DeprecatedVectorEncoding.InternalBatchRow;
 import org.neo4j.genai.vector.DeprecatedVectorEncoding.Provider;
 import org.neo4j.genai.vector.providers.DeprecatedAzureOpenAI;
@@ -45,12 +42,6 @@ import org.neo4j.values.storable.Value;
 
 class VectorEmbeddingTest {
     private static final DeprecatedVectorEncoding VECTOR_ENCODING = new DeprecatedVectorEncoding();
-
-    static {
-        VECTOR_ENCODING.monitors = Mockito.mock(Monitors.class);
-        final var monitor = Mockito.mock(DeprecatedVectorEncodingCallCountersMonitor.class);
-        when(VECTOR_ENCODING.monitors.deprecatedVectorEnc()).thenReturn(monitor);
-    }
 
     @Nested
     class Providers {

@@ -126,12 +126,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-monitoring</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-procedure</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>

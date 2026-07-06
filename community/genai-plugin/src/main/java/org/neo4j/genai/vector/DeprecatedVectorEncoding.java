@@ -44,7 +44,6 @@ import org.neo4j.annotations.service.Service;
 import org.neo4j.genai.util.HttpService;
 import org.neo4j.genai.util.Parameters;
 import org.neo4j.genai.util.Parameters.Parameter;
-import org.neo4j.genai.util.monitor.Monitors;
 import org.neo4j.kernel.api.QueryLanguage;
 import org.neo4j.kernel.api.procedure.QueryLanguageScope;
 import org.neo4j.procedure.Context;
@@ -66,9 +65,6 @@ public class DeprecatedVectorEncoding {
     private static final ImmutableList<Provider> PROVIDERS = Lists.immutable.withAllSorted(
             Comparator.comparing(Provider::name, CASE_INSENSITIVE_ORDER),
             CollectionAdapter.adapt(Services.loadAll(Provider.class)));
-
-    @Context
-    public Monitors monitors;
 
     @Context
     public HttpService httpService;
@@ -190,7 +186,6 @@ public class DeprecatedVectorEncoding {
         requireNonNull(providerName, "'provider' must not be null");
         final var configurationMap = requireNonNullMap(configuration);
         final var provider = getProvider(providerName);
-        monitors.deprecatedVectorEnc().deprecatedEncodeFunctionCalled(provider.name());
         if (resource == null) {
             return NO_VALUE;
         } else {
@@ -239,7 +234,6 @@ public class DeprecatedVectorEncoding {
         requireNonNull(providerName, "'provider' must not be null");
         final var configurationMap = requireNonNullMap(configuration);
         final var provider = getProvider(providerName);
-        monitors.deprecatedVectorEnc().deprecatedEncodeBatchProcedureCalled(provider.name());
         // Remember all the places where we had nulls and remove them from the requested resources
         final var removedIndexes = IntLists.mutable.empty();
         // We need to make a copy as the List interface doesn't guarantee mutability

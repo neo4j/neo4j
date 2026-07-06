@@ -35,7 +35,6 @@ import org.neo4j.genai.ai.text.embed.VectorEmbedding;
 import org.neo4j.genai.util.GenAIProcedureException;
 import org.neo4j.genai.util.HttpService;
 import org.neo4j.genai.util.ResourceLoader;
-import org.neo4j.genai.util.monitor.Monitors;
 import org.neo4j.genai.util.provider.NamedProvider;
 import org.neo4j.genai.util.provider.ProviderRow;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -60,9 +59,6 @@ public class ImageVectorEmbedding {
 
     @Context
     public Providers providers;
-
-    @Context
-    public Monitors monitors;
 
     @Context
     public HttpService httpService;
@@ -98,7 +94,6 @@ public class ImageVectorEmbedding {
         requireNonNull(providerName, "'provider' must not be null");
         requireNonNull(configuration, "'configuration' must not be null");
         final var provider = providers.configure(providerName, configuration, genAIConfig);
-        monitors.imageVectorEnc().embedFunctionCalled(provider.name());
         if (resource == null || resource.isEmpty()) {
             return null;
         } else {
@@ -131,7 +126,6 @@ public class ImageVectorEmbedding {
             return Stream.empty();
         }
         final var provider = providers.configure(providerName, configuration, genAIConfig);
-        monitors.imageVectorEnc().embedBatchProcedureCalled(provider.name());
         var resolved = resources.stream()
                 .map(r -> (r == null || r.isEmpty()) ? r : resolveToBase64(r))
                 .toList();

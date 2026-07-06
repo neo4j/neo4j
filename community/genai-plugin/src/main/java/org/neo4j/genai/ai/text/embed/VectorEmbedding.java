@@ -34,7 +34,6 @@ import org.eclipse.collections.api.factory.primitive.IntLists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.neo4j.genai.GenAIConfig;
 import org.neo4j.genai.util.HttpService;
-import org.neo4j.genai.util.monitor.Monitors;
 import org.neo4j.genai.util.provider.NamedProvider;
 import org.neo4j.genai.util.provider.ProviderRow;
 import org.neo4j.kernel.api.QueryLanguage;
@@ -56,9 +55,6 @@ public class VectorEmbedding {
 
     @Context
     public Providers providers;
-
-    @Context
-    public Monitors monitors;
 
     @Context
     public HttpService httpService;
@@ -85,7 +81,6 @@ public class VectorEmbedding {
         requireNonNull(configuration, "'configuration' must not be null");
         final var provider = providers.configure(providerName, configuration, genAIConfig);
 
-        monitors.vectorEnc().embedFunctionCalled(provider.name());
         if (resource == null || resource.isEmpty()) {
             return null;
         } else {
@@ -115,7 +110,6 @@ public class VectorEmbedding {
             return Stream.empty();
         }
         final var provider = providers.configure(providerName, configuration, genAIConfig);
-        monitors.vectorEnc().embedBatchProcedureCalled(provider.name());
 
         // Not all providers use batching, so in those cases there is no limit, just return
         // the entire thing encoded
