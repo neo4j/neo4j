@@ -58,6 +58,14 @@ public interface LuceneIndexWriter extends Closeable {
 
     void maybeMerge() throws IOException;
 
+    /**
+     * Re-apply merge-policy parameters to the already-open writer, mutating the live {@link MergePolicy}
+     * instance in place (it cannot be replaced on an open writer). Used to swap the population tuning
+     * (e.g. {@code LOG_BYTE_SIZED} with a large {@code mergeFactor}) for the standard tuning before a
+     * post-population {@link #maybeMerge()}, so the natural merge policy actually consolidates.
+     */
+    void updateMergePolicy(int mergeFactor, double segmentsPerTier, int maxMergeAtOnce);
+
     void markAsOnline();
 
     int getMaxDocs();

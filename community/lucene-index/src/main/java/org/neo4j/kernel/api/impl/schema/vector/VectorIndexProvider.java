@@ -36,7 +36,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.internal.schema.TypedIndexSettingsValidator;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.KernelVersion;
@@ -46,11 +45,8 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigMode;
 import org.neo4j.kernel.api.impl.index.JobSchedulerExecutorService;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
-import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneSettings;
-import org.neo4j.kernel.api.impl.index.lucene.LuceneSettings.PostPopulationCompaction;
 import org.neo4j.kernel.api.impl.index.lucene.codec.LuceneCodec;
-import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -63,7 +59,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.ElementIdMapper;
@@ -152,7 +147,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
 
         IgnoreStrategy ignoreStrategy = new IgnoreStrategy(version, dimensions);
         Neo4jVectorSimilarityFunction similarityFunction = vectorSimilarityFunctionFrom(vectorIndexConfig);
-        return new VectorIndexPopulator(luceneIndex, ignoreStrategy, documentStructure, similarityFunction);
+        return new VectorIndexPopulator(luceneIndex, ignoreStrategy, documentStructure, similarityFunction, config);
     }
 
     @Override
@@ -176,7 +171,6 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         }
         DatabaseIndex<VectorIndexReader> luceneIndex = builder.build();
         luceneIndex.open();
-        compactSegments(scheduler, luceneIndex, config);
 
         IgnoreStrategy ignoreStrategy = new IgnoreStrategy(version, vectorIndexConfig.dimensions());
         Neo4jVectorSimilarityFunction similarityFunction = vectorSimilarityFunctionFrom(vectorIndexConfig);
@@ -252,63 +246,5 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
                 ? JobSchedulerExecutorService.nonShutdownable(scheduler, Group.VECTOR_INDEX_MERGE)
                 : null;
         return luceneContext.codecsFactory().codecFor(vectorIndexConfig, numMergeWorkers, mergeExec);
-    }
-
-    /**
-     * Use given {@link JobScheduler} to force the segment merges
-     * @see #compactSegments(DatabaseIndex, Config)
-     * Schedule asynchronous post-population compaction of the index on {@link Group#INDEX_POPULATION}.
-     * The actual operation performed is dictated by
-     * {@link LuceneSettings#vector_post_population_compaction}.
-     * @see #compactSegments(DatabaseIndex, Config)
-     */
-    private static void compactSegments(JobScheduler scheduler, DatabaseIndex<?> luceneIndex, Config config) {
-        scheduler.schedule(
-                Group.INDEX_POPULATION,
-                JobMonitoringParams.systemJob("Compacting vector index segments"),
-                IOUtils.uncheckedRunnable(() -> compactSegments(luceneIndex, config)));
-    }
-
-    /**
-     * Perform post-population compaction of the index according to
-     * {@link LuceneSettings#vector_post_population_compaction}.
-     * <ul>
-     *   <li>{@link PostPopulationCompaction#NONE} — skip merging entirely.</li>
-     *   <li>{@link PostPopulationCompaction#AUTO} — invoke Lucene's natural merge policy via
-     *       {@code maybeMerge()}. The configured merge policy decides which segments (if any) to merge.</li>
-     *   <li>{@link PostPopulationCompaction#PARTIAL} — force-merge down to
-     *       {@link LuceneSettings#vector_standard_merge_factor} segments per partition.</li>
-     *   <li>{@link PostPopulationCompaction#FULL} — force-merge each partition to a single segment.</li>
-     * </ul>
-     */
-    private static void compactSegments(DatabaseIndex<?> luceneIndex, Config config) throws IOException {
-        PostPopulationCompaction mode = config.get(LuceneSettings.vector_post_population_compaction);
-        if (mode == PostPopulationCompaction.NONE) {
-            return;
-        }
-        int forceMergeTarget =
-                mode == PostPopulationCompaction.PARTIAL ? IndexWriterConfigMode.VECTOR.getMergeFactor(config) : 1;
-        IOException exception = null;
-        for (AbstractIndexPartition partition : luceneIndex.getPartitions()) {
-            try {
-                LuceneIndexWriter writer = partition.getIndexWriter();
-                switch (mode) {
-                    case NONE -> {
-                        // handled above
-                    }
-                    case AUTO -> writer.maybeMerge();
-                    case PARTIAL, FULL -> writer.forceMerge(forceMergeTarget);
-                }
-            } catch (IOException e) {
-                if (exception != null) {
-                    exception.addSuppressed(e);
-                } else {
-                    exception = e;
-                }
-            }
-        }
-        if (exception != null) {
-            throw exception;
-        }
     }
 }

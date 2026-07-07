@@ -38,9 +38,12 @@ import org.neo4j.shaded.lucene9.index.DirectoryReader;
 import org.neo4j.shaded.lucene9.index.IndexCommit;
 import org.neo4j.shaded.lucene9.index.IndexDeletionPolicy;
 import org.neo4j.shaded.lucene9.index.IndexWriter;
+import org.neo4j.shaded.lucene9.index.LogMergePolicy;
+import org.neo4j.shaded.lucene9.index.MergePolicy;
 import org.neo4j.shaded.lucene9.index.SegmentInfos;
 import org.neo4j.shaded.lucene9.index.SnapshotDeletionPolicy;
 import org.neo4j.shaded.lucene9.index.Term;
+import org.neo4j.shaded.lucene9.index.TieredMergePolicy;
 import org.neo4j.shaded.lucene9.store.Directory;
 
 class Lucene9IndexWriter implements LuceneIndexWriter {
@@ -90,6 +93,19 @@ class Lucene9IndexWriter implements LuceneIndexWriter {
     @Override
     public void maybeMerge() throws IOException {
         indexWriter.maybeMerge();
+    }
+
+    @Override
+    public void updateMergePolicy(int mergeFactor, double segmentsPerTier, int maxMergeAtOnce) {
+        MergePolicy mergePolicy = indexWriter.getConfig().getMergePolicy();
+        switch (mergePolicy) {
+            case LogMergePolicy logMergePolicy -> logMergePolicy.setMergeFactor(mergeFactor);
+            case TieredMergePolicy tieredMergePolicy -> {
+                tieredMergePolicy.setSegmentsPerTier(segmentsPerTier);
+                tieredMergePolicy.setMaxMergeAtOnce(maxMergeAtOnce);
+            }
+            default -> throw new UnsupportedOperationException("Unexpected mergePolicy: " + mergePolicy);
+        }
     }
 
     @Override

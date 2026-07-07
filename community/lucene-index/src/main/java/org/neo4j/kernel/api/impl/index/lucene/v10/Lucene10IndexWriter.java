@@ -29,9 +29,12 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.index.backup.ReadOnlyIndexSnapshotFileIterator;
@@ -90,6 +93,20 @@ class Lucene10IndexWriter implements LuceneIndexWriter {
     @Override
     public void maybeMerge() throws IOException {
         indexWriter.maybeMerge();
+    }
+
+    @Override
+    public void updateMergePolicy(int mergeFactor, double segmentsPerTier, int maxMergeAtOnce) {
+        MergePolicy mergePolicy = indexWriter.getConfig().getMergePolicy();
+
+        switch (mergePolicy) {
+            case LogMergePolicy logMergePolicy -> logMergePolicy.setMergeFactor(mergeFactor);
+            case TieredMergePolicy tieredMergePolicy -> {
+                tieredMergePolicy.setSegmentsPerTier(segmentsPerTier);
+                tieredMergePolicy.setMaxMergeAtOnce(maxMergeAtOnce);
+            }
+            default -> throw new UnsupportedOperationException("Unexpected mergePolicy: " + mergePolicy);
+        }
     }
 
     @Override
