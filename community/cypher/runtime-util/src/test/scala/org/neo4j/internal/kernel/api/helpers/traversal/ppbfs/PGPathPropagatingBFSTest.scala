@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.util.test_helpers.InMemoryGraph
 import org.neo4j.function.Predicates
 import org.neo4j.graphdb.Direction
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NfaDsl.Implicits._
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest._
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTestBase.Nfa
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTestBase.nfa
@@ -1877,6 +1878,133 @@ class PGPathPropagatingBFSTest extends RuntimeUtilTestSuite with PGPathPropagati
       .withNfa(`(s) ((a)-->(b))+ (t)`)
       .withPathMode(TraversalPathMode.Acyclic)
       .withMaxDepth(10)
+      .assertExpected()
+  }
+
+  // The tests above all use NFAs whose final transition is a node juxtaposition, where the node
+  // adjacent to the target IS the target. These use NFAs ending in a relationship expansion, so
+  // that the target's occurrence at the end of the path is not implied by any other tracked node.
+
+  private val `(s) ((a)-->(b))+ (c)-->(t)`: Nfa =
+    nfa("s" |> ("a" --> "b" +) |> ("c" --> "t"))
+
+  private val `(s) ((a)--(b))+ (c)--(t)`: Nfa =
+    nfa("s" |> ("a" -- "b" +) |> ("c" -- "t"))
+
+  private val `(s) ((a)--(b)){4,8} (c)--(t)`: Nfa =
+    nfa("s" |> ("a" -- "b" rep (4, 8)) |> ("c" -- "t"))
+
+  test("acyclic does not return a path that revisits the target as an inner node") {
+    val graph = InMemoryGraph.fromTemplate(
+      """
+         (s)-[r_st]->(t)-[r_tu]->(u)-[r_uv]->(v)
+                      ^                       |
+                      '-----------------------'
+      """
+    )
+    val s = graph node "s"
+    val t = graph node "t"
+    val u = graph node "u"
+    val v = graph node "v"
+
+    val r_st = graph rel "r_st"
+    val r_tu = graph rel "r_tu"
+    val r_uv = graph rel "r_uv"
+
+    val paths = fixture()
+      .withGraph(graph)
+      .from(s)
+      .withNfa(`(s) ((a)-->(b))+ (c)-->(t)`)
+      .withPathMode(TraversalPathMode.Acyclic)
+      .withMaxDepth(10)
+      .paths()
+
+    // s→t→u→v→t visits the target t as an inner node and must not be returned
+    paths shouldBe Seq(
+      Seq(s, s, r_st, t, t, r_tu, u),
+      Seq(s, s, r_st, t, t, r_tu, u, u, r_uv, v)
+    )
+  }
+
+  test("acyclic rejection of a target revisit preserves a sibling path sharing its signposts") {
+    // As above plus v→w: the valid path s→t→u→v→w shares all but its last signpost with the
+    // rejected s→t→u→v→t, and is found at the same depth
+    val graph = InMemoryGraph.fromTemplate(
+      """
+         (s)-[r_st]->(t)-[r_tu]->(u)-[r_uv]->(v)-[r_vw]->(w)
+                      ^                       |
+                      '-----------------------'
+      """
+    )
+    val s = graph node "s"
+    val t = graph node "t"
+    val u = graph node "u"
+    val v = graph node "v"
+    val w = graph node "w"
+
+    val r_st = graph rel "r_st"
+    val r_tu = graph rel "r_tu"
+    val r_uv = graph rel "r_uv"
+    val r_vw = graph rel "r_vw"
+
+    val paths = fixture()
+      .withGraph(graph)
+      .from(s)
+      .withNfa(`(s) ((a)-->(b))+ (c)-->(t)`)
+      .withPathMode(TraversalPathMode.Acyclic)
+      .withMaxDepth(10)
+      .paths()
+
+    paths shouldBe Seq(
+      Seq(s, s, r_st, t, t, r_tu, u),
+      Seq(s, s, r_st, t, t, r_tu, u, u, r_uv, v),
+      Seq(s, s, r_st, t, t, r_tu, u, u, r_uv, v, v, r_vw, w)
+    )
+  }
+
+  test("acyclic with a minimum repetition returns no path when every candidate cycles through the target") {
+    // ANY SHORTEST ACYCLIC (:S)--{4,}()--(:A) — the only simple path from s to a is the direct
+    // edge, so every candidate of 5+ hops must cycle through the source and/or the target
+
+    val graph = InMemoryGraph.fromTemplate(
+      """
+         .----.      .----.
+         v    |      v    |
+        ()-->(s)-->(a)-->()
+      """
+    )
+    val s = graph node "s"
+    val a = graph node "a"
+
+    val paths = fixture()
+      .withGraph(graph)
+      .from(s)
+      .into(a)
+      .withNfa(`(s) ((a)--(b)){4,8} (c)--(t)`)
+      .withPathMode(TraversalPathMode.Acyclic)
+      .withMaxDepth(10)
+      .paths()
+
+    paths shouldBe empty
+  }
+
+  test("acyclic assertExpected on graph with cycles through both source and target") {
+    val graph = InMemoryGraph.fromTemplate(
+      """
+         .----.      .----.
+         v    |      v    |
+        ()-->(s)-->(a)-->()
+      """
+    )
+
+    val s = graph node "s"
+
+    fixture()
+      .withGraph(graph)
+      .from(s)
+      .withNfa(`(s) ((a)--(b))+ (c)--(t)`)
+      .withPathMode(TraversalPathMode.Acyclic)
+      .withMaxDepth(6)
       .assertExpected()
   }
 

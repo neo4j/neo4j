@@ -158,12 +158,7 @@ public interface SignpostTracking {
                     }
                 }
 
-                if (!signpost.isValidatedAtLength(sourceLength)) {
-                    signpost.validate(sourceLength);
-                    if (!signpost.forwardNode.validatedAtLength(sourceLength)) {
-                        signpost.forwardNode.setValidatedAtLength(sourceLength, stack.dgLength() - sourceLength);
-                    }
-                }
+                validateSignpostLength(signpost, sourceLength, stack);
             }
             return true;
         }
@@ -179,8 +174,8 @@ public interface SignpostTracking {
      * Uses a {@link DepthPresenceTracker} (nodeId to positions) to track
      * where each node appears in the current path, mirroring Trail's relationship tracking.
      *
-     * <p>Node positions use a +1 offset from signpost indices so the target node fits at position 0:
-     * position 0 = target, position S = prevNode of signpost pushed when stack.size() == S.
+     * <p>A node's position is its distance from the target, counted in signposts: the target
+     * sits at position 0, and the prevNode of signpost i sits at position i + 1.
      */
     final class AcyclicModeSignPostTracking implements SignpostTracking {
         private final DepthPresenceTracker nodePresence;
@@ -208,9 +203,8 @@ public interface SignpostTracking {
                 return false;
             }
 
-            // Cap to stack.size() because the duplicate may be with the target node (position 0),
-            // which has no corresponding signpost. In that case dup == stack.size() and dup + 1
-            // would exceed the number of signposts on the stack.
+            // If the duplicate is the target (position 0) there is no signpost for it,
+            // so cap the walk at the number of signposts on the stack.
             int numSignposts = Math.min(dup + 1, stack.size());
             int sourceLength = stack.lengthFromSource();
             for (int i = 0; i < numSignposts; i++) {
@@ -231,9 +225,12 @@ public interface SignpostTracking {
         public void onPushed(TwoWaySignpost signpost, SignpostStack stack) {
             int size = stack.size();
             this.protectFromPruning.set(size - 1, false);
-            // A node signpost at size == 1 indicates the start node, which should also be tracked
-            // It would be missed by only looking at relationship signposts
-            if (signpost instanceof TwoWaySignpost.RelSignpost || size == 1) {
+            if (size == 1) {
+                // The target is the one node on the path that is never a prevNode, so the branch
+                // below never records it. Record it here, at its own position 0.
+                nodePresence.add(stack.target().id(), 0);
+            }
+            if (signpost instanceof TwoWaySignpost.RelSignpost) {
                 nodePresence.add(signpost.prevNode.id(), size);
             }
         }
@@ -242,6 +239,9 @@ public interface SignpostTracking {
         public void onPopped(TwoWaySignpost signpost, SignpostStack stack) {
             if (signpost instanceof TwoWaySignpost.RelSignpost) {
                 nodePresence.remove(signpost.prevNode.id(), stack.size() + 1);
+            }
+            if (stack.size() == 0) {
+                nodePresence.remove(stack.target().id(), 0);
             }
         }
 
@@ -252,7 +252,7 @@ public interface SignpostTracking {
                 TwoWaySignpost signpost = stack.signpost(i);
                 sourceLength += signpost.dataGraphLength();
 
-                if (signpost instanceof TwoWaySignpost.RelSignpost || i == 0) {
+                if (signpost instanceof TwoWaySignpost.RelSignpost) {
                     assert nodePresence.isPresent(signpost.prevNode.id(), i + 1);
                     if (nodePresence.isPresentBeyond(signpost.prevNode.id(), i + 1)) {
                         hooks.invalid(stack);
@@ -260,12 +260,19 @@ public interface SignpostTracking {
                     }
                 }
 
-                if (!signpost.isValidatedAtLength(sourceLength)) {
-                    signpost.validate(sourceLength);
-                    if (!signpost.forwardNode.validatedAtLength(sourceLength)) {
-                        signpost.forwardNode.setValidatedAtLength(sourceLength, stack.dgLength() - sourceLength);
+                if (i == 0) {
+                    // The target has no signpost, so its duplicate check lives here: if it appears
+                    // again deeper in the path, the path cycles through the target — reject it.
+                    // The check runs at i == 0, not before the loop, so that the length validation
+                    // below has already run for every other signpost; other paths that share those
+                    // signposts depend on it.
+                    if (nodePresence.isPresentBeyond(stack.target().id(), 0)) {
+                        hooks.invalid(stack);
+                        return false;
                     }
                 }
+
+                validateSignpostLength(signpost, sourceLength, stack);
             }
             return true;
         }
@@ -274,6 +281,15 @@ public interface SignpostTracking {
         public void clear() {
             nodePresence.clear();
             protectFromPruning.clear();
+        }
+    }
+
+    private static void validateSignpostLength(TwoWaySignpost signpost, int sourceLength, SignpostStack stack) {
+        if (!signpost.isValidatedAtLength(sourceLength)) {
+            signpost.validate(sourceLength);
+            if (!signpost.forwardNode.validatedAtLength(sourceLength)) {
+                signpost.forwardNode.setValidatedAtLength(sourceLength, stack.dgLength() - sourceLength);
+            }
         }
     }
 }
