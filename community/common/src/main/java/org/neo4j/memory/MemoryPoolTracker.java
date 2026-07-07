@@ -52,6 +52,11 @@ class MemoryPoolTracker implements MemoryTracker {
     }
 
     @Override
+    public void allocateHeapNoThrow(long bytes) {
+        pool.reserveHeapNoThrow(bytes);
+    }
+
+    @Override
     public void releaseHeap(long bytes) {
         pool.releaseHeap(bytes);
     }

@@ -112,7 +112,7 @@ public class MemoryPoolImpl implements MemoryPool {
         maxMemory.setRelease(validateSize(size));
     }
 
-    private static long validateSize(long size) {
+    long validateSize(long size) {
         if (size == 0) {
             return Long.MAX_VALUE;
         }

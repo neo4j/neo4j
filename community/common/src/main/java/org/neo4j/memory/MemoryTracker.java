@@ -57,6 +57,13 @@ public interface MemoryTracker extends AutoCloseable, HeapMemoryTracker, HeapEst
     void allocateHeap(long bytes);
 
     /**
+     * Record an allocation of heap memory. This will not throw even if this request exceeds the limits.
+     *
+     * @param bytes the number of bytes about to be allocated.
+     */
+    default void allocateHeapNoThrow(long bytes) {}
+
+    /**
      * Record the release of heap memory. This should be called when we forget about a reference and that particular object will be garbage collected.
      *
      * @param bytes number of released bytes
