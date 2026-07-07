@@ -20,7 +20,6 @@
 package org.neo4j.harness;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.security.StaticAccessMode.FULL;
 import static org.neo4j.internal.kernel.api.security.StaticAccessMode.READ;
 import static org.neo4j.messages.MessageUtil.authDisabled;
@@ -102,9 +101,9 @@ class JavaFunctionsTestIT {
                             + "}"));
 
             JsonNode result = response.get("results").get(0);
-            assertEquals("someNumber", result.get("columns").get(0).asText());
-            assertEquals(1337, result.get("data").get(0).get("row").get(0).asInt());
-            assertEquals("[]", response.get("errors").toString());
+            assertThat(result.get("columns").get(0).asText()).isEqualTo("someNumber");
+            assertThat(result.get("data").get(0).get("row").get(0).asInt()).isEqualTo(1337);
+            assertThat(response.get("errors").toString()).isEqualTo("[]");
         }
     }
 
@@ -118,9 +117,9 @@ class JavaFunctionsTestIT {
                     quotedJson("{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.funcThatThrows()' } ] }"));
 
             String error = response.get("errors").get(0).get("message").asText();
-            assertEquals(
-                    "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang.RuntimeException: This is an exception",
-                    error);
+            assertThat(error)
+                    .isEqualTo(
+                            "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang.RuntimeException: This is an exception");
         }
     }
 
@@ -133,10 +132,10 @@ class JavaFunctionsTestIT {
                     server.httpURI().resolve("db/neo4j/tx/commit").toString(),
                     quotedJson("{ 'statements': [ { 'statement': 'RETURN my.hello() AS result' } ] }"));
 
-            assertEquals("[]", response.get("errors").toString());
+            assertThat(response.get("errors").toString()).isEqualTo("[]");
             JsonNode result = response.get("results").get(0);
-            assertEquals("result", result.get("columns").get(0).asText());
-            assertEquals("world", result.get("data").get(0).get("row").get(0).asText());
+            assertThat(result.get("columns").get(0).asText()).isEqualTo("result");
+            assertThat(result.get("data").get(0).get("row").get(0).asText()).isEqualTo("world");
         }
     }
 
@@ -162,10 +161,10 @@ class JavaFunctionsTestIT {
                 server.httpURI().resolve("db/neo4j/tx/commit").toString(),
                 quotedJson("{ 'statements': [ { 'statement': '" + query + "' } ] }"));
 
-        assertEquals("[]", response.get("errors").toString());
+        assertThat(response.get("errors").toString()).isEqualTo("[]");
         JsonNode result = response.get("results").get(0);
-        assertEquals("value", result.get("columns").get(0).asText());
-        assertEquals(value, result.get("data").get(0).get("row").get(0).asLong());
+        assertThat(result.get("columns").get(0).asText()).isEqualTo("value");
+        assertThat(result.get("data").get(0).get("row").get(0).asLong()).isEqualTo(value);
     }
 
     private static void assertQueryGetsError(Neo4j server, String query, String error) throws Throwable {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.harness;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -70,9 +70,9 @@ class JavaAggregationFunctionsTestIT {
                             + "}"));
 
             JsonNode result = response.get("results").get(0);
-            assertEquals("someNumber", result.get("columns").get(0).asText());
-            assertEquals(1337, result.get("data").get(0).get("row").get(0).asInt());
-            assertEquals("[]", response.get("errors").toString());
+            assertThat(result.get("columns").get(0).asText()).isEqualTo("someNumber");
+            assertThat(result.get("data").get(0).get("row").get(0).asInt()).isEqualTo(1337);
+            assertThat(response.get("errors").toString()).isEqualTo("[]");
         }
     }
 
@@ -86,9 +86,9 @@ class JavaAggregationFunctionsTestIT {
                     quotedJson("{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.funcThatThrows()' } ] }"));
 
             String error = response.get("errors").get(0).get("message").asText();
-            assertEquals(
-                    "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang.RuntimeException: This is an exception",
-                    error);
+            assertThat(error)
+                    .isEqualTo(
+                            "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang.RuntimeException: This is an exception");
         }
     }
 

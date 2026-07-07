@@ -20,8 +20,7 @@
 package org.neo4j.harness.junit.extension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -38,30 +37,31 @@ class Neo4jExtensionIT {
 
     @BeforeEach
     void setUp(Neo4j neo4j, GraphDatabaseService databaseService) {
-        assertNotNull(neo4j);
-        assertNotNull(databaseService);
+        assertThat(neo4j).isNotNull();
+        assertThat(databaseService).isNotNull();
     }
 
     @Test
     void neo4jAvailable(Neo4j neo4j) {
-        assertNotNull(neo4j);
+        assertThat(neo4j).isNotNull();
         assertThat(HTTP.GET(neo4j.httpURI().toString()).status()).isEqualTo(200);
     }
 
     @Test
     void graphDatabaseServiceIsAvailable(GraphDatabaseService databaseService) {
-        assertNotNull(databaseService);
-        assertDoesNotThrow(() -> {
-            try (Transaction transaction = databaseService.beginTx()) {
-                transaction.createNode();
-                transaction.commit();
-            }
-        });
+        assertThat(databaseService).isNotNull();
+        assertThatCode(() -> {
+                    try (Transaction transaction = databaseService.beginTx()) {
+                        transaction.createNode();
+                        transaction.commit();
+                    }
+                })
+                .doesNotThrowAnyException();
     }
 
     @Test
     void databaseManagementServiceIsAvailable(DatabaseManagementService managementService) {
-        assertNotNull(managementService);
-        assertNotNull(managementService.database(DEFAULT_DATABASE_NAME));
+        assertThat(managementService).isNotNull();
+        assertThat(managementService.database(DEFAULT_DATABASE_NAME)).isNotNull();
     }
 }

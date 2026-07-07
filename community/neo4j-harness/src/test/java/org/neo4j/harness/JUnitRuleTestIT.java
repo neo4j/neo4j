@@ -20,7 +20,6 @@
 package org.neo4j.harness;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.TestDatabaseManagementServiceFactorySupplier.isSpd;
@@ -113,7 +112,8 @@ public class JUnitRuleTestIT {
         final GraphDatabaseService graphDatabaseService = neo4j.defaultDatabaseService();
         try (Transaction transaction = graphDatabaseService.beginTx()) {
             // Then
-            assertEquals(2, Iterators.count(transaction.execute("MATCH (n:User) RETURN n")));
+            assertThat(Iterators.count(transaction.execute("MATCH (n:User) RETURN n")))
+                    .isEqualTo(2);
             transaction.commit();
         }
         success = true;
@@ -145,8 +145,8 @@ public class JUnitRuleTestIT {
                         try (Transaction transaction = graphDatabaseService.beginTx()) {
                             try (Result result = transaction.execute("MATCH (n) RETURN count(n) AS " + "count")) {
                                 List<Object> column = Iterators.asList(result.columnAs("count"));
-                                assertEquals(1, column.size());
-                                assertEquals(1L, column.get(0));
+                                assertThat(column.size()).isEqualTo(1);
+                                assertThat(column.get(0)).isEqualTo(1L);
                             }
                         }
                     }

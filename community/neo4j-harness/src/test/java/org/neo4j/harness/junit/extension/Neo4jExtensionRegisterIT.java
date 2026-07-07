@@ -20,8 +20,7 @@
 package org.neo4j.harness.junit.extension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import java.io.IOException;
@@ -76,19 +75,20 @@ class Neo4jExtensionRegisterIT {
 
     @Test
     void neo4jAvailable(Neo4j neo4j) {
-        assertNotNull(neo4j);
+        assertThat(neo4j).isNotNull();
         assertThat(HTTP.GET(neo4j.httpURI().toString()).status()).isEqualTo(200);
     }
 
     @Test
     void graphDatabaseServiceIsAvailable(GraphDatabaseService databaseService) {
-        assertNotNull(databaseService);
-        assertDoesNotThrow(() -> {
-            try (Transaction transaction = databaseService.beginTx()) {
-                transaction.createNode();
-                transaction.commit();
-            }
-        });
+        assertThat(databaseService).isNotNull();
+        assertThatCode(() -> {
+                    try (Transaction transaction = databaseService.beginTx()) {
+                        transaction.createNode();
+                        transaction.commit();
+                    }
+                })
+                .doesNotThrowAnyException();
     }
 
     @Test

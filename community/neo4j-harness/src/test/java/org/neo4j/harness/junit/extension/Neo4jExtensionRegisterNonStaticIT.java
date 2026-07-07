@@ -20,7 +20,6 @@
 package org.neo4j.harness.junit.extension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -33,11 +32,12 @@ import org.neo4j.test.server.HTTP;
 
 class Neo4jExtensionRegisterNonStaticIT {
     @RegisterExtension
+    @SuppressWarnings("JUnitMalformedDeclaration") // non-static is intentional: tests per-instance lifecycle
     Neo4jExtension neo4jExtension = Neo4jExtension.builder().build();
 
     @Test
     void neo4jAvailable(Neo4j neo4j) {
-        assertNotNull(neo4j);
+        assertThat(neo4j).isNotNull();
         assertThat(HTTP.GET(neo4j.httpURI().toString()).status()).isEqualTo(200);
     }
 

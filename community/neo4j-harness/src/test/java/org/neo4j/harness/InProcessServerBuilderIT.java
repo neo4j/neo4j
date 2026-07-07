@@ -20,11 +20,9 @@
 package org.neo4j.harness;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
@@ -95,7 +93,7 @@ class InProcessServerBuilderIT {
         }
 
         // And after it's been closed, it should've cleaned up after itself.
-        assertTrue(FileUtils.isDirectoryEmpty(workDir));
+        assertThat(FileUtils.isDirectoryEmpty(workDir)).isTrue();
     }
 
     @Test
@@ -135,7 +133,7 @@ class InProcessServerBuilderIT {
             Config config = ((GraphDatabaseAPI) neo4j.defaultDatabaseService())
                     .getDependencyResolver()
                     .resolveDependency(Config.class);
-            assertEquals(20, config.get(GraphDatabaseSettings.dense_node_threshold));
+            assertThat(config.get(GraphDatabaseSettings.dense_node_threshold)).isEqualTo(20);
         }
     }
 
@@ -169,16 +167,17 @@ class InProcessServerBuilderIT {
     void startWithDisabledServer() {
         try (Neo4j neo4j =
                 getTestBuilder(directory.homePath()).withDisabledServer().build()) {
-            assertThrows(IllegalStateException.class, neo4j::httpURI);
-            assertThrows(IllegalStateException.class, neo4j::httpsURI);
+            assertThatExceptionOfType(IllegalStateException.class).isThrownBy(neo4j::httpURI);
+            assertThatExceptionOfType(IllegalStateException.class).isThrownBy(neo4j::httpsURI);
 
-            assertDoesNotThrow(() -> {
-                GraphDatabaseService service = neo4j.defaultDatabaseService();
-                try (Transaction transaction = service.beginTx()) {
-                    transaction.createNode();
-                    transaction.commit();
-                }
-            });
+            assertThatCode(() -> {
+                        GraphDatabaseService service = neo4j.defaultDatabaseService();
+                        try (Transaction transaction = service.beginTx()) {
+                            transaction.createNode();
+                            transaction.commit();
+                        }
+                    })
+                    .doesNotThrowAnyException();
         }
     }
 
@@ -214,7 +213,7 @@ class InProcessServerBuilderIT {
             // Then
             GraphDatabaseService graphDatabaseService = neo4j.defaultDatabaseService();
             try (Transaction tx = graphDatabaseService.beginTx()) {
-                assertTrue(Iterables.count(tx.getAllNodes()) > 0);
+                assertThat(Iterables.count(tx.getAllNodes())).isGreaterThan(0);
 
                 // When: create another node
                 tx.createNode();
@@ -226,7 +225,7 @@ class InProcessServerBuilderIT {
         try (var managementService = new TestDatabaseManagementServiceBuilder(existingHomeDir).build()) {
             var db = managementService.database(DEFAULT_DATABASE_NAME);
             try (Transaction tx = db.beginTx()) {
-                assertEquals(1, Iterables.count(tx.getAllNodes()));
+                assertThat(Iterables.count(tx.getAllNodes())).isEqualTo(1);
                 tx.commit();
             }
         }
@@ -239,28 +238,28 @@ class InProcessServerBuilderIT {
             URI uri = neo4j.boltURI();
 
             // when
-            assertDoesNotThrow(() -> {
-                try (var connection = new SocketConnection(
-                        new NioConnectorTransport(),
-                        BoltWire.latest(),
-                        new InetSocketAddress(uri.getHost(), uri.getPort()))) {
-                    connection.connect();
-                }
-            });
+            assertThatCode(() -> {
+                        try (var connection = new SocketConnection(
+                                new NioConnectorTransport(),
+                                BoltWire.latest(),
+                                new InetSocketAddress(uri.getHost(), uri.getPort()))) {
+                            connection.connect();
+                        }
+                    })
+                    .doesNotThrowAnyException();
         }
     }
 
     @Test
     void shouldFailWhenProvidingANonDirectoryAsSource() throws IOException {
         Path notADirectory = Files.createTempFile("prefix", "suffix");
-        assertFalse(Files.isDirectory(notADirectory));
+        assertThat(Files.isDirectory(notADirectory)).isFalse();
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> getTestBuilder(directory.homePath())
+        assertThatThrownBy(() -> getTestBuilder(directory.homePath())
                         .copyFrom(notADirectory)
-                        .build());
-        assertThat(exception.getMessage()).contains("is not a directory");
+                        .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("is not a directory");
     }
 
     @Test
@@ -335,7 +334,7 @@ class InProcessServerBuilderIT {
         }
         try (Transaction tx = db.beginTx()) {
             Node node = single(tx.findNodes(label));
-            assertEquals(propertyValue, node.getProperty(propertyKey));
+            assertThat(node.getProperty(propertyKey)).isEqualTo(propertyValue);
             tx.commit();
         }
     }

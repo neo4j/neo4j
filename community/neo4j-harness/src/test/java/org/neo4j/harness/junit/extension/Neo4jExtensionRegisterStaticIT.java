@@ -20,7 +20,6 @@
 package org.neo4j.harness.junit.extension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
@@ -38,7 +37,7 @@ class Neo4jExtensionRegisterStaticIT {
 
     @Test
     void neo4jAvailable(Neo4j neo4j) {
-        assertNotNull(neo4j);
+        assertThat(neo4j).isNotNull();
         assertThat(HTTP.GET(neo4j.httpURI().toString()).status()).isEqualTo(200);
     }
 

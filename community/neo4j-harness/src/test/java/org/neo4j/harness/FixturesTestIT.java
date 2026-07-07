@@ -20,7 +20,7 @@
 package org.neo4j.harness;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Fail.fail;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
