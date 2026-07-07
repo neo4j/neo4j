@@ -26,11 +26,15 @@ import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.CompositeDatabaseValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 public class DefaultValueMapper extends ValueMapper.JavaMapper {
+    private static final String COMPOSITE_UNSUPPORTED_OPERATION_MESSAGE =
+            "Graph access operations are not supported on composite databases.";
+
     private final InternalTransaction transaction;
 
     public DefaultValueMapper(InternalTransaction transaction) {
@@ -43,6 +47,9 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper {
             // this is the back door through which "virtual nodes" slip
             return (Node) wrappingEntity.getEntity();
         }
+        if (value instanceof CompositeDatabaseValue.CompositeGraphDirectNodeValue compositeNode) {
+            return new CompositeMaterializedNode(compositeNode, this, COMPOSITE_UNSUPPORTED_OPERATION_MESSAGE);
+        }
         return mapNode(value.id());
     }
 
@@ -51,6 +58,10 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper {
         if (value instanceof WrappingEntity<?> wrappingEntity) {
             // this is the back door through which "virtual relationships" slip
             return (Relationship) wrappingEntity.getEntity();
+        }
+        if (value instanceof CompositeDatabaseValue.CompositeDirectRelationshipValue compositeRelationship) {
+            return new CompositeMaterializedRelationship(
+                    compositeRelationship, this, COMPOSITE_UNSUPPORTED_OPERATION_MESSAGE);
         }
         return mapRelationship(value.id());
     }
