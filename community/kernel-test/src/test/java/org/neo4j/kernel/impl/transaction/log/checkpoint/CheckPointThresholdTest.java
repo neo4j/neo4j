@@ -26,10 +26,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold.DEFAULT_CHECKING_FREQUENCY_MILLIS;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
+import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.logging.AssertableLogProvider;
 
 class CheckPointThresholdTest extends CheckPointThresholdTestSupport {
 
@@ -220,5 +225,25 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport {
         threshold.initialize(2, UNSPECIFIED);
         assertThatCode(() -> threshold.isCheckPointingNeeded(6, ARBITRARY_LOG_POSITION, triggered))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void volumetricCheckpointingFallsBackToPeriodicWithMergedLog() {
+        var logProvider = new AssertableLogProvider();
+        Config mergedLogConfig = Config.newBuilder()
+                .set(GraphDatabaseInternalSettings.merge_log_on_latest, true)
+                .set(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create, true)
+                .set(GraphDatabaseInternalSettings.merged_log, true)
+                .set(GraphDatabaseSettings.check_point_policy, GraphDatabaseSettings.CheckpointPolicy.VOLUMETRIC)
+                .build();
+
+        CheckPointThreshold threshold =
+                CheckPointThreshold.createThreshold(mergedLogConfig, clock, logPruning, logProvider);
+
+        assertThat(threshold.checkFrequencyMillis()).isEqualTo(DEFAULT_CHECKING_FREQUENCY_MILLIS);
+        assertThat(logProvider)
+                .forClass(CheckPointThreshold.class)
+                .forLevel(WARN)
+                .containsMessages("is not supported when the transaction log is merged with the replication log");
     }
 }
