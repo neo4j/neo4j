@@ -326,7 +326,10 @@ class ParquetDataInputChunk implements ParquetInputChunk {
                             }
                         }
                     };
-                case DURATION -> DurationValue.parse(object.toString());
+                case DURATION ->
+                    object instanceof DurationValue durationValue
+                            ? durationValue
+                            : DurationValue.parse(object.toString());
                 case INT ->
                     object instanceof Number number
                             ? Numbers.safeCastLongToInt(number.longValue())
@@ -416,6 +419,9 @@ class ParquetDataInputChunk implements ParquetInputChunk {
             }
             if (logicalType instanceof LogicalTypeAnnotation.TimestampLogicalTypeAnnotation ts) {
                 return ts.isAdjustedToUTC() ? EMPTY_DATETIME_ARRAY : EMPTY_LOCALDATETIME_ARRAY;
+            }
+            if (logicalType instanceof LogicalTypeAnnotation.IntervalLogicalTypeAnnotation) {
+                return EMPTY_DURATION_ARRAY;
             }
         }
 

@@ -40,6 +40,8 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -63,6 +65,7 @@ import java.util.stream.Stream;
 import org.apache.parquet.example.data.simple.SimpleGroup;
 import org.apache.parquet.hadoop.example.ExampleParquetWriter;
 import org.apache.parquet.io.LocalOutputFile;
+import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
@@ -1119,6 +1122,91 @@ class ParquetInputTest {
                                     DurationValue.duration(3, 0, 13 * 3600 + 37 * 60, 0),
                                     DurationValue.duration(-12, 0, 4 * 3600 + 20 * 60, 0))),
                     labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReadIntervalColumnAsDuration() throws Exception {
+        // GIVEN
+        // A native parquet INTERVAL column (12-byte months/days/millis) is read as a Neo4j duration without any header.
+        Path nodeFile = createIntervalParquetFile("d", 14, 3, 90_500);
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 1L, properties("d", DurationValue.duration(14, 3, 90, 500_000_000)), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReadIntervalColumnAsDurationWithExplicitHeader() throws Exception {
+        // GIVEN
+        // The same INTERVAL column mapped explicitly as a duration via the header file.
+        Path nodeFile = createIntervalParquetFile("d", 14, 3, 90_500);
+        Path headerFile = createHeaderFile(List.of(":ID", "d:duration"), List.of(":ID", "d"));
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 1L, properties("d", DurationValue.duration(14, 3, 90, 500_000_000)), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReadListOfIntervalsAsDurations() throws Exception {
+        // GIVEN
+        // A native LIST<interval> column is read as a Neo4j duration array.
+        Path nodeFile = createIntervalListParquetFile("d", List.of(new int[] {14, 3, 90_500}, new int[] {1, 0, 1_000}));
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(
+                    nodes,
+                    1L,
+                    properties(
+                            "d",
+                            List.of(
+                                    DurationValue.duration(14, 3, 90, 500_000_000),
+                                    DurationValue.duration(1, 0, 1, 0))),
+                    labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReadEmptyListOfIntervalsAsEmptyDurationArray() throws Exception {
+        // GIVEN
+        // An empty LIST<interval> must be inferred as an (empty) duration array rather than falling back to the
+        // FIXED_LEN_BYTE_ARRAY primitive type (which would wrongly produce an empty byte array).
+        Path nodeFile = createIntervalListParquetFile("d", List.of());
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 1L, properties("d", Values.durationArray(new DurationValue[0])), labels());
             assertThat(readNext(nodes)).isFalse();
         }
     }
@@ -5846,6 +5934,77 @@ class ParquetInputTest {
             writer.write(record);
         }
         return path;
+    }
+
+    /**
+     * Writes a parquet file with a required INT32 {@code :ID} column and a single {@code INTERVAL} column
+     * (a 12-byte FIXED_LEN_BYTE_ARRAY), used to verify that Parquet intervals are read as Neo4j durations.
+     */
+    private Path createIntervalParquetFile(String columnName, int months, int days, int millis) throws Exception {
+        MessageType schema = Types.buildMessage()
+                .required(PrimitiveType.PrimitiveTypeName.INT32)
+                .named(":ID")
+                .required(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
+                .length(12)
+                .as(LogicalTypeAnnotation.intervalType())
+                .named(columnName)
+                .named("something");
+        Path path = directory.file("test%d.parquet".formatted(parquetCounter.getAndIncrement()));
+        try (var writer = ExampleParquetWriter.builder(new LocalOutputFile(path))
+                .withType(schema)
+                .build()) {
+            var record = new SimpleGroup(schema);
+            record.add(":ID", 1);
+            record.add(columnName, Binary.fromConstantByteArray(intervalBytes(months, days, millis)));
+            writer.write(record);
+        }
+        return path;
+    }
+
+    /**
+     * Writes a parquet file with a required INT32 {@code :ID} column and a native {@code LIST} of {@code INTERVAL}
+     * elements, used to verify that lists of Parquet intervals are read as Neo4j duration arrays.
+     */
+    private Path createIntervalListParquetFile(String columnName, List<int[]> intervals) throws Exception {
+        MessageType schema = Types.buildMessage()
+                .required(PrimitiveType.PrimitiveTypeName.INT32)
+                .named(":ID")
+                .optionalList()
+                .optionalElement(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
+                .length(12)
+                .as(LogicalTypeAnnotation.intervalType())
+                .named(columnName)
+                .named("something");
+        var listGroupType = schema.getType(columnName).asGroupType();
+        var repeatedName = listGroupType.getType(0).getName();
+        var elementName = listGroupType.getType(0).asGroupType().getType(0).getName();
+
+        Path path = directory.file("test%d.parquet".formatted(parquetCounter.getAndIncrement()));
+        try (var writer = ExampleParquetWriter.builder(new LocalOutputFile(path))
+                .withType(schema)
+                .build()) {
+            var record = new SimpleGroup(schema);
+            record.add(":ID", 1);
+            var listGroup = record.addGroup(columnName);
+            for (int[] interval : intervals) {
+                listGroup
+                        .addGroup(repeatedName)
+                        .add(
+                                elementName,
+                                Binary.fromConstantByteArray(intervalBytes(interval[0], interval[1], interval[2])));
+            }
+            writer.write(record);
+        }
+        return path;
+    }
+
+    private static byte[] intervalBytes(int months, int days, int millis) {
+        return ByteBuffer.allocate(12)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putInt(months)
+                .putInt(days)
+                .putInt(millis)
+                .array();
     }
 
     private Path createHeaderFile(List<String> columnNames, List<String> originalColumnNames) throws Exception {

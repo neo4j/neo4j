@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport.input.parquet;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -55,6 +56,7 @@ import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.TimeValue;
@@ -324,6 +326,12 @@ class ParquetDataReader implements Closeable {
                 return null;
             }
 
+            if (isInterval(logicalType)) {
+                var duration = readIntervalAsDuration(columnReader);
+                columnReader.consume();
+                return duration;
+            }
+
             var object = readTemporalValues(columnReader, logicalType, primitiveType);
             if (object != null) {
                 columnReader.consume();
@@ -473,9 +481,32 @@ class ParquetDataReader implements Closeable {
          * representation so that they end up in a properly typed array; everything else is read as-is.
          */
         private Object readRepeatedElement(ColumnReader columnReader, PrimitiveType primitiveType) {
+            var logicalType = primitiveType.getLogicalTypeAnnotation();
+            if (isInterval(logicalType)) {
+                return readIntervalAsDuration(columnReader);
+            }
             var value = readPrimitiveType(columnReader, primitiveType);
-            var temporal = toTemporalValue(value, primitiveType.getLogicalTypeAnnotation());
+            var temporal = toTemporalValue(value, logicalType);
             return temporal != null ? temporal : value;
+        }
+
+        private static boolean isInterval(LogicalTypeAnnotation logicalType) {
+            return logicalType != null && logicalType.equals(LogicalTypeAnnotation.intervalType());
+        }
+
+        /**
+         * Reads a Parquet {@code INTERVAL} value (a 12-byte little-endian triple of unsigned ints holding months, days
+         * and milliseconds) into a Neo4j {@link DurationValue}. Does not advance the reader; the caller is responsible
+         * for {@link ColumnReader#consume()}, matching how the other read methods are driven.
+         * See https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#interval
+         */
+        private static DurationValue readIntervalAsDuration(ColumnReader columnReader) {
+            var buffer = columnReader.getBinary().toByteBuffer().order(ByteOrder.LITTLE_ENDIAN);
+            int pos = buffer.position();
+            long months = Integer.toUnsignedLong(buffer.getInt(pos));
+            long days = Integer.toUnsignedLong(buffer.getInt(pos + 4));
+            long millis = Integer.toUnsignedLong(buffer.getInt(pos + 8));
+            return DurationValue.duration(months, days, millis / 1000, (millis % 1000) * 1_000_000);
         }
 
         private static boolean isPrimitiveValueNull(ColumnReader columnReader) {
