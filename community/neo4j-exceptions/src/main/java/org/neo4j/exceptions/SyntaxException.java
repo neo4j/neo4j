@@ -203,6 +203,31 @@ public class SyntaxException extends Neo4jException {
                         expression, invalidPart));
     }
 
+    public static SyntaxException nanInPBAC(String expression) {
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NA0)
+                .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NA3)
+                        .build())
+                .build();
+        return new SyntaxException(
+                gql,
+                String.format(
+                        "The expression: `%s` is not supported. `NaN` is not supported for property-based access control.",
+                        expression));
+    }
+
+    public static SyntaxException nullInPBAC(String expression) {
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NA0)
+                .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NA4)
+                        .withParam(GqlParams.StringParam.pred, expression)
+                        .build())
+                .build();
+        return new SyntaxException(
+                gql,
+                String.format(
+                        "The expression: `%s` is not supported. `NULL` is not supported for property-based access control.",
+                        expression));
+    }
+
     public static SyntaxException mixedListInPBAC(String expression) {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NA0)
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NAB)

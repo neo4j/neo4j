@@ -1551,6 +1551,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.feature_flag.user_tags", BOOL, true).build();
 
     @Internal
+    @Description("A feature toggle behind which property-based access control rules matching a value "
+            + "against a list-valued property (`<value> IN n.property`) are developed")
+    public static final Setting<Boolean> value_in_list_property = newBuilder(
+                    "internal.dbms.feature_flag.value_in_list_property", BOOL, false)
+            .build();
+
+    @Internal
     @Description("A feature toggle behind which show setting feature is developed")
     public static final Setting<Boolean> show_setting =
             newBuilder("internal.dbms.show_setting", BOOL, true).build();

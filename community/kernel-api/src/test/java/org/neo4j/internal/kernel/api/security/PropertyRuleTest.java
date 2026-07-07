@@ -31,6 +31,8 @@ import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOper
 import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator.LESS_THAN_OR_EQUAL;
 import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator.NOT_EQUAL;
 import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator.NOT_IN;
+import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator.NOT_VALUE_IN_LIST_PROPERTY;
+import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator.VALUE_IN_LIST_PROPERTY;
 import static org.neo4j.internal.kernel.api.security.PropertyRule.NullOperator;
 
 import java.util.stream.Stream;
@@ -184,7 +186,62 @@ public class PropertyRuleTest {
                         PointValue.parse("{x:1, y:2}"),
                         Values.of(new PointValue[] {PointValue.parse("{x:10, y:2}"), PointValue.parse("{x:2, y:2}")}),
                         NOT_IN,
-                        true));
+                        true),
+                // VALUE_IN_LIST_PROPERTY: <scalar> IN n.prop, with strict-list semantics (property must be a
+                // list/array)
+                of(Values.of(new String[] {"one", "two"}), Values.of("one"), VALUE_IN_LIST_PROPERTY, true),
+                of(Values.of(new String[] {"one", "two"}), Values.of("three"), VALUE_IN_LIST_PROPERTY, false),
+                of(Values.of(new int[] {1, 2}), Values.of(1), VALUE_IN_LIST_PROPERTY, true),
+                of(Values.of(new int[] {1, 2}), Values.of(1L), VALUE_IN_LIST_PROPERTY, true), // numeric coercion
+                of(Values.of(new long[] {1L, 2L}), Values.of(1), VALUE_IN_LIST_PROPERTY, true),
+                of(Values.of(new int[] {1, 2}), Values.of(3), VALUE_IN_LIST_PROPERTY, false),
+                of(Values.of(new int[0]), Values.of(1), VALUE_IN_LIST_PROPERTY, false), // empty list
+                of(
+                        Values.of("one"),
+                        Values.of("one"),
+                        VALUE_IN_LIST_PROPERTY,
+                        false), // strict: scalar property never matches
+                of(
+                        Values.of(1),
+                        Values.of(1),
+                        VALUE_IN_LIST_PROPERTY,
+                        false), // strict: scalar property never matches when equal
+                of(Values.NO_VALUE, Values.of(1), VALUE_IN_LIST_PROPERTY, false), // absent property never matches
+                of(
+                        Values.of(new int[] {1, 2}),
+                        Values.NO_VALUE,
+                        VALUE_IN_LIST_PROPERTY,
+                        false), // null needle never matches
+                of(
+                        Values.of(new PointValue[] {PointValue.parse("{x:1, y:2}"), PointValue.parse("{x:2, y:2}")}),
+                        PointValue.parse("{x:1, y:2}"),
+                        VALUE_IN_LIST_PROPERTY,
+                        true),
+                // NOT_VALUE_IN_LIST_PROPERTY: NOT <scalar> IN n.prop, with the same strict-list semantics
+                of(Values.of(new String[] {"one", "two"}), Values.of("three"), NOT_VALUE_IN_LIST_PROPERTY, true),
+                of(Values.of(new String[] {"one", "two"}), Values.of("one"), NOT_VALUE_IN_LIST_PROPERTY, false),
+                of(Values.of(new int[] {1, 2}), Values.of(3), NOT_VALUE_IN_LIST_PROPERTY, true),
+                of(Values.of(new int[] {1, 2}), Values.of(1), NOT_VALUE_IN_LIST_PROPERTY, false),
+                of(
+                        Values.of(new int[0]),
+                        Values.of(1),
+                        NOT_VALUE_IN_LIST_PROPERTY,
+                        true), // not in empty list, and it is a list
+                of(
+                        Values.of("one"),
+                        Values.of("one"),
+                        NOT_VALUE_IN_LIST_PROPERTY,
+                        false), // strict: scalar property never matches
+                of(
+                        Values.NO_VALUE,
+                        Values.of(1),
+                        NOT_VALUE_IN_LIST_PROPERTY,
+                        false), // strict: absent never matches, even negated
+                of(
+                        Values.of(new int[] {1, 2}),
+                        Values.NO_VALUE,
+                        NOT_VALUE_IN_LIST_PROPERTY,
+                        false)); // null needle: in is NO_VALUE
     }
 
     private static Stream<Arguments> ValuePredicateStrings() {
@@ -196,7 +253,9 @@ public class PropertyRuleTest {
                 of(LESS_THAN, "l < r"),
                 of(LESS_THAN_OR_EQUAL, "l <= r"),
                 of(IN, "l IN r"),
-                of(NOT_IN, "NOT l IN r"));
+                of(NOT_IN, "NOT l IN r"),
+                of(VALUE_IN_LIST_PROPERTY, "r IN l"),
+                of(NOT_VALUE_IN_LIST_PROPERTY, "NOT r IN l"));
     }
 
     private static Stream<Arguments> nullPropertyRules() {

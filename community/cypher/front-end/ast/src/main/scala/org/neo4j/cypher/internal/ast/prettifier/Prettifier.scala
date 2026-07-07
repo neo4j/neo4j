@@ -1878,6 +1878,7 @@ object Prettifier {
         case e: IsNotNull                                    => propertyAndWherePrettifier(e)
         case e @ In(_, _: ListLiteral)                       => propertyAndWherePrettifier(e)
         case e @ In(_, _: ExplicitParameter)                 => propertyAndWherePrettifier(e)
+        case e @ In(_, _: Property)                          => propertyAndWherePrettifier(e)
         case e @ Not(innerExpression) => innerExpression match {
             case _: Equals                      => propertyAndWherePrettifier(e)
             case _: NotEquals                   => propertyAndWherePrettifier(e)
@@ -1889,6 +1890,7 @@ object Prettifier {
             case _: IsNotNull                   => propertyAndWherePrettifier(e)
             case _ @In(_, _: ListLiteral)       => propertyAndWherePrettifier(e)
             case _ @In(_, _: ExplicitParameter) => propertyAndWherePrettifier(e)
+            case _ @In(_, _: Property)          => propertyAndWherePrettifier(e)
             case _ => throw new IllegalStateException(
                 s"Unknown expression: ${ExpressionStringifier.apply(e => e.asCanonicalStringVal).apply(e)}"
               )

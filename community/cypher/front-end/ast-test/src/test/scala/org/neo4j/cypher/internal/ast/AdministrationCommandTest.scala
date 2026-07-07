@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.CypherVersionHelpers.versionedSemanticContext
 import org.neo4j.cypher.internal.CypherVersionTestSupport
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -152,6 +153,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       .withFeature(SemanticFeature.RelationshipPropertyValueAccessRules)
       .withFeature(SemanticFeature.AttributeBasedAccessControl)
       .withFeature(SemanticFeature.UserTags)
+      .withFeature(SemanticFeature.ValueInListProperty)
 
   // Privilege command tests
 
@@ -1458,6 +1460,171 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 "All elements in a list must be literals of the same type for property-based access control."
             )
         )
+      }
+
+      // e.g. FOR (n) WHERE 1 IN n.prop1 — a scalar tested for membership in a list-valued property
+      test(
+        s"property rules using WHERE syntax with scalar IN property should pass semantic checking($qualifierDescription)"
+      ) {
+        val expressionStringifier = ExpressionStringifier()
+
+        Seq(
+          In(literalInt(1), prop(varFor("n"), "prop1"))(p), // 1 IN n.prop
+          Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p), // NOT 1 IN n.prop
+          In(literalString("s1"), prop(varFor("n"), "prop1"))(p), // 's1' IN n.prop
+          In(trueLiteral, prop(varFor("n"), "prop1"))(p), // true IN n.prop
+          In(literalFloat(1.1), prop(varFor("n"), "prop1"))(p), // 1.1 IN n.prop
+          In(function("point", mapOfInt("x" -> 1, "y" -> 2)), prop(varFor("n"), "prop1"))(p), // point(...) IN n.prop
+          In(parameter("value", CTAny), prop(varFor("n"), "prop1"))(p), // $value IN n.prop
+          Not(In(parameter("value", CTAny), prop(varFor("n"), "prop1"))(p))(p) // NOT $value IN n.prop
+        ).foreach { expression =>
+          withClue(expressionStringifier(expression)) {
+            val privilege = new GrantPrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              false,
+              None,
+              qualifierFn(Some(varFor("n", p)), expression),
+              Seq(literalString("role1"))
+            )(p)
+
+            val result =
+              privilege.semanticCheck.run(
+                initialStateWithFeatureFlags,
+                versionedSemanticContext(CypherVersion.Cypher25)
+              )
+            result.errors.isEmpty shouldBe true
+          }
+        }
+      }
+
+      // value IN a list property is gated behind the ValueInListProperty feature flag
+      test(
+        s"property rules using WHERE syntax with scalar IN property should fail when the feature is disabled($qualifierDescription)"
+      ) {
+        val expressionStringifier = ExpressionStringifier()
+
+        val stateWithoutValueInListProperty =
+          SemanticState.clean
+            .withFeature(SemanticFeature.MultipleDatabases)
+
+        Seq(
+          In(literalInt(1), prop(varFor("n"), "prop1"))(p), // 1 IN n.prop
+          Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p), // NOT 1 IN n.prop
+          Not(Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p))(p) // NOT (NOT 1 IN n.prop)
+        ).foreach { expression =>
+          withClue(expressionStringifier(expression)) {
+            val privilege = new GrantPrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              false,
+              None,
+              qualifierFn(Some(varFor("n", p)), expression),
+              Seq(literalString("role1"))
+            )(p)
+
+            val result =
+              privilege.semanticCheck.run(
+                stateWithoutValueInListProperty,
+                versionedSemanticContext(CypherVersion.Cypher25)
+              )
+            result.errors.map(_.msg) should contain(
+              "The `GRANT TRAVERSE` clause using a `<value> IN <property>` predicate is not available in this implementation of Cypher " +
+                "due to lack of support for access rules checking for a value in a list property."
+            )
+          }
+        }
+      }
+
+      // e.g. FOR (n) WHERE NULL IN n.prop1 — value-in-list-property rejects NULL/NaN scalars and list-on-left, like other PBAC rules
+      test(
+        s"property rules using WHERE syntax with invalid scalar IN property should fail semantic checking($qualifierDescription)"
+      ) {
+        val expressionStringifier = ExpressionStringifier()
+
+        Seq(
+          (
+            In(nullLiteral, prop(varFor("n"), "prop1"))(p), // NULL IN n.prop
+            "The property value access rule pattern `NULL IN prop1` always evaluates to `NULL`.",
+            GqlStatusInfoCodes.STATUS_22NA4
+          ),
+          (
+            In(NaN()(p), prop(varFor("n"), "prop1"))(p), // NaN IN n.prop
+            "`NaN` is not supported for property-based access control.",
+            GqlStatusInfoCodes.STATUS_22NA3
+          ),
+          (
+            In(listOfInt(1, 2), prop(varFor("n"), "prop1"))(p), // [1, 2] IN n.prop (list on left)
+            "Only single, literal-based predicate expressions are allowed for property-based access control.",
+            GqlStatusInfoCodes.STATUS_22NA7
+          ),
+          (
+            Not(Not(Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p))(p))(p), // NOT (NOT (NOT 1 IN n.prop))
+            "Only single, literal-based predicate expressions are allowed for property-based access control.",
+            GqlStatusInfoCodes.STATUS_22NA7
+          )
+        ).foreach { case (expression, reason, causeCode) =>
+          withClue(expressionStringifier(expression)) {
+            val privilege = new GrantPrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              false,
+              None,
+              qualifierFn(Some(varFor("n", p)), expression),
+              Seq(literalString("role1"))
+            )(p)
+
+            val result =
+              privilege.semanticCheck.run(
+                initialStateWithFeatureFlags,
+                versionedSemanticContext(CypherVersion.Cypher25)
+              )
+            result.errors.size shouldBe 1
+            result.errors.head.msg should endWith(reason)
+            result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+            result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe causeCode.getStatusString
+          }
+        }
+      }
+
+      // `<value> IN n.property` is only supported in Cypher 25; under Cypher 5 it falls through to the generic 22NA7 rejection
+      test(
+        s"property rules using WHERE syntax with scalar IN property should fail semantic checking in Cypher 5($qualifierDescription)"
+      ) {
+        val expressionStringifier = ExpressionStringifier()
+
+        Seq(
+          In(literalInt(1), prop(varFor("n"), "prop1"))(p), // 1 IN n.prop
+          Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p), // NOT 1 IN n.prop
+          In(literalString("s1"), prop(varFor("n"), "prop1"))(p), // 's1' IN n.prop
+          In(parameter("value", CTAny), prop(varFor("n"), "prop1"))(p), // $value IN n.prop
+          In(nullLiteral, prop(varFor("n"), "prop1"))(p), // NULL IN n.prop
+          In(NaN()(p), prop(varFor("n"), "prop1"))(p) // NaN IN n.prop
+        ).foreach { expression =>
+          withClue(expressionStringifier(expression)) {
+            val privilege = new GrantPrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              false,
+              None,
+              qualifierFn(Some(varFor("n", p)), expression),
+              Seq(literalString("role1"))
+            )(p)
+
+            val stateWithoutValueInListProperty =
+              SemanticState.clean
+                .withFeature(SemanticFeature.MultipleDatabases)
+                .withFeature(SemanticFeature.RelationshipPropertyValueAccessRules)
+                .withFeature(SemanticFeature.AttributeBasedAccessControl)
+                .withFeature(SemanticFeature.UserTags)
+            Seq(initialStateWithFeatureFlags, stateWithoutValueInListProperty).foreach { state =>
+              val result =
+                privilege.semanticCheck.run(state, versionedSemanticContext(CypherVersion.Cypher5))
+              result.errors.size shouldBe 1
+              result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+              result.errors.head.gqlStatusObject
+                .cause()
+                .get()
+                .gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+            }
+          }
+        }
       }
 
       // e.g. FOR (node) WHERE n.prop1 = 1

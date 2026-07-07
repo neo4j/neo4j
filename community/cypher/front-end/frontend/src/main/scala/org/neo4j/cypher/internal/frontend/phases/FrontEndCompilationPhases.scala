@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ScopeQueries
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ShowSetting
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UUIDType
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UserTags
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ValueInListProperty
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExtractLocalDefinitions
@@ -157,7 +158,8 @@ object FrontEndCompilationPhases extends FrontEndCompilationPhases {
       GraphDatabaseInternalSettings.cypher_enable_parsing_of_obfuscated_literals -> EnableParsingOfObfuscatedLiterals.productPrefix,
       GraphDatabaseInternalSettings.cypher_disable_type_checking -> DisableTypeCheckingInSemanticAnalysis.productPrefix,
       GraphDatabaseInternalSettings.attribute_based_access_control -> AttributeBasedAccessControl.productPrefix,
-      GraphDatabaseInternalSettings.user_tags -> UserTags.productPrefix
+      GraphDatabaseInternalSettings.user_tags -> UserTags.productPrefix,
+      GraphDatabaseInternalSettings.value_in_list_property -> ValueInListProperty.productPrefix
     )
   }
 }

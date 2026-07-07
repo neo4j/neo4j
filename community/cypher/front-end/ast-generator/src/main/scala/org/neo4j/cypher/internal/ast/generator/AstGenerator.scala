@@ -3849,7 +3849,8 @@ class AstGenerator(
     val predicates = Seq(
       Equals(l, r)(pos),
       NotEquals(l, r)(pos),
-      In(l, ListLiteral(Seq(r))(pos))(pos)
+      In(l, ListLiteral(Seq(r))(pos))(pos),
+      In(r, l)(pos)
     ) ++ _inequalitiesPredicate(l, r)
 
     oneOf(

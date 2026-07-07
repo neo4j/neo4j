@@ -45,6 +45,26 @@ public class NodeValuePatternSegmentTest {
     }
 
     @Test
+    void testPatternForValueInListProperty() {
+        var value = mock(Value.class);
+        when(value.prettyPrint()).thenReturn("valueString");
+        var vps = new NodeValuePatternSegment("p", value, ComparisonOperator.VALUE_IN_LIST_PROPERTY);
+        var vpsSpy = spy(vps);
+        when(vpsSpy.propertyString("n")).thenReturn("propertyString");
+        assertThat(vpsSpy.pattern()).isEqualTo("(n) WHERE valueString IN propertyString");
+    }
+
+    @Test
+    void testPatternForNegatedValueInListProperty() {
+        var value = mock(Value.class);
+        when(value.prettyPrint()).thenReturn("valueString");
+        var vps = new NodeValuePatternSegment("p", value, ComparisonOperator.NOT_VALUE_IN_LIST_PROPERTY);
+        var vpsSpy = spy(vps);
+        when(vpsSpy.propertyString("n")).thenReturn("propertyString");
+        assertThat(vpsSpy.pattern()).isEqualTo("(n) WHERE NOT valueString IN propertyString");
+    }
+
+    @Test
     void testToString() {
         var vps = new NodeValuePatternSegment("propertyString", mock(Value.class), ComparisonOperator.EQUAL);
         var vpsSpy = spy(vps);

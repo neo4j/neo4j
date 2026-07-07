@@ -119,7 +119,11 @@ class PropertyPrivilegeAdministrationCommandParserTestBase extends Administratio
         LiteralExpression(not(lessThan(literal, prop(varFor("n"), "prop1")))), // NOT value < n.prop1
 
         LiteralExpression(lessThanOrEqual(literal, prop(varFor("n"), "prop1"))), // value <= n.prop1
-        LiteralExpression(not(lessThanOrEqual(literal, prop(varFor("n"), "prop1")))) // NOT value <= n.prop1
+        LiteralExpression(not(lessThanOrEqual(literal, prop(varFor("n"), "prop1")))), // NOT value <= n.prop1
+
+        // value in list property
+        LiteralExpression(in(literal, prop(varFor("n"), "prop1"))), // value IN n.prop1
+        LiteralExpression(not(in(literal, prop(varFor("n"), "prop1")))) // NOT value IN n.prop1
       )
     )
   ) ++ Seq(

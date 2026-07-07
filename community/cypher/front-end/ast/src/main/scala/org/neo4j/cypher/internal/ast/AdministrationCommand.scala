@@ -1537,26 +1537,27 @@ sealed abstract class PrivilegeCommand(
     }
   }
 
-  private def privilegeQualifierCheckForPropertyRules(qualifiers: List[PrivilegeQualifier]): SemanticCheck = {
-    qualifiers.foldLeft(SemanticCheck.success)((acc, qualifier) => {
-      acc.chain(qualifier match {
-        case PatternQualifier(_, v, e, Relationship) =>
-          featureCheck chain
-            v.foldSemanticCheck(declareVariable(_, CTRelationship)) chain
-            SemanticExpressionCheck.check(SemanticContext.Results, e) chain
-            checkActionTypeForPropertyRules(privilege) chain
-            checkExpression(e)
-        case PatternQualifier(_, v, e, Node) =>
-          v.foldSemanticCheck(declareVariable(_, CTNode)) chain
-            SemanticExpressionCheck.check(SemanticContext.Results, e) chain
-            checkActionTypeForPropertyRules(privilege) chain
-            checkExpression(e)
-        case _ => SemanticCheck.success
+  private def privilegeQualifierCheckForPropertyRules(qualifiers: List[PrivilegeQualifier]): SemanticCheck =
+    SemanticCheck.fromContext { context =>
+      qualifiers.foldLeft(SemanticCheck.success)((acc, qualifier) => {
+        acc.chain(qualifier match {
+          case PatternQualifier(_, v, e, Relationship) =>
+            featureCheck chain
+              v.foldSemanticCheck(declareVariable(_, CTRelationship)) chain
+              SemanticExpressionCheck.check(SemanticContext.Results, e) chain
+              checkActionTypeForPropertyRules(privilege) chain
+              checkExpression(e, context.cypherVersion)
+          case PatternQualifier(_, v, e, Node) =>
+            v.foldSemanticCheck(declareVariable(_, CTNode)) chain
+              SemanticExpressionCheck.check(SemanticContext.Results, e) chain
+              checkActionTypeForPropertyRules(privilege) chain
+              checkExpression(e, context.cypherVersion)
+          case _ => SemanticCheck.success
+        })
       })
-    })
-  }
+    }
 
-  private def checkExpression(expression: Expression) = {
+  private def checkExpression(expression: Expression, cypherVersion: CypherVersion) = {
 
     def stringifyExpression = {
       ExpressionStringifier.apply(_.asCanonicalStringVal).apply(expression)
@@ -1601,10 +1602,27 @@ sealed abstract class PrivilegeCommand(
       ) SemanticCheck.success
       else error(SemanticError.mixedListInPBAC(stringifyExpression, expression.position))
 
-    (expression match {
+    val unwrappedExpression = expression match {
       case Not(e: BooleanExpression) => e
       case e                         => e
-    }) match {
+    }
+
+    def valueInListPropertyFeatureSupport: SemanticCheck =
+      requireFeatureSupport(
+        s"The `$name` clause using a `<value> IN <property>` predicate",
+        SemanticFeature.ValueInListProperty,
+        expression.position
+      )
+
+    def valueInListPropertyFeatureCheck: SemanticCheck = unwrappedExpression match {
+      case In(lhs, _: Property) if !lhs.isInstanceOf[Property] && cypherVersion.isAfter(CypherVersion.Cypher5) =>
+        valueInListPropertyFeatureSupport
+      case Not(In(lhs, _: Property)) if !lhs.isInstanceOf[Property] && cypherVersion.isAfter(CypherVersion.Cypher5) =>
+        valueInListPropertyFeatureSupport
+      case _ => SemanticCheck.success
+    }
+
+    valueInListPropertyFeatureCheck chain (unwrappedExpression match {
       case Equals(_: Property, l: NaN)             => nanError(l)
       case NotEquals(_: Property, l: NaN)          => nanError(l)
       case GreaterThan(_: Property, l: NaN)        => nanError(l)
@@ -1684,10 +1702,16 @@ sealed abstract class PrivilegeCommand(
           l.position,
           " Use `WHERE` syntax in combination with `IS NULL` instead."
         )
-      case Equals(_: Property, e: Expression)                      => checkScalarExpression(e)
-      case NotEquals(_: Property, e: Expression)                   => checkScalarExpression(e)
-      case In(_: Property, e: Expression)                          => checkListExpression(e)
-      case Not(In(_: Property, e: Expression))                     => checkListExpression(e)
+      case Equals(_: Property, e: Expression)                                      => checkScalarExpression(e)
+      case NotEquals(_: Property, e: Expression)                                   => checkScalarExpression(e)
+      case In(_: Property, e: Expression)                                          => checkListExpression(e)
+      case Not(In(_: Property, e: Expression))                                     => checkListExpression(e)
+      case In(l: NaN, _: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) => nanError(l)
+      case In(l: Null, p: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
+        propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"NULL IN ${p.propertyKey.name}", l.position)
+      case In(e: Expression, _: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) => checkScalarExpression(e)
+      case Not(In(e: Expression, _: Property)) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
+        checkScalarExpression(e)
       case IsNull(_: Property) | IsNotNull(_: Property)            => SemanticCheck.success
       case MapExpression(Seq((_: PropertyKeyName, e: Expression))) => checkScalarExpression(e)
       case GreaterThan(_: Property, e: Expression)                 => checkScalarExpression(e)
@@ -1700,7 +1724,7 @@ sealed abstract class PrivilegeCommand(
           unsupportedExpression,
           expression.position
         )
-    }
+    })
   }
 
   override def semanticCheck: SemanticCheck = {

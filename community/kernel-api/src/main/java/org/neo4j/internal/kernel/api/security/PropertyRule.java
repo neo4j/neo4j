@@ -19,12 +19,14 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
 
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import org.neo4j.util.Preconditions;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.utils.ValueBooleanLogic;
 
@@ -93,7 +95,33 @@ public interface PropertyRule extends Predicate<Value> {
             public String toPredicateString(String lhs, String rhs) {
                 return String.format("NOT %s IN %s", lhs, rhs);
             }
+        },
+        VALUE_IN_LIST_PROPERTY("IN") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                return isList(lhs) && ValueBooleanLogic.in(rhs, lhs).equals(TRUE);
+            }
+
+            @Override
+            public String toPredicateString(String lhs, String rhs) {
+                return String.format("%s IN %s", rhs, lhs);
+            }
+        },
+        NOT_VALUE_IN_LIST_PROPERTY("IN") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                return isList(lhs) && ValueBooleanLogic.in(rhs, lhs).equals(FALSE);
+            }
+
+            @Override
+            public String toPredicateString(String lhs, String rhs) {
+                return String.format("NOT %s IN %s", rhs, lhs);
+            }
         };
+
+        private static boolean isList(Value value) {
+            return value instanceof ArrayValue;
+        }
 
         private final String symbol;
 

@@ -45,6 +45,16 @@ public class RelValuePatternSegmentTest {
     }
 
     @Test
+    void testPatternForValueInListProperty() {
+        var value = mock(Value.class);
+        when(value.prettyPrint()).thenReturn("valueString");
+        var vps = new RelValuePatternSegment("p", value, ComparisonOperator.VALUE_IN_LIST_PROPERTY);
+        var vpsSpy = spy(vps);
+        when(vpsSpy.propertyString("r")).thenReturn("propertyString");
+        assertThat(vpsSpy.pattern()).isEqualTo("()-[r]-() WHERE valueString IN propertyString");
+    }
+
+    @Test
     void testPatternOneType() {
         var value = mock(Value.class);
         when(value.prettyPrint()).thenReturn("valueString");
