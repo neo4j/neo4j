@@ -446,7 +446,7 @@ private class TreeTableBuilder private (
         Header.DETAILS -> Cell.left(splitDetails(detailsList.map(_.prettifiedString).toList): _*)
       case pipeline: PipelineInfo => Header.PIPELINE -> Cell.left(serialize(pipeline).toString)
       case indexes: UsedIndexes =>
-        Header.INDEXES_USED -> Cell.left(indexes.stringify)
+        Header.INDEXES_USED -> Cell.left(indexes.toSeqOfStrings: _*)
     }
 
     val idString = Option(plan.id)

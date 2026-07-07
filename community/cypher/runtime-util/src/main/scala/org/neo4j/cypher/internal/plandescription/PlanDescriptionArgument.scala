@@ -110,11 +110,12 @@ object Arguments {
 
   case class UsedIndexes(indexes: Map[String, Int]) extends Argument {
 
-    def stringify: String = indexes
+    def toSeqOfStrings: Seq[String] = indexes
       .toSeq
       .sorted
       .map { case (name, count) => s"$name: $count" }
-      .mkString("\n")
+
+    def stringify: String = toSeqOfStrings.mkString(",\n")
   }
 
   // This is the version of cypher
