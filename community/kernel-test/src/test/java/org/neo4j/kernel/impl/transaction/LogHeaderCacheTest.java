@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
@@ -59,7 +60,8 @@ class LogHeaderCacheTest {
                         StoreIdentifier.newStoreIdentifier(new StoreId(1, 2, "engine-1", "format-1", 3, 4)),
                         LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                         BASE_TX_CHECKSUM,
-                        LATEST_KERNEL_VERSION));
+                        LATEST_KERNEL_VERSION,
+                        UNSPECIFIED_CREATION_TIME));
         final LogHeader logHeader = cache.getLogHeader(5);
 
         // then
@@ -81,7 +83,8 @@ class LogHeaderCacheTest {
                         StoreIdentifier.newStoreIdentifier(new StoreId(1, 2, "engine-1", "format-1", 3, 4)),
                         LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                         BASE_TX_CHECKSUM,
-                        LATEST_KERNEL_VERSION));
+                        LATEST_KERNEL_VERSION,
+                        UNSPECIFIED_CREATION_TIME));
         cache.clear();
         final LogHeader logHeader = cache.getLogHeader(5);
 

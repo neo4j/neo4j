@@ -26,6 +26,7 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.KERNEL_CONTENT_TYPE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
@@ -109,7 +110,8 @@ class EnvelopeFuzzerTest {
                 StoreIdentifier.UNKNOWN,
                 segmentSize,
                 initialChecksum,
-                KERNEL_VERSION);
+                KERNEL_VERSION,
+                UNSPECIFIED_CREATION_TIME);
         writeLogHeader(storeChannel, logHeader, INSTANCE);
         storeChannel.position(segmentSize);
 
@@ -257,7 +259,8 @@ class EnvelopeFuzzerTest {
                             StoreIdentifier.UNKNOWN,
                             segmentSize,
                             previousChecksum,
-                            KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED);
+                            KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED,
+                            UNSPECIFIED_CREATION_TIME);
                     writeLogHeader(logChannel, logHeader, INSTANCE);
                     logChannel.position(segmentSize);
 

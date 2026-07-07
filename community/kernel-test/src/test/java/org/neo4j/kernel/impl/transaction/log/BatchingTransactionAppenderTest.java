@@ -53,6 +53,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIn
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
@@ -345,7 +346,8 @@ class BatchingTransactionAppenderTest {
                 StoreIdentifier.UNKNOWN,
                 512,
                 BASE_TX_CHECKSUM,
-                LATEST_KERNEL_VERSION);
+                LATEST_KERNEL_VERSION,
+                UNSPECIFIED_CREATION_TIME);
         PhysicalLogVersionedStoreChannel logChannel = mock(PhysicalLogVersionedStoreChannel.class);
         when(logChannel.getLogFormatVersion()).thenReturn(LATEST_LOG_FORMAT);
         when(logChannel.position()).thenReturn(logHeader.getStartPosition().getByteOffset());

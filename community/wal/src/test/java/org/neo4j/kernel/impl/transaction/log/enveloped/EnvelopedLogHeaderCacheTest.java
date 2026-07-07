@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
@@ -44,7 +45,8 @@ class EnvelopedLogHeaderCacheTest {
                 StoreIdentifier.UNKNOWN,
                 SEGMENT_BLOCK_SIZE,
                 0,
-                KernelVersion.GLORIOUS_FUTURE);
+                KernelVersion.GLORIOUS_FUTURE,
+                UNSPECIFIED_CREATION_TIME);
     }
 
     @Test

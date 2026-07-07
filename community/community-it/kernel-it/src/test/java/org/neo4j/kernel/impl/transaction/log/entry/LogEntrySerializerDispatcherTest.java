@@ -29,6 +29,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHA
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_SEQUENCE_NUMBER;
@@ -86,7 +87,8 @@ class LogEntrySerializerDispatcherTest {
                 StoreIdentifier.UNKNOWN,
                 logFormat.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
-                version);
+                version,
+                UNSPECIFIED_CREATION_TIME);
         LogFormat.writeLogHeader(storeChannel, logHeader, INSTANCE);
         try (PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                         storeChannel, logHeader, path, EMPTY_ACCESSOR, DatabaseTracer.NULL);

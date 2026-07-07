@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.configuration.Config;
@@ -34,15 +35,19 @@ public class BaseLogHeaderFactory implements LogHeaderFactory {
     private final AtomicBoolean storeIdentifierFinalized = new AtomicBoolean(false);
     private volatile KernelVersion currentAppendedDatabaseVersion;
     private volatile StoreIdentifier storeIdentifier;
+    private final Clock clock;
 
-    public BaseLogHeaderFactory(KernelVersion currentAppendedDatabaseVersion, StoreIdentifier storeIdentifier) {
+    public BaseLogHeaderFactory(
+            KernelVersion currentAppendedDatabaseVersion, StoreIdentifier storeIdentifier, Clock clock) {
         this.currentAppendedDatabaseVersion = currentAppendedDatabaseVersion;
         this.storeIdentifier = storeIdentifier;
+        this.clock = clock;
     }
 
-    public BaseLogHeaderFactory(KernelVersion currentAppendedDatabaseVersion, StoreId storeId) {
+    public BaseLogHeaderFactory(KernelVersion currentAppendedDatabaseVersion, StoreId storeId, Clock clock) {
         this.currentAppendedDatabaseVersion = currentAppendedDatabaseVersion;
         this.storeIdentifier = StoreIdentifier.newStoreIdentifier(storeId);
+        this.clock = clock;
     }
 
     @Override
@@ -61,7 +66,14 @@ public class BaseLogHeaderFactory implements LogHeaderFactory {
                     + " found logFormat=" + logFormat);
         }
         return logFormat.newHeader(
-                newFileVersion, lastAppendIndex, preFileTerm, storeIdentifier, segmentSize, lastChecksum, version);
+                newFileVersion,
+                lastAppendIndex,
+                preFileTerm,
+                storeIdentifier,
+                segmentSize,
+                lastChecksum,
+                version,
+                clock.millis());
     }
 
     public void setVersion(KernelVersion databaseVersion) {

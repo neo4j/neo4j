@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
+
 import java.nio.file.Path;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 /**
  * Adapts a {@link LogFileMetadata} entry into the {@link LogFileInformation} view consumed by threshold
- * predicates. Mtime captured at the point of construction substitutes for the legacy "first start record timestamp"
- * because envelopes don't carry per-entry timestamps in their header.
+ * predicates. Mtime captured at the point of construction can substitute for the legacy "first start record timestamp"
+ * when using log versions that do not carry a timestamp in their header.
  */
 record EnvelopedLogFileInformation(LogFileMetadata metadata, long lastModifiedMillis) implements LogFileInformation {
 
@@ -46,7 +48,12 @@ record EnvelopedLogFileInformation(LogFileMetadata metadata, long lastModifiedMi
 
     @Override
     public long getFirstStartRecordTimestamp() {
-        // TODO MERGELOGS: not desired behaviour consider how we want time stamps to work
-        return lastModifiedMillis;
+        if (metadata.logHeader().getCreationTime() == UNSPECIFIED_CREATION_TIME) {
+            if (metadata.logHeader().getLogVersion() >= 11) {
+                throw new IllegalStateException("Creation time should be specified from V11 logs onwards, but wasn't");
+            }
+            return lastModifiedMillis;
+        }
+        return metadata.logHeader().getCreationTime();
     }
 }

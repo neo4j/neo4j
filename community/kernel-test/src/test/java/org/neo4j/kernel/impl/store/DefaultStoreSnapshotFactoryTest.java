@@ -29,6 +29,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
@@ -88,7 +89,8 @@ class DefaultStoreSnapshotFactoryTest {
         LogFiles logFiles = mock(LogFiles.class);
         LogFile logFile = mock(LogFile.class);
         when(logFile.extractHeader(1))
-                .thenReturn(LATEST_LOG_FORMAT.newHeader(1, 1, 1, StoreIdentifier.UNKNOWN, 1, 1, LATEST_KERNEL_VERSION));
+                .thenReturn(LATEST_LOG_FORMAT.newHeader(
+                        1, 1, 1, StoreIdentifier.UNKNOWN, 1, 1, LATEST_KERNEL_VERSION, UNSPECIFIED_CREATION_TIME));
         when(logFiles.getLogFile()).thenReturn(logFile);
         when(database.getDependencyResolver()).thenReturn(dependenciesOf(checkPointer, logFiles));
         when(database.getDatabaseAvailabilityGuard()).thenReturn(availabilityGuard);

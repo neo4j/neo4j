@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.setMaxStackTraceElementsDisplayed;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.kernel.impl.transaction.log.enveloped.LogsRepository.BASE_VERSION;
 
 import java.io.IOException;
@@ -75,6 +76,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
+import org.neo4j.time.FakeClock;
 
 @TestDirectoryExtension
 @RandomSupportExtension
@@ -88,6 +90,7 @@ class EnvelopedLogFilesTest {
     private final int segmentBlockSize = 256;
     private final int totalSegments = 3;
     private final int totalFileDataSize = segmentBlockSize * (totalSegments - 1);
+    private final FakeClock clock = new FakeClock();
 
     @Inject
     TestDirectory testDirectory;
@@ -128,7 +131,8 @@ class EnvelopedLogFilesTest {
         var baseFolder = testDirectory.directory("logsFolder");
         var filesHelper = new SequentialFileNameHelper(baseFolder, baseFileName);
         mirroringRepository = new LogsRepository(fs, filesHelper);
-        var logHeaderFactory = new BaseLogHeaderFactory(kernelVersion, StoreIdentifier.newStoreIdentifier(12345));
+        var logHeaderFactory =
+                new BaseLogHeaderFactory(kernelVersion, StoreIdentifier.newStoreIdentifier(12345), clock);
         envelopedLogFiles = new EnvelopedLogFiles(
                 mirroringRepository,
                 logHeaderFactory,
@@ -1394,7 +1398,8 @@ class EnvelopedLogFilesTest {
                             headerOfLastFile.getStoreIdentifier(),
                             segmentBlockSize,
                             headerOfLastFile.getPreviousLogFileChecksum(),
-                            headerOfLastFile.getKernelVersion());
+                            headerOfLastFile.getKernelVersion(),
+                            UNSPECIFIED_CREATION_TIME);
             channel.position(0);
             LogFormat.writeLogHeader(channel, newHeader, EmptyMemoryTracker.INSTANCE);
         }
@@ -1437,7 +1442,8 @@ class EnvelopedLogFilesTest {
                             headerOfLastFile.getStoreIdentifier(),
                             segmentBlockSize,
                             headerOfLastFile.getPreviousLogFileChecksum(),
-                            headerOfLastFile.getKernelVersion());
+                            headerOfLastFile.getKernelVersion(),
+                            UNSPECIFIED_CREATION_TIME);
             channel.position(0);
             LogFormat.writeLogHeader(channel, newHeader, EmptyMemoryTracker.INSTANCE);
         }
@@ -1453,7 +1459,14 @@ class EnvelopedLogFilesTest {
         // create a non enveloped log file
         try (var channel = mirroringRepository.createWriteChannel(0L).channel()) {
             LogHeader newHeader = LogFormat.V9.newHeader(
-                    0L, -1, -1, StoreIdentifier.UNKNOWN, segmentBlockSize, 100, KernelVersion.GLORIOUS_FUTURE);
+                    0L,
+                    -1,
+                    -1,
+                    StoreIdentifier.UNKNOWN,
+                    segmentBlockSize,
+                    100,
+                    KernelVersion.GLORIOUS_FUTURE,
+                    UNSPECIFIED_CREATION_TIME);
             channel.position(0);
             LogFormat.writeLogHeader(channel, newHeader, EmptyMemoryTracker.INSTANCE);
             var zeros = new byte[segmentBlockSize];
@@ -1501,7 +1514,8 @@ class EnvelopedLogFilesTest {
                             0, headerOfLastFile.getStoreIdentifier().randomValueIdentifier(), "", "", 1, 1)),
                     segmentBlockSize,
                     headerOfLastFile.getPreviousLogFileChecksum(),
-                    headerOfLastFile.getKernelVersion());
+                    headerOfLastFile.getKernelVersion(),
+                    UNSPECIFIED_CREATION_TIME);
             channel.position(0);
             LogFormat.writeLogHeader(channel, newHeader, EmptyMemoryTracker.INSTANCE);
         }

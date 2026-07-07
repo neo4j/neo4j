@@ -148,7 +148,8 @@ public class TransactionLogChannelAllocator {
                                         logFilesContext.storeId().get()),
                                 logFilesContext.envelopeSegmentBlockSizeBytes(),
                                 previousLogFileChecksum,
-                                kernelVersion);
+                                kernelVersion,
+                                logFilesContext.clock().millis());
                 writeLogHeader(storeChannel, header, logFilesContext.memoryTracker());
                 createEvent.fileCreated(header.getStartPosition().getByteOffset());
             }

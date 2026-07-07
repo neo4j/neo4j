@@ -33,6 +33,7 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
 import static org.neo4j.io.memory.HeapScopedBuffer.EMPTY_BUFFER;
 import static org.neo4j.kernel.impl.transaction.log.LogChannelUtils.estimateBytesWrittenToLogChannel;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
@@ -309,7 +310,14 @@ class PhysicalFlushableChannelTest {
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                 storeChannel, 1, LATEST_LOG_FORMAT, file, nativeChannelAccessor, databaseTracer);
         final var logHeader = LATEST_LOG_FORMAT.newHeader(
-                1, 1, LogHeader.UNKNOWN_TERM, StoreIdentifier.UNKNOWN, 1024, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                1,
+                1,
+                LogHeader.UNKNOWN_TERM,
+                StoreIdentifier.UNKNOWN,
+                1024,
+                BASE_TX_CHECKSUM,
+                LATEST_KERNEL_VERSION,
+                UNSPECIFIED_CREATION_TIME);
         LogFormat.writeLogHeader(versionedStoreChannel, logHeader, INSTANCE);
         versionedStoreChannel.position(logHeader.getStartPosition().getByteOffset());
         try (var channel = new PhysicalFlushableLogPositionAwareChannel(versionedStoreChannel, logHeader, INSTANCE)) {

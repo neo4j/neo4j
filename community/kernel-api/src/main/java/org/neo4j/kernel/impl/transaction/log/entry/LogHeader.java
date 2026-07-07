@@ -33,6 +33,7 @@ public class LogHeader {
     static final int LOG_HEADER_VERSION_SIZE = Long.BYTES;
 
     public static final long UNKNOWN_TERM = -1L;
+    public static final long UNSPECIFIED_CREATION_TIME = 0L;
 
     private final LogFormat logFormatVersion;
     private final long logVersion;
@@ -43,6 +44,7 @@ public class LogHeader {
     private final long lastTerm;
     private final int previousLogFileChecksum;
     private final KernelVersion kernelVersion;
+    private final long creationTime;
 
     LogHeader(
             byte logFormatVersion,
@@ -53,7 +55,8 @@ public class LogHeader {
             long headerSize,
             int segmentBlockSize,
             int previousLogFileChecksum,
-            KernelVersion kernelVersion) {
+            KernelVersion kernelVersion,
+            long creationTime) {
         this.logFormatVersion = LogFormat.fromByteVersion(logFormatVersion);
         this.logVersion = logVersion;
         this.lastAppendIndex = lastAppendIndex;
@@ -68,6 +71,7 @@ public class LogHeader {
         }
         this.previousLogFileChecksum = previousLogFileChecksum;
         this.kernelVersion = kernelVersion;
+        this.creationTime = creationTime;
     }
 
     public LogHeader(LogHeader logHeader, long version) {
@@ -80,6 +84,7 @@ public class LogHeader {
         previousLogFileChecksum = logHeader.previousLogFileChecksum;
         kernelVersion = logHeader.kernelVersion;
         lastTerm = logHeader.lastTerm;
+        creationTime = logHeader.creationTime;
     }
 
     public LogHeader(LogHeader logHeader, long version, long newLastAppendIndex, int checksum) {
@@ -92,6 +97,7 @@ public class LogHeader {
         previousLogFileChecksum = checksum;
         kernelVersion = logHeader.kernelVersion;
         lastTerm = logHeader.lastTerm;
+        creationTime = logHeader.creationTime;
     }
 
     public LogPosition getStartPosition() {
@@ -130,6 +136,10 @@ public class LogHeader {
         return lastTerm;
     }
 
+    public long getCreationTime() {
+        return creationTime;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -148,6 +158,7 @@ public class LogHeader {
                 && previousLogFileChecksum == logHeader.previousLogFileChecksum
                 && kernelVersion == logHeader.kernelVersion
                 && lastTerm == logHeader.lastTerm;
+        // The creationTime is not involved in equality checking for fears around flaky behaviour
     }
 
     @Override
@@ -162,6 +173,7 @@ public class LogHeader {
                 previousLogFileChecksum,
                 kernelVersion,
                 lastTerm);
+        // The creationTime is not involved in equality checking for fears around flaky behaviour
     }
 
     @Override
@@ -171,6 +183,6 @@ public class LogHeader {
                 + lastTerm + ", storeIdentifier=" + storeIdentifier + ", startPosition=" + startPosition
                 + ", segmentBlockSize="
                 + segmentBlockSize + ", previousLogFileChecksum=" + previousLogFileChecksum + ", kernelVersion="
-                + kernelVersion + '}';
+                + kernelVersion + ", creationTime=" + creationTime + '}';
     }
 }

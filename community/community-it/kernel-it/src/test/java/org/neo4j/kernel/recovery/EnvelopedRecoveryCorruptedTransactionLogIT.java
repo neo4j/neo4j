@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.LatestVersions.LATEST_RUNTIME_VERSION;
 
@@ -233,7 +234,8 @@ class EnvelopedRecoveryCorruptedTransactionLogIT extends RecoveryCorruptedTransa
                             StoreIdentifier.newStoreIdentifier(storeId),
                             currentHeader.getSegmentBlockSize(),
                             currentHeader.getPreviousLogFileChecksum(),
-                            currentHeader.getKernelVersion());
+                            currentHeader.getKernelVersion(),
+                            UNSPECIFIED_CREATION_TIME);
             storeChannel.position(0L);
             LogFormat.writeLogHeader(storeChannel, newHeader, INSTANCE);
         }

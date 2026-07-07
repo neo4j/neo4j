@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -68,12 +69,12 @@ class LogFilesMetadataTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void shouldReadHeaders(boolean useCache) throws IOException {
-        var logHeader1 =
-                LogFormat.V10.newHeader(4, 1, 1, StoreIdentifier.UNKNOWN, 512, 1, KernelVersion.GLORIOUS_FUTURE);
-        var logHeader2 =
-                LogFormat.V10.newHeader(5, 2, 2, StoreIdentifier.UNKNOWN, 512, 2, KernelVersion.GLORIOUS_FUTURE);
-        var logHeader3 =
-                LogFormat.V10.newHeader(6, 3, 3, StoreIdentifier.UNKNOWN, 512, 3, KernelVersion.GLORIOUS_FUTURE);
+        var logHeader1 = LogFormat.V10.newHeader(
+                4, 1, 1, StoreIdentifier.UNKNOWN, 512, 1, KernelVersion.GLORIOUS_FUTURE, UNSPECIFIED_CREATION_TIME);
+        var logHeader2 = LogFormat.V10.newHeader(
+                5, 2, 2, StoreIdentifier.UNKNOWN, 512, 2, KernelVersion.GLORIOUS_FUTURE, UNSPECIFIED_CREATION_TIME);
+        var logHeader3 = LogFormat.V10.newHeader(
+                6, 3, 3, StoreIdentifier.UNKNOWN, 512, 3, KernelVersion.GLORIOUS_FUTURE, UNSPECIFIED_CREATION_TIME);
         var logHeaders = new LogHeader[] {logHeader1, logHeader2, logHeader3};
         for (var logHeader : logHeaders) {
             var writeChannel = logsRepository.createWriteChannel(logHeader.getLogVersion());
@@ -115,12 +116,12 @@ class LogFilesMetadataTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void shouldIgnorePreAllocatedFiles(boolean useCache) throws IOException {
-        var logHeader1 =
-                LogFormat.V10.newHeader(0, 1, 1, StoreIdentifier.UNKNOWN, 512, 1, KernelVersion.GLORIOUS_FUTURE);
-        var logHeader2 =
-                LogFormat.V10.newHeader(1, 2, 2, StoreIdentifier.UNKNOWN, 512, 2, KernelVersion.GLORIOUS_FUTURE);
-        var logHeader3 =
-                LogFormat.V10.newHeader(2, 3, 3, StoreIdentifier.UNKNOWN, 512, 3, KernelVersion.GLORIOUS_FUTURE);
+        var logHeader1 = LogFormat.V10.newHeader(
+                0, 1, 1, StoreIdentifier.UNKNOWN, 512, 1, KernelVersion.GLORIOUS_FUTURE, UNSPECIFIED_CREATION_TIME);
+        var logHeader2 = LogFormat.V10.newHeader(
+                1, 2, 2, StoreIdentifier.UNKNOWN, 512, 2, KernelVersion.GLORIOUS_FUTURE, UNSPECIFIED_CREATION_TIME);
+        var logHeader3 = LogFormat.V10.newHeader(
+                2, 3, 3, StoreIdentifier.UNKNOWN, 512, 3, KernelVersion.GLORIOUS_FUTURE, UNSPECIFIED_CREATION_TIME);
         var logHeaders = new LogHeader[] {logHeader1, logHeader2, logHeader3};
         for (var i = 0; i < logHeaders.length; i++) {
 

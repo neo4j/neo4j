@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
@@ -110,7 +111,8 @@ class TransactionLogChannelAllocatorIT {
                             StoreIdentifier.newStoreIdentifier(STORE_ID),
                             LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                             1,
-                            LATEST_KERNEL_VERSION),
+                            LATEST_KERNEL_VERSION,
+                            UNSPECIFIED_CREATION_TIME),
                     INSTANCE);
         }
 
@@ -137,7 +139,8 @@ class TransactionLogChannelAllocatorIT {
                             StoreIdentifier.newStoreIdentifier(STORE_ID),
                             LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                             1,
-                            LATEST_KERNEL_VERSION),
+                            LATEST_KERNEL_VERSION,
+                            UNSPECIFIED_CREATION_TIME),
                     INSTANCE);
         }
 

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdFactory.KEEP_ALL;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdFactory.PRUNE_ALL;
 
@@ -139,7 +140,14 @@ class LogFilesPrunerTest {
             LogFormat.writeLogHeader(
                     channel.channel(),
                     LogFormat.V11.newHeader(
-                            version, prevAppendIndex, 0, StoreIdentifier.UNKNOWN, 246, 1, KernelVersion.V2026_01),
+                            version,
+                            prevAppendIndex,
+                            0,
+                            StoreIdentifier.UNKNOWN,
+                            246,
+                            1,
+                            KernelVersion.V2026_01,
+                            UNSPECIFIED_CREATION_TIME),
                     EmptyMemoryTracker.INSTANCE);
             channel.channel().flush();
         }

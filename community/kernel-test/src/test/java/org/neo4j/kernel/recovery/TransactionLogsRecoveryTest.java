@@ -43,6 +43,7 @@ import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointLogSeri
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.kernel.recovery.IncompleteTransactionAction.ROLLBACK;
 import static org.neo4j.kernel.recovery.IncompleteTransactionAction.STOP;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
@@ -968,7 +969,8 @@ class TransactionLogsRecoveryTest {
                 StoreIdentifier.newStoreIdentifier(storeId),
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
-                LATEST_KERNEL_VERSION);
+                LATEST_KERNEL_VERSION,
+                UNSPECIFIED_CREATION_TIME);
         try (var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                 fileSystem.write(file), logVersion, LATEST_LOG_FORMAT, file, EMPTY_ACCESSOR, DatabaseTracer.NULL)) {
             writeLogHeader(versionedStoreChannel, logHeader, INSTANCE);

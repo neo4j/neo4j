@@ -36,6 +36,7 @@ import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
 import static org.neo4j.kernel.KernelVersion.GLORIOUS_FUTURE;
 import static org.neo4j.kernel.KernelVersionProviders.fixed;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -970,7 +971,8 @@ class TransactionLogFileTest {
                     StoreIdentifier.newStoreIdentifier(STORE_ID),
                     256,
                     BASE_TX_CHECKSUM,
-                    kernelVersion);
+                    kernelVersion,
+                    UNSPECIFIED_CREATION_TIME);
             writeLogHeader(storeChannel, logHeader, INSTANCE);
         }
     }

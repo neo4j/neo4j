@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -222,7 +223,8 @@ class EnvelopeLogRangeFuzzerIT {
                                         ThreadLocalRandom.current().nextLong()),
                                 segmentSize,
                                 preFileChecksum,
-                                KernelVersion.GLORIOUS_FUTURE),
+                                KernelVersion.GLORIOUS_FUTURE,
+                                UNSPECIFIED_CREATION_TIME),
                 SEGMENT_BLOCK_SIZE,
                 4,
                 8,

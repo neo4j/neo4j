@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,7 +100,8 @@ class LogFileBinarySearchTest {
                                 StoreIdentifier.newStoreIdentifier(0),
                                 segmentSize,
                                 preFileChecksum,
-                                KernelVersion.GLORIOUS_FUTURE),
+                                KernelVersion.GLORIOUS_FUTURE,
+                                UNSPECIFIED_CREATION_TIME),
                 segmentBlockSize,
                 writeBufferedBlocks,
                 totalSegments,

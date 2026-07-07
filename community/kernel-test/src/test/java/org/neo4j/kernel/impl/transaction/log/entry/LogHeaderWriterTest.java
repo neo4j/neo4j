@@ -27,6 +27,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V10;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V9;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.encodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogFormatVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
@@ -98,7 +99,8 @@ class LogHeaderWriterTest {
                 expectedStoreId,
                 logFormat != V10 ? UNKNOWN_LOG_SEGMENT_SIZE : expectedBlockSize,
                 expectedChecksum,
-                KernelVersion.GLORIOUS_FUTURE);
+                KernelVersion.GLORIOUS_FUTURE,
+                UNSPECIFIED_CREATION_TIME);
 
         // when
         writeLogHeader(channel, logHeader, INSTANCE);

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -228,7 +229,8 @@ public class EnvelopedConcurrentLogFilesBinarySearchIT {
                                 StoreIdentifier.newStoreIdentifier(12345),
                                 segmentSize,
                                 preFileChecksum,
-                                KernelVersion.GLORIOUS_FUTURE),
+                                KernelVersion.GLORIOUS_FUTURE,
+                                UNSPECIFIED_CREATION_TIME),
                 SEGMENT_BLOCK_SIZE,
                 WRITE_BUFFERED_BLOCKS,
                 TOTAL_SEGMENTS,

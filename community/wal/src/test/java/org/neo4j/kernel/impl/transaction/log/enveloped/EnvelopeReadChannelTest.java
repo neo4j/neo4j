@@ -33,6 +33,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEAD
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.KERNEL_CONTENT_TYPE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.MAX_ZERO_PADDING_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.REPLICATED_TX_CONTENT_TYPE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.kernel.impl.transaction.log.enveloped.EnvelopeWriteChannelTest.buffer;
 import static org.neo4j.kernel.impl.transaction.log.enveloped.EnvelopeWriteChannelTest.writeChannel;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -118,7 +119,8 @@ class EnvelopeReadChannelTest {
                             StoreIdentifier.UNKNOWN,
                             segmentSize,
                             previousLogFileChecksum,
-                            LatestVersions.LATEST_KERNEL_VERSION));
+                            LatestVersions.LATEST_KERNEL_VERSION,
+                            UNSPECIFIED_CREATION_TIME));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

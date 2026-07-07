@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.LOG_VERSION_MASK;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.encodeLogVersion;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -207,7 +208,8 @@ class LogHeaderReaderTest {
                                 LogFormat.V6.getHeaderSize(),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
-                                null);
+                                null,
+                                UNSPECIFIED_CREATION_TIME);
                     }
                 },
                 new TestCase(LogFormat.V7) {
@@ -249,7 +251,8 @@ class LogHeaderReaderTest {
                                 LogFormat.V7.getHeaderSize(),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
-                                null);
+                                null,
+                                UNSPECIFIED_CREATION_TIME);
                     }
                 },
                 new TestCase(LogFormat.V8) {
@@ -291,7 +294,8 @@ class LogHeaderReaderTest {
                                 StoreIdentifier.newStoreIdentifier(storeId),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
-                                null);
+                                null,
+                                UNSPECIFIED_CREATION_TIME);
                     }
                 },
                 new TestCase(LogFormat.V9) {
@@ -333,7 +337,8 @@ class LogHeaderReaderTest {
                                 StoreIdentifier.newStoreIdentifier(storeId),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
-                                null);
+                                null,
+                                UNSPECIFIED_CREATION_TIME);
                     }
                 },
                 new TestCase(LogFormat.V10) {
@@ -374,7 +379,8 @@ class LogHeaderReaderTest {
                                 StoreIdentifier.newStoreIdentifier(storeId),
                                 segmentSize,
                                 checksum,
-                                LATEST_KERNEL_VERSION);
+                                LATEST_KERNEL_VERSION,
+                                UNSPECIFIED_CREATION_TIME);
                     }
                 });
     }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
@@ -276,7 +277,8 @@ class TransactionRangeDiagnosticsTest {
                                         new StoreId(12345, 56789, "engine-1", "format-1", 1, 1)),
                                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                                 BASE_TX_CHECKSUM,
-                                LATEST_KERNEL_VERSION));
+                                LATEST_KERNEL_VERSION,
+                                UNSPECIFIED_CREATION_TIME));
             }
 
             when(transactionLogs.getMatchedFiles()).thenReturn(helper.getFiles(fs));

@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -102,7 +103,8 @@ class TransactionLogFileInformationTest {
                 StoreIdentifier.newStoreIdentifier(storeId),
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
-                LATEST_KERNEL_VERSION);
+                LATEST_KERNEL_VERSION,
+                UNSPECIFIED_CREATION_TIME);
         when(logFile.extractHeader(version)).thenReturn(expectedHeader);
 
         long lastAppendIndexBeforeFile = info.forVersion(version).getPreviousAppendIndexFromHeader();
@@ -131,7 +133,8 @@ class TransactionLogFileInformationTest {
                 StoreIdentifier.newStoreIdentifier(storeId),
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
-                LATEST_KERNEL_VERSION);
+                LATEST_KERNEL_VERSION,
+                UNSPECIFIED_CREATION_TIME);
         when(logFile.extractHeader(anyLong())).thenReturn(expectedHeader);
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
         when(logFile.versionExists(anyLong())).thenReturn(true);
@@ -159,7 +162,8 @@ class TransactionLogFileInformationTest {
                 StoreIdentifier.newStoreIdentifier(storeId),
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
-                LATEST_KERNEL_VERSION);
+                LATEST_KERNEL_VERSION,
+                UNSPECIFIED_CREATION_TIME);
         when(logFile.extractHeader(anyLong())).thenReturn(expectedHeader);
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
         when(logFile.versionExists(anyLong())).thenReturn(true);
