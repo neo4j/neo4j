@@ -2255,20 +2255,6 @@
       </properties>
     </profile>
     <profile>
-      <id>multiVersionRecordFormat</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>NEO4J_OVERRIDE_STORE_FORMAT</name>
-          <value>multiversion</value>
-        </property>
-      </activation>
-      <properties>
-        <excludedTestGroups>recordformatoverride</excludedTestGroups>
-        <test.runner.jvm.settings.db.format>-DNEO4J_OVERRIDE_STORE_FORMAT=multiversion</test.runner.jvm.settings.db.format>
-      </properties>
-    </profile>
-    <profile>
       <id>multiVersionBlockFormat</id>
       <activation>
         <activeByDefault>false</activeByDefault>
