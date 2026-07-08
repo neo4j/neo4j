@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.planner.spi.histogram.Bucket
 import org.neo4j.cypher.internal.planner.spi.histogram.Histogram
 import org.neo4j.cypher.internal.planner.spi.histogram.StandardBucket
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundReadTokenContext
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
@@ -100,7 +100,7 @@ object HistogramsFromConfigHelper {
    */
   def getHistogramKey(
     histogram: Histogram,
-    tokenContext: TransactionBoundReadTokenContext
+    tokenContext: ReadTokenContext
   ): Option[HistogramKey] = {
     val maybeLabelOrTypeId =
       histogram.nodeOrRelationship match {
