@@ -86,5 +86,8 @@ case class DriverCypherExecutorFactory(
       SessionConfig.builder().withDatabase(databaseName).withNotificationConfig(notificationConfig).build()
     ))
 
-  override def close(): Unit = driver.close()
+  override def close(): Unit = {
+    restrictedDriver.close()
+    driver.close()
+  }
 }

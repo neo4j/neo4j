@@ -78,7 +78,6 @@ object FeatureDatabaseManagementService {
         .set(BoltConnector.listen_address, new SocketAddress("localhost", 0))
         .build()
       val managementService = createBackingDbms(config)
-      managementService.database("system").executeTransactionally("ALTER USER neo4j SET PASSWORD CHANGE NOT REQUIRED")
       val executorFactory =
         DriverCypherExecutorFactory(managementService, config, Some(AuthTokens.basic("neo4j", "neo4j")))
       FeatureDatabaseManagementService(managementService, executorFactory)
