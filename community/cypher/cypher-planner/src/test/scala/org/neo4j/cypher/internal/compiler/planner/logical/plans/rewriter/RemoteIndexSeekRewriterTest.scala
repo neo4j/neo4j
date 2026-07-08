@@ -51,48 +51,32 @@ class RemoteIndexSeekRewriterTest extends CypherPlannerTestSuite {
     result shouldEqual expected
   }
 
-  test("should rewrite NodeIndexSeek on RHS even if the argumentIds are empty") {
+  test("should not rewrite NodeIndexSeek on RHS of a hash join where the argumentIds are empty") {
     val input = new LogicalPlanBuilder(wholePlan = false)
       .nodeHashJoin("m")
       .|.nodeIndexOperator("n:Person(id = 42)")
       .nodeByLabelScan("m", "Person", IndexOrderNone)
       .build()
 
-    val expected = new LogicalPlanBuilder(wholePlan = false)
-      .nodeHashJoin("m")
-      .|.remoteNodeIndexOperator("n:Person(id = 42)")
-      .nodeByLabelScan("m", "Person", IndexOrderNone)
-      .build()
-
-    rewrite(input) shouldEqual expected
+    rewrite(input) shouldEqual input
   }
 
-  test("should rewrite NodeIndexSeek even when it is not on the RHS") {
+  test("should not rewrite a top-level NodeIndexSeek") {
     val input = new LogicalPlanBuilder(wholePlan = false)
       .nodeIndexOperator("n:Person(id = 42)")
       .build()
 
-    val expected = new LogicalPlanBuilder(wholePlan = false)
-      .remoteNodeIndexOperator("n:Person(id = 42)")
-      .build()
-
-    rewrite(input) shouldEqual expected
+    rewrite(input) shouldEqual input
   }
 
-  test("should rewrite NodeIndexSeek on the LHS of an apply plan") {
+  test("should not rewrite NodeIndexSeek on the LHS of an apply plan") {
     val input = new LogicalPlanBuilder(wholePlan = false)
       .apply()
       .|.allNodeScan("m")
       .nodeIndexOperator("n:Person(id = 42)")
       .build()
 
-    val expected = new LogicalPlanBuilder(wholePlan = false)
-      .apply()
-      .|.allNodeScan("m")
-      .remoteNodeIndexOperator("n:Person(id = 42)")
-      .build()
-
-    rewrite(input) shouldEqual expected
+    rewrite(input) shouldEqual input
   }
 
   test("should rewrite NodeUniqueIndexSeek on RHS of Apply to RemoteNodeUniqueIndexSeek") {
@@ -113,32 +97,22 @@ class RemoteIndexSeekRewriterTest extends CypherPlannerTestSuite {
     rewrite(input) shouldEqual expected
   }
 
-  test("should rewrite NodeUniqueIndexSeek even if the argumentIds are empty") {
+  test("should not rewrite a top-level NodeUniqueIndexSeek") {
     val input = new LogicalPlanBuilder(wholePlan = false)
       .nodeIndexOperator("n:Person(id = 42)", unique = true)
       .build()
 
-    val expected = new LogicalPlanBuilder(wholePlan = false)
-      .remoteNodeIndexOperator("n:Person(id = 42)", unique = true)
-      .build()
-
-    rewrite(input) shouldEqual expected
+    rewrite(input) shouldEqual input
   }
 
-  test("should rewrite NodeUniqueIndexSeek on the LHS of an apply plan") {
+  test("should not rewrite NodeUniqueIndexSeek on the LHS of an apply plan") {
     val input = new LogicalPlanBuilder(wholePlan = false)
       .apply()
       .|.allNodeScan("m")
       .nodeIndexOperator("n:Person(id = 42)", unique = true)
       .build()
 
-    val expected = new LogicalPlanBuilder(wholePlan = false)
-      .apply()
-      .|.allNodeScan("m")
-      .remoteNodeIndexOperator("n:Person(id = 42)", unique = true)
-      .build()
-
-    rewrite(input) shouldEqual expected
+    rewrite(input) shouldEqual input
   }
 
   test("should not rewrite NodeIndexSeek on RHS of a Merge-Apply") {

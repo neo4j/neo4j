@@ -129,6 +129,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     with RuntimeTestResolver[CONTEXT]
     with InputDataStreamTestSupport {
 
+  def spdEnabled: Boolean = edition.spd.isDefined
+
   protected var managementService: DatabaseManagementService = _
   protected var dbmsFileSystem: EphemeralFileSystemAbstraction = _
   protected var graphDb: GraphDatabaseService = _

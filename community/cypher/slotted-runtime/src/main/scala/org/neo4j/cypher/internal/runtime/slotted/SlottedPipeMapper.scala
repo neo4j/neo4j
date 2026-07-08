@@ -136,6 +136,8 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.RemoteNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.RemoteNodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatAcyclic
 import org.neo4j.cypher.internal.logical.plans.RepeatTrail
@@ -355,6 +357,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.ValueHashJoinSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.CantCompileQueryException
@@ -1184,6 +1187,50 @@ class SlottedPipeMapper(
       // Currently used for testing only
       case _: MultiNodeIndexSeek =>
         throw CantCompileQueryException.unsupportedInSlotted(String.valueOf(plan))
+
+      case RemoteNodeIndexSeek(
+          idName,
+          label,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        ) =>
+        onLeaf(NodeIndexSeek(
+          idName,
+          label,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        )(SameId(id)))
+
+      case RemoteNodeUniqueIndexSeek(
+          idName,
+          label,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        ) =>
+        onLeaf(NodeUniqueIndexSeek(
+          idName,
+          label,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        )(
+          SameId(id)
+        ))
 
       case _ =>
         fallback.onLeaf(plan)

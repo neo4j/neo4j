@@ -43,17 +43,39 @@ import scala.util.matching.Regex
 trait QueryPlanTestSupport {
 
   /**
+   * [[true]] when the test runs against a sharded property database 
+   */
+  def runOnSpd: Boolean
+
+  /**
+   * On SPD the planner rewrites read-only `NodeIndexSeek`/`NodeUniqueIndexSeek` into their `Remote*` equivalents,
+   * rendered as `"Remote" + indexMode`. 
+   * Under `runOnSpd`, broaden a plan-name assertion for these four names to accept either local or remote form, 
+   * which avoids having to add conditional assertions to every test case. 
+   */
+  private val RemotableSeekNames = Set(
+    "NodeIndexSeek",
+    "NodeIndexSeekByRange",
+    "NodeUniqueIndexSeek",
+    "NodeUniqueIndexSeekByRange"
+  )
+
+  private def withRemoteAwareName(base: PlanMatcher, name: String): PlanMatcher =
+    if (runOnSpd && RemotableSeekNames(name)) base.withName(("(Remote)?" + name).r)
+    else base.withName(name)
+
+  /**
    * Allows the syntax
    * `plan should haveAsRoot.aPlan("ProduceResults")`
    */
   object haveAsRoot {
     def aPlan: PlanMatcher = ExactPlan()
 
-    def aPlan(name: String): PlanMatcher = ExactPlan().withName(name)
+    def aPlan(name: String): PlanMatcher = withRemoteAwareName(ExactPlan(), name)
 
     def aSourcePlan: PlanMatcher = ExactPlan.ignoringCachedProperties()
 
-    def aSourcePlan(name: String): PlanMatcher = ExactPlan.ignoringCachedProperties().withName(name)
+    def aSourcePlan(name: String): PlanMatcher = withRemoteAwareName(ExactPlan.ignoringCachedProperties(), name)
   }
 
   /**
@@ -67,7 +89,7 @@ trait QueryPlanTestSupport {
   object includeSomewhere {
     def aPlan: PlanMatcher = PlanInTree(ExactPlan())
 
-    def aPlan(name: String): PlanMatcher = PlanInTree(ExactPlan()).withName(name)
+    def aPlan(name: String): PlanMatcher = withRemoteAwareName(PlanInTree(ExactPlan()), name)
     def aPlanEndingWith(name: String): PlanMatcher = aPlan(s"\\w*$name".r)
 
     def aPlan(name: Regex): PlanMatcher = PlanInTree(ExactPlan()).withName(name)

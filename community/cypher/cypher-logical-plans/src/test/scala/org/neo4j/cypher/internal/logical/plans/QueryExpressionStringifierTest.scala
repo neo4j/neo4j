@@ -349,6 +349,16 @@ class QueryExpressionStringifierTest extends CypherFunSuite with AstConstruction
     }
   }
 
+  test("should stringify RangeLessThan with three inclusive bounds by emitting all bounds (<=)") {
+    val range = RangeLessThan(NonEmptyList(
+      InclusiveBound(literalInt(10)),
+      InclusiveBound(literalInt(100)),
+      InclusiveBound(literalInt(1000))
+    ))
+    val expr = RangeQueryExpression(InequalitySeekRangeWrapper(range)(pos))
+    defaultStringifier(expr, Seq("prop")) should equal("prop <= 10 AND prop <= 100 AND prop <= 1000")
+  }
+
   // Tests with entity parameter
   test("should stringify SingleQueryExpression with entity") {
     val expr = SingleQueryExpression(parameter("param", CTAny))

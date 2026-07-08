@@ -413,7 +413,7 @@ class PushOperatorsToShardPlanningIntegrationTest
       .expandInto("(a)-[]->(n1)")
       .filter(assertIsNode("n0"))
       .apply()
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "a:L0(prop = 42)",
         argumentIds = Set("n0", "n1"),
         getValue = Map("prop" -> GetValue)
@@ -1130,7 +1130,7 @@ class PushOperatorsToShardPlanningIntegrationTest
         .|.nodeByLabelScan("a", "Person")
         .antiSemiApply()
         .|.expandInto("(b)-[:KNOWS]->(anon_0)")
-        .|.nodeIndexOperator(
+        .|.remoteNodeIndexOperator(
           "anon_0:Person(firstName = 'Jon')",
           argumentIds = Set("b"),
           getValue = Map("firstName" -> DoNotGetValue)
@@ -1510,7 +1510,7 @@ class PushOperatorsToShardPlanningIntegrationTest
       .produceResults("`id(a)`", "`id(b)`")
       .projection("id(a) AS `id(a)`", "id(b) AS `id(b)`")
       .apply()
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "a:PROFILES(pets = cacheN[b.children])",
         argumentIds = Set("b"),
         getValue = Map("pets" -> DoNotGetValue)
@@ -1747,7 +1747,7 @@ class PushOperatorsToShardPlanningIntegrationTest
       .planBuilder()
       .produceResults("city", "person")
       .apply()
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "person:Person(firstName = cacheN[city.name])",
         argumentIds = Set("city"),
         getValue = Map("firstName" -> DoNotGetValue)
@@ -1771,7 +1771,7 @@ class PushOperatorsToShardPlanningIntegrationTest
       .produceResults("`person.id`", "`friend.id`")
       .projection("cacheN[person.id] AS `person.id`", "cacheN[friend.id] AS `friend.id`")
       .apply()
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "friend:Person(id = cacheN[person.id])",
         argumentIds = Set("person"),
         getValue = Map("id" -> GetValue),

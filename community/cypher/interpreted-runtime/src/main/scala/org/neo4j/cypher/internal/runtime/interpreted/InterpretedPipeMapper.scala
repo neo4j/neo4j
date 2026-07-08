@@ -164,6 +164,8 @@ import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithFilter
+import org.neo4j.cypher.internal.logical.plans.RemoteNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.RemoteNodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatAcyclic
 import org.neo4j.cypher.internal.logical.plans.RepeatTrail
@@ -402,6 +404,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Eagerly
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
@@ -1006,6 +1009,50 @@ case class InterpretedPipeMapper(
           indexSeekMode,
           indexOrder
         )(id = id)
+
+      case RemoteNodeIndexSeek(
+          idName,
+          label,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        ) =>
+        onLeaf(NodeIndexSeek(
+          idName,
+          label,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        )(SameId(id)))
+
+      case RemoteNodeUniqueIndexSeek(
+          idName,
+          label,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        ) =>
+        onLeaf(NodeUniqueIndexSeek(
+          idName,
+          label,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        )(
+          SameId(id)
+        ))
 
       case PartitionedNodeIndexSeek(ident, label, properties, valueExpr, _, indexType) =>
         val indexSeekMode = IndexSeekMode(unique = false, readOnly = readOnly, valueExpr)

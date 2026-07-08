@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.util.topDown
  * Rewrites [[NodeIndexSeek]] and [[NodeUniqueIndexSeek]] plans into [[RemoteNodeIndexSeek]] and
  * [[RemoteNodeUniqueIndexSeek]] plans respectively for SHARDED databases.
  * Currently supported only for read-only queries.
+ * Additionally, only seeks with arguments are rewritten: the remote operators batch index queries across
+ * argument rows, and a seek with no arguments is a single invocation with nothing to batch.
  */
 case object RemoteIndexSeekRewriter extends Rewriter {
 
@@ -50,7 +52,7 @@ case object RemoteIndexSeekRewriter extends Rewriter {
         indexOrder,
         indexType,
         supportPartitionedScan
-      ) =>
+      ) if argumentIds.nonEmpty =>
       RemoteNodeIndexSeek(
         idName,
         label,
@@ -71,7 +73,7 @@ case object RemoteIndexSeekRewriter extends Rewriter {
         indexOrder,
         indexType,
         supportPartitionedScan
-      ) =>
+      ) if argumentIds.nonEmpty =>
       RemoteNodeUniqueIndexSeek(
         idName,
         label,

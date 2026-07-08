@@ -149,6 +149,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexSeekTestBas
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexStartsWithSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipLockingUniqueIndexSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipTypeScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RemoteNodeIndexSeekCompatibilityTestRewriter
 import org.neo4j.cypher.internal.runtime.spec.tests.RemoveDynamicLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RemoveLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RepeatAcyclicTestBase
@@ -368,6 +369,10 @@ class InterpretedNodeIndexEndsWithScanTest
 class InterpretedNodeIndexSeekTest
     extends NodeIndexSeekTestBase(COMMUNITY.EDITION, CommunityInterpretedRuntime, SIZE_HINT)
     with NodeLockingUniqueIndexSeekTestBase[CommunityRuntimeContext]
+
+class InterpretedRemoteNodeIndexSeekCompatibilityTest
+    extends NodeIndexSeekTestBase(COMMUNITY.EDITION, CommunityInterpretedRuntime, SIZE_HINT)
+    with RemoteNodeIndexSeekCompatibilityTestRewriter[CommunityRuntimeContext]
 
 class InterpretedNodeFulltextIndexSearchTest
     extends NodeFulltextIndexSearchTestBase(COMMUNITY.EDITION, CommunityInterpretedRuntime, SIZE_HINT)

@@ -23,20 +23,25 @@ import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoteNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.RemoteNodeUniqueIndexSeek
 import org.neo4j.cypher.internal.runtime.spec.RewritingRuntimeTest
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.RewriterStopper
+import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
 /**
- * Rewrites every [[NodeIndexSeek]] in the logical plan into a [[RemoteNodeIndexSeek]].
+ * Rewrites every [[NodeIndexSeek]] in the logical plan into a [[RemoteNodeIndexSeek]],
+ * and every [[NodeUniqueIndexSeek]] in a read-only logical plan into a [[RemoteNodeUniqueIndexSeek]].
  */
 trait RemoteNodeIndexSeekCompatibilityTestRewriter[CONTEXT <: RuntimeContext] extends RewritingRuntimeTest[CONTEXT] {
   self: RuntimeTestSuite[CONTEXT] =>
 
   override def rewriter(logicalQuery: LogicalQuery): Rewriter = {
+    val readOnly = logicalQuery.logicalPlan.readOnly
     bottomUp(
       Rewriter.lift {
         case plan: NodeIndexSeek =>
@@ -49,7 +54,18 @@ trait RemoteNodeIndexSeekCompatibilityTestRewriter[CONTEXT <: RuntimeContext] ex
             plan.indexOrder,
             plan.indexType,
             plan.supportPartitionedScan
-          )(logicalQuery.idGen)
+          )(SameId(plan.id))
+        case plan: NodeUniqueIndexSeek if readOnly =>
+          RemoteNodeUniqueIndexSeek(
+            plan.idName,
+            plan.label,
+            plan.properties,
+            plan.valueExpr,
+            plan.argumentIds,
+            plan.indexOrder,
+            plan.indexType,
+            plan.supportPartitionedScan
+          )(SameId(plan.id))
       },
       stopper
     )
