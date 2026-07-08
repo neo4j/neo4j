@@ -87,6 +87,10 @@ public enum PrivilegeAction {
     ALTER_ALIAS,
     SHOW_ALIAS,
 
+    READ_SECRETS,
+    WRITE_SECRETS,
+    SHOW_SECRETS,
+
     SHOW_USER,
     CREATE_USER,
     RENAME_USER,
@@ -236,6 +240,16 @@ public enum PrivilegeAction {
         }
     },
 
+    SECRETS_MANAGEMENT {
+        @Override
+        public boolean satisfies(PrivilegeAction action) {
+            return switch (action) {
+                case READ_SECRETS, WRITE_SECRETS, SHOW_SECRETS -> true;
+                default -> this == action;
+            };
+        }
+    },
+
     USER_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
@@ -369,6 +383,7 @@ public enum PrivilegeAction {
             return ROLE_MANAGEMENT.satisfies(action)
                     || USER_MANAGEMENT.satisfies(action)
                     || USER_METADATA_MANAGEMENT.satisfies(action)
+                    || SECRETS_MANAGEMENT.satisfies(action)
                     || AUTH_RULE_MANAGEMENT.satisfies(action)
                     || DATABASE_MANAGEMENT.satisfies(action)
                     || ALIAS_MANAGEMENT.satisfies(action)

@@ -26,17 +26,22 @@ import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedurePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
+import org.neo4j.cypher.internal.ast.SecretAllQualifier
+import org.neo4j.cypher.internal.ast.SecretQualifier
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.internal.kernel.api.security.FunctionSegment
 import org.neo4j.internal.kernel.api.security.LabelSegment
 import org.neo4j.internal.kernel.api.security.ProcedureSegment
 import org.neo4j.internal.kernel.api.security.RelTypeSegment
+import org.neo4j.internal.kernel.api.security.SecretSegment
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.internal.kernel.api.security.UserSegment
 
 object QualifierMapper {
 
+  /** Maps a qualifier to its kernel segment for version-support checks only.
+   * Named qualifiers are coerced to their wildcard form — the exact name is not relevant here. */
   def asKernelQualifier(qualifier: PrivilegeQualifier): Segment = qualifier match {
     case _: ProcedurePrivilegeQualifier => ProcedureSegment.ALL
     case _: FunctionPrivilegeQualifier  => FunctionSegment.ALL
@@ -46,6 +51,8 @@ object QualifierMapper {
     case _: RelationshipAllQualifier    => RelTypeSegment.ALL
     case _: UserQualifier               => UserSegment.ALL
     case _: UserAllQualifier            => UserSegment.ALL
+    case _: SecretQualifier             => SecretSegment.ALL
+    case _: SecretAllQualifier          => SecretSegment.ALL
     case _                              => Segment.ALL
   }
 }

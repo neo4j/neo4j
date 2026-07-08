@@ -5003,6 +5003,42 @@ class PrettifierIT extends AbstractPrettifierTest {
     "GRANT LOAD ON CIDR '' TO ``" -> """GRANT LOAD ON CIDR "" TO ``""",
     "DENY LOAD ON CIDR $`` TO $``" -> "DENY LOAD ON CIDR $`` TO $``",
     "REVOKE LOAD ON ALL DATA FROM ``" -> "REVOKE LOAD ON ALL DATA FROM ``",
+    FailsInCypher5(
+      "GRANT SECRETS MANAGEMENT ON DBMS TO $``",
+      "GRANT SECRETS MANAGEMENT ON DBMS TO $``"
+    ),
+    FailsInCypher5(
+      "GRANT WRITE SECRETS ON DBMS TO $``",
+      "GRANT WRITE SECRETS ON DBMS TO $``"
+    ),
+    FailsInCypher5(
+      "GRANT SHOW SECRETS ON DBMS TO $``",
+      "GRANT SHOW SECRETS ON DBMS TO $``"
+    ),
+    FailsInCypher5(
+      "GRANT READ SECRET 'sec1' ON DBMS TO $``",
+      """GRANT READ SECRETS "sec1" ON DBMS TO $``"""
+    ),
+    FailsInCypher5(
+      "GRANT READ SECRET 'sec\\'1' ON DBMS TO $``",
+      """GRANT READ SECRETS "sec'1" ON DBMS TO $``"""
+    ),
+    FailsInCypher5(
+      "GRANT READ SECRET $secretName ON DBMS TO $``",
+      "GRANT READ SECRETS $secretName ON DBMS TO $``"
+    ),
+    FailsInCypher5(
+      "GRANT READ SECRET $`my secret` ON DBMS TO $``",
+      "GRANT READ SECRETS $`my secret` ON DBMS TO $``"
+    ),
+    FailsInCypher5(
+      "GRANT READ SECRET * ON DBMS TO $``",
+      "GRANT READ SECRETS * ON DBMS TO $``"
+    ),
+    FailsInCypher5(
+      "GRANT READ SECRET '' ON DBMS TO $``",
+      """GRANT READ SECRETS "" ON DBMS TO $``"""
+    ),
 
     // database
     "SHOW DATABASE ``" -> "SHOW DATABASE ``",

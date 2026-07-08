@@ -237,6 +237,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase
       Immutable
     ) => InputPosition => ast.Statement
 
+  type secretsPrivilegeFunc =
+    (
+      ast.DbmsAction,
+      List[ast.SecretPrivilegeQualifier],
+      Seq[Expression],
+      Immutable
+    ) => InputPosition => ast.Statement
+
   def grantGraphPrivilege(
     p: ast.PrivilegeType,
     a: ast.ActionResourceBase,
@@ -318,6 +326,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase
   def grantShowSettingPrivilege(
     a: ast.DbmsAction,
     q: List[ast.SettingPrivilegeQualifier],
+    r: Seq[Expression],
+    i: Immutable
+  ): InputPosition => ast.Statement =
+    grantQualifiedDbmsPrivilege(a, q, r, i)
+
+  def grantReadSecretsPrivilege(
+    a: ast.DbmsAction,
+    q: List[ast.SecretPrivilegeQualifier],
     r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
@@ -416,6 +432,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase
   ): InputPosition => ast.Statement =
     denyQualifiedDbmsPrivilege(a, q, r, i)
 
+  def denyReadSecretsPrivilege(
+    a: ast.DbmsAction,
+    q: List[ast.SecretPrivilegeQualifier],
+    r: Seq[Expression],
+    i: Immutable
+  ): InputPosition => ast.Statement =
+    denyQualifiedDbmsPrivilege(a, q, r, i)
+
   def denyQualifiedDbmsPrivilege(
     a: ast.DbmsAction,
     q: List[ast.PrivilegeQualifier],
@@ -489,6 +513,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase
   ): InputPosition => ast.Statement =
     revokeQualifiedDbmsPrivilege(ast.RevokeGrantType()(pos), a, q, r, i)
 
+  def revokeGrantReadSecretsPrivilege(
+    a: ast.DbmsAction,
+    q: List[ast.SecretPrivilegeQualifier],
+    r: Seq[Expression],
+    i: Immutable
+  ): InputPosition => ast.Statement =
+    revokeQualifiedDbmsPrivilege(ast.RevokeGrantType()(pos), a, q, r, i)
+
   def revokeDenyGraphPrivilege(
     p: ast.PrivilegeType,
     a: ast.ActionResourceBase,
@@ -554,6 +586,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase
   ): InputPosition => ast.Statement =
     revokeQualifiedDbmsPrivilege(ast.RevokeDenyType()(pos), a, q, r, i)
 
+  def revokeDenyReadSecretsPrivilege(
+    a: ast.DbmsAction,
+    q: List[ast.SecretPrivilegeQualifier],
+    r: Seq[Expression],
+    i: Immutable
+  ): InputPosition => ast.Statement =
+    revokeQualifiedDbmsPrivilege(ast.RevokeDenyType()(pos), a, q, r, i)
+
   def revokeGraphPrivilege(
     p: ast.PrivilegeType,
     a: ast.ActionResourceBase,
@@ -614,6 +654,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase
   def revokeShowSettingPrivilege(
     a: ast.DbmsAction,
     q: List[ast.SettingPrivilegeQualifier],
+    r: Seq[Expression],
+    i: Immutable
+  ): InputPosition => ast.Statement =
+    revokeQualifiedDbmsPrivilege(ast.RevokeBothType()(pos), a, q, r, i)
+
+  def revokeReadSecretsPrivilege(
+    a: ast.DbmsAction,
+    q: List[ast.SecretPrivilegeQualifier],
     r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =

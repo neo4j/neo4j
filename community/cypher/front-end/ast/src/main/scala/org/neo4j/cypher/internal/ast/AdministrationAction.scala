@@ -145,6 +145,16 @@ case object ExecuteBoostedFunctionAction extends DbmsAction("EXECUTE BOOSTED USE
 
 case object ShowSettingAction extends DbmsAction("SHOW SETTING")
 
+abstract class SecretManagementAction(override val name: String) extends DbmsAction(name)
+
+case object AllSecretManagementActions extends SecretManagementAction("SECRETS MANAGEMENT")
+
+case object ReadSecretsAction extends SecretManagementAction("READ SECRETS")
+
+case object WriteSecretsAction extends SecretManagementAction("WRITE SECRETS")
+
+case object ShowSecretsAction extends SecretManagementAction("SHOW SECRETS")
+
 abstract class UserManagementAction(override val name: String) extends DbmsAction(name)
 
 case object AllUserActions extends UserManagementAction("USER MANAGEMENT")

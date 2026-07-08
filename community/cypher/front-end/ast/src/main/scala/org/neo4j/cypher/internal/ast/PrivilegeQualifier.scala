@@ -219,3 +219,21 @@ final case class LoadUrlQualifier(url: Either[String, Parameter])(val position: 
     )(position).asInstanceOf[this.type]
   }
 }
+
+// Secrets qualifiers
+
+sealed trait SecretPrivilegeQualifier extends PrivilegeQualifier
+
+final case class SecretAllQualifier()(val position: InputPosition) extends SecretPrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): SecretAllQualifier.this.type = this
+}
+
+final case class SecretQualifier(secret: Either[String, Parameter])(val position: InputPosition)
+    extends SecretPrivilegeQualifier {
+
+  override def dup(children: Seq[AnyRef]): SecretQualifier.this.type = {
+    SecretQualifier(
+      children.head.asInstanceOf[Either[String, Parameter]]
+    )(position).asInstanceOf[this.type]
+  }
+}

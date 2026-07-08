@@ -59,6 +59,10 @@ abstract class AnonymizerTestBase extends CypherFunSuite with RewriteTest {
     assertRename(anonymizer.constraintName)
   }
 
+  test("repeatable secretName") {
+    assertRename(anonymizer.secretName)
+  }
+
   // Assert that we get the same names when calling the anonymizer twice on same input
   private def assertRename(rename: String => String): Unit = {
     val names = Set("cat", "bob", "fish", "colly_flower11")

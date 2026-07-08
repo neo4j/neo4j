@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.ast.AllPrivilegeActions
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AllQualifier
 import org.neo4j.cypher.internal.ast.AllRoleActions
+import org.neo4j.cypher.internal.ast.AllSecretManagementActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
@@ -282,6 +283,7 @@ import org.neo4j.cypher.internal.ast.QueryWithLocalDefinitions
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
+import org.neo4j.cypher.internal.ast.ReadSecretsAction
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.ReallocateDatabases
 import org.neo4j.cypher.internal.ast.RelAllExistsConstraints
@@ -327,6 +329,7 @@ import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.Search
+import org.neo4j.cypher.internal.ast.SecretQualifier
 import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetClause
@@ -371,6 +374,7 @@ import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
+import org.neo4j.cypher.internal.ast.ShowSecretsAction
 import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowServers
 import org.neo4j.cypher.internal.ast.ShowSettingAction
@@ -445,6 +449,7 @@ import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.WriteAction
+import org.neo4j.cypher.internal.ast.WriteSecretsAction
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
@@ -3699,7 +3704,11 @@ class AstGenerator(
     ShowAuthRuleAction,
     AllUserMetadataActions,
     ShowUserMetadataAction,
-    SetUserMetadataAction
+    SetUserMetadataAction,
+    AllSecretManagementActions,
+    ReadSecretsAction,
+    WriteSecretsAction,
+    ShowSecretsAction
   ) // Actions not available in Cypher 5
     .filterNot(_ => usesCypher5))
 
@@ -3759,6 +3768,13 @@ class AstGenerator(
         qualifier <- frequency(7 -> functions, 3 -> List(FunctionQualifier("*")(pos)))
       } yield qualifier
 
+    } else if (dbmsAction == ReadSecretsAction) {
+      // Secrets
+      for {
+        name <- _nameAsEither
+        secrets <- listOfN(1, SecretQualifier(name)(pos))
+        qualifier <- frequency(7 -> secrets, 3 -> List(SecretQualifier(Left("*"))(pos)))
+      } yield qualifier
     } else if (dbmsAction == ShowSettingAction) {
       // Settings
       for {

@@ -693,6 +693,10 @@ public interface Cypher25ParserListener extends ParseTreeListener {
 
     void exitTransactionToken(Cypher25Parser.TransactionTokenContext ctx);
 
+    void exitSecretToken(Cypher25Parser.SecretTokenContext ctx);
+
+    void exitSecretQualifier(Cypher25Parser.SecretQualifierContext ctx);
+
     void exitUserQualifier(Cypher25Parser.UserQualifierContext ctx);
 
     void exitExecuteFunctionQualifier(Cypher25Parser.ExecuteFunctionQualifierContext ctx);

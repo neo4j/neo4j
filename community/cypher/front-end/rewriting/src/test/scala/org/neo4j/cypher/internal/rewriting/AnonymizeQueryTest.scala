@@ -52,6 +52,7 @@ class AnonymizeQueryTest extends AnonymizerTestBase with AstConstructionTestSupp
     override def indexName(name: String): String = "X" + name
     override def constraintName(name: String): String = "X" + name
     override def identifierAsString(name: String): String = "X" + name
+    override def secretName(name: String): String = "X" + name
   }
 
   val rewriterUnderTest: Rewriter = anonymizeQuery(anonymizer)
@@ -589,6 +590,16 @@ class AnonymizeQueryTest extends AnonymizerTestBase with AstConstructionTestSupp
     assertRewrite(
       "GRANT LOAD ON CIDR 'cidr' TO bao",
       "GRANT LOAD ON CIDR 'cidr' TO `string[bao]`"
+    )
+    assertRewrite(
+      CypherVersion.Cypher25,
+      "GRANT READ SECRET 'sec1' ON DBMS TO bao",
+      "GRANT READ SECRET 'Xsec1' ON DBMS TO `string[bao]`"
+    )
+    assertRewrite(
+      CypherVersion.Cypher25,
+      "GRANT READ SECRET $sec ON DBMS TO bao",
+      "GRANT READ SECRET $Xsec ON DBMS TO `string[bao]`"
     )
   }
 

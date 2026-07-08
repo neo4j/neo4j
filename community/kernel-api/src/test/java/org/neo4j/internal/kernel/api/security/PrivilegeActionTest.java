@@ -70,6 +70,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.MATCH;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.MERGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.PRIVILEGE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.READ;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.READ_SECRETS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REMOVE_LABEL;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REMOVE_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REMOVE_ROLE;
@@ -77,6 +78,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.RENAME_AUTH
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.RENAME_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.RENAME_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ROLE_MANAGEMENT;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SECRETS_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SERVER_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_AUTH;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_DATABASE_ACCESS;
@@ -94,6 +96,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONSTR
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_INDEX;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_SECRETS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_SERVER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_TRANSACTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER;
@@ -108,6 +111,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TRAVERSE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.USER_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.USER_METADATA_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.WRITE;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.WRITE_SECRETS;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -132,6 +136,7 @@ class PrivilegeActionTest {
         expected.put(ALTER_USER, Set.of(SET_USER_STATUS, SET_PASSWORDS, SET_AUTH, SET_USER_HOME_DATABASE));
         expected.put(SET_AUTH, Set.of(SET_PASSWORDS));
         expected.put(USER_METADATA_MANAGEMENT, Set.of(SHOW_USER_METADATA, SET_USER_METADATA));
+        expected.put(SECRETS_MANAGEMENT, Set.of(READ_SECRETS, WRITE_SECRETS, SHOW_SECRETS));
         expected.put(
                 DATABASE_MANAGEMENT,
                 Set.of(CREATE_DATABASE, DROP_DATABASE, ALTER_DATABASE, COMPOSITE_DATABASE_MANAGEMENT));
@@ -157,6 +162,7 @@ class PrivilegeActionTest {
                         ROLE_MANAGEMENT,
                         USER_MANAGEMENT,
                         USER_METADATA_MANAGEMENT,
+                        SECRETS_MANAGEMENT,
                         AUTH_RULE_MANAGEMENT,
                         DATABASE_MANAGEMENT,
                         ALIAS_MANAGEMENT,

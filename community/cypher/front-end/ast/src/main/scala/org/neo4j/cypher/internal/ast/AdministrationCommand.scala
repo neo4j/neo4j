@@ -1734,6 +1734,12 @@ sealed abstract class PrivilegeCommand(
       case _ => SemanticCheck.success
     }
 
+    val secretsManagerFeatureCheck = privilege match {
+      case DbmsPrivilege(_: SecretManagementAction) =>
+        requireFeatureSupport(s"The `$name` clause", SemanticFeature.SecretsManager, position)
+      case _ => SemanticCheck.success
+    }
+
     (privilege match {
       case _: LoadPrivilege =>
         qualifier match {
@@ -1743,8 +1749,8 @@ sealed abstract class PrivilegeCommand(
             error(gql, "LOAD privileges with a URL pattern are not currently supported", position)
           case _ => super.semanticCheck chain SemanticState.recordCurrentScope(this)
         }
-      case _ => showSettingFeatureCheck chain super.semanticCheck chain
-          SemanticState.recordCurrentScope(this)
+      case _ => showSettingFeatureCheck chain secretsManagerFeatureCheck chain
+          super.semanticCheck chain SemanticState.recordCurrentScope(this)
     }) chain privilegeQualifierCheckForPropertyRules(qualifier)
   }
 }

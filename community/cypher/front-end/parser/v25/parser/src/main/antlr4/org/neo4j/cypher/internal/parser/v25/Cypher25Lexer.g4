@@ -1192,6 +1192,14 @@ SECONDS
    : S E C O N D S
    ;
 
+SECRET
+   : S E C R E T
+   ;
+
+SECRETS
+   : S E C R E T S
+   ;
+
 SEEK
    : S E E K
    ;

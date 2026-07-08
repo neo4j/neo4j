@@ -540,6 +540,9 @@ public abstract class AbstractCypher25AstBuilder implements Cypher25ParserListen
                 exitConstraintToken((Cypher25Parser.ConstraintTokenContext) ctx);
             case Cypher25Parser.RULE_transactionToken ->
                 exitTransactionToken((Cypher25Parser.TransactionTokenContext) ctx);
+            case Cypher25Parser.RULE_secretToken -> exitSecretToken((Cypher25Parser.SecretTokenContext) ctx);
+            case Cypher25Parser.RULE_secretQualifier ->
+                exitSecretQualifier((Cypher25Parser.SecretQualifierContext) ctx);
             case Cypher25Parser.RULE_userQualifier -> exitUserQualifier((Cypher25Parser.UserQualifierContext) ctx);
             case Cypher25Parser.RULE_executeFunctionQualifier ->
                 exitExecuteFunctionQualifier((Cypher25Parser.ExecuteFunctionQualifierContext) ctx);

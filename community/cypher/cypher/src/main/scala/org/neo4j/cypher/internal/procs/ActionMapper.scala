@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.AllGraphAction
 import org.neo4j.cypher.internal.ast.AllIndexActions
 import org.neo4j.cypher.internal.ast.AllPrivilegeActions
 import org.neo4j.cypher.internal.ast.AllRoleActions
+import org.neo4j.cypher.internal.ast.AllSecretManagementActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
@@ -78,6 +79,7 @@ import org.neo4j.cypher.internal.ast.LoadUrlAction
 import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.ReadAction
+import org.neo4j.cypher.internal.ast.ReadSecretsAction
 import org.neo4j.cypher.internal.ast.RemoveLabelAction
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
@@ -100,6 +102,7 @@ import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
+import org.neo4j.cypher.internal.ast.ShowSecretsAction
 import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowSettingAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
@@ -110,6 +113,7 @@ import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.WriteAction
+import org.neo4j.cypher.internal.ast.WriteSecretsAction
 import org.neo4j.exceptions.InternalException
 import org.neo4j.internal.kernel.api.security
 
@@ -154,6 +158,11 @@ object ActionMapper {
 
     case StartDatabaseAction => security.PrivilegeAction.START_DATABASE
     case StopDatabaseAction  => security.PrivilegeAction.STOP_DATABASE
+
+    case AllSecretManagementActions => security.PrivilegeAction.SECRETS_MANAGEMENT
+    case ReadSecretsAction          => security.PrivilegeAction.READ_SECRETS
+    case WriteSecretsAction         => security.PrivilegeAction.WRITE_SECRETS
+    case ShowSecretsAction          => security.PrivilegeAction.SHOW_SECRETS
 
     case AllUserActions            => security.PrivilegeAction.USER_MANAGEMENT
     case ShowUserAction            => security.PrivilegeAction.SHOW_USER

@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.ast.AllPrivilegeActions
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AllQualifier
 import org.neo4j.cypher.internal.ast.AllRoleActions
+import org.neo4j.cypher.internal.ast.AllSecretManagementActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
@@ -120,6 +121,7 @@ import org.neo4j.cypher.internal.ast.PrivilegeType
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.ReadAction
+import org.neo4j.cypher.internal.ast.ReadSecretsAction
 import org.neo4j.cypher.internal.ast.Relationship
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
@@ -135,6 +137,8 @@ import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromAuthRules
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
+import org.neo4j.cypher.internal.ast.SecretAllQualifier
+import org.neo4j.cypher.internal.ast.SecretQualifier
 import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
@@ -152,6 +156,7 @@ import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
+import org.neo4j.cypher.internal.ast.ShowSecretsAction
 import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowSettingAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
@@ -164,6 +169,7 @@ import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.WriteAction
+import org.neo4j.cypher.internal.ast.WriteSecretsAction
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.ast.util.Util.astOpt
@@ -441,8 +447,11 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
             case Cypher25Parser.USER =>
               if (ctx.METADATA() != null) withQualifier(AllUserMetadataActions)
               else withQualifier(AllUserActions)
-            case Cypher25Parser.AUTH => withQualifier(AllAuthRuleActions)
-            case _                   => throw new IllegalStateException()
+            case Cypher25Parser.AUTH    => withQualifier(AllAuthRuleActions)
+            case Cypher25Parser.READ    => ctx.secretQualifier().ast()
+            case Cypher25Parser.WRITE   => withQualifier(WriteSecretsAction)
+            case Cypher25Parser.SECRETS => withQualifier(AllSecretManagementActions)
+            case _                      => throw new IllegalStateException()
           }
         case _ => throw new IllegalStateException()
       }
@@ -450,6 +459,14 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
       case a: DbmsAction            => (DbmsPrivilege(a)(pos(ctx)), None, qualifier)
       case a: DatabaseAndDbmsAction => (DatabasePrivilege(a, AllDatabasesScope()(pos(ctx)))(pos(ctx)), None, qualifier)
       case _                        => throw new IllegalStateException()
+    }
+  }
+
+  override def exitSecretQualifier(ctx: Cypher25Parser.SecretQualifierContext): Unit = {
+    ctx.ast = if (ctx.TIMES() != null) {
+      (ReadSecretsAction, List(SecretAllQualifier()(InputPosition.NONE)))
+    } else {
+      (ReadSecretsAction, List(SecretQualifier(ctx.stringOrParameter().ast())(pos(ctx))))
     }
   }
 
@@ -551,7 +568,8 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
             case Cypher25Parser.USER =>
               if (ctx.METADATA() != null) withQualifier(ShowUserMetadataAction)
               else withQualifier(ShowUserAction)
-            case _ => throw new IllegalStateException()
+            case Cypher25Parser.SECRETS => withQualifier(ShowSecretsAction)
+            case _                      => throw new IllegalStateException()
           }
         case r: RuleNode if r.getRuleContext.getRuleIndex == Cypher25Parser.RULE_settingToken =>
           (ShowSettingAction, ctx.settingQualifier().ast[List[SettingQualifier]]())
@@ -875,6 +893,7 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
   override def exitIndexToken(ctx: Cypher25Parser.IndexTokenContext): Unit = { ctx.ast = CreateIndexAction }
   override def exitNodeToken(ctx: Cypher25Parser.NodeTokenContext): Unit = {}
   override def exitPasswordToken(ctx: Cypher25Parser.PasswordTokenContext): Unit = {}
+  override def exitSecretToken(ctx: Cypher25Parser.SecretTokenContext): Unit = {}
   override def exitPrivilegeToken(ctx: Cypher25Parser.PrivilegeTokenContext): Unit = {}
   override def exitProcedureToken(ctx: Cypher25Parser.ProcedureTokenContext): Unit = {}
   override def exitRelToken(ctx: Cypher25Parser.RelTokenContext): Unit = {}

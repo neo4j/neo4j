@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.AllDbmsAction
 import org.neo4j.cypher.internal.ast.AllPrivilegeActions
 import org.neo4j.cypher.internal.ast.AllRoleActions
+import org.neo4j.cypher.internal.ast.AllSecretManagementActions
 import org.neo4j.cypher.internal.ast.AllUserActions
 import org.neo4j.cypher.internal.ast.AllUserMetadataActions
 import org.neo4j.cypher.internal.ast.AlterAliasAction
@@ -51,6 +52,7 @@ import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameAuthRuleAction
 import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameUserAction
+import org.neo4j.cypher.internal.ast.SecretManagementAction
 import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
@@ -63,11 +65,13 @@ import org.neo4j.cypher.internal.ast.ShowAliasAction
 import org.neo4j.cypher.internal.ast.ShowAuthRuleAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
+import org.neo4j.cypher.internal.ast.ShowSecretsAction
 import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserMetadataAction
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UserMetadataManagementAction
+import org.neo4j.cypher.internal.ast.WriteSecretsAction
 import org.neo4j.cypher.internal.ast.factory.ddl.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.maybeImmutable
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher25
@@ -75,7 +79,7 @@ import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 
 class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
-  // Impersonate and execute privileges have their own files and are not in this list
+  // Impersonate, execute and read secrets privileges have their own files and are not in this list
 
   private val dbmsActionPrivileges: Seq[(String, Boolean => AdministrationAction, Boolean)] =
     Seq(
@@ -113,6 +117,9 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
       ("ASSIGN PRIVILEGE", AssignPrivilegeAction),
       ("REMOVE PRIVILEGE", RemovePrivilegeAction),
       ("PRIVILEGE MANAGEMENT", AllPrivilegeActions),
+      ("SECRETS MANAGEMENT", AllSecretManagementActions),
+      ("WRITE SECRETS", WriteSecretsAction),
+      ("SHOW SECRETS", ShowSecretsAction),
       ("SHOW SERVER", ShowServerAction),
       ("SHOW SERVERS", ShowServerAction),
       ("SERVER MANAGEMENT", ServerManagementAction),
@@ -140,6 +147,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
     action match {
       case _: AuthRuleManagementAction     => false
       case _: UserMetadataManagementAction => false
+      case _: SecretManagementAction       => false
       case _                               => true
     }
 
@@ -403,7 +411,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
                 s"""Invalid input 'DATABASE': expected 'ALIAS', 'CONSTRAINT', 'CONSTRAINTS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'ROLE', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'TRANSACTION', 'TRANSACTIONS' or 'USER' (line 1, column ${offset + 6} (offset: ${offset + 5}))"""
               )
             case _ => _.withSyntaxErrorContaining(
-                s"""Invalid input 'DATABASE': expected 'ALIAS', 'CONSTRAINT', 'CONSTRAINTS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'ROLE', 'AUTH RULE', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'TRANSACTION', 'TRANSACTIONS' or 'USER' (line 1, column ${offset + 6} (offset: ${offset + 5}))"""
+                s"""Invalid input 'DATABASE': expected 'ALIAS', 'CONSTRAINT', 'CONSTRAINTS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'ROLE', 'AUTH RULE', 'SECRETS', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'TRANSACTION', 'TRANSACTIONS' or 'USER' (line 1, column ${offset + 6} (offset: ${offset + 5}))"""
               )
           }
         }

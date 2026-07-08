@@ -346,6 +346,8 @@ class Cypher25VocabularyTest extends CypherFunSuite {
     Cypher25Parser.SEC -> "'SEC'",
     Cypher25Parser.SECOND -> "'SECOND'",
     Cypher25Parser.SECONDS -> "'SECONDS'",
+    Cypher25Parser.SECRET -> "'SECRET'",
+    Cypher25Parser.SECRETS -> "'SECRETS'",
     Cypher25Parser.SEEK -> "'SEEK'",
     Cypher25Parser.SEMICOLON -> "';'",
     Cypher25Parser.SERVER -> "'SERVER'",

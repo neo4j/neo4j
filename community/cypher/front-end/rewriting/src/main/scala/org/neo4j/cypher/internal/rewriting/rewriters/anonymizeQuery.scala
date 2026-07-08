@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.GraphTypeConstraintDefinition
 import org.neo4j.cypher.internal.ast.GraphTypeConstraintName
 import org.neo4j.cypher.internal.ast.Search
+import org.neo4j.cypher.internal.ast.SecretQualifier
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
@@ -58,6 +59,7 @@ trait Anonymizer {
   def indexName(name: String): String
   def constraintName(name: String): String
   def identifierAsString(name: String): String
+  def secretName(name: String): String
 }
 
 case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
@@ -83,6 +85,10 @@ case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
     case x: GraphTypeConstraintDefinition =>
       x.copy(name = x.name.map(name => anonymizer.constraintName(name)))(x.position)
     case x: User => x.copy(anonymizer.identifierAsString(x.name))(x.position)
+    case x: SecretQualifier => x.copy(secret = x.secret match {
+        case Left(s)  => Left(anonymizer.secretName(s))
+        case Right(_) => x.secret
+      })(x.position)
   })
 
   private def anonymizeSchemaName(

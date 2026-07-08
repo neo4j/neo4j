@@ -198,6 +198,8 @@ import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.Search
+import org.neo4j.cypher.internal.ast.SecretAllQualifier
+import org.neo4j.cypher.internal.ast.SecretQualifier
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
@@ -767,13 +769,13 @@ case class Prettifier(
       // dbms privileges
 
       case x @ GrantPrivilege(DbmsPrivilege(_), _, _, qualifiers, roleNames) =>
-        s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
+        s"${x.name}${Prettifier.extractQualifierString(qualifiers, expr)} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
 
       case x @ DenyPrivilege(DbmsPrivilege(_), _, _, qualifiers, roleNames) =>
-        s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
+        s"${x.name}${Prettifier.extractQualifierString(qualifiers, expr)} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
 
       case x @ RevokePrivilege(DbmsPrivilege(_), _, _, qualifiers, roleNames, _) =>
-        s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
+        s"${x.name}${Prettifier.extractQualifierString(qualifiers, expr)} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
 
       // cypher 5 alter database privileges on *
       // these have AST like ON DATABASE * but should be prettified to ON DBMS (in Cypher 5)
@@ -812,26 +814,26 @@ case class Prettifier(
       // database privileges
 
       case x @ GrantPrivilege(DatabasePrivilege(_, dbScope), _, _, qualifier, roleNames) =>
-        Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
+        Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames, expr)
 
       case x @ DenyPrivilege(DatabasePrivilege(_, dbScope), _, _, qualifier, roleNames) =>
-        Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
+        Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames, expr)
 
       case x @ RevokePrivilege(DatabasePrivilege(_, dbScope), _, _, qualifier, roleNames, _) =>
-        Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "FROM", roleNames)
+        Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "FROM", roleNames, expr)
 
       // graph privileges
 
       case x @ GrantPrivilege(GraphPrivilege(action, graphScope), _, resource, qualifier, roleNames) =>
-        val qualifierString = Prettifier.prettifyGraphQualifier(action, qualifier)
+        val qualifierString = Prettifier.prettifyGraphQualifier(action, qualifier, expr)
         Prettifier.prettifyGraphPrivilege(x.name, graphScope, qualifierString, resource, "TO", roleNames)
 
       case x @ DenyPrivilege(GraphPrivilege(action, graphScope), _, resource, qualifier, roleNames) =>
-        val qualifierString = Prettifier.prettifyGraphQualifier(action, qualifier)
+        val qualifierString = Prettifier.prettifyGraphQualifier(action, qualifier, expr)
         Prettifier.prettifyGraphPrivilege(x.name, graphScope, qualifierString, resource, "TO", roleNames)
 
       case x @ RevokePrivilege(GraphPrivilege(action, graphScope), _, resource, qualifier, roleNames, _) =>
-        val qualifierString = Prettifier.prettifyGraphQualifier(action, qualifier)
+        val qualifierString = Prettifier.prettifyGraphQualifier(action, qualifier, expr)
         Prettifier.prettifyGraphPrivilege(x.name, graphScope, qualifierString, resource, "FROM", roleNames)
 
       // load privileges
@@ -1744,7 +1746,8 @@ object Prettifier {
     dbScope: DatabaseScope,
     qualifier: List[PrivilegeQualifier],
     preposition: String,
-    roleNames: Seq[Expression]
+    roleNames: Seq[Expression],
+    expr: ExpressionStringifier
   ): String = {
     val (dbName, home, multiple) = Prettifier.extractDbScope(dbScope)
     val db =
@@ -1755,7 +1758,7 @@ object Prettifier {
       } else {
         s"DATABASE $dbName"
       }
-    s"$privilegeName${extractQualifierString(qualifier)} ON $db $preposition ${escapeNames(roleNames)}"
+    s"$privilegeName${extractQualifierString(qualifier, expr)} ON $db $preposition ${escapeNames(roleNames)}"
   }
 
   private def prettifyGraphPrivilege(
@@ -1791,16 +1794,20 @@ object Prettifier {
     case LoadCidrQualifier(Right(cidrParam)) :: Nil => s"CIDR ${expr(cidrParam)}"
   }
 
-  private def prettifyGraphQualifier(action: GraphAction, qualifier: List[PrivilegeQualifier]): String = {
+  private def prettifyGraphQualifier(
+    action: GraphAction,
+    qualifier: List[PrivilegeQualifier],
+    expr: ExpressionStringifier
+  ): String = {
     // For WRITE, we don't want to print out the qualifier. For SET and REMOVE LABEL, it is printed out in another position.
     if (action.name.equals("WRITE") || action.name.equals("SET LABEL") || action.name.equals("REMOVE LABEL")) {
       ""
     } else {
-      extractQualifierString(qualifier)
+      extractQualifierString(qualifier, expr)
     }
   }
 
-  private def extractQualifierPart(qualifier: List[PrivilegeQualifier]): Option[String] = {
+  private def extractQualifierPart(qualifier: List[PrivilegeQualifier], expr: ExpressionStringifier): Option[String] = {
     def stringifyQualifiedName(glob: String) = {
       // If we have multiple . in a row, just escape the whole thing to not loose any of them
       // or risk breaking parsing of the prettified string, as multiple . in a row cannot be parsed unescaped
@@ -1912,23 +1919,26 @@ object Prettifier {
       case ElementsAllQualifier() :: Nil          => Some("ELEMENTS *")
       case PatternQualifier(lqs, v, e, element) :: Nil =>
         Some(s"FOR ${extractPropertyRuleExpression(lqs, v, e, element)}")
-      case UserQualifier(user) :: Nil     => Some("(" + escapeName(user) + ")")
-      case users @ UserQualifier(_) :: _  => Some("(" + users.map(stringify).mkString(", ") + ")")
-      case UserAllQualifier() :: Nil      => Some("(*)")
-      case AllQualifier() :: Nil          => None
-      case AllDatabasesQualifier() :: Nil => None
-      case p @ ProcedureQualifier(_) :: _ => Some(p.map(stringify).mkString(", "))
-      case ProcedureAllQualifier() :: Nil => Some("*")
-      case p @ FunctionQualifier(_) :: _  => Some(p.map(stringify).mkString(", "))
-      case FunctionAllQualifier() :: Nil  => Some("*")
-      case p @ SettingQualifier(_) :: _   => Some(p.map(stringify).mkString(", "))
-      case SettingAllQualifier() :: Nil   => Some("*")
-      case _                              => Some("<unknown>")
+      case UserQualifier(user) :: Nil       => Some("(" + escapeName(user) + ")")
+      case users @ UserQualifier(_) :: _    => Some("(" + users.map(stringify).mkString(", ") + ")")
+      case UserAllQualifier() :: Nil        => Some("(*)")
+      case AllQualifier() :: Nil            => None
+      case AllDatabasesQualifier() :: Nil   => None
+      case p @ ProcedureQualifier(_) :: _   => Some(p.map(stringify).mkString(", "))
+      case ProcedureAllQualifier() :: Nil   => Some("*")
+      case p @ FunctionQualifier(_) :: _    => Some(p.map(stringify).mkString(", "))
+      case FunctionAllQualifier() :: Nil    => Some("*")
+      case p @ SettingQualifier(_) :: _     => Some(p.map(stringify).mkString(", "))
+      case SettingAllQualifier() :: Nil     => Some("*")
+      case SecretAllQualifier() :: Nil      => Some("*")
+      case SecretQualifier(Left(s)) :: Nil  => Some(expr.quote(s))
+      case SecretQualifier(Right(p)) :: Nil => Some(escapeName(p))
+      case _                                => Some("<unknown>")
     }
   }
 
-  private def extractQualifierString(qualifier: List[PrivilegeQualifier]): String = {
-    val qualifierPart = extractQualifierPart(qualifier)
+  private def extractQualifierString(qualifier: List[PrivilegeQualifier], expr: ExpressionStringifier): String = {
+    val qualifierPart = extractQualifierPart(qualifier, expr)
     qualifierPart match {
       case Some(string) => s" $string"
       case _            => ""
