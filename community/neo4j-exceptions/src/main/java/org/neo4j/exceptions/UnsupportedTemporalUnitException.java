@@ -138,4 +138,18 @@ public class UnsupportedTemporalUnitException extends CypherTypeException {
         var gql = GqlHelper.getGql22G05_22N40(component, "ordinal date");
         return new UnsupportedTemporalUnitException(gql, "Cannot assign " + component + " to ordinal date.");
     }
+
+    public static UnsupportedTemporalUnitException cannotAssignTemporalField(
+            String component, String valueType, Throwable cause) {
+        var gql = GqlHelper.getGql22G06_22N40(component, valueType);
+        return new UnsupportedTemporalUnitException(
+                gql, String.format("Cannot assign %s of a %s.", component, valueType), cause);
+    }
+
+    public static UnsupportedTemporalUnitException cannotAssignDurationField(
+            String component, String valueType, Throwable cause) {
+        var gql = GqlHelper.getGql22G08_22N40(component, valueType);
+        return new UnsupportedTemporalUnitException(
+                gql, String.format("Cannot assign %s of a %s.", component, valueType), cause);
+    }
 }

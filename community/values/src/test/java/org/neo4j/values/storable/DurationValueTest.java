@@ -43,8 +43,11 @@ import static org.neo4j.values.storable.DurationValue.durationBetween;
 import static org.neo4j.values.storable.DurationValue.parse;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.time;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
@@ -57,10 +60,14 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.ArithmeticException;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.exceptions.TemporalParseException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.utils.TemporalUtil;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 class DurationValueTest {
     @Test
@@ -382,6 +389,124 @@ class DurationValueTest {
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
                 .hasStatusDescription(
                         "error: data exception - overflow error. The result of the operation '-' has caused an overflow.");
+    }
+
+    @Test
+    void shouldFailOnWrongTypedDurationField() {
+        record Case(MapValue map, String component, String valueType) {}
+
+        List<Case> cases = List.of(
+                // Every writable duration field is rejected when given a non-number value.
+                new Case(field("years", booleanValue(true)), "years", "BOOLEAN"),
+                new Case(field("months", stringValue("abc")), "months", "STRING"),
+                new Case(field("weeks", booleanValue(false)), "weeks", "BOOLEAN"),
+                new Case(field("days", stringValue("abc")), "days", "STRING"),
+                new Case(field("hours", booleanValue(true)), "hours", "BOOLEAN"),
+                new Case(field("minutes", stringValue("abc")), "minutes", "STRING"),
+                new Case(field("seconds", booleanValue(true)), "seconds", "BOOLEAN"),
+                new Case(field("milliseconds", stringValue("abc")), "milliseconds", "STRING"),
+                new Case(field("microseconds", booleanValue(true)), "microseconds", "BOOLEAN"),
+                new Case(field("nanoseconds", stringValue("abc")), "nanoseconds", "STRING"),
+                // Non-number value types other than BOOLEAN/STRING are reported by their Cypher type name.
+                new Case(field("hours", date(2020, 1, 1)), "hours", "DATE"),
+                new Case(field("seconds", VirtualValues.list(longValue(1), longValue(2))), "seconds", "LIST<INTEGER>"),
+                // With several fields set, the first wrong-typed field (in decreasing-unit order) is reported.
+                new Case(
+                        VirtualValues.map(
+                                new String[] {"hours", "minutes"}, new AnyValue[] {longValue(10), stringValue("abc")}),
+                        "minutes",
+                        "STRING"),
+                new Case(
+                        VirtualValues.map(
+                                new String[] {"days", "seconds"}, new AnyValue[] {longValue(2), booleanValue(true)}),
+                        "seconds",
+                        "BOOLEAN"),
+                // A valid floating-point field alongside a wrong-typed field still reports the wrong-typed one.
+                new Case(
+                        VirtualValues.map(
+                                new String[] {"weeks", "days"}, new AnyValue[] {doubleValue(1.5), stringValue("x")}),
+                        "days",
+                        "STRING"));
+
+        for (Case c : cases) {
+            ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.build(c.map()))
+                    .as("duration(%s)", c.map())
+                    .isInstanceOf(UnsupportedTemporalUnitException.class)
+                    .hasGqlStatus(GqlStatusInfoCodes.STATUS_22G08)
+                    .hasStatusDescription("error: data exception - invalid duration function field value")
+                    .gqlCause()
+                    .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N40)
+                    .hasStatusDescription("error: data exception - non-assignable temporal component. Cannot assign '"
+                            + c.component() + "' of a " + c.valueType() + ".");
+        }
+    }
+
+    private static MapValue field(String name, AnyValue value) {
+        return VirtualValues.map(new String[] {name}, new AnyValue[] {value});
+    }
+
+    private static MapValue fields(String k1, AnyValue v1, String k2, AnyValue v2) {
+        return VirtualValues.map(new String[] {k1, k2}, new AnyValue[] {v1, v2});
+    }
+
+    @Test
+    void shouldIgnoreNullDurationFields() {
+        // expected == null means the map should fail with "at least one field required" (22N30).
+        record Case(MapValue map, DurationValue expected) {}
+
+        String[] durationFields = {
+            "years", "months", "weeks", "days", "hours",
+            "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"
+        };
+
+        List<Case> cases = new ArrayList<>();
+
+        // A field explicitly set to null is ignored, so a lone null field behaves like an empty map (22N30).
+        for (String f : durationFields) {
+            cases.add(new Case(field(f, NO_VALUE), null));
+        }
+        // A map where every field is null also behaves like an empty map.
+        AnyValue[] allNull = new AnyValue[durationFields.length];
+        java.util.Arrays.fill(allNull, NO_VALUE);
+        cases.add(new Case(VirtualValues.map(durationFields.clone(), allNull), null));
+
+        // A null field is ignored while the remaining (non-null) field is still applied. Each field, in turn,
+        // is the null one, paired with a different anchor field so the anchor drives the resulting duration.
+        cases.add(new Case(fields("years", NO_VALUE, "months", longValue(1)), duration(1, 0, 0, 0)));
+        cases.add(new Case(fields("months", NO_VALUE, "days", longValue(2)), duration(0, 2, 0, 0)));
+        cases.add(new Case(fields("weeks", NO_VALUE, "days", longValue(3)), duration(0, 3, 0, 0)));
+        cases.add(new Case(fields("days", NO_VALUE, "hours", longValue(1)), duration(0, 0, 3600, 0)));
+        cases.add(new Case(fields("hours", NO_VALUE, "minutes", longValue(5)), duration(0, 0, 300, 0)));
+        cases.add(new Case(fields("minutes", NO_VALUE, "seconds", longValue(7)), duration(0, 0, 7, 0)));
+        cases.add(new Case(fields("seconds", NO_VALUE, "days", longValue(1)), duration(0, 1, 0, 0)));
+        cases.add(new Case(fields("milliseconds", NO_VALUE, "nanoseconds", longValue(5)), duration(0, 0, 0, 5)));
+        cases.add(new Case(fields("microseconds", NO_VALUE, "nanoseconds", longValue(5)), duration(0, 0, 0, 5)));
+        cases.add(new Case(fields("nanoseconds", NO_VALUE, "microseconds", longValue(5)), duration(0, 0, 0, 5000)));
+
+        // Combinations: several nulls ignored at once, nulls mixed with integral and with floating-point fields.
+        cases.add(new Case(
+                VirtualValues.map(
+                        new String[] {"days", "hours", "minutes"}, new AnyValue[] {longValue(2), NO_VALUE, NO_VALUE}),
+                duration(0, 2, 0, 0)));
+        cases.add(new Case(
+                VirtualValues.map(
+                        new String[] {"years", "months", "days"},
+                        new AnyValue[] {longValue(1), longValue(2), NO_VALUE}),
+                duration(14, 0, 0, 0)));
+        cases.add(new Case(fields("hours", doubleValue(1.5), "minutes", NO_VALUE), duration(0, 0, 5400, 0)));
+
+        for (Case c : cases) {
+            if (c.expected() == null) {
+                ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.build(c.map()))
+                        .as("duration(%s)", c.map())
+                        .isInstanceOf(InvalidArgumentException.class)
+                        .hasGqlStatus(GqlStatusInfoCodes.STATUS_22007)
+                        .gqlCause()
+                        .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N30);
+            } else {
+                assertEquals(c.expected(), DurationValue.build(c.map()), "duration(" + c.map() + ")");
+            }
+        }
     }
 
     @Test

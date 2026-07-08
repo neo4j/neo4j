@@ -28,7 +28,6 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.DateValue.DATE_PATTERN;
 import static org.neo4j.values.storable.DateValue.parseDate;
-import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalTimeValue.TIME_PATTERN;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
 
@@ -239,7 +238,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime, Local
                             () -> tempResult
                                     .with(
                                             IsoFields.WEEK_BASED_YEAR,
-                                            safeCastIntegral(
+                                            safeCastAssignableIntegral(
                                                     TemporalFields.year.name(),
                                                     fields.get(TemporalFields.year),
                                                     TemporalFields.year.defaultValue))

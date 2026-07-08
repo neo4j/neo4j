@@ -23,6 +23,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.DateTimeValue.builder;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.Values.booleanValue;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import java.time.Year;
@@ -34,10 +36,13 @@ import java.time.temporal.TemporalUnit;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 class TemporalValueTest {
 
@@ -72,6 +77,32 @@ class TemporalValueTest {
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N01)
                 .hasStatusDescription(
                         "error: data exception - invalid type. Expected the value 2025 to be of type DATE, LOCAL DATETIME, LOCAL TIME, ZONED DATETIME or ZONED TIME, but was of type java.time.temporal.Temporal.");
+    }
+
+    @Test
+    void shouldGiveProperErrorForWrongTypedTemporalField() {
+        MapValue map = VirtualValues.map(new String[] {"year"}, new AnyValue[] {booleanValue(true)});
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DateValue.build(map, clock))
+                .isInstanceOf(UnsupportedTemporalUnitException.class)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22G06)
+                .hasStatusDescription("error: data exception - invalid date, time, or datetime function field value")
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N40)
+                .hasStatusDescription(
+                        "error: data exception - non-assignable temporal component. Cannot assign 'year' of a BOOLEAN.");
+    }
+
+    @Test
+    void shouldGiveProperErrorForWrongTypedTimezone() {
+        MapValue map =
+                VirtualValues.map(new String[] {"hour", "timezone"}, new AnyValue[] {longValue(12), longValue(123)});
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> TimeValue.build(map, clock))
+                .isInstanceOf(UnsupportedTemporalUnitException.class)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22G06)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N40)
+                .hasStatusDescription(
+                        "error: data exception - non-assignable temporal component. Cannot assign 'timezone' of a INTEGER.");
     }
 
     @Test

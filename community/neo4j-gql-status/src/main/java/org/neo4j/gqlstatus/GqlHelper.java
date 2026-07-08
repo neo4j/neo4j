@@ -225,6 +225,24 @@ public class GqlHelper {
                 .build();
     }
 
+    public static ErrorGqlStatusObject getGql22G06_22N40(String component, String valueType) {
+        return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22G06)
+                .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N40)
+                        .withParam(GqlParams.StringParam.component, component)
+                        .withParam(GqlParams.StringParam.valueType, valueType)
+                        .build())
+                .build();
+    }
+
+    public static ErrorGqlStatusObject getGql22G08_22N40(String component, String valueType) {
+        return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22G08)
+                .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N40)
+                        .withParam(GqlParams.StringParam.component, component)
+                        .withParam(GqlParams.StringParam.valueType, valueType)
+                        .build())
+                .build();
+    }
+
     public static ErrorGqlStatusObject getGql22007_22N25(String valueType, String temporal) {
         return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22007)
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N25)

@@ -25,7 +25,6 @@ import static org.neo4j.memory.HeapEstimator.LOCAL_DATE_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
-import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 
 import java.time.Clock;
 import java.time.DayOfWeek;
@@ -519,7 +518,7 @@ public final class DateValue extends TemporalValue<LocalDate, DateValue> {
                         () -> DEFAULT_CALENDER_DATE
                                 .with(
                                         IsoFields.WEEK_BASED_YEAR,
-                                        safeCastIntegral(
+                                        safeCastAssignableIntegral(
                                                 TemporalFields.year.name(),
                                                 fields.get(TemporalFields.year),
                                                 TemporalFields.year.defaultValue))

@@ -34,6 +34,7 @@ import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.NumberValue.castToLong;
 import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.utils.TemporalUtil.AVG_NANOS_PER_MONTH;
 import static org.neo4j.values.utils.TemporalUtil.AVG_SECONDS_PER_MONTH;
 import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
@@ -64,6 +65,7 @@ import org.neo4j.values.Comparison;
 import org.neo4j.values.Equality;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.ValueTypeNames;
 import org.neo4j.values.virtual.MapValue;
 
 /**
@@ -138,7 +140,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     public static DurationValue build(MapValue map) {
-        return StructureBuilder.build(builder(), map);
+        // A field explicitly set to null is ignored, so that e.g. duration({days: null}) behaves like duration({}).
+        // This filtering happens before the "at least one field" (22N30) check and the field type check.
+        return StructureBuilder.build(builder(), map.filter((key, value) -> value != NO_VALUE));
     }
 
     public static DurationValue between(TemporalUnit unit, Temporal from, Temporal to) {
@@ -201,17 +205,29 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                                     + castToLong("nanoseconds", nanoseconds));
                 } else {
                     return approximate(
-                            safeCastFloatingPoint("years", years, 0) * 12 + safeCastFloatingPoint("months", months, 0),
-                            safeCastFloatingPoint("weeks", weeks, 0) * 7 + safeCastFloatingPoint("days", days, 0),
-                            safeCastFloatingPoint("hours", hours, 0) * 3600
-                                    + safeCastFloatingPoint("minutes", minutes, 0) * 60
-                                    + safeCastFloatingPoint("seconds", seconds, 0),
-                            safeCastFloatingPoint("milliseconds", milliseconds, 0) * 1_000_000
-                                    + safeCastFloatingPoint("microseconds", microseconds, 0) * 1_000
-                                    + safeCastFloatingPoint("nanoseconds", nanoseconds, 0));
+                            safeCastDurationField("years", years) * 12 + safeCastDurationField("months", months),
+                            safeCastDurationField("weeks", weeks) * 7 + safeCastDurationField("days", days),
+                            safeCastDurationField("hours", hours) * 3600
+                                    + safeCastDurationField("minutes", minutes) * 60
+                                    + safeCastDurationField("seconds", seconds),
+                            safeCastDurationField("milliseconds", milliseconds) * 1_000_000
+                                    + safeCastDurationField("microseconds", microseconds) * 1_000
+                                    + safeCastDurationField("nanoseconds", nanoseconds));
                 }
             }
         };
+    }
+
+    /**
+     * Casts a duration field value to a floating point, turning the type mismatch reported by
+     * {@link NumberValue#safeCastFloatingPoint} into a proper (non-internal) error.
+     */
+    private static double safeCastDurationField(String name, AnyValue value) {
+        try {
+            return safeCastFloatingPoint(name, value, 0);
+        } catch (IllegalArgumentException e) {
+            throw UnsupportedTemporalUnitException.cannotAssignDurationField(name, ValueTypeNames.nameOfType(value), e);
+        }
     }
 
     @Override

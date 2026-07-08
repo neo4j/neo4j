@@ -54,6 +54,7 @@ class AliasMapSettingsEvaluator(procedures: Procedures, cypherVersion: CypherVer
       evaluator.evaluate(expression, params, CypherRow.empty)
     } catch {
       case e: EvaluationException => throw InvalidArgumentsException.failedEvaluatingDriverSettings(e)
+      case e: Exception           => throw e
     }
   }
 

@@ -66,6 +66,7 @@ import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
+import org.neo4j.values.utils.ValueTypeNames;
 import org.neo4j.values.virtual.MapValue;
 
 public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<T, V>> extends HashMemoizingScalarValue
@@ -441,7 +442,8 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 if (f == TemporalFields.year && fields.containsKey(TemporalFields.week)) {
                     // Year can mean week-based year, if a week is specified.
                     result = assertValidArgument(f.toString(), () -> (Temp) tmpResult.with(
-                            IsoFields.WEEK_BASED_YEAR, safeCastIntegral(f.name(), entry.getValue(), f.defaultValue)));
+                            IsoFields.WEEK_BASED_YEAR,
+                            safeCastAssignableIntegral(f.name(), entry.getValue(), f.defaultValue)));
                 } else if (!f.isGroupSelector()
                         && f != TemporalFields.timezone
                         && f != TemporalFields.millisecond
@@ -450,7 +452,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                     TemporalField temporalField = f.field;
 
                     result = assertValidArgument(f.toString(), () -> (Temp) tmpResult.with(
-                            temporalField, safeCastIntegral(f.name(), entry.getValue(), f.defaultValue)));
+                            temporalField, safeCastAssignableIntegral(f.name(), entry.getValue(), f.defaultValue)));
                 }
             }
             // Assign all sub-second parts in one step
@@ -521,8 +523,8 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     }
 
     /**
-     * All fields that can be a asigned to or read from temporals.
-     * Make sure that writable fields defined in "decreasing" order between year and nanosecond.
+     * All fields that can be assigned to or read from temporals.
+     * Make sure that writable fields are defined in "decreasing" order between year and nanosecond.
      */
     public enum TemporalFields {
         year(ChronoField.YEAR, 0),
@@ -1167,13 +1169,27 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         if (timezone instanceof TextValue) {
             return parseZoneName(((TextValue) timezone).stringValue());
         }
-        throw new UnsupportedOperationException("Cannot convert to ZoneId: " + timezone);
+        throw UnsupportedTemporalUnitException.cannotAssignTemporalField(
+                TemporalFields.timezone.name(), ValueTypeNames.nameOfType(timezone), null);
+    }
+
+    /**
+     * Casts an assignable temporal field value to an integral, turning the type mismatch reported by
+     * {@link IntegralValue#safeCastIntegral} into a proper (non-internal) error.
+     */
+    static long safeCastAssignableIntegral(String field, AnyValue value, long defaultValue) {
+        try {
+            return safeCastIntegral(field, value, defaultValue);
+        } catch (IllegalArgumentException e) {
+            throw UnsupportedTemporalUnitException.cannotAssignTemporalField(
+                    field, ValueTypeNames.nameOfType(value), e);
+        }
     }
 
     private static int validNano(AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond) {
-        long ms = safeCastIntegral("millisecond", millisecond, TemporalFields.millisecond.defaultValue);
-        long us = safeCastIntegral("microsecond", microsecond, TemporalFields.microsecond.defaultValue);
-        long ns = safeCastIntegral("nanosecond", nanosecond, TemporalFields.nanosecond.defaultValue);
+        long ms = safeCastAssignableIntegral("millisecond", millisecond, TemporalFields.millisecond.defaultValue);
+        long us = safeCastAssignableIntegral("microsecond", microsecond, TemporalFields.microsecond.defaultValue);
+        long ns = safeCastAssignableIntegral("nanosecond", nanosecond, TemporalFields.nanosecond.defaultValue);
         final long milliLimit = 1000L;
         if (ms < 0 || ms >= milliLimit) {
             throw InvalidArgumentException.invalidMillisecondValue(milliLimit - 1, ms);

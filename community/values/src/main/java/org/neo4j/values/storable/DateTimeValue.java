@@ -360,7 +360,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime, DateTimeVa
                             () -> tmpResult
                                     .with(
                                             IsoFields.WEEK_BASED_YEAR,
-                                            safeCastIntegral(
+                                            safeCastAssignableIntegral(
                                                     TemporalFields.year.name(),
                                                     fields.get(TemporalFields.year),
                                                     TemporalFields.year.defaultValue))
