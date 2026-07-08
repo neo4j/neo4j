@@ -231,4 +231,13 @@ public enum KernelVersion {
     public int contentMarshallerVersion() {
         return contentMarshallerVersion;
     }
+
+    /**
+     * The content marshaller version for this kernel version, or {@link #GLORIOUS_FUTURE}'s when this version has no
+     * merge-log marshaller version pinned ({@link #contentMarshallerVersion()} is {@code 0}). Enveloped raft content is
+     * written, read back from disk, and decoded from the wire through this single resolution so the three paths agree.
+     */
+    public int contentMarshallerVersionOrLatest() {
+        return contentMarshallerVersion == 0 ? GLORIOUS_FUTURE.contentMarshallerVersion : contentMarshallerVersion;
+    }
 }

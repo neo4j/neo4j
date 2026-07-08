@@ -107,6 +107,15 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
 
     private static final byte[] PADDING_ZEROES = new byte[MAX_ZERO_PADDING_SIZE];
 
+    // Offsets of fields within an envelope frame header (matches completeEnvelope's write order / HEADER_SIZE).
+    private static final int ENVELOPE_TYPE_OFFSET = Integer.BYTES; // type byte follows the 4-byte checksum
+    private static final int ENVELOPE_PAYLOAD_LENGTH_OFFSET = ENVELOPE_TYPE_OFFSET + Byte.BYTES; // length follows type
+    private static final int ENVELOPE_PREVIOUS_CHECKSUM_OFFSET = Integer.BYTES
+            + Byte.BYTES
+            + Integer.BYTES
+            + Long.BYTES
+            + Byte.BYTES; // past checksum,type,length,index,version
+
     private final Checksum checksum = CHECKSUM_FACTORY.get();
     private final ScopedBuffer scopedBuffer;
     private final LogRotation logRotation;
@@ -417,6 +426,121 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         // Update envelope start so that everything we have written will be flushed on next flush call
         currentEnvelopeStart = buffer.position();
         return this;
+    }
+
+    /**
+     * Appends raw, already-enveloped bytes (shipped verbatim from another member) at the current position and, unlike
+     * {@link #directPutAll(ByteBuffer, long)} which leaves rotation to the caller, rotates on {@link #rotateAtSize}
+     * like the normal append path. Expects buffers are not cut in middle of header so it's always possible to peek
+     * when rotation is needed.
+     * <p>
+     * {@code index}/{@code term} are supplied by the caller; the rest of the state a rotated file's
+     * header needs — the chain's previous checksum and whether the boundary splits an entry — is peeked from the
+     * next frame's header when, and only when, a rotation is actually due.
+     * <p>
+     * NOTE: This means that the write channel is still in a semi-detached state when this method is used since its
+     * only keeping track of index and term
+     */
+    public PhysicalLogChannel appendRaw(ByteBuffer src, long index, long term) throws IOException {
+        // Shipped buffers arrive big-endian (ByteBuffer.wrap default), but the envelope header ints we peek were
+        // written in the log's byte order; read them as such. The bulk byte copies below are order-independent.
+        src.order(buffer.order());
+        padAndRotateBeforeRawFrame(src);
+        currentIndex = index;
+        currentTerm = term;
+        nextTerm = term;
+        final int length = src.remaining();
+        final int srcEnd = src.position() + length;
+        int srcIndex = src.position();
+        while (srcIndex < srcEnd) {
+            int payloadChunk = min(srcEnd - srcIndex, nextSegmentOffset - buffer.position());
+            buffer.put(buffer.position(), src, srcIndex, payloadChunk);
+            buffer.position(buffer.position() + payloadChunk);
+            srcIndex += payloadChunk;
+            if (srcIndex != srcEnd) {
+                // A boundary reached mid-buffer must fall between frames: src[srcIndex] has to start a new frame.
+                // Otherwise the shipped bytes are misaligned to our segment grid and we would write a frame
+                // straddling the boundary, corrupting the log (invalid envelope type when later read at the segment).
+                checkRawFrameStart(src, srcIndex);
+                padSegmentAndGoToNext(false);
+                rotateRawIfLimitReached(src, srcIndex);
+            }
+        }
+        appendedBytes += length;
+        currentEnvelopeStart = buffer.position();
+        return this;
+    }
+
+    /**
+     * Pads the current segment (and rotates on the size limit) before a shipped frame that would not fit in the bytes left to the boundary, folding in the
+     * plain "no room for a header" check.
+     * <p>
+     * It is not possible to know if padding is needed without peeking, this is because padding depends on what content was written after the header and
+     * therefor peeking is necessary.
+     */
+    private void padAndRotateBeforeRawFrame(ByteBuffer src) throws IOException {
+        int frameStart = src.position();
+        int tail = nextSegmentOffset - buffer.position();
+        if (tail >= segmentBlockSize) {
+            return; // already on a fresh segment boundary
+        }
+        boolean fits;
+        if (src.remaining() >= HEADER_SIZE && isRawEntryStart(src.get(frameStart + ENVELOPE_TYPE_OFFSET))) {
+            final int frameLength = HEADER_SIZE + src.getInt(frameStart + ENVELOPE_PAYLOAD_LENGTH_OFFSET);
+            checkState(
+                    frameLength <= tail || tail <= MAX_ZERO_PADDING_SIZE,
+                    "Raw append would pad a %d-byte tail before a %d-byte frame, but a tail larger than the max "
+                            + "zero-padding size (%d) cannot be padding; the shipped bytes are misaligned to the "
+                            + "segment grid.",
+                    tail,
+                    frameLength,
+                    MAX_ZERO_PADDING_SIZE);
+            fits = frameLength <= tail;
+        } else {
+            // MIDDLE/END continuation, or a sub-header chunk: only advance the grid when on a boundary.
+            fits = tail > HEADER_SIZE;
+        }
+        if (!fits) {
+            padSegmentAndGoToNext(false);
+            rotateRawIfLimitReached(src, frameStart);
+        }
+    }
+
+    private static boolean isRawEntryStart(byte type) {
+        return type == EnvelopeType.FULL.typeValue || type == EnvelopeType.BEGIN.typeValue;
+    }
+
+    /**
+     * Peeks the checksum from the next header to perform a rotation. Expects index and term to be set correct.
+     * {@code src}'s byte order is set to the log's in {@link #appendRaw}, so the absolute read uses the right order.
+     */
+    private void rotateRawIfLimitReached(ByteBuffer src, int nextHeaderOffset) throws IOException {
+        if (channel.position() < rotateAtSize) {
+            return;
+        }
+        previousChecksum = src.getInt(nextHeaderOffset + ENVELOPE_PREVIOUS_CHECKSUM_OFFSET);
+        rotateLogFile();
+    }
+
+    /**
+     * Tripwire for {@link #appendRaw}: a segment boundary reached part-way through {@code src} must land on a frame
+     * header, not inside a frame or in padding. A frame may never straddle a segment boundary (entries that span
+     * segments do so as separate BEGIN/MIDDLE/END frames), so the type byte at {@code frameStart} must be one of the
+     * real frame types. Anything else means the shipped bytes are misaligned to this log's segment grid and we are
+     * about to corrupt it.
+     */
+    private static void checkRawFrameStart(ByteBuffer src, int frameStart) {
+        byte typeValue = src.get(frameStart + ENVELOPE_TYPE_OFFSET);
+        boolean atFrameStart = typeValue == EnvelopeType.FULL.typeValue
+                || typeValue == EnvelopeType.BEGIN.typeValue
+                || typeValue == EnvelopeType.MIDDLE.typeValue
+                || typeValue == EnvelopeType.END.typeValue;
+        checkState(
+                atFrameStart,
+                "Raw append reached a segment boundary in the middle of a frame (envelope type byte %d at buffer "
+                        + "offset %d); the shipped bytes are misaligned to this log's segment grid.",
+                typeValue,
+                frameStart);
     }
 
     @Override

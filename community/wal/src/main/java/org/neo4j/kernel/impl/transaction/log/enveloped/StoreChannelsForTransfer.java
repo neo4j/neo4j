@@ -25,20 +25,21 @@ import org.neo4j.io.fs.StoreChannel;
 /**
  * Contains a list of {@link StoreChannel} for transfer reflecting the range of bytes for the given index range in the
  * log.
- * @param storeChannels a list of {@link StoreChannel} each channel is positioned at their start and end positions for
- *                      that file's log range. The first channel start is positioned at {@code fromIndex}, all other
- *                      channels are positioned from the start of their first log entry, omitting the log header (which
- *                      for envelopes should be from the second segment). Note: these include START_OFFSET envelopes as
- *                      well.
- * @param toPosition    reflects the end position of {@code toIndex}. This is always for the last channel in the
- *                      list.
- * @param fromIndex     first index in the range
- * @param toIndex       last index in the range
+ * @param storeChannels    a list of {@link StoreChannel} each channel is positioned at their start and end positions
+ *                         for that file's log range. The first channel start is positioned at {@code fromIndex}, all
+ *                         other channels are positioned from the start of their first log entry, omitting the log
+ *                         header (which for envelopes should be from the second segment). Note: these include
+ *                         START_OFFSET envelopes as well.
+ * @param toPosition       reflects the end position of {@code toIndex}. This is always for the last channel in the
+ *                         list.
+ * @param fromIndex        first index in the range
+ * @param toIndex          last index in the range
+ * @param segmentBlockSize size of one envelope segment in bytes; {@code 0} when the transfer is empty.
  */
 public record StoreChannelsForTransfer(
-        List<StoreChannel> storeChannels, long toPosition, long fromIndex, long toIndex) {
+        List<StoreChannel> storeChannels, long toPosition, long fromIndex, long toIndex, int segmentBlockSize) {
 
     public static StoreChannelsForTransfer nothingToTransfer(long fromIndex, long toIndex) {
-        return new StoreChannelsForTransfer(List.of(), -1, fromIndex, toIndex);
+        return new StoreChannelsForTransfer(List.of(), -1, fromIndex, toIndex, 0);
     }
 }

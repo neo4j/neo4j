@@ -499,6 +499,9 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
 
         // Open a read channel on the current log file version directly
         long currentVersion = currentWriteChannel.version();
+        log.info(
+                "Recalibrating write-channel checksum-chain mirrors from on-disk tail (fileVersion=%d, segmentBoundary=%d, currentPosition=%d).",
+                currentVersion, segmentBoundary, currentPosition);
         try (var readChannel = envelopedReadChannel(logsRepository.openReadChannel(currentVersion), false)) {
             // Position the read channel at the segment boundary
             readChannel.position(segmentBoundary);
@@ -694,7 +697,8 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 if (envToChannel.logHeader().getLastAppendIndex() < fromIndex) {
                     var position = envToChannel.goToEntry(fromIndex);
                     toChannelCtx.channel().position(position);
-                    return new StoreChannelsForTransfer(storeChannels, toPosition, fromIndex, toIndex);
+                    return new StoreChannelsForTransfer(
+                            storeChannels, toPosition, fromIndex, toIndex, segmentBlockSize);
                 }
                 // Otherwise, toChannel starts at its log header's data start
                 toChannelCtx
@@ -741,7 +745,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 midChannel.position(segmentBlockSize);
             }
 
-            return new StoreChannelsForTransfer(storeChannels, toPosition, fromIndex, toIndex);
+            return new StoreChannelsForTransfer(storeChannels, toPosition, fromIndex, toIndex, segmentBlockSize);
         } catch (Exception e) {
             IOUtils.closeAllSilently(storeChannels);
             throw e;
