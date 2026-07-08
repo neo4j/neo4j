@@ -934,3 +934,24 @@ Feature: QuantifiedPathPatternAcceptance
     Then the result should be, in order:
       | ids             |
       | [5, 4, 3, 2, 1] |
+
+  Scenario: QPP with EXISTS nested in CASE
+    Given an empty graph
+    And having executed:
+        """
+        CREATE (:A)-[:R]->(:B)-[:R]->(c:C)-[:R]->(:D)
+        CREATE (c)-[:P]->(c)-[:Q]->(c)
+        """
+    When executing query:
+        """
+        MATCH p = (
+          (a)-[:R]->(b)
+          WHERE CASE
+            WHEN EXISTS { (b)-->(b)-->(b) } THEN true
+          END
+         )+
+        RETURN p
+        """
+    Then the result should be, in any order:
+      | p |
+      | <(:B)-[:R]->(:C)> |

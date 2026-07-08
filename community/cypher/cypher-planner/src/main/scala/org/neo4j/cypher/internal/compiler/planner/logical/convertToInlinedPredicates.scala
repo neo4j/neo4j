@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.functions.EndNode
 import org.neo4j.cypher.internal.expressions.functions.StartNode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
 import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.From
 import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.To
@@ -184,7 +185,10 @@ object convertToInlinedPredicates {
 
     val inlinedPredicates =
       predicatesToInline.traverse(predicate => {
-        if (isJuxtaposedOnOuterNodes(predicate)) {
+        if (predicate.folder.treeFindByClass[NestedPlanExpression].isDefined) {
+          // Nested logical plans don't generally support arbitrary expressions like TraversalEndpoint in place of variables
+          None
+        } else if (isJuxtaposedOnOuterNodes(predicate)) {
           Some(VariablePredicate(
             anonymousNodeVariable,
             predicate
