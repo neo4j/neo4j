@@ -51,7 +51,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.impl.muninn.StoreFile;
-import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
@@ -354,8 +353,11 @@ public class RandomPageCacheTestHarness implements Closeable {
         }
 
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
-        MuninnPageCache cache = new MuninnPageCache(
-                fs, jobScheduler, MuninnPageCache.config(cachePageCount).pageCacheTracer(tracer));
+        MuninnPageCache.Configuration configuration = MuninnPageCache.config(cachePageCount)
+                .pageCacheTracer(tracer)
+                // Don't use background eviction as that may race with the verification phase
+                .disableEvictionThread();
+        MuninnPageCache cache = new MuninnPageCache(fs, jobScheduler, configuration);
         if (filePageSize == 0) {
             filePageSize = cache.pageSize();
         }
@@ -430,7 +432,6 @@ public class RandomPageCacheTestHarness implements Closeable {
 
     private void runVerificationPhase(MuninnPageCache cache) throws Exception {
         if (verification != null) {
-            cache.flushAndForce(DatabaseFlushEvent.NULL); // Clears any stray evictor exceptions
             verification.run(cache, this.fs, plan.getFilesTouched());
         }
     }
