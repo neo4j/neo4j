@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -319,6 +320,34 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         KEY readKey = layout.newKey();
         for (int i = 0; i < keyCount; i++) {
             assertKeyEquals(key(firstKey + i), internal.keyAt(cursor, readKey, i, NULL_CONTEXT));
+        }
+    }
+
+    @Test
+    void availableSpaceOfInternalShouldPredictOverflow() throws IOException {
+        initializeInternal();
+        long stable = 3;
+        long unstable = 4;
+        int keyCount = 0;
+        long childId = 10;
+        internal.setChildAt(cursor, childId, 0, stable, unstable);
+        childId++;
+        while (true) {
+            KEY key = key(childId);
+            int availableSpace = internal.availableSpace(cursor, keyCount);
+            boolean fits = availableSpace >= internal.totalSpaceOfKeyChild(key);
+            assertThat(internal.overflow(cursor, keyCount, key) != Overflow.YES).isEqualTo(fits);
+            if (!fits) {
+                break;
+            }
+            if (internal.overflow(cursor, keyCount, key) == Overflow.NO_NEED_DEFRAG) {
+                internal.defragment(cursor, keyCount);
+            }
+            internal.insertKeyAndRightChildAt(cursor, key, childId, keyCount, keyCount, stable, unstable, NULL_CONTEXT);
+            keyCount++;
+            TreeNodeUtil.setKeyCount(cursor, keyCount);
+            assertThat(internal.availableSpace(cursor, keyCount)).isLessThan(availableSpace);
+            childId++;
         }
     }
 

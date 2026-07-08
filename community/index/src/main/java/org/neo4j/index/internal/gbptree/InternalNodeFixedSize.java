@@ -199,7 +199,7 @@ final class InternalNodeFixedSize<KEY> implements InternalNodeBehaviour<KEY> {
 
     @Override
     public int availableSpace(PageCursor cursor, int currentKeyCount) {
-        return maxKeyCount - currentKeyCount * (keySize + SIZE_PAGE_REFERENCE);
+        return (maxKeyCount - currentKeyCount) * (keySize + SIZE_PAGE_REFERENCE);
     }
 
     @Override
