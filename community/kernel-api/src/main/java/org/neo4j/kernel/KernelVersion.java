@@ -126,6 +126,7 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_PARTITIONED_BLOCK_SCHEMA_RULE_TEXT = V2026_01;
     public static final KernelVersion VERSION_SPD_FILTERED_PROPERTY_SHARD_TX_LOG = V2026_02;
     public static final KernelVersion VERSION_VECTOR_BINARY_QUANTIZATION = V2026_06;
+    public static final KernelVersion VERSION_VECTOR_HFQ_GENERAL_AVAILABILITY = V2026_07;
 
     // Keep updated each time there is an new schema rule added
     // related to IntegrityValidator

@@ -499,6 +499,7 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
                         case V2025_08 -> ZippedStoreCommunity.REC_AF11_V202508_EMPTY;
                         case V2025_11 -> ZippedStoreCommunity.REC_AF11_V202511_EMPTY;
                         case V2026_02 -> ZippedStoreCommunity.REC_AF11_V202602_EMPTY;
+                        case V2026_06 -> ZippedStoreCommunity.REC_AF11_V202606_EMPTY;
                         default ->
                             throw InvalidArgumentException.internalError(
                                     this.getClass().getSimpleName(),

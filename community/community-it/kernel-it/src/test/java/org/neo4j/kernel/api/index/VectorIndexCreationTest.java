@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.index;
 
 import static java.lang.Math.ceilDiv;
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,7 +32,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.SequencedCollection;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -519,10 +517,16 @@ public class VectorIndexCreationTest {
         @Nested
         class DefaultSearchExpansionFactor extends TestBase {
             private static final IndexSetting SETTING = IndexSetting.vector_Default_Search_Expansion_Factor();
-            private static final Map<VectorQuantizationType, Value> DEFAULT_VALUES = Map.ofEntries(
-                    entry(VectorQuantizationType.NONE, Values.doubleValue(1.0)),
-                    entry(VectorQuantizationType.SCALAR, Values.doubleValue(1.5)),
-                    entry(VectorQuantizationType.BINARY, Values.doubleValue(2.0)));
+
+            private static Value defaultValue(VectorIndexVersion version, VectorQuantizationType quantizationType) {
+                double defaultSearchExpansionFactor =
+                        switch (quantizationType) {
+                            case NONE -> 1.0;
+                            case SCALAR -> 1.5;
+                            case BINARY -> version.compareTo(VectorIndexVersion.V2026_07) >= 0 ? 3.0 : 2.0;
+                        };
+                return Values.doubleValue(defaultSearchExpansionFactor);
+            }
 
             DefaultSearchExpansionFactor() {
                 super(
@@ -596,7 +600,7 @@ public class VectorIndexCreationTest {
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
                 IndexDescriptor index = ref.get();
 
-                Value defautValue = DEFAULT_VALUES.get(quantizationType);
+                Value defautValue = defaultValue(version, quantizationType);
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), defautValue);
@@ -625,7 +629,7 @@ public class VectorIndexCreationTest {
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
                 IndexDescriptor index = ref.get();
 
-                Value defautValue = DEFAULT_VALUES.get(quantizationType);
+                Value defautValue = defaultValue(LATEST, quantizationType);
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), defautValue);
@@ -778,11 +782,22 @@ public class VectorIndexCreationTest {
         @Nested
         class QuantizationTypes extends TestBase {
             private static final IndexSetting SETTING = IndexSetting.vector_Quantization_Type();
-            private static final Map<Optional<Boolean>, Value> DEFAULT_VALUES = Map.ofEntries(
-                    entry(Optional.empty(), Values.utf8Value(VectorQuantizationType.SCALAR.name())),
-                    entry(Optional.of(false), Values.utf8Value(VectorQuantizationType.NONE.name())),
-                    entry(Optional.of(true), Values.utf8Value(VectorQuantizationType.SCALAR.name())));
-            private static final Value DEFAULT_VALUE = DEFAULT_VALUES.get(Optional.<Boolean>empty());
+
+            // Currently the parameter is unused, it has been added in preparation
+            // for when we change the default quantization type
+            @SuppressWarnings("unused")
+            private static Value defaultValue(VectorIndexVersion version) {
+                VectorQuantizationType quantizationType = VectorQuantizationType.SCALAR;
+                return Values.utf8Value(quantizationType.name());
+            }
+
+            private static Value defaultValue(VectorIndexVersion version, boolean quantizationEnabled) {
+                if (quantizationEnabled) {
+                    return defaultValue(version);
+                } else {
+                    return Values.utf8Value(VectorQuantizationType.NONE.name());
+                }
+            }
 
             QuantizationTypes() {
                 super(
@@ -886,10 +901,12 @@ public class VectorIndexCreationTest {
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
                 IndexDescriptor index = ref.get();
 
+                Value defaultValue = defaultValue(version);
+
                 // config committed in tx
-                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
+                assertSettingHasValue(SETTING, index.getIndexConfig(), defaultValue);
                 // config via schema store
-                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), defaultValue);
             }
 
             @Test
@@ -901,10 +918,12 @@ public class VectorIndexCreationTest {
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
                 IndexDescriptor index = ref.get();
 
+                Value defaultValue = defaultValue(LATEST);
+
                 // config committed in tx
-                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
+                assertSettingHasValue(SETTING, index.getIndexConfig(), defaultValue);
                 // config via schema store
-                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), defaultValue);
             }
 
             @ParameterizedTest
@@ -918,7 +937,7 @@ public class VectorIndexCreationTest {
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
                 IndexDescriptor index = ref.get();
 
-                Value defautValue = DEFAULT_VALUES.get(Optional.of(false));
+                Value defautValue = defaultValue(version, false);
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), defautValue);
@@ -936,7 +955,7 @@ public class VectorIndexCreationTest {
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
                 IndexDescriptor index = ref.get();
 
-                Value defautValue = DEFAULT_VALUES.get(Optional.of(false));
+                Value defautValue = defaultValue(LATEST, false);
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), defautValue);

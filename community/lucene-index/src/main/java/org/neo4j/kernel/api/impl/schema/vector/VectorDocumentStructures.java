@@ -27,7 +27,7 @@ class VectorDocumentStructures {
             case UNKNOWN -> null;
             case V1_0 -> V1;
             case V2_0 -> V2;
-            case V3_0, V2026_06 -> V3;
+            case V3_0, V2026_06, V2026_07 -> V3;
         };
     }
 
