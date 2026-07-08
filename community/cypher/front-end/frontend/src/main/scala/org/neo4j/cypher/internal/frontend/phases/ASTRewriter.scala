@@ -59,7 +59,6 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
-import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 object ASTRewriter {
@@ -112,7 +111,7 @@ object ASTRewriter {
     cancellationChecker: CancellationChecker,
     version: CypherVersion
   ): Statement = {
-    val rewriters = orderedSteps.map { step =>
+    val steps = orderedSteps.map { step =>
       val rewriter =
         step.getRewriter(
           semanticState,
@@ -121,11 +120,9 @@ object ASTRewriter {
           cancellationChecker,
           version
         )
-      RewriterStep.validatingRewriter(rewriter, step, cancellationChecker)
+      (step, RewriterStep.validatingRewriter(rewriter, step, cancellationChecker))
     }
 
-    val combined = inSequence(rewriters: _*)
-
-    statement.endoRewrite(combined)
+    Transformer.applyRewritersInSequence("AstRewriting", statement, steps)
   }
 }

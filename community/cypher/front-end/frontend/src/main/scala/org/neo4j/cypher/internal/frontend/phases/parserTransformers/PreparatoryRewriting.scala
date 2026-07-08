@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.Search
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.TimestampRewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
-import org.neo4j.cypher.internal.util.inSequence
 
 /**
  * Rewrite the AST into a shape that semantic analysis can be performed on.
@@ -68,14 +67,12 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
-    val rewriters = orderedSteps.map { step =>
+    val steps = orderedSteps.map { step =>
       val rewriter = step.getRewriter(context.cypherExceptionFactory, Some(context.cypherVersion))
-      RewriterStep.validatingRewriter(rewriter, step, context.cancellationChecker)
+      (step, RewriterStep.validatingRewriter(rewriter, step, context.cancellationChecker))
     }
 
-    val rewrittenStatement = from.statement().endoRewrite(inSequence(rewriters: _*))
-
-    from.withStatement(rewrittenStatement)
+    from.withStatement(Transformer.applyRewritersInSequence("PreparatoryRewriting", from.statement(), steps))
   }
 
   override val phase = AST_REWRITE

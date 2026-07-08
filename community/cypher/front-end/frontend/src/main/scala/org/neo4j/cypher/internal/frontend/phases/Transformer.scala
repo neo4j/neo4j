@@ -47,8 +47,11 @@ import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.AstString
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.helpers.LazyVal
+import org.neo4j.cypher.internal.util.inSequence
 
 trait Transformer[-C <: BaseContext, -FROM, +TO] {
   def transform(from: FROM, context: C): TO
@@ -87,6 +90,31 @@ trait Transformer[-C <: BaseContext, -FROM, +TO] {
 object Transformer {
   val prettifier = Prettifier(ExpressionStringifier())
 
+  /**
+   * Applies `steps` to `statement` in order. Behaves exactly like
+   * `statement.endoRewrite(inSequence(steps.map(_._2)))` (`inSequence` applies each rewriter to the
+   * whole tree in turn). When [[Debug.LogInnerRewriters]] is enabled it instead applies the rewriters
+   * one at a time and prints each step that changed the statement, which is the only way to see which
+   * of the rewriters bundled into a single phase (e.g. ASTRewriting, PreparatoryRewriting) fired.
+   */
+  def applyRewritersInSequence(
+    bundleName: String,
+    statement: Statement,
+    steps: Seq[(StepSequencer.Step, Rewriter)]
+  ): Statement =
+    if (Debug.LogInnerRewriters) {
+      steps.foldLeft(statement) { case (stmt, (step, rewriter)) =>
+        val next = stmt.endoRewrite(rewriter)
+        if (next != stmt)
+          println(s"######## DEBUG $bundleName/${step.getClass.getSimpleName.stripSuffix("$")} changed the statement")
+          if (Debug.LogStatementsAsQueries) println(prettifier.asString(next))
+          if (Debug.LogStatements) println(AstString.render(next))
+        next
+      }
+    } else {
+      statement.endoRewrite(inSequence(steps.map(_._2): _*))
+    }
+
   object Debug {
     // Debug flags, requires that assertions are enabled to have effect (jvm option -ea)
     // Intellij Idea: You might need you to: Build -> Recompile 'Transformer.scala'
@@ -96,9 +124,10 @@ object Transformer {
     final val LogChangedFields = false
     final val LogWorkingScope = false
     final val LogLegacyScopeTree = false
+    final val LogInnerRewriters = false
 
     final val Enabled =
-      LogTransformerName || LogStatements || LogStatementsAsQueries || LogChangedFields || LogWorkingScope || LogLegacyScopeTree
+      LogTransformerName || LogStatements || LogStatementsAsQueries || LogChangedFields || LogWorkingScope || LogLegacyScopeTree || LogInnerRewriters
   }
 
   /**
