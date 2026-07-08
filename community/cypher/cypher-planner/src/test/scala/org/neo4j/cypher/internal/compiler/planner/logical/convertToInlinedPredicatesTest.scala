@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
 import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.From
 import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.To
@@ -397,5 +399,17 @@ class convertToInlinedPredicatesTest extends CypherPlannerTestSuite with AstCons
     ).value shouldEqual InlinedPredicates(relationshipPredicates =
       Seq(VariablePredicate(v"  UNNAMED1", TO.prop.equalsOne(v"  UNNAMED2")))
     )
+  }
+
+  test("should not rewrite nested plan expressions") {
+    val expr = NestedPlanExpression.exists(
+      new LogicalPlanBuilder(wholePlan = false).argument(innerStart.name).build(),
+      v"x"
+    )(pos)
+
+    rewrite(
+      innerPredicates = Seq(expr),
+      minRep = 1
+    ) shouldBe None
   }
 }
