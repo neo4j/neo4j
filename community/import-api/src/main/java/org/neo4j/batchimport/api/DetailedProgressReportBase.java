@@ -29,6 +29,7 @@ import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.batchimport.api.DetailedProgressReport.Stats;
 import org.neo4j.batchimport.api.input.ApplicationMode;
 import org.neo4j.common.EntityType;
+import org.neo4j.common.FallbackTokenNameLookup;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaUserDescription;
 
@@ -71,7 +72,9 @@ public class DetailedProgressReportBase {
     }
 
     public void setTokenNameLookup(TokenNameLookup tokenNameLookup) {
-        this.tokenNameLookup = tokenNameLookup;
+        // If we try to look up a token that does not exist yet, we default to the uninformative name
+        // instead of failing with a null json serialization error.
+        this.tokenNameLookup = new FallbackTokenNameLookup(tokenNameLookup, SchemaUserDescription.TOKEN_ID_NAME_LOOKUP);
     }
 
     public MutableStats nodeStats() {
