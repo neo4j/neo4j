@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
+import org.neo4j.kernel.impl.query.statistic.PlanDetailsToBeLogged
 import org.neo4j.kernel.impl.query.statistic.PlanOperatorDetailsToBeLogged
 
 import java.util
@@ -78,14 +79,17 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
   def addArgument(arg: Argument): InternalPlanDescription
 
-  def flatten: Seq[InternalPlanDescription] = {
+  def flatten: Seq[InternalPlanDescription] = flatten(leftPrecedence = true)
+
+  private def flatten(leftPrecedence: Boolean): Seq[InternalPlanDescription] = {
     val flatten = new ArrayBuffer[InternalPlanDescription]
     val stack = new mutable.Stack[InternalPlanDescription]()
     stack.push(self)
     while (stack.nonEmpty) {
       val plan = stack.pop()
       flatten += plan
-      plan.children.reverse.foreach(stack.push)
+      val childrenByPrecedence = if (leftPrecedence) plan.children.reverse else plan.children
+      childrenByPrecedence.foreach(stack.push)
     }
     flatten
   }.toSeq
@@ -144,8 +148,10 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
     result
   }
 
-  def logInfo(): Array[PlanOperatorDetailsToBeLogged] = {
-    flatten.map(_.logInfoSingleOperator()).toArray
+  def logInfo(): PlanDetailsToBeLogged = {
+    val operatorDetails = flatten(leftPrecedence = false)
+      .map(_.logInfoSingleOperator()).toArray
+    new PlanDetailsToBeLogged(operatorDetails)
   }
 
   // Implement public Java API here=

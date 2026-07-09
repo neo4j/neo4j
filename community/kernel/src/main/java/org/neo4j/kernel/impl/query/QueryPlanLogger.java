@@ -20,14 +20,21 @@
 package org.neo4j.kernel.impl.query;
 
 import org.neo4j.kernel.impl.query.statistic.PlanDetailsToBeLogged;
+import org.neo4j.kernel.impl.query.statistic.PlanRuntimeInfo;
 
 /**
  * Logger for query plan cache events.
- * Called when a new execution plan is computed and inserted into the execution plan cache.
  */
 public interface QueryPlanLogger {
 
-    QueryPlanLogger NO_LOG = (executionPlanCacheKeyHash, queryId, planDescription) -> {};
+    QueryPlanLogger NO_LOG = (executionPlanCacheKeyHash,
+            queryId,
+            planDetails,
+            cypherVersion,
+            runtimeInfo,
+            plannerVersion,
+            planningTime,
+            planningReason) -> {};
 
     /**
      * Log a newly computed query plan.
@@ -35,6 +42,19 @@ public interface QueryPlanLogger {
      * @param executionPlanCacheKeyHash the hash of the execution plan cache key, as an 8-character hex string
      * @param queryId the id of the query that introduced the execution plan
      * @param planDetails all details of a query plan that need to be logged
+     * @param cypherVersion the resolved Cypher version used by the query
+     * @param runtimeInfo runtime metadata for the plan
+     * @param plannerVersion Cypher planner version metadata, or {@code null} when not available
+     * @param planningTime the logical planning time in milliseconds
+     * @param planningReason the reason why the query had to be (re)planned, e.g., cache miss, stale statistics, invalid notification existing.
      */
-    void planComputed(String executionPlanCacheKeyHash, String queryId, PlanDetailsToBeLogged planDetails);
+    void planComputed(
+            String executionPlanCacheKeyHash,
+            String queryId,
+            PlanDetailsToBeLogged planDetails,
+            String cypherVersion,
+            PlanRuntimeInfo runtimeInfo,
+            String plannerVersion,
+            Long planningTime,
+            String planningReason);
 }

@@ -106,11 +106,14 @@ import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.kernel.impl.query.statistic.PlanDetailsToBeLogged
+import org.neo4j.kernel.impl.query.statistic.PlanRuntimeInfo
+import org.neo4j.logging.Log
 import org.neo4j.monitoring.Monitors
 import org.neo4j.notifications.NotificationImplementation
 import org.neo4j.values.virtual.MapValue
 
+import java.util.Locale
+import java.util.Optional
 import java.util.function.Supplier
 
 import scala.collection.mutable.ListBuffer
@@ -121,8 +124,8 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
  * Composite [[Compiler]], which uses a [[CypherPlanner]] and [[CypherRuntime]] to compile
  * a query into a [[ExecutableQuery]].
  *
- * @param planner the planner
- * @param runtime the runtime
+ * @param planner        the planner
+ * @param runtime        the runtime
  * @param contextManager the runtime context manager
  * @param kernelMonitors monitors support
  * @tparam CONTEXT type of runtime context used
@@ -142,9 +145,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
   /**
    * Compile [[InputQuery]] into [[ExecutableQuery]].
    *
-   * @param query                   query to convert
-   * @param tracer                  compilation tracer to which events of the compilation process are reported
-   * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
+   * @param query                query to convert
+   * @param tracer               compilation tracer to which events of the compilation process are reported
+   * @param transactionalContext transactional context to use during compilation (in logical and physical planning)
    * @throws org.neo4j.exceptions.Neo4jException public cypher exceptions on compilation problems
    * @return a compiled and executable query
    */
@@ -207,15 +210,19 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       )
     val cachedExecutionPlan = cacheResult.value
 
-    if (cacheResult.isNewEntry) {
-      logQueryPlan(
-        transactionalContext.executingQuery(),
-        executionPlanCacheKeyHash,
-        cachedExecutionPlan,
-        logicalPlan,
-        planState,
-        query
-      )
+    logicalPlanResult.compileReason match {
+      case None => // No need to append to the planner log
+      case Some(planningReason) => logQueryPlan(
+          transactionalContext.executingQuery(),
+          executionPlanCacheKeyHash,
+          cachedExecutionPlan,
+          logicalPlan,
+          planState,
+          query,
+          logicalPlanResult.plannerContext.log,
+          logicalPlanResult.planningTimeMillis,
+          planningReason
+        )
     }
 
     new CypherExecutableQuery(
@@ -328,9 +335,19 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     cachedExecutionPlan: CachedExecutionPlan,
     logicalPlan: LogicalPlan,
     planState: CachableLogicalPlanState,
-    query: InputQuery
+    query: InputQuery,
+    log: Log,
+    planningTimeMillis: Long,
+    compileReason: QueryCache.CompileReason
   ): Unit = {
+    val cacheKeyHashHex = String.format("%08X", executionPlanCacheKeyHash)
+    val queryId = executingQuery.id()
     try {
+      // cypher planner version, runtime info etc are injected directly
+      val plannerVersion = Option
+        .when(contextManager.config.displayPlannerVersion) {
+          query.options.queryOptions.plannerVersionOption.name.toUpperCase(Locale.ROOT)
+        }
       val planDescriptionBuilder = PlanDescriptionBuilder(
         cachedExecutionPlan.executionPlan.rewrittenPlan.getOrElse(logicalPlan),
         planState.plannerName,
@@ -344,15 +361,32 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         renderPlanDescription = true,
         query.resolvedLanguage,
         planState.maybeExplainScope,
-        None // TODO: PLAN-3477
+        None
       )
-      val cacheKeyHashHex = String.format("%08X", executionPlanCacheKeyHash)
-      val queryId = executingQuery.id()
       val internalPlanDescription = planDescriptionBuilder.explain()
-      val planDescriptionInfoToLog = internalPlanDescription.logInfo()
-      queryExecutionMonitor.planComputed(cacheKeyHashHex, queryId, new PlanDetailsToBeLogged(planDescriptionInfoToLog))
+      val runtimeInfo = new PlanRuntimeInfo(
+        cachedExecutionPlan.executionPlan.runtimeName,
+        cachedExecutionPlan.executionPlan.maybeBatchSize
+          .map(batchSize => Optional.of(Integer.valueOf(batchSize)))
+          .getOrElse(Optional.empty())
+      )
+
+      queryExecutionMonitor.planComputed(
+        cacheKeyHashHex,
+        queryId,
+        internalPlanDescription.logInfo(),
+        query.resolvedLanguage.toString,
+        runtimeInfo,
+        plannerVersion.orNull,
+        planningTimeMillis,
+        compileReason.asText
+      )
     } catch {
-      case _: Exception => // Best effort logging, don't fail the query
+      case e: Exception =>
+        log.debug(
+          s"Failed to log query plan for query $queryId with cache key hash $cacheKeyHashHex",
+          e
+        )
     }
   }
 

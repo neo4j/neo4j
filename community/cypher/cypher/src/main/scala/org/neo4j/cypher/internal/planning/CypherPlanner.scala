@@ -29,6 +29,9 @@ import org.neo4j.cypher.internal.MaybeReusable
 import org.neo4j.cypher.internal.ObfuscationPolicy
 import org.neo4j.cypher.internal.PlanFingerprint
 import org.neo4j.cypher.internal.PlanFingerprintReference
+import org.neo4j.cypher.internal.QueryCache
+import org.neo4j.cypher.internal.QueryCache.CompileReason
+import org.neo4j.cypher.internal.QueryCache.QueryCacheResult
 import org.neo4j.cypher.internal.ReusabilityState
 import org.neo4j.cypher.internal.SchemaCommandRuntime
 import org.neo4j.cypher.internal.ast.AdministrationCommand
@@ -147,6 +150,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 
 import java.time.Clock
+import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -617,6 +621,7 @@ final class TransformingPlanner private[planning] (
     rawQueryText: String,
     cacheStrategy: CacheStrategy
   ): LogicalPlanResult = {
+    val planningStartNanos = System.nanoTime()
     def getBatchSize: CypherPipelinedBatchSize = {
       CypherPipelinedBatchSizePresetOption.batchSizeConfigFrom(
         options.queryOptions.pipelinedBatchSizePresetOption,
@@ -774,7 +779,7 @@ final class TransformingPlanner private[planning] (
     }
 
     val canBeCached = options.queryOptions.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)
-    val cacheableLogicalPlan =
+    val queryCacheResult =
       // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
       if (cacheStrategy.logicalPlanShouldBeCached && canBeCached) {
         val cacheKey = LogicalPlanCache.key(
@@ -794,13 +799,20 @@ final class TransformingPlanner private[planning] (
           cacheStrategy
         )
       } else if (!enoughParametersSupplied) {
-        createPlan(
-          shouldBeCached = canBeCached,
-          missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey)
+        QueryCacheResult(
+          createPlan(
+            shouldBeCached = canBeCached,
+            missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey)
+          ),
+          Some(CompileReason.SkipCache),
+          waitTimeMillis = 0L
         )
       } else {
-        createPlan(shouldBeCached = canBeCached)
+        QueryCacheResult(createPlan(shouldBeCached = canBeCached), Some(CompileReason.SkipCache), waitTimeMillis = 0L)
       }
+
+    val cacheableLogicalPlan = queryCacheResult.executableQuery
+    val planningReason = queryCacheResult.compileReason
 
     val updatedCachableLogicalPlan = {
       cacheableLogicalPlan.logicalPlanState.logicalPlan match {
@@ -822,6 +834,7 @@ final class TransformingPlanner private[planning] (
     }
 
     val cacheStrategyAfterPlanning = cacheStrategy.updateFromLogicalPlan(updatedCachableLogicalPlan)
+    val planningTimeMillis = NANOSECONDS.toMillis(System.nanoTime() - planningStartNanos)
     LogicalPlanResult(
       updatedCachableLogicalPlan.logicalPlanState,
       queryParamNames,
@@ -831,7 +844,9 @@ final class TransformingPlanner private[planning] (
       (notificationLogger.notifications ++ updatedCachableLogicalPlan.notifications).toIndexedSeq,
       cacheStrategyAfterPlanning,
       obfuscator,
-      TransactionBoundIndexComparatorFactory
+      TransactionBoundIndexComparatorFactory,
+      planningTimeMillis,
+      planningReason
     )
   }
 
@@ -1010,5 +1025,7 @@ case class LogicalPlanResult(
   notifications: IndexedSeq[InternalNotification],
   cacheStrategy: CacheStrategy,
   queryObfuscator: QueryObfuscator,
-  indexSelector: IndexComparatorFactory
+  indexSelector: IndexComparatorFactory,
+  planningTimeMillis: Long,
+  compileReason: Option[QueryCache.CompileReason]
 )

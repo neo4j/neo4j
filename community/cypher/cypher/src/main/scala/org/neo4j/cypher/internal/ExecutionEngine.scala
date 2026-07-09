@@ -454,7 +454,7 @@ abstract class ExecutionEngine(
              * @return the owning database of this reference. This is used for authorization on property shards which inherit
              *         their permissions from the "owning" graph shard.
              */
-            override def owningDatabaseName: String = fullName().name();
+            override def owningDatabaseName: String = fullName().name()
 
             override def catalogEntry(): NormalizedCatalogEntry = throw new NotImplementedError()
 
@@ -463,7 +463,7 @@ abstract class ExecutionEngine(
           cacheStrategy
         )
 
-        val executableQuery = queryCache.computeIfAbsentOrStale(
+        val queryCacheResult = queryCache.computeIfAbsentOrStale(
           cacheKey,
           tc,
           compiler,
@@ -471,6 +471,7 @@ abstract class ExecutionEngine(
           context.executingQuery().id(),
           cacheStrategy
         )
+        val executableQuery = queryCacheResult.executableQuery
 
         val lockedEntities = schemaHelper.lockEntities(schemaToken, executableQuery, tc)
 

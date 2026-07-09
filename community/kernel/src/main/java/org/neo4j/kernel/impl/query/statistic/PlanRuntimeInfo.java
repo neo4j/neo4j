@@ -19,14 +19,7 @@
  */
 package org.neo4j.kernel.impl.query.statistic;
 
-public class PlanDetailsToBeLogged {
-    private final PlanOperatorDetailsToBeLogged[] operatorDetails;
+import java.util.Optional;
+import org.neo4j.kernel.api.query.RuntimeName;
 
-    public PlanDetailsToBeLogged(PlanOperatorDetailsToBeLogged[] operatorDetails) {
-        this.operatorDetails = operatorDetails;
-    }
-
-    public PlanOperatorDetailsToBeLogged[] getOperatorDetails() {
-        return operatorDetails;
-    }
-}
+public record PlanRuntimeInfo(RuntimeName runtime, Optional<Integer> batchSize) {}

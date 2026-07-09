@@ -22,11 +22,15 @@ package org.neo4j.cypher.internal
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.RemovalListener
 import org.mockito.Mockito
+import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verifyNoMoreInteractions
+import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.QueryCache.CacheKey
+import org.neo4j.cypher.internal.QueryCache.CompileReason
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryCache.QueryCacheResult
 import org.neo4j.cypher.internal.QueryCacheTest.MyValue
 import org.neo4j.cypher.internal.QueryCacheTest.QueryCacheUsageQueue
 import org.neo4j.cypher.internal.QueryCacheTest.TC
@@ -49,11 +53,23 @@ import org.neo4j.kernel.api.query.QueryCacheUsage
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
+import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
 import org.scalatestplus.mockito.MockitoSugar
 
-import scala.collection.mutable
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
-class QueryCacheTest extends CommunityCypherTestSuite {
+import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
+class QueryCacheTest extends CommunityCypherTestSuite with Eventually {
+
+  implicit override val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = Span(5000, Millis), interval = Span(100, Millis))
 
   def newCache(
     tracer: Tracer = newTracer(),
@@ -70,7 +86,13 @@ class QueryCacheTest extends CommunityCypherTestSuite {
     val key = newKey("foo")
 
     // When
-    val v1 = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    val v1 =
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.default
+      ).executableQuery
     // Then
     v1 should equal(compiled(key))
     v1.compiledWithExpressionCodeGen should equal(false)
@@ -80,7 +102,13 @@ class QueryCacheTest extends CommunityCypherTestSuite {
     queryTracer.queueIsEmmpty shouldBe true
 
     // When
-    val v2 = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    val v2 =
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.default
+      ).executableQuery
     // Then
     v2 should equal(compiled(key))
     v2.compiledWithExpressionCodeGen should equal(false)
@@ -99,7 +127,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
 
     // When
     val valueFromCache =
-      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.default
+      ).executableQuery
     // Then
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
@@ -123,7 +156,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
 
     // When
     val value1FromCache =
-      cache.computeIfAbsentOrStale(key1, TC, compilerWithExpressionCodeGenOption(key1), CypherReplanOption.default)
+      cache.computeIfAbsentOrStale(
+        key1,
+        TC,
+        compilerWithExpressionCodeGenOption(key1),
+        CypherReplanOption.default
+      ).executableQuery
     // Then
     value1FromCache should equal(compiled(key1))
     value1FromCache.compiledWithExpressionCodeGen should equal(false)
@@ -137,7 +175,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
 
     // When
     val value2FromCache =
-      cache.computeIfAbsentOrStale(key2, TC, compilerWithExpressionCodeGenOption(key2), CypherReplanOption.default)
+      cache.computeIfAbsentOrStale(
+        key2,
+        TC,
+        compilerWithExpressionCodeGenOption(key2),
+        CypherReplanOption.default
+      ).executableQuery
     // Then
     value2FromCache should equal(compiled(key2))
     value2FromCache.compiledWithExpressionCodeGen should equal(false)
@@ -169,7 +212,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
 
     // When
     val valueFromCache =
-      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.default
+      ).executableQuery
     // Then
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
@@ -191,7 +239,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
 
     // When
     val valueFromCache1 =
-      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.force)
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.force
+      ).executableQuery
     // Then
     valueFromCache1 should equal(compiled(key))
     valueFromCache1.compiledWithExpressionCodeGen should equal(true)
@@ -205,7 +258,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
 
     // When
     val valueFromCache2 =
-      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.force)
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.force
+      ).executableQuery
     // Then
     valueFromCache2 should equal(compiled(key))
     valueFromCache2.compiledWithExpressionCodeGen should equal(true)
@@ -248,7 +306,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
 
     // When
     val valueFromCache =
-      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.default
+      ).executableQuery
     // Then
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
@@ -283,7 +346,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
 
     // When
     val valueFromCache =
-      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.skip
+      ).executableQuery
     // Then
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
@@ -307,7 +375,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
     val valueFromCache =
-      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.default
+      ).executableQuery
 
     // Then
     valueFromCache should equal(compiled(key))
@@ -339,7 +412,7 @@ class QueryCacheTest extends CommunityCypherTestSuite {
     val key = newKey("foo")
 
     // When
-    val v1 =
+    val QueryCacheResult(v1, compileReason, _) =
       cache.computeIfAbsentOrStale(
         key,
         TC,
@@ -353,6 +426,7 @@ class QueryCacheTest extends CommunityCypherTestSuite {
     o.verify(tracer).cacheMiss(key, "")
     o.verify(tracer).compute(key, 23L, "")
     verifyNoMoreInteractions(tracer)
+    compileReason.get shouldEqual CompileReason.CacheMiss
 
     queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.MISS
     queryTracer.queueIsEmmpty shouldBe true
@@ -360,7 +434,7 @@ class QueryCacheTest extends CommunityCypherTestSuite {
     // When
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default) // hit
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default) // hit
-    val v2 =
+    val QueryCacheResult(v2, compileReasonV2, _) =
       cache.computeIfAbsentOrStale(
         key,
         TC,
@@ -378,11 +452,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
     o.verify(tracer).computeWithExpressionCodeGen(key, 23L, "")
     o.verify(tracer).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
+    compileReasonV2.get shouldEqual CompileReason.RecompiledWithCodeGen
 
     queryTracer.dequeueAllCacheUsage() shouldEqual Seq.fill(3)(QueryCacheUsage.HIT)
 
     // When
-    val v3 =
+    val QueryCacheResult(v3, compileReasonV3, _) =
       cache.computeIfAbsentOrStale(
         key,
         TC,
@@ -399,6 +474,7 @@ class QueryCacheTest extends CommunityCypherTestSuite {
 
     queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.HIT
     queryTracer.queueIsEmmpty shouldBe true
+    compileReasonV3.get shouldEqual CompileReason.StaleStatistics
   }
 
   test("accessing the cache with replan=skip should not recompile hot queries") {
@@ -413,7 +489,12 @@ class QueryCacheTest extends CommunityCypherTestSuite {
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
     val valueFromCache =
-      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
+      cache.computeIfAbsentOrStale(
+        key,
+        TC,
+        compilerWithExpressionCodeGenOption(key),
+        CypherReplanOption.skip
+      ).executableQuery
 
     // Then
     valueFromCache should equal(compiled(key))
@@ -454,6 +535,115 @@ class QueryCacheTest extends CommunityCypherTestSuite {
     verifyNoMoreInteractions(tracer)
 
     queryTracer.dequeueAllCacheUsage() shouldEqual (QueryCacheUsage.MISS +: Seq.fill(99)(QueryCacheUsage.HIT))
+  }
+
+  test("waiting thread captures waitTimeMillis when planning completes") {
+    val tracer = newTracer()
+    val cache = newCache(tracer)
+    val key = newKey("foo")
+
+    val compilationStarted = new CountDownLatch(1)
+    val compilationCanFinish = new CountDownLatch(1)
+    val thread2AboutToWait = new CountDownLatch(1)
+
+    doAnswer((_: InvocationOnMock) => {
+      thread2AboutToWait.countDown(); null
+    })
+      .when(tracer).awaitOngoingComputation(key, "")
+
+    val slowCompiler = new CompilerWithExpressionCodeGenOption[MyValue] {
+      override def compile(): MyValue = {
+        compilationStarted.countDown()
+        compilationCanFinish.await(5, TimeUnit.SECONDS)
+        Thread.sleep(20)
+        MyValue(key.queryRep)(compiledWithExpressionCodeGen = false)
+      }
+
+      override def compileWithExpressionCodeGen(): MyValue = compile()
+
+      override def maybeCompileWithExpressionCodeGen(hitCount: Int, shouldRecompile: () => Boolean): Option[MyValue] =
+        None
+    }
+
+    // Start planning in thread 1
+    val thread1Future = Future {
+      cache.computeIfAbsentOrStale(key, TC, slowCompiler, CypherReplanOption.default)
+    }
+
+    // Thread 1 has started compilation, start thread 2
+    compilationStarted.await(5, TimeUnit.SECONDS) shouldBe true
+
+    val thread2Future = Future {
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    }
+
+    // Thread 2 is in awaitingOngoingComputation, so restart thread 1.
+    // Thread 2 should now have a wait time in it.
+    thread2AboutToWait.await(5, TimeUnit.SECONDS) shouldBe true
+    compilationCanFinish.countDown()
+
+    val result1 = thread1Future.futureValue
+    val result2 = thread2Future.futureValue
+
+    result1.waitTimeMillis shouldBe 0L
+    result2.waitTimeMillis should be > 0L
+  }
+
+  test("waiting thread captures waitTimeMillis even when planning is not skipped") {
+    val tracer = newTracer()
+    val cache = newCache(tracer)
+    val key = newKey("foo")
+
+    val compilationStarted = new CountDownLatch(1)
+    val compilationCanFinish = new CountDownLatch(1)
+    val thread2AboutToWait = new CountDownLatch(1)
+
+    doAnswer((_: InvocationOnMock) => {
+      thread2AboutToWait.countDown(); null
+    })
+      .when(tracer).awaitOngoingComputation(key, "")
+
+    val failingSlowCompiler = new CompilerWithExpressionCodeGenOption[MyValue] {
+      override def compile(): MyValue = {
+        compilationStarted.countDown()
+        compilationCanFinish.await(5, TimeUnit.SECONDS)
+        Thread.sleep(20)
+        // Do not cache compiled value, so that all waiting threads will receive a "DoItYourself"
+        MyValue(key.queryRep, mockShouldBeCached = false)(compiledWithExpressionCodeGen = false)
+      }
+
+      override def compileWithExpressionCodeGen(): MyValue = compile()
+
+      override def maybeCompileWithExpressionCodeGen(hitCount: Int, shouldRecompile: () => Boolean): Option[MyValue] =
+        None
+    }
+
+    // start compilation on thread 1 and wait for thread 2 to start.
+    val thread1Future = Future {
+      cache.computeIfAbsentOrStale(key, TC, failingSlowCompiler, CypherReplanOption.default)
+    }
+
+    compilationStarted.await(5, TimeUnit.SECONDS) shouldBe true
+
+    // Now that thread 1 is compiling, start thread 2.
+    val thread2Future = Future {
+      cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    }
+
+    thread2AboutToWait.await(5, TimeUnit.SECONDS) shouldBe true
+    // now that thread 2 is waiting, finish compilation on thread1.
+    compilationCanFinish.countDown()
+
+    // Thread 1 returns a value that should not be cached; thread 2 retries planning itself (DoItYourself)
+    val result1 = thread1Future.futureValue
+    val result2 = thread2Future.futureValue
+
+    result1.executableQuery.shouldBeCached shouldBe false
+    result1.waitTimeMillis shouldBe 0L
+    result1.compileReason shouldBe Some(CompileReason.CacheMiss)
+
+    result2.compileReason shouldBe Some(CompileReason.CacheMiss)
+    result2.waitTimeMillis should be > 0L
   }
 
   test("parameterTypeMap should equal if same parameters") {
@@ -534,7 +724,6 @@ class QueryCacheTest extends CommunityCypherTestSuite {
       }
     }
   }
-
 }
 
 class SoftQueryCacheTest extends QueryCacheTest {
@@ -549,9 +738,12 @@ class SoftQueryCacheTest extends QueryCacheTest {
 
 object QueryCacheTest extends MockitoSugar {
 
-  case class MyValue(key: String)(val compiledWithExpressionCodeGen: Boolean) extends CacheabilityInfo {
-    override def shouldBeCached: Boolean = true
+  case class MyValue(key: String, mockShouldBeCached: Boolean = true)(val compiledWithExpressionCodeGen: Boolean)
+      extends CacheabilityInfo {
+    override def shouldBeCached: Boolean = mockShouldBeCached
+
     override def notifications: IndexedSeq[InternalNotification] = IndexedSeq.empty
+
     override def codeGenByteCodeSize: Long = 23
   }
 
@@ -637,7 +829,7 @@ object QueryCacheTest extends MockitoSugar {
   private def compiledWithExpressionCodeGen(key: Key): MyValue =
     MyValue(key.queryRep)(compiledWithExpressionCodeGen = true)
 
-  class QueryCacheUsageQueue() extends ExecutingQueryTracer {
+  class QueryCacheUsageQueue extends ExecutingQueryTracer {
     private val cacheUsage = new mutable.Queue[QueryCacheUsage]()
 
     def dequeueCacheUsage(): QueryCacheUsage = cacheUsage.dequeue()
