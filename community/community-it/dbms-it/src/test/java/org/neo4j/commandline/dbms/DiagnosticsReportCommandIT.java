@@ -22,11 +22,8 @@ package org.neo4j.commandline.dbms;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.cli.CommandTestUtils.withSuppressedOutput;
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.DEFAULT_CLASSIFIERS;
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.describeClassifier;
@@ -184,7 +181,7 @@ class DiagnosticsReportCommandIT {
         assertThat(files.length).isEqualTo(1);
 
         try (FileSystem fs = FileSystems.newFileSystem(files[0])) {
-            assertTrue(Files.exists(fs.getPath("heapdump.hprof")));
+            assertThat(fs.getPath("heapdump.hprof")).exists();
         }
     }
 
@@ -216,10 +213,10 @@ class DiagnosticsReportCommandIT {
 
         try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
             Path logsDir = fileSystem.getPath("logs");
-            assertTrue(Files.exists(logsDir.resolve("debug.log")));
-            assertTrue(Files.exists(logsDir.resolve("debug.log.01.zip")));
-            assertTrue(Files.exists(logsDir.resolve("neo4j.log")));
-            assertTrue(Files.exists(logsDir.resolve("neo4j.log.01")));
+            assertThat(logsDir.resolve("debug.log")).exists();
+            assertThat(logsDir.resolve("debug.log.01.zip")).exists();
+            assertThat(logsDir.resolve("neo4j.log")).exists();
+            assertThat(logsDir.resolve("neo4j.log.01")).exists();
         }
     }
 
@@ -240,9 +237,9 @@ class DiagnosticsReportCommandIT {
 
         try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
             Path confDir = fileSystem.getPath("config");
-            assertTrue(Files.exists(confDir.resolve("neo4j.conf")));
-            assertTrue(Files.exists(confDir.resolve("neo4j-admin.conf")));
-            assertTrue(Files.exists(confDir.resolve("neo4j-admin-database-check.conf")));
+            assertThat(confDir.resolve("neo4j.conf")).exists();
+            assertThat(confDir.resolve("neo4j-admin.conf")).exists();
+            assertThat(confDir.resolve("neo4j-admin-database-check.conf")).exists();
         }
     }
 
@@ -283,20 +280,22 @@ class DiagnosticsReportCommandIT {
         try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
             Path conf =
                     fileSystem.getPath("config").resolve(neo4jConf.getFileName().toString());
-            assertTrue(Files.isDirectory(conf));
-            assertTrue(Files.exists(conf.resolve(GraphDatabaseSettings.db_format.name())));
-            assertTrue(Files.exists(conf.resolve(GraphDatabaseSettings.auth_enabled.name())));
-            assertTrue(Files.exists(conf.resolve(GraphDatabaseSettings.log_queries.name())));
+            assertThat(conf).isDirectory();
+            assertThat(conf.resolve(GraphDatabaseSettings.db_format.name())).exists();
+            assertThat(conf.resolve(GraphDatabaseSettings.auth_enabled.name())).exists();
+            assertThat(conf.resolve(GraphDatabaseSettings.log_queries.name())).exists();
 
             Path admin =
                     fileSystem.getPath("config").resolve(adminConf.getFileName().toString());
-            assertTrue(Files.isDirectory(admin));
-            assertTrue(Files.exists(admin.resolve(GraphDatabaseSettings.pagecache_memory.name())));
+            assertThat(admin).isDirectory();
+            assertThat(admin.resolve(GraphDatabaseSettings.pagecache_memory.name()))
+                    .exists();
 
-            assertFalse(Files.exists(fileSystem
-                    .getPath("config")
-                    .resolve(rootSubDir.getFileName().toString())));
-            assertFalse(Files.exists(conf.resolve(confSubDir.getFileName().toString())));
+            assertThat(fileSystem
+                            .getPath("config")
+                            .resolve(rootSubDir.getFileName().toString()))
+                    .doesNotExist();
+            assertThat(conf.resolve(confSubDir.getFileName().toString())).doesNotExist();
         }
     }
 
@@ -329,15 +328,15 @@ class DiagnosticsReportCommandIT {
         try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
             Path confDir = fileSystem.getPath("config");
             Path neo4jConf = confDir.resolve("neo4j.conf");
-            assertTrue(Files.exists(neo4jConf));
+            assertThat(neo4jConf).exists();
             assertThat(Files.readAllLines(neo4jConf)).containsExactly(neo4jConfContents);
 
             Path serverLogConf = confDir.resolve("server-logs.xml");
-            assertTrue(Files.exists(serverLogConf));
+            assertThat(serverLogConf).exists();
             assertThat(Files.readAllLines(serverLogConf)).containsExactly("Config1");
 
             Path userLogConf = confDir.resolve("user-logs.xml");
-            assertTrue(Files.exists(userLogConf));
+            assertThat(userLogConf).exists();
             assertThat(Files.readAllLines(userLogConf)).containsExactly("Config2");
         }
     }
@@ -348,10 +347,10 @@ class DiagnosticsReportCommandIT {
             String[] args = {"all", "logs", "tx"};
             DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
 
-            CommandFailedException incorrectUsage =
-                    assertThrows(CommandFailedException.class, diagnosticsReportCommand::execute);
-            assertThat(incorrectUsage.getMessage())
-                    .contains("If you specify 'all' this has to be the only classifier. Found ['logs','tx'] as well.");
+            assertThatThrownBy(diagnosticsReportCommand::execute)
+                    .isInstanceOf(CommandFailedException.class)
+                    .hasMessageContaining(
+                            "If you specify 'all' this has to be the only classifier. Found ['logs','tx'] as well.");
         });
     }
 
@@ -360,9 +359,9 @@ class DiagnosticsReportCommandIT {
         String[] args = {"logs", "tx", "invalid"};
         withSuppressedOutput(homeDir, configDir, fs, ctx -> {
             DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
-            CommandFailedException incorrectUsage =
-                    assertThrows(CommandFailedException.class, diagnosticsReportCommand::execute);
-            assertThat(incorrectUsage.getMessage()).contains("Unknown classifier: invalid");
+            assertThatThrownBy(diagnosticsReportCommand::execute)
+                    .isInstanceOf(CommandFailedException.class)
+                    .hasMessageContaining("Unknown classifier: invalid");
         });
     }
 
@@ -374,9 +373,9 @@ class DiagnosticsReportCommandIT {
         }
 
         // Make sure the above actually catches bad classifiers
-        IllegalArgumentException exception =
-                assertThrows(IllegalArgumentException.class, () -> describeClassifier("invalid"));
-        assertEquals("Unknown classifier: invalid", exception.getMessage());
+        assertThatThrownBy(() -> describeClassifier("invalid"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unknown classifier: invalid");
     }
 
     @Test

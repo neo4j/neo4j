@@ -21,13 +21,11 @@ package org.neo4j.dbms.systemgraph;
 
 import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
 import static org.neo4j.kernel.database.DatabaseReferenceImpl.PropertyShard.propertyShardName;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -499,11 +497,11 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         var locDb = newDatabase(b -> b.withDatabase("loc"));
         createInternalReferenceForDatabase(tx, "locAlias", false, locDb);
 
-        assertEquals(Optional.of(CypherVersion.Cypher5), dbmsModel().getRemoteAliasLanguageVersion("remote1"));
-        assertEquals(Optional.of(CypherVersion.Cypher25), dbmsModel().getRemoteAliasLanguageVersion("remote2"));
+        assertThat(dbmsModel().getRemoteAliasLanguageVersion("remote1")).hasValue(CypherVersion.Cypher5);
+        assertThat(dbmsModel().getRemoteAliasLanguageVersion("remote2")).hasValue(CypherVersion.Cypher25);
 
-        assertEquals(Optional.empty(), dbmsModel().getRemoteAliasLanguageVersion("nonExisting"));
-        assertEquals(Optional.empty(), dbmsModel().getRemoteAliasLanguageVersion("locDb"));
-        assertEquals(Optional.empty(), dbmsModel().getRemoteAliasLanguageVersion("locAlias"));
+        assertThat(dbmsModel().getRemoteAliasLanguageVersion("nonExisting")).isEmpty();
+        assertThat(dbmsModel().getRemoteAliasLanguageVersion("locDb")).isEmpty();
+        assertThat(dbmsModel().getRemoteAliasLanguageVersion("locAlias")).isEmpty();
     }
 }

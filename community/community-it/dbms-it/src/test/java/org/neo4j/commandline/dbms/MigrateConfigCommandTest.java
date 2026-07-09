@@ -21,8 +21,6 @@ package org.neo4j.commandline.dbms;
 
 import static java.lang.System.lineSeparator;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
@@ -229,17 +227,17 @@ class MigrateConfigCommandTest {
     void shouldMigrateMinimalConfigWithAllSpecialCases() throws IOException {
         var configFile = createConfigFileInDefaultLocation(OLD_CONFIG);
         var result = runConfigMigrationCommand();
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
         assertThat(readFileIgnoreJvmRecommendations(configFile)).isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG));
-        assertFalse(Files.exists(
-                configFile.getParent().resolve("apoc.conf"))); // No apoc conf since there were no apoc settings.
+        assertThat(configFile.getParent().resolve("apoc.conf"))
+                .doesNotExist(); // No apoc conf since there were no apoc settings.
     }
 
     @Test
     void shouldMigrateJsonFormatToNewFormatWithMessage() throws IOException {
         var configFile = createConfigFileInDefaultLocation(OLD_CONFIG_JSON_FORMATS);
         var result = runConfigMigrationCommand();
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
         assertThat(readFileIgnoreJvmRecommendations(configFile))
                 .isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG_JSON_FORMATS));
         var serverLogsXml = Files.readString(configFile.getParent().resolve("server-logs.xml"));
@@ -268,7 +266,7 @@ class MigrateConfigCommandTest {
     void shouldLogChanges() throws IOException {
         createConfigFileInDefaultLocation(OLD_CONFIG);
         var result = runConfigMigrationCommand();
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
         assertThat(result.err)
                 .contains("server.bolt.enabled=true REMOVED DUPLICATE")
                 .contains("setting.that.does.not.exist=true REMOVED UNKNOWN")
@@ -296,7 +294,7 @@ class MigrateConfigCommandTest {
         var configFile = createConfigFileInDefaultLocation(OLD_CONFIG_APOC);
         var newApocConf = configFile.resolveSibling("apoc.conf");
         var result = runConfigMigrationCommand();
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
         assertThat(readFileIgnoreJvmRecommendations(configFile))
                 .isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG_APOC));
         assertThat(Files.readString(newApocConf)).isEqualTo(maybeChangeLineSeparators(NEW_CONFIG_APOC));
@@ -320,7 +318,7 @@ class MigrateConfigCommandTest {
         Files.writeString(apocConf, "Old apoc.conf", StandardCharsets.UTF_8);
 
         var result = runConfigMigrationCommand();
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
         assertThat(readFileIgnoreJvmRecommendations(configFile))
                 .isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG_APOC));
         assertThat(Files.readString(apocConf)).isEqualTo(maybeChangeLineSeparators(NEW_CONFIG_APOC));
@@ -338,7 +336,7 @@ class MigrateConfigCommandTest {
     void shouldRenameOverriddenFile() throws IOException {
         var configFile = createConfigFileInDefaultLocation("dbms.tx_log.rotation.size=1G");
         var result = runConfigMigrationCommand();
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
         assertThat(readFileIgnoreJvmRecommendations(configFile))
                 .isEqualToIgnoringNewLines("db.tx_log.rotation.size=1G");
         var originalConfigFile = configFile.getParent().resolve("neo4j.conf.old");
@@ -349,7 +347,7 @@ class MigrateConfigCommandTest {
     void providedSourcePathMustExist() {
         var result = runConfigMigrationCommand(
                 "--from-path", neo4jLayout.homeDirectory().resolve("somewhere").toString());
-        assertEquals(1, result.exitCode);
+        assertThat(result.exitCode()).isEqualTo(1);
         assertThat(result.err).contains("Provided path '").contains("somewhere' is not an existing directory");
     }
 
@@ -358,7 +356,7 @@ class MigrateConfigCommandTest {
         var sourceDir = neo4jLayout.homeDirectory().resolve("somewhere");
         Files.createDirectories(sourceDir);
         var result = runConfigMigrationCommand("--from-path", sourceDir.toString());
-        assertEquals(1, result.exitCode);
+        assertThat(result.exitCode()).isEqualTo(1);
         assertThat(result.err)
                 .contains("Resolved source file '")
                 .contains(Path.of("somewhere", "neo4j.conf") + "' does not exist");
@@ -369,7 +367,7 @@ class MigrateConfigCommandTest {
         createConfigFileInDefaultLocation("dbms.tx_log.rotation.size=1G");
         var result = runConfigMigrationCommand(
                 "--to-path", neo4jLayout.homeDirectory().resolve("somewhere").toString());
-        assertEquals(1, result.exitCode);
+        assertThat(result.exitCode()).isEqualTo(1);
         assertThat(result.err).contains("Provided path '").contains("somewhere' is not an existing directory");
     }
 
@@ -378,7 +376,7 @@ class MigrateConfigCommandTest {
         var originalConfigFile = createConfigFile("somewhere", "dbms.tx_log.rotation.size=1G");
         var result = runConfigMigrationCommand(
                 "--from-path", originalConfigFile.getParent().toString());
-        assertEquals(1, result.exitCode);
+        assertThat(result.exitCode()).isEqualTo(1);
         assertThat(result.err).contains("Target path '").contains("conf' is not an existing directory");
     }
 
@@ -389,7 +387,7 @@ class MigrateConfigCommandTest {
         Files.createDirectories(targetDir);
         var result = runConfigMigrationCommand(
                 "--from-path", originalConfigFile.getParent().toString());
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
         var migratedConfigFile = targetDir.resolve("neo4j.conf");
         assertThat(readFileIgnoreJvmRecommendations(migratedConfigFile))
                 .isEqualToIgnoringNewLines("db.tx_log.rotation.size=1G");
@@ -402,7 +400,7 @@ class MigrateConfigCommandTest {
         Path targetDir = neo4jLayout.homeDirectory().resolve("another-conf-dir");
         Files.createDirectories(targetDir);
         var result = runConfigMigrationCommand("--to-path", targetDir.toString());
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
         var migratedConfigFile = targetDir.resolve("neo4j.conf");
         assertThat(readFileIgnoreJvmRecommendations(migratedConfigFile))
                 .isEqualToIgnoringNewLines("db.tx_log.rotation.size=1G");
@@ -413,7 +411,7 @@ class MigrateConfigCommandTest {
     void shouldWorkWithSettingsInPlugins() throws IOException {
         var cfgFile = createConfigFileInDefaultLocation(MyPlugin.oldSetting + "=bar");
         var result = runConfigMigrationCommand(createPluginClassLoader());
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
         assertThat(readFileIgnoreJvmRecommendations(cfgFile))
                 .isEqualToIgnoringNewLines(MyPlugin.setting.name() + "=bar");
     }
@@ -465,7 +463,7 @@ class MigrateConfigCommandTest {
         var cfgFileWithoutAnyJvmAdditional =
                 createConfigFileInDefaultLocation(GraphDatabaseSettings.filewatcher_enabled.name() + "=false");
         var result = runConfigMigrationCommand(createPluginClassLoader());
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
 
         assertThat(Files.readString(cfgFileWithoutAnyJvmAdditional))
                 .isEqualToIgnoringNewLines(
@@ -489,7 +487,7 @@ class MigrateConfigCommandTest {
         var cfgFileWithSomeJvmAdditional =
                 createConfigFileInDefaultLocation(gcJvm + log4jJvmWithTrailingSpaceAndMismatchingValue);
         var result = runConfigMigrationCommand(createPluginClassLoader());
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode()).isZero();
 
         String filteredRec = jvmRecommendations("-Dlog4j2.disable.jmx");
         assertThat(Files.readString(cfgFileWithSomeJvmAdditional))

@@ -26,7 +26,6 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -234,10 +233,10 @@ class DumpCommandIT {
                 Locker locker = new DatabaseLocker(fileSystem, databaseLayout)) {
             locker.checkLock();
 
-            CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-            assertThat(commandFailed.getMessage()).contains("Dump failed for databases: 'foo'");
-            assertThat(commandFailed.getMessage())
-                    .contains("The database is in use. Stop database 'foo' and try again.");
+            assertThatThrownBy(() -> execute("foo"))
+                    .isInstanceOf(CommandFailedException.class)
+                    .hasMessageContaining("Dump failed for databases: 'foo'")
+                    .hasMessageContaining("The database is in use. Stop database 'foo' and try again.");
         }
     }
 
@@ -264,10 +263,10 @@ class DumpCommandIT {
             // Required to push envelopes to stream
             writer.getChannel().putChecksum();
         }
-        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-        assertThat(commandFailed.getMessage()).contains("Dump failed for databases: 'foo'");
-        assertThat(commandFailed.getMessage())
-                .contains("Active logical log detected, this might be a source of inconsistencies.");
+        assertThatThrownBy(() -> execute("foo"))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Dump failed for databases: 'foo'")
+                .hasMessageContaining("Active logical log detected, this might be a source of inconsistencies.");
     }
 
     @Test
@@ -280,7 +279,7 @@ class DumpCommandIT {
     void shouldReleaseTheDatabaseLockEvenIfThereIsAnError() throws Exception {
         Dumper dumper1 = doThrow(IOException.class).when(dumper);
         dumper1.dump(any(), any(), any());
-        assertThrows(CommandFailedException.class, () -> execute("foo"));
+        assertThatThrownBy(() -> execute("foo")).isInstanceOf(CommandFailedException.class);
         assertCanLockDatabase(databaseDirectory);
     }
 
@@ -305,9 +304,10 @@ class DumpCommandIT {
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(databaseDirectory);
         Path file = databaseLayout.databaseLockFile();
         try (Closeable ignored = withPermissions(file, emptySet())) {
-            CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-            assertThat(commandFailed.getMessage()).contains("Dump failed for databases: 'foo'");
-            assertThat(commandFailed.getMessage()).contains("You do not have permission to dump the database.");
+            assertThatThrownBy(() -> execute("foo"))
+                    .isInstanceOf(CommandFailedException.class)
+                    .hasMessageContaining("Dump failed for databases: 'foo'")
+                    .hasMessageContaining("You do not have permission to dump the database.");
         }
     }
 
@@ -346,16 +346,18 @@ class DumpCommandIT {
     @Test
     void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws Exception {
         doThrow(new FileAlreadyExistsException("the-archive-path")).when(dumper).dump(any(), any(), any());
-        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-        assertThat(commandFailed.getMessage()).contains("Dump failed for databases: 'foo'");
-        assertThat(commandFailed.getMessage()).contains("Archive already exists: the-archive-path");
+        assertThatThrownBy(() -> execute("foo"))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Dump failed for databases: 'foo'")
+                .hasMessageContaining("Archive already exists: the-archive-path");
     }
 
     @Test
     void shouldGiveAClearMessageIfTheDatabaseDoesntExist() {
-        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("bobo"));
-        assertThat(commandFailed.getMessage()).contains("Dump failed for databases: 'bobo'");
-        assertThat(commandFailed.getMessage()).contains("Database does not exist: bobo");
+        assertThatThrownBy(() -> execute("bobo"))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Dump failed for databases: 'bobo'")
+                .hasMessageContaining("Database does not exist: bobo");
     }
 
     @Test
@@ -363,18 +365,20 @@ class DumpCommandIT {
         doThrow(new NoSuchFileException(archive.getParent().toString()))
                 .when(dumper)
                 .dump(any(), any(), any());
-        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-        assertThat(commandFailed.getMessage()).contains("Dump failed for databases: 'foo'");
-        assertThat(commandFailed.getMessage()).contains("NoSuchFileException: " + archive.getParent());
+        assertThatThrownBy(() -> execute("foo"))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Dump failed for databases: 'foo'")
+                .hasMessageContaining("NoSuchFileException: " + archive.getParent());
     }
 
     @Test
     void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws Exception {
         doThrow(new IOException("the-message")).when(dumper).dump(any(), any(), any());
-        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
-        assertThat(commandFailed.getMessage()).contains("Dump failed for databases: 'foo'");
-        assertThat(commandFailed.getMessage()).contains("IOException: the-message");
+        assertThatThrownBy(() -> execute("foo"))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Dump failed for databases: 'foo'")
+                .hasMessageContaining("IOException: the-message");
     }
 
     @Test
@@ -436,18 +440,18 @@ class DumpCommandIT {
             }
         };
         CommandLine.populateCommand(command, "foo*", "--to-stdout");
-        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, command::execute);
-        assertThat(commandFailed.getMessage())
-                .contains("Globbing in database name can not be used in combination with standard output. "
+        assertThatThrownBy(command::execute)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Globbing in database name can not be used in combination with standard output. "
                         + "Specify a directory as destination or a single target database");
     }
 
     @Test
     void shouldNotAllowSpecifiedFile() throws IOException {
         Files.createFile(archive);
-        CommandFailedException commandFailed =
-                assertThrows(CommandFailedException.class, () -> execute("foo*", archive));
-        assertThat(commandFailed.getMessage()).contains(archive + " is not an existing directory");
+        assertThatThrownBy(() -> execute("foo*", archive))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining(archive + " is not an existing directory");
     }
 
     @Test

@@ -20,8 +20,7 @@
 package org.neo4j.dbms.database;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
@@ -98,8 +97,8 @@ class DefaultSystemGraphComponentUpgradeIT {
         // Then
         try (Transaction tx = systemDb.beginTx()) {
             Label dbname = TopologyGraphDbmsModel.DATABASE_LABEL;
-            assertEquals(1, Iterables.asList(tx.schema().getConstraints(dbname)).size());
-            assertThrows(IllegalArgumentException.class, () -> tx.schema().getIndexByName("rogue"));
+            assertThat(Iterables.asList(tx.schema().getConstraints(dbname))).hasSize(1);
+            assertThatThrownBy(() -> tx.schema().getIndexByName("rogue")).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -125,8 +124,8 @@ class DefaultSystemGraphComponentUpgradeIT {
         // Then
         try (Transaction tx = systemDb.beginTx()) {
             Label dbname = TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
-            assertEquals(2, Iterables.asList(tx.schema().getConstraints(dbname)).size());
-            assertThrows(IllegalArgumentException.class, () -> tx.schema().getIndexByName("rogue"));
+            assertThat(Iterables.asList(tx.schema().getConstraints(dbname))).hasSize(2);
+            assertThatThrownBy(() -> tx.schema().getIndexByName("rogue")).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -153,11 +152,9 @@ class DefaultSystemGraphComponentUpgradeIT {
             localConstituentAlias.setProperty(NAMESPACE_PROPERTY, "composite");
             localConstituentAlias.setProperty(PRIMARY_PROPERTY, false);
 
-            var e = assertThrows(
-                    RuntimeException.class,
-                    () -> localConstituentAlias.setProperty(DISPLAY_NAME_PROPERTY, "composite.local"));
-            assertThat(e.getMessage())
-                    .contains(
+            assertThatThrownBy(() -> localConstituentAlias.setProperty(DISPLAY_NAME_PROPERTY, "composite.local"))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining(
                             "already exists with label `DatabaseName` and property `displayName` = 'composite.local'");
         }
     }

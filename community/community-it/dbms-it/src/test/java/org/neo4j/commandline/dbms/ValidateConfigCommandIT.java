@@ -20,7 +20,6 @@
 package org.neo4j.commandline.dbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -85,7 +84,7 @@ class ValidateConfigCommandIT {
     void shouldValidateValidNeo4jConfig() throws IOException {
         createConfigFileInDefaultLocation(MigrateConfigCommandTest.MIGRATED_CONFIG);
         var result = runValidateConfigCommand();
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode).isZero();
         assertThat(result.out)
                 .containsSubsequence(
                         "Validating Neo4j configuration",
@@ -100,7 +99,7 @@ class ValidateConfigCommandIT {
     void shouldWarnOnApocSettingInNeo4jConfig() throws IOException {
         createConfigFileInDefaultLocation(CONFIG_WITH_APOC_SETTING);
         var result = runValidateConfigCommand();
-        assertEquals(0, result.exitCode);
+        assertThat(result.exitCode).isZero();
         assertThat(result.out)
                 .containsSubsequence(
                         "Validating Neo4j configuration",

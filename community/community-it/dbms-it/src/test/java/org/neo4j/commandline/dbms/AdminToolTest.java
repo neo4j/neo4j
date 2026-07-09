@@ -19,8 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -33,7 +32,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
-public class AdminToolTest {
+class AdminToolTest {
     @Inject
     private TestDirectory directory;
 
@@ -43,14 +42,13 @@ public class AdminToolTest {
         ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
         try (PrintStream out = new PrintStream(outBuffer);
                 PrintStream err = new PrintStream(errBuffer)) {
-            assertEquals(
-                    ExitCode.USAGE,
-                    AdminTool.execute(new ExecutionContext(
-                            directory.homePath(), directory.directory("conf"), out, err, directory.getFileSystem())));
+            assertThat(AdminTool.execute(new ExecutionContext(
+                            directory.homePath(), directory.directory("conf"), out, err, directory.getFileSystem())))
+                    .isEqualTo(ExitCode.USAGE);
         }
         String outString = outBuffer.toString();
-        assertTrue(outString.contains("Environment variables"));
-        assertTrue(outString.contains("NEO4J_HOME"));
-        assertTrue(outString.contains("NEO4J_CONF"));
+        assertThat(outString).contains("Environment variables");
+        assertThat(outString).contains("NEO4J_HOME");
+        assertThat(outString).contains("NEO4J_CONF");
     }
 }

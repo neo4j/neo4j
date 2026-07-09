@@ -23,8 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.cli.AbstractAdminCommand.COMMAND_CONFIG_FILE_NAME_PATTERN;
 import static org.neo4j.cli.CommandTestUtils.containCount;
 import static org.neo4j.cli.CommandTestUtils.latestFileInDirectory;
@@ -515,7 +513,7 @@ class CheckCommandIT {
         });
 
         // After the command has finished the staging area should have been cleared away
-        assertFalse(testDirectory.getFileSystem().fileExists(tempDir.get()));
+        assertThat(testDirectory.getFileSystem().fileExists(tempDir.get())).isFalse();
     }
 
     @Test
@@ -536,7 +534,7 @@ class CheckCommandIT {
         });
 
         // After the command has finished the staging area should have been cleared away
-        assertFalse(testDirectory.getFileSystem().fileExists(tempDir.get()));
+        assertThat(testDirectory.getFileSystem().fileExists(tempDir.get())).isFalse();
     }
 
     @Test
@@ -558,8 +556,8 @@ class CheckCommandIT {
 
         // After the command has finished the staging area should have been cleared away and the temp-path should still
         // exist
-        assertFalse(testDirectory.getFileSystem().fileExists(tempDir.get()));
-        assertTrue(testDirectory.getFileSystem().fileExists(reqTempDir));
+        assertThat(testDirectory.getFileSystem().fileExists(tempDir.get())).isFalse();
+        assertThat(testDirectory.getFileSystem().fileExists(reqTempDir)).isTrue();
     }
 
     private void removeAndReprepareDatabase(DatabaseLayout databaseLayout) throws IOException {
@@ -595,7 +593,7 @@ class CheckCommandIT {
         return new TrackingConsistencyCheckService(returnValue, (service) -> {
             DatabaseLayout layout = (DatabaseLayout) service.arguments.get(DatabaseLayout.class);
             tempDir.set(layout.getNeo4jLayout().homeDirectory().toAbsolutePath());
-            assertTrue(testDirectory.getFileSystem().fileExists(tempDir.get()));
+            assertThat(testDirectory.getFileSystem().fileExists(tempDir.get())).isTrue();
             assertThat(tempDir.get().getParent().toAbsolutePath()).isEqualTo(expectedTempRoot.toAbsolutePath());
         });
     }
