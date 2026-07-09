@@ -35,6 +35,7 @@ import org.neo4j.io.locker.Locker;
 import org.neo4j.kernel.api.exceptions.ConsoleFriendlyException;
 import org.neo4j.kernel.diagnostics.providers.SystemDiagnostics;
 import org.neo4j.kernel.internal.Version;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
@@ -101,6 +102,14 @@ public abstract class AbstractCommand implements Callable<Integer> {
         }
         try {
             wrappedExecute();
+        } catch (CommandLine.ParameterException e) {
+            // Let through ParameterException, which is e.g. when an option/argument is missing.
+            // Typically, PicoCLI throws this itself during parsing (i.e. before even getting to executing the command,
+            // but there are scenarios where options/arguments are conditionally required and in such cases
+            // the command's execute() method can manually throw these types of exceptions.
+            // These are let through because PicoCLI will treat these with a printout of the command and generally
+            // be helpful about the error to the user.
+            throw e;
         } catch (Throwable e) {
             Path problematicFile = findFileForPotentialPermissionProblems(e);
             problematicFile = problematicFile != null ? problematicFile : ctx.homeDir();
