@@ -63,6 +63,7 @@ import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.swapper.SegmentedPageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.swapper.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.SegmentEvent;
 import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
@@ -86,6 +87,7 @@ class SegmentedPageSwapperIT {
 
     private JobScheduler jobScheduler;
     private final LifeSupport life = new LifeSupport();
+    private final SwapperSet swapperSet = new SwapperSet();
 
     @BeforeEach
     void start() {
@@ -174,6 +176,30 @@ class SegmentedPageSwapperIT {
                     assertThat(value).as("page %d", p).isEqualTo(0xC0FFEEL + p);
                 }
             }
+        }
+    }
+
+    @Test
+    void segmentedFileConsumesSingleSwapperId() throws IOException {
+        Path baseFile = directory.file("data");
+        try (MuninnPageCache pageCache = newPageCache();
+                PagedFile pagedFile = mapSegmented(pageCache, baseFile, CREATE)) {
+            MuninnPagedFile muninnPagedFile = (MuninnPagedFile) pagedFile;
+            SwapperSet swapperSet = pageCache.swapperSet();
+            assertThat(swapperSet.getAllocation(muninnPagedFile.swapperId).swapper)
+                    .isSameAs(muninnPagedFile.swapper);
+
+            try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                for (int p = 0; p < 3 * PAGES_PER_SEGMENT; p++) {
+                    assertTrue(cursor.next(p));
+                    cursor.putLong(p);
+                }
+            }
+            pagedFile.flushAndForce(NULL, EMPTY_ASYNC_BLOCK_ACCESSOR);
+            assertThat(fs.fileExists(segment(baseFile, 2))).isTrue();
+
+            assertThat(swapperSet.allocate(new DummyPageSwapper("dummy", PAGE_SIZE)))
+                    .isEqualTo(muninnPagedFile.swapperId + 1);
         }
     }
 
@@ -1412,7 +1438,7 @@ class SegmentedPageSwapperIT {
                 0,
                 IOController.DISABLED,
                 EvictionBouncer.ALWAYS_ALLOW,
-                new SwapperSet())) {
+                swapperSet::allocate)) {
             long buffer = allocateFilled(PAGE_SIZE, (byte) 0xFF);
             try {
                 swapper.read(physicalPage, buffer);
@@ -1478,7 +1504,7 @@ class SegmentedPageSwapperIT {
                 PAGES_PER_SEGMENT,
                 IOController.DISABLED,
                 EvictionBouncer.ALWAYS_ALLOW,
-                new SwapperSet());
+                swapperSet::allocate);
     }
 
     private static final PageEvictionCallback NO_CALLBACK = (pageRef, filePageId) -> {};

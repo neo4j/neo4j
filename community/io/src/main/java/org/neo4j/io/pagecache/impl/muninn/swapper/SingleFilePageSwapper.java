@@ -50,7 +50,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 
 /**
@@ -92,7 +91,7 @@ class SingleFilePageSwapper implements PageSwapper {
             PageEvictionCallback onEviction,
             boolean useDirectIO,
             IOController ioController,
-            SwapperSet swapperSet,
+            SwapperIdProvider swapperIdProvider,
             PageFileSwapperTracer fileSwapperTracer,
             BlockSwapper blockSwapper,
             NativeAccessFactory nativeAccessFactory,
@@ -128,7 +127,7 @@ class SingleFilePageSwapper implements PageSwapper {
             throw e;
         }
         this.canDoVectorizedIO = channel.hasPositionLock() && UnsafeUtil.unsafeByteBufferAccessAvailable();
-        this.swapperId = swapperSet.allocate(this);
+        this.swapperId = swapperIdProvider.swapperId(this);
         this.blockSwapper = blockSwapper;
         this.nativeAccess = nativeAccessFactory.create(path);
         this.evictionBouncer = evictionBouncer;

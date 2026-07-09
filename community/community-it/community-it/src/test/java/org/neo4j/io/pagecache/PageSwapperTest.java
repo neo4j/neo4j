@@ -1113,7 +1113,7 @@ public abstract class PageSwapperTest {
                 pagesPerSegment(),
                 DISABLED,
                 ALWAYS_ALLOW,
-                swapperSet);
+                swapperSet::allocate);
         openedSwappers.add(swapper);
         return swapper;
     }
@@ -1136,7 +1136,7 @@ public abstract class PageSwapperTest {
                 pagesPerSegment(),
                 controller,
                 ALWAYS_ALLOW,
-                swapperSet);
+                swapperSet::allocate);
         openedSwappers.add(swapper);
         return swapper;
     }

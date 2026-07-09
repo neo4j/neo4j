@@ -119,6 +119,7 @@ import org.neo4j.io.pagecache.impl.muninn.multiversion.SingleThreadedTestContext
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.swapper.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.swapper.SwapperIdProvider;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
@@ -3025,7 +3026,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 long pagesPerSegment,
                 IOController ioController,
                 EvictionBouncer evictionBouncer,
-                SwapperSet swappers)
+                SwapperIdProvider swapperIdProvider)
                 throws IOException {
             return new DelegatingPageSwapper(super.createPageSwapper(
                     file,
@@ -3036,7 +3037,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     pagesPerSegment,
                     ioController,
                     evictionBouncer,
-                    swappers)) {
+                    swapperIdProvider)) {
                 @Override
                 public long write(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length)
                         throws IOException {
@@ -3552,7 +3553,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 long pagesPerSegment,
                 IOController ioController,
                 EvictionBouncer evictionBouncer,
-                SwapperSet swappers)
+                SwapperIdProvider swapperIdProvider)
                 throws IOException {
             return new DelegatingPageSwapper(super.createPageSwapper(
                     file,
@@ -3563,7 +3564,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     pagesPerSegment,
                     ioController,
                     evictionBouncer,
-                    swappers)) {
+                    swapperIdProvider)) {
                 @Override
                 public long read(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length)
                         throws IOException {

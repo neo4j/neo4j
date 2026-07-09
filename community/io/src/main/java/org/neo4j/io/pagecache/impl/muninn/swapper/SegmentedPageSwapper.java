@@ -38,7 +38,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 import org.neo4j.io.pagecache.tracing.SegmentEvent;
@@ -57,12 +56,11 @@ public final class SegmentedPageSwapper implements PageSwapper {
     private final boolean useDirectIO;
     private final IOController ioController;
     private final EvictionBouncer evictionBouncer;
-    private final SwapperSet swapperSet;
+    private final int swapperId;
     private final PageFileSwapperTracer fileSwapperTracer;
     private final PageCacheTracer pageCacheTracer;
     private final int pageShift;
     private volatile PageEvictionCallback onEviction;
-    private final int swapperId;
 
     private PageSwapper[] segments;
 
@@ -75,7 +73,7 @@ public final class SegmentedPageSwapper implements PageSwapper {
             boolean useDirectIO,
             IOController ioController,
             EvictionBouncer evictionBouncer,
-            SwapperSet swapperSet,
+            SwapperIdProvider swapperIdProvider,
             PageSwapperFactory fileSwapperFactory,
             FileSystemAbstraction fs,
             PageFileSwapperTracer fileSwapperTracer,
@@ -89,15 +87,14 @@ public final class SegmentedPageSwapper implements PageSwapper {
         this.useDirectIO = useDirectIO;
         this.ioController = ioController;
         this.evictionBouncer = evictionBouncer;
-        this.swapperSet = swapperSet;
         this.fileSwapperTracer = fileSwapperTracer;
         this.pageCacheTracer = pageCacheTracer;
         this.onEviction = onEviction;
         this.fileSwapperFactory = fileSwapperFactory;
         this.pageShift = numberOfTrailingZeros(pagesPerSegment);
 
+        this.swapperId = swapperIdProvider.swapperId(this);
         this.segments = initialSegmentOpen(createIfNotExist);
-        this.swapperId = swapperSet.allocate(this);
     }
 
     @Override
@@ -574,7 +571,7 @@ public final class SegmentedPageSwapper implements PageSwapper {
                 pagesPerSegment,
                 ioController,
                 evictionBouncer,
-                swapperSet);
+                segmentSwapper -> swapperId);
     }
 
     private void closeAndDeleteSegments(PageSwapper[] segments, int initialIndex) throws IOException {

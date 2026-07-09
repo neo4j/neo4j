@@ -25,7 +25,6 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
-import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 
 /**
  * Creates PageSwappers for the given files.
@@ -55,7 +54,7 @@ public interface PageSwapperFactory {
      * @param pagesPerSegment  Number of pages per file segment. 0 if segmentation is disabled
      * @param ioController     controller to report swapper io's
      * @param evictionBouncer  eviction bouncer to check if flushing for the dirty page is still required or can be skipped
-     * @param swappers         set of already registered swappers
+     * @param swapperIdProvider provider of the swapper id for the created swapper
      * @return A working PageSwapper instance for the given file.
      * @throws IOException If the PageSwapper could not be created, for
      *                     instance if the underlying file could not be opened, or the given file does not exist and createIfNotExist is
@@ -70,6 +69,6 @@ public interface PageSwapperFactory {
             long pagesPerSegment,
             IOController ioController,
             EvictionBouncer evictionBouncer,
-            SwapperSet swappers)
+            SwapperIdProvider swapperIdProvider)
             throws IOException;
 }

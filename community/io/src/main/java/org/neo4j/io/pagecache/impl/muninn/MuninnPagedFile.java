@@ -250,7 +250,7 @@ final class MuninnPagedFile implements PagedFile, Flushable {
                 pagesPerSegment,
                 ioController,
                 evictionBouncer,
-                swapperSet);
+                swapperSet::allocate);
         if (truncateExisting) {
             swapper.truncate();
         }

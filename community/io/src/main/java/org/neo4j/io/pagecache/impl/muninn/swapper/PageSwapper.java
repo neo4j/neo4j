@@ -206,8 +206,9 @@ public interface PageSwapper extends Closeable {
     void allocate(long newFileSize) throws IOException;
 
     /**
-     * Each page swapper have a id that is unique for the lifetime of a swapper. Ids can be reused later on if particular swapper is closed.
-     * @return underlying page swapper id
+     * The swapper id of the mapped file this swapper does IO for.
+     * Cache pages of the file are bound to this id, and all swappers serving
+     * the same file share it: segment swappers of a segmented file report the file's id.
      */
     int swapperId();
 

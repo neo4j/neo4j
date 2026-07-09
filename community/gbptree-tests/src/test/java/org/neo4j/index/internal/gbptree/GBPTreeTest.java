@@ -105,10 +105,10 @@ import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.impl.muninn.StoreFile;
-import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.swapper.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.swapper.SwapperIdProvider;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
@@ -2827,7 +2827,7 @@ class GBPTreeTest {
                 long pagesPerSegment,
                 IOController ioController,
                 EvictionBouncer evictionBouncer,
-                SwapperSet swappers)
+                SwapperIdProvider swapperIdProvider)
                 throws IOException {
             PageSwapper delegate = this.delegate.createPageSwapper(
                     path,
@@ -2838,7 +2838,7 @@ class GBPTreeTest {
                     pagesPerSegment,
                     ioController,
                     evictionBouncer,
-                    swappers);
+                    swapperIdProvider);
             return new DelegatingPageSwapper(delegate) {
                 @Override
                 public void force() {

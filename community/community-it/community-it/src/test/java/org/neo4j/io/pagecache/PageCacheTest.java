@@ -106,10 +106,10 @@ import org.neo4j.io.pagecache.impl.muninn.CacheLiveLockException;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor;
 import org.neo4j.io.pagecache.impl.muninn.StoreFile;
-import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.swapper.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.swapper.SwapperIdProvider;
 import org.neo4j.io.pagecache.randomharness.Record;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
@@ -4698,7 +4698,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     long pagesPerSegment,
                     IOController ioController,
                     EvictionBouncer evictionBouncer,
-                    SwapperSet swappers)
+                    SwapperIdProvider swapperIdProvider)
                     throws IOException {
                 PageSwapper swapper = super.createPageSwapper(
                         path,
@@ -4709,7 +4709,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         pagesPerSegment,
                         ioController,
                         evictionBouncer,
-                        swappers);
+                        swapperIdProvider);
                 return new DelegatingPageSwapper(swapper) {
                     @Override
                     public long write(long filePageId, long bufferAddress) throws IOException {
