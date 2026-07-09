@@ -768,8 +768,9 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
               roleNames = List(roleName),
               ruleNames = List(ruleName)
             )(c.position)
+            val roleCheck = EnsureRoleHasNoDeniedPrivileges(Some(source), roleName, prettifier.asString(subCommand))
             plans.RevokeRoleFromAuthRule(
-              source,
+              roleCheck,
               roleName,
               ruleName,
               prettifier.asString(subCommand)
@@ -852,12 +853,23 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
               (s, r) => {
                 val subCommand =
                   c.copy(qualifier = List(simpleQualifier), roleNames = List(roleName), revokeType = r)(c.position)
-                plans.RevokeDbmsAction(
+                val assertCanBeMutated =
                   planRevokes(
                     s,
                     revokeType,
                     (s, r) => plans.AssertDbmsPrivilegeCanBeMutated(s, action, simpleQualifier, roleName, r.relType)
-                  ),
+                  )
+                val authRuleCheck = r match {
+                  case _: RevokeDenyType =>
+                    EnsureRoleNotGrantedToAnyAuthRules(
+                      Some(assertCanBeMutated),
+                      roleName,
+                      prettifier.asString(subCommand)
+                    )
+                  case _ => assertCanBeMutated
+                }
+                plans.RevokeDbmsAction(
+                  authRuleCheck,
                   action,
                   simpleQualifier,
                   roleName,
@@ -963,13 +975,20 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   roleNames = List(role),
                   revokeType = r
                 )(c.position)
-                plans.RevokeDatabaseAction(
+                val assertCanBeMutated =
                   planRevokes(
                     s,
                     revokeType,
                     (s, r) =>
                       plans.AssertDatabasePrivilegeCanBeMutated(s, action, runtimeScope, qualifier, role, r.relType)
-                  ),
+                  )
+                val authRuleCheck = r match {
+                  case _: RevokeDenyType =>
+                    EnsureRoleNotGrantedToAnyAuthRules(Some(assertCanBeMutated), role, prettifier.asString(subCommand))
+                  case _ => assertCanBeMutated
+                }
+                plans.RevokeDatabaseAction(
+                  authRuleCheck,
                   action,
                   runtimeScope,
                   qualifier,
@@ -1096,7 +1115,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   roleNames = List(roleName),
                   revokeType = r
                 )(c.position)
-                plans.RevokeGraphAction(
+                val assertCanBeMutated =
                   planRevokes(
                     s,
                     revokeType,
@@ -1110,7 +1129,18 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                         roleName,
                         r.relType
                       )
-                  ),
+                  )
+                val authRuleCheck = r match {
+                  case _: RevokeDenyType =>
+                    EnsureRoleNotGrantedToAnyAuthRules(
+                      Some(assertCanBeMutated),
+                      roleName,
+                      prettifier.asString(subCommand)
+                    )
+                  case _ => assertCanBeMutated
+                }
+                plans.RevokeGraphAction(
+                  authRuleCheck,
                   action,
                   resource,
                   runtimeScope,
@@ -1221,7 +1251,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                 roleNames = List(roleName),
                 revokeType = r
               )(rp.position)
-              plans.RevokeLoadAction(
+              val assertCanBeMutated =
                 planRevokes(
                   s,
                   revokeType,
@@ -1234,7 +1264,18 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                       roleName,
                       r.relType
                     )
-                ),
+                )
+              val authRuleCheck = r match {
+                case _: RevokeDenyType =>
+                  EnsureRoleNotGrantedToAnyAuthRules(
+                    Some(assertCanBeMutated),
+                    roleName,
+                    prettifier.asString(subCommand)
+                  )
+                case _ => assertCanBeMutated
+              }
+              plans.RevokeLoadAction(
+                authRuleCheck,
                 action,
                 resource,
                 qualifier,
