@@ -178,7 +178,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
             pageCacheTracer.vectoredFaults(vectoredFaults);
         }
         if (failedVectoredFaults > 0) {
-            pageCacheTracer.failedVectoredFaults(vectoredFaults);
+            pageCacheTracer.failedVectoredFaults(failedVectoredFaults);
         }
         if (noPinFaults > 0) {
             pageCacheTracer.noPinFaults(noPinFaults);

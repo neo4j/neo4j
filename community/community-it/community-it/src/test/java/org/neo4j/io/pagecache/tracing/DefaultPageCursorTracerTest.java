@@ -135,6 +135,39 @@ class DefaultPageCursorTracerTest {
     }
 
     @Test
+    void countVectoredFaultsAndFailures() {
+        try (var faultEvent = pageCursorTracer.beginVectoredPageFault(swapper)) {
+            faultEvent.addPagesFaulted(2, new long[] {0, 1}, referenceTranslator);
+        }
+        try (var faultEvent = pageCursorTracer.beginVectoredPageFault(swapper)) {
+            faultEvent.setException(new IOException("vectored fault exception"));
+        }
+        try (var faultEvent = pageCursorTracer.beginVectoredPageFault(swapper)) {
+            faultEvent.setException(new IOException("vectored fault exception"));
+        }
+
+        assertEquals(3, pageCursorTracer.vectoredFaults());
+        assertEquals(2, pageCursorTracer.failedVectoredFaults());
+    }
+
+    @Test
+    void reportVectoredFaultsAndFailuresToPageCacheTracer() {
+        try (var faultEvent = pageCursorTracer.beginVectoredPageFault(swapper)) {
+            faultEvent.addPagesFaulted(2, new long[] {0, 1}, referenceTranslator);
+        }
+        try (var faultEvent = pageCursorTracer.beginVectoredPageFault(swapper)) {
+            faultEvent.setException(new IOException("vectored fault exception"));
+        }
+        try (var faultEvent = pageCursorTracer.beginVectoredPageFault(swapper)) {
+            faultEvent.setException(new IOException("vectored fault exception"));
+        }
+        pageCursorTracer.reportEvents();
+
+        assertEquals(3, cacheTracer.vectoredFaults());
+        assertEquals(2, cacheTracer.failedVectoredFaults());
+    }
+
+    @Test
     void countPageEvictions() {
         try (var pinEvent = pageCursorTracer.beginPin(true, 0, swapper)) {
             try (var faultEvent = pinEvent.beginPageFault(1, swapper)) {
