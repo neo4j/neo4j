@@ -1011,10 +1011,9 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             )(c.position)
             val roleCheck =
               if (immutable) source else plans.AssertMutablePrivilegesCanBeAssignedToRole(source, roleName)
-            val authRuleCheck =
-              EnsureRoleNotGrantedToAnyAuthRules(Some(roleCheck), roleName, prettifier.asString(subCommand))
+
             plans.GrantGraphAction(
-              authRuleCheck,
+              roleCheck,
               action,
               resource,
               runtimeScope,
