@@ -23,7 +23,6 @@ import scala.annotation.tailrec
 
 trait CypherType extends ASTNode {
   def parentType: CypherType
-  val isAbstract: Boolean = false
 
   // e.g BOOLEAN set(true, false, null) is nullable, BOOLEAN NOT NULL set(true, false) is not
   def isNullable: Boolean

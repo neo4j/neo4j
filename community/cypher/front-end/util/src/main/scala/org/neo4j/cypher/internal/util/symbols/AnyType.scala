@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 case class AnyType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
   val parentType: CypherType = this
-  override val isAbstract = true
 
   override def isAssignableFrom(other: CypherType): Boolean = true
 
