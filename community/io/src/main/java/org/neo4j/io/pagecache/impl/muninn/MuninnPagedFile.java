@@ -406,10 +406,16 @@ final class MuninnPagedFile implements PagedFile, Flushable {
 
     @Override
     public void flush(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor) throws IOException {
-        try (var buffer = bufferFactory.createBuffer()) {
-            flushAndForceInternal(flushEvent, asyncBlockAccessor, false, ioController, buffer, false);
+        if (asyncBlockAccessor.isAvailable()) {
+            // TODO there's an unknown issue causing this call to hang in some scenarios if async IO is available
+            //  so the flush-without-force is disabled until this is figured out.
+            flushAndForce(flushEvent, asyncBlockAccessor);
+        } else {
+            try (var buffer = bufferFactory.createBuffer()) {
+                flushAndForceInternal(flushEvent, asyncBlockAccessor, false, ioController, buffer, false);
+            }
+            pageCache.clearEvictorException();
         }
-        pageCache.clearEvictorException();
     }
 
     @Override
