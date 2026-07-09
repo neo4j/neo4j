@@ -235,16 +235,24 @@ public class CsvInput implements Input {
 
     private static void assertSaneConfiguration(Configuration config) {
         Map<Character, String> delimiters = new HashMap<>();
-        delimiters.put(config.delimiter(), "delimiter");
-        checkUniqueCharacter(delimiters, config.arrayDelimiter(), "array delimiter");
-        checkUniqueCharacter(delimiters, config.quotationCharacter(), "quotation character");
+        delimiters.put(disallowNewline(config.delimiter(), "delimiter"), "delimiter");
+        checkUniqueCharacterAndNotNewline(delimiters, config.arrayDelimiter(), "array delimiter");
+        checkUniqueCharacterAndNotNewline(delimiters, config.quotationCharacter(), "quotation character");
         // Vector delimiter may equal array delimiter, so drop array before checking vector.
         delimiters.remove(config.arrayDelimiter());
-        checkUniqueCharacter(delimiters, config.vectorDelimiter(), "vector delimiter");
+        checkUniqueCharacterAndNotNewline(delimiters, config.vectorDelimiter(), "vector delimiter");
     }
 
-    private static void checkUniqueCharacter(
+    private static char disallowNewline(char character, String characterDescription) {
+        if (character == '\n' || character == '\r') {
+            throw new IllegalArgumentException("A newline character must not be used as the " + characterDescription);
+        }
+        return character;
+    }
+
+    private static void checkUniqueCharacterAndNotNewline(
             Map<Character, String> characters, char character, String characterDescription) {
+        disallowNewline(character, characterDescription);
         String conflict = characters.put(character, characterDescription);
         if (conflict != null) {
             throw new IllegalArgumentException("Character '" + character + "' specified by " + characterDescription

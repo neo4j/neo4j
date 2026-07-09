@@ -68,10 +68,13 @@ import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
@@ -107,6 +110,7 @@ import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -1007,6 +1011,35 @@ class CsvInputTest {
                     labels());
             assertThat(readNext(nodes)).isFalse();
         }
+    }
+
+    private static Stream<Arguments> shouldFailWhenNewlineIsUsedAsAnyDelimiter() {
+        return Arrays.stream(MultilineSetting.values())
+                .flatMap(setting -> Stream.of(Pair.of(setting, '\n'), Pair.of(setting, '\r')))
+                .flatMap(settings -> Stream.of(
+                        invalidNewlineConfig("delimiter", settings, b -> b::withDelimiter),
+                        invalidNewlineConfig("array delimiter", settings, b -> b::withArrayDelimiter),
+                        invalidNewlineConfig("vector delimiter", settings, b -> b::withVectorDelimiter),
+                        invalidNewlineConfig("quotation character", settings, b -> b::withQuotationCharacter)));
+    }
+
+    private static Arguments invalidNewlineConfig(
+            String characterDescription,
+            Pair<MultilineSetting, Character> settings,
+            Function<Configuration.Builder, Consumer<Character>> configSetter) {
+        var builder = config(settings.first()).toBuilder();
+        configSetter.apply(builder).accept(settings.other());
+        return Arguments.of(builder.build(), characterDescription);
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void shouldFailWhenNewlineIsUsedAsAnyDelimiter(Configuration configuration, String characterDescription) {
+        // WHEN
+        assertThatThrownBy(() -> new CsvInput(
+                        null, null, null, null, INTEGER, configuration, false, NO_MONITOR, groups, INSTANCE))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll("A newline character must not be used as the ", characterDescription);
     }
 
     @ParameterizedTest

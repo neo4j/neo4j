@@ -143,6 +143,31 @@ public class Configuration {
         return readIsForSampling;
     }
 
+    @Override
+    public String toString() {
+        return "Configuration{ delimiter="
+                + delimiter
+                + " arrayDelimiter="
+                + arrayDelimiter
+                + " vectorDelimiter="
+                + vectorDelimiter
+                + " quotationCharacter="
+                + quotationCharacter
+                + " bufferSize="
+                + bufferSize
+                + " legacyMultilineFields="
+                + legacyMultilineFields
+                + " trimStrings="
+                + trimStrings
+                + " emptyQuotedStringsAsNull="
+                + emptyQuotedStringsAsNull
+                + " legacyStyleQuoting="
+                + legacyStyleQuoting
+                + " readIsForSampling="
+                + readIsForSampling
+                + " }";
+    }
+
     public Builder toBuilder() {
         final var builder = new Builder()
                 .withQuotationCharacter(quotationCharacter)
