@@ -23,20 +23,50 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiFunction;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.filename.SequentialFileNameHelper;
 import org.neo4j.util.Preconditions;
 
-public interface StreamSource {
-    InputStream next() throws IOException;
+public record StreamSource<T>(
+        T base,
+        BiFunction<T, Integer, T> mapper,
+        ThrowingFunction<T, InputStream, IOException> reader,
+        MutableInt counter) {
+    public InputStream next() throws IOException {
+        int version = counter.getAndIncrement();
+        if (version == 0) {
+            return reader.apply(base);
+        } else {
+            var newT = mapper.apply(base, version);
+            return reader.apply(newT);
+        }
+    }
 
-    static StreamSource siblingsOf(URI uri, ThrowingFunction<URI, InputStream, IOException> open) {
+    /**
+     * Lists all sibling files of the archive
+     *
+     * @param numSiblingParts the number of data parts beside the base, i.e. {@code 0} for an unsplit archive and
+     *                        {@link CombiningInputStream#numParts} for a split one
+     */
+    public List<T> siblings(int numSiblingParts) {
+        Preconditions.checkArgument(numSiblingParts >= 0, "numSiblingParts must not be negative");
+        List<T> result = new ArrayList<>(numSiblingParts + 1);
+        for (int i = 1; i <= numSiblingParts; i++) {
+            result.add(mapper.apply(base, i));
+        }
+        return result;
+    }
+
+    public static StreamSource<URI> siblingsOf(URI uri, ThrowingFunction<URI, InputStream, IOException> open) {
         return generic(uri, (u, v) -> URI.create(u + "." + v), open);
     }
 
-    static StreamSource siblingsOf(FileSystemAbstraction fs, Path base) {
+    public static StreamSource<Path> siblingsOf(FileSystemAbstraction fs, Path base) {
         var parent = base.getParent();
         Preconditions.checkArgument(base.isAbsolute(), "base must have an absolute path");
         Preconditions.checkArgument(parent != null, "base must have a parent");
@@ -45,21 +75,8 @@ public interface StreamSource {
         return generic(base, (p, v) -> fnHelper.getFileForVersion(v), fs::openAsInputStream);
     }
 
-    static <T> StreamSource generic(
+    public static <T> StreamSource<T> generic(
             T t, BiFunction<T, Integer, T> newT, ThrowingFunction<T, InputStream, IOException> open) {
-        return new StreamSource() {
-            // Generates the sequence (t, t.1, t.2,...)
-            int current = 0;
-
-            @Override
-            public InputStream next() throws IOException {
-                var version = current++;
-                if (version == 0) {
-                    return open.apply(t);
-                } else {
-                    return open.apply(newT.apply(t, version));
-                }
-            }
-        };
+        return new StreamSource<>(t, newT, open, new MutableInt(0));
     }
 }

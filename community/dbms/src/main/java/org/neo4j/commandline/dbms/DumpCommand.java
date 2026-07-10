@@ -295,7 +295,7 @@ public class DumpCommand extends AbstractAdminCommand {
         if (splitSize > 0) {
             // TODO(split-backups): Do pruning of archives
             // TODO(split-backups): Validate split size
-            return new Dumper.SplitFileOutput(fs, archive, splitSize);
+            return Dumper.SplitFileOutput.of(fs, archive, splitSize);
         }
 
         // Allow "overwriting" of existing dumps.

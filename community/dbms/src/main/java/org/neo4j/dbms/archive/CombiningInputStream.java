@@ -32,8 +32,8 @@ public class CombiningInputStream extends InputStream {
     private static final int INDEX_BYTES = 4;
     private static final int ID_BYTES = 16;
 
-    private final int numParts;
-    private final byte[] archiveId;
+    public final int numParts;
+    public final byte[] archiveId;
     private final StreamSource src;
 
     // The data part currently being read, and the one-based index of the part that opened it. Parts are opened lazily,

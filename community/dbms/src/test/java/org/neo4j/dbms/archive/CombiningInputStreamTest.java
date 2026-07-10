@@ -355,7 +355,7 @@ class CombiningInputStreamTest {
 
     private Path writeSplitArchive(String name, byte[] data) throws IOException {
         Path base = testDirectory.file(name);
-        try (OutputStream out = new Dumper.SplitFileOutput(fileSystem, base, PART_SIZE).stream()) {
+        try (OutputStream out = Dumper.SplitFileOutput.of(fileSystem, base, PART_SIZE).stream()) {
             out.write(data);
         }
         return base;

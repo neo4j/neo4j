@@ -22,10 +22,12 @@ package org.neo4j.dbms.archive;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
@@ -51,7 +53,7 @@ public sealed interface ArchiveInput {
         InputStream stream =
                 switch (this) {
                     case StreamInput streamInput -> streamInput.stream();
-                    case FileInput fileInput -> fileInput.source().next();
+                    case FileInput<?> fileInput -> fileInput.source().next();
                 };
         try {
             byte[] magic = stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
@@ -80,12 +82,16 @@ public sealed interface ArchiveInput {
     /**
      * An archive in a file; the parts of a split archive are located as sibling files.
      */
-    record FileInput(StreamSource source, String description) implements ArchiveInput {
-        public static FileInput of(FileSystemAbstraction fs, Path path) {
+    record FileInput<T>(StreamSource<T> source, String description) implements ArchiveInput {
+        public static FileInput<Path> of(FileSystemAbstraction fs, Path path) {
             Objects.requireNonNull(fs);
             Objects.requireNonNull(path);
             Path absolutePath = path.toAbsolutePath();
-            return new FileInput(StreamSource.siblingsOf(fs, absolutePath), absolutePath.toString());
+            return new FileInput<>(StreamSource.siblingsOf(fs, absolutePath), path.toString());
+        }
+
+        public static FileInput<URI> of(URI uri, ThrowingFunction<URI, InputStream, IOException> openURI) {
+            return new FileInput<>(StreamSource.siblingsOf(uri, openURI), uri.toString());
         }
 
         @Override

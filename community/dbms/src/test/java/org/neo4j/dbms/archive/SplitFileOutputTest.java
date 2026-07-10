@@ -57,7 +57,7 @@ class SplitFileOutputTest {
     void shouldCreateSplitFiles() throws IOException {
         Path base = testDirectory.file("test.dump");
 
-        try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
+        try (OutputStream stream = Dumper.SplitFileOutput.of(fileSystem, base, FILE_SIZE).stream()) {
             stream.write(new byte[250]); // 3 parts
         }
 
@@ -72,7 +72,7 @@ class SplitFileOutputTest {
     void shouldHaveCorrectDataInFirstFile() throws IOException {
         Path base = testDirectory.file("test.dump");
 
-        try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
+        try (OutputStream stream = Dumper.SplitFileOutput.of(fileSystem, base, FILE_SIZE).stream()) {
             stream.write(new byte[200]); // 3 parts
         }
 
@@ -86,7 +86,7 @@ class SplitFileOutputTest {
     void shouldHaveMagicHeaderFirstInAllFiles() throws IOException {
         Path base = testDirectory.file("test.dump");
 
-        try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
+        try (OutputStream stream = Dumper.SplitFileOutput.of(fileSystem, base, FILE_SIZE).stream()) {
             stream.write(new byte[250]); // 3 parts
         }
 
@@ -107,7 +107,7 @@ class SplitFileOutputTest {
     void shouldCreateSplitFilesWithSameUUID() throws IOException {
         Path base = testDirectory.file("test.dump");
 
-        try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
+        try (OutputStream stream = Dumper.SplitFileOutput.of(fileSystem, base, FILE_SIZE).stream()) {
             stream.write(new byte[250]); // 3 parts
         }
 
@@ -132,7 +132,7 @@ class SplitFileOutputTest {
     void shouldCreateSplitFilesWithCorrectIndex() throws IOException {
         Path base = testDirectory.file("test.dump");
 
-        try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
+        try (OutputStream stream = Dumper.SplitFileOutput.of(fileSystem, base, FILE_SIZE).stream()) {
             stream.write(new byte[250]); // 3 parts
         }
 
@@ -154,7 +154,7 @@ class SplitFileOutputTest {
             expected[i] = (byte) i;
         }
 
-        try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
+        try (OutputStream stream = Dumper.SplitFileOutput.of(fileSystem, base, FILE_SIZE).stream()) {
             stream.write(expected);
         }
 
@@ -175,7 +175,7 @@ class SplitFileOutputTest {
         int parts = random.nextInt(100, 1000);
         byte[] expected = random.nextBytes(parts * (FILE_SIZE - Dumper.SplitFileOutput.HEADER_SIZE));
 
-        try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
+        try (OutputStream stream = Dumper.SplitFileOutput.of(fileSystem, base, FILE_SIZE).stream()) {
             stream.write(expected);
         }
 
@@ -202,7 +202,7 @@ class SplitFileOutputTest {
         Files.createFile(base.resolveSibling("test.dump"));
 
         assertThatThrownBy(() -> {
-                    try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
+                    try (OutputStream stream = Dumper.SplitFileOutput.of(fileSystem, base, FILE_SIZE).stream()) {
                         stream.write(new byte[50]);
                     }
                 })

@@ -208,7 +208,8 @@ public class Dumper {
         }
     }
 
-    public record SplitFileOutput(FileSystemAbstraction fs, Path baseArtifact, long maxArtifactSize)
+    public record SplitFileOutput(
+            FileSystemAbstraction fs, Path baseArtifact, long maxArtifactSize, SplitFileGeneratorMonitor monitor)
             implements DumpOutput {
         public static final MagicSignature MAGIC_MANIFEST_HEADER =
                 MagicSignature.of(ArchiveFormat.SPLIT_FILE_PREFIX + "MV1");
@@ -232,13 +233,18 @@ public class Dumper {
         }
 
         public static SplitFileOutput of(FileSystemAbstraction fs, Path baseArtifact, long maxArtifactSize) {
-            return new SplitFileOutput(fs, baseArtifact, maxArtifactSize);
+            return new SplitFileOutput(fs, baseArtifact, maxArtifactSize, SplitFileGeneratorMonitor.NO_MONITOR);
+        }
+
+        public static SplitFileOutput of(
+                FileSystemAbstraction fs, Path baseArtifact, long maxArtifactSize, SplitFileGeneratorMonitor monitor) {
+            return new SplitFileOutput(fs, baseArtifact, maxArtifactSize, monitor);
         }
 
         @Override
         public OutputStream stream() throws IOException {
             checkWritableDirectory(baseArtifact.getParent());
-            SplitFileGenerator fileGenerator = new SplitFileGenerator(baseArtifact, fs);
+            SplitFileGenerator fileGenerator = new SplitFileGenerator(baseArtifact, fs, monitor);
             Runnable onClose = () -> {
                 try {
                     fileGenerator.writeCountToFirstFile();
@@ -254,19 +260,27 @@ public class Dumper {
             return "split archive: " + baseArtifact;
         }
 
+        public interface SplitFileGeneratorMonitor {
+            void openedPath(Path pth);
+
+            SplitFileGeneratorMonitor NO_MONITOR = pth -> {};
+        }
+
         private static final class SplitFileGenerator implements Iterator<OutputStream> {
             private final FileSystemAbstraction fs;
+            private final SplitFileGeneratorMonitor monitor;
             private final SequentialFileNameHelper fileNameHelper;
             private final Path baseArtifact;
             private final UUID id;
             private int count = 0;
 
-            SplitFileGenerator(Path basePath, FileSystemAbstraction fs) {
+            SplitFileGenerator(Path basePath, FileSystemAbstraction fs, SplitFileGeneratorMonitor monitor) {
                 this.fs = fs;
                 this.fileNameHelper = new SequentialFileNameHelper(
                         basePath.getParent(), basePath.getFileName().toString());
                 this.baseArtifact = basePath;
                 this.id = UUID.randomUUID();
+                this.monitor = monitor;
             }
 
             @Override
@@ -281,6 +295,7 @@ public class Dumper {
                     count++;
                     Path p = fileNameHelper.getFileForVersion(count);
                     stream = fs.openAsOutputStream(p, Set.of(WRITE, CREATE_NEW));
+                    monitor.openedPath(p);
                     stream.write(MAGIC_DATA_HEADER.getBytes()); // header to signal split artifact
                     stream.write(intToByteArray(count)); // index of this file in the split artifact, starting from 1
                     stream.write(uuidBytes()); // unique id of the split artifacts
@@ -311,6 +326,7 @@ public class Dumper {
             void writeCountToFirstFile() throws IOException {
                 // The first file contains header, total artifact count and uuid
                 try (var stream = fs.openAsOutputStream(baseArtifact, Set.of(WRITE, CREATE_NEW))) {
+                    monitor.openedPath(baseArtifact);
                     stream.write(MAGIC_MANIFEST_HEADER.getBytes());
                     stream.write(intToByteArray(count));
                     stream.write(uuidBytes());

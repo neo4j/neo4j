@@ -237,7 +237,7 @@ class LoaderTest {
         byte[] expected = new byte[500];
         random.nextBytes(expected);
 
-        try (OutputStream compressed = format.compress(new Dumper.SplitFileOutput(fileSystem, base, 200).stream())) {
+        try (OutputStream compressed = format.compress(Dumper.SplitFileOutput.of(fileSystem, base, 200).stream())) {
             compressed.write(expected);
         }
 
@@ -268,7 +268,7 @@ class LoaderTest {
         byte[] expected = new byte[500];
         random.nextBytes(expected);
 
-        try (OutputStream compressed = format.compress(new Dumper.SplitFileOutput(fileSystem, base, 200).stream())) {
+        try (OutputStream compressed = format.compress(Dumper.SplitFileOutput.of(fileSystem, base, 200).stream())) {
             compressed.write(expected);
         }
 
