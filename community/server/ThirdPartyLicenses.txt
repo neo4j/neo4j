@@ -872,6 +872,17 @@ This Agreement is governed by the laws of the State of New York and the intellec
 
 ------------------------------------------------------------------------------
 Eclipse Public License v2.0
+  Core :: ALPN :: Java Server
+  Core :: ALPN :: Server
+  Core :: EE :: Web Application
+  Core :: HTTP2 :: Common
+  Core :: HTTP2 :: HPACK
+  Core :: HTTP2 :: Server
+  Core :: Sessions
+  EE8 :: Nested
+  EE8 :: Security
+  EE8 :: Servlet
+  EE8 :: WebApp
   HK2 API module
   HK2 Implementation Utilities
   Jakarta Annotations API
@@ -2026,6 +2037,50 @@ For more information, please refer to <http://unlicense.org/>
 
 Dependencies with multiple licenses
 -----------------------------------
+
+Core :: ALPN :: Java Server
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+Core :: ALPN :: Server
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+Core :: EE :: Web Application
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+Core :: HTTP2 :: Common
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+Core :: HTTP2 :: HPACK
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+Core :: HTTP2 :: Server
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+Core :: Sessions
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+EE8 :: Nested
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+EE8 :: Security
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+EE8 :: Servlet
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
+
+EE8 :: WebApp
+  Apache Software License, Version 2.0
+  Eclipse Public License v2.0
 
 Eclipse Collections API
   Eclipse Distribution License - v 1.0

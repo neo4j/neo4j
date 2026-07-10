@@ -88,7 +88,7 @@
     <dependency>
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
-      <version>2.4.1.Final</version>
+      <version>2.4.2.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>

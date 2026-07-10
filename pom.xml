@@ -83,18 +83,18 @@
     <apache.directory.server.version>2.0.0.AM27</apache.directory.server.version>
     <asm.version>9.10.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
-    <awssdk.version>2.46.6</awssdk.version>
+    <awssdk.version>2.47.3</awssdk.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
-    <build-resources.version>2026.06.1</build-resources.version>
+    <build-resources.version>2026.07.1</build-resources.version>
     <caffeine.version>3.2.4</caffeine.version>
 
     <!-- Bump the cucumber dependencies together. -->
     <cucumber.scala.version>8.39.1</cucumber.scala.version>
-    <cucumber.version>7.34.3</cucumber.version>
+    <cucumber.version>7.34.4</cucumber.version>
 
     <cursor.counters.check>true</cursor.counters.check>
-    <cypherdsl.version>2025.2.7</cypherdsl.version>
+    <cypherdsl.version>2025.3.0</cypherdsl.version>
     <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
     <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
@@ -102,16 +102,16 @@
     <!-- there is a non-standard behaviour of map merge in the 13.0 version can't upgrade for now-->
     <eclipse-collections.version>11.1.0</eclipse-collections.version>
     <!-- You MUST re-generate the parsers after changing this value! -->
-    <error_prone.version>2.49.0</error_prone.version>
+    <error_prone.version>2.50.0</error_prone.version>
     <excludedTestGroups />
     <forkCounts>1</forkCounts>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
-    <grpc.version>1.81.0</grpc.version>
+    <grpc.version>1.82.1</grpc.version>
     <gson.version>2.14.0</gson.version>
     <guava.version>33.6.0-jre</guava.version>
     <!-- no more patch releases for jackson-annotations so different versioning from jackson -->
     <jackson.annotations.version>2.22</jackson.annotations.version>
-    <jackson.version>2.22.0</jackson.version>
+    <jackson.version>2.22.1</jackson.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
     <jakarta.inject.version>2.0.1</jakarta.inject.version>
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
@@ -129,20 +129,20 @@
     <jdk25.custom.options />
     <jersey.version>2.46</jersey.version>
     <jetty.toolchain.version>4.0.9</jetty.toolchain.version>
-    <jetty.version>12.1.8</jetty.version>
-    <json-unit.version>5.1.2</json-unit.version>
+    <jetty.version>12.1.11</jetty.version>
+    <json-unit.version>6.0.1</json-unit.version>
     <json4s.version>4.1.0</json4s.version>
     <jsr305.version>3.0.2</jsr305.version>
-    <junit.version>6.1.0</junit.version>
+    <junit.version>6.1.1</junit.version>
     <license-text.header>license/neo4j_gpl_v3/header.txt</license-text.header>
 
     <license.id>neo4j_gpl_v3</license.id>
     <licensing.prepend.text>license/neo4j_gpl_v3/notice.txt</licensing.prepend.text>
     <log4j.version>2.25.4</log4j.version>
-    <logback.version>1.5.34</logback.version>
+    <logback.version>1.5.38</logback.version>
     <lucene.version>10.4.0</lucene.version>
     <lucene9.version>9.12.3</lucene9.version>
-    <lz4.version>1.11.0</lz4.version>
+    <lz4.version>1.11.1</lz4.version>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
     <maven.compiler.release>${vm.target.version}</maven.compiler.release>
     <metrics.version>4.2.39</metrics.version>
@@ -159,17 +159,17 @@
      - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
      - needs updating.
      -->
-    <netty.version>4.2.15.Final</netty.version>
+    <netty.version>4.2.16.Final</netty.version>
     <opencypher.version>1.0.0-M23</opencypher.version>
-    <oshi-common.version>7.3.0</oshi-common.version>
+    <oshi-common.version>7.4.0</oshi-common.version>
     <parallel.tests>false</parallel.tests>
     <parquet-floor.version>2.1</parquet-floor.version>
     <parquet.version>1.17.1</parquet.version>
     <picocli.version>4.7.7</picocli.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <protobuf.version>4.35.0</protobuf.version>
+    <protobuf.version>4.35.1</protobuf.version>
     <required.maven.version>3.9.11</required.maven.version>
-    <s3mock.version>5.0.0</s3mock.version>
+    <s3mock.version>5.1.0</s3mock.version>
     <scala-maven-plugin.version>4.9.9</scala-maven-plugin.version>
     <scala.binary.version>3</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
@@ -181,7 +181,7 @@
     <skip-scalastyle>false</skip-scalastyle>
     <slf4j.version>2.0.17</slf4j.version>
     <sqlite-jdbc.version>3.53.2.0</sqlite-jdbc.version>
-    <teavm.version>0.14.1</teavm.version>
+    <teavm.version>0.15.0</teavm.version>
     <test.runner.jvm />
     <test.runner.jvm.settings>${test.runner.mockito.agent}
       -Xmx${test.vm.heap.size}
@@ -354,7 +354,7 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.5.7-10</version>
+        <version>1.5.7-11</version>
       </dependency>
       <dependency>
         <groupId>com.github.seancfoley</groupId>
@@ -472,7 +472,7 @@
       <dependency>
         <groupId>commons-logging</groupId>
         <artifactId>commons-logging</artifactId>
-        <version>1.3.6</version>
+        <version>1.4.0</version>
       </dependency>
       <dependency>
         <groupId>info.picocli</groupId>
@@ -636,22 +636,34 @@
       <dependency>
         <groupId>net.bytebuddy</groupId>
         <artifactId>byte-buddy</artifactId>
-        <version>1.18.10</version>
+        <version>1.18.11</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.19.0</version>
+        <version>5.19.1</version>
       </dependency>
       <dependency>
         <groupId>net.javacrumbs.json-unit</groupId>
         <artifactId>json-unit-assertj</artifactId>
         <version>${json-unit.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>net.javacrumbs.json-unit</groupId>
         <artifactId>json-unit-core</artifactId>
         <version>${json-unit.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -882,7 +894,7 @@
       <dependency>
         <groupId>org.codehaus.jettison</groupId>
         <artifactId>jettison</artifactId>
-        <version>1.5.5</version>
+        <version>1.5.6</version>
       </dependency>
 
       <!-- other -->
