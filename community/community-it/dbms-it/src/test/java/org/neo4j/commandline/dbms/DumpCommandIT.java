@@ -513,6 +513,21 @@ class DumpCommandIT {
         });
     }
 
+    @Test
+    void shouldRemovePreviousFilesOnOverwrite() throws IOException {
+        fs.write(dumpDir.resolve("foo.dump")).close();
+        fs.write(dumpDir.resolve("foo.dump.1")).close();
+        fs.write(dumpDir.resolve("foo.dump.2")).close();
+        execute("foo", dumpDir, "--overwrite-destination");
+        var outputCaptor = ArgumentCaptor.forClass(DumpOutput.class);
+        verify(dumper).dump(outputCaptor.capture(), any(), any());
+        assertThat(outputCaptor.getValue()).isInstanceOfSatisfying(FileOutput.class, output -> {
+            assertThat(output.path()).isEqualTo(archive);
+            assertThat(output.fs()).isInstanceOf(SchemeFileSystemAbstraction.class);
+        });
+        assertThat(fs.listFiles(dumpDir)).isEmpty();
+    }
+
     private void execute(String database) {
         execute(database, dumpDir);
     }

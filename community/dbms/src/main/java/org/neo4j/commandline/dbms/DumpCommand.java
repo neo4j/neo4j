@@ -51,11 +51,13 @@ import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.Dumper.DumpOutput;
 import org.neo4j.dbms.archive.Dumper.FileOutput;
+import org.neo4j.dbms.archive.Dumper.SplitFileOutput;
 import org.neo4j.dbms.archive.Dumper.StdoutOutput;
 import org.neo4j.dbms.archive.Manifest;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.filename.SequentialFileNameHelper;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.FileLockException;
@@ -290,19 +292,28 @@ public class DumpCommand extends AbstractAdminCommand {
         }
 
         final var archive = storagePath.resolve(databaseName + DUMP_EXTENSION).toAbsolutePath();
-        long splitSize = Dumper.SplitFileOutput.determineSplitArtifactSize(config, overrideArchiveSplitSize);
-
-        if (splitSize > 0) {
-            // TODO(split-backups): Do pruning of archives
-            // TODO(split-backups): Validate split size
-            return Dumper.SplitFileOutput.of(fs, archive, splitSize);
-        }
+        long splitSize = SplitFileOutput.determineSplitArtifactSize(config, overrideArchiveSplitSize);
 
         // Allow "overwriting" of existing dumps.
-        if (fs.fileExists(archive) && overwriteDestination) {
-            fs.delete(archive);
+        if (overwriteDestination) {
+            deleteArchive(fs, archive);
+        }
+
+        if (splitSize > 0) {
+            return SplitFileOutput.of(fs, archive, splitSize);
         }
         return FileOutput.of(fs, archive);
+    }
+
+    private void deleteArchive(FileSystemAbstraction fs, Path archive) throws IOException {
+        // Delete the archive and all potential split parts
+        SequentialFileNameHelper helper = new SequentialFileNameHelper(
+                archive.getParent(), archive.getFileName().toString());
+        Path[] files = helper.getFiles(fs);
+        for (Path file : files) {
+            fs.deleteFile(file);
+        }
+        fs.deleteFile(archive);
     }
 
     private void dump(
