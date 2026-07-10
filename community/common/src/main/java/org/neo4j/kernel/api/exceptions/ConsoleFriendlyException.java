@@ -23,8 +23,10 @@ import static java.lang.System.lineSeparator;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -139,7 +141,12 @@ public abstract class ConsoleFriendlyException extends RuntimeException {
         var displayCauseMessage = true;
         var message = super.getMessage();
         var sb = new StringBuilder();
+        Set<String> seenSupplementaryMessages = new HashSet<>();
         for (var msg : supplementaryMessages) {
+            if (!seenSupplementaryMessages.add(msg)) {
+                continue;
+            }
+
             if (Objects.equals(message, msg)) {
                 displayCauseMessage = false;
             }
