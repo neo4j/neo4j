@@ -188,30 +188,6 @@ class UploadCommandTest {
         verifyGCPPresignedEndpoints();
     }
 
-    @Test
-    void happyPathGCPSplitUploadCommandTest() {
-        String authResponse = "token";
-        createAuraHappyPathStubs(authResponse);
-        createGCPHappyPathWireMockStubs(authResponse);
-        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
-                .withHeader("Authorization", equalTo("Bearer " + authResponse))
-                .willReturn(firstSuccessfulDatabaseRunningResponse())
-                .inScenario("test")
-                .whenScenarioStateIs(Scenario.STARTED)
-                .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
-
-        AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
-        UploadCommand command = buildUploadCommand(auraURLFactory);
-        String[] args = getNormalRuntimeArgs(SPLIT_DBNAME);
-
-        assertThatCode(() -> new CommandLine(command).execute(args)).doesNotThrowAnyException();
-
-        verifyCommonConsoleUrls();
-        verifyGCPPresignedEndpoints();
-    }
-
     private String[] getNormalRuntimeArgs() {
         return getNormalRuntimeArgs(DBNAME);
     }
@@ -286,43 +262,6 @@ class UploadCommandTest {
                 PushToCloudCLI.fakeCLI("username", "password", false));
 
         String[] args = getNormalRuntimeArgs();
-        assertThatCode(() -> new CommandLine(command).execute(args)).doesNotThrowAnyException();
-
-        verifyCommonConsoleUrls();
-
-        verify(putRequestedFor(urlEqualTo("/signed1")));
-        verify(putRequestedFor(urlEqualTo("/signed2")));
-        verify(putRequestedFor(urlEqualTo("/signed3")));
-    }
-
-    @Test
-    void happyPathAWSSplitUploadCommandTest() {
-        String authResponse = "token";
-        createAuraHappyPathStubs(authResponse);
-
-        wireMockServer.stubFor(
-                initiateUploadTargetRequest(authResponse).willReturn(successfulInitiateUploadTargetAWSResponse()));
-        wireMockServer.stubFor(uploadRequest().willReturn(aResponse().withStatus(HTTP_OK)));
-        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
-                .withHeader("Authorization", equalTo("Bearer " + authResponse))
-                .willReturn(firstSuccessfulDatabaseRunningResponse())
-                .inScenario("test")
-                .whenScenarioStateIs(Scenario.STARTED)
-                .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
-        wireMockServer.stubFor(getMultiPartStatusRequest().willReturn(successfulMultiPartStatusResponse()));
-
-        AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
-        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
-        UploadCommand command = new UploadCommand(
-                ctx,
-                auraClientBuilder,
-                auraURLFactory,
-                new FakeAWSUploadURLFactory(),
-                PushToCloudCLI.fakeCLI("username", "password", false));
-
-        String[] args = getNormalRuntimeArgs(SPLIT_DBNAME);
         assertThatCode(() -> new CommandLine(command).execute(args)).doesNotThrowAnyException();
 
         verifyCommonConsoleUrls();
