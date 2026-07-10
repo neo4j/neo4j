@@ -60,7 +60,7 @@ public final class LogConfig {
     public static final String HTTP_LOG = "http.log";
 
     public static final String QUERY_LOG_JSON_TEMPLATE = "classpath:org/neo4j/logging/QueryLogJsonLayout.json";
-    public static final String PLAN_LOG_JSON_TEMPLATE = "classpath:org/neo4j/logging/QueryLogJsonLayout.json";
+    public static final String PLAN_LOG_JSON_TEMPLATE = "classpath:org/neo4j/logging/PlanLogJsonLayout.json";
     // Please note: These 2 files seem unused in the monorepo, but they're used in Aura.
     // Do not simply remove these files. The constants here remain as a reminder, even if they
     // are unused.
