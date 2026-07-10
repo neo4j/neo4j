@@ -304,7 +304,7 @@ object MatchChecks {
 
     def check: SemanticErrorCheck = (baseState, _) => {
       baseState.statement().folder.treeFold(Seq.empty[SemanticError]) {
-        case Search(bindingVariable, _, _, embedding, where, _) =>
+        case Search(bindingVariable, _, _, _, embedding, where, _, _, _) =>
           errors =>
             val newErrors = Seq.empty[SemanticError] ++
               Option.when(embedding.dependencies.contains(bindingVariable)) {

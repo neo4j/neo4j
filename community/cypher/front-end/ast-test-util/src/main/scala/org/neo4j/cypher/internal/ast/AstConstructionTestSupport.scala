@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.Search.SearchIndexType
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
@@ -1482,16 +1483,50 @@ trait AstConstructionTestSupport {
     patternForMatch(elements.map(e => PatternPart(e)): _*)
   }
 
-  def search(
+  def fulltextSearch(
+    resultVariable: String,
+    score: Option[String],
+    indexName: Expression,
+    embedding: Expression,
+    limitNbr: Long,
+    analyzer: Option[Expression] = None,
+    skipNbr: Option[Long] = None
+  ): Search =
+    search(resultVariable, score, Search.Fulltext, indexName, embedding, limitNbr, None, analyzer, skipNbr)
+
+  def vectorSearch(
     resultVariable: String,
     score: Option[String],
     indexName: Expression,
     embedding: Expression,
     limitNbr: Long,
     where: Option[Where] = None
+  ): Search =
+    search(resultVariable, score, Search.Vector, indexName, embedding, limitNbr, where)
+
+  def search(
+    resultVariable: String,
+    score: Option[String],
+    indexType: SearchIndexType,
+    indexName: Expression,
+    embedding: Expression,
+    limitNbr: Long,
+    where: Option[Where] = None,
+    analyzer: Option[Expression] = None,
+    skipNbr: Option[Long] = None
   ): Search = {
     val scoreVariable = if (score.isDefined) Some(varFor(score.get)) else None
-    Search(varFor(resultVariable), scoreVariable, indexName, embedding, where, limit(limitNbr))(pos)
+    Search(
+      varFor(resultVariable),
+      scoreVariable,
+      indexType,
+      indexName,
+      embedding,
+      where,
+      analyzer,
+      skipNbr.map(n => skip(n, pos)),
+      limit(limitNbr)
+    )(pos)
   }
 
   def with_(items: ReturnItem*): With =

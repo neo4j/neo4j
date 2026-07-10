@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryR
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticTypeCheck
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
+import org.neo4j.cypher.internal.notification.IdentifierShadowsVariableNotification
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
@@ -45,7 +46,7 @@ class SearchSemanticAnalysisTest extends CypherFunSuite with NameBasedSemanticAn
       SemanticTypeCheck
 
   private def semanticFeatures(complexPatternAllowed: Boolean): Seq[SemanticFeature] = {
-    Seq() ++ Option.when(complexPatternAllowed)(VectorSearchWithComplexPattern)
+    Seq(SemanticFeature.FulltextSearch) ++ Option.when(complexPatternAllowed)(VectorSearchWithComplexPattern)
   }
 
   private def runSearchWithRewriter(complexPatternAllowed: Boolean): AnalysisAssertions = {
@@ -1485,5 +1486,288 @@ class SearchSemanticAnalysisTest extends CypherFunSuite with NameBasedSemanticAn
         )
       )
     }
+
+    // ---------- Fulltext SEARCH ----------
+
+    // Valid: string-literal query
+    test(
+      s"""${maybeOptional}MATCH (movie: Movie)
+         |  SEARCH movie IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'green witch'
+         |    LIMIT 5
+         |  )
+         |RETURN movie.title AS title
+         |// complexPatternAllowed = $complexPatternAllowed
+         |""".stripMargin
+    ) {
+      runSearch(complexPatternAllowed).hasNoErrors
+    }
+
+    // Valid fulltext query expressions (string / string-typed property / parameter / null)
+    val validFulltextQueries = Seq("'green witch'", "m.plot", "$queryString", "null")
+    for { sq <- validFulltextQueries } yield {
+      test(
+        s"""${maybeOptional}MATCH (m: Movie {title: "Matrix, The"})
+           |MATCH (movie: Movie)
+           |  SEARCH movie IN (
+           |    FULLTEXT INDEX moviePlots
+           |    FOR $sq
+           |    LIMIT 5
+           |  )
+           |RETURN movie.title AS title
+           |// complexPatternAllowed = $complexPatternAllowed
+           |""".stripMargin
+      ) {
+        runSearch(complexPatternAllowed).hasNoErrors
+      }
+    }
+
+    // Valid: WITH ANALYZER (literal + parameter)
+    for { analyzer <- Seq("'english'", "$analyzer") } yield {
+      test(
+        s"""${maybeOptional}MATCH (movie: Movie)
+           |  SEARCH movie IN (
+           |    FULLTEXT INDEX moviePlots
+           |    FOR 'green witch' WITH ANALYZER $analyzer
+           |    LIMIT 5
+           |  )
+           |RETURN movie.title AS title
+           |// complexPatternAllowed = $complexPatternAllowed
+           |""".stripMargin
+      ) {
+        runSearch(complexPatternAllowed).hasNoErrors
+      }
+    }
+
+    // Valid: SKIP / OFFSET / SKIP 0
+    for { skipClause <- Seq("SKIP 2", "OFFSET 2", "SKIP 0") } yield {
+      test(
+        s"""${maybeOptional}MATCH (movie: Movie)
+           |  SEARCH movie IN (
+           |    FULLTEXT INDEX moviePlots
+           |    FOR 'matrix'
+           |    $skipClause
+           |    LIMIT 5
+           |  )
+           |RETURN movie.title AS title
+           |// complexPatternAllowed = $complexPatternAllowed
+           |""".stripMargin
+      ) {
+        runSearch(complexPatternAllowed).hasNoErrors
+      }
+    }
+
+    // R2: fulltext query must be STRING
+    val invalidFulltextQueries = Seq(
+      ("42", "Integer", "INTEGER", Some(2)),
+      ("[1, 2, 3]", "List<Integer>", "LIST<INTEGER>", None)
+    )
+    for { (sq, typeString, cypherTypeString, length) <- invalidFulltextQueries } yield {
+      test(
+        s"""${maybeOptional}MATCH (movie: Movie)
+           |  SEARCH movie IN (
+           |    FULLTEXT INDEX moviePlots
+           |    FOR $sq
+           |    LIMIT 5
+           |  )
+           |RETURN movie.title AS title
+           |// complexPatternAllowed = $complexPatternAllowed
+           |""".stripMargin
+      ) {
+        runSearch(complexPatternAllowed).hasErrors(
+          SemanticError(
+            GqlHelper.getGql42001_22NB1(
+              java.util.List.of("STRING"),
+              cypherTypeString,
+              79 + optionalLength,
+              4,
+              9
+            ),
+            s"Type mismatch: expected String but was $typeString",
+            if (length.isDefined) InputPosition.withLength(79 + optionalLength, 4, 9, length.get)
+            else p(79 + optionalLength, 4, 9)
+          )
+        )
+      }
+    }
+
+    // R3: WHERE is vector-only -> 42N14
+    test(
+      s"""${maybeOptional}MATCH (movie: Movie)
+         |  SEARCH movie IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'matrix'
+         |    WHERE movie.prop > 42
+         |    LIMIT 5
+         |  )
+         |RETURN movie.title AS title
+         |// complexPatternAllowed = $complexPatternAllowed
+         |""".stripMargin
+    ) {
+      runSearch(complexPatternAllowed).hasErrors(
+        SemanticError(
+          GqlHelper.getGql42001_42N14("WHERE", "FULLTEXT INDEX", 92 + optionalLength, 5, 5),
+          "WHERE cannot be used together with FULLTEXT INDEX.",
+          p(92 + optionalLength, 5, 5)
+        )
+      )
+    }
+
+    // R5: fulltext SKIP must be INTEGER NOT NULL in [0, 2147483647] -> 42N31
+    val invalidSkips: Seq[Any] = Seq(-1, "NULL", 2147483648L)
+    for { skipVal <- invalidSkips } yield {
+      test(
+        s"""${maybeOptional}MATCH (movie: Movie)
+           |  SEARCH movie IN (
+           |    FULLTEXT INDEX moviePlots
+           |    FOR 'matrix'
+           |    SKIP $skipVal
+           |    LIMIT 5
+           |  )
+           |RETURN movie.title AS title
+           |// complexPatternAllowed = $complexPatternAllowed
+           |""".stripMargin
+      ) {
+        runSearch(complexPatternAllowed).hasErrors(
+          SemanticError(
+            ErrorGqlStatusObjectImplementation
+              .from(GqlStatusInfoCodes.STATUS_42001)
+              .atPosition(97 + optionalLength, 5, 10)
+              .withCause(ErrorGqlStatusObjectImplementation
+                .from(GqlStatusInfoCodes.STATUS_42N31)
+                .withParam(GqlParams.StringParam.component, "SKIP")
+                .withParam(GqlParams.StringParam.valueType, "INTEGER NOT NULL")
+                .withParam(GqlParams.NumberParam.lower, 0)
+                .withParam(GqlParams.NumberParam.upper, 2147483647L)
+                .withParam(GqlParams.StringParam.value, skipVal.toString)
+                .atPosition(97 + optionalLength, 5, 10).build())
+              .build(),
+            s"Invalid input. '$skipVal' is not a valid value. Must be a non-negative integer smaller than or equal to 2147483647.",
+            InputPosition.withLength(97 + optionalLength, 5, 10, skipVal.toString.length)
+          )
+        )
+      }
+    }
+
+    // R7: fulltext WITH ANALYZER must be STRING
+    test(
+      s"""${maybeOptional}MATCH (movie: Movie)
+         |  SEARCH movie IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'matrix' WITH ANALYZER 42
+         |    LIMIT 5
+         |  )
+         |RETURN movie.title AS title
+         |// complexPatternAllowed = $complexPatternAllowed
+         |""".stripMargin
+    ) {
+      runSearch(complexPatternAllowed).hasErrors(
+        SemanticError(
+          GqlHelper.getGql42001_22NB1(java.util.List.of("STRING"), "INTEGER", 102 + optionalLength, 4, 32),
+          "Type mismatch: expected String but was Integer",
+          InputPosition.withLength(102 + optionalLength, 4, 32, 2)
+        )
+      )
+    }
+
+    // R6: WITH ANALYZER is fulltext-only -> 42N14 (error at analyzer expr position)
+    test(
+      s"""${maybeOptional}MATCH (movie: Movie)
+         |  SEARCH movie IN (
+         |    VECTOR INDEX moviePlots
+         |    FOR [1, 2, 3] WITH ANALYZER 'english'
+         |    LIMIT 5
+         |  )
+         |RETURN movie.title AS title
+         |// complexPatternAllowed = $complexPatternAllowed
+         |""".stripMargin
+    ) {
+      runSearch(complexPatternAllowed).hasErrors(
+        SemanticError(
+          GqlHelper.getGql42001_42N14("WITH ANALYZER", "VECTOR INDEX", 101 + optionalLength, 4, 33),
+          "WITH ANALYZER cannot be used together with VECTOR INDEX.",
+          InputPosition.withLength(101 + optionalLength, 4, 33, 9)
+        )
+      )
+    }
+
+    // R4: SKIP / OFFSET is fulltext-only -> 42N14 (error at SKIP/OFFSET keyword position)
+    for { skipKw <- Seq("SKIP", "OFFSET") } yield {
+      test(
+        s"""${maybeOptional}MATCH (movie: Movie)
+           |  SEARCH movie IN (
+           |    VECTOR INDEX moviePlots
+           |    FOR [1, 2, 3]
+           |    $skipKw 2
+           |    LIMIT 5
+           |  )
+           |RETURN movie.title AS title
+           |// complexPatternAllowed = $complexPatternAllowed
+           |""".stripMargin
+      ) {
+        runSearch(complexPatternAllowed).hasErrors(
+          SemanticError(
+            GqlHelper.getGql42001_42N14(skipKw, "VECTOR INDEX", 91 + optionalLength, 5, 5),
+            s"$skipKw cannot be used together with VECTOR INDEX.",
+            p(91 + optionalLength, 5, 5)
+          )
+        )
+      }
+    }
+  }
+
+  // Fulltext SEARCH is gated behind the FulltextSearch feature flag (default off).
+  // These run without semanticFeatures, i.e. with FulltextSearch disabled.
+
+  test(
+    """MATCH (movie: Movie)
+      |  SEARCH movie IN (
+      |    FULLTEXT INDEX moviePlots
+      |    FOR 'green witch'
+      |    LIMIT 5
+      |  )
+      |RETURN movie.title AS title
+      |""".stripMargin
+  ) {
+    runWith(disabledCypherVersions = Set(CypherVersion.Cypher5)).hasErrors(
+      SemanticError(
+        GqlHelper.getGql42001_51N26("The `FULLTEXT SEARCH` clause", "the `FULLTEXT SEARCH` clause", 23, 2, 3),
+        "The `FULLTEXT SEARCH` clause is not supported.",
+        p(23, 2, 3)
+      )
+    )
+  }
+
+  test(
+    """MATCH (movie: Movie)
+      |  SEARCH movie IN (
+      |    VECTOR INDEX moviePlots
+      |    FOR [1, 2, 3]
+      |    LIMIT 5
+      |  )
+      |RETURN movie.title AS title
+      |// vector search is ungated
+      |""".stripMargin
+  ) {
+    runWith(disabledCypherVersions = Set(CypherVersion.Cypher5)).hasNoErrors
+  }
+
+  // The index name shadows a variable in scope -> index-type-aware notification
+
+  test(
+    """WITH 'x' AS moviePlots
+      |MATCH (movie: Movie)
+      |  SEARCH movie IN (
+      |    FULLTEXT INDEX moviePlots
+      |    FOR 'green witch'
+      |    LIMIT 5
+      |  )
+      |RETURN movie.title AS title
+      |""".stripMargin
+  ) {
+    runWith(disabledCypherVersions = Set(CypherVersion.Cypher5), SemanticFeature.FulltextSearch).hasNotifications(
+      IdentifierShadowsVariableNotification(InputPosition.withLength(83, 4, 20, 10), "moviePlots", "FULLTEXT INDEX")
+    )
   }
 }

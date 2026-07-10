@@ -300,6 +300,65 @@ class PrettifierIT extends AbstractPrettifierTest {
         |  ) SCORE AS s
         |  WHERE s > 0.9""".stripMargin
     ),
+    FailsInCypher5(
+      "MATCH (n) search n IN (fULLtEXt InDEX iDx For 'query' LIMiT 2)",
+      """MATCH (n)
+        |  SEARCH n IN (
+        |    FULLTEXT INDEX iDx
+        |    FOR "query"
+        |    LIMIT 2
+        |  )""".stripMargin
+    ),
+    FailsInCypher5(
+      "MATCH (n) SEARCH n IN (FULLTEXT INDEX idx FOR 'green witch' wITh aNaLYzeR 'english' LIMIT 3)",
+      """MATCH (n)
+        |  SEARCH n IN (
+        |    FULLTEXT INDEX idx
+        |    FOR "green witch" WITH ANALYZER "english"
+        |    LIMIT 3
+        |  )""".stripMargin
+    ),
+    FailsInCypher5(
+      "MATCH (n) SEARCH n IN (FULLTEXT INDEX moviePlots FOR 'matrix' sKiP 2 LIMIT 5)",
+      """MATCH (n)
+        |  SEARCH n IN (
+        |    FULLTEXT INDEX moviePlots
+        |    FOR "matrix"
+        |    SKIP 2
+        |    LIMIT 5
+        |  )""".stripMargin
+    ),
+    FailsInCypher5(
+      "MATCH (n) SEARCH n IN (FULLTEXT INDEX moviePlots FOR 'matrix' OFFSET 2 LIMIT 5)",
+      """MATCH (n)
+        |  SEARCH n IN (
+        |    FULLTEXT INDEX moviePlots
+        |    FOR "matrix"
+        |    OFFSET 2
+        |    LIMIT 5
+        |  )""".stripMargin
+    ),
+    FailsInCypher5(
+      "MATCH ()-[r]->() SEARCH r in (fULLtExt InDEX `iD x` For $queryString wITh aNALYZER $analyzer sKiP 1 LIMiT 2) SCORE AS `sCore `",
+      """MATCH ()-[r]->()
+        |  SEARCH r IN (
+        |    FULLTEXT INDEX `iD x`
+        |    FOR $queryString WITH ANALYZER $analyzer
+        |    SKIP 1
+        |    LIMIT 2
+        |  ) SCORE AS `sCore `""".stripMargin
+    ),
+    FailsInCypher5(
+      "MATCH (n) SEARCH n IN (FULLTEXT INDEX $index FOR 'text' WITH ANALYZER 'standard' OFFSET 0 LIMIT 5) SCORE AS score WHERE score > 0.8",
+      """MATCH (n)
+        |  SEARCH n IN (
+        |    FULLTEXT INDEX $index
+        |    FOR "text" WITH ANALYZER "standard"
+        |    OFFSET 0
+        |    LIMIT 5
+        |  ) SCORE AS score
+        |  WHERE score > 0.8""".stripMargin
+    ),
     "MATCH (n:N WHERE n.prop > 0)" -> "MATCH (n:N WHERE n.prop > 0)",
     "MATCH (n:N {foo: 5} WHERE n.prop > 0)" -> "MATCH (n:N {foo: 5} WHERE n.prop > 0)",
     "match (n  : $( 'a' + 'b'):$( c))" -> "MATCH (n:$all(\"a\" + \"b\"):$all(c))",

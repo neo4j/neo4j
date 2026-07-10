@@ -180,15 +180,19 @@ whereClause
    ;
 
 searchClause
-   : SEARCH variable IN LPAREN indexSpecificationClause forClause whereClause? limit RPAREN scoreClause?
+   : SEARCH variable IN LPAREN (FULLTEXT | VECTOR) indexSpecificationClause forClause analyzerClause? whereClause? skip? limit RPAREN scoreClause?
    ;
 
 indexSpecificationClause
-   : VECTOR INDEX commandNameExpression
+   : INDEX commandNameExpression
    ;
 
 forClause
    : FOR expression
+   ;
+
+analyzerClause
+   : WITH ANALYZER expression
    ;
 
 scoreClause
@@ -2243,6 +2247,7 @@ unescapedSymbolicNameString_
    | ALL
    | ALLREDUCE
    | ALTER
+   | ANALYZER
    | AND
    | ANY
    | ARRAY

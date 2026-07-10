@@ -1287,15 +1287,18 @@ case class Prettifier(
 
     def asString(s: Search): String = {
 
+      val indexType = s.indexType.name
       val indexName = Prettifier.escapeName(s.indexName)
 
       val maybeScore = if (s.score.isDefined) s" SCORE AS ${Prettifier.escapeName(s.score.get)}" else ""
 
       val maybeWhere = s.where.map(w => s"$INDENT${asString(w)}").map(asNewLine).getOrElse("")
+      val maybeAnalyzer = s.analyzer.map(a => s" WITH ANALYZER ${expr(a)}").getOrElse("")
+      val maybeSkip = s.skip.map(sk => s"$INDENT${asString(sk)}").map(asNewLine).getOrElse("")
 
       s"""${INDENT}SEARCH ${backtickEmpty(s.bindingVariable.name)} IN (
-         |$INDENT${INDENT}VECTOR INDEX $indexName
-         |$INDENT${INDENT}FOR ${expr(s.embedding, shouldBacktickEmpty = true)}$maybeWhere
+         |$INDENT$INDENT$indexType $indexName
+         |$INDENT${INDENT}FOR ${expr(s.embedding, shouldBacktickEmpty = true)}$maybeAnalyzer$maybeWhere$maybeSkip
          |$INDENT${INDENT}LIMIT ${expr(s.limit.expression, shouldBacktickEmpty = true)}
          |$INDENT)$maybeScore""".stripMargin
     }

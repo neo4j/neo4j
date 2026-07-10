@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.DisableTypeChecki
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.EnableParsingOfObfuscatedLiterals
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.EnableWorkingScopeNamespacer
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExperimentalCypherVersions
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.FulltextSearch
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.GraphTypes
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.GroupByClause
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LocalCallables
@@ -153,6 +154,7 @@ object FrontEndCompilationPhases extends FrontEndCompilationPhases {
       GraphDatabaseInternalSettings.relationship_property_value_access_rules -> RelationshipPropertyValueAccessRules.productPrefix,
       GraphDatabaseInternalSettings.cypher_uuid_type_enabled -> UUIDType.productPrefix,
       GraphDatabaseInternalSettings.cypher_group_by_clause_enabled -> GroupByClause.productPrefix,
+      GraphDatabaseInternalSettings.cypher_fulltext_search_enabled -> FulltextSearch.productPrefix,
       GraphDatabaseInternalSettings.cypher_enable_local_callables -> LocalCallables.productPrefix,
       GraphDatabaseInternalSettings.cypher_enable_scope_queries -> ScopeQueries.productPrefix,
       GraphDatabaseInternalSettings.cypher_enable_working_scope_namespacer -> EnableWorkingScopeNamespacer.productPrefix,

@@ -146,6 +146,7 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.inputText
 import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChildType
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v25.Cypher25Parser
 import org.neo4j.cypher.internal.parser.v25.Cypher25ParserListener
@@ -401,6 +402,10 @@ trait StatementBuilder extends Cypher25ParserListener {
 
   final override def exitSearchClause(ctx: Cypher25Parser.SearchClauseContext): Unit = {
 
+    val indexType = nodeChildType(ctx, 4) match {
+      case Cypher25Parser.FULLTEXT => Search.Fulltext
+      case Cypher25Parser.VECTOR   => Search.Vector
+    }
     val indexName = ctx.indexSpecificationClause().ast[Expression]
     val maybeScoreClause = ctx.scoreClause()
     val maybeScore = if (maybeScoreClause == null) None else Some(maybeScoreClause.variable().ast())
@@ -411,9 +416,12 @@ trait StatementBuilder extends Cypher25ParserListener {
     ctx.ast = Search(
       ctx.variable.ast(),
       maybeScore,
+      indexType,
       indexName,
       ctx.forClause().ast(),
       maybeWhere,
+      astOpt(ctx.analyzerClause()),
+      astOpt(ctx.skip()),
       ctx.limit().ast()
     )(pos(ctx))
   }
@@ -423,6 +431,10 @@ trait StatementBuilder extends Cypher25ParserListener {
   }
 
   final override def exitForClause(ctx: Cypher25Parser.ForClauseContext): Unit = {
+    ctx.ast = ctx.expression().ast()
+  }
+
+  final override def exitAnalyzerClause(ctx: Cypher25Parser.AnalyzerClauseContext): Unit = {
     ctx.ast = ctx.expression().ast()
   }
 

@@ -1992,6 +1992,21 @@ object SemanticError {
     )
   }
 
+  def fulltextSearchNotSupported(position: InputPosition): SemanticError = {
+    val gql = GqlHelper.getGql42001_51N26(
+      "The `FULLTEXT SEARCH` clause",
+      "the `FULLTEXT SEARCH` clause",
+      position.offset,
+      position.line,
+      position.column
+    )
+    SemanticError(
+      gql,
+      "The `FULLTEXT SEARCH` clause is not supported.",
+      position
+    )
+  }
+
   def unsupportedPathModeWithVarLength(
     varLengthRel: String,
     pathMode: String,
@@ -2454,10 +2469,10 @@ object SemanticError {
     )
   }
 
-  def invalidIndexParameter(position: InputPosition): SemanticError = {
+  def invalidIndexParameter(indexName: String, position: InputPosition): SemanticError = {
     SemanticError(
-      GqlHelper.getGql42001_42I04("Parameter", "VECTOR INDEX", position.offset, position.line, position.column),
-      "Parameter cannot be used in a VECTOR INDEX clause.",
+      GqlHelper.getGql42001_42I04("Parameter", indexName, position.offset, position.line, position.column),
+      s"Parameter cannot be used in a $indexName clause.",
       position
     )
   }

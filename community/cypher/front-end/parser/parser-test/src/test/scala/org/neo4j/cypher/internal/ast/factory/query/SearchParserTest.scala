@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Search
+import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.test.util.Parsers
@@ -118,7 +119,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
+          search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
         ),
         searchPos
       )
@@ -137,7 +138,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, None, literalString("moviePlots"), prop("movie", "vector"), 3L))
+          search = Some(vectorSearch(variable, None, literalString("moviePlots"), prop("movie", "vector"), 3L))
         ),
         searchPos
       )
@@ -157,7 +158,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -184,7 +185,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -211,7 +212,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -238,7 +239,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -265,7 +266,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -292,7 +293,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -322,7 +323,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -352,7 +353,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -381,7 +382,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, Some(variable), literalString(variable), prop(variable, variable), 5L))
+          search = Some(vectorSearch(variable, Some(variable), literalString(variable), prop(variable, variable), 5L))
         ),
         searchPos
       )
@@ -400,7 +401,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, Some("score"), literalString("null"), prop("m", "embedding"), 5L))
+          search = Some(vectorSearch(variable, Some("score"), literalString("null"), prop("m", "embedding"), 5L))
         ),
         searchPos
       )
@@ -420,7 +421,7 @@ class SearchParserTest extends AstParsingTestBase {
         match_(
           patternAst,
           search =
-            Some(search(
+            Some(vectorSearch(
               variable,
               Some("score"),
               parameter("param", CTString),
@@ -445,7 +446,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -470,7 +471,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, Some("score"), literalString("indexName"), listOfInt(1, 5, 42, 37), 5L))
+          search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), listOfInt(1, 5, 42, 37), 5L))
         ),
         searchPos
       )
@@ -489,7 +490,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, Some("score"), literalString("indexName"), listOfFloat(1.5), 5L))
+          search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), listOfFloat(1.5), 5L))
         ),
         searchPos
       )
@@ -508,7 +509,8 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, Some("score"), literalString("indexName"), parameter("vector", CTAny), 5L))
+          search =
+            Some(vectorSearch(variable, Some("score"), literalString("indexName"), parameter("vector", CTAny), 5L))
         ),
         searchPos
       )
@@ -527,7 +529,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, Some("score"), literalString("indexName"), nullLiteral, 5L))
+          search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), nullLiteral, 5L))
         ),
         searchPos
       )
@@ -546,7 +548,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         optionalMatch(
           patternAst,
-          search = Some(search(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
+          search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
         ),
         InputPosition(searchPos.offset + 9, 2, 3)
       )
@@ -565,7 +567,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 0L))
+          search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 0L))
         ),
         searchPos
       )
@@ -584,7 +586,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), -1L))
+          search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), -1L))
         ),
         searchPos
       )
@@ -606,8 +608,11 @@ class SearchParserTest extends AstParsingTestBase {
           search = Some(Search(
             varFor(variable),
             Some(varFor("score")),
+            Search.Vector,
             literalString("indexName"),
             prop("m", "embedding"),
+            None,
+            None,
             None,
             Limit(nullLiteral)(pos)
           )(pos))
@@ -629,7 +634,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search("x", Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
+          search = Some(vectorSearch("x", Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
         ),
         searchPos
       )
@@ -648,7 +653,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search("NULL", Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
+          search = Some(vectorSearch("NULL", Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
         ),
         searchPos
       )
@@ -667,7 +672,7 @@ class SearchParserTest extends AstParsingTestBase {
       parsesValidSearch[Clause](
         match_(
           patternAst,
-          search = Some(search(variable, Some("null"), literalString("indexName"), prop("m", "embedding"), 5L))
+          search = Some(vectorSearch(variable, Some("null"), literalString("indexName"), prop("m", "embedding"), 5L))
         ),
         searchPos
       )
@@ -688,7 +693,7 @@ class SearchParserTest extends AstParsingTestBase {
         match_(
           patternAst,
           where = Some(where(propGreaterThan(variable, "released", 2000))),
-          search = Some(search(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
+          search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
         ),
         InputPosition(searchPos.offset + 26, 3, searchPos.column)
       )
@@ -710,7 +715,7 @@ class SearchParserTest extends AstParsingTestBase {
         match_(
           patternAst,
           where = Some(where(propGreaterThan(variable, "released", 2000))),
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -738,7 +743,7 @@ class SearchParserTest extends AstParsingTestBase {
         match_(
           patternAst,
           where = Some(where(propGreaterThan(variable, "released", 2000))),
-          search = Some(search(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
+          search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
         ),
         searchPos
       )
@@ -760,7 +765,7 @@ class SearchParserTest extends AstParsingTestBase {
         match_(
           patternAst,
           where = Some(where(propGreaterThan(variable, "released", 2000))),
-          search = Some(search(
+          search = Some(vectorSearch(
             variable,
             Some("score"),
             literalString("indexName"),
@@ -793,7 +798,7 @@ class SearchParserTest extends AstParsingTestBase {
         singleQuery(
           match_(
             patternAst,
-            search = Some(search(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
+            search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
           )
         )
       )(InputPosition(16, 2, 7), None, None)
@@ -824,7 +829,7 @@ class SearchParserTest extends AstParsingTestBase {
         singleQuery(
           match_(
             patternAst,
-            search = Some(search(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
+            search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
           )
         )
       )(InputPosition(16, 2, 7), None, None)
@@ -856,7 +861,7 @@ class SearchParserTest extends AstParsingTestBase {
         singleQuery(
           match_(
             patternAst,
-            search = Some(search(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
+            search = Some(vectorSearch(variable, Some("score"), literalString("indexName"), prop("m", "embedding"), 5L))
           ),
           return_(variableReturnItem(variable))
         )
@@ -972,6 +977,355 @@ class SearchParserTest extends AstParsingTestBase {
         InputPosition(searchPos.offset + 84, 6, 11)
       )
     }
+
+    // ---------- Fulltext SEARCH ----------
+
+    // Fulltext with score
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'green witch'
+         |    LIMIT 5
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(
+            fulltextSearch(variable, Some("score"), literalString("moviePlots"), literalString("green witch"), 5L)
+          )
+        ),
+        searchPos
+      )
+    }
+
+    // Fulltext without score
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR m.plot
+         |    LIMIT 3
+         |  )
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(fulltextSearch(variable, None, literalString("moviePlots"), prop("m", "plot"), 3L))
+        ),
+        searchPos
+      )
+    }
+
+    // Fulltext with WITH ANALYZER
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'such as heaven' WITH ANALYZER 'english'
+         |    LIMIT 3
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(fulltextSearch(
+            variable,
+            Some("score"),
+            literalString("moviePlots"),
+            literalString("such as heaven"),
+            3L,
+            analyzer = Some(literalString("english"))
+          ))
+        ),
+        searchPos
+      )
+    }
+
+    // Fulltext with WITH ANALYZER as parameter
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'such as heaven' WITH ANALYZER $$analyzer
+         |    LIMIT 3
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(fulltextSearch(
+            variable,
+            Some("score"),
+            literalString("moviePlots"),
+            literalString("such as heaven"),
+            3L,
+            analyzer = Some(parameter("analyzer", CTAny))
+          ))
+        ),
+        searchPos
+      )
+    }
+
+    // Fulltext with SKIP
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'matrix'
+         |    SKIP 2
+         |    LIMIT 5
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(fulltextSearch(
+            variable,
+            Some("score"),
+            literalString("moviePlots"),
+            literalString("matrix"),
+            5L,
+            skipNbr = Some(2L)
+          ))
+        ),
+        searchPos
+      )
+    }
+
+    // Fulltext with OFFSET
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'matrix'
+         |    OFFSET 2
+         |    LIMIT 5
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(Search(
+            varFor(variable),
+            Some(varFor("score")),
+            Search.Fulltext,
+            literalString("moviePlots"),
+            literalString("matrix"),
+            None,
+            None,
+            Some(offset(2L)),
+            limit(5L)
+          )(pos))
+        ),
+        searchPos
+      )
+    }
+
+    // Fulltext with SKIP 0, parameter embedding and WITH ANALYZER combined
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR $$queryString WITH ANALYZER 'english'
+         |    SKIP 0
+         |    LIMIT 5
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(fulltextSearch(
+            variable,
+            Some("score"),
+            literalString("moviePlots"),
+            parameter("queryString", CTAny),
+            5L,
+            analyzer = Some(literalString("english")),
+            skipNbr = Some(0L)
+          ))
+        ),
+        searchPos
+      )
+    }
+
+    // Fulltext with WHERE - will fail in semantic checking
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'matrix'
+         |    WHERE $variable.prop > 42
+         |    LIMIT 5
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(search(
+            variable,
+            Some("score"),
+            Search.Fulltext,
+            literalString("moviePlots"),
+            literalString("matrix"),
+            5L,
+            where = Some(where(greaterThan(prop(variable, "prop"), literalInt(42L))))
+          ))
+        ),
+        searchPos
+      )
+    }
+
+    // Fulltext with negative SKIP - this should parse but will fail in semantic checking
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'matrix'
+         |    SKIP -1
+         |    LIMIT 5
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(fulltextSearch(
+            variable,
+            Some("score"),
+            literalString("moviePlots"),
+            literalString("matrix"),
+            5L,
+            skipNbr = Some(-1L)
+          ))
+        ),
+        searchPos
+      )
+    }
+
+    // Fulltext with null SKIP - this should parse but will fail in semantic checking
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'matrix'
+         |    SKIP null
+         |    LIMIT 5
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(Search(
+            varFor(variable),
+            Some(varFor("score")),
+            Search.Fulltext,
+            literalString("moviePlots"),
+            literalString("matrix"),
+            None,
+            None,
+            Some(Skip(nullLiteral)(pos)),
+            limit(5L)
+          )(pos))
+        ),
+        searchPos
+      )
+    }
+
+    // Vector with WITH ANALYZER - this should parse but will fail in semantic checking
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    VECTOR INDEX indexName
+         |    FOR m.embedding WITH ANALYZER 'english'
+         |    LIMIT 5
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(search(
+            variable,
+            Some("score"),
+            Search.Vector,
+            literalString("indexName"),
+            prop("m", "embedding"),
+            5L,
+            analyzer = Some(literalString("english"))
+          ))
+        ),
+        searchPos
+      )
+    }
+
+    // Vector with SKIP - this should parse but will fail in semantic checking
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    VECTOR INDEX indexName
+         |    FOR m.embedding
+         |    SKIP 2
+         |    LIMIT 5
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(search(
+            variable,
+            Some("score"),
+            Search.Vector,
+            literalString("indexName"),
+            prop("m", "embedding"),
+            5L,
+            skipNbr = Some(2L)
+          ))
+        ),
+        searchPos
+      )
+    }
+
+    // Vector with OFFSET - this should parse but will fail in semantic checking
+    test(
+      s"""MATCH $pattern
+         |  SEARCH $variable IN (
+         |    VECTOR INDEX indexName
+         |    FOR m.embedding
+         |    OFFSET 2
+         |    LIMIT 5
+         |  ) SCORE AS score
+         |""".stripMargin
+    ) {
+      parsesValidSearch[Clause](
+        match_(
+          patternAst,
+          search = Some(Search(
+            varFor(variable),
+            Some(varFor("score")),
+            Search.Vector,
+            literalString("indexName"),
+            prop("m", "embedding"),
+            None,
+            None,
+            Some(offset(2L)),
+            limit(5L)
+          )(pos))
+        ),
+        searchPos
+      )
+    }
   }
 
   // With label and property predicates on the MATCH node
@@ -987,7 +1341,7 @@ class SearchParserTest extends AstParsingTestBase {
     parsesValidSearch[Clause](
       match_(
         nodePat(Some("n"), Some(labelLeaf("Movie")), Some(mapOf("title" -> literalString("Matrix, The")))),
-        search = Some(search("n", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L))
+        search = Some(vectorSearch("n", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L))
       ),
       InputPosition(41, 2, 3)
     )
@@ -1010,7 +1364,7 @@ class SearchParserTest extends AstParsingTestBase {
           relPat(Some("r"), Some(labelRelTypeLeaf("REL")), properties = Some(mapOf("prop" -> literalInt(42)))),
           nodePat()
         ),
-        search = Some(search("r", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L))
+        search = Some(vectorSearch("r", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L))
       ),
       InputPosition(34, 2, 3)
     )
@@ -1033,7 +1387,7 @@ class SearchParserTest extends AstParsingTestBase {
           relPat(Some("r")),
           nodePat()
         ),
-        search = Some(search("r", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L))
+        search = Some(vectorSearch("r", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L))
       ),
       InputPosition(20, 2, 3)
     )
@@ -1056,7 +1410,7 @@ class SearchParserTest extends AstParsingTestBase {
           relPat(),
           nodePat(None, Some(labelLeaf("Actor")))
         ),
-        search = Some(search("n", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L))
+        search = Some(vectorSearch("n", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L))
       ),
       InputPosition(23, 2, 3)
     )
@@ -1087,7 +1441,7 @@ class SearchParserTest extends AstParsingTestBase {
           )
         ))(pos),
         where = None,
-        search = Some(search("n", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L)),
+        search = Some(vectorSearch("n", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L)),
         hints = Seq.empty
       )(pos),
       InputPosition(50, 2, 3)

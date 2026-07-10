@@ -349,7 +349,7 @@ class CollectSyntaxUsageMetricsTest extends CypherFunSuite with CypherVersionTes
     stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NEXT_STATEMENT) should be(1)
   }
 
-  testVersionsExcept5("should find SEARCH clause without filters") { version =>
+  testVersionsExcept5("should find vector SEARCH clause without filters") { version =>
     val stats = runPipeline(
       version,
       """
@@ -363,11 +363,14 @@ class CollectSyntaxUsageMetricsTest extends CypherFunSuite with CypherVersionTes
         |RETURN movie.title AS title
         |""".stripMargin
     )
-    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.SEARCH_WITHOUT_FILTERS) should be(1)
-    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.SEARCH_WITH_FILTERS) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.SEARCH) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.VECTOR_SEARCH_WITHOUT_FILTERS) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.VECTOR_SEARCH_WITH_FILTERS) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.FULLTEXT_SEARCH_WITHOUT_ANALYZER) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.FULLTEXT_SEARCH_WITH_ANALYZER) should be(0)
   }
 
-  testVersionsExcept5("should find SEARCH clause with filters") { version =>
+  testVersionsExcept5("should find vector SEARCH clause with filters") { version =>
     val stats = runPipeline(
       version,
       """
@@ -382,8 +385,51 @@ class CollectSyntaxUsageMetricsTest extends CypherFunSuite with CypherVersionTes
         |RETURN movie.title AS title
         |""".stripMargin
     )
-    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.SEARCH_WITHOUT_FILTERS) should be(0)
-    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.SEARCH_WITH_FILTERS) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.SEARCH) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.VECTOR_SEARCH_WITHOUT_FILTERS) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.VECTOR_SEARCH_WITH_FILTERS) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.FULLTEXT_SEARCH_WITHOUT_ANALYZER) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.FULLTEXT_SEARCH_WITH_ANALYZER) should be(0)
+  }
+
+  testVersionsExcept5("should find fulltext SEARCH clause without analyzer") { version =>
+    val stats = runPipeline(
+      version,
+      """
+        |MATCH (movie)
+        |  SEARCH movie IN (
+        |    FULLTEXT INDEX idx
+        |    FOR 'green witch'
+        |    LIMIT 5
+        |  )
+        |RETURN movie.title AS title
+        |""".stripMargin
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.SEARCH) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.FULLTEXT_SEARCH_WITHOUT_ANALYZER) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.FULLTEXT_SEARCH_WITH_ANALYZER) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.VECTOR_SEARCH_WITHOUT_FILTERS) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.VECTOR_SEARCH_WITH_FILTERS) should be(0)
+  }
+
+  testVersionsExcept5("should find fulltext SEARCH clause with analyzer") { version =>
+    val stats = runPipeline(
+      version,
+      """
+        |MATCH (movie)
+        |  SEARCH movie IN (
+        |    FULLTEXT INDEX idx
+        |    FOR 'green witch' WITH ANALYZER 'english'
+        |    LIMIT 5
+        |  )
+        |RETURN movie.title AS title
+        |""".stripMargin
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.SEARCH) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.FULLTEXT_SEARCH_WITHOUT_ANALYZER) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.FULLTEXT_SEARCH_WITH_ANALYZER) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.VECTOR_SEARCH_WITHOUT_FILTERS) should be(0)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.VECTOR_SEARCH_WITH_FILTERS) should be(0)
   }
 
   testVersions("should find LOAD CSV") { version =>

@@ -82,6 +82,7 @@ class Cypher25VocabularyTest extends CypherFunSuite {
     Cypher25Parser.ALL -> "'ALL'",
     Cypher25Parser.ALLREDUCE -> "'allReduce'",
     Cypher25Parser.ALTER -> "'ALTER'",
+    Cypher25Parser.ANALYZER -> "'ANALYZER'",
     Cypher25Parser.AND -> "'AND'",
     Cypher25Parser.ANY -> "'ANY'",
     Cypher25Parser.ARRAY -> "'ARRAY'",

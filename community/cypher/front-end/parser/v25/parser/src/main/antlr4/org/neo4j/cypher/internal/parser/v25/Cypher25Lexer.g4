@@ -147,6 +147,10 @@ ALTER
    : A L T E R
    ;
 
+ANALYZER
+   : A N A L Y Z E R
+   ;
+
 AND
    : A N D
    ;

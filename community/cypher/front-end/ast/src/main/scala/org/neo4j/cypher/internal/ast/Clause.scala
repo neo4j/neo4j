@@ -1461,8 +1461,8 @@ case class Match(
     }
 
     val maybeScoreVariable = search match {
-      case Some(Search(_, Some(score), _, _, _, _)) => Set(score)
-      case _                                        => Set.empty
+      case Some(Search(_, Some(score), _, _, _, _, _, _, _)) => Set(score)
+      case _                                                 => Set.empty
     }
 
     patternVariables ++ maybeScoreVariable

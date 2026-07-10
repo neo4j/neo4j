@@ -140,10 +140,14 @@ case object CollectSyntaxUsageMetrics
         increaseMetric(SyntaxUsageMetricKey.CONDITIONAL_QUERY)
       case _: NextStatement =>
         increaseMetric(SyntaxUsageMetricKey.NEXT_STATEMENT)
-      case Search(_, _, _, _, None, _) =>
-        increaseMetric(SyntaxUsageMetricKey.SEARCH_WITHOUT_FILTERS)
-      case Search(_, _, _, _, Some(_), _) =>
-        increaseMetric(SyntaxUsageMetricKey.SEARCH_WITH_FILTERS)
+      case s: Search =>
+        increaseMetric(SyntaxUsageMetricKey.SEARCH)
+        (s.indexType, s.where, s.analyzer) match {
+          case (Search.Vector, None, _)      => increaseMetric(SyntaxUsageMetricKey.VECTOR_SEARCH_WITHOUT_FILTERS)
+          case (Search.Vector, Some(_), _)   => increaseMetric(SyntaxUsageMetricKey.VECTOR_SEARCH_WITH_FILTERS)
+          case (Search.Fulltext, _, None)    => increaseMetric(SyntaxUsageMetricKey.FULLTEXT_SEARCH_WITHOUT_ANALYZER)
+          case (Search.Fulltext, _, Some(_)) => increaseMetric(SyntaxUsageMetricKey.FULLTEXT_SEARCH_WITH_ANALYZER)
+        }
       case _: AlterCurrentGraphType =>
         increaseMetric(SyntaxUsageMetricKey.ALTER_CURRENT_GRAPH_TYPE)
       case _: ShowCurrentGraphTypeClause =>

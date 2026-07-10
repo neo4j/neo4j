@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.Search.SearchIndexType
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.*
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -62,25 +63,72 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.cypher.internal.util.symbols.CTVector
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
+
+object Search {
+
+  sealed trait SearchIndexType {
+    def name: String
+    def expectedEmbeddingType: TypeSpec
+
+    def requireVectorIndex(clause: String, pos: InputPosition): SemanticCheck
+    def requireFulltextIndex(clause: String, pos: InputPosition): SemanticCheck
+  }
+
+  case object Vector extends SearchIndexType {
+    override val name = "VECTOR INDEX"
+    override val expectedEmbeddingType: TypeSpec = CTVector.union(CTList(CTNumber).covariant)
+
+    override def requireVectorIndex(clause: String, pos: InputPosition): SemanticCheck = SemanticCheck.success
+
+    override def requireFulltextIndex(clause: String, pos: InputPosition): SemanticCheck =
+      SemanticCheck.error(SemanticError.invalidClauseCombination(clause, name, pos))
+  }
+
+  case object Fulltext extends SearchIndexType {
+    override val name = "FULLTEXT INDEX"
+    override val expectedEmbeddingType: TypeSpec = CTString
+
+    override def requireVectorIndex(clause: String, pos: InputPosition): SemanticCheck =
+      SemanticCheck.error(SemanticError.invalidClauseCombination(clause, name, pos))
+
+    override def requireFulltextIndex(clause: String, pos: InputPosition): SemanticCheck = SemanticCheck.success
+  }
+
+}
 
 case class Search(
   bindingVariable: LogicalVariable,
   score: Option[LogicalVariable],
+  indexType: SearchIndexType,
   indexName: Expression,
   embedding: Expression,
   where: Option[Where],
+  analyzer: Option[Expression],
+  skip: Option[Skip],
   limit: Limit
 )(val position: InputPosition)
     extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
 
   def semanticCheck: SemanticCheck = {
-    checkBindingVariable() chain
+    checkFulltextEnabled() chain
+      checkBindingVariable() chain
       checkScore() chain
       checkIndexName() chain
       checkEmbedding() chain
       checkLimit() chain
-      checkWhere()
+      checkWhere() chain
+      checkSkip() chain
+      checkAnalyzer()
+
+  }
+
+  private def checkFulltextEnabled(): SemanticCheck = SemanticCheck.fromState { state =>
+    if (indexType != Search.Fulltext || state.features.contains(SemanticFeature.FulltextSearch))
+      SemanticCheck.success
+    else
+      SemanticCheck.error(SemanticError.fulltextSearchNotSupported(position))
   }
 
   private def checkIndexName(): SemanticCheck = {
@@ -90,7 +138,7 @@ case class Search(
       case parameter: Parameter if parameter.parameterType == CTString =>
         // This is a restriction for the MVP which we intend to lift later
         // TODO: Once SEARCH can handle parameters, re-enable the auto-parametrization of the Search clause
-        SemanticError.invalidIndexParameter(parameter.position)
+        SemanticError.invalidIndexParameter(indexType.name, parameter.position)
       case exp =>
         // We only parse the index name as an identifier (saved as StringLiteral) or string Parameter
         // This is the same exception as for create index for this case
@@ -115,14 +163,21 @@ case class Search(
           Right(s.addNotification(IdentifierShadowsVariableNotification(
             position,
             name,
-            "VECTOR INDEX"
+            indexType.name
           )))
       }
   }
 
   private def checkEmbedding(): SemanticCheck = {
     SemanticExpressionCheck.simple(embedding) chain
-      expectType(CTVector.union(CTList(CTNumber).covariant), embedding)
+      expectType(indexType.expectedEmbeddingType, embedding)
+  }
+
+  private def checkSkip(): SemanticCheck = {
+    skip.foldSemanticCheck(s =>
+      indexType.requireFulltextIndex(s.name, s.position) chain
+        s.semanticCheckWithUpperBound(Int.MaxValue)
+    )
   }
 
   private def checkLimit(): SemanticCheck = limit.semanticCheckWithUpperBound(Int.MaxValue)
@@ -146,13 +201,20 @@ case class Search(
        * Later, rewriters will have modified the predicates e.g. by turning m.prop = 5 to m.prop IN [$`  AUTOINT1`].
        * This also means that type checking for e.g. unresolved functions like date() needs to happen at runtime.
        */
-      if (where.isDefined && !state.semanticCheckHasRunOnce) {
-        where.semanticCheck ifOkChain
-          checkExpressionsRangeOrExact(where.get.expression)
-      } else {
-        where.semanticCheck
-      }
+      where.foldSemanticCheck(wh =>
+        indexType.requireVectorIndex("WHERE", wh.position) chain
+          wh.semanticCheck ifOkChain
+          when(!state.semanticCheckHasRunOnce) { checkExpressionsRangeOrExact(wh.expression) }
+      )
     }
+  }
+
+  private def checkAnalyzer(): SemanticCheck = {
+    analyzer.foldSemanticCheck(expr =>
+      indexType.requireFulltextIndex("WITH ANALYZER", expr.position) chain
+        SemanticExpressionCheck.simple(expr) chain
+        SemanticExpressionCheck.expectType(CTString, expr)
+    )
   }
 
   private def checkExpressionsRangeOrExact(expression: Expression): SemanticCheck = {

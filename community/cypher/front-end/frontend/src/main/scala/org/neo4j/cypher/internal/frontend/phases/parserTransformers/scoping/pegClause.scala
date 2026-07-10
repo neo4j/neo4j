@@ -885,26 +885,30 @@ object pegClause {
 
     val constantIncoming = incoming.constantChildContext()
 
-    val bindingVariable = search.bindingVariable
-    val bindingVariableScope = pegExpression(bindingVariable, constantIncoming)
-    val embedding = search.embedding
-    val embeddingScope = pegExpression(embedding, constantIncoming)
-    val whereOpt = search.where
-    val whereScopeOpt = whereOpt.map(where =>
-      pegExpression(where.expression, incoming.constantChildContext())
-    )
-    val limit = search.limit
-    val limitScope = pegExpression(limit.expression, constantIncoming)
-    val scoreOpt = search.score
+    import search._
 
-    val outgoing = if (scoreOpt.isDefined) incoming.amendedWith(scoreOpt.get) else incoming
+    val bindingVariableScope = pegExpression(bindingVariable, constantIncoming)
+    val embeddingScope = pegExpression(embedding, constantIncoming)
+    val whereScopeOpt = where.map(where => pegExpression(where.expression, constantIncoming))
+    val analyzerScopeOpt = analyzer.map(analyzer => pegExpression(analyzer, constantIncoming))
+    val skipScopeOpt = skip.map(skip => pegExpression(skip.expression, constantIncoming))
+    val limitScope = pegExpression(limit.expression, constantIncoming)
+
+    val outgoing = if (score.isDefined) incoming.amendedWith(score.get) else incoming
 
     val children: Seq[WorkingScope] =
-      Seq(Some(bindingVariableScope), Some(embeddingScope), whereScopeOpt, Some(limitScope)).flatten
+      Seq(
+        Some(bindingVariableScope),
+        Some(embeddingScope),
+        whereScopeOpt,
+        analyzerScopeOpt,
+        skipScopeOpt,
+        Some(limitScope)
+      ).flatten
 
     val referenced = Some(WorkingScope.referencedInChildren(children) intersect incoming.constantsAndVariables)
 
-    incoming.noResultScope(outgoing, children, referenced, declared = Declarations(Seq.empty, scoreOpt.toSeq))
+    incoming.noResultScope(outgoing, children, referenced, declared = Declarations(Seq.empty, score.toSeq))
 
   }
 }

@@ -1676,11 +1676,14 @@ class AstGenerator(
   def _search: Gen[Search] = for {
     variable <- _variable
     score <- option(_variable)
+    indexType <- oneOf(Seq(Search.Fulltext, Search.Vector))
     indexName <- _stringLiteralOrParameter
     expr <- _expression
     where <- option(_where)
+    analyzer <- option(_expression)
+    skip <- option(_skip)
     limit <- _limit
-  } yield Search(variable, score, indexName, expr, where, limit)(pos)
+  } yield Search(variable, score, indexType, indexName, expr, where, analyzer, skip, limit)(pos)
 
   def _with: Gen[With] = for {
     distinct <- boolean

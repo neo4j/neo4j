@@ -1417,6 +1417,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .immutable()
             .build();
 
+    @Internal
+    @Description("Set this to enable the use of fulltext SEARCH in Cypher.")
+    public static final Setting<Boolean> cypher_fulltext_search_enabled = newBuilder(
+                    "internal.cypher.fulltext_search_enabled", BOOL, false)
+            .immutable()
+            .build();
+
     public enum ExtractLiteral {
         ALWAYS,
         NEVER,
