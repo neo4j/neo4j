@@ -117,6 +117,10 @@ public interface CheckPointer {
      */
     LatestCheckpointInfo latestCheckPointInfo();
 
+    default long compact() throws IOException {
+        return 0;
+    }
+
     /**
      * Shutdown checkpointer and prevent any new checkpoints from happening.
      * Any checkpoint requested on a shutdown checkpointer will not write any checkpoint and will

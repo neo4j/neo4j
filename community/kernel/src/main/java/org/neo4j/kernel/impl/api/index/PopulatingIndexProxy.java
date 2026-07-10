@@ -97,6 +97,11 @@ public class PopulatingIndexProxy implements IndexProxy {
     }
 
     @Override
+    public long compact(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
+        return 0;
+    }
+
+    @Override
     public void refresh() {
         // Ignored... this isn't called from the outside while we're populating the index.
     }

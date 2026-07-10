@@ -81,6 +81,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.StoreFile;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -259,7 +260,7 @@ class GBPTreeGenericCountsStoreTest {
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2), 2); // now at 5
         }
 
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
 
         // when/then
         assertThat(countsStore.read(nodeKey(LABEL_ID_1), NULL_CONTEXT)).isEqualTo(15);
@@ -335,7 +336,7 @@ class GBPTreeGenericCountsStoreTest {
             }));
             race.addContestant(throwing(() -> {
                 long checkpointTxId = lastClosedTxId.getHighestGapFreeNumber();
-                countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+                countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
                 lastCheckPointedTxId.set(checkpointTxId);
                 Thread.sleep(ThreadLocalRandom.current().nextInt(roundTimeMillis / 5));
             }));
@@ -439,7 +440,7 @@ class GBPTreeGenericCountsStoreTest {
         // given
         int labelId = 123;
         incrementNodeCount(BASE_TX_ID + 1, labelId, 4);
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         incrementNodeCount(BASE_TX_ID + 2, labelId, -2);
         closeCountsStore();
         deleteCountsStore();
@@ -481,7 +482,7 @@ class GBPTreeGenericCountsStoreTest {
         try (OtherThreadExecutor checkpointer = new OtherThreadExecutor("Checkpointer", 1, MINUTES)) {
             // when
             Future<Object> checkpoint = checkpointer.executeDontWait(command(
-                    () -> countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT)));
+                    () -> countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT)));
             checkpointer.waitUntilWaiting();
 
             // and when closing one of the updaters it should still wait
@@ -505,7 +506,7 @@ class GBPTreeGenericCountsStoreTest {
                 OtherThreadExecutor applier = new OtherThreadExecutor("Applier", 1, MINUTES)) {
             // when
             Future<Object> checkpoint = checkpointer.executeDontWait(command(
-                    () -> countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT)));
+                    () -> countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT)));
             checkpointer.waitUntilWaiting();
 
             // and when trying to open another applier it must wait
@@ -554,7 +555,7 @@ class GBPTreeGenericCountsStoreTest {
     @Test
     void shouldAllowToCreateUpdatedEvenInReadOnlyMode() throws IOException {
         // given
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         closeCountsStore();
         instantiateCountsStore(EMPTY_REBUILD, true, NO_MONITOR);
         countsStore.start(NULL_CONTEXT, INSTANCE);
@@ -567,13 +568,13 @@ class GBPTreeGenericCountsStoreTest {
     @Test
     void shouldNotCheckpointInReadOnlyMode() throws IOException {
         // given
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         closeCountsStore();
         instantiateCountsStore(EMPTY_REBUILD, true, NO_MONITOR);
         countsStore.start(NULL_CONTEXT, INSTANCE);
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
     }
 
     @Test
@@ -588,7 +589,8 @@ class GBPTreeGenericCountsStoreTest {
         // when
         Race race = new Race();
         race.addContestant(
-                throwing(() -> countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT)),
+                throwing(() ->
+                        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT)),
                 1);
         race.addContestants(
                 10,
@@ -709,7 +711,7 @@ class GBPTreeGenericCountsStoreTest {
         }
 
         // write the illegal value to the tree
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
 
         try (CountUpdater updater = countsStore.updaterImpl(++txId, true, NULL_CONTEXT)) {
             updater.increment(nodeKey(LABEL_ID_1), 10); // this will be just ignored
@@ -726,7 +728,7 @@ class GBPTreeGenericCountsStoreTest {
         // and other counts still work
         assertThat(countsStore.read(nodeKey(LABEL_ID_2), NULL_CONTEXT)).isEqualTo(15);
 
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
 
         // ... and after checkpoint, too
         InvalidCountException e2 = assertThatExceptionOfType(InvalidCountException.class)
@@ -746,7 +748,7 @@ class GBPTreeGenericCountsStoreTest {
         }
 
         // when
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         closeCountsStore();
         MutableBoolean rebuildTriggered = new MutableBoolean();
         openCountsStore(new Rebuilder() {
@@ -777,7 +779,7 @@ class GBPTreeGenericCountsStoreTest {
         try (CountUpdater updater = countsStore.updaterImpl(countsStoreTxId + 2, true, NULL_CONTEXT)) {
             updater.increment(key, 3);
         }
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
 
         // when
         closeCountsStore();
@@ -823,7 +825,9 @@ class GBPTreeGenericCountsStoreTest {
                 OtherThreadExecutor applier = new OtherThreadExecutor("Applier", 1, MINUTES)) {
 
             // Do countstore checkpoint all the way until the actual tree checkpoint
+            DatabaseFlushEvent dbFlushEvent = spy(DatabaseFlushEvent.NULL);
             FileFlushEvent fileFlushEvent = spy(FileFlushEvent.NULL);
+            when(dbFlushEvent.beginFileFlush()).thenReturn(fileFlushEvent);
             BinaryLatch latch = new BinaryLatch();
             doAnswer((invocationOnMock) -> {
                         latch.await();
@@ -832,7 +836,7 @@ class GBPTreeGenericCountsStoreTest {
                     .when(fileFlushEvent)
                     .startFlush(any());
             Future<Object> checkpoint = checkpointer.executeDontWait(
-                    command(() -> countsStore.checkpoint(fileFlushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT)));
+                    command(() -> countsStore.checkpoint(dbFlushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT)));
             checkpointer.waitUntilWaiting(location -> location.isAt(MultiRootGBPTree.class, "checkpoint"));
 
             // While checkpoint is in checkpoint we should still be able to fill up the cache and do the switching
@@ -930,7 +934,7 @@ class GBPTreeGenericCountsStoreTest {
     }
 
     private void checkpointAndRestartCountsStore() throws Exception {
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         closeCountsStore();
         openCountsStore();
     }

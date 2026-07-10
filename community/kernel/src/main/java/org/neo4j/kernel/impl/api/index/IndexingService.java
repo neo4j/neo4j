@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
@@ -858,6 +859,19 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 proxy.force(fileFlushEvent, asyncBlockAccessor, cursorContext);
             }
         }));
+    }
+
+    public long compact(
+            DatabaseFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+            throws IOException {
+        MutableLong numBytesTrimmed = new MutableLong();
+        indexMapRef.indexMapSnapshot().forEachIndexProxy(indexProxyOperation("force", proxy -> {
+            internalLog.debug("Compacting %s", proxy.getDescriptor().userDescription(tokenNameLookup));
+            try (var fileFlushEvent = flushEvent.beginFileFlush()) {
+                numBytesTrimmed.add(proxy.compact(fileFlushEvent, asyncBlockAccessor, cursorContext));
+            }
+        }));
+        return numBytesTrimmed.longValue();
     }
 
     private LongObjectProcedure<IndexProxy> indexProxyOperation(

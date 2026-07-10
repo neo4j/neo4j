@@ -117,7 +117,6 @@ import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.async.SubmitEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.Barrier;
@@ -126,7 +125,6 @@ import org.neo4j.test.Race;
 import org.neo4j.test.Race.ThrowingRunnable;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -135,7 +133,7 @@ import org.neo4j.test.utils.PageCacheConfig;
 import org.neo4j.test.utils.TestDirectory;
 
 @EphemeralTestDirectoryExtension
-@ExtendWith({RandomExtension.class, LifeExtension.class})
+@ExtendWith(RandomExtension.class)
 class GBPTreeTest {
     private static final Layout<MutableLong, MutableLong> layout = longLayout().build();
     private final AsyncBlockAccessor asyncBlockAccessor = AsyncBlockAccessor.EMPTY_ASYNC_BLOCK_ACCESSOR;
@@ -152,9 +150,6 @@ class GBPTreeTest {
 
     @Inject
     private RandomSupport random;
-
-    @Inject
-    private LifeSupport lifeSupport;
 
     protected Path indexFile;
     private ExecutorService executor;
@@ -2362,7 +2357,7 @@ class GBPTreeTest {
                         new StoreFile(testDirectory.file("other")),
                         defaultPageSize,
                         "test",
-                        Sets.immutable.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE))) {
+                        Sets.immutable.of(CREATE, StandardOpenOption.WRITE))) {
                     try (var cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                         for (long i = 0; !end.get(); i++) {
                             cursor.next(i % pageCache.maxCachedPages());
@@ -2402,6 +2397,44 @@ class GBPTreeTest {
                     assertThat(counter).isGreaterThan(0);
                 }
             }
+        }
+    }
+
+    @Test
+    void shouldShrinkFileSizeDuringCompactionAfterDeletingSomeData() throws IOException {
+        var reportSaysFileShrunk = new AtomicBoolean();
+        var monitor = new Monitor.Adaptor() {
+            @Override
+            public void checkpointCompleted(CompactionReport compactionReport) {
+                if (compactionReport.shrunkFile()) {
+                    reportSaysFileShrunk.set(true);
+                }
+            }
+        };
+        try (var pageCache = createPageCache(defaultPageSize);
+                var tree = index(pageCache).with(monitor).build()) {
+            // given
+            try (var writer = tree.writer(NULL_CONTEXT)) {
+                for (int i = 0; i < 200_000; i++) {
+                    writer.put(new MutableLong(i), new MutableLong(i));
+                }
+            }
+            try (var writer = tree.writer(NULL_CONTEXT)) {
+                for (int i = 0; i < 200_000; i++) {
+                    writer.remove(new MutableLong(i));
+                }
+            }
+
+            // when
+            long sizeBefore = tree.sizeInBytes();
+            for (int i = 0; i < 2; i++) {
+                tree.compact(FileFlushEvent.NULL, asyncBlockAccessor, NULL_CONTEXT);
+            }
+
+            // then
+            long sizeAfter = tree.sizeInBytes();
+            assertThat(sizeAfter).isLessThan(sizeBefore);
+            assertThat(reportSaysFileShrunk.get()).isTrue();
         }
     }
 
@@ -2634,7 +2667,7 @@ class GBPTreeTest {
         private volatile boolean enabled;
 
         @Override
-        public void checkpointCompleted() {
+        public void checkpointCompleted(CompactionReport compactionReport) {
             if (enabled) {
                 barrier.reached();
             }
@@ -2645,7 +2678,7 @@ class GBPTreeTest {
         private int count;
 
         @Override
-        public void checkpointCompleted() {
+        public void checkpointCompleted(CompactionReport compactionReport) {
             count++;
         }
 

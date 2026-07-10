@@ -30,6 +30,7 @@ import static org.neo4j.index.internal.gbptree.TreeNodeUtil.keyCount;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.OptionalLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -461,6 +462,24 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             coordination.reset();
             treeLogic.reset();
         }
+    }
+
+    /**
+     * @param nodeId the tree node ID to create a successor for.
+     * @return the tree node ID of the newly created successor, or false if a successor couldn't be created..
+     * @throws IOException on I/O error.
+     */
+    OptionalLong forceCreateSuccessor(long nodeId) throws IOException {
+        reset();
+        if (!goToRoot()) {
+            return OptionalLong.empty();
+        }
+        OptionalLong successorId = treeLogic.forceCreateSuccessor(
+                cursor, structurePropagation, nodeId, stableGeneration, unstableGeneration, cursorContext);
+        if (successorId.isPresent()) {
+            handleStructureChanges(cursorContext);
+        }
+        return successorId;
     }
 
     @Override

@@ -34,6 +34,7 @@ import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_LEFT_
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_MID_CHILD;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_RIGHT_CHILD;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.generation;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.goTo;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.isInternal;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.keyCount;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.MERGED;
@@ -43,6 +44,8 @@ import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.UNCHANGED
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.OptionalLong;
+import java.util.function.LongPredicate;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -305,6 +308,18 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
     public boolean moveToCorrectLeaf(
             PageCursor cursor, KEY key, long stableGeneration, long unstableGeneration, CursorContext cursorContext)
             throws IOException {
+        return moveToCorrectLeaf(cursor, key, stableGeneration, unstableGeneration, cursorContext, id -> false, true);
+    }
+
+    private boolean moveToCorrectLeaf(
+            PageCursor cursor,
+            KEY key,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext,
+            LongPredicate goalReached,
+            boolean assertLandOnLeaf)
+            throws IOException {
         int previousLevel = currentLevel;
         while (!levels[currentLevel].covers(key)) {
             currentLevel--;
@@ -315,7 +330,7 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
         }
 
         boolean isInternal = isInternal(cursor);
-        while (isInternal) {
+        while (!goalReached.test(cursor.getCurrentPageId()) && isInternal) {
             ensureNodeIsTreeNode(cursor, key);
 
             // We still need to go down further, but we're on the right path
@@ -372,8 +387,61 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
         }
 
         ensureNodeIsTreeNode(cursor, key);
-        ensureTreeNodeIsLeaf(cursor, key);
+        if (assertLandOnLeaf) {
+            ensureTreeNodeIsLeaf(cursor, key);
+        }
         return true;
+    }
+
+    OptionalLong forceCreateSuccessor(
+            PageCursor cursor,
+            StructurePropagation<KEY> structurePropagation,
+            long nodeId,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException {
+        if (!navigateToPage(cursor, nodeId, stableGeneration, unstableGeneration, cursorContext)) {
+            return OptionalLong.empty();
+        }
+        if (!createSuccessorIfNeeded(
+                cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration, cursorContext)) {
+            return OptionalLong.empty();
+        }
+        long newSuccessorId = cursor.getCurrentPageId();
+        handleStructureChanges(cursor, structurePropagation, stableGeneration, unstableGeneration, cursorContext);
+        return OptionalLong.of(newSuccessorId);
+    }
+
+    private boolean navigateToPage(
+            PageCursor cursor, long nodeId, long stableGeneration, long unstableGeneration, CursorContext cursorContext)
+            throws IOException {
+        long prevId = cursor.getCurrentPageId();
+        goTo(cursor, "read key", nodeId);
+        KEY key = layout.newKey();
+        int keyCount;
+        while ((keyCount = keyCount(cursor)) == 0) {
+            // Apparently there can be completely empty tree nodes in the tree for some reason.
+            // Go down in the tree until finding a tree node that has at least one key and read that instead.
+            if (!isInternal(cursor)) {
+                // This is very odd - a leaf node w/o any keys in it
+                return false;
+            }
+            long childId = internalNode.childAt(cursor, 0, stableGeneration, unstableGeneration);
+            if (!GenerationSafePointerPair.isSuccess(childId)) {
+                return false;
+            }
+            TreeNodeUtil.goTo(cursor, "navigateToPage", childId);
+        }
+
+        // Read the last key because that's what KeySearch compares first of all
+        SharedNodeBehaviour<KEY> reader = isInternal(cursor) ? internalNode : leafNode;
+        reader.keyAt(cursor, key, keyCount - 1, cursorContext);
+        SpecificNodeIdGoal goal = new SpecificNodeIdGoal(nodeId);
+
+        goTo(cursor, "back to root", prevId);
+        moveToCorrectLeaf(cursor, key, stableGeneration, unstableGeneration, cursorContext, goal, false);
+        return goal.reached;
     }
 
     private void ensureNodeIsTreeNode(PageCursor cursor, KEY key) {
@@ -1891,10 +1959,11 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
      * if new unstable version is created
      * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
      * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
+     * @return whether a successor was created.
      * @throws IOException on cursor failure
      */
     @Override
-    public void createSuccessorIfNeeded(
+    public boolean createSuccessorIfNeeded(
             PageCursor cursor,
             StructurePropagation<KEY> structurePropagation,
             StructurePropagation.StructureUpdate structureUpdate,
@@ -1906,7 +1975,7 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
         long nodeGeneration = generation(cursor);
         if (nodeGeneration == unstableGeneration) {
             // Don't copy
-            return;
+            return false;
         }
 
         // Do copy
@@ -1962,6 +2031,7 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
 
         structureWriteLog.addToFreelist(unstableGeneration, oldId);
         idProvider.releaseId(stableGeneration, unstableGeneration, oldId, bind(cursor));
+        return true;
     }
 
     private static <KEY> void checkChildPointer(
@@ -2027,5 +2097,23 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
         NOT_FOUND,
         REMOVED,
         FAIL
+    }
+
+    private static class SpecificNodeIdGoal implements LongPredicate {
+        private final long targetNodeId;
+        private boolean reached;
+
+        SpecificNodeIdGoal(long targetNodeId) {
+            this.targetNodeId = targetNodeId;
+        }
+
+        @Override
+        public boolean test(long value) {
+            if (targetNodeId == value) {
+                reached = true;
+                return true;
+            }
+            return false;
+        }
     }
 }

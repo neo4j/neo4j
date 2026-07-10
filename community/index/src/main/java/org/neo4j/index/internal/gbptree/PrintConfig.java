@@ -85,6 +85,16 @@ public final class PrintConfig {
         return this;
     }
 
+    public PrintConfig printAll() {
+        this.printValues = true;
+        this.printPosition = true;
+        this.printState = true;
+        this.printHeader = true;
+        this.printFreelist = true;
+        this.printOffload = true;
+        return this;
+    }
+
     public PrintConfig visitDataLayer(boolean visitDataLayer) {
         this.visitDataLayer = visitDataLayer;
         return this;

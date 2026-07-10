@@ -19,11 +19,31 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-public record PointerWithGeneration(long pointer, long generation) {
-    public static final PointerWithGeneration EMPTY =
-            new PointerWithGeneration(GenerationSafePointer.EMPTY_POINTER, GenerationSafePointer.EMPTY_GENERATION);
+import java.nio.file.Path;
 
-    public boolean isNull() {
-        return !TreeNodeUtil.isNode(pointer);
+public record CompactionReport(
+        Path path,
+        long previousHighId,
+        long newHighId,
+        boolean freelistMoved,
+        int numHighPagesLookedAt,
+        int numHighPagesAlreadyFree,
+        int numHighPagesMoved,
+        long numAvailableFreeIds,
+        long numAvailableFreeLowIds,
+        int numUnnecessaryMoves,
+        long timeSpentMillis) {
+    public static final CompactionReport EMPTY = new CompactionReport(null, 0, 0, false, 0, 0, 0, 0, 0, 0, 0);
+
+    public boolean madeChanges() {
+        return freelistMoved || numHighPagesMoved > 0;
+    }
+
+    public boolean shrunkFile() {
+        return newHighId < previousHighId;
+    }
+
+    public long numTrimmedPages() {
+        return previousHighId - newHighId;
     }
 }

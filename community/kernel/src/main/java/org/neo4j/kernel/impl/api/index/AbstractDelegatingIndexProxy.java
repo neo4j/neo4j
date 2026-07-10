@@ -74,6 +74,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy {
     }
 
     @Override
+    public long compact(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+            throws IOException {
+        return getDelegate().compact(flushEvent, asyncBlockAccessor, cursorContext);
+    }
+
+    @Override
     public void refresh() throws IOException {
         getDelegate().refresh();
     }

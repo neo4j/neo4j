@@ -127,6 +127,17 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy {
     }
 
     @Override
+    public long compact(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+            throws IOException {
+        barge(lock.readLock()); // see javadoc of this method (above) for rationale on why we use barge(...) here
+        try {
+            return delegate.compact(flushEvent, asyncBlockAccessor, cursorContext);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
     public void refresh() throws IOException {
         lock.readLock().lock();
         try {

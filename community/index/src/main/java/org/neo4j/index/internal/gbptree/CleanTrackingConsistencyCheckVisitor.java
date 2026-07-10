@@ -114,12 +114,6 @@ class CleanTrackingConsistencyCheckVisitor implements GBPTreeConsistencyCheckVis
     }
 
     @Override
-    public void pageIdExceedLastId(long lastId, long pageId, Path file) {
-        isConsistent.setFalse();
-        delegate.pageIdExceedLastId(lastId, pageId, file);
-    }
-
-    @Override
     public void nodeMetaInconsistency(long pageId, String message, Path file) {
         isConsistent.setFalse();
         delegate.nodeMetaInconsistency(pageId, message, file);

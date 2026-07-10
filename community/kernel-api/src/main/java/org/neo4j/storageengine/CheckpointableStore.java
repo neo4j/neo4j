@@ -17,13 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.storageengine;
 
-public record PointerWithGeneration(long pointer, long generation) {
-    public static final PointerWithGeneration EMPTY =
-            new PointerWithGeneration(GenerationSafePointer.EMPTY_POINTER, GenerationSafePointer.EMPTY_GENERATION);
+import java.io.IOException;
+import org.neo4j.io.async.AsyncBlockAccessor;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent.FileFlushEventProvider;
 
-    public boolean isNull() {
-        return !TreeNodeUtil.isNode(pointer);
+public interface CheckpointableStore {
+    void checkpoint(
+            FileFlushEventProvider flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+            throws IOException;
+
+    default long compact(
+            FileFlushEventProvider flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+            throws IOException {
+        return 0;
     }
+
+    StoreFile storeFile();
 }

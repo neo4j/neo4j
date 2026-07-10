@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.apache.commons.lang3.ArrayUtils.shuffle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,6 +42,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.factory.primitive.LongLists;
+import org.eclipse.collections.api.factory.primitive.LongSets;
+import org.eclipse.collections.api.iterator.MutableLongIterator;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
@@ -99,7 +104,7 @@ class FreeListIdProviderTest {
     @Test
     void shouldReleaseAndAcquireId() throws Exception {
         // GIVEN
-        long releasedId = 11;
+        long releasedId = freelist.acquireNewId(GENERATION_ONE, readCursor(pagedFile), NULL_CONTEXT);
         fillPageWithRandomBytes(pagedFile, releasedId);
 
         // WHEN
@@ -119,17 +124,23 @@ class FreeListIdProviderTest {
     void shouldReleaseAndAcquireIdsFromMultiplePages() throws Exception {
         // GIVEN
         int entries = freelist.entriesPerPage() + freelist.entriesPerPage() / 2;
-        long baseId = 101;
+        MutableLongList ids = LongLists.mutable.empty();
         for (int i = 0; i < entries; i++) {
-            freelist.releaseId(GENERATION_ONE, GENERATION_TWO, baseId + i, writeCursor(pagedFile));
+            ids.add(freelist.acquireNewId(GENERATION_ONE, readCursor(pagedFile), NULL_CONTEXT));
+        }
+        MutableLongIterator idsIterator = ids.longIterator();
+        while (idsIterator.hasNext()) {
+            freelist.releaseId(GENERATION_ONE, GENERATION_TWO, idsIterator.next(), writeCursor(pagedFile));
         }
         freelist.flush(GENERATION_ONE, GENERATION_TWO, writeCursor(pagedFile));
 
         // WHEN/THEN
+        MutableLongList reacquiredIds = LongLists.mutable.empty();
         for (int i = 0; i < entries; i++) {
             long acquiredId = freelist.acquireNewId(GENERATION_TWO, writeCursor(pagedFile), NULL_CONTEXT);
-            assertEquals(baseId + i, acquiredId);
+            reacquiredIds.add(acquiredId);
         }
+        assertThat(reacquiredIds).isEqualTo(ids);
     }
 
     @Test
@@ -201,7 +212,7 @@ class FreeListIdProviderTest {
         }
 
         // THEN
-        assertTrue(freelist.lastId() < 200, String.valueOf(freelist.lastId()));
+        assertThat(freelist.lastId()).isLessThan(200);
     }
 
     @Test
@@ -428,6 +439,74 @@ class FreeListIdProviderTest {
                 },
                 readCursor(pagedFile));
         assertTrue(expected.isEmpty());
+    }
+
+    @Test
+    void shouldRewriteFreelistIntoLowerIds() throws IOException {
+        // given
+        long stableGeneration = GenerationSafePointer.MIN_GENERATION;
+        long unstableGeneration = stableGeneration + 1;
+        var acquiredIds = LongLists.mutable.empty();
+        for (int i = 0; i < 30; i++) {
+            int batchSize = random.intBetween(7, 12);
+            for (int j = 0; j < batchSize; j++) {
+                acquiredIds.add(freelist.acquireNewId(stableGeneration, readCursor(pagedFile), NULL_CONTEXT));
+            }
+        }
+        long[] releasedIds = acquiredIds.toArray();
+        shuffle(releasedIds, random.random());
+        for (long releasedId : releasedIds) {
+            freelist.releaseId(stableGeneration, unstableGeneration, releasedId, writeCursor(pagedFile));
+            if (random.nextInt(1_000) == 0) {
+                stableGeneration = unstableGeneration;
+                unstableGeneration = stableGeneration + 1;
+            }
+        }
+        freelist.flush(stableGeneration, unstableGeneration, writeCursor(pagedFile));
+        var freelistPagesBefore = LongSets.mutable.empty();
+        var freeIdsBefore = LongSets.mutable.empty();
+        freelist.visitFreelist(
+                new IdProvider.IdProviderVisitor.Adaptor() {
+                    @Override
+                    public void beginFreelistPage(long pageId) {
+                        freelistPagesBefore.add(pageId);
+                    }
+
+                    @Override
+                    public void freelistEntry(long pageId, long generation, int pos) {
+                        freeIdsBefore.add(pageId);
+                    }
+                },
+                readCursor(pagedFile));
+
+        // when
+        long belowId = (long) (freelist.lastId() * 0.9);
+        try (var maintenanceMode = freelist.exclusiveAccess()) {
+            maintenanceMode.rewrite(
+                    writeCursor(pagedFile), belowId, stableGeneration, unstableGeneration, NULL_CONTEXT);
+        }
+
+        // then
+        var freelistPagesAfter = LongSets.mutable.empty();
+        var freeIdsAfter = LongSets.mutable.empty();
+        freelist.visitFreelist(
+                new IdProvider.IdProviderVisitor.Adaptor() {
+                    @Override
+                    public void beginFreelistPage(long pageId) {
+                        freelistPagesAfter.add(pageId);
+                    }
+
+                    @Override
+                    public void freelistEntry(long pageId, long generation, int pos) {
+                        freeIdsAfter.add(pageId);
+                    }
+                },
+                readCursor(pagedFile));
+        var expectedFreeIdsAfter = LongSets.mutable.empty();
+        expectedFreeIdsAfter.addAll(freeIdsBefore);
+        expectedFreeIdsAfter.addAll(freelistPagesBefore);
+        expectedFreeIdsAfter.removeAll(freelistPagesAfter);
+        assertThat(freeIdsAfter.toSortedArray()).isEqualTo(expectedFreeIdsAfter.toSortedArray());
     }
 
     static void fillPageWithRandomBytes(PagedFile pagedFile, long releasedId) throws IOException {

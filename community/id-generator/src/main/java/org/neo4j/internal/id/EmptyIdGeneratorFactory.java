@@ -99,14 +99,10 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         private EmptyIdGenerator() {}
 
         @Override
-        public void setHighId(long id) {
-            // nothing
-        }
+        public void setHighId(long id) {}
 
         @Override
-        public void markHighestWrittenAtHighId() {
-            // nothing
-        }
+        public void markHighestWrittenAtHighId() {}
 
         @Override
         public long getHighestWritten() {
@@ -139,34 +135,24 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
-        public void close() {
-            // nothing
-        }
+        public void close() {}
 
         @Override
         public void checkpoint(
-                FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
-            // nothing
-        }
+                FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {}
 
         @Override
         public void maintenance(
                 CursorContext cursorContext, OldestVisibilityHorizonFactory oldestVisibilityHorizonFactory) {}
 
         @Override
-        public void start(FreeIds freeIdsForRebuild, CursorContext cursorContext) {
-            // nothing
-        }
+        public void start(FreeIds freeIdsForRebuild, CursorContext cursorContext) {}
 
         @Override
-        public void stop() {
-            // nothing
-        }
+        public void stop() {}
 
         @Override
-        public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
-            // nothing
-        }
+        public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {}
 
         @Override
         public boolean allocationEnabled() {

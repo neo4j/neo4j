@@ -268,7 +268,12 @@ abstract class GBPTreeLargeDynamicKeysITBase {
                     }
                 }
             }
-            tree.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+            tree.checkpoint(
+                    Header.CARRY_OVER_PREVIOUS_HEADER,
+                    FileFlushEvent.NULL,
+                    EMPTY_ASYNC_BLOCK_ACCESSOR,
+                    NULL_CONTEXT,
+                    true);
         }
     }
 

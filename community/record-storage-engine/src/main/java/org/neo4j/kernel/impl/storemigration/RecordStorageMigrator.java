@@ -802,14 +802,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         contextFactory,
                         pageCacheTracer,
                         openOptions);
-                var context = contextFactory.create("update counts store");
-                var flushEvent = pageCacheTracer.beginFileFlush()) {
+                var context = contextFactory.create("update counts store")) {
             countsStore.start(context, memoryTracker);
             if (countsUpToDate.isTrue()) {
                 for (long txId = txIdBeforeMigration + 1; txId <= txIdAfterMigration; txId++) {
                     countsStore.updater(txId, true, context).close();
                 }
-                countsStore.checkpoint(flushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, context);
+                countsStore.checkpoint(pageCacheTracer, EMPTY_ASYNC_BLOCK_ACCESSOR, context);
             }
         }
 
@@ -826,14 +825,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             }
         };
         try (var degreesStore = openDegreeStore(recordLayout, degreesBuilder, openOptions);
-                var context = contextFactory.create("update group degrees store");
-                var flushEvent = pageCacheTracer.beginFileFlush()) {
+                var context = contextFactory.create("update group degrees store")) {
             degreesStore.start(context, EmptyMemoryTracker.INSTANCE);
             if (degreesUpToDate.isTrue()) {
                 for (long txId = txIdBeforeMigration + 1; txId <= txIdAfterMigration; txId++) {
                     degreesStore.updater(txId, true, context).close();
                 }
-                degreesStore.checkpoint(flushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, context);
+                degreesStore.checkpoint(pageCacheTracer, EMPTY_ASYNC_BLOCK_ACCESSOR, context);
             }
         }
 

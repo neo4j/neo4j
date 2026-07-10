@@ -41,6 +41,7 @@ import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.collection.PrimitiveArrays.RemovalsAndAdditions;
+import org.neo4j.index.internal.gbptree.CompactionReport;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -252,7 +253,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
             AtomicBoolean checkpointCompletedCall) {
         return new MultiRootGBPTree.Monitor.Adaptor() {
             @Override
-            public void checkpointCompleted() {
+            public void checkpointCompleted(CompactionReport compactionReport) {
                 checkpointCompletedCall.set(true);
             }
         };

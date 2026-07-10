@@ -616,7 +616,12 @@ public abstract class GBPTreeConcurrencyITBase<KEY, VALUE> {
         return () -> {
             while (!endSignal.get()) {
                 try {
-                    index.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+                    index.checkpoint(
+                            Header.CARRY_OVER_PREVIOUS_HEADER,
+                            FileFlushEvent.NULL,
+                            EMPTY_ASYNC_BLOCK_ACCESSOR,
+                            NULL_CONTEXT,
+                            true);
                     // Sleep a little in between checkpoints
                     MILLISECONDS.sleep(20L);
                 } catch (Throwable e) {

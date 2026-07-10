@@ -22,7 +22,7 @@ package org.neo4j.counts;
 import java.io.IOException;
 import org.neo4j.io.async.AsyncBlockAccessor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent.FileFlushEventProvider;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.memory.MemoryTracker;
 
@@ -104,7 +104,8 @@ public interface CountsStore extends AutoCloseable, ConsistencyCheckable {
      * @param cursorContext      page cache access context.
      * @throws IOException on I/O error.
      */
-    void checkpoint(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+    void checkpoint(
+            FileFlushEventProvider flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
             throws IOException;
 
     @Override

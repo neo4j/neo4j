@@ -23,8 +23,17 @@ import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.io.pagecache.PageCursorUtil.goTo;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongConsumer;
+import org.eclipse.collections.api.factory.primitive.LongLists;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.iterator.MutableLongIterator;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.PagedFile;
@@ -65,7 +74,7 @@ class FreelistIdProvider implements IdProvider {
      * Each free list page links to a potential next free-list page, by using the last entry containing
      * page id to the next.
      * <p>
-     * Each entry in the the free list consist of a page id and the generation in which it was freed.
+     * Each entry in the free list consist of a page id and the generation in which it was freed.
      * <p>
      * Read pointer cannot go beyond entries belonging to stable generation.
      * About the free-list id/offset variables below:
@@ -130,6 +139,7 @@ class FreelistIdProvider implements IdProvider {
 
     private final ConcurrentLinkedDeque<Long> releaseCache = new ConcurrentLinkedDeque<>();
     private volatile boolean mayBeMoreToReadIntoCache;
+    private final AtomicBoolean exclusiveAccessMode = new AtomicBoolean();
 
     FreelistIdProvider(PagedFile pagedFile) {
         this(pagedFile, NO_MONITOR);
@@ -151,13 +161,16 @@ class FreelistIdProvider implements IdProvider {
     void initializeAfterCreation(CursorCreator cursorCreator, long lastId) throws IOException {
         // Allocate a new free-list page id and set both write/read free-list page id to it.
         this.lastId.set(lastId);
+        initializeNewFreelist(cursorCreator, lastId);
+    }
+
+    private void initializeNewFreelist(CursorCreator cursorCreator, long lastId) throws IOException {
         writeMetaData = new ListHeadMetaData(lastId, 0);
-        long pageId = writeMetaData.pageId;
-        readMetaData = new ListHeadMetaData(pageId, 0);
+        readMetaData = new ListHeadMetaData(lastId, 0);
         mayBeMoreToReadIntoCache = false;
 
         try (var cursor = cursorCreator.create()) {
-            goTo(cursor, "free-list", pageId);
+            goTo(cursor, "free-list", lastId);
             FreelistNode.initialize(cursor);
             checkOutOfBounds(cursor);
         }
@@ -180,7 +193,7 @@ class FreelistIdProvider implements IdProvider {
         cursor.zapPage();
     }
 
-    private synchronized void fillAcquireCache(long stableGeneration, CursorCreator cursorCreator) throws IOException {
+    private void fillAcquireCache(long stableGeneration, CursorCreator cursorCreator) throws IOException {
         if (!mayBeMoreToReadIntoCache) {
             return;
         }
@@ -221,14 +234,17 @@ class FreelistIdProvider implements IdProvider {
         mayBeMoreToReadIntoCache = moreAfterThis;
     }
 
-    private long acquireNewIdFromFreelistOrEnd(long stableGeneration, CursorCreator cursorCreator) throws IOException {
+    private synchronized long acquireNewIdFromFreelistOrEnd(long stableGeneration, CursorCreator cursorCreator)
+            throws IOException {
         do {
             FreelistEntry entry = acquireCache.poll();
             if (entry != null) {
                 if (entry.pos == freelistNode.maxEntries() - 1) {
                     queueReleasedId(entry.freelistPageId);
                 }
-                return entry.id;
+                if (entry.id <= lastId.get()) {
+                    return entry.id;
+                }
             }
             fillAcquireCache(stableGeneration, cursorCreator);
         } while (mayBeMoreToReadIntoCache || !acquireCache.isEmpty());
@@ -243,8 +259,8 @@ class FreelistIdProvider implements IdProvider {
     public void releaseId(long stableGeneration, long unstableGeneration, long id, CursorCreator cursorCreator)
             throws IOException {
         queueReleasedId(id);
-        if (releaseCache.size() >= CACHE_SIZE) {
-            flushReleaseCache(stableGeneration, unstableGeneration, cursorCreator);
+        if (releaseCache.size() >= CACHE_SIZE && !exclusiveAccessMode.get()) {
+            flush(stableGeneration, unstableGeneration, cursorCreator);
         }
     }
 
@@ -254,41 +270,59 @@ class FreelistIdProvider implements IdProvider {
     }
 
     private synchronized void flushReleaseCache(
-            long stableGeneration, long unstableGeneration, CursorCreator cursorCreator) throws IOException {
+            Deque<Long> releaseCache, long unstableGeneration, CursorCreator cursorCreator, IdSupplier idSupplier)
+            throws IOException {
         if (releaseCache.isEmpty()) {
             return;
         }
 
         long writePageId = writeMetaData.pageId;
         int writePos = writeMetaData.pos;
+        long lastId = this.lastId.get();
         try (var cursor = cursorCreator.create()) {
             Long id;
             while ((id = releaseCache.poll()) != null) {
+                if (id > lastId) {
+                    continue;
+                }
+
                 PageCursorUtil.goTo(cursor, "free-list write page", writePageId);
                 freelistNode.write(cursor, unstableGeneration, id, writePos);
                 writePos++;
 
                 if (writePos >= freelistNode.maxEntries()) {
                     // Current free-list write page is full, allocate a new one.
-                    long nextFreelistPage =
-                            acquireNewId(stableGeneration, CursorCreator.bind(cursor), CursorContext.NULL_CONTEXT);
-                    PageCursorUtil.goTo(cursor, "free-list write page", writePageId);
+                    long nextFreelistPage = idSupplier.get(cursor);
+                    FreelistNode.setNext(cursor, nextFreelistPage);
+                    PageCursorUtil.goTo(cursor, "free-list write page", nextFreelistPage);
                     FreelistNode.initialize(cursor);
                     // Link previous --> new writer page
-                    FreelistNode.setNext(cursor, nextFreelistPage);
                     writePageId = nextFreelistPage;
                     writePos = 0;
                     monitor.acquiredFreelistPageId(nextFreelistPage);
                 }
             }
         }
-        // Install the new write meta data, both of those fields atomically, to potential concurrent readers
+        // Install the new write meta-data, both of those fields atomically, to potential concurrent readers
         writeMetaData = new ListHeadMetaData(writePageId, writePos);
         mayBeMoreToReadIntoCache = true;
     }
 
     void flush(long stableGeneration, long unstableGeneration, CursorCreator cursorCreator) throws IOException {
-        flushReleaseCache(stableGeneration, unstableGeneration, cursorCreator);
+        flush(stableGeneration, unstableGeneration, cursorCreator, ignored -> {});
+    }
+
+    void flush(
+            long stableGeneration,
+            long unstableGeneration,
+            CursorCreator cursorCreator,
+            LongConsumer acquiredIdsMonitor)
+            throws IOException {
+        flushReleaseCache(releaseCache, unstableGeneration, cursorCreator, cursor -> {
+            long id = acquireNewId(stableGeneration, CursorCreator.bind(cursor), CursorContext.NULL_CONTEXT);
+            acquiredIdsMonitor.accept(id);
+            return id;
+        });
     }
 
     @Override
@@ -308,11 +342,10 @@ class FreelistIdProvider implements IdProvider {
 
         try (var cursor = cursorCreator.create()) {
             long prevPage;
-            ListHeadMetaData writeMetaDataSnapshot;
+            ListHeadMetaData writeMetaDataSnapshot = this.writeMetaData;
             do {
                 PageCursorUtil.goTo(cursor, "free-list", pageId);
                 visitor.beginFreelistPage(pageId);
-                writeMetaDataSnapshot = this.writeMetaData;
                 int targetPos =
                         pageId == writeMetaDataSnapshot.pageId ? writeMetaDataSnapshot.pos : freelistNode.maxEntries();
                 while (pos < targetPos) {
@@ -321,7 +354,10 @@ class FreelistIdProvider implements IdProvider {
                     do {
                         unacquiredId = freelistNode.read(cursor, Long.MAX_VALUE, pos);
                     } while (cursor.shouldRetry());
-                    visitor.freelistEntry(unacquiredId.pointer(), unacquiredId.generation(), pos);
+                    if (unacquiredId.pointer() <= lastId.get()) {
+                        // Since the file can shrink, just ignore freed ids that are beyond the last id.
+                        visitor.freelistEntry(unacquiredId.pointer(), unacquiredId.generation(), pos);
+                    }
                     pos++;
                 }
                 visitor.endFreelistPage(pageId);
@@ -344,9 +380,9 @@ class FreelistIdProvider implements IdProvider {
     }
 
     FreelistMetaData metaData() {
-        // Note: this can return write meta data for unwritten released ids. The caller is supposed to handle flushing
+        // Note: this can return write meta-data for unwritten released ids. The caller is supposed to handle flushing
         // vs. calling this method
-        // for various purposes, e.g. writing meta data state page etc.
+        // for various purposes, e.g. writing meta-data state page etc.
         long lastId = this.lastId.get();
         long writePageId = writeMetaData.pageId;
         long readPageId = readMetaData.pageId;
@@ -362,6 +398,87 @@ class FreelistIdProvider implements IdProvider {
         return new FreelistMetaData(lastId, writePageId, readPageId, writePos, readPos);
     }
 
+    @Override
+    public ExclusiveAccessMode exclusiveAccess() {
+        if (!exclusiveAccessMode.compareAndSet(false, true)) {
+            throw new IllegalStateException("Already in exclusive-access mode");
+        }
+
+        return new ExclusiveAccessMode() {
+            @Override
+            public void shrink(long numberOfPages) {
+                releaseAcquireCache();
+                lastId.addAndGet(-numberOfPages);
+            }
+
+            @Override
+            public RewriteResult rewrite(
+                    CursorCreator cursorCreator,
+                    long belowId,
+                    long stableGeneration,
+                    long unstableGeneration,
+                    CursorContext cursorContext)
+                    throws IOException {
+                releaseAcquireCache();
+                flush(stableGeneration, unstableGeneration, cursorCreator);
+
+                CheckAvailabilityVisitor checkAvailabilityVisitor =
+                        new CheckAvailabilityVisitor(belowId, stableGeneration);
+                visitFreelist(checkAvailabilityVisitor, cursorCreator);
+                long numNewFreelistPagesRequired = calculateNumRequiredFreelistPages(
+                        checkAvailabilityVisitor.numEntriesInFreelist, checkAvailabilityVisitor.freelistPageIds.size());
+                if (checkAvailabilityVisitor.numAvailableIdsBelowId < numNewFreelistPagesRequired) {
+                    // There's no point in rewriting the freelist since the rewritten freelist wouldn't be able
+                    // to satisfy the constraint of residing below the given id.
+                    return null;
+                }
+
+                RewriteVisitor rewriteVisitor = new RewriteVisitor(
+                        stableGeneration,
+                        unstableGeneration,
+                        belowId,
+                        numNewFreelistPagesRequired,
+                        cursorCreator,
+                        cursorContext,
+                        checkAvailabilityVisitor.freelistPageIds);
+                visitFreelist(rewriteVisitor, cursorCreator);
+                rewriteVisitor.flush();
+                return new RewriteResult(
+                        checkAvailabilityVisitor.freelistPageIds.toArray(),
+                        rewriteVisitor.idsForNewFreelistPages.toArray());
+            }
+
+            @Override
+            public void close() {
+                exclusiveAccessMode.set(false);
+            }
+        };
+    }
+
+    private long calculateNumRequiredFreelistPages(long numEntriesInFreelist, long numFreelistPageIds) {
+        // We need space for all the entries plus the to-be-old freelist page IDs
+        long numEntries = numEntriesInFreelist + numFreelistPageIds;
+
+        // This padding exists because of the way that freelist pages themselves are allocated from the freelist.
+        // So if there's exactly mod maxEntries+1 (1 for the freelist page and maxEntries for the items)
+        // then writing the last entry would trigger a new freelist page to be allocated
+        // (which we wouldn't have had set aside a page for) - otoh if we set aside one more that means that
+        // there's now one less id to write and therefor the new freelist page allocation will not happen.
+        // So, we set aside one additional page which will be freed back into the new freelist in the end.
+        int padding = numEntries > 0 && (numEntries % (freelistNode.maxEntries() + 1)) == 0 ? 1 : 0;
+
+        // Though some of these IDs will be used for freelist pages, so subtract those
+        return (numEntries - 1) / (freelistNode.maxEntries() + 1) + 1 + padding;
+    }
+
+    private void releaseAcquireCache() {
+        FreelistEntry first = acquireCache.poll();
+        if (first != null) {
+            this.readMetaData = new ListHeadMetaData(first.freelistPageId, first.pos);
+        }
+        acquireCache.clear();
+    }
+
     // test-access method
     int entriesPerPage() {
         return freelistNode.maxEntries();
@@ -370,4 +487,140 @@ class FreelistIdProvider implements IdProvider {
     record FreelistMetaData(long lastId, long writePageId, long readPageId, int writePos, int readPos) {}
 
     private record ListHeadMetaData(long pageId, int pos) {}
+
+    private interface IdSupplier {
+        long get(PageCursor cursor) throws IOException;
+    }
+
+    private static class CheckAvailabilityVisitor extends IdProviderVisitor.Adaptor {
+        private final MutableLongList freelistPageIds = LongLists.mutable.empty();
+        private final long belowId;
+        private final long stableGeneration;
+        private long numAvailableIdsBelowId;
+        private long numEntriesInFreelist;
+
+        public CheckAvailabilityVisitor(long belowId, long stableGeneration) {
+            this.belowId = belowId;
+            this.stableGeneration = stableGeneration;
+        }
+
+        @Override
+        public void beginFreelistPage(long pageId) {
+            freelistPageIds.add(pageId);
+        }
+
+        @Override
+        public void freelistEntry(long pageId, long generation, int pos) {
+            numEntriesInFreelist++;
+            if (pageId < belowId && generation <= stableGeneration) {
+                numAvailableIdsBelowId++;
+            }
+        }
+    }
+
+    private class RewriteVisitor extends IdProviderVisitor.Adaptor {
+        private final MutableLongList idsForNewFreelistPages;
+        private final LinkedList<FreelistEntry> tempEntries = new LinkedList<>();
+        private final LinkedList<Long> batchOfIdsToRelease = new LinkedList<>();
+        private final long stableGeneration;
+        private final long unstableGeneration;
+        private final long belowId;
+        private final long numNewFreelistPagesRequired;
+        private final CursorCreator cursorCreator;
+        private final CursorContext cursorContext;
+        private final MutableLongList freelistPageIds;
+        private LongIterator idsForNewFreelistPagesIterator;
+        private boolean freelistInitialized;
+
+        public RewriteVisitor(
+                long stableGeneration,
+                long unstableGeneration,
+                long belowId,
+                long numNewFreelistPagesRequired,
+                CursorCreator cursorCreator,
+                CursorContext cursorContext,
+                MutableLongList freelistPageIds) {
+            this.stableGeneration = stableGeneration;
+            this.unstableGeneration = unstableGeneration;
+            this.belowId = belowId;
+            this.numNewFreelistPagesRequired = numNewFreelistPagesRequired;
+            this.cursorCreator = cursorCreator;
+            this.cursorContext = cursorContext;
+            this.freelistPageIds = freelistPageIds;
+            this.idsForNewFreelistPages = LongLists.mutable.empty();
+        }
+
+        @Override
+        public void freelistEntry(long pageId, long generation, int pos) {
+            assert generation <= stableGeneration;
+            try {
+                if (!freelistInitialized) {
+                    if (pageId < belowId) {
+                        idsForNewFreelistPages.add(pageId);
+                        if (idsForNewFreelistPages.size() == numNewFreelistPagesRequired) {
+                            idsForNewFreelistPagesIterator = idsForNewFreelistPages.longIterator();
+                            initializeNewFreelist(cursorCreator, idsForNewFreelistPagesIterator.next());
+                            while (!tempEntries.isEmpty()) {
+                                FreelistEntry entry = tempEntries.poll();
+                                writeFreeId(entry.id, entry.generation);
+                            }
+                            freelistInitialized = true;
+                        }
+                    } else {
+                        tempEntries.add(new FreelistEntry(-1, pos, pageId, generation));
+                    }
+                } else {
+                    assert tempEntries.isEmpty();
+                    writeFreeId(pageId, generation);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        void flush() throws IOException {
+            // Write the remaining free IDs with the correct generation
+            batchOfIdsToRelease.sort(Long::compareTo);
+            flushReleaseCache(
+                    batchOfIdsToRelease, stableGeneration, cursorCreator, c -> idsForNewFreelistPagesIterator.next());
+            batchOfIdsToRelease.clear();
+
+            // Write the IDs of the old freelist pages
+            MutableLongIterator oldIds = freelistPageIds.longIterator();
+            while (oldIds.hasNext()) {
+                batchOfIdsToRelease.add(oldIds.next());
+            }
+            flushReleaseCache(
+                    batchOfIdsToRelease, unstableGeneration, cursorCreator, c -> idsForNewFreelistPagesIterator.next());
+            batchOfIdsToRelease.clear();
+
+            // Write any remaining IDs that we previously reserved in anticipation of them being used for new
+            // freelist pages. This happens rarely and basically comes from a one-off scenario occurring because
+            // of how free IDs are also used for freelist pages to hold other free IDs.
+            while (idsForNewFreelistPagesIterator.hasNext()) {
+                batchOfIdsToRelease.add(idsForNewFreelistPagesIterator.next());
+            }
+            flushReleaseCache(batchOfIdsToRelease, unstableGeneration, cursorCreator, cursor -> {
+                long freelistPageId = acquireNewId(stableGeneration, CursorCreator.bind(cursor), cursorContext);
+                idsForNewFreelistPages.add(freelistPageId);
+                return freelistPageId;
+            });
+        }
+
+        private void writeFreeId(long id, long generation) throws IOException {
+            // Here we can take the opportunity to sort the free IDs, and actually there's no real need to keep
+            // the exact generation for generations <= stable
+            boolean isUnstableGeneration = generation > stableGeneration;
+            if (batchOfIdsToRelease.size() > 100_000) {
+                batchOfIdsToRelease.sort(Long::compareTo);
+                flushReleaseCache(
+                        batchOfIdsToRelease,
+                        stableGeneration,
+                        cursorCreator,
+                        c -> idsForNewFreelistPagesIterator.next());
+                batchOfIdsToRelease.clear();
+            }
+            batchOfIdsToRelease.add(id);
+        }
+    }
 }

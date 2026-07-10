@@ -124,6 +124,19 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy {
     }
 
     @Override
+    public long compact(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+            throws IOException {
+        if (tryOpenCall()) {
+            try {
+                return super.compact(flushEvent, asyncBlockAccessor, cursorContext);
+            } finally {
+                closeCall();
+            }
+        }
+        return 0;
+    }
+
+    @Override
     public void drop() {
         if (state.compareAndSet(State.INIT, State.CLOSED)) {
             super.drop();

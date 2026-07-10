@@ -171,6 +171,12 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     void checkpoint(DatabaseFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
             throws IOException;
 
+    default long compact(
+            DatabaseFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+            throws IOException {
+        return 0;
+    }
+
     /**
      * Dump diagnostics about the storage.
      *

@@ -161,11 +161,24 @@ public class StoreCopyCheckPointMutex {
         LockSupport.parkNanos(MILLISECONDS.toNanos(100));
     }
 
+    /**
+     * Tries to acquire the checkpoint lock.
+     * @return resource to close after checkpoint is complete (releasing this lock), or {@code null} if
+     * the lock couldn't be acquired.
+     */
     public Resource tryCheckPoint() {
         Lock writeLock = lock.writeLock();
         return writeLock.tryLock() ? writeLock::unlock : null;
     }
 
+    /**
+     * Tries to acquire checkpoint lock (blocking for a maximum time as specified by {@code timeoutPredicate},
+     * returning {@code null} if it could not be acquire.
+     * @param timeoutPredicate predicate acting as timeout signal - {@code false} meaning timout where {@code null}
+     * will be returned and {@code true} meaning to keep waiting to acquire the lock.
+     * @return resource to close after checkpoint is complete (releasing this lock), or {@code null} if
+     * the lock couldn't be acquired.
+     */
     public Resource tryCheckPoint(BooleanSupplier timeoutPredicate) {
         Lock writeLock = lock.writeLock();
         long waitTimeMillis = 0; // Don't do any waiting on the first iteration. We want to consult the predicate first.
@@ -184,6 +197,10 @@ public class StoreCopyCheckPointMutex {
         return writeLock::unlock;
     }
 
+    /**
+     * Acquires checkpoint lock, blocking until it is available.
+     * @return resource to close after checkpoint is complete (releasing this lock).
+     */
     public Resource checkPoint() {
         Lock writeLock = lock.writeLock();
         writeLock.lock();

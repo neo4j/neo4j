@@ -335,6 +335,11 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     }
 
     @Override
+    public long compact(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
+        return tree.compact(flushEvent, asyncBlockAccessor, cursorContext);
+    }
+
+    @Override
     public void refresh() {
         // not required in this implementation
     }

@@ -58,7 +58,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.function.ThrowingAction;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
 import org.neo4j.index.internal.gbptree.Header.Reader;
 import org.neo4j.index.internal.gbptree.RootLayer.TreeRootsVisitor;
@@ -159,6 +159,7 @@ import org.neo4j.util.VisibleForTesting;
  */
 public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     private static final String INDEX_INTERNAL_TAG = "indexInternal";
+    private static final int MAX_NUM_HIGH_PAGES_FOR_COMPACTION = 100_000;
 
     /**
      * For monitoring {@link GBPTree}.
@@ -172,7 +173,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             public void checkpointStarted() {}
 
             @Override
-            public void checkpointCompleted() {}
+            public void checkpointCompleted(CompactionReport compactionReport) {}
 
             @Override
             public void noStoreFile() {}
@@ -222,8 +223,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             }
 
             @Override
-            public void checkpointCompleted() {
-                delegate.checkpointCompleted();
+            public void checkpointCompleted(CompactionReport compactionReport) {
+                delegate.checkpointCompleted(compactionReport);
             }
 
             @Override
@@ -285,7 +286,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         /**
          * Called when a {@link MultiRootGBPTree#checkpoint(FileFlushEvent, AsyncBlockAccessor, CursorContext)} has started, right after
          * current writers have been drained. Future writers after this point onwards and until the next call
-         * to {@link #checkpointCompleted()} will do eager flushing of their changes.
+         * to {@link #checkpointCompleted(CompactionReport)} will do eager flushing of their changes.
          */
         void checkpointStarted();
 
@@ -295,7 +296,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
          * Writers from this point onwards and until the next call to {@link #checkpointStarted()} will not do
          * eager flushing of their changes.
          */
-        void checkpointCompleted();
+        void checkpointCompleted(CompactionReport compactionReport);
 
         /**
          * Called when the tree was started on no existing store file and so will be created.
@@ -1101,7 +1102,33 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             AsyncBlockAccessor asyncBlockAccessor,
             CursorContext cursorContext) {
         try {
-            checkpoint(replace(headerWriter), flushEvent, asyncBlockAccessor, cursorContext);
+            checkpoint(replace(headerWriter), flushEvent, asyncBlockAccessor, cursorContext, false);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Compacts this tree, together with the backing file as much as possible by moving used pages in the highest
+     * region of the file to a lower region so that the file can be truncated.
+     * Internally, compaction is done incrementally to not hold too much state in memory at any given time,
+     * but also to be able to interleave writers in between these incremental steps.
+     * @param flushEvent for tracing any page flushes.
+     * @param asyncBlockAccessor async block accessor of compaction event.
+     * @param cursorContext underlying page cursor context
+     */
+    public long compact(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
+        try {
+            CompactionReport compactionReport;
+            long numTrimmedBytes = 0;
+            do {
+                compactionReport =
+                        checkpoint(CARRY_OVER_PREVIOUS_HEADER, flushEvent, asyncBlockAccessor, cursorContext, true);
+                if (compactionReport.numTrimmedPages() > 0) {
+                    numTrimmedBytes += compactionReport.numTrimmedPages() * pagedFile.pageSize();
+                }
+            } while (compactionReport.madeChanges() || compactionReport.shrunkFile());
+            return numTrimmedBytes;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -1114,12 +1141,12 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      * @param asyncBlockAccessor async block accessor of current checkpoint
      * @param cursorContext      underlying page cursor context
      * @throws UncheckedIOException on error flushing to storage.
-     * @see #checkpoint(Header.Writer, FileFlushEvent, AsyncBlockAccessor, CursorContext)
+     * @see #checkpoint(Header.Writer, FileFlushEvent, AsyncBlockAccessor, CursorContext, boolean)
      */
     public void checkpoint(
             FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
         try {
-            checkpoint(CARRY_OVER_PREVIOUS_HEADER, flushEvent, asyncBlockAccessor, cursorContext);
+            checkpoint(CARRY_OVER_PREVIOUS_HEADER, flushEvent, asyncBlockAccessor, cursorContext, false);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -1139,18 +1166,27 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      * The two sections where writers are blocked are both very short:
      * <ul>
      *     <li>#1 flips a boolean</li>
-     *     <li>#3 writes and flushes a maximum of 3-or-so pages (one state page and potentially two freelist pages</li>
+     *     <li>#3 writes and flushes a handful of pages (one state page and potentially two freelist pages).
+     *     If {@code doCompaction==true} then potentially a lot more pages will be dirtied and flushed additionally.</li>
      * </ul>
      * During #2 (when the file is flushed), writers are unblocked and will eagerly flush their changes as they write.
+     *
+     * If {@code doCompaction==true} also tries to compact the tree to some extent.
+     * This compaction is designed to run boxed by some upper ceiling of page count, as to run fairly quickly.
+     * To compact a tree that has a large number of free pages the compaction may need to be run multiple times.
+     * Compaction takes advantage of the internal locks so that no writers or checkpoints can be made at the same time.
+     * This compaction may result in moving internal pages or even forcing successors for some tree node pages
+     * to be created (for tree nodes that are at the very end of the file).
      */
-    private synchronized void checkpoint(
+    synchronized CompactionReport checkpoint(
             Header.Writer headerWriter,
             FileFlushEvent flushEvent,
             AsyncBlockAccessor asyncBlockAccessor,
-            CursorContext cursorContext)
+            CursorContext cursorContext,
+            boolean doCompaction)
             throws IOException {
         if (readOnly) {
-            return;
+            return CompactionReport.EMPTY;
         }
 
         awaitCleaner();
@@ -1166,12 +1202,13 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
 
             // Drain writers, bump generation and do the final forcing of the file.
             // New writers after this section don't need to eagerly flush anymore.
-            withCheckpointAndWriterLock(() -> {
+            return withCheckpointAndWriterLock(() -> {
                 // Eager flush is optimistic and may fail. There is a chance a few pages are still dirty at this point.
                 writersMustEagerlyFlush = false;
                 long generation = this.generation;
                 long stableGeneration = stableGeneration(generation);
                 long unstableGeneration = unstableGeneration(generation);
+
                 freeList.flush(
                         stableGeneration, unstableGeneration, bind(pagedFile, PF_SHARED_WRITE_LOCK, cursorContext));
 
@@ -1189,8 +1226,28 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 writeState(pagedFile, headerWriter, cursorContext);
                 pagedFile.flushAndForce(flushEvent, asyncBlockAccessor);
 
-                monitor.checkpointCompleted();
+                // Checkpoint is now logically complete. This is a good time to do some compaction.
+                stableGeneration = stableGeneration(this.generation);
+                unstableGeneration = unstableGeneration(this.generation);
+                CompactionReport compactionReport = doCompaction
+                        ? rootLayer.runCompaction(
+                                MAX_NUM_HIGH_PAGES_FOR_COMPACTION, stableGeneration, unstableGeneration, cursorContext)
+                        : CompactionReport.EMPTY;
+                if (compactionReport.madeChanges()) {
+                    // If compaction ended up moving things around to allow the backing file to shrink then
+                    // we need to do another bump of the generation and flush.
+                    freeList.flush(
+                            stableGeneration, unstableGeneration, bind(pagedFile, PF_SHARED_WRITE_LOCK, cursorContext));
+                    pagedFile.flushAndForce(flushEvent, asyncBlockAccessor);
+                    this.generation = Generation.generation(unstableGeneration, unstableGeneration + 1);
+                    writeState(pagedFile, headerWriter, cursorContext);
+                    pagedFile.flushAndForce(flushEvent, asyncBlockAccessor);
+                    rootLayer.postCompaction(compactionReport);
+                }
+
+                monitor.checkpointCompleted(compactionReport);
                 changesSinceLastCheckpoint.set(false);
+                return compactionReport;
             });
         } finally {
             // Safeguard, let's never leave this method with eager flushing for writers enabled.
@@ -1214,7 +1271,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             }
             withCheckpointAndWriterLock(() -> {
                 if (closed) {
-                    return;
+                    return null;
                 }
                 AsyncBlockAccessor asyncBlockAccessor = EMPTY_ASYNC_BLOCK_ACCESSOR;
                 try {
@@ -1239,15 +1296,16 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 } finally {
                     doClose();
                 }
+                return null;
             });
         }
     }
 
-    private void withCheckpointAndWriterLock(ThrowingAction<IOException> task) throws IOException {
+    private <T> T withCheckpointAndWriterLock(ThrowingSupplier<T, IOException> task) throws IOException {
         checkpointLock.writeLock().lock();
         writerLock.writeLock().lock();
         try {
-            task.apply();
+            return task.get();
         } finally {
             writerLock.writeLock().unlock();
             checkpointLock.writeLock().unlock();

@@ -104,12 +104,6 @@ public class ThrowingConsistencyCheckVisitor implements GBPTreeConsistencyCheckV
     }
 
     @Override
-    public void pageIdExceedLastId(long lastId, long pageId, Path file) {
-        throwTreeMetaInconsistency(
-                "Tree node has page id larger than registered last id, lastId=%d, pageId=%d.", lastId, pageId);
-    }
-
-    @Override
     public void nodeMetaInconsistency(long pageId, String message, Path file) {
         throwNodeMetaInconsistency("Tree node %d has inconsistent meta data: %s.", pageId, message);
     }

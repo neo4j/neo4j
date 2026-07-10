@@ -123,6 +123,11 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
     void checkpoint(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext);
 
+    default long compact(
+            FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
+        return 0;
+    }
+
     /**
      * Does some maintenance. This operation isn't critical for the functionality of an IdGenerator, but may make it perform better.
      * The work happening inside this method should be work that would otherwise happen now and then inside the other methods anyway,
@@ -435,6 +440,12 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         public void checkpoint(
                 FileFlushEvent fileFlushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
             delegate.checkpoint(fileFlushEvent, asyncBlockAccessor, cursorContext);
+        }
+
+        @Override
+        public long compact(
+                FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
+            return delegate.compact(flushEvent, asyncBlockAccessor, cursorContext);
         }
 
         @Override

@@ -51,7 +51,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.StoreFile;
-import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -136,7 +136,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
             updater.increment(GROUP_ID_1, INCOMING, 2); // now at 5
         }
 
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
 
         // when/then
         assertEquals(15, countsStore.degree(GROUP_ID_1, OUTGOING, NULL_CONTEXT));
@@ -205,7 +205,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
             updater.increment(GROUP_ID_1, INCOMING, 3);
             updater.increment(GROUP_ID_2, LOOP, 7);
         }
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         closeCountsStore();
 
         // when
@@ -234,7 +234,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     }
 
     private void checkpointAndRestartCountsStore() throws Exception {
-        countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+        countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         closeCountsStore();
         openCountsStore();
     }

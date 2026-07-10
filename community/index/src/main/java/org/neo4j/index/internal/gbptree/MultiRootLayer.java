@@ -512,6 +512,21 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         }
     }
 
+    @Override
+    GBPTreeWriter writer(byte layerType) {
+        if (layerType == ROOT_LAYER_FLAG) {
+            return support.newWriter(
+                    rootLayout,
+                    this,
+                    rootLeafNode,
+                    rootInternalNode,
+                    TreeWriterCoordination.NO_COORDINATION,
+                    false,
+                    layerType);
+        }
+        throw new UnsupportedOperationException("Only supported for root layer");
+    }
+
     private class RootMappingInteraction implements TreeRootExchange {
         private final ROOT_KEY dataRootKey;
 

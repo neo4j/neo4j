@@ -161,7 +161,12 @@ abstract class GBPTreeITBase<KEY, VALUE> {
                 }
             }
 
-            index.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+            index.checkpoint(
+                    Header.CARRY_OVER_PREVIOUS_HEADER,
+                    FileFlushEvent.NULL,
+                    EMPTY_ASYNC_BLOCK_ACCESSOR,
+                    NULL_CONTEXT,
+                    true);
             randomlyModifyIndex(index, data, random.random(), (double) round / totalNumberOfRounds, writerFactory);
         }
 

@@ -72,7 +72,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.prefetch.PagePrefetcher;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
-import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DatabaseCreationOptions;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -401,7 +400,7 @@ class BatchingNeoStoresTest {
                 PageCacheTracer.NULL,
                 openOptions)) {
             countsStore.start(NULL_CONTEXT, INSTANCE);
-            countsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+            countsStore.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         }
 
         // when

@@ -195,6 +195,12 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
         // Not needed in SingleRootLayer, but must be used in testing for MultiRootLayer
     }
 
+    @Override
+    GBPTreeWriter writer(byte layerType) {
+        return support.newWriter(
+                layout, this, leafNode, internalNode, TreeWriterCoordination.NO_COORDINATION, false, layerType);
+    }
+
     private class SingleDataTree implements DataTree<KEY, VALUE> {
         private final GBPTreeWriter<KEY, VALUE> batchedWriter;
 

@@ -480,9 +480,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                         pageCacheTracer);
                 var cursorContext = contextFactory.create("buildCountsStore")) {
             countsStore.start(cursorContext, memoryTracker);
-            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
-                countsStore.checkpoint(flushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, cursorContext);
-            }
+            countsStore.checkpoint(pageCacheTracer, EMPTY_ASYNC_BLOCK_ACCESSOR, cursorContext);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -493,9 +491,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         try (var groupDegreesStore = openGroupDegreeStore(logMetadataProvider, contextFactory);
                 var cursorContext = contextFactory.create("buildRelationshipDegreesStore")) {
             groupDegreesStore.start(cursorContext, memoryTracker);
-            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
-                groupDegreesStore.checkpoint(flushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, cursorContext);
-            }
+            groupDegreesStore.checkpoint(pageCacheTracer, EMPTY_ASYNC_BLOCK_ACCESSOR, cursorContext);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

@@ -354,7 +354,7 @@ class RootLayerSupport {
         }
     }
 
-    IdProvider idProvider() {
+    FreelistIdProvider idProvider() {
         return freeList;
     }
 
@@ -463,5 +463,9 @@ class RootLayerSupport {
 
     StructureWriteLog structureWriteLog() {
         return structureWriteLog;
+    }
+
+    MultiRootGBPTree.Monitor monitor() {
+        return monitor;
     }
 }

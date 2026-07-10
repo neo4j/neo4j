@@ -83,10 +83,6 @@ public interface GBPTreeConsistencyCheckVisitor {
             + indexInconsistent)
     void unusedPage(long pageId, Path file);
 
-    @Documented("Index inconsistency: "
-            + "Tree node has page id larger than registered last id, lastId=%d, pageId=%d.%n" + indexInconsistent)
-    void pageIdExceedLastId(long lastId, long pageId, Path file);
-
     @Documented("Index inconsistency: " + "Tree node %d has inconsistent meta data: %s.%n" + indexInconsistent)
     void nodeMetaInconsistency(long pageId, String message, Path file);
 
@@ -190,9 +186,6 @@ public interface GBPTreeConsistencyCheckVisitor {
 
         @Override
         public void unusedPage(long pageId, Path file) {}
-
-        @Override
-        public void pageIdExceedLastId(long lastId, long pageId, Path file) {}
 
         @Override
         public void nodeMetaInconsistency(long pageId, String message, Path file) {}

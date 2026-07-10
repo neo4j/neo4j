@@ -443,6 +443,37 @@
     "cypherVersionScope": [5, 25]
   },
   {
+    "name": "db.compact",
+    "description": "Initiate and wait for a compaction. Mainly native indexes, counts/degrees stores and .id files are compacted. While compaction is running, transaction throughput might temporarily degrade slightly, due to increased IO load.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "db.compact() :: (numBytesTrimmed :: INTEGER)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "numBytesTrimmed",
+        "description": "Number of bytes that compaction trimmed from the database files.",
+        "type": "INTEGER",
+        "isDeprecated": false
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true,
+    "cypherVersionScope": [25]
+  },
+  {
     "name": "db.clearQueryCaches",
     "description": "Clears all query caches.",
     "mode": "DBMS",

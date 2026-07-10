@@ -51,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.index.internal.gbptree.CompactionReport;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -443,7 +444,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
             AtomicInteger checkpoints = new AtomicInteger();
             GBPTree.Monitor treeMonitor = new GBPTree.Monitor.Adaptor() {
                 @Override
-                public void checkpointCompleted() {
+                public void checkpointCompleted(CompactionReport compactionReport) {
                     checkpoints.incrementAndGet();
                 }
             };

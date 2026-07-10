@@ -70,7 +70,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DatabaseCreationOptions;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -687,7 +687,7 @@ class RecordStorageMigratorIT {
             for (long txId = fromTxId + 1; txId <= toTxId; txId++) {
                 store.updater(txId, true, NULL_CONTEXT).close();
             }
-            store.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+            store.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         }
         try (var store =
                 openGroupDegreesStore(PageCacheTracer.NULL, NULL_CONTEXT_FACTORY, openOptions, new DegreesRebuilder() {
@@ -706,7 +706,7 @@ class RecordStorageMigratorIT {
             for (long txId = fromTxId + 1; txId <= toTxId; txId++) {
                 store.updater(txId, true, NULL_CONTEXT).close();
             }
-            store.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+            store.checkpoint(DatabaseFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         }
     }
 

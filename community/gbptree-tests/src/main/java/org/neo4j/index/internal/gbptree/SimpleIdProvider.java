@@ -72,6 +72,29 @@ public class SimpleIdProvider implements IdProvider {
         return lastId;
     }
 
+    @Override
+    public ExclusiveAccessMode exclusiveAccess() {
+        return new ExclusiveAccessMode() {
+            @Override
+            public void shrink(long numberOfPages) {
+                lastId -= numberOfPages;
+            }
+
+            @Override
+            public RewriteResult rewrite(
+                    CursorCreator cursorCreator,
+                    long belowId,
+                    long stableGeneration,
+                    long unstableGeneration,
+                    CursorContext cursorContext) {
+                return null;
+            }
+
+            @Override
+            public void close() {}
+        };
+    }
+
     void reset() {
         releasedIds.clear();
         lastId = IdSpace.MIN_TREE_NODE_ID - 1;

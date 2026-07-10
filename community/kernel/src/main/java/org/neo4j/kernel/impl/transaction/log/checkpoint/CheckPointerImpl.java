@@ -191,6 +191,19 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
         return NO_APPEND_INDEX;
     }
 
+    @Override
+    public long compact() throws IOException {
+        try (var checkpointLock = mutex.checkPoint();
+                var cursorContext = cursorContextFactory.create(CHECKPOINT_TAG);
+                var checkPointEvent = tracers.getDatabaseTracer().beginCheckPoint();
+                var flushEvent = checkPointEvent.beginDatabaseFlush()) {
+            return forceOperation.compact(
+                    flushEvent,
+                    createAsyncBlockAccessor(AsyncIOProvider.getInstance(), memoryTracker, flushEvent),
+                    cursorContext);
+        }
+    }
+
     private long checkpointByTrigger(TriggerInfo triggerInfo, boolean skipLogPruning) throws IOException {
         if (shutdown) {
             logShutdownMessage(triggerInfo);
@@ -393,6 +406,12 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
         void flushAndForce(
                 DatabaseFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
                 throws IOException;
+
+        default long compact(
+                DatabaseFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+                throws IOException {
+            return 0;
+        }
     }
 
     private record NotCompletedTransactionInfo(long appendIndex, LogPosition logPosition) {}

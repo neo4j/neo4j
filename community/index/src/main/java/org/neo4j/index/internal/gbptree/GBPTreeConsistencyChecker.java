@@ -153,9 +153,6 @@ class GBPTreeConsistencyChecker<KEY> {
         if (target.get(index)) {
             visitor.pageIdSeenMultipleTimes(id, file);
         }
-        if (id > lastId) {
-            visitor.pageIdExceedLastId(lastId, id, file);
-        }
         target.set(index);
     }
 

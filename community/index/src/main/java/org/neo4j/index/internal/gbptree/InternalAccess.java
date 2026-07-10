@@ -45,7 +45,7 @@ public interface InternalAccess<KEY, VALUE> {
             CursorContext cursorContext)
             throws IOException;
 
-    void createSuccessorIfNeeded(
+    boolean createSuccessorIfNeeded(
             PageCursor cursor,
             StructurePropagation<KEY> structurePropagation,
             StructureUpdate updateMidChild,

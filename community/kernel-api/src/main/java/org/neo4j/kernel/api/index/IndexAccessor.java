@@ -82,6 +82,11 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      */
     void force(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext);
 
+    default long compact(
+            FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
+        return 0;
+    }
+
     /**
      * Refreshes this index, so that {@link #newValueReader(IndexUsageTracking) readers} created after completion of this call
      * will see the latest updates. This happens automatically on closing {@link #newUpdater(IndexUpdateMode, CursorContext, boolean)}

@@ -140,6 +140,12 @@ public class OnlineIndexProxy implements IndexProxy {
     }
 
     @Override
+    public long compact(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+            throws IOException {
+        return accessor.compact(flushEvent, asyncBlockAccessor, cursorContext);
+    }
+
+    @Override
     public void refresh() {
         accessor.refresh();
     }

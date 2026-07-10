@@ -50,4 +50,16 @@ public class DefaultForceOperation implements CheckPointerImpl.ForceOperation {
         storageEngine.checkpoint(databaseFlushEvent, asyncBlockAccessor, cursorContext);
         flushGuard.flushUnflushed();
     }
+
+    @Override
+    public long compact(
+            DatabaseFlushEvent databaseFlushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+            throws IOException {
+        FlushGuard flushGuard = databasePageCache.flushGuard(databaseFlushEvent, asyncBlockAccessor);
+        long numBytesTrimmed = 0;
+        numBytesTrimmed += indexingService.compact(databaseFlushEvent, asyncBlockAccessor, cursorContext);
+        numBytesTrimmed += storageEngine.compact(databaseFlushEvent, asyncBlockAccessor, cursorContext);
+        flushGuard.flushUnflushed();
+        return numBytesTrimmed;
+    }
 }

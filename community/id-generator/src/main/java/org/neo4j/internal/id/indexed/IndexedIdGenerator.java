@@ -773,6 +773,11 @@ public class IndexedIdGenerator implements IdGenerator {
     }
 
     @Override
+    public long compact(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
+        return tree.compact(flushEvent, asyncBlockAccessor, cursorContext);
+    }
+
+    @Override
     public void maintenance(
             CursorContext cursorContext, OldestVisibilityHorizonFactory oldestVisibilityHorizonFactory) {
         if (started && !cache.isFull() && !readOnly) {

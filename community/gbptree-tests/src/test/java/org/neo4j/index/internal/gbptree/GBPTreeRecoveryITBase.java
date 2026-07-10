@@ -519,7 +519,12 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
 
         @Override
         public void execute(GBPTree<KEY, VALUE> index) throws IOException {
-            index.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
+            index.checkpoint(
+                    Header.CARRY_OVER_PREVIOUS_HEADER,
+                    FileFlushEvent.NULL,
+                    EMPTY_ASYNC_BLOCK_ACCESSOR,
+                    NULL_CONTEXT,
+                    true);
         }
 
         @Override

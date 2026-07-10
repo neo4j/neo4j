@@ -648,15 +648,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     public void checkpoint(
             DatabaseFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
             throws IOException {
-
         log.debug("Checkpointing %s", RecordDatabaseFile.COUNTS_STORE.getName());
-        try (var fileFlushEvent = flushEvent.beginFileFlush()) {
-            countsStore.checkpoint(fileFlushEvent, asyncBlockAccessor, cursorContext);
-        }
+        countsStore.checkpoint(flushEvent, asyncBlockAccessor, cursorContext);
         log.debug("Checkpointing %s", RecordDatabaseFile.RELATIONSHIP_GROUP_DEGREES_STORE.getName());
-        try (var fileFlushEvent = flushEvent.beginFileFlush()) {
-            groupDegreesStore.checkpoint(fileFlushEvent, asyncBlockAccessor, cursorContext);
-        }
+        groupDegreesStore.checkpoint(flushEvent, asyncBlockAccessor, cursorContext);
         neoStores.checkpoint(flushEvent, asyncBlockAccessor, cursorContext);
     }
 

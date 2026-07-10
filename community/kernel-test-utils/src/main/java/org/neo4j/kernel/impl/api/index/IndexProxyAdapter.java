@@ -59,6 +59,11 @@ public class IndexProxyAdapter implements IndexProxy {
     public void force(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {}
 
     @Override
+    public long compact(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
+        return 0;
+    }
+
+    @Override
     public void refresh() {}
 
     @Override

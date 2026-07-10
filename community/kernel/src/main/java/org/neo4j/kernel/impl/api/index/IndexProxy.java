@@ -81,6 +81,9 @@ public interface IndexProxy extends MinimalIndexAccessor {
     void force(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
             throws IOException;
 
+    long compact(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
+            throws IOException;
+
     void refresh() throws IOException;
 
     /**
