@@ -454,7 +454,10 @@ object expandSolverStep {
     val endNode = if (fromLeft) quantifiedPathPattern.right else quantifiedPathPattern.left
     val expansionMode = if (availableVars.contains(endNode)) ExpandInto else ExpandAll
 
-    val pathMode = TraversalPathMode.getFromPredicates(solvedPredicates)
+    // We only need to check uniquenessPredicates to determine the path mode, as this will
+    // be able to find the strictest path-mode-derived predicate inserted by AddElementUniquenessPredicates
+    // (as long as AddElementUniquenessPredicates remains the sole source of uniqueness predicates found here)
+    val pathMode = TraversalPathMode.getFromPredicates(uniquenessPredicates.map(_.solvedPredicate))
 
     val allReduceAccumulators =
       innerPlanPredicates.collect {
@@ -737,17 +740,10 @@ object expandSolverStep {
         context.staticComponents.anonymousVariableNameGenerator
       )
     }
-    val nonInlinedSelectionsWithoutUniqPreds = nonInlinedSelections.filter(_.expr match {
-      case far: ForAllRepetitions =>
-        far.originalInnerPredicate match {
-          case _: RelationshipUniquenessPredicate => false
-          case _: NodeUniquenessPredicate         => false
-          case _                                  => true
-        }
-      case _: RelationshipUniquenessPredicate => false
-      case _: NodeUniquenessPredicate         => false
-      case _                                  => true
-    })
+    val pathMode = TraversalPathMode.getFromPredicates(originalSpp.selections.predicates.map(_.expr))
+
+    val nonInlinedSelectionsWithoutUniqPreds =
+      nonInlinedSelections.filter(predicate => !enforcedByPathMode(predicate.expr, pathMode))
 
     val rewrittenNfa = nfa.endoRewrite(bottomUp(Rewriter.lift {
       case variable: LogicalVariable => rewriteLookup.getOrElse(variable, variable)
@@ -764,8 +760,6 @@ object expandSolverStep {
       Option.when(nonInlinedSelectionsWithoutUniqPreds.nonEmpty)(
         Ands.create(nonInlinedSelectionsWithoutUniqPreds.flatPredicates.to(ListSet))
       )
-
-    val pathMode = TraversalPathMode.getFromPredicates(originalSpp.selections.predicates.map(_.expr))
 
     Some(
       heuristicForStatefulShortestInto(
@@ -793,6 +787,19 @@ object expandSolverStep {
         context
       )
     )
+  }
+
+  private[idp] def enforcedByPathMode(expression: Expression, pathMode: TraversalPathMode): Boolean = {
+    val unwrapped = expression match {
+      case far: ForAllRepetitions => far.originalInnerPredicate
+      case other                  => other
+    }
+    unwrapped match {
+      case _: NodeUniquenessPredicate => pathMode == TraversalPathMode.Acyclic
+      case _: RelationshipUniquenessPredicate =>
+        pathMode == TraversalPathMode.Acyclic || pathMode == TraversalPathMode.Trail
+      case _ => false
+    }
   }
 
   /**

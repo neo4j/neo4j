@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.LiteralEntry
@@ -75,7 +76,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import java.lang.Boolean.FALSE
 
 class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with LogicalPlanningIntegrationTestSupport
-    with AstConstructionTestSupport with CypherVersionTestSupport {
+    with AstConstructionTestSupport with CypherVersionTestSupport with LogicalPlanningAttributesTestSupport {
 
   private val plannerBase = plannerBuilder()
     .setAllNodesCardinality(100)
@@ -5410,6 +5411,242 @@ class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with Lo
       .cartesianProduct()
       .|.allNodeScan("n")
       .allNodeScan("m")
+      .build()
+  }
+
+  private val fixedLengthPathModePlannerBase = plannerBuilder()
+    .setAllNodesCardinality(100)
+    .setAllRelationshipsCardinality(40)
+    .setLabelCardinality("User", 4)
+    .setRelationshipCardinality("(:User)-[]->()", 10)
+    .setRelationshipCardinality("()-[]->(:User)", 10)
+    .setExecutionModel(Volcano)
+
+  private val fixedLengthPathModePlanner = fixedLengthPathModePlannerBase.build()
+
+  private val fixedLengthPathModeIntoPlanner = fixedLengthPathModePlannerBase
+    .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, INTO_ONLY)
+    .build()
+
+  private val `nfa_acyclic_(a)-[r1]->(b)-[r2]->(c)-[r3]->(d)` = new TestNFABuilder(0, "a")
+    .addTransition(0, 1, "(a)-[r1]->(b WHERE NOT a = b)")
+    .addTransition(1, 2, "(b)-[r2 WHERE NOT startNode(r2) = endNode(r2)]->(c WHERE NOT a = c)")
+    .addTransition(2, 3, "(c)-[r3 WHERE NOT startNode(r3) = endNode(r3)]->(d WHERE NOT a = d)")
+    .setFinalState(3)
+    .build()
+
+  private val `nfa_(a)-[r1]->(b)-[r2]->(c)-[r3]->(d)` = new TestNFABuilder(0, "a")
+    .addTransition(0, 1, "(a)-[r1]->(b)")
+    .addTransition(1, 2, "(b)-[r2]->(c)")
+    .addTransition(2, 3, "(c)-[r3]->(d)")
+    .setFinalState(3)
+    .build()
+
+  private def fixedLengthAcyclicExpectedPlan = fixedLengthPathModePlanner.subPlanBuilder()
+    .statefulShortestPath(
+      sourceNode = "a",
+      targetNode = "d",
+      solvedExpressionString = "SHORTEST 1 (a)-[r1]->(b)-[r2]->(c)-[r3]->(d)",
+      nonInlinedPreFilters = None,
+      groupNodes = Set(),
+      groupRelationships = Set(),
+      singletonNodeVariables = Set(("b", "b"), ("c", "c"), ("d", "d")),
+      singletonRelationshipVariables = Set(("r1", "r1"), ("r2", "r2"), ("r3", "r3")),
+      selector = StatefulShortestPath.Selector.Shortest(CountInteger(1)),
+      nfa = `nfa_acyclic_(a)-[r1]->(b)-[r2]->(c)-[r3]->(d)`,
+      mode = ExpandAll,
+      reverseGroupVariableProjections = false,
+      minLength = 3,
+      maxLength = Some(3),
+      pathMode = Acyclic
+    )
+    .nodeByLabelScan("a", "User")
+    .build()
+
+  private def fixedLengthTrailExpectedPlan = fixedLengthPathModePlanner.subPlanBuilder()
+    .statefulShortestPath(
+      sourceNode = "a",
+      targetNode = "d",
+      solvedExpressionString = "SHORTEST 1 (a)-[r1]->(b)-[r2]->(c)-[r3]->(d)",
+      nonInlinedPreFilters = None,
+      groupNodes = Set(),
+      groupRelationships = Set(),
+      singletonNodeVariables = Set(("b", "b"), ("c", "c"), ("d", "d")),
+      singletonRelationshipVariables = Set(("r1", "r1"), ("r2", "r2"), ("r3", "r3")),
+      selector = StatefulShortestPath.Selector.Shortest(CountInteger(1)),
+      nfa = `nfa_(a)-[r1]->(b)-[r2]->(c)-[r3]->(d)`,
+      mode = ExpandAll,
+      reverseGroupVariableProjections = false,
+      minLength = 3,
+      maxLength = Some(3),
+      pathMode = TraversalPathMode.Trail
+    )
+    .nodeByLabelScan("a", "User")
+    .build()
+
+  testVersionsExcept5(
+    "should plan SHORTEST 1 ACYCLIC fixed-length pattern with Acyclic path mode and no non-inlined pre-filters"
+  ) { version =>
+    val query = "MATCH SHORTEST 1 ACYCLIC (a:User)-[r1]->(b)-[r2]->(c)-[r3]->(d) RETURN *"
+    val plan = fixedLengthPathModePlanner.plan(version, query).stripProduceResults
+    plan shouldEqual fixedLengthAcyclicExpectedPlan
+  }
+
+  testVersionsExcept5(
+    "should preserve uniqueness filters when ALL SHORTEST ACYCLIC fixed-length pattern planned as plain expands"
+  ) { version =>
+    val query = "MATCH ALL SHORTEST ACYCLIC (a:User)-[r1]->(b)-[r2]->(c)-[r3]->(d) RETURN *"
+    val plan = fixedLengthPathModePlanner.plan(version, query).stripProduceResults
+    plan shouldEqual fixedLengthPathModePlanner.subPlanBuilder()
+      .filter("NOT b = d", "NOT a = d", "NOT c = d")
+      .expandAll("(c)-[r3]->(d)")
+      .filter("NOT a = c", "NOT b = c")
+      .expandAll("(b)-[r2]->(c)")
+      .filter("NOT a = b")
+      .expandAll("(a)-[r1]->(b)")
+      .nodeByLabelScan("a", "User")
+      .build()
+  }
+
+  testVersionsExcept5(
+    "should plan SHORTEST 1 fixed-length pattern with Trail path mode, dropping relationship-uniqueness pre-filters"
+  ) { version =>
+    val query = "MATCH SHORTEST 1 (a:User)-[r1]->(b)-[r2]->(c)-[r3]->(d) RETURN *"
+    val plan = fixedLengthPathModePlanner.plan(version, query).stripProduceResults
+    plan shouldEqual fixedLengthTrailExpectedPlan
+  }
+
+  testVersionsExcept5(
+    "should plan SHORTEST 1 TRAIL fixed-length pattern with Trail path mode"
+  ) { version =>
+    val query = "MATCH SHORTEST 1 TRAIL (a:User)-[r1]->(b)-[r2]->(c)-[r3]->(d) RETURN *"
+    val plan = fixedLengthPathModePlanner.plan(version, query).stripProduceResults
+    plan shouldEqual fixedLengthTrailExpectedPlan
+  }
+
+  testVersionsExcept5(
+    "should plan SHORTEST 1 ACYCLIC fixed-length with bound endpoints (the ExpandInto case) with Acyclic path mode"
+  ) { version =>
+    val query =
+      """MATCH (a:User), (d)
+        |WITH * SKIP 1
+        |MATCH SHORTEST 1 ACYCLIC (a)-[r1]->(b)-[r2]->(c)-[r3]->(d)
+        |RETURN *""".stripMargin
+    val plan = fixedLengthPathModeIntoPlanner.plan(version, query).stripProduceResults
+    plan shouldEqual fixedLengthPathModeIntoPlanner.subPlanBuilder()
+      .statefulShortestPath(
+        sourceNode = "a",
+        targetNode = "d",
+        solvedExpressionString = "SHORTEST 1 (a)-[r1]->(b)-[r2]->(c)-[r3]->(d)",
+        nonInlinedPreFilters = None,
+        groupNodes = Set(),
+        groupRelationships = Set(),
+        singletonNodeVariables = Set(("b", "b"), ("c", "c")),
+        singletonRelationshipVariables = Set(("r1", "r1"), ("r2", "r2"), ("r3", "r3")),
+        selector = StatefulShortestPath.Selector.Shortest(CountInteger(1)),
+        nfa = new TestNFABuilder(0, "a")
+          .addTransition(0, 1, "(a)-[r1]->(b WHERE NOT a = b AND NOT b = d)")
+          .addTransition(1, 2, "(b)-[r2 WHERE NOT startNode(r2) = endNode(r2)]->(c WHERE NOT c = d AND NOT a = c)")
+          .addTransition(2, 3, "(c)-[r3]->(d)")
+          .setFinalState(3)
+          .build(),
+        mode = ExpandInto,
+        reverseGroupVariableProjections = false,
+        minLength = 3,
+        maxLength = Some(3),
+        pathMode = Acyclic
+      )
+      .filter("NOT a = d")
+      .skip(1)
+      .cartesianProduct()
+      .|.allNodeScan("d")
+      .nodeByLabelScan("a", "User")
+      .build()
+  }
+
+  testVersionsExcept5(
+    "should plan REPEATABLE ELEMENTS SHORTEST 1 fixed-length pattern with Walk path mode"
+  ) { version =>
+    val query = "MATCH REPEATABLE ELEMENTS SHORTEST 1 (a:User)-[r1]->(b)-[r2]->(c)-[r3]->(d) RETURN *"
+    val plan = fixedLengthPathModePlanner.plan(version, query).stripProduceResults
+    plan shouldEqual fixedLengthPathModePlanner.subPlanBuilder()
+      .statefulShortestPath(
+        sourceNode = "a",
+        targetNode = "d",
+        solvedExpressionString = "SHORTEST 1 (a)-[r1]->(b)-[r2]->(c)-[r3]->(d)",
+        nonInlinedPreFilters = None,
+        groupNodes = Set(),
+        groupRelationships = Set(),
+        singletonNodeVariables = Set(("b", "b"), ("c", "c"), ("d", "d")),
+        singletonRelationshipVariables = Set(("r1", "r1"), ("r2", "r2"), ("r3", "r3")),
+        selector = StatefulShortestPath.Selector.Shortest(CountInteger(1)),
+        nfa = `nfa_(a)-[r1]->(b)-[r2]->(c)-[r3]->(d)`,
+        mode = ExpandAll,
+        reverseGroupVariableProjections = false,
+        minLength = 3,
+        maxLength = Some(3),
+        pathMode = TraversalPathMode.Walk
+      )
+      .nodeByLabelScan("a", "User")
+      .build()
+  }
+
+  testVersionsExcept5(
+    "should plan REPEATABLE ELEMENTS SHORTEST 1 fixed-length pattern with Walk alongside a non-selective pattern"
+  ) { version =>
+    val query =
+      "MATCH REPEATABLE ELEMENTS SHORTEST 1 (a:User)-[r1]->(b)-[r2]->(c)-[r3]->(d), (d)-[r4]->(x) RETURN *"
+    val plan = fixedLengthPathModePlanner.plan(version, query).stripProduceResults
+    plan shouldEqual fixedLengthPathModePlanner.subPlanBuilder()
+      .expandAll("(d)-[r4]->(x)")
+      .statefulShortestPath(
+        sourceNode = "a",
+        targetNode = "d",
+        solvedExpressionString = "SHORTEST 1 (a)-[r1]->(b)-[r2]->(c)-[r3]->(d)",
+        nonInlinedPreFilters = None,
+        groupNodes = Set(),
+        groupRelationships = Set(),
+        singletonNodeVariables = Set(("b", "b"), ("c", "c"), ("d", "d")),
+        singletonRelationshipVariables = Set(("r1", "r1"), ("r2", "r2"), ("r3", "r3")),
+        selector = StatefulShortestPath.Selector.Shortest(CountInteger(1)),
+        nfa = `nfa_(a)-[r1]->(b)-[r2]->(c)-[r3]->(d)`,
+        mode = ExpandAll,
+        reverseGroupVariableProjections = false,
+        minLength = 3,
+        maxLength = Some(3),
+        pathMode = TraversalPathMode.Walk
+      )
+      .nodeByLabelScan("a", "User")
+      .build()
+  }
+
+  test(
+    "should plan single-relationship SHORTEST (=> no uniqueness predicates) as WALK"
+  ) {
+    val query = "MATCH SHORTEST 1 (y)-[r1]->(b) RETURN *"
+    val plan = fixedLengthPathModePlanner.plan(query).stripProduceResults
+    plan shouldEqual fixedLengthPathModePlanner.subPlanBuilder()
+      .statefulShortestPath(
+        sourceNode = "y",
+        targetNode = "b",
+        solvedExpressionString = "SHORTEST 1 (y)-[r1]->(b)",
+        nonInlinedPreFilters = None,
+        groupNodes = Set(),
+        groupRelationships = Set(),
+        singletonNodeVariables = Set(("b", "b")),
+        singletonRelationshipVariables = Set(("r1", "r1")),
+        selector = StatefulShortestPath.Selector.Shortest(CountInteger(1)),
+        nfa = new TestNFABuilder(0, "y")
+          .addTransition(0, 1, "(y)-[r1]->(b)")
+          .setFinalState(1)
+          .build(),
+        mode = ExpandAll,
+        reverseGroupVariableProjections = false,
+        minLength = 1,
+        maxLength = Some(1),
+        pathMode = TraversalPathMode.Walk
+      )
+      .allNodeScan("y")
       .build()
   }
 }

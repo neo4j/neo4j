@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Unique
-import org.neo4j.cypher.internal.expressions.UniqueNodes
+import org.neo4j.cypher.internal.expressions.NodeUniquenessPredicate
+import org.neo4j.cypher.internal.expressions.RelationshipUniquenessPredicate
+import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 
 sealed trait TraversalPathMode
 
@@ -33,11 +34,17 @@ object TraversalPathMode {
   def getFromPredicates(predicates: Iterable[Expression], alwaysTrail: Boolean = false): TraversalPathMode = {
     if (alwaysTrail)
       TraversalPathMode.Trail
-    else if (predicates.exists({ case _: UniqueNodes => true; case _ => false }))
-      TraversalPathMode.Acyclic
-    else if (predicates.exists({ case _: Unique => true; case _ => false }))
-      TraversalPathMode.Trail
-    else
-      TraversalPathMode.Walk
+    else {
+      val unwrapped = predicates.map {
+        case far: ForAllRepetitions => far.originalInnerPredicate
+        case expression             => expression
+      }
+      if (unwrapped.exists(_.isInstanceOf[NodeUniquenessPredicate]))
+        TraversalPathMode.Acyclic
+      else if (unwrapped.exists(_.isInstanceOf[RelationshipUniquenessPredicate]))
+        TraversalPathMode.Trail
+      else
+        TraversalPathMode.Walk
+    }
   }
 }

@@ -22,16 +22,32 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.expressions.DifferentNodes
+import org.neo4j.cypher.internal.expressions.DifferentRelationships
+import org.neo4j.cypher.internal.expressions.Disjoint
+import org.neo4j.cypher.internal.expressions.DisjointNodes
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.IsRepeatAcyclic
+import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
+import org.neo4j.cypher.internal.expressions.NoneOfNodes
+import org.neo4j.cypher.internal.expressions.NoneOfNodesInVarLengthRelationship
+import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.Unique
+import org.neo4j.cypher.internal.expressions.UniqueNodes
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
 
 import scala.collection.immutable.BitSet
 import scala.language.implicitConversions
@@ -172,4 +188,61 @@ class ExpandSolverStepTest extends CypherPlannerTestSuite with LogicalPlanningTe
 
   def register(patRels: NodeConnection*)(implicit registry: IdRegistry[NodeConnection]): Goal =
     Goal(registry.registerAll(patRels))
+
+  private val nodeUniquenessPredicates: Seq[Expression] = Seq(
+    DifferentNodes(v"n1", v"n2")(pos),
+    NoneOfNodes(v"n1", v"group")(pos),
+    NoneOfNodesInVarLengthRelationship(v"n1", v"r1", SemanticDirection.OUTGOING, mustBeInlined = false)(pos),
+    DisjointNodes(v"n1", v"n2", 1L, Some(2L))(pos),
+    UniqueNodes(v"group", None)(pos),
+    IsRepeatAcyclic(v"n1")(pos)
+  )
+
+  private val relationshipUniquenessPredicates: Seq[Expression] = Seq(
+    DifferentRelationships(v"r1", v"r2")(pos),
+    NoneOfRelationships(v"r1", v"group")(pos),
+    Disjoint(v"r1", v"r2")(pos),
+    Unique(v"group")(pos),
+    IsRepeatTrailUnique(v"r1")(pos)
+  )
+
+  private val nonUniquenessPredicate: Expression = Equals(v"n1", v"n2")(pos)
+
+  private def forAllRepetitions(inner: Expression): Expression =
+    ForAllRepetitions(v"group", Set(VariableGrouping(v"n1", v"group")(pos)), inner)(pos)
+
+  private val allPathModes = Seq(TraversalPathMode.Walk, TraversalPathMode.Trail, TraversalPathMode.Acyclic)
+
+  for {
+    predicate <- nodeUniquenessPredicates
+    (wrapperName, wrap) <-
+      Seq[(String, Expression => Expression)](("", identity), ("ForAllRepetitions-wrapped ", forAllRepetitions))
+  } {
+    test(s"${wrapperName}node-uniqueness predicate ${predicate.getClass.getSimpleName} is enforced by Acyclic only") {
+      expandSolverStep.enforcedByPathMode(wrap(predicate), TraversalPathMode.Acyclic) shouldBe true
+      expandSolverStep.enforcedByPathMode(wrap(predicate), TraversalPathMode.Trail) shouldBe false
+      expandSolverStep.enforcedByPathMode(wrap(predicate), TraversalPathMode.Walk) shouldBe false
+    }
+  }
+
+  for {
+    predicate <- relationshipUniquenessPredicates
+    (wrapperName, wrap) <-
+      Seq[(String, Expression => Expression)](("", identity), ("ForAllRepetitions-wrapped ", forAllRepetitions))
+  } {
+    test(
+      s"${wrapperName}relationship-uniqueness predicate ${predicate.getClass.getSimpleName} is enforced by Acyclic and Trail"
+    ) {
+      expandSolverStep.enforcedByPathMode(wrap(predicate), TraversalPathMode.Acyclic) shouldBe true
+      expandSolverStep.enforcedByPathMode(wrap(predicate), TraversalPathMode.Trail) shouldBe true
+      expandSolverStep.enforcedByPathMode(wrap(predicate), TraversalPathMode.Walk) shouldBe false
+    }
+  }
+
+  test("a non-uniqueness expression is not enforced by any path mode") {
+    for (pathMode <- allPathModes) {
+      expandSolverStep.enforcedByPathMode(nonUniquenessPredicate, pathMode) shouldBe false
+      expandSolverStep.enforcedByPathMode(forAllRepetitions(nonUniquenessPredicate), pathMode) shouldBe false
+    }
+  }
 }

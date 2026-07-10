@@ -140,7 +140,8 @@ object ConvertToNFA {
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     syntheticVarLengthSingleton: Map[LogicalVariable, LogicalVariable]
   ): Selections = {
-    // we cannot inline uniqueness predicates but we do not have to solve them as the algorithm for finding shortest paths will do that.
+    // Relationship uniqueness predicates cannot be inlined, but any such predicate makes the inferred
+    // traversal path mode at least Trail (see TraversalPathMode.getFromPredicates), which enforces it at runtime.
     val selectionsWithoutUniquenessPredicates = selections.filter(_.expr match {
       case far: ForAllRepetitions =>
         far.originalInnerPredicate match {
