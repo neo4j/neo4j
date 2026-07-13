@@ -307,7 +307,7 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
         }
 
         public DatabaseReferenceImpl.Mirror asMirror() {
-            return new Mirror(alias, namedDatabaseId);
+            return new Mirror(alias, namedDatabaseId, primary);
         }
 
         public DatabaseReferenceImpl.GraphEngine asGraphEngine() {
@@ -650,6 +650,10 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
     public static final class Mirror extends DatabaseReferenceImpl.Internal {
         public Mirror(NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId) {
             super(alias, namedDatabaseId, true);
+        }
+
+        public Mirror(NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId, boolean primary) {
+            super(alias, namedDatabaseId, primary);
         }
 
         @Override
