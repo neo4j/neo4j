@@ -77,7 +77,7 @@ class FileImporterTest {
     void writesReportToSpecifiedReportFile() throws Exception {
         Path reportLocation = testDir.file("the_report");
         Path inputFile = testDir.file("foobar.csv");
-        List<String> lines = Collections.singletonList("foo\\tbar\\tbaz");
+        List<String> lines = Collections.singletonList(":ID\tfoo\\tbar\\tbaz");
         Files.write(inputFile, lines, Charset.defaultCharset());
         Config config = dbConfig();
 
@@ -139,7 +139,7 @@ class FileImporterTest {
     @Test
     void tracePageCacheAccessOnCsvImport() throws IOException {
         Path reportLocation = testDir.file("the_report");
-        Path inputFile = writeFileWithLines("foobar.csv", "foo;bar;baz");
+        Path inputFile = writeFileWithLines("foobar.csv", ":Id,foo;bar;baz");
         Config config = dbConfig();
 
         var cacheTracer = new DefaultPageCacheTracer();

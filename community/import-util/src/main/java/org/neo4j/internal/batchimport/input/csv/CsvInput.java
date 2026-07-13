@@ -357,20 +357,19 @@ public class CsvInput implements Input {
                             numIdColumnsGroups <= 1,
                             "There are multiple :ID columns, but they are referring to different groups");
 
-                    if (!idHeaders.isEmpty()) {
-                        final var numIdColumns = idHeaders.size();
-                        if (numIdColumns > 1) {
-                            hasCompositeIdColumns.setTrue();
-                        }
+                    Preconditions.checkState(!idHeaders.isEmpty(), "There are no :ID columns in the header.");
+                    final var numIdColumns = idHeaders.size();
+                    if (numIdColumns > 1) {
+                        hasCompositeIdColumns.setTrue();
+                    }
 
-                        final var group = idHeaders.getFirst().group();
-                        if (numberOfIdsPerGroup.getOrDefault(group, numIdColumns) == numIdColumns) {
-                            // Either not set yet or already set to numIdColumns
-                            numberOfIdsPerGroup.put(group, numIdColumns);
-                        } else {
-                            // Already set to a different value
-                            numberOfIdsPerGroup.put(group, -1);
-                        }
+                    final var group = idHeaders.getFirst().group();
+                    if (numberOfIdsPerGroup.getOrDefault(group, numIdColumns) == numIdColumns) {
+                        // Either not set yet or already set to numIdColumns
+                        numberOfIdsPerGroup.put(group, numIdColumns);
+                    } else {
+                        // Already set to a different value
+                        numberOfIdsPerGroup.put(group, -1);
                     }
                 },
                 valueSizeCalculator,

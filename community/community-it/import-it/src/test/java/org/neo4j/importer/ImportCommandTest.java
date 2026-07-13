@@ -289,18 +289,18 @@ class ImportCommandTest {
         // GIVEN
         Path header = file(fileName("4097labels-header.csv"));
         try (PrintStream writer = new PrintStream(Files.newOutputStream(header))) {
-            writer.println(":LABEL");
+            writer.println(":ID\t:LABEL");
         }
         Path data = file(fileName("4097labels.csv"));
         try (PrintStream writer = new PrintStream(Files.newOutputStream(data))) {
             // Need to have unique names in order to get unique ids for labels. Want 4096 unique label ids present.
             for (int i = 0; i < 4096; i++) {
-                writer.println("SIMPLE" + i);
+                writer.println(i + "\tSIMPLE" + i);
             }
             // Then insert one with 3 array entries which will get ids greater than 4096. These cannot be inlined
             // due 36 bits being divided into 3 parts of 12 bits each and 4097 > 2^12, thus these labels will be
             // need to be dynamic records.
-            writer.println("FIRST 4096|SECOND 4096|THIRD 4096");
+            writer.println("4096\tFIRST 4096|SECOND 4096|THIRD 4096");
         }
 
         // WHEN
@@ -309,8 +309,7 @@ class ImportCommandTest {
                 "TAB",
                 "--array-delimiter",
                 "|",
-                "--nodes",
-                header.toAbsolutePath() + "," + data.toAbsolutePath());
+                "--nodes=" + header.toAbsolutePath() + "," + data.toAbsolutePath());
 
         // THEN
         GraphDatabaseService databaseService = getDatabaseApi();
@@ -332,12 +331,13 @@ class ImportCommandTest {
 
         Path data = file(fileName("whitespace.csv"));
         try (PrintStream writer = new PrintStream(Files.newOutputStream(data))) {
-            writer.println(":LABEL,name,s:short,b:byte,i:int,l:long,f:float,d:double");
+            writer.println(":ID,:LABEL,name,s:short,b:byte,i:int,l:long,f:float,d:double");
 
             // For each test value
-            for (String value : values) {
+            for (int i = 0; i < values.size(); i++) {
+                String value = values.get(i);
                 // Save value as a String in name
-                writer.print("PERSON,'" + value + "'");
+                writer.print(i + ",PERSON,'" + value + "'");
                 // For each numerical type
                 for (int j = 0; j < 6; j++) {
                     writer.print("," + value);
@@ -389,12 +389,13 @@ class ImportCommandTest {
 
         Path data = file(fileName("whitespace.csv"));
         try (PrintStream writer = new PrintStream(Files.newOutputStream(data))) {
-            writer.println(":LABEL,name,f:float,d:double");
+            writer.println(":ID,:LABEL,name,f:float,d:double");
 
             // For each test value
-            for (String value : values) {
+            for (int i = 0; i < values.size(); i++) {
+                String value = values.get(i);
                 // Save value as a String in name
-                writer.print("PERSON,'" + value + "'");
+                writer.print(i + ",PERSON,'" + value + "'");
                 // For each numerical type
                 for (int j = 0; j < 2; j++) {
                     writer.print("," + value);
@@ -443,20 +444,20 @@ class ImportCommandTest {
         // GIVEN
         Path data = file(fileName("whitespace.csv"));
         try (PrintStream writer = new PrintStream(Files.newOutputStream(data))) {
-            writer.println(":LABEL,name,adult:boolean");
+            writer.println(":ID,:LABEL,name,adult:boolean");
 
-            writer.println("PERSON,'t1',true");
-            writer.println("PERSON,'t2',  true");
-            writer.println("PERSON,'t3',true  ");
-            writer.println("PERSON,'t4',  true  ");
+            writer.println("0,PERSON,'t1',true");
+            writer.println("1,PERSON,'t2',  true");
+            writer.println("2,PERSON,'t3',true  ");
+            writer.println("3,PERSON,'t4',  true  ");
 
-            writer.println("PERSON,'f1',false");
-            writer.println("PERSON,'f2',  false");
-            writer.println("PERSON,'f3',false  ");
-            writer.println("PERSON,'f4',  false  ");
-            writer.println("PERSON,'f5',  truebutactuallyfalse  ");
+            writer.println("4,PERSON,'f1',false");
+            writer.println("5,PERSON,'f2',  false");
+            writer.println("6,PERSON,'f3',false  ");
+            writer.println("7,PERSON,'f4',  false  ");
+            writer.println("8,PERSON,'f5',  truebutactuallyfalse  ");
 
-            writer.println("PERSON,'f6',  non true things are interpreted as false  ");
+            writer.println("9,PERSON,'f6',  non true things are interpreted as false  ");
         }
 
         // WHEN
@@ -1352,25 +1353,6 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldSkipEmptyFiles() throws Exception {
-        // GIVEN
-        Path data = data("");
-
-        // WHEN
-        runImport("--nodes", data.toAbsolutePath().toString());
-
-        // THEN
-        GraphDatabaseService graphDatabaseService = getDatabaseApi();
-        try (Transaction tx = graphDatabaseService.beginTx();
-                ResourceIterable<Node> allNodes = tx.getAllNodes()) {
-            assertThat(Iterables.asList(allNodes))
-                    .as("Expected database to be empty")
-                    .isEmpty();
-            tx.commit();
-        }
-    }
-
-    @Test
     void shouldIgnoreEmptyQuotedStringsIfConfiguredTo() throws Exception {
         // GIVEN
         Path data = data(":ID,one,two,three", "1,\"\",,value");
@@ -1590,7 +1572,7 @@ class ImportCommandTest {
     private Path nodeDataWithMissingQuote(int totalLines, int unbalancedStartLine) throws Exception {
         String[] lines = new String[totalLines + 1];
 
-        lines[0] = "ID,:LABEL";
+        lines[0] = ":ID,:LABEL";
 
         for (int i = 1; i <= totalLines; i++) {
             StringBuilder line = new StringBuilder(format("%d,", i));
@@ -3562,7 +3544,7 @@ class ImportCommandTest {
     private Path writeArrayCsv(String[] headers, String[] values) throws IOException {
         Path data = file(fileName("whitespace.csv"));
         try (PrintStream writer = new PrintStream(Files.newOutputStream(data))) {
-            writer.print(":LABEL");
+            writer.print(":ID,:LABEL");
             for (String header : headers) {
                 writer.print("," + header);
             }
@@ -3570,7 +3552,7 @@ class ImportCommandTest {
             writer.println();
 
             // Save value as a String in name
-            writer.print("PERSON");
+            writer.print("0,PERSON");
             // For each type
             for (String ignored : headers) {
                 boolean comma = true;

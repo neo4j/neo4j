@@ -34,6 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.internal.batchimport.input.InputException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
@@ -71,8 +72,8 @@ class ImportNumericalFailureTest {
 
         Path data = file(databaseLayout, "whitespace.csv");
         try (PrintStream writer = new PrintStream(Files.newOutputStream(data))) {
-            writer.println(":LABEL,adult:" + type);
-            writer.println("PERSON," + val);
+            writer.println(":ID,:LABEL,adult:" + type);
+            writer.println("0,PERSON," + val);
         }
 
         assertThatThrownBy(() -> runImport(
@@ -111,7 +112,9 @@ class ImportNumericalFailureTest {
             current = current.getCause();
         }
         assertThat(found)
-                .as("Expected exception chain to contain %s with message containing '%s'", type, message)
+                .as(
+                        "Expected exception chain to contain %s with message containing '%s'. But got %s",
+                        type, message, Exceptions.stringify(e))
                 .isTrue();
     }
 }
