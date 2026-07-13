@@ -71,7 +71,7 @@ public class KernelTransactionMonitor extends TransactionMonitor<KernelTransacti
     }
 
     @Override
-    protected void updateTransactionBoundaries() {
+    protected synchronized void updateTransactionBoundaries() {
         // we return gap free transaction that is already closed, and if we do not have any readers it should be safe to
         // assume that no one will need
         // data before that point of history
