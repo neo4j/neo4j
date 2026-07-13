@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.VectorSearchClause
 import org.neo4j.cypher.internal.logical.plans.AllQueryExpression
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.HalfOpenSeekRange
@@ -62,6 +63,7 @@ import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
 import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.VectorIndexDescriptor
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -105,10 +107,8 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
 
               val indexedProperties =
                 getIndexedProperties(
-                  context,
-                  resultVariable,
+                  context.staticComponents.planContext,
                   descriptor,
-                  queryGraph.selections.flatPredicatesSet -- implicitlySolvedPredicates,
                   NODE_TYPE
                 )
 
@@ -174,10 +174,8 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
 
               val indexedProperties =
                 getIndexedProperties(
-                  context,
-                  resultVariable,
+                  context.staticComponents.planContext,
                   descriptor,
-                  queryGraph.selections.flatPredicatesSet -- implicitlySolvedPredicates,
                   RELATIONSHIP_TYPE
                 )
 
@@ -220,31 +218,20 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
   }
 
   private def getIndexedProperties(
-    context: LogicalPlanningContext,
-    resultVariable: LogicalVariable,
+    planContext: PlanContext,
     vectorIndexDescriptor: VectorIndexDescriptor,
-    selections: Set[Expression],
     entityType: EntityType
   ) = {
-    val propertyKeyTokens =
-      vectorIndexDescriptor.properties
-        .map { nameId =>
-          PropertyKeyToken(
-            name = context.staticComponents.planContext.getPropertyKeyName(nameId.id),
-            nameId = nameId
-          )
-        }
-
-    propertyKeyTokens.map { propertyKeyToken =>
+    vectorIndexDescriptor.properties.map { nameId =>
       IndexedProperty(
-        propertyKeyToken,
-        getValueFromIndex =
-          context.settings.remoteBatchPropertiesStrategy.getValueFromIndexBehavior(
-            resultVariable,
-            propertyKeyToken.name,
-            selections,
-            context.plannerState.contextualPropertyAccess
-          ),
+        PropertyKeyToken(
+          name = planContext.getPropertyKeyName(nameId.id),
+          nameId = nameId
+        ),
+        // A vector index categorically cannot return property values
+        // (VectorIndexCapability.supportsReturningValues() == false), so the search leaf must never
+        // claim to provide them. Downstream property reads are served from the store instead.
+        getValueFromIndex = DoNotGetValue,
         entityType = entityType
       )
     }

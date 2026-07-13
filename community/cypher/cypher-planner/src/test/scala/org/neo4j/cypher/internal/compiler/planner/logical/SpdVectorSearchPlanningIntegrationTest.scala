@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode
 
 class SpdVectorSearchPlanningIntegrationTest extends CypherPlannerTestSuite
@@ -70,14 +69,14 @@ class SpdVectorSearchPlanningIntegrationTest extends CypherPlannerTestSuite
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
       .projection("cacheN[m.content] AS `m.content`")
+      .remoteBatchProperties("cacheNFromStore[m.content]")
       .nodeVectorIndexSearch(
         "m",
         Seq("Message"),
         Seq("content"),
         "messageContent",
         "$embedding",
-        "10",
-        getValueFromIndex = Map("content" -> GetValue)
+        "10"
       )
       .build()
   }
@@ -100,14 +99,14 @@ class SpdVectorSearchPlanningIntegrationTest extends CypherPlannerTestSuite
     plan shouldEqual
       planner.subPlanBuilder()
         .projection("cacheR[r.description] AS `r.description`")
+        .remoteBatchProperties("cacheRFromStore[r.description]")
         .relationshipVectorIndexSearch(
           "()-[r]->()",
           Seq("KNOWS"),
           Seq("description"),
           "knowsDescr",
           "$embedding",
-          "10",
-          getValueFromIndex = Map("description" -> GetValue)
+          "10"
         )
         .build()
   }
@@ -157,15 +156,14 @@ class SpdVectorSearchPlanningIntegrationTest extends CypherPlannerTestSuite
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .filter("cacheN[m.content] CONTAINS 'Malmo'")
+      .remoteBatchPropertiesWithFilter("cacheNFromStore[m.content]")("m.content CONTAINS 'Malmo'")
       .nodeVectorIndexSearch(
         "m",
         Seq("Message"),
         Seq("content"),
         "messageContent",
         "$embedding",
-        "10",
-        getValueFromIndex = Map("content" -> GetValue)
+        "10"
       )
       .build()
   }
@@ -188,9 +186,10 @@ class SpdVectorSearchPlanningIntegrationTest extends CypherPlannerTestSuite
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .projection(Map("x.size" -> cachedNodeProp("m", "size", "x")))
-      .remoteBatchProperties(cachedNodeProp("m", "size", "x", knownToAccessStore = true))
-      .filter(contains(cachedNodeProp("m", "content", "x"), literalString("Malmo")))
+      .projection("cacheN[x.size] AS `x.size`")
+      .remoteBatchPropertiesWithFilter("cacheNFromStore[x.content]", "cacheNFromStore[x.size]")(
+        "x.content CONTAINS 'Malmo'"
+      )
       .projection("m AS x")
       .nodeVectorIndexSearch(
         "m",
@@ -198,8 +197,7 @@ class SpdVectorSearchPlanningIntegrationTest extends CypherPlannerTestSuite
         Seq("content"),
         "messageContent",
         "$embedding",
-        "10",
-        getValueFromIndex = Map("content" -> GetValue)
+        "10"
       )
       .build()
   }
@@ -247,14 +245,14 @@ class SpdVectorSearchPlanningIntegrationTest extends CypherPlannerTestSuite
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
       .projection("cacheN[m.content] AS `m.content`")
+      .remoteBatchProperties("cacheNFromStore[m.content]")
       .nodeVectorIndexSearch(
         "m",
         Seq("Message", "Info"),
         Seq("content"),
         "messageOrInfoContent",
         "$embedding",
-        "10",
-        getValueFromIndex = Map("content" -> GetValue)
+        "10"
       )
       .build()
   }
@@ -277,14 +275,14 @@ class SpdVectorSearchPlanningIntegrationTest extends CypherPlannerTestSuite
     plan shouldEqual
       planner.subPlanBuilder()
         .projection("cacheR[r.description] AS `r.description`")
+        .remoteBatchProperties("cacheRFromStore[r.description]")
         .relationshipVectorIndexSearch(
           "()-[r]->()",
           Seq("KNOWS", "THINKS"),
           Seq("description"),
           "knowsOrThinksDescr",
           "$embedding",
-          "10",
-          getValueFromIndex = Map("description" -> GetValue)
+          "10"
         )
         .build()
   }
