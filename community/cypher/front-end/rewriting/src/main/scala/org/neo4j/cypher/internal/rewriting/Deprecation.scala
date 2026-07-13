@@ -19,14 +19,12 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
-import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.ExpressionBody
 import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.LocalFunctionDefinition
 import org.neo4j.cypher.internal.ast.LocalProcedureDefinition
-import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.NextStatement
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
@@ -46,13 +44,9 @@ import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathLengthQuantifier
-import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -66,8 +60,6 @@ import org.neo4j.cypher.internal.notification.DeprecatedImportingWithInSubqueryC
 import org.neo4j.cypher.internal.notification.DeprecatedKeywordVariableInWhenOperand
 import org.neo4j.cypher.internal.notification.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.notification.DeprecatedPrecedenceOfLabelExpressionPredicate
-import org.neo4j.cypher.internal.notification.DeprecatedPropertyReferenceInCreate
-import org.neo4j.cypher.internal.notification.DeprecatedPropertyReferenceInMerge
 import org.neo4j.cypher.internal.notification.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.notification.DeprecatedTextIndexProvider
 import org.neo4j.cypher.internal.notification.DeprecatedWhereVariableInNodePattern
@@ -76,8 +68,6 @@ import org.neo4j.cypher.internal.notification.FixedLengthRelationshipInShortestP
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.Namespace
 import org.neo4j.cypher.internal.util.Ref
@@ -241,30 +231,6 @@ object Deprecations {
   // add new semantically deprecated features here
   case object SemanticallyDeprecatedFeatures extends SemanticDeprecations {
 
-    // Returns the set of variables that are defined in a `CREATE` or `MERGE` and then used in the same `CREATE` or `MERGE` for property read
-    // E.g. `CREATE (a {prop: 5}), (b {prop: a.prop})
-    // E.g. `MERGE (a {prop:'p'})-[:T]->(b {prop: a.prop})`
-    def propertyUsageOfNewVariable(pattern: Pattern, semanticTable: SemanticTable): Set[LogicalVariable] = {
-      val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
-
-      def findRefVariables(e: Option[Expression]): Set[LogicalVariable] =
-        e.fold(Set.empty[LogicalVariable])(_.dependencies)
-
-      def isDefinition(variable: LogicalVariable): Boolean =
-        allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
-
-      val (declaredVariables, referencedVariables) =
-        pattern.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
-          case NodePattern(maybeVariable, _, maybeProperties, _) => acc =>
-              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findRefVariables(maybeProperties)))
-          case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc =>
-              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findRefVariables(maybeProperties)))
-          case NamedPatternPart(variable, _) => acc =>
-              TraverseChildren((acc._1 + variable, acc._2))
-        }
-      referencedVariables.intersect(declaredVariables)
-    }
-
     override def find(version: CypherVersion, semanticTable: SemanticTable): PartialFunction[Any, Deprecation] =
       Function.unlift {
         case s @ SetExactPropertiesFromMapItem(lhs: Variable, rhs: Variable, false)
@@ -317,28 +283,6 @@ object Deprecations {
             None,
             Some(DeprecatedImportingWithInSubqueryCall(c.position, subqueryType, importing))
           ))
-
-        case Create(pattern) if Create.SelfReferenceAcrossPatterns.deprecatedIn(version) =>
-          /*
-        Note: When this deprecation turns into a semantic error in 6.0,
-        we can clean up some code.
-
-        The rewriter IsolateSubqueriesInMutatingPatterns currently
-        does not rewrite CREATE clauses if the subquery has a cross-reference.
-        This check won't be needed in the future because such queries will have led to an error already.
-        Even though it won't need to look at the SemanticTable any more, it will still depend on
-        SemanticAnalysis having run, so that these queries don't reach the IsolateSubqueriesInMutatingPatterns.
-           */
-          propertyUsageOfNewVariable(pattern, semanticTable).collectFirst { e =>
-            Deprecation(None, Some(DeprecatedPropertyReferenceInCreate(e.position, e.name)))
-          }
-
-        case Merge(patternPart, _, _) if Merge.SelfReference.deprecatedIn(version) =>
-          // Create an update pattern consisting of the one patternPart from the MERGE clause
-          val pattern = Pattern.ForUpdate(Seq(patternPart))(patternPart.position)
-          propertyUsageOfNewVariable(pattern, semanticTable).collectFirst { e =>
-            Deprecation(None, Some(DeprecatedPropertyReferenceInMerge(e.position, e.name)))
-          }
 
         case _ => None
       }

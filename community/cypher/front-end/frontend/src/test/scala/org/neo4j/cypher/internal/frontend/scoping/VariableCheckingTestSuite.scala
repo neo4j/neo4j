@@ -79,6 +79,8 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryR
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.VariableChecker
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
+import org.neo4j.cypher.internal.notification.InternalNotification
+import org.neo4j.cypher.internal.notification.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
@@ -894,6 +896,42 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
     case Right(errors) => errors
   }
 
+  private def producedNotifications(
+    query: String,
+    checker: Transformer[BaseContext, BaseState, BaseState],
+    version: CypherVersion
+  ): Seq[InternalNotification] = {
+    val recordingLogger = new RecordingNotificationLogger()
+    val context =
+      new ErrorCollectingContext(version, semanticFeatures = Seq(ScopeQueries), notificationLogger = recordingLogger) {
+        override def errorMessageProvider: ErrorMessageProvider = messageProvider
+      }
+    val transformers = Parse andThen ScopeSurveyor andThen ScopeSurveyor andThen checker
+    transformers.transform(initialStateWithQuery(query), context)
+    recordingLogger.notifications.toSeq
+  }
+
+  def notified(query: String, expected: Notified, versions: Array[CypherVersion]): Unit =
+    checkersUnderTest.foreach(checker =>
+      versions.foreach(version => {
+        val notifications = producedNotifications(query, checker, version)
+        withClue(
+          s"""Version: $version
+             |Checker: ${checker.name}
+             |Query:
+             |
+             |$query
+             |
+             |is expected to log notification: ${expected.description}
+             |
+             |actually logged: ${if (notifications.isEmpty) "(none)" else notifications.mkString("\n  ", "\n  ", "")}
+             |""".stripMargin
+        ) {
+          notifications.exists(expected.matches) shouldBe true
+        }
+      })
+    )
+
   def error(
     query: String,
     expectedGqlStatusCode: String,
@@ -988,6 +1026,7 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
       case Ignore               => ()
       case Passes               => pass(query, versions)
       case e: GqlError          => error(query, e, versions)
+      case n: Notified          => notified(query, n, versions)
       case AllOf(outcomes @ _*) => outcomes.foreach(o => check(query, o, versions))
       case Absent(codes @ _*)   => absent(query, codes.toSet, versions)
       case Exactly(errors @ _*) => exactly(query, errors, versions)

@@ -95,6 +95,42 @@ class OutcomeAssertionTest extends VariableCheckingTestSuite {
     check(singleError, ignoreBeforeCypher25(E42N62("x")), CypherVersion.values())
   }
 
+  // ----- Notified: notifications (not errors) logged by the checker -----
+
+  private val createSelfRef = "CREATE (b {prop: EXISTS {(a)-->()}}), (a)"
+  private val v5 = Array(CypherVersion.Cypher5)
+
+  private def rejectsIn(query: String, outcome: Outcome, versions: Array[CypherVersion]): Unit =
+    intercept[TestFailedException](check(query, outcome, versions))
+
+  test("Notified accepts a notification the checker logs") {
+    check(createSelfRef, Notified.deprecatedPropertyReferenceInCreate("a"), v5)
+  }
+
+  test("Notified rejects an expected notification that is never logged") {
+    rejects("RETURN 1 AS a", Notified.deprecatedPropertyReferenceInCreate("a"))
+  }
+
+  test("Notified rejects a notification of the wrong kind even when another is logged") {
+    rejectsIn(createSelfRef, Notified.deprecatedPropertyReferenceInMerge("a"), v5)
+  }
+
+  test("Notified rejects a notification for the wrong variable") {
+    rejectsIn(createSelfRef, Notified.deprecatedPropertyReferenceInCreate("zzz"), v5)
+  }
+
+  test("Versioned composes a notification (Cypher 5) with an error (Cypher 25)") {
+    check(
+      createSelfRef,
+      Versioned(E42I58("a"), CypherVersion.Cypher5 -> Notified.deprecatedPropertyReferenceInCreate("a")),
+      CypherVersion.values()
+    )
+  }
+
+  test("AllOf composes a notification with an absent error") {
+    check(createSelfRef, AllOf(Notified.deprecatedPropertyReferenceInCreate("a"), Absent("42I58")), v5)
+  }
+
   // ----- relaxedForFuzzing: weakening exact assertions for surrounded/fuzzed queries -----
 
   test("relaxedForFuzzing rewrites Exactly to AllOf of the same errors") {

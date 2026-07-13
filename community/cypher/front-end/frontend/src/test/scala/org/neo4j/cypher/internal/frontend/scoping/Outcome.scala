@@ -17,6 +17,9 @@
 package org.neo4j.cypher.internal.frontend.scoping
 
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.notification.DeprecatedPropertyReferenceInCreate
+import org.neo4j.cypher.internal.notification.DeprecatedPropertyReferenceInMerge
+import org.neo4j.cypher.internal.notification.InternalNotification
 
 sealed trait Outcome
 
@@ -33,9 +36,10 @@ object Outcome {
    *     query is wrapped in arbitrary context.
    *   - [[AllOf]] / [[Versioned]]               — relaxed structurally, per element / per branch.
    *
-   * Single [[GqlError]], [[Passes]] and [[Ignore]] are already surrounding-robust (they only assert a
-   * code is present somewhere, or that nothing is asserted) and pass through unchanged. As a result
-   * this is the identity transform for every outcome that does not use the exact/absent combinators.
+   * Single [[GqlError]], [[Notified]], [[Passes]] and [[Ignore]] are already surrounding-robust (they
+   * only assert a code is present somewhere, or that nothing is asserted) and pass through unchanged.
+   * As a result this is the identity transform for every outcome that does not use the exact/absent
+   * combinators.
    */
   def relaxedForFuzzing(outcome: Outcome): Outcome = outcome match {
     case Exactly(errors @ _*) => AllOf(errors: _*)
@@ -52,6 +56,9 @@ case class Versioned(default: Outcome, map: (CypherVersion, Outcome)*) extends O
 object Versioned {
   def ignoreBeforeCypher25(outcome: Outcome): Outcome = Versioned(outcome, CypherVersion.Cypher5 -> Ignore)
   def passesBeforeCypher25(outcome: Outcome): Outcome = Versioned(outcome, CypherVersion.Cypher5 -> Passes)
+
+  def notifiesBeforeCypher25(outcome: Outcome, notification: Notified): Outcome =
+    Versioned(outcome, CypherVersion.Cypher5 -> notification)
 
   def passesCypher25Onwards(beforeCypher25: Outcome): Outcome =
     Versioned(Passes, CypherVersion.Cypher5 -> beforeCypher25)
@@ -103,6 +110,29 @@ case class AllOf(outcomes: Outcome*) extends Unversioned
 case class Absent(codes: String*) extends Unversioned
 
 case class Exactly(errors: GqlError*) extends Unversioned
+
+case class Notified(description: String, matches: InternalNotification => Boolean) extends Unversioned
+
+object Notified {
+
+  def deprecatedPropertyReferenceInCreate(varName: String): Notified =
+    Notified(
+      s"DeprecatedPropertyReferenceInCreate($varName)",
+      {
+        case DeprecatedPropertyReferenceInCreate(_, n) => n == varName
+        case _                                         => false
+      }
+    )
+
+  def deprecatedPropertyReferenceInMerge(varName: String): Notified =
+    Notified(
+      s"DeprecatedPropertyReferenceInMerge($varName)",
+      {
+        case DeprecatedPropertyReferenceInMerge(_, n) => n == varName
+        case _                                        => false
+      }
+    )
+}
 
 object GqlError {
 

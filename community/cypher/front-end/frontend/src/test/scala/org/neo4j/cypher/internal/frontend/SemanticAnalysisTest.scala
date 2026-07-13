@@ -1950,6 +1950,29 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite with AstConstructio
     override def createMultipleGraphReferencesError(graphName: String, transactioinalDefault: Boolean = false): String =
       "A very nice message explaining why multiple graph references are not allowed: " + graphName
   }
+
+  test("self-reference: INSERT reports the error at the referencing position") {
+    runWithCarets(
+      """INSERT (a), (b {prop: a.prop})
+        |                      ^""".stripMargin
+    ).hasAtLeastErrorsWithMarkedPosition(pos => SemanticError.invalidEntityReference("a", "INSERT", pos))
+  }
+
+  test("self-reference: CREATE reports the error at the referencing position (Cypher 25)") {
+    runWithCarets(
+      """CREATE (a), (b {prop: a.prop})
+        |                      ^""".stripMargin,
+      disabledVersions = Set(CypherVersion.Cypher5)
+    ).hasAtLeastErrorsWithMarkedPosition(pos => SemanticError.invalidEntityReference("a", "CREATE", pos))
+  }
+
+  test("self-reference: MERGE reports the error at the referencing position (Cypher 25)") {
+    runWithCarets(
+      """MERGE (a {prop:'p'})-[:T]->(b {prop:a.prop})
+        |                                    ^""".stripMargin,
+      disabledVersions = Set(CypherVersion.Cypher5)
+    ).hasAtLeastErrorsWithMarkedPosition(pos => SemanticError.invalidEntityReference("a", "MERGE", pos))
+  }
 }
 
 object SemanticAnalysisTest {

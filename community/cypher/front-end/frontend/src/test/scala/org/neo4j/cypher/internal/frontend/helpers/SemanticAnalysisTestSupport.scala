@@ -25,8 +25,9 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.notification.devNullLogger
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.*
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedCatalogEntry
@@ -43,13 +44,13 @@ class ErrorCollectingContext(
   databaseName: String = "mock",
   query: String = "mock",
   override val semanticFeatures: Seq[SemanticFeature] = Seq(),
-  override val shadowedFunctions: Set[String] = Set.empty
+  override val shadowedFunctions: Set[String] = Set.empty,
+  override val notificationLogger: InternalNotificationLogger = devNullLogger
 ) extends BaseContext {
 
   var errors: Seq[SemanticErrorDef] = Seq.empty
 
   override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
-  override def notificationLogger: devNullLogger.type = devNullLogger
   override def cypherExceptionFactory: CypherExceptionFactory = Neo4jCypherExceptionFactory(query, None)
   override def monitors: Monitors = ???
 

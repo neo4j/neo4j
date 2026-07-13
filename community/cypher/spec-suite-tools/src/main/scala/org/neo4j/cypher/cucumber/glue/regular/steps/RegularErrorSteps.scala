@@ -163,12 +163,17 @@ object RegularErrorSteps {
       case (actualLeft, optExpect) => actualLeft.filterNot(w => warningMatch(w, optExpect))
     }
 
-    // Remaining warnings should match exactly (currently requires that expected are ordered)
+    // Remaining warnings must match as a multiset, independent of order:
+    // each expected warning consumes exactly one distinct actual warning.
     actualWithoutOptional.size == expected.size &&
-    actualWithoutOptional
-      .sortBy(w => (w.code, w.statusDescription))
-      .zip(expected)
-      .forall { case (actual, expected) => warningMatch(actual, expected) }
+    expected.foldLeft(Option(actualWithoutOptional.toList)) {
+      case (Some(remaining), exp) =>
+        remaining.indexWhere(warningMatch(_, exp)) match {
+          case -1  => None
+          case idx => Some(remaining.patch(idx, Nil, 1))
+        }
+      case (None, _) => None
+    }.contains(Nil)
   }
 
   private def warningMatch(actual: GqlNotification, expected: NotificationDescription): Boolean = {

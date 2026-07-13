@@ -20,10 +20,12 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
+import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
+import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.LocalCallableDefinition
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
@@ -51,6 +53,7 @@ import org.neo4j.cypher.internal.expressions.AllReducePredicate.ReductionStepVar
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.ReduceScope
@@ -61,6 +64,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.notification.DeprecatedPropertyReferenceInCreate
+import org.neo4j.cypher.internal.notification.DeprecatedPropertyReferenceInMerge
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Foldable.FoldingBehavior
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -176,27 +180,21 @@ case class VariableChecker(
   }
 
   private def invalidEntityReferenceInUpdatingClause(acc: Acc, ss: StatementScope): Acc = (acc, ss) match {
-    case ( // ≥ Cypher 25
-        Acc.CreatePattern(a, topo, _, create, true),
-        StatementScope(_: Match, _, _, declared, _, _, _, _)
-      )
-      if version != CypherVersion.Cypher5 && (declared.withoutAnonymousDeclaration.allSymbols.toSet intersect topo).nonEmpty =>
-      a(declared.withoutAnonymousDeclaration.allSymbols.filter(topo).map(v =>
-        SemanticError.invalidEntityReference(v.name, create.name, v.position)
-      ))
-    case ( // Cypher 5
+    case (
         Acc.CreatePattern(a, topo, patternVars, create, true),
-        StatementScope(_: Match, _, _, declared, _, _, _, _)
-      )
-      if version == CypherVersion.Cypher5 && (declared.withoutAnonymousDeclaration.allSymbols.toSet intersect topo).nonEmpty =>
-      a(declared.withoutAnonymousDeclaration.allSymbols.flatMap(v =>
-        if (patternVars contains v)
+        StatementScope(_: Match, _, referenced, declared, _, _, _, _)
+      ) =>
+      val selfReferenced =
+        (declared.withoutAnonymousDeclaration.allSymbols.toSet ++ referenced.getVariables).filter(topo)
+      val hardError = version != CypherVersion.Cypher5 || create.isInstanceOf[Insert]
+      a(selfReferenced.toSeq.flatMap { v =>
+        if (hardError || (patternVars contains v))
           Seq(SemanticError.invalidEntityReference(v.name, create.name, v.position))
         else {
           logger.log(DeprecatedPropertyReferenceInCreate(v.position, v.name))
-          Seq()
+          Seq.empty
         }
-      ))
+      })
     case _ => acc
   }
 
@@ -228,25 +226,29 @@ case class VariableChecker(
 
   private def variableNotDefined(acc: Acc, es: ExpressionScope): Acc = (acc, es) match {
     case (
-        Acc.CreatePattern(a, topo, patternVariables, create, inScalarSubquery),
+        Acc.CreatePattern(a, topo, patternVariables, create, _),
         Scope.Expr.Variable(variable, isConstant)
       ) =>
       val isIncoming = isConstant(variable)
       val declaredInSameGraphPattern = topo contains variable
       val declaredInSamePathPattern = patternVariables contains variable
-      (isIncoming, declaredInSameGraphPattern, inScalarSubquery, declaredInSamePathPattern, version) match {
-        case (true, false, _, _, _)                         => a
-        case (_, true, false, false, CypherVersion.Cypher5) => a
-        case (_, false, _, _, _) => a(SemanticError.variableNotDefined(variable.name, variable.position))
-        case _ => a(SemanticError.invalidEntityReference(variable.name, create.name, variable.position))
+      (isIncoming, declaredInSameGraphPattern, declaredInSamePathPattern, version) match {
+        case (true, false, _, _) => a
+        case (_, true, false, CypherVersion.Cypher5) if create.isInstanceOf[Create] =>
+          logger.log(DeprecatedPropertyReferenceInCreate(variable.position, variable.name))
+          a
+        case (_, false, _, _) => a(SemanticError.variableNotDefined(variable.name, variable.position))
+        case _                => a(SemanticError.invalidEntityReference(variable.name, create.name, variable.position))
       }
     case (
         Acc.MergePattern(a, topo, merge),
         Scope.Expr.Variable(variable, isConstant)
       ) if !isConstant(variable) =>
       if (topo contains variable) {
-        if (version == CypherVersion.Cypher5) a
-        else
+        if (version == CypherVersion.Cypher5) {
+          logger.log(DeprecatedPropertyReferenceInMerge(variable.position, variable.name))
+          a
+        } else
           a(SemanticError.invalidEntityReference(variable.name, merge.name, variable.position))
       } else {
         a(SemanticError.variableNotDefined(variable.name, variable.position))
@@ -465,6 +467,15 @@ case class VariableChecker(
           TraverseChildrenNewAccForSiblings(
             _acc.dropIncomingVariablesToClause(importedSymbols),
             acc => acc.inProjectionContext(_acc.projectionContext)
+          )
+        )
+
+      case s @ PatternScope(np: NamedPatternPart, _, _, Declarations(_, variables, _), _, _) =>
+        val inRelationship = np.element.isInstanceOf[RelationshipChain]
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            if (_acc.hasPatternVariables) _acc else _acc.withPatternVariables(variables.toSet, inRelationship),
+            acc => acc.inVariableContext(_acc.variableContext)
           )
         )
 

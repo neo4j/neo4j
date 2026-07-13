@@ -16,14 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.parserTransformers
 
-import org.neo4j.cypher.internal.ast.Create
-import org.neo4j.cypher.internal.ast.CreateOrInsert
-import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.Search
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.UpdateClause
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.And
@@ -31,11 +26,7 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.NamedPatternPart
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.VectorFilterExpression
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
@@ -51,14 +42,9 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ListCoercedT
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.MatchChecks.SearchCheck
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PatternExpressionInNonExistenceCheck.patternExpressionInNonExistenceCheck
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticTypeCheck.SemanticErrorCheck
-import org.neo4j.cypher.internal.label_expressions.LabelExpression
-import org.neo4j.cypher.internal.label_expressions.LabelExpression.DynamicLeaf
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.FunctionName
-import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
@@ -81,8 +67,6 @@ case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState]
 
   val checks: Seq[SemanticErrorCheck] = Seq(
     patternExpressionInNonExistenceCheck,
-    SelfReferenceCheckWithinPatternPart.check,
-    SelfReferenceCheckAcrossPatternParts.check,
     listCoercedToBooleanCheck,
     MatchChecks.checkMatchMode,
     SearchCheck.check
@@ -133,123 +117,6 @@ object PatternExpressionInNonExistenceCheck extends ExpectedBooleanTypeCheck {
       case p: PatternExpression if !isExpectedTypeBoolean(baseState.semanticTable(), p) =>
         errors => SkipChildren(errors :+ SemanticError.invalidUseOfPatternExpression(p.position))
     }
-  }
-}
-
-trait VariableReferenceCheck {
-
-  /**
-   * Check for self references either within a pattern part (disallowed for CREATE and INSERT) or across multiple
-   * pattern parts (disallowed for INSERT, deprecated for CREATE).
-   * @param ast The pattern part or (in case of checking across pattern parts) the full pattern to be checked
-   * @param pattern The full pattern, needed to fetch all symbol definitions in scope from the semantic table
-   * @param semanticTable Semantic table, containing symbol definitions
-   * @return
-   */
-  def findSelfReferenceVariables(
-    ast: ASTNode,
-    pattern: Pattern,
-    semanticTable: SemanticTable
-  ): Set[LogicalVariable] = {
-
-    val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
-
-    def isDefinition(variable: LogicalVariable): Boolean = {
-      allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
-    }
-
-    def findRefVariables(e: Option[Expression]): Set[LogicalVariable] =
-      e.fold(Set.empty[LogicalVariable])(_.dependencies)
-
-    def findDynamicVariables(e: Option[LabelExpression]): Set[LogicalVariable] =
-      e.folder.findAllByClass[DynamicLeaf].flatten(_.expr.expression.dependencies).toSet
-
-    val (declaredVariables, referencedVariables) =
-      ast.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
-        case NodePattern(maybeVariable, labelExpression, maybeProperties, _) => acc =>
-            SkipChildren((
-              acc._1 ++ maybeVariable.filter(isDefinition),
-              acc._2 ++ findRefVariables(maybeProperties) ++ findDynamicVariables(labelExpression)
-            ))
-        case RelationshipPattern(maybeVariable, labelExpression, _, maybeProperties, _, _) => acc =>
-            SkipChildren((
-              acc._1 ++ maybeVariable.filter(isDefinition),
-              acc._2 ++ findRefVariables(maybeProperties) ++ findDynamicVariables(labelExpression)
-            ))
-        case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
-      }
-    referencedVariables.intersect(declaredVariables)
-  }
-}
-
-object SelfReferenceCheckWithinPatternPart extends VariableReferenceCheck {
-
-  def check: SemanticErrorCheck = (baseState, baseContext) => {
-    val semanticTable = baseState.semanticTable()
-
-    baseState.statement().folder.treeFold(Seq.empty[SemanticError]) {
-      case c: CreateOrInsert =>
-        accErrors =>
-          val errors = checkPattern(c, c.pattern, semanticTable)
-          SkipChildren(accErrors ++ errors)
-
-      case m: Merge if Merge.SelfReference.errorIn(baseContext.cypherVersion) =>
-        accErrors =>
-          val pattern = Pattern.ForUpdate(Seq(m.pattern))(m.pattern.position)
-          val errors = checkPattern(m, pattern, semanticTable)
-          SkipChildren(accErrors ++ errors)
-    }
-  }
-
-  private def checkPattern(
-    clause: UpdateClause,
-    pattern: Pattern,
-    semanticTable: SemanticTable
-  ): Seq[SemanticError] = {
-    findSelfReferenceVariablesWithinPatternParts(pattern, semanticTable)
-      .map(createError(clause, _))
-      .toSeq
-  }
-
-  private def findSelfReferenceVariablesWithinPatternParts(
-    pattern: Pattern,
-    semanticTable: SemanticTable
-  ): Set[LogicalVariable] = {
-    pattern.patternParts.flatMap { patternPart =>
-      findSelfReferenceVariables(patternPart, pattern, semanticTable)
-    }.toSet
-  }
-
-  private def createError(
-    clause: UpdateClause,
-    variable: LogicalVariable
-  ): SemanticError = {
-    SemanticError.invalidEntityReference(variable.name, clause.name, variable.position)
-  }
-}
-
-object SelfReferenceCheckAcrossPatternParts extends VariableReferenceCheck {
-
-  def check: SemanticErrorCheck = (baseState, ctx) => {
-    val semanticTable = baseState.semanticTable()
-    baseState.statement().folder.treeFold(Seq.empty[SemanticError]) {
-      case i: Insert =>
-        accErrors =>
-          val errors = checkPattern(i, i.pattern, semanticTable)
-          SkipChildren(accErrors ++ errors)
-
-      case c: Create if Create.SelfReferenceAcrossPatterns.errorIn(ctx.cypherVersion) =>
-        accErrors =>
-          val errors = checkPattern(c, c.pattern, semanticTable)
-          SkipChildren(accErrors ++ errors)
-    }
-  }
-
-  private def checkPattern(clause: UpdateClause, pattern: Pattern, semanticTable: SemanticTable): Seq[SemanticError] = {
-    // Returns the set of variables that are defined in a pattern and used in the same pattern for property read
-    // E.g. `INSERT (a {prop: 5}), (b {prop: a.prop})
-    findSelfReferenceVariables(pattern, pattern, semanticTable)
-      .map(e => SemanticError.invalidEntityReference(e.name, clause.name, e.position)).toSeq
   }
 }
 
