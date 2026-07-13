@@ -76,6 +76,11 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
   private val timeZones: Seq[ZoneId] = ZoneId.getAvailableZoneIds.asScala.toSeq.map(ZoneId.of)
   private val MAX_NANOS_PER_DAY = 86399999999999L
 
+  // Perturbation applied by modifyPoint to every coordinate when producing the
+  // lessThan/moreThan neighbours of a generated point. WGS84 generators tighten
+  // their bounds by this delta so the perturbed point is still a valid WGS84
+  // coordinate.
+  private val pointModifierDelta: Double = 0.1
   // ----------------
   // the actual test
   // ----------------
@@ -90,9 +95,24 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
         changeLastChar(c => (c - 1).toChar),
         changeLastChar(c => (c + 1).toChar)
       ),
-      ValueSetup[PointValue]("geometric points", pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)),
-      ValueSetup[PointValue]("2d geographic points", wgs84_2D_pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)),
-      ValueSetup[PointValue]("3d geographic points", wgs84_3D_pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)),
+      ValueSetup[PointValue](
+        "geometric points",
+        pointGen,
+        modifyPoint(_ - pointModifierDelta),
+        modifyPoint(_ + pointModifierDelta)
+      ),
+      ValueSetup[PointValue](
+        "2d geographic points",
+        wgs84_2D_pointGen,
+        modifyPoint(_ - pointModifierDelta),
+        modifyPoint(_ + pointModifierDelta)
+      ),
+      ValueSetup[PointValue](
+        "3d geographic points",
+        wgs84_3D_pointGen,
+        modifyPoint(_ - pointModifierDelta),
+        modifyPoint(_ + pointModifierDelta)
+      ),
       ValueSetup[DateValue]("dates", dateGen, x => x.sub(oneDay), x => x.add(oneDay)),
       ValueSetup[DateTimeValue]("dateTimes", dateTimeGen, x => x.sub(oneDay), x => x.add(oneDay)),
       ValueSetup[LocalDateTimeValue]("localDateTimes", localDateTimeGen, x => x.sub(oneDay), x => x.add(oneDay)),
@@ -135,21 +155,29 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
   def pointGen: Gen[PointValue] =
     for {
       dimension <- Gen.oneOf(allNonGeographicCRSDimensions)
-      coordinates <- Gen.listOfN(dimension, arbitrary[Double].retryUntil(java.lang.Double.isFinite(_)))
+      coordinates <- Gen.listOfN(dimension, arbitrary[Double].retryUntil(java.lang.Double.isFinite))
       crs <- Gen.oneOf(allNonGeographicCRS(dimension))
     } yield Values.pointValue(crs, coordinates*)
 
   def wgs84_3D_pointGen: Gen[PointValue] =
     for {
-      x <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -180 <= d && d <= 180)
-      y <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -90 <= d && d <= 90)
-      z <- arbitrary[Double].retryUntil(java.lang.Double.isFinite(_))
+      x <- arbitrary[Double].retryUntil(d =>
+        java.lang.Double.isFinite(d) && -180 + pointModifierDelta <= d && d <= 180 - pointModifierDelta
+      )
+      y <- arbitrary[Double].retryUntil(d =>
+        java.lang.Double.isFinite(d) && -90 + pointModifierDelta <= d && d <= 90 - pointModifierDelta
+      )
+      z <- arbitrary[Double].retryUntil(java.lang.Double.isFinite)
     } yield Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, x, y, z)
 
   def wgs84_2D_pointGen: Gen[PointValue] =
     for {
-      x <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -180 <= d && d <= 180)
-      y <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -90 <= d && d <= 90)
+      x <- arbitrary[Double].retryUntil(d =>
+        java.lang.Double.isFinite(d) && -180 + pointModifierDelta <= d && d <= 180 - pointModifierDelta
+      )
+      y <- arbitrary[Double].retryUntil(d =>
+        java.lang.Double.isFinite(d) && -90 + pointModifierDelta <= d && d <= 90 - pointModifierDelta
+      )
     } yield Values.pointValue(CoordinateReferenceSystem.WGS_84, x, y)
 
   def timeGen: Gen[TimeValue] =
