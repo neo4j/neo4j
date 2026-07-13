@@ -1170,11 +1170,6 @@
         <version>${scala.test.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.scalactic</groupId>
-        <artifactId>scalactic_3</artifactId>
-        <version>${scala.test.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest-compatible</artifactId>
         <version>${scala.test.version}</version>
@@ -1186,27 +1181,12 @@
       </dependency>
       <dependency>
         <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-core_3</artifactId>
-        <version>${scala.test.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
         <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
         <version>${scala.test.version}</version>
       </dependency>
       <dependency>
         <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-funsuite_3</artifactId>
-        <version>${scala.test.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
         <artifactId>scalatest-matchers-core_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-matchers-core_3</artifactId>
         <version>${scala.test.version}</version>
       </dependency>
       <dependency>
@@ -1219,32 +1199,11 @@
         <artifactId>scalatest-shouldmatchers_${scala.binary.version}</artifactId>
         <version>${scala.test.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-shouldmatchers_3</artifactId>
-        <version>${scala.test.version}</version>
-      </dependency>
 
       <!-- scala test dependencies -->
       <dependency>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-reflect</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <!-- scalatest_3 -->
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest_3</artifactId>
         <version>${scala.test.version}</version>
       </dependency>
       <dependency>
@@ -1254,28 +1213,8 @@
       </dependency>
       <dependency>
         <groupId>org.scalatestplus</groupId>
-        <artifactId>mockito-4-6_3</artifactId>
-        <version>${scala.test.version}.0</version>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatestplus</groupId>
         <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
         <version>${scala.test.version}.0</version>
-      </dependency>
-      <dependency>
-        <groupId>org.scalautils</groupId>
-        <artifactId>scalautils_${scala.binary.version}</artifactId>
-        <version>2.1.7</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-reflect</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
