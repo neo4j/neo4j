@@ -127,7 +127,7 @@ class TokenCountIT {
 
         @Override
         String confRequired() {
-            return "{ model: 'amazon.nova-micro-v1:0', region: 'us-east-1', accessKeyId: $key, secretAccessKey: $secret, chatHistory: %s }"
+            return "{ model: 'anthropic.claude-haiku-4-5-20251001-v1:0', region: 'us-east-1', accessKeyId: $key, secretAccessKey: $secret, chatHistory: %s }"
                     .formatted(chatHistory);
         }
     }
