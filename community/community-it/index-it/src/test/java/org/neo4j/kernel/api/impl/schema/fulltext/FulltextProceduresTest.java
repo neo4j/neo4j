@@ -1657,7 +1657,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             try {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService(layout).runFullConsistencyCheck();
                 if (!result.isSuccessful()) {
-                    Files.lines(result.reportFile()).forEach(System.out::println);
+                    try (var lines = Files.lines(result.reportFile())) {
+                        lines.forEach(System.out::println);
+                    }
                 }
                 assertTrue(result.isSuccessful());
             } catch (Exception e) {

@@ -89,7 +89,7 @@ class ProfilingContextTest {
 
         profilingContext.close();
 
-        var profiles = Files.list(profilesDir).toList();
+        List<Path> profiles = getProfiles();
         assertThat(profiles).hasSize(1);
         var profileContent = Files.readString(profiles.get(0));
 
@@ -149,6 +149,12 @@ class ProfilingContextTest {
                 """;
 
         assertThat(profileContent).isEqualToNormalizingNewlines(expected);
+    }
+
+    private List<Path> getProfiles() throws IOException {
+        try (var files = Files.list(profilesDir)) {
+            return files.toList();
+        }
     }
 
     void recordProfile(int dbId, String query, long duration, String profileName) {

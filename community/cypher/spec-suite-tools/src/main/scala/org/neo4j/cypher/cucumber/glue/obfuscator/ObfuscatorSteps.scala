@@ -166,10 +166,12 @@ final class ObfuscatorSteps @Inject() (
     val logsDir = inner.getDbmsAccessor.dbms.database.getDependencyResolver
       .resolveDependency(classOf[Config])
       .get(GraphDatabaseSettings.logs_directory)
-    Files.list(logsDir)
-      .filter(_.toString.contains("query.log"))
-      .sorted()
-      .toList.asScala.toSeq
+    Using.resource(Files.list(logsDir)) { files =>
+      files
+        .filter(_.toString.contains("query.log"))
+        .sorted()
+        .toList.asScala.toSeq
+    }
   }
 
   private def tagQuery(cypher: String): String = {
