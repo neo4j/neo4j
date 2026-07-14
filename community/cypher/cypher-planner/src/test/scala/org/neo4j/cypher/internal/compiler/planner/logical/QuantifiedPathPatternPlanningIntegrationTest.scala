@@ -2109,7 +2109,7 @@ trait QuantifiedPathPatternPlanningIntegrationTestBase extends CypherPlannerTest
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("r")
-        .filter("b.p = cacheNFromStore[a.p]")
+        .filter("b.p = cacheN[a.p]")
         .expand(
           "(a)-[r*1..]->(b)",
           relationshipPredicates = Seq(Predicate("anon_0", "endNode(anon_0).p = cacheNFromStore[a.p]"))
@@ -2607,8 +2607,10 @@ trait QuantifiedPathPatternPlanningIntegrationTestBase extends CypherPlannerTest
           projectedDir = INCOMING
         )
         .filter(
-          "cacheN[d.prop] = cacheNFromStore[a.prop]",
-          "cacheNFromStore[a.prop] = cacheNFromStore[d.prop]",
+          andsReorderable(
+            "cacheNFromStore[a.prop] = cacheN[d.prop]",
+            "cacheN[d.prop] = cacheNFromStore[a.prop]"
+          ),
           "all(anon_3 IN range(0, size(c) - 1) WHERE (c[anon_3]).prop = cacheNFromStore[a.prop])"
         )
         .repeatTrail(TrailParameters(

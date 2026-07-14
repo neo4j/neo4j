@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredic
 import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriter.RewritablePredicate
 import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriter.RewritableQuantifiedPath
 import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriter.extractRewritableQppPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.copyVariables
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
@@ -83,7 +84,7 @@ case class CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriter() {
 
   private def rewritePredicate(predicate: RewritablePredicate): Expression = {
     val RewritablePredicate(outer, inner, innerPredicate) = predicate
-    innerPredicate.replaceAllOccurrencesBy(inner, outer)
+    copyVariables(innerPredicate.replaceAllOccurrencesBy(inner, outer)).asInstanceOf[Expression]
   }
 }
 

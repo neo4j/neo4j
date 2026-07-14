@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ReplacePatte
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
+import org.neo4j.cypher.internal.rewriting.conditions.NoReferenceEqualityAmongVariables
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriterTest
@@ -374,5 +376,26 @@ class CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriterTest
         |WHERE a.p > pre.p
         |RETURN *""".stripMargin
     )
+  }
+
+  test("copied predicates keep variable instances unique (NoReferenceEqualityAmongVariables)") {
+    Seq(
+      """MATCH (pre) MATCH (a) ((n)-[r]->(m) WHERE n.p > pre.p)+ (b)
+        |RETURN *""".stripMargin,
+      """MATCH (movie)<-[:LIKES]-(user)-[:LIVES_NEAR]->(place)
+        |MATCH (user)( (:User)-[:FRIEND]-(u:User) WHERE
+        |   EXISTS {
+        |     (u)((:User)-[:DATING]-(:User)){1,5}()-[:LIVES_NEAR]->(place)
+        |   } ){0,2}(friend:User)
+        |RETURN DISTINCT friend""".stripMargin
+    ).foreach { query =>
+      rewriteAndAssert(
+        query,
+        statement =>
+          withClue(s"reference-equal variables remain after rewriting:\n$query\n") {
+            NoReferenceEqualityAmongVariables(statement)(CancellationChecker.NeverCancelled) shouldBe empty
+          }
+      )
+    }
   }
 }
