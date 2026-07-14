@@ -1727,6 +1727,13 @@ sealed abstract class PrivilegeCommand(
     })
   }
 
+  private def checkQualifierType(qualifiers: List[PrivilegeQualifier]): SemanticCheck = {
+    semanticCheckFold(qualifiers) {
+      case SecretQualifier(name) => checkIsStringLiteralOrParameter("secret name", name)
+      case _                     => SemanticCheck.success
+    }
+  }
+
   override def semanticCheck: SemanticCheck = {
     val showSettingFeatureCheck = privilege match {
       case DbmsPrivilege(ShowSettingAction) =>
@@ -1751,7 +1758,7 @@ sealed abstract class PrivilegeCommand(
         }
       case _ => showSettingFeatureCheck chain secretsManagerFeatureCheck chain
           super.semanticCheck chain SemanticState.recordCurrentScope(this)
-    }) chain privilegeQualifierCheckForPropertyRules(qualifier)
+    }) chain privilegeQualifierCheckForPropertyRules(qualifier) chain checkQualifierType(qualifier)
   }
 }
 

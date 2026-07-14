@@ -1834,7 +1834,7 @@ secretToken
 
 secretQualifier
   : TIMES
-  | stringOrParameter
+  | stringOrParameterExpression
   ;
 
 userQualifier

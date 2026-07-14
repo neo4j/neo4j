@@ -466,7 +466,7 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
     ctx.ast = if (ctx.TIMES() != null) {
       (ReadSecretsAction, List(SecretAllQualifier()(InputPosition.NONE)))
     } else {
-      (ReadSecretsAction, List(SecretQualifier(ctx.stringOrParameter().ast())(pos(ctx))))
+      (ReadSecretsAction, List(SecretQualifier(ctx.stringOrParameterExpression().ast())(pos(ctx))))
     }
   }
 

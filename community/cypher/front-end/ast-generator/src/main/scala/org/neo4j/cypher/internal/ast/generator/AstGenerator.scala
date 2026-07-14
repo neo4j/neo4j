@@ -329,6 +329,7 @@ import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.Search
+import org.neo4j.cypher.internal.ast.SecretAllQualifier
 import org.neo4j.cypher.internal.ast.SecretQualifier
 import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetAuthAction
@@ -3774,9 +3775,8 @@ class AstGenerator(
     } else if (dbmsAction == ReadSecretsAction) {
       // Secrets
       for {
-        name <- _nameAsEither
-        secrets <- listOfN(1, SecretQualifier(name)(pos))
-        qualifier <- frequency(7 -> secrets, 3 -> List(SecretQualifier(Left("*"))(pos)))
+        name <- _stringLiteralOrParameter
+        qualifier <- frequency(7 -> List(SecretQualifier(name)(pos)), 3 -> List(SecretAllQualifier()(pos)))
       } yield qualifier
     } else if (dbmsAction == ShowSettingAction) {
       // Settings

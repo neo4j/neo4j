@@ -594,7 +594,7 @@ class AnonymizeQueryTest extends AnonymizerTestBase with AstConstructionTestSupp
     assertRewrite(
       CypherVersion.Cypher25,
       "GRANT READ SECRET 'sec1' ON DBMS TO bao",
-      "GRANT READ SECRET 'Xsec1' ON DBMS TO `string[bao]`"
+      "GRANT READ SECRET 'Xstring[sec1]' ON DBMS TO `string[bao]`"
     )
     assertRewrite(
       CypherVersion.Cypher25,

@@ -28352,8 +28352,8 @@ public class Cypher25Parser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class SecretQualifierContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode TIMES() { return getToken(Cypher25Parser.TIMES, 0); }
-		public StringOrParameterContext stringOrParameter() {
-			return getRuleContext(StringOrParameterContext.class,0);
+		public StringOrParameterExpressionContext stringOrParameterExpression() {
+			return getRuleContext(StringOrParameterExpressionContext.class,0);
 		}
 		public SecretQualifierContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -28381,7 +28381,7 @@ public class Cypher25Parser extends Parser {
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(4112);
-				stringOrParameter();
+				stringOrParameterExpression();
 				}
 				break;
 			default:
@@ -40885,7 +40885,7 @@ public class Cypher25Parser extends Parser {
 		"D\u0000\u0000\u100a\u029b\u0001\u0000\u0000\u0000\u100b\u100c\u0007E\u0000"+
 		"\u0000\u100c\u029d\u0001\u0000\u0000\u0000\u100d\u100e\u0007F\u0000\u0000"+
 		"\u100e\u029f\u0001\u0000\u0000\u0000\u100f\u1012\u0005\u013e\u0000\u0000"+
-		"\u1010\u1012\u0003\u0338\u019c\u0000\u1011\u100f\u0001\u0000\u0000\u0000"+
+		"\u1010\u1012\u0003\u0336\u019b\u0000\u1011\u100f\u0001\u0000\u0000\u0000"+
 		"\u1011\u1010\u0001\u0000\u0000\u0000\u1012\u02a1\u0001\u0000\u0000\u0000"+
 		"\u1013\u1016\u0005\u00b8\u0000\u0000\u1014\u1017\u0005\u013e\u0000\u0000"+
 		"\u1015\u1017\u0003\u020c\u0106\u0000\u1016\u1014\u0001\u0000\u0000\u0000"+

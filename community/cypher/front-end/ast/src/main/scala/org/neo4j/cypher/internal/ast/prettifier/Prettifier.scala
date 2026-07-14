@@ -1823,6 +1823,11 @@ object Prettifier {
       }
     }
 
+    def stringifyExpression(expr: ExpressionStringifier): PartialFunction[Expression, String] = {
+      case StringLiteral(s) => expr.quote(s)
+      case p: Parameter     => s"$$${backtickEmpty(p.name)}"
+    }
+
     def stringify: PartialFunction[PrivilegeQualifier, String] = {
       case LabelQualifier(name)        => backtickEmpty(name)
       case RelationshipQualifier(name) => backtickEmpty(name)
@@ -1922,21 +1927,20 @@ object Prettifier {
       case ElementsAllQualifier() :: Nil          => Some("ELEMENTS *")
       case PatternQualifier(lqs, v, e, element) :: Nil =>
         Some(s"FOR ${extractPropertyRuleExpression(lqs, v, e, element)}")
-      case UserQualifier(user) :: Nil       => Some("(" + escapeName(user) + ")")
-      case users @ UserQualifier(_) :: _    => Some("(" + users.map(stringify).mkString(", ") + ")")
-      case UserAllQualifier() :: Nil        => Some("(*)")
-      case AllQualifier() :: Nil            => None
-      case AllDatabasesQualifier() :: Nil   => None
-      case p @ ProcedureQualifier(_) :: _   => Some(p.map(stringify).mkString(", "))
-      case ProcedureAllQualifier() :: Nil   => Some("*")
-      case p @ FunctionQualifier(_) :: _    => Some(p.map(stringify).mkString(", "))
-      case FunctionAllQualifier() :: Nil    => Some("*")
-      case p @ SettingQualifier(_) :: _     => Some(p.map(stringify).mkString(", "))
-      case SettingAllQualifier() :: Nil     => Some("*")
-      case SecretAllQualifier() :: Nil      => Some("*")
-      case SecretQualifier(Left(s)) :: Nil  => Some(expr.quote(s))
-      case SecretQualifier(Right(p)) :: Nil => Some(escapeName(p))
-      case _                                => Some("<unknown>")
+      case UserQualifier(user) :: Nil     => Some("(" + escapeName(user) + ")")
+      case users @ UserQualifier(_) :: _  => Some("(" + users.map(stringify).mkString(", ") + ")")
+      case UserAllQualifier() :: Nil      => Some("(*)")
+      case AllQualifier() :: Nil          => None
+      case AllDatabasesQualifier() :: Nil => None
+      case p @ ProcedureQualifier(_) :: _ => Some(p.map(stringify).mkString(", "))
+      case ProcedureAllQualifier() :: Nil => Some("*")
+      case p @ FunctionQualifier(_) :: _  => Some(p.map(stringify).mkString(", "))
+      case FunctionAllQualifier() :: Nil  => Some("*")
+      case p @ SettingQualifier(_) :: _   => Some(p.map(stringify).mkString(", "))
+      case SettingAllQualifier() :: Nil   => Some("*")
+      case SecretAllQualifier() :: Nil    => Some("*")
+      case SecretQualifier(secret) :: Nil => Some(stringifyExpression(expr)(secret))
+      case _                              => Some("<unknown>")
     }
   }
 

@@ -76,22 +76,20 @@ case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
     case x: PropertyKeyName    => PropertyKeyName(anonymizer.propertyKey(x.name))(x.position)
     case x: Parameter          => ExplicitParameter(anonymizer.parameter(x.name), x.parameterType)(x.position)
     case x: StringLiteral      => StringLiteral(anonymizer.literal(x.value))(x.position)
-    case x: CreateIndex        => x.withName(x.name.map(n => anonymizeSchemaName(n, anonymizer.indexName)))
-    case x: DropIndexOnName    => x.copy(name = anonymizeSchemaName(x.name, anonymizer.indexName))(x.position)
-    case x: Search             => x.copy(indexName = anonymizeSchemaName(x.indexName, anonymizer.indexName))(x.position)
-    case x: CreateConstraint   => x.withName(x.name.map(n => anonymizeSchemaName(n, anonymizer.constraintName)))
-    case x: DropConstraintOnName    => x.copy(name = anonymizeSchemaName(x.name, anonymizer.constraintName))(x.position)
+    case x: CreateIndex        => x.withName(x.name.map(n => anonymizeIdentifierName(n, anonymizer.indexName)))
+    case x: DropIndexOnName    => x.copy(name = anonymizeIdentifierName(x.name, anonymizer.indexName))(x.position)
+    case x: Search => x.copy(indexName = anonymizeIdentifierName(x.indexName, anonymizer.indexName))(x.position)
+    case x: CreateConstraint => x.withName(x.name.map(n => anonymizeIdentifierName(n, anonymizer.constraintName)))
+    case x: DropConstraintOnName =>
+      x.copy(name = anonymizeIdentifierName(x.name, anonymizer.constraintName))(x.position)
     case x: GraphTypeConstraintName => x.copy(name = anonymizer.constraintName(x.name))(x.position)
     case x: GraphTypeConstraintDefinition =>
       x.copy(name = x.name.map(name => anonymizer.constraintName(name)))(x.position)
-    case x: User => x.copy(anonymizer.identifierAsString(x.name))(x.position)
-    case x: SecretQualifier => x.copy(secret = x.secret match {
-        case Left(s)  => Left(anonymizer.secretName(s))
-        case Right(_) => x.secret
-      })(x.position)
+    case x: User            => x.copy(anonymizer.identifierAsString(x.name))(x.position)
+    case x: SecretQualifier => x.copy(anonymizeIdentifierName(x.secret, anonymizer.secretName))(x.position)
   })
 
-  private def anonymizeSchemaName(
+  private def anonymizeIdentifierName(
     name: Expression,
     anonymizeStringName: String => String
   ): Expression =

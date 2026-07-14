@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.ddl.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.maybeImmutable
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
-import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.SyntaxException
 
@@ -107,7 +107,7 @@ class ReadSecretsAdministrationCommandParserTest extends AdministrationAndSchema
                   case _ =>
                     _.toAst(Statements(Seq(func(
                       ReadSecretsAction,
-                      List(readSecretQualifier(Right(paramFoo))),
+                      List(readSecretQualifier(paramFoo)),
                       Seq(literalRole),
                       immutable
                     )(pos))))
@@ -166,7 +166,7 @@ class ReadSecretsAdministrationCommandParserTest extends AdministrationAndSchema
 
   }
 
-  private def readSecretQualifier(secret: Either[String, Parameter]): InputPosition => SecretQualifier =
+  private def readSecretQualifier(secret: Expression): InputPosition => SecretQualifier =
     SecretQualifier(secret)(_)
   private def secretAllQualifier: InputPosition => SecretAllQualifier = SecretAllQualifier()(_)
 }

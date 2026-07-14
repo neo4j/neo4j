@@ -228,12 +228,12 @@ final case class SecretAllQualifier()(val position: InputPosition) extends Secre
   override def dup(children: Seq[AnyRef]): SecretAllQualifier.this.type = this
 }
 
-final case class SecretQualifier(secret: Either[String, Parameter])(val position: InputPosition)
+final case class SecretQualifier(secret: Expression)(val position: InputPosition)
     extends SecretPrivilegeQualifier {
 
   override def dup(children: Seq[AnyRef]): SecretQualifier.this.type = {
     SecretQualifier(
-      children.head.asInstanceOf[Either[String, Parameter]]
+      children.head.asInstanceOf[Expression]
     )(position).asInstanceOf[this.type]
   }
 }
