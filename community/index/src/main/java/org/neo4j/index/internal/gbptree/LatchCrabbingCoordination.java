@@ -164,7 +164,7 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         }
 
         if (isStable) {
-            if (depthData.positionedAtTheEdge()) {
+            if (positionedAtTheEdge(depth)) {
                 // If the leaf we're updating needs a successor and the position of this leaf in the parent is at the
                 // edge
                 // it means that one of its siblings sits in a neighbour parent, which isn't currently locked, so fall
@@ -176,6 +176,11 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         }
 
         return true;
+    }
+
+    private boolean positionedAtTheEdge(int depth) {
+        int childPos = dataByDepth[depth].childPos;
+        return childPos == 0 || (depth > 0 && childPos == dataByDepth[depth - 1].keyCount);
     }
 
     @Override
@@ -338,10 +343,6 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         private int keyCount;
         private int childPos;
         private boolean isStable;
-
-        boolean positionedAtTheEdge() {
-            return childPos == 0 || childPos == keyCount;
-        }
 
         private void refLatch(long childTreeNodeId, TreeNodeLatchService latchService) {
             if (latch != null) {

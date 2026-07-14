@@ -215,6 +215,26 @@ class LatchCrabbingCoordinationTest {
     }
 
     @Test
+    void shouldOptimisticallyAllowArriveAtChildOnLeafNeedsSuccessorWhenChildPosOnlyMatchesOwnKeyCount() {
+        LongSpinLatch parentLatch = mock(LongSpinLatch.class);
+        when(parentLatch.tryUpgradeToWrite()).thenReturn(true);
+        when(latchService.latch(1L)).thenReturn(parentLatch);
+        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
+        when(latchService.latch(2L)).thenReturn(leafLatch);
+
+        coordination.beforeTraversingToChild(1L, 2);
+        assertTrue(coordination.arrivedAtChild(true, MERGE_THRESHOLD / 2, false, 10));
+        coordination.beforeTraversingToChild(2L, 5);
+
+        assertTrue(coordination.arrivedAtChild(false, MERGE_THRESHOLD / 2, true, 5));
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
+        verify(leafLatch).tryUpgradeToWrite();
+        verify(parentLatch).tryUpgradeToWrite();
+    }
+
+    @Test
     void shouldOptimisticallySucceedRemovalIfLeafWillNotUnderflow() {
         // given
         LongSpinLatch leafLatch = mock(LongSpinLatch.class);
