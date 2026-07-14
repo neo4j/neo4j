@@ -735,6 +735,12 @@ public class ImportCommand {
                         spec.commandLine(), "Both distributed graph and property shard options have been specified");
             }
 
+            if (isSkidbladnir() && autoSkipHeaders) {
+                throw new ParameterException(
+                        spec.commandLine(),
+                        "ERROR: Skidbladnir import does not support the '--auto-skip-subsequent-headers' option");
+            }
+
             if (threads > DEFAULT_IMPORTER_CONFIG.maxNumberOfWorkerThreads()) {
                 printf(
                         "WARNING: '%s' is set to %d but the total number of cores on this machine is only %d"
