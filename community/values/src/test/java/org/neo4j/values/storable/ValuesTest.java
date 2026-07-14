@@ -56,6 +56,8 @@ import static org.neo4j.values.storable.Values.utf8Value;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -175,5 +177,13 @@ class ValuesTest {
                 .isEqualTo(Map.of("singleKey", "value:with:colons"));
         assertThat(Value.parseStringMap("{key1:value:with:colons,key2:'another value'}"))
                 .isEqualTo(Map.of("key1", "value:with:colons", "key2", "another value"));
+    }
+
+    @Test
+    void shouldHandleOffsetDateTimeArray() {
+        var clock = new FrozenClock("Europe/Berlin");
+        assertThat(Values.arrayValue(new OffsetDateTime[] {OffsetDateTime.now(clock)}, false))
+                .isEqualTo(new DateTimeArray(
+                        new ZonedDateTime[] {ZonedDateTime.now(clock).withFixedOffsetZone()}));
     }
 }

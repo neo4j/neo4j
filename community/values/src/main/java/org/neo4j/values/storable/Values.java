@@ -579,6 +579,10 @@ public final class Values {
             case LocalDateTime[] array ->
                 localDateTimeArray(copyDefensively ? copy(array, new LocalDateTime[array.length]) : array);
             case OffsetTime[] array -> timeArray(copyDefensively ? copy(array, new OffsetTime[array.length]) : array);
+            case OffsetDateTime[] array ->
+                dateTimeArray(Arrays.stream(array)
+                        .map(OffsetDateTime::toZonedDateTime)
+                        .toArray(ZonedDateTime[]::new));
             case LocalTime[] array ->
                 localTimeArray(copyDefensively ? copy(array, new LocalTime[array.length]) : array);
             case LocalDate[] array -> dateArray(copyDefensively ? copy(array, new LocalDate[array.length]) : array);
