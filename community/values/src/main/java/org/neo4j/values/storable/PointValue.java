@@ -115,14 +115,17 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
             }
 
             double x = coordinate[0];
-            // Valid range for X is  [-180,180]
-            while (x > 180) {
-                x = x - 360;
+            // Valid range for x is [-180,180]; wrap in constant time.
+            // The floating-point remainder is exact and O(1), so this also terminates regardless of the size of x.
+            if (x > 180 || x < -180) {
+                x = x % 360; // result in (-360, 360)
+                if (x > 180) {
+                    x -= 360;
+                } else if (x < -180) {
+                    x += 360;
+                }
             }
-            while (x < -180) {
-                x = x + 360;
-            }
-            this.coordinate[0] = x;
+            this.coordinate[0] = x == 0 ? 0.0 : x; // normalize -0.0 (e.g. from -360 % 360) to +0.0
         }
     }
 

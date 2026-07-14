@@ -210,6 +210,20 @@ class PointValueTest {
     }
 
     @Test
+    final void geographicLongitudeWrappingTerminatesForExtremeValues() {
+        // Testing for extreme longitudes, cf. SURF-1189
+        double[] extremes = {-1e30, 1e30, -1e18, 1e18, -1.5e18, 1.5e18, Double.MAX_VALUE, -Double.MAX_VALUE};
+        for (double lon : extremes) {
+            for (CoordinateReferenceSystem crs : new CoordinateReferenceSystem[] {WGS_84, WGS_84_3D}) {
+                double[] coords = crs == WGS_84 ? new double[] {lon, 3} : new double[] {lon, 3, 0};
+                double x = pointValue(crs, coords).coordinate()[0];
+                assertThat(x).isFinite();
+                assertThat(x).isBetween(-180.0, 180.0);
+            }
+        }
+    }
+
+    @Test
     final void shouldHaveValueGroup() {
         assertThat(pointValue(CARTESIAN, 1, 2).valueGroup()).isNotNull();
         assertThat(pointValue(WGS_84, 1, 2).valueGroup()).isNotNull();
