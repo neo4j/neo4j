@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewri
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.logging.InternalLogProvider
 
 /**
@@ -45,7 +46,15 @@ trait RewritingRuntimeTest[CONTEXT <: RuntimeContext] {
     workloadMode: WorkloadMode,
     logProvider: InternalLogProvider
   ): RuntimeTestSupport[CONTEXT] = {
-    new RewritingRuntimeTestSupport(graphDb, edition, runtime, workloadMode, logProvider, debugOptions)
+    new RewritingRuntimeTestSupport(
+      graphDb,
+      edition,
+      runtime,
+      workloadMode,
+      logProvider,
+      debugOptions,
+      defaultTransactionType
+    )
   }
 
   class RewritingRuntimeTestSupport(
@@ -54,10 +63,19 @@ trait RewritingRuntimeTest[CONTEXT <: RuntimeContext] {
     runtime: CypherRuntime[CONTEXT],
     workloadMode: WorkloadMode,
     logProvider: InternalLogProvider,
-    // No default value: a default getter would synthesize a companion object, which the
+    // No default values: a default getter would synthesize a companion object, which the
     // Scala 2.13 TASTy reader cannot resolve when nested in a Scala 3 trait
-    debugOptions: CypherDebugOptions
-  ) extends RuntimeTestSupport[CONTEXT](graphDb, edition, runtime, workloadMode, logProvider, debugOptions) {
+    debugOptions: CypherDebugOptions,
+    defaultTransactionType: Type
+  ) extends RuntimeTestSupport[CONTEXT](
+        graphDb,
+        edition,
+        runtime,
+        workloadMode,
+        logProvider,
+        debugOptions,
+        defaultTransactionType
+      ) {
 
     override protected[spec] def rewriteLogicalQuery(
       logicalQuery: LogicalQuery,

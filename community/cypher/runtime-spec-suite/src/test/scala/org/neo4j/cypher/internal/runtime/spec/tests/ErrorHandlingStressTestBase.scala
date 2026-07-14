@@ -27,12 +27,8 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
-import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport.WorkloadMode
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelTransaction.Type
-import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.LogAssert
 import org.scalatest.LoneElement
 
@@ -56,23 +52,7 @@ abstract class ErrorHandlingStressTestBase[CONTEXT <: RuntimeContext](
     with RandomValuesTestSupport[CONTEXT]
     with LoneElement {
 
-  override protected def createRuntimeTestSupport(
-    graphDb: GraphDatabaseService,
-    edition: Edition[CONTEXT],
-    runtime: CypherRuntime[CONTEXT],
-    workloadMode: WorkloadMode,
-    logProvider: InternalLogProvider
-  ): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](
-      graphDb,
-      edition,
-      runtime,
-      workloadMode,
-      logProvider,
-      debugOptions,
-      defaultTransactionType = Type.IMPLICIT
-    )
-  }
+  override protected def defaultTransactionType: Type = Type.IMPLICIT
 
   class SuperFatalError(msg: String) extends VirtualMachineError(msg)
 

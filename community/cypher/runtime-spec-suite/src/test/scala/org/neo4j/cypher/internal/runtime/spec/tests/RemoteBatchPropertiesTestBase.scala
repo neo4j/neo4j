@@ -31,12 +31,9 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
-import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport.WorkloadMode
 import org.neo4j.cypher.internal.runtime.spec.tests.index.PropertyIndexTestSupport
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Limited
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
@@ -44,7 +41,6 @@ import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type
-import org.neo4j.logging.InternalLogProvider
 
 import java.util.Collections.emptyList
 
@@ -1113,23 +1109,7 @@ trait UpdatingTransactionRemoteBatchPropertiesTestBase[CONTEXT <: RuntimeContext
     extends RuntimeTestSuite[CONTEXT] with PropertyIndexTestSupport[CONTEXT] {
   self: RemoteBatchPropertiesTestBase[CONTEXT] =>
 
-  override protected def createRuntimeTestSupport(
-    graphDb: GraphDatabaseService,
-    edition: Edition[CONTEXT],
-    runtime: CypherRuntime[CONTEXT],
-    workloadMode: WorkloadMode,
-    logProvider: InternalLogProvider
-  ): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](
-      graphDb,
-      edition,
-      runtime,
-      workloadMode,
-      logProvider,
-      debugOptions,
-      defaultTransactionType = Type.IMPLICIT
-    )
-  }
+  override protected def defaultTransactionType: Type = Type.IMPLICIT
 
   test("should create data from returning subqueries remote projection on RHS") {
     givenGraph {

@@ -21,9 +21,13 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.AssertCachedProperties
+import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
+import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithFilter
 import org.neo4j.cypher.internal.logical.plans.RemoteNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoteNodeUniqueIndexSeek
 import org.neo4j.cypher.internal.runtime.spec.RewritingRuntimeTest
@@ -33,14 +37,11 @@ import org.neo4j.cypher.internal.util.RewriterStopper
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
-/**
- * Rewrites every [[NodeIndexSeek]] in the logical plan into a [[RemoteNodeIndexSeek]],
- * and every [[NodeUniqueIndexSeek]] in a read-only logical plan into a [[RemoteNodeUniqueIndexSeek]].
- */
-trait RemoteNodeIndexSeekCompatibilityTestRewriter[CONTEXT <: RuntimeContext] extends RewritingRuntimeTest[CONTEXT] {
+trait SpdCompatibilityTestRewriter[CONTEXT <: RuntimeContext] extends RewritingRuntimeTest[CONTEXT] {
   self: RuntimeTestSuite[CONTEXT] =>
 
   override def rewriter(logicalQuery: LogicalQuery): Rewriter = {
+    val idGen = logicalQuery.idGen
     val readOnly = logicalQuery.logicalPlan.readOnly
     bottomUp(
       Rewriter.lift {
@@ -66,6 +67,12 @@ trait RemoteNodeIndexSeekCompatibilityTestRewriter[CONTEXT <: RuntimeContext] ex
             plan.indexType,
             plan.supportPartitionedScan
           )(SameId(plan.id))
+        case plan @ CacheProperties(source, properties) =>
+          AssertCachedProperties(RemoteBatchProperties(source, properties)(SameId(plan.id)), properties)(idGen)
+        case plan: RemoteBatchProperties =>
+          AssertCachedProperties(plan, plan.properties)(idGen)
+        case plan: RemoteBatchPropertiesWithFilter =>
+          AssertCachedProperties(plan, plan.properties)(idGen)
       },
       stopper
     )

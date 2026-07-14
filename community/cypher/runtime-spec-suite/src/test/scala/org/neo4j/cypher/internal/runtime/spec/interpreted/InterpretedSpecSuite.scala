@@ -149,7 +149,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexSeekTestBas
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexStartsWithSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipLockingUniqueIndexSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipTypeScanTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.RemoteNodeIndexSeekCompatibilityTestRewriter
 import org.neo4j.cypher.internal.runtime.spec.tests.RemoveDynamicLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RemoveLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RepeatAcyclicTestBase
@@ -179,6 +178,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.SetRelationshipPropertyTestB
 import org.neo4j.cypher.internal.runtime.spec.tests.ShortestPathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SkipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SortTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.SpdCompatibilityTestRewriter
 import org.neo4j.cypher.internal.runtime.spec.tests.StatefulShortestPathAcyclicModeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.StatefulShortestPathPropagationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.StatefulShortestPathTrailModeTestBase
@@ -372,7 +372,7 @@ class InterpretedNodeIndexSeekTest
 
 class InterpretedRemoteNodeIndexSeekCompatibilityTest
     extends NodeIndexSeekTestBase(COMMUNITY.EDITION, CommunityInterpretedRuntime, SIZE_HINT)
-    with RemoteNodeIndexSeekCompatibilityTestRewriter[CommunityRuntimeContext]
+    with SpdCompatibilityTestRewriter[CommunityRuntimeContext]
 
 class InterpretedNodeFulltextIndexSearchTest
     extends NodeFulltextIndexSearchTestBase(COMMUNITY.EDITION, CommunityInterpretedRuntime, SIZE_HINT)

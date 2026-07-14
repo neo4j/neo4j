@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.ArgumentTracker
+import org.neo4j.cypher.internal.logical.plans.AssertCachedProperties
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.AssertingMultiNodeIndexSeek
@@ -921,6 +922,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: NonPipelined |
         _: NonPipelinedStreaming |
         _: PipelineBreaker |
+        _: AssertCachedProperties |
         _: Prober |
         _: TriadicBuild |
         _: TriadicFilter |

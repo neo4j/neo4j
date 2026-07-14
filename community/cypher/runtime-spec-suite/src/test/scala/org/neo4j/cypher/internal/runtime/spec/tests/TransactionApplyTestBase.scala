@@ -46,8 +46,6 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
-import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport.WorkloadMode
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.cypher.internal.runtime.spec.rewriters.RussianRoulette
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
@@ -61,7 +59,6 @@ import org.neo4j.cypher.internal.util.bottomUpWithParent
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.ConstraintViolationException
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
@@ -70,7 +67,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.logging.InternalLogProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.CoordinateReferenceSystem
@@ -105,23 +101,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     with RandomValuesTestSupport[CONTEXT]
     with LoneElement {
 
-  override protected def createRuntimeTestSupport(
-    graphDb: GraphDatabaseService,
-    edition: Edition[CONTEXT],
-    runtime: CypherRuntime[CONTEXT],
-    workloadMode: WorkloadMode,
-    logProvider: InternalLogProvider
-  ): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](
-      graphDb,
-      edition,
-      runtime,
-      workloadMode,
-      logProvider,
-      debugOptions,
-      defaultTransactionType = Type.IMPLICIT
-    )
-  }
+  override protected def defaultTransactionType: Type = Type.IMPLICIT
 
   test("batchSize 0") {
     val query = new LogicalQueryBuilder(this)

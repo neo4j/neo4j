@@ -245,6 +245,14 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     require(runtimeTestSupport == null)
     logProvider.clear()
     runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, runtime, workloadMode, logProvider)
+    require(
+      runtimeTestSupport.defaultTransactionType == defaultTransactionType,
+      s"""
+         |createRuntimeTestSupport override dropped the defaultTransactionType hook.
+         |Suite wants $defaultTransactionType but the RuntimeTestSupport was built with ${runtimeTestSupport.defaultTransactionType}.
+         |Thread defaultTransactionType through the override (or override the def instead).
+         |""".stripMargin
+    )
     if (runtimeTestParameters != null) {
       runtimeTestSupport.setRuntimeTestParameters(augmentedRuntimeTestParameters, isParallel)
     }
@@ -279,6 +287,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     augmented
   }
 
+  protected def defaultTransactionType: KernelTransaction.Type = KernelTransaction.Type.EXPLICIT
+
   protected def createRuntimeTestSupport(
     graphDb: GraphDatabaseService,
     edition: Edition[CONTEXT],
@@ -286,7 +296,15 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     workloadMode: WorkloadMode,
     logProvider: InternalLogProvider
   ): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](graphDb, edition, runtime, workloadMode, logProvider, debugOptions)
+    new RuntimeTestSupport[CONTEXT](
+      graphDb,
+      edition,
+      runtime,
+      workloadMode,
+      logProvider,
+      debugOptions,
+      defaultTransactionType
+    )
   }
 
   protected def shutdownDatabase(): Unit = {
@@ -322,8 +340,13 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     })
   }
 
+  protected def excludedTestNames: Set[String] = Set.empty
+
   override protected def runTest(testName: String, args: Args): Status = {
-    if (includeOnlyTestNames == null || includeOnlyTestNames.contains(testName)) {
+    if (excludedTestNames.contains(testName)) {
+      // Excluded by the implementer. See the overriding excludedTestNames for rationale.
+      SucceededStatus
+    } else if (includeOnlyTestNames == null || includeOnlyTestNames.contains(testName)) {
       super.runTest(testName, args)
     } else {
       SucceededStatus // Maybe not optimal. If we could filter before run that would be better.

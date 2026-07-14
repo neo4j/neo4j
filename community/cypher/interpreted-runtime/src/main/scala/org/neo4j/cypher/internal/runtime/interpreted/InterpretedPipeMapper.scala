@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.AssertCachedProperties
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
@@ -1517,6 +1518,9 @@ case class InterpretedPipeMapper(
 
       case Prober(_, probe) =>
         ProberPipe(source, probe)(id = id)
+
+      case _: AssertCachedProperties =>
+        TestPipe(source)(id = id)
 
       case Selection(predicate, _) =>
         val predicateExpression =

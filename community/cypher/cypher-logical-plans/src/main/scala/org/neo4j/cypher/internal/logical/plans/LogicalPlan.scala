@@ -4559,6 +4559,24 @@ case class Prober(override val source: LogicalPlan, probe: Probe)(implicit idGen
   override val distinctness: Distinctness = source.distinctness
 }
 
+/**
+ * Test-only plan.
+ *
+ * Asserts that the cached-property slot of every property in `properties` that should be populated is populated. 
+ * Rows pass through unchanged.
+ */
+case class AssertCachedProperties(
+  override val source: LogicalPlan,
+  properties: Set[LogicalProperty]
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with TestOnlyPlan {
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override val localAvailableSymbols: Set[LogicalVariable] = source.localAvailableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
+}
+
 object Prober {
 
   trait Probe {

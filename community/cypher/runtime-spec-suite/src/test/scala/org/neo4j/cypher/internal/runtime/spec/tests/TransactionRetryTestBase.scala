@@ -40,8 +40,6 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RowsMatcher
-import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
-import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport.WorkloadMode
 import org.neo4j.cypher.internal.runtime.spec.StaticGraphRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionRetryTestBase.DEFAULT_RETRY_TIMEOUT_SECONDS
@@ -53,14 +51,12 @@ import org.neo4j.cypher.internal.runtime.spec.tests.TransactionRetryTestBase.Exp
 import org.neo4j.cypher.internal.util.test_helpers.TimeLimitedCypherTest
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.exceptions.TransactionRetryAbortedException
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.query.ExtendedQueryStatistics
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.logging.InternalLogProvider
 import org.neo4j.util.Table
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.IntegralValue
@@ -1141,23 +1137,7 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  override protected def createRuntimeTestSupport(
-    graphDb: GraphDatabaseService,
-    edition: Edition[CONTEXT],
-    runtime: CypherRuntime[CONTEXT],
-    workloadMode: WorkloadMode,
-    logProvider: InternalLogProvider
-  ): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](
-      graphDb,
-      edition,
-      runtime,
-      workloadMode,
-      logProvider,
-      debugOptions,
-      defaultTransactionType = Type.IMPLICIT
-    )
-  }
+  override protected def defaultTransactionType: Type = Type.IMPLICIT
 
   final private class TestTransientError(message: String) extends RuntimeException(message) with HasStatus {
     override def status: Status = Status.Transaction.Outdated
