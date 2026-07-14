@@ -443,6 +443,14 @@ class DateTimeValueTest {
                 .assertThrows(InvalidArgumentException.class, "No such field: picosecond");
     }
 
+    @ParameterizedTest
+    @ValueSource(longs = {Long.MIN_VALUE, Long.MAX_VALUE})
+    void shouldRejectOutOfRangeEpochSeconds(long epochSeconds) {
+        assertThrows(InvalidArgumentException.class, () -> fromValues(builder(clock))
+                .add("epochSeconds", epochSeconds)
+                .build());
+    }
+
     @Test
     void shouldFailOnInvalidRawValue() {
         ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> datetimeRaw(31556889864403200L, 0, UTC))

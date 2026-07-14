@@ -296,8 +296,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime, DateTimeVa
                                     "date time", String.valueOf(epochField), prettyVal);
                         }
                         result = assertValidArgument(
-                                "epochSeconds",
-                                () -> ofInstant(ofEpochMilli(epochSeconds.longValue() * 1000), timezone()));
+                                "epochSeconds", () -> ofInstant(ofEpochSecond(epochSeconds.longValue()), timezone()));
                     } else {
                         AnyValue epochField = fields.get(TemporalFields.epochMillis);
                         if (!(epochField instanceof IntegralValue epochMillis)) {
