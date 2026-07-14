@@ -69,7 +69,6 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_INITIA
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_MODE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_RAFT_MEMBER_ID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_RELATIONSHIP;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_AUTO_SYSTEM_DATABASE_MODE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_DISCOVERED_AT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_MODE_CONSTRAINT_PROPERTY;
@@ -512,11 +511,6 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             versions.forEach((key, value) -> {
                 versionsNode.setProperty(key.name(), value);
             });
-            return this;
-        }
-
-        public InstanceNodeBuilder withAutoSystemDatabaseMode(SystemDatabaseMode systemDatabaseMode) {
-            node.setProperty(INSTANCE_AUTO_SYSTEM_DATABASE_MODE_PROPERTY, systemDatabaseMode.name());
             return this;
         }
 
