@@ -77,6 +77,11 @@ class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<VectorInde
     }
 
     @Override
+    protected boolean usesSeparateDocuments() {
+        return true;
+    }
+
+    @Override
     protected LuceneDocument updateAsDocument(ValueIndexEntryUpdate update) {
         return documentsFactory.createVectorDocument(
                 documentStructure, update.getEntityId(), similarityFunction, update.values());

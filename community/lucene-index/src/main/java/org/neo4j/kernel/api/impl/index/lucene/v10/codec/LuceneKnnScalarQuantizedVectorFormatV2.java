@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index.lucene.v10.codec;
 
-import static org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat.ScalarEncoding.UNSIGNED_BYTE;
 import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.HNSW_GRAPH_THRESHOLD;
+import static org.apache.lucene.util.quantization.QuantizedByteVectorValues.ScalarEncoding.UNSIGNED_BYTE;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;

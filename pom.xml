@@ -140,7 +140,7 @@
     <licensing.prepend.text>license/neo4j_gpl_v3/notice.txt</licensing.prepend.text>
     <log4j.version>2.25.4</log4j.version>
     <logback.version>1.5.38</logback.version>
-    <lucene.version>10.4.0</lucene.version>
+    <lucene.version>10.5.0</lucene.version>
     <lucene9.version>9.12.3</lucene9.version>
     <lz4.version>1.11.1</lz4.version>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>

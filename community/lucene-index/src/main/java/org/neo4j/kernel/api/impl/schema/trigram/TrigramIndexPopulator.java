@@ -50,6 +50,11 @@ class TrigramIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<ValueInde
     }
 
     @Override
+    protected boolean usesSeparateDocuments() {
+        return true;
+    }
+
+    @Override
     public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
         return new TrigramIndexPopulatingUpdater(writer, ignoreStrategy, validator);
     }

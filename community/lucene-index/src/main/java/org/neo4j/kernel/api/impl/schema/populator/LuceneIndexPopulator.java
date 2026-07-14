@@ -25,10 +25,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -85,20 +87,32 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
         assert updatesForCorrectIndex(updates);
 
         try {
-            // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents
-            // here
-            // That is why we create a lazy Iterator and then Iterable
-            writer.addDocuments(
-                    updates.size(),
-                    () -> updates.stream()
-                            .map(ValueIndexEntryUpdate.class::cast)
-                            .filter(Predicate.not(ignoreStrategy::ignore))
-                            .map(this::updateAsDocument)
-                            .filter(Objects::nonNull)
-                            .iterator());
+            if (usesSeparateDocuments()) {
+                var luceneDocuments = updates.stream()
+                        .map(ValueIndexEntryUpdate.class::cast)
+                        .filter(Predicate.not(ignoreStrategy::ignore))
+                        .map(this::updateAsDocument)
+                        .filter(Objects::nonNull)
+                        .iterator();
+                writer.addDocuments(updates.size(), () -> luceneDocuments);
+                return;
+            }
+
+            // we reuse the same document stored in thread local, and because since lucene 10.5 there is additional
+            // has next call while iterating documents we can't produce next document on the hasNext call
+            // and need to do that only on next (as a side effects we can't produce null documents there anymore atp)
+            Iterator<ValueIndexEntryUpdate> relevantUpdates = updates.stream()
+                    .map(ValueIndexEntryUpdate.class::cast)
+                    .filter(Predicate.not(ignoreStrategy::ignore))
+                    .iterator();
+            writer.addDocuments(updates.size(), () -> Iterators.map(this::updateAsDocument, relevantUpdates));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    protected boolean usesSeparateDocuments() {
+        return false;
     }
 
     protected abstract LuceneDocument updateAsDocument(ValueIndexEntryUpdate update);

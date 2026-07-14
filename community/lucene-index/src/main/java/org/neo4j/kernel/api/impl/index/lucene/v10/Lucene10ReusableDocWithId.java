@@ -54,14 +54,14 @@ abstract class Lucene10ReusableDocWithId {
     }
 
     static LuceneDocument reusableTextDocument(long nodeId, Value... values) {
-        Lucene9ReusableTextDocWithId doc = Lucene9ReusableTextDocWithId.PER_THREAD_DOCUMENT.get();
+        Lucene10ReusableTextDocWithId doc = Lucene10ReusableTextDocWithId.PER_THREAD_DOCUMENT.get();
         doc.setId(nodeId);
         doc.setValues(values);
         return doc.luceneDocument;
     }
 
     static LuceneDocument reusableFulltextDocument(long id, String[] propertyNames, Value[] values) {
-        Lucene9ReusableFulltextDocWithId doc = Lucene9ReusableFulltextDocWithId.PER_THREAD_DOCUMENT.get();
+        Lucene10ReusableFulltextDocWithId doc = Lucene10ReusableFulltextDocWithId.PER_THREAD_DOCUMENT.get();
         doc.setId(id);
         int setValues = doc.setValues(propertyNames, values);
         return setValues == 0 ? null : doc.luceneDocument;
@@ -79,13 +79,13 @@ abstract class Lucene10ReusableDocWithId {
         document.add(idValueField);
     }
 
-    private static class Lucene9ReusableTextDocWithId extends Lucene10ReusableDocWithId {
+    private static class Lucene10ReusableTextDocWithId extends Lucene10ReusableDocWithId {
 
-        private static final ThreadLocal<Lucene9ReusableTextDocWithId> PER_THREAD_DOCUMENT =
-                ThreadLocal.withInitial(Lucene9ReusableTextDocWithId::new);
+        private static final ThreadLocal<Lucene10ReusableTextDocWithId> PER_THREAD_DOCUMENT =
+                ThreadLocal.withInitial(Lucene10ReusableTextDocWithId::new);
         private Field[] reusableValueFields = new Field[0];
 
-        Lucene9ReusableTextDocWithId() {
+        Lucene10ReusableTextDocWithId() {
             super(ENTITY_ID_KEY);
         }
 
@@ -116,11 +116,11 @@ abstract class Lucene10ReusableDocWithId {
         }
     }
 
-    private static class Lucene9ReusableFulltextDocWithId extends Lucene10ReusableDocWithId {
-        private static final ThreadLocal<Lucene9ReusableFulltextDocWithId> PER_THREAD_DOCUMENT =
-                ThreadLocal.withInitial(Lucene9ReusableFulltextDocWithId::new);
+    private static class Lucene10ReusableFulltextDocWithId extends Lucene10ReusableDocWithId {
+        private static final ThreadLocal<Lucene10ReusableFulltextDocWithId> PER_THREAD_DOCUMENT =
+                ThreadLocal.withInitial(Lucene10ReusableFulltextDocWithId::new);
 
-        private Lucene9ReusableFulltextDocWithId() {
+        private Lucene10ReusableFulltextDocWithId() {
             super(FIELD_ENTITY_ID);
         }
 
