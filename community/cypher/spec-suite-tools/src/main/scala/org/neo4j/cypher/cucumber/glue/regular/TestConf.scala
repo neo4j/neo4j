@@ -49,7 +49,8 @@ case class TestConf(
   preparserOptions: Map[String, String],
   private val tagContext: Set[String],
   serverLogsConfResource: Option[String],
-  maxDbmsReuse: Option[Int]
+  maxDbmsReuse: Option[Int],
+  useComposite: Boolean
 ) {
   val preparserPrefix: String = TestConf.preParserPrefix(preparserOptions)
 
@@ -70,6 +71,7 @@ object TestConf {
     useBolt: Boolean = false,
     useEnterprise: Boolean = true,
     useSpd: Boolean = false,
+    useComposite: Boolean = false,
     readOnlyUser: Boolean = false,
     preparserOptions: Map[String, String] = Map.empty,
     additionalTagContext: Set[String] = Set.empty,
@@ -106,6 +108,7 @@ object TestConf {
       (if (useEnterprise) "enterprise" else "community") +
       cypherVersionTag ++
       Option.when(useSpd)("spd") ++
+      Option.when(useComposite)("composite") ++
       Option.when(useBolt)("bolt") ++
       preparserOptions.get("runtime").map(runtime => s"$runtime-runtime") ++
       preparserOptions.get("operatorEngine").map(operatorEngine => s"$operatorEngine-operatorEngine") +
@@ -122,7 +125,8 @@ object TestConf {
       preparserOptions = preparserOptions,
       tagContext = tagContext,
       serverLogsConfResource = serverLogsConfResource,
-      maxDbmsReuse = maxDbmsReuse
+      maxDbmsReuse = maxDbmsReuse,
+      useComposite = useComposite
     )
   }
 
@@ -486,6 +490,26 @@ object TestConf {
       maxDbmsReuse = Some(256) // Workaround: We have seen OOMs because SPD uses too much ephemeral disk space.
     ))
     final class ObjectFactory extends SingletonInjector(injector)
+  }
+
+  object Composite {
+
+    private def baseConf: TestConf = TestConf(
+      useBolt = true,
+      useComposite = true
+    )
+
+    object Cypher25 extends InjectedTestConf {
+      final val FactoryName = "org.neo4j.cypher.cucumber.glue.regular.TestConf$Composite$Cypher25$ObjectFactory"
+      final override val conf: TestConf = TestConf.withCypher25(baseConf)
+      final class ObjectFactory extends SingletonInjector(injector)
+    }
+
+    object Cypher5 extends InjectedTestConf {
+      final val FactoryName = "org.neo4j.cypher.cucumber.glue.regular.TestConf$Composite$Cypher5$ObjectFactory"
+      final override val conf: TestConf = TestConf.withCypher5(baseConf)
+      final class ObjectFactory extends SingletonInjector(injector)
+    }
   }
 
   object CommunityDefaultBolt {

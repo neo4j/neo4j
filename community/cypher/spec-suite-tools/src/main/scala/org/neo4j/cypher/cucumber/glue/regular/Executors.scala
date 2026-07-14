@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
+import org.neo4j.configuration.connectors.ConnectorPortRegister
+import org.neo4j.configuration.connectors.ConnectorType
 import org.neo4j.cypher.cucumber.CypherCucumber.Tag.ConfPrefix
 import org.neo4j.cypher.cucumber.glue.regular.TestConf.Settings
 import org.neo4j.cypher.cucumber.util.KernelOperation
@@ -125,6 +127,9 @@ trait ExecutorPool extends Executors {
         KernelOperation.detachDeleteAllNodes(executor.dbms.database)
       }
 
+      // No-op unless this is a composite session; bounds fabric query-cache growth across reuse.
+      executor.dbms.clearFabricQueryCacheForSession()
+
       executor.dbms.closeExecutor()
       executors.offer(Some(executor))
     } catch {
@@ -140,8 +145,8 @@ trait ExecutorPool extends Executors {
     !forceRestart && accessor.isCompatible(extraSettings) && conf.maxDbmsReuse.forall(_ > accessor.reUseCount)
   }
 
-  private def createExecutor(extraSettings: Settings): DbAccessor = {
-    accessorFrom(startDbms(extraSettings), extraSettings, None)
+  protected def createExecutor(extraSettings: Settings): DbAccessor = {
+    accessorFrom(startDbms(extraSettings), extraSettings, None, None)
   }
 
   override def start(): Unit = {
@@ -186,13 +191,14 @@ trait ExecutorPool extends Executors {
     }
   }
 
-  final private def accessorFrom(
+  final protected def accessorFrom(
     dbms: DatabaseManagementService,
     extraSettings: Settings,
-    dbName: Option[String]
+    dataDbName: Option[String],
+    sessionDbName: Option[String]
   ): DbAccessor = {
     setupSecurity(dbms)
-    val neo4jConf = dbms.database(dbName.getOrElse("neo4j")).asInstanceOf[GraphDatabaseAPI]
+    val neo4jConf = dbms.database(dataDbName.getOrElse("neo4j")).asInstanceOf[GraphDatabaseAPI]
       .getDependencyResolver
       .resolveDependency(classOf[Config])
     val authToken =
@@ -204,7 +210,12 @@ trait ExecutorPool extends Executors {
       else EmbeddedCypherExecutorFactory(dbms, neo4jConf)
 
     DbAccessor(
-      dbms = FeatureDatabaseManagementService(dbms, executorFactory, dbName),
+      dbms = FeatureDatabaseManagementService(
+        dbms,
+        executorFactory,
+        databaseName = dataDbName,
+        sessionDatabaseName = sessionDbName
+      ),
       extraSettings = extraSettings,
       reUseCount = 0
     )
@@ -283,11 +294,79 @@ final class SpdExecutorPool @Inject() (override val conf: TestConf) extends Exec
   }
 }
 
+/**
+ * Runs scenarios "through composite": the DBMS hosts a composite database whose constituent is a
+ * self-remote alias (bolt loopback to a local db on the same server), so queries prefaced with
+ * `USE comp.data` execute on a genuine remote fabric fragment. The executor session targets the
+ * composite; the `database` handle stays the constituent so cleanup / side-effect scans keep working.
+ */
+@com.google.inject.Singleton
+final class CompositeExecutorPool @Inject() (override val conf: TestConf) extends ExecutorPool {
+  import CompositeExecutorPool._
+
+  // A single keystore (required to store the remote alias' encrypted password) reused for every DBMS.
+  // The setting keys mirror enterprise SecuritySettings.keystore_path/keystore_password/key_name, inlined as raw
+  // strings because this community `main` code cannot depend on the enterprise SecuritySettings class.
+  private lazy val keystoreSettings: Settings = {
+    val keystore = Files.createTempFile("keystore_11_0_5", ".pkcs12")
+    keystore.toFile.deleteOnExit()
+    Using.resource(getClass.getClassLoader.getResourceAsStream(KeystoreResource))(Files.copy(
+      _,
+      keystore,
+      REPLACE_EXISTING
+    ))
+    Map(
+      "dbms.security.keystore.path" -> keystore.toAbsolutePath.toString,
+      "dbms.security.keystore.password" -> KeystorePassword,
+      "dbms.security.key.name" -> KeystoreKeyName
+    )
+  }
+
+  override protected def startDbms(extraSettings: Settings): DatabaseManagementService =
+    super.startDbms(extraSettings ++ keystoreSettings)
+
+  override protected def createExecutor(extraSettings: Settings): DbAccessor = {
+    val dbms = startDbms(extraSettings)
+    setupComposite(dbms)
+    accessorFrom(dbms, extraSettings, dataDbName = Some(DataDatabase), sessionDbName = Some(CompositeDatabase))
+  }
+
+  private def setupComposite(dbms: DatabaseManagementService): Unit = {
+    val system = dbms.database(SYSTEM_DATABASE_NAME)
+    system.executeTransactionally(s"CREATE DATABASE $DataDatabase WAIT")
+    system.executeTransactionally(s"CREATE COMPOSITE DATABASE $CompositeDatabase WAIT")
+    val boltPort = dbms.database(DataDatabase).asInstanceOf[GraphDatabaseAPI]
+      .getDependencyResolver
+      .resolveDependency(classOf[ConnectorPortRegister])
+      .getLocalAddress(ConnectorType.BOLT)
+      .getPort
+    // Self-remote constituent: loops back over bolt to the local `data` db, so a `USE comp.data` query
+    // executes on a genuine remote fabric fragment. Remote-alias URLs must use the neo4j:// routing scheme.
+    system.executeTransactionally(
+      s"CREATE ALIAS $Constituent FOR DATABASE $DataDatabase AT 'neo4j://localhost:$boltPort' " +
+        s"USER neo4j PASSWORD 'neo4j' DRIVER { ssl_enforced: false }"
+    )
+  }
+}
+
+object CompositeExecutorPool {
+  val DataDatabase = "data"
+  val CompositeDatabase = "comp"
+
+  /** The constituent alias every generated query targets via `USE`. */
+  val Constituent = s"$CompositeDatabase.$DataDatabase"
+
+  private val KeystoreResource = "keystore_11_0_5.pkcs12"
+  private val KeystorePassword = "test24"
+  private val KeystoreKeyName = "256bitkey"
+}
+
 @com.google.inject.Singleton()
 class ExecutorsProvider @com.google.inject.Inject() (conf: TestConf) extends Provider[Executors] {
 
   override def get(): Executors = {
     if (conf.useSpd) new SpdExecutorPool(conf)
+    else if (conf.useComposite) new CompositeExecutorPool(conf)
     else new DefaultExecutorPool(conf)
   }
 }

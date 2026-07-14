@@ -23,6 +23,7 @@ import org.neo4j.cypher.cucumber.glue.regular.TestConf
 import org.neo4j.cypher.cucumber.synthesise.generator.AddIndex
 import org.neo4j.cypher.cucumber.synthesise.generator.CachingParser
 import org.neo4j.cypher.cucumber.synthesise.generator.CombineUncommitted
+import org.neo4j.cypher.cucumber.synthesise.generator.CompositeWrap
 import org.neo4j.cypher.cucumber.synthesise.generator.Paginate
 import org.neo4j.cypher.cucumber.synthesise.generator.ScenarioGenerator
 import org.neo4j.cypher.cucumber.synthesise.generator.Uncommitted
@@ -45,6 +46,9 @@ object CucumberSalad {
 
   /** Create pagination queries (SKIP + LIMIT) based on existing scenarios. */
   def pagination(args: Ingredients): ScenarioGenerator = new Paginate(args)
+
+  /** Wrap queries with `USE comp.data` so they run through a composite database's remote fragment. */
+  def compositeWrap(args: Ingredients): ScenarioGenerator = new CompositeWrap(args)
 
   case class Ingredients(
     source: Seq[RecordedScenario],

@@ -114,17 +114,26 @@ case class FeatureDatabaseManagementService(
   databaseManagementService: DatabaseManagementService,
   executorFactory: CypherExecutorFactory,
   private val databaseName: Option[String] = None,
-  private val notificationConfig: NotificationConfig = NotificationConfig.defaultConfig()
+  private val notificationConfig: NotificationConfig = NotificationConfig.defaultConfig(),
+  private val sessionDatabaseName: Option[String] = None
 ) {
 
   val database: GraphDatabaseAPI =
     databaseManagementService.database(databaseName.getOrElse(DEFAULT_DATABASE_NAME)).asInstanceOf[GraphDatabaseAPI]
 
+  // The database the executor connects to. Defaults to `databaseName`, but composite configs set this to
+  // the composite database while `database` stays the constituent that actually holds the data (so cleanup,
+  // side-effect kernel scans and procedure registration keep targeting the constituent).
+  private val sessionName: Option[String] = sessionDatabaseName.orElse(databaseName)
+
+  private lazy val sessionDatabase: GraphDatabaseAPI =
+    databaseManagementService.database(sessionName.getOrElse(DEFAULT_DATABASE_NAME)).asInstanceOf[GraphDatabaseAPI]
+
   private val cypherExecutor: CypherExecutor = createExecutor()
   val restrictedCypherExecutor: CypherExecutor = createRestrictedExecutor()
 
   private lazy val maybeFabricExecutor = {
-    val resolver = database.getDependencyResolver
+    val resolver = sessionDatabase.getDependencyResolver
     // Fabric executor is present only in composite databases
     if (resolver.containsDependency(classOf[FabricExecutor]))
       Option(resolver.resolveDependency(classOf[FabricExecutor]))
@@ -134,12 +143,12 @@ case class FeatureDatabaseManagementService(
   private lazy val globalProcedures = database.getDependencyResolver.provideDependency(classOf[GlobalProcedures]).get()
   private lazy val executionEngine = database.getDependencyResolver.resolveDependency(classOf[QueryExecutionEngine])
 
-  private def createExecutor() = databaseName match {
+  private def createExecutor() = sessionName match {
     case Some(name) => executorFactory.executor(name)
     case None       => executorFactory.executor()
   }
 
-  private def createRestrictedExecutor() = databaseName match {
+  private def createRestrictedExecutor() = sessionName match {
     case Some(name) => executorFactory.restrictedExecutor(name)
     case None       => executorFactory.restrictedExecutor()
   }
@@ -164,6 +173,9 @@ case class FeatureDatabaseManagementService(
 
   def clearFabricQueryCache(dbName: String): Unit =
     maybeFabricExecutor.map(fe => fe.clearQueryCachesForDatabase(dbName))
+
+  /** Clears the fabric query cache for the session (composite) database. No-op for non-composite databases. */
+  def clearFabricQueryCacheForSession(): Unit = sessionName.foreach(clearFabricQueryCache)
 
   def clearQueryCaches(): Unit = executionEngine.clearQueryCaches()
   def clearExecutableQueryCache(): Unit = executionEngine.clearExecutableQueryCache()
@@ -235,7 +247,13 @@ case class FeatureDatabaseManagementService(
   def withNewExecutor(): FeatureDatabaseManagementService = {
     cypherExecutor.close()
     restrictedCypherExecutor.close()
-    FeatureDatabaseManagementService(databaseManagementService, executorFactory, databaseName, notificationConfig)
+    FeatureDatabaseManagementService(
+      databaseManagementService,
+      executorFactory,
+      databaseName,
+      notificationConfig,
+      sessionDatabaseName
+    )
   }
 
   def closeExecutor(): Unit = {

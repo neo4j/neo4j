@@ -341,6 +341,8 @@ class CypherCucumberTest extends CypherFunSuite with LoneElement {
       TestConf.SlottedBolt.Cypher25.FactoryName -> TestConf.SlottedBolt.Cypher25.conf,
       TestConf.SpdBolt.FactoryName -> TestConf.SpdBolt.conf,
       TestConf.SpdParallel.FactoryName -> TestConf.SpdParallel.conf,
+      TestConf.Composite.Cypher25.FactoryName -> TestConf.Composite.Cypher25.conf,
+      TestConf.Composite.Cypher5.FactoryName -> TestConf.Composite.Cypher5.conf,
       TestConf.CommunityDefaultBolt.Cypher25.FactoryName -> TestConf.CommunityDefaultBolt.Cypher25.conf,
       TestConf.CommunityDefaultBolt.Cypher5.FactoryName -> TestConf.CommunityDefaultBolt.Cypher5.conf,
       TestConf.Legacy.FactoryName -> TestConf.Legacy.conf,
