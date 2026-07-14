@@ -73,6 +73,13 @@ public class UploadCommand extends AbstractAdminCommand {
     private String boltURI;
 
     @Option(
+            names = "--to-dbid",
+            paramLabel = "<databaseid>",
+            description =
+                    "Database ID of the target database. Required when uploading to a Multi-DB instance, using an instance-based URI (e.g. *.instances.neo4j.io).")
+    private String toDbId;
+
+    @Option(
             names = "--to-user",
             defaultValue = "${" + ENV_NEO4J_USERNAME + "}",
             description =
@@ -144,7 +151,7 @@ public class UploadCommand extends AbstractAdminCommand {
 
             boolean devMode = pushToCloudCLI.readDevMode(DEV_MODE_VAR_NAME);
 
-            AuraConsole auraConsole = auraURLFactory.buildConsoleURI(boltURI, devMode);
+            AuraConsole auraConsole = auraURLFactory.buildConsoleURI(boltURI, devMode, toDbId);
 
             AuraClient auraClient = clientBuilder
                     .withAuraConsole(auraConsole)

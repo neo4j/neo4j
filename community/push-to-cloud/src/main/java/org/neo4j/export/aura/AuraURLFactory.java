@@ -25,13 +25,22 @@ import org.neo4j.cli.CommandFailedException;
 public class AuraURLFactory {
 
     public AuraConsole buildConsoleURI(String boltURI, boolean devMode) throws CommandFailedException {
+        return buildConsoleURI(boltURI, devMode, null);
+    }
+
+    public AuraConsole buildConsoleURI(String boltURI, boolean devMode, String dbId) throws CommandFailedException {
         ConsoleUrlMatcher[] matchers = devMode
                 ? new ConsoleUrlMatcher[] {
                     new ConsoleUrlMatcher.DevMatcher(),
                     new ConsoleUrlMatcher.ProdMatcher(),
-                    new ConsoleUrlMatcher.PrivMatcher()
+                    new ConsoleUrlMatcher.PrivMatcher(),
+                    new ConsoleUrlMatcher.InstanceMatcher(dbId, true)
                 }
-                : new ConsoleUrlMatcher[] {new ConsoleUrlMatcher.ProdMatcher(), new ConsoleUrlMatcher.PrivMatcher()};
+                : new ConsoleUrlMatcher[] {
+                    new ConsoleUrlMatcher.ProdMatcher(),
+                    new ConsoleUrlMatcher.PrivMatcher(),
+                    new ConsoleUrlMatcher.InstanceMatcher(dbId, false)
+                };
 
         return stream(matchers)
                 .filter(m -> m.match(boltURI))
@@ -74,6 +83,12 @@ public class AuraURLFactory {
 
         protected abstract Pattern pattern();
 
+        protected static String buildBaseURL(String environment, String domain) {
+            return String.format(
+                    "https://console%s.neo4j%s.io",
+                    environment != null ? environment : "", domain != null ? domain : "");
+        }
+
         public abstract AuraConsole getConsole();
 
         public boolean match(String url) {
@@ -93,10 +108,7 @@ public class AuraURLFactory {
             public AuraConsole getConsole() {
                 String databaseId = matcher.group(1);
                 String environment = matcher.group(2);
-
-                return new AuraConsole(
-                        String.format("https://console%s.neo4j.io", environment == null ? "" : environment),
-                        databaseId);
+                return new AuraConsole(buildBaseURL(environment, null), databaseId);
             }
         }
 
@@ -122,8 +134,7 @@ public class AuraURLFactory {
                     domain = matcher.group(4);
                 }
 
-                String baseURL = String.format("https://console%s.neo4j%s.io", environment, domain);
-                return new AuraConsole(baseURL, databaseId);
+                return new AuraConsole(buildBaseURL(environment, domain), databaseId);
             }
         }
 
@@ -151,8 +162,49 @@ public class AuraURLFactory {
                         domain = matcher.group(4);
                     }
                 }
-                String baseURL = String.format("https://console%s.neo4j%s.io", environment, domain);
-                return new AuraConsole(baseURL, databaseId);
+                return new AuraConsole(buildBaseURL(environment, domain), databaseId);
+            }
+        }
+
+        static class InstanceMatcher extends ConsoleUrlMatcher {
+            private final String dbId;
+            private final boolean devMode;
+
+            InstanceMatcher(String dbId, boolean devMode) {
+                this.dbId = dbId;
+                this.devMode = devMode;
+            }
+
+            @Override
+            protected Pattern pattern() {
+                // Instance-based bolt URIs follow the same convention as ProdMatcher: the
+                // environment is an optional suffix on the instance identifier, separated by "-".
+                //
+                // Examples:
+                //   neo4j+s://dbid.instances.neo4j.io
+                //   neo4j+s://dbid-staging.instances.neo4j.io
+                //   neo4j+s://dbid-rogueenv.instances.neo4j-dev.io
+                //
+                // Group 1 captures the environment suffix including the leading "-" (e.g. "-staging"),
+                // or is null when there is no environment.
+                // In dev mode, group 2 captures the optional domain suffix (e.g. "-dev").
+                if (devMode) {
+                    return Pattern.compile(
+                            "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://[^-]+(-[^.]+)?\\.instances\\.neo4j(-[^.]+)?\\.io$");
+                }
+                return Pattern.compile(
+                        "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://[^-]+(-[^.]+)?\\.instances\\.neo4j\\.io$");
+            }
+
+            @Override
+            public AuraConsole getConsole() {
+                if (dbId == null || dbId.isBlank()) {
+                    throw new CommandFailedException(
+                            "--to-dbid must be specified when providing an instance based URI");
+                }
+                String environment = matcher.group(1);
+                String domain = devMode ? matcher.group(2) : null;
+                return new AuraConsole(buildBaseURL(environment, domain), dbId);
             }
         }
     }

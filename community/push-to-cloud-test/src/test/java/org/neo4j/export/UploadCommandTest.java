@@ -178,7 +178,7 @@ class UploadCommandTest {
                 .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         UploadCommand command = buildUploadCommand(auraURLFactory);
         String[] args = getNormalRuntimeArgs();
 
@@ -202,7 +202,7 @@ class UploadCommandTest {
                 .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         UploadCommand command = buildUploadCommand(auraURLFactory);
         String[] args = getNormalRuntimeArgs(SPLIT_DBNAME);
 
@@ -276,7 +276,7 @@ class UploadCommandTest {
         wireMockServer.stubFor(getMultiPartStatusRequest().willReturn(successfulMultiPartStatusResponse()));
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
                 ctx,
@@ -313,7 +313,7 @@ class UploadCommandTest {
         wireMockServer.stubFor(getMultiPartStatusRequest().willReturn(successfulMultiPartStatusResponse()));
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
                 ctx,
@@ -355,7 +355,7 @@ class UploadCommandTest {
                 .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         SystemNanoClock clockMock = mock(SystemNanoClock.class);
         auraClientBuilder.withClock(clockMock);
@@ -390,7 +390,7 @@ class UploadCommandTest {
         wireMockServer.stubFor(
                 triggerImportRequest(authResponse).willReturn(aResponse().withStatus(HTTP_CONFLICT)));
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         UploadCommand command = buildUploadCommand(auraURLFactory);
 
         String[] args = getNormalRuntimeArgs();
@@ -411,7 +411,7 @@ class UploadCommandTest {
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         UploadCommand command = buildUploadCommand(auraURLFactory);
 
         AuraJsonMapper.StatusBody statusBody = new AuraJsonMapper.StatusBody();
@@ -453,7 +453,7 @@ class UploadCommandTest {
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         UploadCommand command = buildUploadCommand(auraURLFactory);
 
         // ...and
@@ -529,7 +529,7 @@ class UploadCommandTest {
 
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
                 ctx,
@@ -558,7 +558,7 @@ class UploadCommandTest {
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
 
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
@@ -584,7 +584,7 @@ class UploadCommandTest {
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
 
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
@@ -612,7 +612,7 @@ class UploadCommandTest {
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
 
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
 
@@ -645,7 +645,7 @@ class UploadCommandTest {
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
 
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
@@ -672,7 +672,7 @@ class UploadCommandTest {
         String password = "abc";
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         createGCPHappyPathWireMockStubs("token");
 
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
@@ -702,7 +702,7 @@ class UploadCommandTest {
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
 
         UploadCommand command = new UploadCommand(
@@ -739,7 +739,7 @@ class UploadCommandTest {
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
 
         UploadCommand command = new UploadCommand(
@@ -765,7 +765,7 @@ class UploadCommandTest {
         // given
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         String[] args = {"otherdbname", "--from-path", dumpDir.toString(), "--to-uri", SOME_EXAMPLE_BOLT_URI};
         UploadCommand command = new UploadCommand(
@@ -785,7 +785,7 @@ class UploadCommandTest {
     void shouldFailOnWrongDumpPath() {
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         String[] args = {DBNAME, "--from-path", dump.toAbsolutePath().toString(), "--to-uri", SOME_EXAMPLE_BOLT_URI};
         UploadCommand command = new UploadCommand(
