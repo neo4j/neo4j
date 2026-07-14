@@ -264,7 +264,8 @@ public final class SettingMigrators {
                 "internal.dbms.vector_single_stage_filtering_enabled",
                 "internal.dbms.cypher_show_database_interpreted",
                 "internal.cypher.enable_variable_checker",
-                "internal.cypher.disable_reworked_rewriters");
+                "internal.cypher.disable_reworked_rewriters",
+                "internal.cypher.enable_working_scope_namespacer");
 
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),

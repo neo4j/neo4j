@@ -389,12 +389,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.cypher.enable_scope_queries", BOOL, false).build();
 
     @Internal
-    @Description("Set this to enable working scope implementation for namespacer")
-    public static final Setting<Boolean> cypher_enable_working_scope_namespacer = newBuilder(
-                    "internal.cypher.enable_working_scope_namespacer", BOOL, true)
-            .build();
-
-    @Internal
     @Description("Enable parsing of obfuscated literals")
     public static final Setting<Boolean> cypher_enable_parsing_of_obfuscated_literals = newBuilder(
                     "internal.cypher.enable_parsing_of_obfuscated_literals", BOOL, false)

@@ -64,8 +64,7 @@ case object AstRewriting extends StepSequencer.Step with ParsePipelineTransforme
     BaseContains[SemanticState]()
   )
 
-  // noReferenceEqualityAmongVariables is broken by later phases, e.g. Namespacer.
-  // This can be fixed in a subsequent investigation.
+  // ASTRewriting currently does not uphold this condition. Tracked on SURF-1196
   override def postConditions: Set[StepSequencer.Condition] =
     ASTRewriter.postConditions - NoReferenceEqualityAmongVariables
 

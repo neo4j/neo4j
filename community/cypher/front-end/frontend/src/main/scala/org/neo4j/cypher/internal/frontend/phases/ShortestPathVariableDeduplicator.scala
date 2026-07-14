@@ -84,7 +84,7 @@ case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseStat
   private def generateRenaming(anonymousVariableNameGenerator: AnonymousVariableNameGenerator)(
     variable: LogicalVariable
   ): (Ref[LogicalVariable], LogicalVariable) = {
-    val newName = Namespacer.genName(anonymousVariableNameGenerator, variable.name)
+    val newName = AnonymousVariableNameGenerator.genName(anonymousVariableNameGenerator, variable.name)
     Ref(variable) -> variable.renameId(newName)
   }
 

@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
-import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Repeat
@@ -81,7 +80,10 @@ case class AllReduceSingletonRewriter(
     val renamings =
       accumulatorsToNamespace.map {
         (variable: LogicalVariable) =>
-          variable -> varFor(Namespacer.genName(anonymousVariableNameGenerator, variableName = variable.name))
+          variable -> varFor(AnonymousVariableNameGenerator.genName(
+            anonymousVariableNameGenerator,
+            variableName = variable.name
+          ))
       }.toMap
     val newAccumulatorMappings =
       accumulatorMappings.map {

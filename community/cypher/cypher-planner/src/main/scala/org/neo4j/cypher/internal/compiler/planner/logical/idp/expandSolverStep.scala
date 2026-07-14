@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.UniqueNodes
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableGrouping
-import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.NodePathVariable
@@ -71,6 +70,7 @@ import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
 import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -717,7 +717,11 @@ object expandSolverStep {
     spp.pathVariables.iterator
       .filterNot(pathVariable => nonSingletons.contains(pathVariable.variable))
       .foreach { pathVar =>
-        val nfaName = Namespacer.genName(context.staticComponents.anonymousVariableNameGenerator, pathVar.variable.name)
+        val nfaName =
+          AnonymousVariableNameGenerator.genName(
+            context.staticComponents.anonymousVariableNameGenerator,
+            pathVar.variable.name
+          )
         val mapping = Mapping(varFor(nfaName), pathVar.variable)
         rewriteLookup.addOne(mapping.rowVar -> mapping.nfaExprVar)
         pathVar match {

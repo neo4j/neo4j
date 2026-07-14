@@ -41,8 +41,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.Scop
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest
-    with NamespacerTestWithCanonicalization {
+class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
 
   private val tests: Seq[Test] = Seq(
     TestCase(
@@ -174,15 +173,15 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         ),
         singleQuery(
           match_(
-            NodePattern(Some(varFor("  a@2")), None, None, None)(pos),
+            NodePattern(Some(varFor("  a@1")), None, None, None)(pos),
             MatchMode.default(pos),
-            Some(Where(HasLabels(varFor("  a@2"), Seq(LabelName("Animal")(pos)))(pos))(pos))
+            Some(Where(HasLabels(varFor("  a@1"), Seq(LabelName("Animal")(pos)))(pos))(pos))
           ),
-          return_(varFor("  a@2").as("  a@2"))
+          return_(varFor("  a@1").as("  a@1"))
         ),
-        List(UnionMapping(varFor("  a@1"), varFor("  a@0"), varFor("  a@2")))
+        List(UnionMapping(varFor("  a@2"), varFor("  a@0"), varFor("  a@1")))
       )(pos),
-      List(varFor("  a@0"), varFor("  a@2"))
+      List(varFor("  a@0"), varFor("  a@1"))
     ),
     TestCase(
       "MATCH p=(a:Start)-[r]->(b) RETURN *",
@@ -489,7 +488,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       ("d", "  d@0"),
       ("some weird propy38259dsyfj name", "  some weird propy38259dsyfj name@0")
     ).foreach { case (input, expected) =>
-      Namespacer.genName(new AnonymousVariableNameGenerator, input) should equal(expected)
+      AnonymousVariableNameGenerator.genName(new AnonymousVariableNameGenerator, input) should equal(expected)
     }
   }
 }

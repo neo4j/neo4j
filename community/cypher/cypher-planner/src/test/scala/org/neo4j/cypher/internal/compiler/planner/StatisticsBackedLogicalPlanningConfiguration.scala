@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.CypherVersionHelpers.randomVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.EnableWorkingScopeNamespacer
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
@@ -174,7 +173,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     useMinimumGraphStatistics: Boolean = false,
     txStateHasChanges: Boolean = false,
     deduplicateNames: Boolean = true,
-    semanticFeatures: Seq[SemanticFeature] = Seq(EnableWorkingScopeNamespacer),
+    semanticFeatures: Seq[SemanticFeature] = Seq.empty,
     databaseReferenceRepository: DatabaseReferenceRepository = ContextHelper.mockDatabaseReferenceRepository,
     printNotifications: Boolean = false,
     parallelRepeatHeuristic: CypherParallelRepeatHeuristicOption = CypherParallelRepeatHeuristicOption.disabled,

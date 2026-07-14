@@ -106,7 +106,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
-import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ResolvedNonLocalCall
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CSVFormat
@@ -336,6 +335,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAre
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
@@ -2223,7 +2223,7 @@ case class LogicalPlanProducer(
     // on the vector search results
     if (argumentIds.contains(resultVariable)) {
       val renamedVariable =
-        UnPositionedVariable.varFor(Namespacer.genName(
+        UnPositionedVariable.varFor(AnonymousVariableNameGenerator.genName(
           context.staticComponents.anonymousVariableNameGenerator,
           resultVariable.name
         ))

@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
 import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.functions.EndNode
 import org.neo4j.cypher.internal.expressions.functions.StartNode
-import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -80,7 +79,7 @@ object ConvertToNFA {
     val directedConnections = if (fromLeft) connections else connections.reverse
 
     val syntheticVarLengthSingletons = spp.varLengthRelationships.map { rel =>
-      val singletonRelName = Namespacer.genName(
+      val singletonRelName = AnonymousVariableNameGenerator.genName(
         anonymousVariableNameGenerator,
         rel.name
       )

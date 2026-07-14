@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
@@ -39,6 +38,7 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 
 object SortPlanner {
 
@@ -177,7 +177,7 @@ object SortPlanner {
         .collectFirst { case (key, e) if e == expression => key }
         .getOrElse(
           varFor(
-            Namespacer.genName(
+            AnonymousVariableNameGenerator.genName(
               context.staticComponents.anonymousVariableNameGenerator,
               ExpressionStringifier.pretty(_ =>
                 context.staticComponents.anonymousVariableNameGenerator.nextName

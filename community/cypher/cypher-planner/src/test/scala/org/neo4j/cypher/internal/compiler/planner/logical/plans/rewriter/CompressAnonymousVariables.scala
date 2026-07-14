@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -82,7 +81,10 @@ case object CompressAnonymousVariables extends Phase[PlannerContext, LogicalPlan
     val compression = (anonTable ++ namedAnonTable).map {
       case (originalName, index) =>
         s"${Regex.quote(originalName.name)}\\b".r ->
-          Namespacer.includeName(originalName.name, AnonymousVariableNameGenerator.anonymousVarName(index))
+          AnonymousVariableNameGenerator.includeName(
+            originalName.name,
+            AnonymousVariableNameGenerator.anonymousVarName(index)
+          )
     }
 
     val rewriter = bottomUp(Rewriter.lift {

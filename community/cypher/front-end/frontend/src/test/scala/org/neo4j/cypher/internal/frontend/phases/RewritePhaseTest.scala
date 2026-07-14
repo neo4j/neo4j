@@ -217,8 +217,6 @@ trait RewritePhaseTest extends CypherVersionTestSupport {
     compareStatements(expectedStatement, actualStatement, fromOutState, semanticTableExpressions)
   }
 
-  protected def canonicalizeForComparison(stmt: Statement): Statement = stmt
-
   private def compareStatements(
     expectedStatement: Statement,
     actualStatement: Statement,
@@ -226,9 +224,7 @@ trait RewritePhaseTest extends CypherVersionTestSupport {
     semanticTableExpressions: List[Expression]
   ): Unit = {
 
-    StatementPrettifier(canonicalizeForComparison(actualStatement)) should equal(
-      StatementPrettifier(canonicalizeForComparison(expectedStatement))
-    )
+    StatementPrettifier(actualStatement) should equal(StatementPrettifier(expectedStatement))
 
     semanticTableExpressions.foreach { e =>
       state.semanticTable().types.keys.map(_.node) should contain(e)
