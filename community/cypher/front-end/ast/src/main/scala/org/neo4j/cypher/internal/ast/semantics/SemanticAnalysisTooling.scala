@@ -258,7 +258,7 @@ trait SemanticAnalysisTooling {
         case (accumulator @ (Seq(), _, _), _) =>
           accumulator
         case ((possibilities, argIdx, r1), arg) =>
-          val argTypes = possibilities.foldLeft(TypeSpec.none) { _ | _.argumentTypes.head.covariant }
+          val argTypes = possibilities.foldLeft(TypeSpec.none) { (acc, sig) => acc | sig.argumentTypes.head.covariant }
 
           val info = expression match {
             case f: FunctionInvocation =>
@@ -281,7 +281,7 @@ trait SemanticAnalysisTooling {
 
     val outputType = remainingSignatures match {
       case Seq() => TypeSpec.all
-      case _     => remainingSignatures.foldLeft(TypeSpec.none) { _ | _.outputType.invariant }
+      case _     => remainingSignatures.foldLeft(TypeSpec.none) { (acc, sig) => acc | sig.outputType.invariant }
     }
 
     specifyType(outputType, expression)(result.state) match {

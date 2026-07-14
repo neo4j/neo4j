@@ -157,8 +157,8 @@ class CypherTypeNameTest extends CypherParserTestSuite {
   // RULES TESTED: 2
   test("NULL update nullable false should return NOTHING") {
     val nullType = NullType()(pos)
-    val nothingTypeName = NothingType()(pos)
-    nullType.withIsNullable(false) should be(nothingTypeName)
+    val nothingType = NothingType()(pos)
+    nullType.withIsNullable(false) should be(nothingType)
   }
 
   test("NULL update nullable true should return NULL") {
@@ -168,13 +168,14 @@ class CypherTypeNameTest extends CypherParserTestSuite {
 
   // RULES TESTED: 2
   test("NOTHING update nullable false should return NOTHING") {
-    val nothingTypeName = NothingType()(pos)
-    nothingTypeName.withIsNullable(false) should be(nothingTypeName)
+    val nothingType = NothingType()(pos)
+    nothingType.withIsNullable(false) should be(nothingType)
   }
 
-  test("NOTHING update nullable true should return NOTHING") {
-    val nothingTypeName = NothingType()(pos)
-    nothingTypeName.withIsNullable(true) should be(nothingTypeName)
+  test("NOTHING update nullable true should return NULL") {
+    val nullType = NullType()(pos)
+    val nothingType = NothingType()(pos)
+    nothingType.withIsNullable(true) should be(nullType)
   }
 
   test("ANY<> update nullable false should return ANY<> with all values changed") {

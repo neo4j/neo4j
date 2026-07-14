@@ -20,6 +20,9 @@ import scala.language.implicitConversions
 
 package object symbols {
   val CTAny: AnyType = AnyType(isNullable = true)(InputPosition.NONE)
+  val CTAnyNotNull: AnyType = AnyType(isNullable = false)(InputPosition.NONE)
+  val CTNull: NullType = NullType()(InputPosition.NONE)
+  val CTNothing: NothingType = NothingType()(InputPosition.NONE)
   val CTBoolean: BooleanType = BooleanType(isNullable = true)(InputPosition.NONE)
   val CTString: StringType = StringType(isNullable = true)(InputPosition.NONE)
   val CTStringNotNull: StringType = CTString.withIsNullable(false)

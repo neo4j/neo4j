@@ -43,7 +43,7 @@ object TypeSpec {
     }.getOrElse(CTAny)
   }
 
-  def exact(types: CypherType*): TypeSpec = exact(types)
+  def exact(typ: CypherType): TypeSpec = exact(Some(typ))
 
   def exact[T <: CypherType](iterableOnce: IterableOnce[T]): TypeSpec =
     TypeSpec(iterableOnce.iterator.map(t => TypeRange(t, t)))
