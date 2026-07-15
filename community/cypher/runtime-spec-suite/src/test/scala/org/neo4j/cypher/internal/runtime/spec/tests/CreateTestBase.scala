@@ -34,12 +34,13 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
+import org.neo4j.kernel.api.exceptions.Status
 
 import scala.jdk.CollectionConverters.IterableHasAsJava
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -553,11 +554,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("n"))
       .build(readOnly = false)
 
-    the[InternalException] thrownBy consume(
+    val error = the[InvalidArgumentException] thrownBy consume(
       execute(logicalQuery, runtime, inputValues(Array[Any](null)))
-    ) should have message
+    )
+
+    error should have message
       "Failed to create relationship `r`, node `n` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
       "set 'dbms.cypher.lenient_create_relationship = true' in neo4j.conf"
+    error.status() shouldBe Status.Statement.ArgumentError
   }
 
   test("should fail to create relationship if start node is missing") {
@@ -570,11 +574,13 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("n"))
       .build(readOnly = false)
 
-    the[InternalException] thrownBy consume(
+    val error = the[InvalidArgumentException] thrownBy consume(
       execute(logicalQuery, runtime, inputValues(Array[Any](null)))
-    ) should have message
+    )
+    error should have message
       "Failed to create relationship `r`, node `n` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
       "set 'dbms.cypher.lenient_create_relationship = true' in neo4j.conf"
+    error.status() shouldBe Status.Statement.ArgumentError
   }
 
   test("should fail to create relationship if end node is missing") {
@@ -587,11 +593,13 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("m"))
       .build(readOnly = false)
 
-    the[InternalException] thrownBy consume(
+    val error = the[InvalidArgumentException] thrownBy consume(
       execute(logicalQuery, runtime, inputValues(Array[Any](null)))
-    ) should have message
+    )
+    error should have message
       "Failed to create relationship `r`, node `m` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
       "set 'dbms.cypher.lenient_create_relationship = true' in neo4j.conf"
+    error.status() shouldBe Status.Statement.ArgumentError
   }
 
   test("should create node with similarly named labels") {
@@ -1211,4 +1219,5 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
     val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
     results should beColumns("r").withSingleRow(null).withStatistics(nodesCreated = 1, labelsAdded = 1)
   }
+
 }

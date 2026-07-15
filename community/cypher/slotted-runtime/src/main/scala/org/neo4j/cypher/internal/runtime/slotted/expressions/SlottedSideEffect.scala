@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.slotted.expressions
 import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateNode.handleNaNValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateNode.handleNoValue
@@ -37,7 +36,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateRelationshipSlotted
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.cypher.operations.CypherTypeValueMapper
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP
 import org.neo4j.values.AnyValue
@@ -92,7 +91,7 @@ case class CreateSlottedRelationship(command: CreateRelationshipSlottedCommand, 
   override def execute(row: CypherRow, state: QueryState): Unit = {
     def handleMissingNode(nodeName: String) =
       if (state.lenientCreateRelationship) NO_SUCH_RELATIONSHIP
-      else throw new InternalException(LenientCreateRelationship.errorMsg(command.relName, nodeName))
+      else throw InvalidArgumentException.createRelationshipMissingNode(command.relName, nodeName)
 
     val start = command.startNodeIdGetter.applyAsLong(row)
     val end = command.endNodeIdGetter.applyAsLong(row)

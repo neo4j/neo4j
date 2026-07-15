@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.BaseCreatePipe
@@ -32,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyType
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP
 
@@ -69,7 +68,7 @@ abstract class EntityCreateSlottedPipe(source: Pipe) extends BaseCreatePipe(sour
 
     def handleMissingNode(nodeName: String) =
       if (state.lenientCreateRelationship) NO_SUCH_RELATIONSHIP
-      else throw new InternalException(LenientCreateRelationship.errorMsg(command.relName, nodeName))
+      else throw InvalidArgumentException.createRelationshipMissingNode(command.relName, nodeName)
 
     val startNodeId = command.startNodeIdGetter.applyAsLong(context)
     val endNodeId = command.endNodeIdGetter.applyAsLong(context)

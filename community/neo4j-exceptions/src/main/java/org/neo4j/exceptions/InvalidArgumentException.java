@@ -56,6 +56,16 @@ public class InvalidArgumentException extends Neo4jException {
         return Status.Statement.ArgumentError;
     }
 
+    public static InvalidArgumentException createRelationshipMissingNode(String relName, String nodeName) {
+        var gql = GqlHelper.getGql22G03_22N01("NULL", List.of("NODE"), "NULL");
+        return new InvalidArgumentException(
+                gql,
+                String.format(
+                        "Failed to create relationship `%s`, node `%s` is missing. If you prefer to simply ignore rows "
+                                + "where a relationship node is missing, set 'dbms.cypher.lenient_create_relationship = true' in neo4j.conf",
+                        relName, nodeName));
+    }
+
     public static InvalidArgumentException unknownNormalForm(String normalForm) {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N49)
