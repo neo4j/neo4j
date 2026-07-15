@@ -48,8 +48,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.util.UUID
-import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -75,8 +78,14 @@ case class DbAccessor(dbms: FeatureDatabaseManagementService, extraSettings: Set
   def isCompatible(extraSettings: Settings): Boolean = this.extraSettings == extraSettings
 }
 
+/**
+ * Pools DBMSes so scenarios reuse them instead of booting one each.
+ * Idle executors are keyed by their extra settings.
+ */
 trait ExecutorPool extends Executors {
-  private[this] val executors = new ArrayBlockingQueue[Option[DbAccessor]](ExecutorPool.PoolSize)
+  private[this] val slots = new Semaphore(ExecutorPool.PoolSize)
+  private[this] val idle = new ConcurrentHashMap[Settings, ConcurrentLinkedDeque[DbAccessor]]()
+  private[this] val liveExecutors = new AtomicInteger(0)
   @volatile private[this] var started = false
 
   def conf: TestConf
@@ -85,31 +94,37 @@ trait ExecutorPool extends Executors {
     checkState(started, "ExecutorPool is not started")
 
     val extraSettings = extraSettingsFor(scenario) ++ dynamicSettings
-    executors.poll(5, TimeUnit.MINUTES) match {
-      case Some(executor) =>
-        try {
-          if (isCompatible(executor, extraSettings, scenario)) {
+    val forceRestart = scenario.getSourceTagNames.contains("@force-restart")
+    if (!slots.tryAcquire(5, TimeUnit.MINUTES)) {
+      throw new IllegalStateException(s"Timed out while waiting for executor (not supposed to happen)")
+    }
+
+    try {
+      val reusable = if (forceRestart) None else pollIdle(extraSettings)
+      reusable match {
+        case Some(executor) =>
+          try {
             DbAccessor(executor.dbms.withNewExecutor(), executor.extraSettings, executor.reUseCount + 1)
-          } else {
-            shutdownExecutor(executor, deleteFiles = true)
-            createExecutor(extraSettings)
+          } catch {
+            case t: Throwable =>
+              Try(destroyExecutor(executor, deleteFiles = false))
+              throw t
           }
-        } catch {
-          case t: Throwable =>
-            Try(shutdownExecutor(executor, deleteFiles = false))
-            executors.offer(None)
-            throw t
-        }
-      case None =>
-        try {
-          createExecutor(extraSettings)
-        } catch {
-          case t: Throwable =>
-            executors.offer(None)
-            throw t
-        }
-      case null =>
-        throw new IllegalStateException(s"Timed out while waiting for executor (not supposed to happen)")
+        case None =>
+          makeRoom()
+          liveExecutors.incrementAndGet()
+          try {
+            createExecutor(extraSettings)
+          } catch {
+            case t: Throwable =>
+              liveExecutors.decrementAndGet()
+              throw t
+          }
+      }
+    } catch {
+      case t: Throwable =>
+        slots.release()
+        throw t
     }
   }
 
@@ -131,18 +146,49 @@ trait ExecutorPool extends Executors {
       executor.dbms.clearFabricQueryCacheForSession()
 
       executor.dbms.closeExecutor()
-      executors.offer(Some(executor))
+      idle.computeIfAbsent(executor.extraSettings, _ => new ConcurrentLinkedDeque()).push(executor)
     } catch {
       case t: Throwable =>
-        Try(shutdownExecutor(executor, deleteFiles = false))
-        executors.offer(None)
+        Try(destroyExecutor(executor, deleteFiles = false))
         throw t
+    } finally {
+      slots.release()
     }
   }
 
-  private def isCompatible(accessor: DbAccessor, extraSettings: Settings, scenario: Scenario): Boolean = {
-    val forceRestart = scenario.getSourceTagNames.contains("@force-restart")
-    !forceRestart && accessor.isCompatible(extraSettings) && conf.maxDbmsReuse.forall(_ > accessor.reUseCount)
+  // Take an idle executor with matching settings, reclaiming any that reached the reuse limit.
+  private def pollIdle(extraSettings: Settings): Option[DbAccessor] = {
+    val deque = idle.get(extraSettings)
+    if (deque == null) {
+      None
+    } else {
+      var executor = deque.poll()
+      while (executor != null && conf.maxDbmsReuse.exists(_ <= executor.reUseCount)) {
+        destroyExecutor(executor, deleteFiles = true)
+        executor = deque.poll()
+      }
+      Option(executor)
+    }
+  }
+
+  // Evict one idle executor if the pool is at capacity.
+  private def makeRoom(): Unit = {
+    if (liveExecutors.get() >= ExecutorPool.PoolSize) {
+      val deques = idle.values().iterator()
+      var evicted = false
+      while (!evicted && deques.hasNext) {
+        val executor = deques.next().poll()
+        if (executor != null) {
+          destroyExecutor(executor, deleteFiles = true)
+          evicted = true
+        }
+      }
+    }
+  }
+
+  private def destroyExecutor(executor: DbAccessor, deleteFiles: Boolean): Unit = {
+    liveExecutors.decrementAndGet()
+    shutdownExecutor(executor, deleteFiles)
   }
 
   protected def createExecutor(extraSettings: Settings): DbAccessor = {
@@ -151,15 +197,15 @@ trait ExecutorPool extends Executors {
 
   override def start(): Unit = {
     checkState(!started, "Tried starting already started ExecutorPool")
-    while (executors.offer(None)) {}
     started = true
   }
 
   override def shutdown(): Unit = this.synchronized {
     checkState(started, "Tried stopping already stopped ExecutorPool")
     started = false
-    executors.forEach(_.foreach(a => Try(shutdownExecutor(a, deleteFiles = true))))
-    executors.clear()
+    idle.values().forEach(_.forEach(a => Try(shutdownExecutor(a, deleteFiles = true))))
+    idle.clear()
+    liveExecutors.set(0)
   }
 
   protected def startDbms(extraSettings: Settings): DatabaseManagementService = {
