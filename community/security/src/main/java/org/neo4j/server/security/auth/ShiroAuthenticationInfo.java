@@ -106,9 +106,9 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
     }
 
     @Override
-    public void merge(AuthenticationInfo info) {
+    public AuthenticationInfo merge(AuthenticationInfo info) {
         if (info == null || info.getPrincipals() == null || info.getPrincipals().isEmpty()) {
-            return;
+            return this;
         }
 
         super.merge(info);
@@ -122,6 +122,7 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
             // so we claim the result to be an implicit success
             authenticationResult = mergeAuthenticationResult(authenticationResult, AuthenticationResult.SUCCESS);
         }
+        return this;
     }
 
     private static final AuthenticationResult[][] MERGE_MATRIX = {
