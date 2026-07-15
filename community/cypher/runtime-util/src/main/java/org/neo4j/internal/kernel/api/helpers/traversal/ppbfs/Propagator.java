@@ -80,6 +80,18 @@ public final class Propagator implements AutoCloseable {
             this.nodeState = nodeState;
         }
 
+        public int totalLength() {
+            return totalLength;
+        }
+
+        public int sourceLength() {
+            return sourceLength;
+        }
+
+        public NodeState nodeState() {
+            return nodeState;
+        }
+
         @Override
         public String toString() {
             return "QueuedPropagation{" + "totalLength="

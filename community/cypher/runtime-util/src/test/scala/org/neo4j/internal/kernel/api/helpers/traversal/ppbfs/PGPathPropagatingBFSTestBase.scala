@@ -31,15 +31,17 @@ import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBF
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TracedPath.PathEntity
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventPPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.JsonlPPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.VisualizingPPBSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.PGStateBuilder
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
 import org.neo4j.kernel.api.AssertOpen
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipDirection
+
+import java.nio.file.Path
 
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -165,8 +167,8 @@ trait PGPathPropagatingBFSTestBase { self: RuntimeUtilTestSuite =>
 
     def logged(level: LoggingPPBFSHooks = LoggingPPBFSHooks.debug): FixtureBuilder[A] = copy(hooks = level)
 
-    /** Render graphviz to stdout */
-    def viz(compress: Boolean): FixtureBuilder[A] = copy(hooks = new VisualizingPPBSHooks(compress))
+    def logJson(dir: Path = Path.of("/tmp")): FixtureBuilder[A] =
+      copy(hooks = new JsonlPPBFSHooks(dir))
 
     /** Run the iterator with event hooks attached */
     def events(): Seq[EventRecorder.Event] = {
