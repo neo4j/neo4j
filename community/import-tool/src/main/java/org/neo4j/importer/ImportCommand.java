@@ -738,7 +738,7 @@ public class ImportCommand {
             if (isSkidbladnir() && autoSkipHeaders) {
                 throw new ParameterException(
                         spec.commandLine(),
-                        "ERROR: Skidbladnir import does not support the '--auto-skip-subsequent-headers' option");
+                        "ERROR: Skidbladnir import is not supported with '--auto-skip-subsequent-headers'");
             }
 
             if (threads > DEFAULT_IMPORTER_CONFIG.maxNumberOfWorkerThreads()) {
