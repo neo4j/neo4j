@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.harness;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.async.AsyncBlockAccessor.EMPTY_ASYNC_BLOCK_ACCESSOR;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -54,6 +55,7 @@ import org.neo4j.io.pagecache.randomharness.Phase;
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
 import org.neo4j.io.pagecache.randomharness.RecordFormat;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -231,6 +233,11 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
                             throw th;
                         }
                     }
+                    // The adversary is disabled by the time verification runs, but the on-disk copy may still
+                    // hold torn writes from cooperative eviction during the (adversarial) command phase. Flush
+                    // the authoritative in-cache pages down before reading the raw channel below, otherwise the
+                    // raw-file assertion checks an unreconciled disk state the page cache never guaranteed.
+                    pf.flushAndForce(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR);
                 }
                 var reservedBytes = cache.pageReservedBytes(openOptions);
                 try (StoreChannel channel = fs1.read(file)) {
