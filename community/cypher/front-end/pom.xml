@@ -28,6 +28,8 @@
     <module>ast-test</module>
     <module>rewriting</module>
     <module>frontend</module>
+    <module>frontend-tests</module>
+    <module>frontend-test-util</module>
     <module>frontend-inspector</module>
     <module>util</module>
     <module>test-util</module>

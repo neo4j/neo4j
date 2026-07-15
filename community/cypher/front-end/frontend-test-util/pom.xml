@@ -8,11 +8,11 @@
     <version>2026.08.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>neo4j-front-end</artifactId>
+  <artifactId>neo4j-front-end-test-util</artifactId>
   <packaging>jar</packaging>
-  <name>openCypher Front End</name>
+  <name>openCypher Front End common test fixtures</name>
 
-  <description>Scala implementation of
+  <description>Common test fixtures for the Scala implementation of
         - parser
         - abstract syntax tree (AST)
         - semantic analysis
@@ -32,21 +32,20 @@
   </scm>
 
   <properties>
-    <mixed.language.allowed>true</mixed.language.allowed>
     <moduleName>org.neo4j.cypher.internal.frontend</moduleName>
   </properties>
 
   <dependencies>
+
+    <!-- scala test dependencies -->
+
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>cypher-parser-ast-common</artifactId>
-      <version>${project.version}</version>
+      <groupId>com.lihaoyi</groupId>
+      <artifactId>pprint_${scala.binary.version}</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>cypher-parser-factory</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+
+    <!-- neo4j -->
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ast</artifactId>
@@ -59,27 +58,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-configuration</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-exceptions</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-expressions</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-gql-status</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graphdb-api</artifactId>
+      <artifactId>neo4j-front-end</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -89,30 +73,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-notifications</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-rewriting</artifactId>
       <version>${project.version}</version>
     </dependency>
-
-    <!-- neo4j -->
-
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-util</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -126,5 +92,44 @@
       <groupId>org.scala-lang</groupId>
       <artifactId>scala3-library_3</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
+      <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- disable only the ban-test-dependencies-in-compile enforcer rule
+                since this project creates test utilities -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>ban-test-dependencies-in-compile</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>analyze</id>
+            <goals>
+              <goal>analyze-only</goal>
+            </goals>
+            <configuration>
+              <failOnWarning>true</failOnWarning>
+              <ignoredUnusedDeclaredDependencies>
+                <ignoredUnusedDeclaredDependency>org.scalatestplus:mockito-4-6_${scala.binary.version}</ignoredUnusedDeclaredDependency>
+              </ignoredUnusedDeclaredDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

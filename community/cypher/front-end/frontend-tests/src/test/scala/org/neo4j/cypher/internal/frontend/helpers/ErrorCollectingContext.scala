@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.frontend.helpers
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
@@ -111,10 +110,4 @@ object ErrorCollectingContext {
       )
     }
   }
-}
-
-object NoPlannerName extends PlannerName {
-  override def name = "no planner"
-  override def toTextOutput = "no planner"
-  override def version = "no version"
 }
