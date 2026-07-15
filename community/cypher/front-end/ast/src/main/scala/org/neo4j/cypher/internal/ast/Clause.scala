@@ -2159,6 +2159,9 @@ object With {
 
   def apply(returnItems: ReturnItems, where: Where, withType: WithType)(pos: InputPosition): With =
     With(distinct = false, returnItems, None, None, None, None, Some(where), withType)(pos)
+
+  def apply(distinct: Boolean, returnItems: ReturnItems, withType: WithType)(pos: InputPosition): With =
+    With(distinct, returnItems, None, None, None, None, None, withType)(pos)
 }
 
 case class With(

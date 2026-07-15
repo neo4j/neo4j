@@ -369,6 +369,26 @@ case class ProjectionSpecification(
   def getShadowingDeclarations(incomingSymbols: Set[LogicalVariable]): Set[LogicalVariable] =
     incomingSymbols intersect getIntroducedSymbols
 
+  /**
+   * Re-alias every grouping key and aggregating item under a fresh anonymous alias, returning the anonymized
+   * specification together with a map from each item's original alias to its new anonymous one.
+   *
+   * Used when hoisting a GROUP BY projection into a preceding clause: with only anonymous names in the hoisted
+   * clause, no user identifier there can be shadowed by a name bound inside a sibling subquery expression.
+   */
+  def withAnonymousHoistedAliases(
+    anonVarGen: AnonymousVariableNameGenerator
+  ): (ProjectionSpecification, Map[LogicalVariable, LogicalVariable]) = {
+    val gkAnon = groupingKeys.toSeq.map(gk => gk -> Variable(anonVarGen.nextName, gk.expression.position))
+    val aggAnon = aggregatingItems.toSeq.map(agg => agg -> Variable(anonVarGen.nextName, agg.expression.position))
+    val aliasMapping = (gkAnon ++ aggAnon).flatMap { case (item, anon) => item.alias.map(_ -> anon) }.toMap
+    val anonymized = copy(
+      groupingKeys = gkAnon.map { case (gk, anon) => gk.copy(alias = Some(anon)) }.toSet,
+      aggregatingItems = aggAnon.map { case (agg, anon) => agg.copy(alias = Some(anon)) }.toSet
+    )
+    (anonymized, aliasMapping)
+  }
+
   def getContainingItem(expr: Expression): Option[ProjectionItem] =
     items.find(_.expression == expr).orElse {
       val subExpressions = expr.subExpressions

@@ -44,6 +44,22 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
     }))
   }
 
+  /**
+   * Expanding a query, rendering it back to text, then re-parsing and re-expanding must reach a
+   * fixpoint. This mirrors a composite database shipping an already-expanded fragment to a constituent,
+   * which re-parses it: if the expansion is not round-trip-stable the re-parsed form can bind sort/where
+   * references differently (see the GROUP BY ambiguous-projection split).
+   */
+  private def assertExpansionRoundTripStable(query: String): Unit = {
+    val firstRender =
+      prettifier.asString(prepareFrom(CypherVersion.Cypher25, query, rewriterPhaseUnderTest).statement())
+    val secondRender =
+      prettifier.asString(prepareFrom(CypherVersion.Cypher25, firstRender, rewriterPhaseUnderTest).statement())
+    withClue(s"First expansion:\n$firstRender\n\nSecond expansion:\n$secondRender\n") {
+      secondRender should equal(firstRender)
+    }
+  }
+
   // 1. GROUP BY without aggregation collapses to DISTINCT.
 
   test("RETURN: GROUP BY without aggregation becomes RETURN DISTINCT") {
@@ -128,8 +144,8 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
       """WITH 1 AS a, 2 AS b, 3 AS c
         |RETURN DISTINCT a, b, count(*) AS cnt GROUP BY a, b, c""".stripMargin,
       """WITH 1 AS a, 2 AS b, 3 AS c
-        |WITH a, b, c, count(*) AS cnt
-        |RETURN a, b, cnt""".stripMargin,
+        |WITH a AS `  UNNAMED0`, b AS `  UNNAMED1`, c AS `  UNNAMED2`, count(*) AS `  UNNAMED3`
+        |RETURN `  UNNAMED0` AS a, `  UNNAMED1` AS b, `  UNNAMED3` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -140,8 +156,8 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
       """WITH 1 AS a, 2 AS b, 3 AS c
         |RETURN DISTINCT a, b, count(*) AS cnt GROUP BY a, b, toInteger(c + 1) * b""".stripMargin,
       """WITH 1 AS a, 2 AS b, 3 AS c
-        |WITH a, b, toInteger(c + 1) * b AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN a, b, cnt""".stripMargin,
+        |WITH a AS `  UNNAMED1`, b AS `  UNNAMED2`, toInteger(c + 1) * b AS `  UNNAMED3`, count(*) AS `  UNNAMED4`
+        |RETURN `  UNNAMED1` AS a, `  UNNAMED2` AS b, `  UNNAMED4` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -153,9 +169,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |WITH DISTINCT a, b, count(*) AS cnt GROUP BY a, b, c
         |RETURN a, b, cnt""".stripMargin,
       """WITH 1 AS a, 2 AS b, 3 AS c
-        |WITH a, b, c, count(*) AS cnt
-        |WITH a, b, cnt
-        |RETURN a, b, cnt""".stripMargin,
+        |WITH a AS `  UNNAMED0`, b AS `  UNNAMED1`, c AS `  UNNAMED2`, count(*) AS `  UNNAMED3`
+        |WITH `  UNNAMED0` AS a, `  UNNAMED1` AS b, `  UNNAMED3` AS cnt
+        |RETURN a AS a, b AS b, cnt AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -167,9 +183,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |WITH DISTINCT a, b, count(*) AS cnt GROUP BY a, b, toInteger(c + 1) * b
         |RETURN a, b, cnt""".stripMargin,
       """WITH 1 AS a, 2 AS b, 3 AS c
-        |WITH a, b, toInteger(c + 1) * b AS `  UNNAMED0`, count(*) AS cnt
-        |WITH a, b, cnt
-        |RETURN a, b, cnt""".stripMargin,
+        |WITH a AS `  UNNAMED1`, b AS `  UNNAMED2`, toInteger(c + 1) * b AS `  UNNAMED3`, count(*) AS `  UNNAMED4`
+        |WITH `  UNNAMED1` AS a, `  UNNAMED2` AS b, `  UNNAMED4` AS cnt
+        |RETURN a AS a, b AS b, cnt AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -181,8 +197,8 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN a.p + 1 AS x, count(*) AS cnt
         |  GROUP BY a.p""".stripMargin,
       """WITH {p: 1} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN `  UNNAMED0` + 1 AS x, cnt""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN `  UNNAMED1` + 1 AS x, `  UNNAMED2` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -195,9 +211,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY a.p
         |  ORDER BY 2 + a.p + 1""".stripMargin,
       """WITH {p: 1} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN `  UNNAMED0` + 1 AS x, cnt
-        |  ORDER BY 2 + `  UNNAMED0` + 1""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN `  UNNAMED1` + 1 AS x, `  UNNAMED2` AS cnt
+        |  ORDER BY (2 + `  UNNAMED1`) + 1 ASCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -210,9 +226,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY a.p
         |RETURN x, cnt""".stripMargin,
       """WITH {p: 1} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |WITH `  UNNAMED0` + 1 AS x, cnt
-        |RETURN x, cnt""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |WITH `  UNNAMED1` + 1 AS x, `  UNNAMED2` AS cnt
+        |RETURN x AS x, cnt AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -224,8 +240,8 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN [y IN a.p WHERE y < size(a.p) | y * size(a.p)] AS l, count(*) AS cnt
         |  GROUP BY a.p""".stripMargin,
       """WITH {p: [1, 2, 3]} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN [y IN `  UNNAMED0` WHERE y < size(`  UNNAMED0`) | y * size(`  UNNAMED0`)] AS l, cnt""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN [y IN `  UNNAMED1` WHERE y < size(`  UNNAMED1`) | y * size(`  UNNAMED1`)] AS l, `  UNNAMED2` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -237,8 +253,8 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN [a IN [{p: 10}] WHERE a.p > 5 | a.p] AS l, count(*) AS cnt
         |  GROUP BY a.p""".stripMargin,
       """WITH {p: 1} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN [a IN [{p: 10}] WHERE a.p > 5 | a.p] AS l, cnt""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN [a IN [{p: 10}] WHERE a.p > 5 | a.p] AS l, `  UNNAMED2` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -250,8 +266,8 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN any(y IN a.p WHERE y < size(a.p)) AS b, count(*) AS cnt
         |  GROUP BY a.p""".stripMargin,
       """WITH {p: [1, 2, 3]} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN any(y IN `  UNNAMED0` WHERE y < size(`  UNNAMED0`)) AS b, cnt""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN any(y IN `  UNNAMED1` WHERE y < size(`  UNNAMED1`)) AS b, `  UNNAMED2` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -263,8 +279,8 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN reduce(acc = 0, y IN a.p | acc + y + size(a.p)) AS r, count(*) AS cnt
         |  GROUP BY a.p""".stripMargin,
       """WITH {p: [1, 2, 3]} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN reduce(acc = 0, y IN `  UNNAMED0` | acc + y + size(`  UNNAMED0`)) AS r, cnt""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN reduce(acc = 0, y IN `  UNNAMED1` | (acc + y) + size(`  UNNAMED1`)) AS r, `  UNNAMED2` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -276,8 +292,8 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN [(n)-->(m) WHERE m.v = size(a.p) | m.v] AS l, count(*) AS cnt
         |  GROUP BY a.p""".stripMargin,
       """WITH {p: [1, 2, 3]} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN [(n)-->(m) WHERE m.v = size(`  UNNAMED0`) | m.v] AS l, cnt""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN [(n)-->(m) WHERE m.v = size(`  UNNAMED1`) | m.v] AS l, `  UNNAMED2` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -289,8 +305,11 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN COUNT { MATCH (n) WHERE n.v = size(a.p) } AS c, count(*) AS cnt
         |  GROUP BY a.p""".stripMargin,
       """WITH {p: [1, 2, 3]} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN COUNT { MATCH (n) WHERE n.v = size(`  UNNAMED0`) } AS c, cnt""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN COUNT {
+        |  MATCH (n)
+        |    WHERE n.v = size(`  UNNAMED1`)
+        |} AS c, `  UNNAMED2` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -302,8 +321,8 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN allreduce(acc = 0, y IN a.p | acc + y + size(a.p), acc < size(a.p)) AS r, count(*) AS cnt
         |  GROUP BY a.p""".stripMargin,
       """WITH {p: [1, 2, 3]} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN allreduce(acc = 0, y IN `  UNNAMED0` | acc + y + size(`  UNNAMED0`), acc < size(`  UNNAMED0`)) AS r, cnt""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN allReduce(acc = 0, y IN `  UNNAMED1` | (acc + y) + size(`  UNNAMED1`), acc < size(`  UNNAMED1`)) AS r, `  UNNAMED2` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -315,8 +334,8 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN allreduce(acc = 0, a IN [{p: 10}] | acc + a.p, a.p > 0) AS r, count(*) AS cnt
         |  GROUP BY a.p""".stripMargin,
       """WITH {p: 1} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN allreduce(acc = 0, a IN [{p: 10}] | acc + a.p, a.p > 0) AS r, cnt""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN allReduce(acc = 0, a IN [{p: 10}] | acc + a.p, a.p > 0) AS r, `  UNNAMED2` AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -333,13 +352,13 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY ()
         |RETURN *;
       """.stripMargin,
-      """LET a = 10, const = "const"
+      """WITH 10 AS a, "const" AS const
         |UNWIND [1, 2, 3] AS x
-        |FILTER WHERE false
-        |WITH SUM(x / a) * 5 AS s
-        |WITH "const2" AS c2, s
-        |RETURN *;
-      """.stripMargin,
+        |WITH *
+        |  WHERE false
+        |WITH SUM(x / a) * 5 AS `  UNNAMED0`
+        |WITH "const2" AS c2, `  UNNAMED0` AS s
+        |RETURN *""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -355,14 +374,14 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  ORDER BY SUM(x / a) * 5, c2
         |RETURN *;
       """.stripMargin,
-      """LET a = 10, const = "const"
+      """WITH 10 AS a, "const" AS const
         |UNWIND [1, 2, 3] AS x
-        |FILTER WHERE false
-        |WITH SUM(x / a) * 5 AS s
-        |WITH "const2" AS c2, s
-        |  ORDER BY s, c2
-        |RETURN *;
-      """.stripMargin,
+        |WITH *
+        |  WHERE false
+        |WITH SUM(x / a) * 5 AS `  UNNAMED0`
+        |WITH "const2" AS c2, `  UNNAMED0` AS s
+        |  ORDER BY `  UNNAMED0` ASCENDING, c2 ASCENDING
+        |RETURN *""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -376,14 +395,140 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY x
         |RETURN *;
       """.stripMargin,
-      """LET a = 10, const = "const"
+      """WITH 10 AS a, "const" AS const
         |UNWIND [1, 2, 3] AS x
-        |WITH x, SUM(x / a) * 5 AS s
-        |WITH "const2" AS c2, s
-        |RETURN *;
-      """.stripMargin,
+        |WITH x AS `  UNNAMED0`, SUM(x / a) * 5 AS `  UNNAMED1`
+        |WITH "const2" AS c2, `  UNNAMED1` AS s
+        |RETURN *""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WITH: ambiguous projection under explicit GROUP BY splits into grouping + projecting clauses") {
+    assertRewritten(
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS k, b AS a, sum(c) AS s
+        |  GROUP BY k, a
+        |  ORDER BY a.p, s
+        |RETURN k, a, s""".stripMargin,
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS `  UNNAMED0`, b AS `  UNNAMED1`, sum(c) AS `  UNNAMED2`
+        |WITH `  UNNAMED0` AS k, `  UNNAMED1` AS a, `  UNNAMED2` AS s
+        |  ORDER BY a.p ASCENDING, s ASCENDING
+        |RETURN k AS k, a AS a, s AS s""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("RETURN: ambiguous projection under explicit GROUP BY splits into grouping WITH + projecting RETURN") {
+    assertRewritten(
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |RETURN a.p AS k, b AS a, sum(c) AS s
+        |  GROUP BY k, a
+        |  ORDER BY a.p, s""".stripMargin,
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS `  UNNAMED0`, b AS `  UNNAMED1`, sum(c) AS `  UNNAMED2`
+        |RETURN `  UNNAMED0` AS k, `  UNNAMED1` AS a, `  UNNAMED2` AS s
+        |  ORDER BY a.p ASCENDING, s ASCENDING""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WITH: ambiguous projection under GROUP BY ALL splits into grouping + projecting clauses") {
+    assertRewritten(
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS k, b AS a, sum(c) AS s
+        |  GROUP BY ALL
+        |  ORDER BY a.p, s
+        |RETURN k, a, s""".stripMargin,
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS `  UNNAMED0`, b AS `  UNNAMED1`, sum(c) AS `  UNNAMED2`
+        |WITH `  UNNAMED0` AS k, `  UNNAMED1` AS a, `  UNNAMED2` AS s
+        |  ORDER BY a.p ASCENDING, s ASCENDING
+        |RETURN k AS k, a AS a, s AS s""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WITH: ambiguous projection with a WHERE referencing the shadowed name splits") {
+    assertRewritten(
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS k, b AS a, sum(c) AS s
+        |  GROUP BY k, a
+        |  WHERE a.p > 0
+        |RETURN k, a, s""".stripMargin,
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS `  UNNAMED0`, b AS `  UNNAMED1`, sum(c) AS `  UNNAMED2`
+        |WITH `  UNNAMED0` AS k, `  UNNAMED1` AS a, `  UNNAMED2` AS s
+        |  WHERE a.p > 0
+        |RETURN k AS k, a AS a, s AS s""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WITH: non-ambiguous projection under GROUP BY stays a single clause") {
+    assertRewritten(
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS k, b AS d, sum(c) AS s
+        |  GROUP BY k, d
+        |  ORDER BY a.p, s
+        |RETURN k, d, s""".stripMargin,
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS k, b AS d, sum(c) AS s
+        |  ORDER BY k, s
+        |RETURN k, d, s""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WITH: ambiguous projection splits even when the ORDER BY does not reference the shadow") {
+    assertRewritten(
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS k, b AS a, sum(c) AS s
+        |  GROUP BY k, a
+        |  ORDER BY s
+        |RETURN k, a, s""".stripMargin,
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS `  UNNAMED0`, b AS `  UNNAMED1`, sum(c) AS `  UNNAMED2`
+        |WITH `  UNNAMED0` AS k, `  UNNAMED1` AS a, `  UNNAMED2` AS s
+        |  ORDER BY s ASCENDING
+        |RETURN k AS k, a AS a, s AS s""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("Ambiguous GROUP BY projection expansion is round-trip stable") {
+    assertExpansionRoundTripStable(
+      """WITH {p: 1} AS a, {p: 2} AS b, 3 AS c
+        |WITH a.p AS k, b AS a, sum(c) AS s
+        |  GROUP BY k, a
+        |  ORDER BY a.p, s
+        |RETURN k, a, s""".stripMargin
+    )
+  }
+
+  test("aggregation alias shadowed by a COUNT-subquery variable is hoisted under a fresh name (round-trip stable)") {
+    assertExpansionRoundTripStable(
+      """WITH {p: 3} AS a, 1 AS c
+        |RETURN COUNT { UNWIND range(1, a.p) AS cnt RETURN cnt } AS n, count(c) AS cnt
+        |  GROUP BY a.p""".stripMargin
+    )
+  }
+
+  test(
+    "projected grouping-key alias shadowed by a subquery variable is hoisted under a fresh name (round-trip stable)"
+  ) {
+    assertExpansionRoundTripStable(
+      """WITH 1 AS x, 2 AS c
+        |RETURN x AS k, COUNT { UNWIND range(1, x) AS k RETURN k } AS n, count(c) AS cnt
+        |  GROUP BY k""".stripMargin
     )
   }
 
@@ -408,9 +553,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN a, b, count(b) AS cnt
         |  ORDER BY count(b), count(b) + sum(a)""".stripMargin,
       """WITH 1 AS a, 2 AS b
-        |WITH a AS a, b AS b, count(b) AS cnt, count(b) + sum(a) AS `  UNNAMED0`
-        |RETURN a AS a, b AS b, cnt AS cnt
-        |  ORDER BY cnt, `  UNNAMED0` ASCENDING""".stripMargin,
+        |WITH a AS `  UNNAMED1`, b AS `  UNNAMED2`, count(b) AS `  UNNAMED3`, count(b) + sum(a) AS `  UNNAMED4`
+        |RETURN `  UNNAMED1` AS a, `  UNNAMED2` AS b, `  UNNAMED3` AS cnt
+        |  ORDER BY `  UNNAMED3` ASCENDING, `  UNNAMED4` ASCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -422,9 +567,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN a, b, count(b) AS cnt
         |  ORDER BY count(b) + sum(a) DESC""".stripMargin,
       """WITH 1 AS a, 2 AS b
-        |WITH a AS a, b AS b, count(b) AS cnt, count(b) + sum(a) AS `  UNNAMED0`
-        |RETURN a AS a, b AS b, cnt AS cnt
-        |  ORDER BY `  UNNAMED0` DESCENDING""".stripMargin,
+        |WITH a AS `  UNNAMED1`, b AS `  UNNAMED2`, count(b) AS `  UNNAMED3`, count(b) + sum(a) AS `  UNNAMED4`
+        |RETURN `  UNNAMED1` AS a, `  UNNAMED2` AS b, `  UNNAMED3` AS cnt
+        |  ORDER BY `  UNNAMED4` DESCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -438,9 +583,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  ORDER BY count(a) + sum(a), count(a)""".stripMargin,
       """UNWIND [1, 2, 3, 4] AS x
         |WITH 1 AS a, 2 AS b, x AS x
-        |WITH x AS x, count(a) AS cnt, count(a) + sum(a) AS `  UNNAMED0`
-        |RETURN x AS x, cnt AS cnt
-        |  ORDER BY `  UNNAMED0`, cnt""".stripMargin,
+        |WITH x AS `  UNNAMED1`, count(a) AS `  UNNAMED2`, count(a) + sum(a) AS `  UNNAMED3`
+        |RETURN `  UNNAMED1` AS x, `  UNNAMED2` AS cnt
+        |  ORDER BY `  UNNAMED3` ASCENDING, `  UNNAMED2` ASCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -455,10 +600,10 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN x, cnt""".stripMargin,
       """UNWIND [1, 2, 3, 4] AS x
         |WITH 1 AS a, 2 AS b, x AS x
-        |WITH x AS x, count(a) AS cnt, count(a) + sum(a) AS `  UNNAMED0`
-        |WITH x AS x, cnt AS cnt
-        |  ORDER BY `  UNNAMED0`, cnt
-        |RETURN x, cnt""".stripMargin,
+        |WITH x AS `  UNNAMED1`, count(a) AS `  UNNAMED2`, count(a) + sum(a) AS `  UNNAMED3`
+        |WITH `  UNNAMED1` AS x, `  UNNAMED2` AS cnt
+        |  ORDER BY `  UNNAMED3` ASCENDING, `  UNNAMED2` ASCENDING
+        |RETURN x AS x, cnt AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -470,9 +615,10 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |WITH a, b, count(b) AS cnt WHERE count(b) > 0
         |RETURN a, b, cnt""".stripMargin,
       """WITH 1 AS a, 2 AS b
-        |WITH a AS a, b AS b, count(b) AS cnt, count(b) > 0 AS `  UNNAMED0`
-        |WITH a AS a, b AS b, cnt AS cnt WHERE `  UNNAMED0`
-        |RETURN a, b, cnt""".stripMargin,
+        |WITH a AS `  UNNAMED1`, b AS `  UNNAMED2`, count(b) AS `  UNNAMED3`
+        |WITH `  UNNAMED1` AS a, `  UNNAMED2` AS b, `  UNNAMED3` AS cnt
+        |  WHERE `  UNNAMED3` > 0
+        |RETURN a AS a, b AS b, cnt AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -486,9 +632,10 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN x, cnt""".stripMargin,
       """UNWIND [1, 2, 3, 4] AS x
         |WITH 1 AS a, 2 AS b, x AS x
-        |WITH x AS x, count(a) AS cnt, count(a) + sum(a) > 0 AS `  UNNAMED0`
-        |WITH x AS x, cnt AS cnt WHERE `  UNNAMED0`
-        |RETURN x, cnt""".stripMargin,
+        |WITH x AS `  UNNAMED1`, count(a) AS `  UNNAMED2`, count(a) + sum(a) > 0 AS `  UNNAMED3`
+        |WITH `  UNNAMED1` AS x, `  UNNAMED2` AS cnt
+        |  WHERE `  UNNAMED3`
+        |RETURN x AS x, cnt AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -507,9 +654,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  LIMIT 2""".stripMargin,
       """UNWIND [1, 2, 3, 4] AS x
         |WITH 1 AS a, 2 AS b, x AS x
-        |WITH a + 2 AS a, b AS b, toInteger(x + 1) * b AS `  UNNAMED0`, x AS x, count(*) AS cnt
-        |RETURN b AS b, cnt AS cnt, a AS a
-        |  ORDER BY a ASCENDING, b ASCENDING, x ASCENDING
+        |WITH a + 2 AS `  UNNAMED1`, b AS `  UNNAMED2`, toInteger(x + 1) * b AS `  UNNAMED3`, x AS `  UNNAMED4`, count(*) AS `  UNNAMED5`
+        |RETURN `  UNNAMED2` AS b, `  UNNAMED5` AS cnt, `  UNNAMED1` AS a
+        |  ORDER BY a ASCENDING, b ASCENDING, `  UNNAMED4` ASCENDING
         |  SKIP 1
         |  LIMIT 2""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
@@ -529,12 +676,12 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |RETURN b, cnt, a""".stripMargin,
       """UNWIND [1, 2, 3, 4] AS x
         |WITH 1 AS a, 2 AS b, x AS x
-        |WITH a + 2 AS a, b AS b, toInteger(x + 1) * b AS `  UNNAMED0`, x AS x, count(*) AS cnt
-        |WITH b AS b, cnt AS cnt, a AS a
-        |  ORDER BY a ASCENDING, b ASCENDING, x ASCENDING
+        |WITH a + 2 AS `  UNNAMED1`, b AS `  UNNAMED2`, toInteger(x + 1) * b AS `  UNNAMED3`, x AS `  UNNAMED4`, count(*) AS `  UNNAMED5`
+        |WITH `  UNNAMED2` AS b, `  UNNAMED5` AS cnt, `  UNNAMED1` AS a
+        |  ORDER BY a ASCENDING, b ASCENDING, `  UNNAMED4` ASCENDING
         |  SKIP 1
         |  LIMIT 2
-        |RETURN b, cnt, a""".stripMargin,
+        |RETURN b AS b, cnt AS cnt, a AS a""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -598,8 +745,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY ALL
         |  ORDER BY a.p""".stripMargin,
       """MATCH (a:A), (b:B)
-        |RETURN a.p AS x, b AS a, count(*) AS count
-        |  ORDER BY a.p""".stripMargin,
+        |WITH a.p AS `  UNNAMED0`, b AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN `  UNNAMED0` AS x, `  UNNAMED1` AS a, `  UNNAMED2` AS count
+        |  ORDER BY a.p ASCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -625,8 +773,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY x, a
         |  ORDER BY a.p""".stripMargin,
       """MATCH (a:A), (b:B)
-        |RETURN a.p AS x, b AS a, count(*) AS count
-        |  ORDER BY a.p""".stripMargin,
+        |WITH a.p AS `  UNNAMED0`, b AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN `  UNNAMED0` AS x, `  UNNAMED1` AS a, `  UNNAMED2` AS count
+        |  ORDER BY a.p ASCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -1085,11 +1234,12 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         GROUP BY ALL
         ORDER BY b, a
       """.stripMargin,
-      """
-      MATCH (a:A), (b:B)
-      RETURN DISTINCT a AS b, b AS a
-        ORDER BY b, a
-      """.stripMargin
+      """MATCH (a:A), (b:B)
+        |WITH DISTINCT a AS `  UNNAMED0`, b AS `  UNNAMED1`
+        |RETURN `  UNNAMED0` AS b, `  UNNAMED1` AS a
+        |  ORDER BY b ASCENDING, a ASCENDING""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
     )
   }
 
@@ -1259,10 +1409,12 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY pa0, pa1
         |  ORDER BY -pa0
       """.stripMargin,
-      """WITH -0.5 as pa0
-        |RETURN DISTINCT 1 AS pa0, -pa0 as pa1
-        |  ORDER BY -pa0
-      """.stripMargin
+      """WITH -0.5 AS pa0
+        |WITH DISTINCT 1 AS `  UNNAMED0`, -pa0 AS `  UNNAMED1`
+        |RETURN `  UNNAMED0` AS pa0, `  UNNAMED1` AS pa1
+        |  ORDER BY -pa0 ASCENDING""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
     )
   }
 
@@ -1322,11 +1474,13 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  WHERE -1 = -pa0
         |RETURN pa0 AS pa3
       """.stripMargin,
-      """WITH -0.5 as pa0
-        |WITH 1 AS pa0, -pa0 as pa1, count(*) AS cnt
+      """WITH -0.5 AS pa0
+        |WITH 1 AS `  UNNAMED0`, -pa0 AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |WITH `  UNNAMED0` AS pa0, `  UNNAMED1` AS pa1, `  UNNAMED2` AS cnt
         |  WHERE -1 = -pa0
-        |RETURN pa0 AS pa3
-      """.stripMargin
+        |RETURN pa0 AS pa3""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
     )
   }
 
@@ -1338,11 +1492,13 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  WHERE -1 = -pa1
         |RETURN pa0 AS pa3
       """.stripMargin,
-      """WITH -0.5 as pa0
-        |WITH 1 AS pa0, -pa0 as pa1, count(*) AS cnt
+      """WITH -0.5 AS pa0
+        |WITH 1 AS `  UNNAMED0`, -pa0 AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |WITH `  UNNAMED0` AS pa0, `  UNNAMED1` AS pa1, `  UNNAMED2` AS cnt
         |  WHERE -1 = -pa1
-        |RETURN pa0 AS pa3
-      """.stripMargin
+        |RETURN pa0 AS pa3""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
     )
   }
 
@@ -1376,10 +1532,12 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY ALL
         |  ORDER BY -1 = pa0.p + x
       """.stripMargin,
-      """WITH {p: -0.5} as pa0, 1 AS x
-        |RETURN DISTINCT {p: 1} AS pa0, pa0.p as pa1, x AS y
-        |ORDER BY -1 = pa0.p + y
-      """.stripMargin
+      """WITH {p: -0.5} AS pa0, 1 AS x
+        |WITH DISTINCT {p: 1} AS `  UNNAMED0`, pa0.p AS `  UNNAMED1`, x AS `  UNNAMED2`
+        |RETURN `  UNNAMED0` AS pa0, `  UNNAMED1` AS pa1, `  UNNAMED2` AS y
+        |  ORDER BY -1 = pa0.p + y ASCENDING""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
     )
   }
 
@@ -1491,10 +1649,10 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  WHERE sum(b) > 0
         |RETURN a, cnt""".stripMargin,
       """WITH 1 AS a, 2 AS b
-        |WITH a AS a, count(b) AS cnt, sum(b) > 0 AS `  UNNAMED0`
-        |WITH a AS a, cnt AS cnt
-        |  WHERE `  UNNAMED0`
-        |RETURN a, cnt""".stripMargin,
+        |WITH a AS `  UNNAMED1`, count(b) AS `  UNNAMED2`, sum(b) > 0 AS `  UNNAMED3`
+        |WITH `  UNNAMED1` AS a, `  UNNAMED2` AS cnt
+        |  WHERE `  UNNAMED3`
+        |RETURN a AS a, cnt AS cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -1564,8 +1722,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY x, y
         |  ORDER BY x""".stripMargin,
       """WITH 1 AS x, 2 AS y
-        |RETURN *, 10 AS x, count(*) AS cnt
-        |  ORDER BY x""".stripMargin,
+        |WITH 10 AS `  UNNAMED0`, y AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN `  UNNAMED0` AS x, `  UNNAMED2` AS cnt
+        |  ORDER BY x ASCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -1581,9 +1740,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY a.p
         |  ORDER BY a.p""".stripMargin,
       """WITH {p: 1} AS a
-        |WITH a.p AS `  UNNAMED0`, count(*) AS cnt
-        |RETURN cnt
-        |  ORDER BY `  UNNAMED0`""".stripMargin,
+        |WITH a.p AS `  UNNAMED1`, count(*) AS `  UNNAMED2`
+        |RETURN `  UNNAMED2` AS cnt
+        |  ORDER BY `  UNNAMED1` ASCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -1626,8 +1785,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY a.p
         |  ORDER BY a.p""".stripMargin,
       """WITH {p: 1} AS a
-        |RETURN a.p AS p, {p: -1} AS a, count(*) AS cnt
-        |  ORDER BY a.p""".stripMargin,
+        |WITH a.p AS `  UNNAMED0`, count(*) AS `  UNNAMED1`
+        |RETURN `  UNNAMED0` AS p, {p: -1} AS a, `  UNNAMED1` AS cnt
+        |  ORDER BY a.p ASCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -1654,8 +1814,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY [x IN a | x]
         |  ORDER BY [x IN a | x]""".stripMargin,
       """WITH [1, 2, 3] AS a
-        |RETURN [x IN a | x] AS l, [-1] AS a, count(*) AS cnt
-        |  ORDER BY [x IN a | x]""".stripMargin,
+        |WITH [x IN a | x] AS `  UNNAMED0`, count(*) AS `  UNNAMED1`
+        |RETURN `  UNNAMED0` AS l, [-1] AS a, `  UNNAMED1` AS cnt
+        |  ORDER BY [x IN a | x] ASCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -1682,8 +1843,9 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
         |  GROUP BY COUNT { RETURN a }
         |  ORDER BY COUNT { RETURN a }""".stripMargin,
       """WITH 1 AS a
-        |RETURN COUNT { RETURN a } AS c, 2 AS a, count(*) AS cnt
-        |  ORDER BY COUNT { RETURN a }""".stripMargin,
+        |WITH COUNT { RETURN a AS a } AS `  UNNAMED0`, count(*) AS `  UNNAMED1`
+        |RETURN `  UNNAMED0` AS c, 2 AS a, `  UNNAMED1` AS cnt
+        |  ORDER BY COUNT { RETURN a AS a } ASCENDING""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )

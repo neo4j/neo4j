@@ -214,8 +214,6 @@ case object ExpandSubclauses extends StatementRewriter
                 (Set.empty[GroupingKey], nonAggregatingItems, Set.empty[AggregatingItem], false)
             }
 
-          val groupAndAggAliases = (groupingKeys.map(_.alias) ++ aggregatingItems.map(_.alias)).flatten
-
           val subclauses = Elements(p).subclauses
           val updatedSpec = ProjectionSpecification(
             groupingKeys,
@@ -232,42 +230,50 @@ case object ExpandSubclauses extends StatementRewriter
 
           val needsExplicitDistinct = (p.groupBy.isDefined || p.distinct) && aggregatingItems.isEmpty
 
-          if (
-            hasInsetKeys || hasSubclauseAggregations || (p.groupBy.exists(
-              _.groupingElements.isInstanceOf[GroupingNone]
-            ) && nonAggregatingItems.nonEmpty)
-          ) {
+          val ambiguousProjection =
+            p.groupBy.isDefined &&
+              (subclauses.orderBy.isDefined || subclauses.where.isDefined) &&
+              updatedSpec.getShadowingDeclarations(scope.incoming.allSymbols).nonEmpty
+
+          val emptyGroupBy =
+            p.groupBy.exists(_.groupingElements.isInstanceOf[GroupingNone]) && nonAggregatingItems.nonEmpty
+
+          if (hasInsetKeys || hasSubclauseAggregations || ambiguousProjection || emptyGroupBy) {
             val pos = p.position
-            val groupingAndAggregatingItems =
-              groupingKeys.map(_.asReturnItem).toSeq ++
-                aggregatingItems.map(_.asReturnItem).toSeq ++
-                extractedAggregations
-            val groupAndAggItems =
-              ReturnItems(FreeProjection, groupingAndAggregatingItems)(pos)
 
-            val groupingAndAggregatingClause =
-              With(needsExplicitDistinct, groupAndAggItems, None, None, None, None, None, AddedInRewriteGeneral())(pos)
+            val (splitSpec, hoistedAlias) = updatedSpec.withAnonymousHoistedAliases(anonVarGen)
 
-            val substituteGroupingKeys: Rewriter = groupingKeyRewriter(updatedSpec)
-            val projectingItems = items.mapItems(_.map(ri => {
-              val alias = ri.alias.get
-              if (groupAndAggAliases contains alias) AliasedReturnItem(alias)
-              else ri match {
-                case ari: AliasedReturnItem =>
-                  ari.copy(expression = ari.expression.endoRewrite(substituteGroupingKeys))(ari.position)
-                case other => other
+            val (hoistedAggregations, orderBy, where) =
+              extractAndReplaceAggregatingExpressions(subclauses, splitSpec)
+
+            val hoistedItems =
+              splitSpec.groupingKeys.toSeq.map(_.asReturnItem) ++
+                splitSpec.aggregatingItems.toSeq.map(_.asReturnItem) ++
+                hoistedAggregations
+            val hoistingClause =
+              With(needsExplicitDistinct, ReturnItems(FreeProjection, hoistedItems)(pos), AddedInRewriteGeneral())(pos)
+
+            val substituteGroupingKeys: Rewriter = groupingKeyRewriter(splitSpec)
+            val projectingItems = items.mapItems(_.map(ri =>
+              hoistedAlias.get(ri.alias.get) match {
+                case Some(anon) => AliasedReturnItem(anon.copyId, ri.alias.get.copyId)(ri.position)
+                case None => ri match {
+                    case ari: AliasedReturnItem =>
+                      ari.copy(expression = ari.expression.endoRewrite(substituteGroupingKeys))(ari.position)
+                    case other => other
+                  }
               }
-            }))
+            ))
 
             val projectingClause = p.copyProjection(
               distinct = false,
               returnItems = projectingItems,
               groupBy = None,
-              orderBy = updatedOrderByOpt.orElse(p.orderBy),
-              where = updatedWhereOpt.orElse(p.where)
+              orderBy = orderBy.orElse(p.orderBy),
+              where = where.orElse(p.where)
             )
 
-            p -> Seq(groupingAndAggregatingClause, projectingClause)
+            p -> Seq(hoistingClause, projectingClause)
           } else if (updatedOrderByOpt.isDefined || updatedWhereOpt.isDefined || p.groupBy.isDefined) {
             p -> Seq(p.copyProjection(
               distinct = needsExplicitDistinct,
