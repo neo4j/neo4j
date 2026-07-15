@@ -88,6 +88,11 @@
     </dependency>
 
     <dependency>
+      <groupId>com.lihaoyi</groupId>
+      <artifactId>fansi_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-test-util</artifactId>
       <version>${project.version}</version>
