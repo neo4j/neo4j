@@ -38,6 +38,7 @@ import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriterConfig.MergePolicyOption;
+import org.neo4j.memory.MachineMemory;
 
 @ServiceProvider
 public class LuceneSettings implements SettingsDeclaration {
@@ -95,7 +96,7 @@ public class LuceneSettings implements SettingsDeclaration {
             + "With larger values, more RAM is used during indexing, and while searches is slower, indexing is faster. "
             + "This is only used on vector indexes during initial creation.")
     public static final Setting<Integer> vector_population_merge_factor = newBuilder(
-                    "internal.dbms.index.vector.population_merge_factor", INT, 1_000)
+                    "internal.dbms.index.vector.population_merge_factor", INT, 100)
             .addConstraint(min(2))
             .build();
 
@@ -207,12 +208,15 @@ public class LuceneSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("Determines the amount of RAM that may be used for buffering added documents and deletions "
-            + "before they are flushed to the Directory. Generally for faster indexing performance it's best "
-            + "to flush by RAM usage instead of document count and use as large a RAM buffer as you can. "
-            + "This is only used for vector indexes during the creation of the index.")
+    @Description("Determines the amount of RAM (in MiB) that may be used for buffering added documents before they "
+            + "are flushed to the Directory during vector index population. A larger buffer produces fewer, larger "
+            + "segments. The default scales with the machine's physical RAM, rounded down to a power of two and "
+            + "clamped to [1 MiB, 64 MiB] (roughly 1 MiB at 16 GiB RAM up to 64 MiB at ~768 GiB). Only used for "
+            + "vector indexes during the creation of the index.")
     public static final Setting<Double> vector_population_ram_buffer_size = newBuilder(
-                    "internal.dbms.index.vector.population_ram_buffer_size", DOUBLE, 1.0)
+                    "internal.dbms.index.vector.population_ram_buffer_size",
+                    DOUBLE,
+                    autoRamBufferSizeMB(MachineMemory.DEFAULT.getTotalPhysicalMemory()))
             .addConstraint(any(is((double) LuceneIndexWriterConfig.DISABLE_AUTO_FLUSH), min(Math.nextUp(0.0))))
             .build();
 
@@ -243,9 +247,13 @@ public class LuceneSettings implements SettingsDeclaration {
     @Description("Number of threads used to parallelize HNSW graph construction within a single segment merge "
             + "of a vector index. Maps to Lucene's numMergeWorkers / mergeExec on the HNSW vectors format. "
             + "Set to 1 to disable intra-merge parallelism; higher values trade more CPU for faster merges, "
-            + "which dominate the cost of building or rebuilding large vector indexes.")
+            + "which dominate the cost of building or rebuilding large vector indexes. Defaults to a quarter of the "
+            + "available processors (at least 1, capped at 16), leaving headroom for index population workers and "
+            + "query serving.")
     public static final Setting<Integer> vector_intra_merge_workers = newBuilder(
-                    "internal.dbms.index.vector.intra_merge_workers", INT, 1)
+                    "internal.dbms.index.vector.intra_merge_workers",
+                    INT,
+                    Math.clamp(Runtime.getRuntime().availableProcessors() / 4, 1, 16))
             .addConstraint(min(1))
             .build();
 
@@ -277,6 +285,19 @@ public class LuceneSettings implements SettingsDeclaration {
     public static final Setting<PostPopulationCompaction> vector_post_population_compaction = newBuilder(
                     "internal.dbms.index.vector.post_population_compaction",
                     ofEnum(PostPopulationCompaction.class),
-                    PostPopulationCompaction.NONE)
+                    PostPopulationCompaction.AUTO)
             .build();
+
+    /**
+     * Map physical RAM to a population buffer, rounded down to a power of two and clamped to
+     * [1, 64] MiB — one power-of-two step per 12 GiB of RAM.
+     * For comparison, Lucene defaults to 16 MiB, Solr to 100 MiB, and Elasticsearch to 10% of heap (min 48 MiB) shared across shards.
+     */
+    private static double autoRamBufferSizeMB(long totalPhysicalMemoryBytes) {
+        long bytesPerGib = 1L << 30;
+        long ramGiB = totalPhysicalMemoryBytes / bytesPerGib;
+        long ramGibPerBufferStep = 12;
+        long tier = Long.highestOneBit(Math.max(1L, ramGiB / ramGibPerBufferStep));
+        return Math.clamp(tier, 1, 64);
+    }
 }
