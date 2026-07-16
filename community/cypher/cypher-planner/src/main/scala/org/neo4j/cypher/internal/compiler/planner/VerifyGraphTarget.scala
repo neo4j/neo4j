@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -66,7 +65,7 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
 
   override def visit(value: BaseState, context: PlannerContext): Unit = {
     // We skip this check when the new stack is enabled and we are targeting a composite DB
-    if (!value.semantics().features.contains(UseAsMultipleGraphsSelector)) {
+    if (!context.semanticFeatures.contains(UseAsMultipleGraphsSelector)) {
       verifyGraphTarget(
         context.databaseReferenceRepository,
         value.statement(),
@@ -77,8 +76,7 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
     }
   }
 
-  override def preConditions: Set[StepSequencer.Condition] =
-    Set(BaseContains[Statement](), BaseContains[SemanticState]())
+  override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[Statement]())
 
   // necessary because VisitorPhase defines empty postConditions
   override def postConditions: Set[StepSequencer.Condition] = Set(completed)

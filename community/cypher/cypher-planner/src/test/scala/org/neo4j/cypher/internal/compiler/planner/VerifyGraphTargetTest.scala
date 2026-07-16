@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsSingleGraphSelector
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -238,15 +237,12 @@ class VerifyGraphTargetTest extends CypherPlannerTestSuite {
     val parsedQuery = parse(version, query)
     val state = mock[BaseState]
     when(state.statement()).thenReturn(parsedQuery)
-    val semantics = mock[SemanticState]
-    if (allowCompositeQueries && targetsComposite) {
-      when(semantics.features).thenReturn(Set(UseAsMultipleGraphsSelector))
-    } else {
-      when(semantics.features).thenReturn(Set(UseAsSingleGraphSelector))
-    }
-    when(state.semantics()).thenReturn(semantics)
 
     val plannerContext = mock[PlannerContext]
+    val semanticFeatures =
+      if (allowCompositeQueries && targetsComposite) Seq(UseAsMultipleGraphsSelector)
+      else Seq(UseAsSingleGraphSelector)
+    when(plannerContext.semanticFeatures).thenReturn(semanticFeatures)
     when(plannerContext.databaseReferenceRepository).thenReturn(databaseReferenceRepository)
     when(plannerContext.databaseId).thenReturn(sessionDb)
     when(plannerContext.cancellationChecker).thenReturn(mock[CancellationChecker])
