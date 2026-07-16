@@ -1161,7 +1161,9 @@ public class Database extends AbstractDatabase {
 
         TransactionExecutionMonitor transactionExecutionMonitor =
                 getMonitors().newMonitor(TransactionExecutionMonitor.class);
-        var transactionIdGenerator = databaseConfig.get(GraphDatabaseInternalSettings.merged_log) && !isSystem()
+        var transactionIdGenerator = databaseConfig.get(GraphDatabaseInternalSettings.merged_log)
+                        && (mode == HostedOnMode.RAFT || mode == HostedOnMode.REPLICA)
+                        && !isSystem()
                 ? TransactionIdGenerator.EXTERNAL_ID
                 : new IdStoreTransactionIdGenerator(logMetadataProvider);
         databaseDependencies.satisfyDependency(transactionIdGenerator);
