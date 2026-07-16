@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases.parserTransformers
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap.PositionedNode
 import org.neo4j.cypher.internal.ast.AddedInRewriteGeneral
+import org.neo4j.cypher.internal.ast.AddedWithOrigin
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
@@ -93,6 +94,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
@@ -747,7 +749,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
                       )(lv.position)
                     )
                   )(ast.position),
-                  AddedInRewriteGeneral(Some("WHEN"))
+                  AddedInRewriteGeneral(AddedWithOrigin.Synthesized(Some("WHEN")))
                 )(ast.position)
               ),
               referencedSorted.map(lv => AliasedReturnItem(lv))
@@ -801,7 +803,11 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
           case (_, true)                           => Some(defaultPostface)
         }
 
-        SingleQuery(incomingLayout.getIngress ++ preface ++ Seq(subquery) ++ postface)(ast.position)
+        // Emit a graph selection inherited from an enclosing `USE g { ... }` as the leading clause, so the whole
+        // expanded WHEN (the switch WITH, the branch subquery, the postface) is scoped to g.
+        SingleQuery(incomingLayout.use.toSeq ++ incomingLayout.getIngress ++ preface ++ Seq(subquery) ++ postface)(
+          ast.position
+        )
           .endoRewrite(ensureUniqueIds)
       }
     }
@@ -998,7 +1004,10 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
       case wh: ConditionalQueryWhen =>
         WhenExpansion.expand(wh, layout.refByQuery(wh))
       case ns @ NextStatement(queries) =>
-        SingleQuery(rewriteNextQueries(queries, layout.refByQuery(ns)))(ns.position)
+        // A NEXT chain flattens all operands into one SingleQuery.
+        val lay = layout.refByQuery(ns)
+        val ingress = lay.use.toSeq.endoRewrite(ensureUniqueIds)
+        SingleQuery(ingress ++ rewriteNextQueries(queries, lay.copy(use = None)))(ns.position)
     }
 
     def clauseCleanup(clauses: Seq[Clause]): Seq[Clause] = clauses.filter {
@@ -1006,7 +1015,8 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
       case _                                                                      => true
     }
 
-    def subqueryExpressionCleanup(query: Query): Query =
+    def subqueryExpressionCleanup(query: Query): Query = {
+      val placeholderName = LazyVal(anonVarNameGen.nextName)
       query.mapEachSingleQuery(sq => {
         val clauses = clauseCleanup(sq.clauses)
         if (clauses.nonEmpty)
@@ -1016,11 +1026,12 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
             FreeProjection,
             Seq(AliasedReturnItem(
               SignedDecimalIntegerLiteral("1")(sq.position.zeroLength),
-              Variable(anonVarNameGen.nextName, sq.position)
+              Variable(placeholderName.value, sq.position)
             )(sq.position))
           )(sq.position)
         )(sq.position)))(sq.position)
       })
+    }
 
     // Cypher 5 requires a WITH clause between clauses in some cases so the query is not possible to fully cleanup.
     def cleanupCypher5: Rewriter = Rewriter.noop

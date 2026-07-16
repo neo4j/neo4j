@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExpandClauses
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.ExpandShowWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.NormalizeWithAndReturnClauses
@@ -1244,8 +1245,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
 
     assertRewritten(
       "RETURN EXISTS { WITH * UNION WITH * } AS y",
-      "RETURN EXISTS { RETURN 1 AS `  UNNAMED0` UNION RETURN 1 AS `  UNNAMED1`} AS y",
-      invalidSemantics = true
+      "RETURN EXISTS { RETURN 1 AS `  UNNAMED0` UNION RETURN 1 AS `  UNNAMED0`} AS y"
     )
 
     assertRewritten(
@@ -1255,7 +1255,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
 
     assertRewritten(
       "RETURN COUNT { WITH * UNION WITH * } AS y",
-      "RETURN COUNT { RETURN 1 AS `  UNNAMED0` UNION RETURN 1 AS `  UNNAMED1`} AS y",
+      "RETURN COUNT { RETURN 1 AS `  UNNAMED0` UNION RETURN 1 AS `  UNNAMED0`} AS y",
       invalidSemantics = true
     )
   }
@@ -1543,7 +1543,8 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
   test("when in top level braces") {
     assertRewritten(
       """USE graph { WHEN true THEN RETURN 1 AS x } """.stripMargin,
-      """WITH CASE
+      """USE `graph`
+        |WITH CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED0`
@@ -1564,7 +1565,8 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
   test("when in top level braces with inner use") {
     assertRewritten(
       """USE graph { WHEN true THEN USE otherGraph RETURN 1 AS x } """.stripMargin,
-      """WITH CASE
+      """USE `graph`
+        |WITH CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED0`
@@ -1579,14 +1581,16 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |}
         |RETURN x AS x""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
-      additionalActualAstCleanup = withUpdate()
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
     )
   }
 
   test("when in top level braces with inner use tlb") {
     assertRewritten(
       """USE graph { WHEN true THEN USE otherGraph { RETURN 1 AS x } } """.stripMargin,
-      """WITH CASE
+      """USE `graph`
+        |WITH CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED0`
@@ -1601,7 +1605,8 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |}
         |RETURN x AS x""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
-      additionalActualAstCleanup = withUpdate()
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
     )
   }
 
@@ -1918,7 +1923,8 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |   WHEN false THEN USE otherInnerGraph { RETURN 2 AS x }
         |   ELSE { RETURN 3 AS x }
         |}""".stripMargin,
-      """WITH CASE
+      """USE `graph`
+        |WITH CASE
         |  WHEN false THEN 0
         |  WHEN false THEN 1
         |  ELSE 2
@@ -1949,7 +1955,8 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |}
         |RETURN x AS x""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
-      additionalActualAstCleanup = withUpdate()
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
     )
   }
 
@@ -5517,6 +5524,361 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
       .clauses.last.asInstanceOf[Return].returnItems.items.head.asInstanceOf[AliasedReturnItem]
     returnItem.expression.position should equal(expressionPos)
     returnItem.variable.position.offset should equal(expressionPos.offset)
+  }
+
+  private def assertRenderableAfterExpansion(query: String): Unit = {
+    val rewritten = prepareFrom(CypherVersion.Cypher25, query, rewriterPhaseUnderTest).statement()
+    val rendered = prettifier.asString(rewritten)
+    val exceptionFactory = Neo4jCypherExceptionFactory(rendered, None)
+    withClue(s"Expanded AST rendered to:\n$rendered\n") {
+      try AstParserFactory(CypherVersion.Cypher25)(rendered, exceptionFactory, None, Seq()).singleStatement()
+      catch { case e: Exception => fail(s"Rendered query did not parse:\n$rendered", e) }
+    }
+  }
+
+  test("FILTER at start of query renders to valid Cypher after expansion") {
+    assertRenderableAfterExpansion("FILTER true RETURN 1 AS x")
+  }
+
+  test("FILTER at start of a CALL subquery renders to valid Cypher after expansion") {
+    assertRenderableAfterExpansion("MATCH (a) CALL { FILTER true RETURN 5 AS c } RETURN a, c")
+  }
+
+  test("standalone ORDER BY in a CALL subquery renders to valid Cypher after expansion") {
+    assertRenderableAfterExpansion("MATCH (a) CALL { ORDER BY 1 RETURN 1 AS x } RETURN a, x")
+  }
+
+  test("standalone SKIP in a CALL subquery renders to valid Cypher after expansion") {
+    assertRenderableAfterExpansion("MATCH (a) CALL { SKIP 1 RETURN 1 AS x } RETURN a, x")
+  }
+
+  test("standalone LIMIT in a CALL subquery renders to valid Cypher after expansion") {
+    assertRenderableAfterExpansion("MATCH (a) CALL { LIMIT 1 RETURN 1 AS x } RETURN a, x")
+  }
+
+  test("ambient EXISTS in a WHEN inherits the block's USE (no injected USE)") {
+    assertRewritten(
+      "USE g { WHEN EXISTS { MATCH (n) RETURN n AS x } THEN RETURN 1 AS x ELSE RETURN 2 AS x }",
+      """USE `g`
+        |WITH CASE WHEN EXISTS { MATCH (n) RETURN n AS x } THEN 0 ELSE 1 END AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`) {
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 0
+        |  CALL () { RETURN 1 AS x }
+        |  RETURN x AS x
+        |  UNION ALL
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 1
+        |  CALL () { RETURN 2 AS x }
+        |  RETURN x AS x
+        |}
+        |RETURN x AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WHEN with a same-graph EXISTS predicate and branch USEs keeps all USEs") {
+    assertRewritten(
+      "USE g { WHEN EXISTS { USE g MATCH (n) RETURN n AS x } THEN USE g RETURN 1 AS x ELSE USE g RETURN 2 AS x }",
+      """USE `g`
+        |WITH CASE WHEN EXISTS { USE `g` MATCH (n) RETURN n AS x } THEN 0 ELSE 1 END AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`) {
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 0
+        |  CALL () { USE `g` RETURN 1 AS x }
+        |  RETURN x AS x
+        |  UNION ALL
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 1
+        |  CALL () { USE `g` RETURN 2 AS x }
+        |  RETURN x AS x
+        |}
+        |RETURN x AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WHEN with a cross-graph EXISTS predicate and branch USEs keeps all distinct USEs") {
+    assertRewritten(
+      "USE g { WHEN EXISTS { USE g3 MATCH (n) RETURN n AS x } THEN USE g1 RETURN 1 AS x ELSE USE g2 RETURN 2 AS x }",
+      """USE `g`
+        |WITH CASE WHEN EXISTS { USE `g3` MATCH (n) RETURN n AS x } THEN 0 ELSE 1 END AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`) {
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 0
+        |  CALL () { USE `g1` RETURN 1 AS x }
+        |  RETURN x AS x
+        |  UNION ALL
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 1
+        |  CALL () { USE `g2` RETURN 2 AS x }
+        |  RETURN x AS x
+        |}
+        |RETURN x AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
+    )
+  }
+
+  test("WHEN block keeps its inherited USE as a UNION branch") {
+    assertRewritten(
+      "USE g { WHEN true THEN RETURN 1 AS x ELSE RETURN 2 AS x } UNION USE g MATCH (n) RETURN n.age AS x",
+      """USE `g`
+        |WITH CASE WHEN true THEN 0 ELSE 1 END AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`) {
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 0
+        |  CALL () { RETURN 1 AS x }
+        |  RETURN x AS x
+        |  UNION ALL
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 1
+        |  CALL () { RETURN 2 AS x }
+        |  RETURN x AS x
+        |}
+        |RETURN x AS x
+        |UNION
+        |USE `g`
+        |MATCH (n)
+        |RETURN n.age AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WHEN with a same-graph explicit branch USE keeps the leading USE") {
+    assertRewritten(
+      "USE g { WHEN true THEN USE g RETURN 1 AS x ELSE RETURN 2 AS x }",
+      """USE `g`
+        |WITH CASE WHEN true THEN 0 ELSE 1 END AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`) {
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 0
+        |  CALL () { USE `g` RETURN 1 AS x }
+        |  RETURN x AS x
+        |  UNION ALL
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 1
+        |  CALL () { RETURN 2 AS x }
+        |  RETURN x AS x
+        |}
+        |RETURN x AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("LET at start of query renders to valid Cypher after expansion") {
+    assertRenderableAfterExpansion("LET x = 1 RETURN x")
+  }
+
+  test("inherited USE scopes a WHEN block (leading USE is not dropped)") {
+    assertRewritten(
+      "USE g { WHEN true THEN RETURN 1 AS x ELSE RETURN 2 AS x }",
+      """USE `g`
+        |WITH CASE WHEN true THEN 0 ELSE 1 END AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`) {
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 0
+        |  CALL () { RETURN 1 AS x }
+        |  RETURN x AS x
+        |  UNION ALL
+        |  WITH `  UNNAMED0` AS `  UNNAMED0` WHERE `  UNNAMED0` = 1
+        |  CALL () { RETURN 2 AS x }
+        |  RETURN x AS x
+        |}
+        |RETURN x AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("top-level NEXT: ambient-first, then focused operand (a->default, b->comp2)") {
+    assertRewritten(
+      "RETURN 1 AS a NEXT USE comp2 RETURN a AS b",
+      """WITH 1 AS a
+        |CALL (a) {
+        |  USE `comp2`
+        |  RETURN a AS b
+        |}
+        |RETURN b AS b""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
+    )
+  }
+
+  test("top-level NEXT: focused-first operand's USE does not stick (a->comp2, b->default)") {
+    assertRewritten(
+      "USE comp2 RETURN 1 AS a NEXT RETURN a AS b",
+      """CALL () {
+        |  USE `comp2`
+        |  RETURN 1 AS a
+        |}
+        |RETURN a AS b""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
+    )
+  }
+
+  test("top-level NEXT: focused-first, then two ambient (a->comp2, b->default, c->default)") {
+    assertRewritten(
+      "USE comp2 RETURN 1 AS a NEXT RETURN a AS b NEXT RETURN b AS c",
+      """CALL () {
+        |  USE `comp2`
+        |  RETURN 1 AS a
+        |}
+        |WITH a AS b
+        |RETURN b AS c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
+    )
+  }
+
+  test("top-level NEXT: ambient, focused, ambient (a->default, b->comp2, c->default)") {
+    assertRewritten(
+      "RETURN 1 AS a NEXT USE comp2 RETURN a AS b NEXT RETURN b AS c",
+      """WITH 1 AS a
+        |CALL (a) {
+        |  USE `comp2`
+        |  RETURN a AS b
+        |}
+        |RETURN b AS c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
+    )
+  }
+
+  test("focused-first NEXT operand: a trailing ambient operand falls back to the block's USE") {
+    assertRewritten(
+      "USE comp1 { USE comp2 RETURN 1 AS a NEXT RETURN a AS b }",
+      """USE `comp1`
+        |CALL () {
+        |  USE `comp2`
+        |  RETURN 1 AS a
+        |}
+        |RETURN a AS b""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
+    )
+  }
+
+  test("focused-first NEXT chain: all later ambient operands inherit the block's USE") {
+    assertRewritten(
+      "USE comp1 { USE comp2 RETURN 1 AS a NEXT RETURN a AS b NEXT RETURN b AS c }",
+      """USE `comp1`
+        |CALL () {
+        |  USE `comp2`
+        |  RETURN 1 AS a
+        |}
+        |WITH a AS b
+        |RETURN b AS c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
+    )
+  }
+
+  test("USE + NEXT renders to valid Cypher after expansion") {
+    assertRenderableAfterExpansion("USE g { RETURN 1 AS a NEXT RETURN 2 AS b }")
+  }
+
+  test("inherited USE over a NEXT chain is emitted once, as the first clause") {
+    assertRewritten(
+      "USE g { RETURN 1 AS a NEXT RETURN 2 AS b }",
+      """USE `g`
+        |WITH 1 AS a
+        |RETURN 2 AS b""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("collecting keeps the inherited USE at the front of a NEXT chain") {
+    assertRewritten(
+      "USE g { UNWIND [1,2,3] AS x RETURN x AS a NEXT UNWIND [1,2] AS y RETURN count(y) AS b UNION ALL RETURN a AS b }",
+      """USE `g`
+        |UNWIND [1, 2, 3] AS x
+        |WITH x AS a
+        |WITH count(*) AS `  UNNAMED1`, collect([a]) AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`, `  UNNAMED1`) {
+        |  UNWIND range(0, `  UNNAMED1` - 1) AS `  UNNAMED2`
+        |  WITH (`  UNNAMED0`[`  UNNAMED2`])[0] AS a
+        |  UNWIND [1, 2] AS y
+        |  RETURN count(y) AS b
+        |  UNION ALL
+        |  UNWIND range(0, `  UNNAMED1` - 1) AS `  UNNAMED2`
+        |  WITH (`  UNNAMED0`[`  UNNAMED2`])[0] AS a
+        |  RETURN a AS b
+        |}
+        |RETURN b AS b""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("collecting with an inherited USE and a different USE on a later operand") {
+    assertRewritten(
+      "USE g { UNWIND [1,2,3] AS x RETURN x AS a NEXT USE neo2 UNWIND [1,2] AS y RETURN a AS b, count(y) AS c }",
+      """USE `g`
+        |UNWIND [1, 2, 3] AS x
+        |WITH x AS a
+        |WITH count(*) AS `  UNNAMED1`, collect([a]) AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`, `  UNNAMED1`) {
+        |  USE `neo2`
+        |  UNWIND range(0, `  UNNAMED1` - 1) AS `  UNNAMED2`
+        |  WITH (`  UNNAMED0`[`  UNNAMED2`])[0] AS a
+        |  UNWIND [1, 2] AS y
+        |  RETURN a AS b, count(y) AS c
+        |}
+        |RETURN b AS b, c AS c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
+    )
+  }
+
+  test("nested top-level braces: the inner USE wins") {
+    assertRewritten(
+      "USE g { USE h { RETURN 1 AS a } }",
+      """USE `h`
+        |RETURN 1 AS a""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+    assertRewritten(
+      "USE g { USE h { RETURN 1 AS a NEXT RETURN 2 AS b } }",
+      """USE `h`
+        |WITH 1 AS a
+        |RETURN 2 AS b""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("per-operand explicit USE in a NEXT chain is preserved") {
+    assertRewritten(
+      """USE neo1 MATCH (n:L1) RETURN *
+        |NEXT
+        |USE neo2 MATCH (m:L1) RETURN *
+        |NEXT
+        |USE neo1 MATCH (o:L2) RETURN n.x + m.x + o.x""".stripMargin,
+      """CALL () {
+        |  USE `neo1`
+        |  MATCH (n:L1)
+        |  RETURN n AS n
+        |}
+        |CALL (n) {
+        |  USE `neo2`
+        |  MATCH (m:L1)
+        |  RETURN m AS `  UNNAMED1`, n AS `  UNNAMED0`
+        |}
+        |WITH `  UNNAMED1` AS m, `  UNNAMED0` AS n
+        |CALL (m, n) {
+        |  USE `neo1`
+        |  MATCH (o:L2)
+        |  RETURN (n.x + m.x) + o.x AS `n.x + m.x + o.x`
+        |}
+        |RETURN `n.x + m.x + o.x` AS `n.x + m.x + o.x`""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
   }
 
 }

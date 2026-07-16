@@ -1915,8 +1915,8 @@ sealed trait ProjectionClause extends HorizonClause {
 
   def withRewrittenType: ProjectionClause = {
     this match {
-      case w @ With(_, _, _, _, _, _, _, _: FlavouredWithType) =>
-        w.copy(withType = AddedInRewriteGeneral(Some(w.name)))(this.position)
+      case w @ With(_, _, _, _, _, _, _, flavour: FlavouredWithType) =>
+        w.copy(withType = AddedInRewriteGeneral(AddedWithOrigin.RewrittenFlavoured(flavour)))(this.position)
       case w @ With(_, _, _, _, _, _, _, _) => w
       case r: Return                        => r
       case y: Yield                         => y
@@ -2143,7 +2143,16 @@ case object ParsedAsLet extends FlavouredWithType with StarNotReferencing
 case object ParsedAsYield extends WithType with YieldType
 case object AddedInRewriteShowCommands extends GenericWithType
 case object AddedInRewriteProcCall extends GenericWithType
-case class AddedInRewriteGeneral(name: Option[String] = None) extends GenericWithType with MayBeImportingWithType
+
+sealed trait AddedWithOrigin
+
+object AddedWithOrigin {
+  case class Synthesized(label: Option[String] = None) extends AddedWithOrigin
+  case class RewrittenFlavoured(flavour: FlavouredWithType) extends AddedWithOrigin
+}
+
+case class AddedInRewriteGeneral(origin: AddedWithOrigin = AddedWithOrigin.Synthesized())
+    extends GenericWithType with MayBeImportingWithType
 
 sealed trait ReturnType extends ClauseType {
 
@@ -2193,14 +2202,19 @@ case class With(
 )(val position: InputPosition) extends ProjectionClause {
 
   override def name: String = withType match {
-    case AddedInRewriteGeneral(Some(name)) => name
-    case ParsedAsOrderBy                   => "ORDER BY"
-    case ParsedAsSkip                      => skip.get.name
-    case ParsedAsLimit                     => limit.get.name
-    case ParsedAsFilter                    => "FILTER"
-    case ParsedAsLet                       => "LET"
-    case ParsedAsYield                     => "YIELD"
-    case _                                 => "WITH"
+    case AddedInRewriteGeneral(AddedWithOrigin.RewrittenFlavoured(flavour)) => flavourName(flavour)
+    case AddedInRewriteGeneral(AddedWithOrigin.Synthesized(Some(label)))    => label
+    case flavour: FlavouredWithType                                         => flavourName(flavour)
+    case ParsedAsYield                                                      => "YIELD"
+    case _                                                                  => "WITH"
+  }
+
+  private def flavourName(flavour: FlavouredWithType): String = flavour match {
+    case ParsedAsOrderBy => "ORDER BY"
+    case ParsedAsSkip    => skip.get.name
+    case ParsedAsLimit   => limit.get.name
+    case ParsedAsFilter  => "FILTER"
+    case ParsedAsLet     => "LET"
   }
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
@@ -2289,7 +2303,16 @@ case class Return(
     this.copy(returnItems = returnItems)(this.position)
 
   def convertToWith(context: Option[String] = Some("NEXT")): With =
-    With(distinct, returnItems, groupBy, orderBy, skip, limit, None, AddedInRewriteGeneral(context))(position)
+    With(
+      distinct,
+      returnItems,
+      groupBy,
+      orderBy,
+      skip,
+      limit,
+      None,
+      AddedInRewriteGeneral(AddedWithOrigin.Synthesized(context))
+    )(position)
 }
 
 case object Yield {

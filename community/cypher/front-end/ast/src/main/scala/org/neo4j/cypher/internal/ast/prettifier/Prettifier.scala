@@ -19,7 +19,9 @@ package org.neo4j.cypher.internal.ast.prettifier
 import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.ActionResourceBase
 import org.neo4j.cypher.internal.ast.AddTags
+import org.neo4j.cypher.internal.ast.AddedInRewriteGeneral
 import org.neo4j.cypher.internal.ast.AddedInRewriteShowCommands
+import org.neo4j.cypher.internal.ast.AddedWithOrigin
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
@@ -1432,7 +1434,9 @@ case class Prettifier(
       if (r.returnType.suppressInRendering) ""
       else {
         val d = if (r.distinct) " DISTINCT" else ""
-        val i = asString(r.returnItems)
+        val i =
+          if (r.returnItems.items.isEmpty && !r.returnItems.includeExisting) "*"
+          else asString(r.returnItems)
         val ind = indented()
         val g = r.groupBy.map(ind.asString).map(asNewLine).getOrElse("")
         val o = r.orderBy.map(ind.asString).map(asNewLine).getOrElse("")
@@ -1454,7 +1458,13 @@ case class Prettifier(
       ).flatten
       lazy val rewrittenClausesStrWithNlSeparators = rewrittenClauses.mkString(NL)
 
-      w.withType match {
+      val effectiveType = w.withType match {
+        case AddedInRewriteGeneral(AddedWithOrigin.RewrittenFlavoured(flavour)) if w.returnItems.items.isEmpty =>
+          flavour
+        case other => other
+      }
+
+      effectiveType match {
         case ParsedAsOrderBy | ParsedAsSkip | ParsedAsLimit =>
           s"$INDENT${rewrittenClausesStrWithNlSeparators.trim}"
         case ParsedAsFilter =>
@@ -1476,7 +1486,9 @@ case class Prettifier(
           else ""
         case _ =>
           val d = if (w.distinct) " DISTINCT" else ""
-          val i = asString(w.returnItems)
+          val i =
+            if (w.returnItems.items.isEmpty && !w.returnItems.includeExisting) "*"
+            else asString(w.returnItems)
 
           s"${INDENT}WITH$d $i${rewrittenClauses.map(asNewLine).mkString}"
       }
