@@ -2145,9 +2145,26 @@ case object AddedInRewriteShowCommands extends GenericWithType
 case object AddedInRewriteProcCall extends GenericWithType
 case class AddedInRewriteGeneral(name: Option[String] = None) extends GenericWithType with MayBeImportingWithType
 
-sealed trait ReturnType extends ClauseType
-case object DefaultReturn extends ReturnType
-case object ReturnAddedInRewrite extends ReturnType
+sealed trait ReturnType extends ClauseType {
+
+  def addedInRewrite: Boolean
+  def suppressInRendering: Boolean
+}
+
+case object DefaultReturn extends ReturnType {
+  override def addedInRewrite: Boolean = false
+  override def suppressInRendering: Boolean = false
+}
+
+case object ReturnAddedInRewrite extends ReturnType {
+  override def addedInRewrite: Boolean = true
+  override def suppressInRendering: Boolean = true
+}
+
+case object RenderedReturnAddedInRewrite extends ReturnType {
+  override def addedInRewrite: Boolean = true
+  override def suppressInRendering: Boolean = false
+}
 
 object With {
 
@@ -2662,7 +2679,7 @@ case class ScopeClauseSubqueryCall(
           innerFinalScope.symbolTable.values.filter(x => !importedSymbolNames.contains(x.name))
 
         innerQuery.getReturns.flatMap(v => difference.map((v, _))).foldSemanticCheck {
-          case (ret, name) if ret.returnType != ReturnAddedInRewrite =>
+          case (ret, name) if !ret.returnType.addedInRewrite =>
             ret.returnItems.items.find(_.name == name) match {
               case Some(AliasedReturnItem(_, variable)) =>
                 SemanticError.variableAlreadyDeclaredInOuterScope(name, variable.position)
@@ -2771,9 +2788,9 @@ object CommandClause {
   // Check if the query should automatically be routed to the system database, for backwards compatibility reasons
   def shouldRouteToSystem(clauses: Seq[Clause]): Boolean = clauses match {
     case Seq(_: CommandClauseRouteToSystem, w: With, r: Return) =>
-      w.withType == ParsedAsYield || (w.withType == AddedInRewriteShowCommands && r.returnType == ReturnAddedInRewrite)
+      w.withType == ParsedAsYield || (w.withType == AddedInRewriteShowCommands && r.returnType.addedInRewrite)
     case Seq(_: CommandClauseRouteToSystem, r: Return) =>
-      r.returnType == ReturnAddedInRewrite
+      r.returnType.addedInRewrite
     case _ => false
   }
 }

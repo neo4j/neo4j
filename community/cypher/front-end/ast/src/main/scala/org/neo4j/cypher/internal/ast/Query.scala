@@ -536,7 +536,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       !c.isInstanceOf[CommandClause] &&
         !c.isInstanceOf[GraphSelection] &&
         !(c.isInstanceOf[Return] && (
-          !onlyAllowReturnIfAddedInRewriter || c.asInstanceOf[Return].returnType == ReturnAddedInRewrite
+          !onlyAllowReturnIfAddedInRewriter || c.asInstanceOf[Return].returnType.addedInRewrite
         )) &&
         !(c.isInstanceOf[With] && (
           c.asInstanceOf[With].withType == ParsedAsYield ||
@@ -583,21 +583,21 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         // COMMAND CLAUSE [WHERE]
         case Seq(_: CommandClause, withClause: With, returnClause: Return)
           if withClause.withType == AddedInRewriteShowCommands =>
-          returnClause.returnType == ReturnAddedInRewrite
+          returnClause.returnType.addedInRewrite
         // USE x COMMAND CLAUSE [WHERE]
         case Seq(_: GraphSelection, _: CommandClause, withClause: With, returnClause: Return)
           if withClause.withType == AddedInRewriteShowCommands =>
-          returnClause.returnType == ReturnAddedInRewrite
+          returnClause.returnType.addedInRewrite
         // COMMAND CLAUSE YIELD [RETURN]
         case Seq(_: CommandClause, withClause: With, returnClause: Return) =>
-          withClause.withType == ParsedAsYield || returnClause.returnType == ReturnAddedInRewrite
+          withClause.withType == ParsedAsYield || returnClause.returnType.addedInRewrite
         // USE x COMMAND CLAUSE YIELD [RETURN]
         case Seq(_: GraphSelection, _: CommandClause, withClause: With, returnClause: Return) =>
-          withClause.withType == ParsedAsYield || returnClause.returnType == ReturnAddedInRewrite
+          withClause.withType == ParsedAsYield || returnClause.returnType.addedInRewrite
         // COMMAND CLAUSE YIELD rewriter-WITH RETURN
         // for when we split out variables from the return to a separate with clause
         case Seq(_: CommandClause, withAsYieldClause: With, rewriterWith: With, returnClause: Return)
-          if withAsYieldClause.withType == ParsedAsYield && returnClause.returnType != ReturnAddedInRewrite =>
+          if withAsYieldClause.withType == ParsedAsYield && !returnClause.returnType.addedInRewrite =>
           rewriterWith.withType.isInstanceOf[AddedInRewriteGeneral]
         // USE x COMMAND CLAUSE YIELD rewriter-WITH RETURN
         // for when we split out variables from the return to a separate with clause
@@ -608,7 +608,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
             rewriterWith: With,
             returnClause: Return
           )
-          if withAsYieldClause.withType == ParsedAsYield && returnClause.returnType != ReturnAddedInRewrite =>
+          if withAsYieldClause.withType == ParsedAsYield && !returnClause.returnType.addedInRewrite =>
           rewriterWith.withType.isInstanceOf[AddedInRewriteGeneral]
         case _ => false
       }
@@ -640,7 +640,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         if (partOfLargerQuery || containsNonCommand)
           checkLastClause(clauses, canOmitReturnClause = false, disallowReturnAddedInRewrite = true)
         else clauses.last match {
-          case clause: Return if clause.returnType != ReturnAddedInRewrite => None
+          case clause: Return if !clause.returnType.addedInRewrite => None
           case clause =>
             Some(SemanticError.missingReturn(
               clause.position
@@ -722,7 +722,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     disallowReturnAddedInRewrite: Boolean
   ): Option[SemanticError] = {
     clauses.last match {
-      case ret: Return if disallowReturnAddedInRewrite && ret.returnType == ReturnAddedInRewrite =>
+      case ret: Return if disallowReturnAddedInRewrite && ret.returnType.addedInRewrite =>
         // Return was added in rewrite so check second to last clause
         checkLastClause(clauses.init, canOmitReturnClause, disallowReturnAddedInRewrite)
       case _: UpdateClause | _: Return | _: Finish                                                     => None
@@ -897,7 +897,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 
   private def errorOnShadowedImportVariables(outer: SemanticState): SemanticCheck = { (inner: SemanticState) =>
-    if (getReturns.exists(_.returnType == ReturnAddedInRewrite)) { SemanticCheckResult.success(inner) }
+    if (getReturns.exists(_.returnType.addedInRewrite)) { SemanticCheckResult.success(inner) }
     else {
       val outerScopeSymbols: Map[String, Symbol] = outer.currentScope.scope.symbolTable
 

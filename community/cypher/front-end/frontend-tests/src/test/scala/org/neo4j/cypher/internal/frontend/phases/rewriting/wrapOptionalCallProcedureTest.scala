@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.frontend.phases.rewriting
 
 import org.neo4j.cypher.internal.ast.AddedInRewriteProcCall
 import org.neo4j.cypher.internal.ast.DefaultWith
+import org.neo4j.cypher.internal.ast.RenderedReturnAddedInRewrite
 import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.ReturnAddedInRewrite
 import org.neo4j.cypher.internal.ast.RewrittenOptional
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.UnresolvedCall
@@ -44,7 +44,7 @@ class wrapOptionalCallProcedureTest extends CypherFunSuite with RewriteTest {
       "OPTIONAL CALL (*) { CALL foo() YIELD a, b RETURN a AS a, b AS b } FINISH",
       additionalExpectedAstUpdates = expectedStatement => {
         expectedStatement.endoRewrite(bottomUp(Rewriter.lift {
-          case r: Return                  => r.copy(returnType = ReturnAddedInRewrite)(r.position)
+          case r: Return                  => r.copy(returnType = RenderedReturnAddedInRewrite)(r.position)
           case c: UnresolvedCall          => c.copy(optionalState = RewrittenOptional)(c.position)
           case c: ScopeClauseSubqueryCall => c.copy(addedInRewriteOptionalCall = true)(c.position)
         }))
@@ -56,7 +56,7 @@ class wrapOptionalCallProcedureTest extends CypherFunSuite with RewriteTest {
       additionalExpectedAstUpdates = expectedStatement => {
         expectedStatement.endoRewrite(bottomUp(Rewriter.lift {
           case w: With if w.withType == DefaultWith => w.copy(withType = AddedInRewriteProcCall)(w.position)
-          case r: Return                            => r.copy(returnType = ReturnAddedInRewrite)(r.position)
+          case r: Return                            => r.copy(returnType = RenderedReturnAddedInRewrite)(r.position)
           case c: UnresolvedCall                    => c.copy(optionalState = RewrittenOptional)(c.position)
           case c: ScopeClauseSubqueryCall           => c.copy(addedInRewriteOptionalCall = true)(c.position)
         }))

@@ -189,7 +189,6 @@ import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.ReturnAddedInRewrite
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.RevokePrivilege
@@ -1430,7 +1429,7 @@ case class Prettifier(
     }
 
     def asString(r: Return): String =
-      if (r.returnType == ReturnAddedInRewrite) ""
+      if (r.returnType.suppressInRendering) ""
       else {
         val d = if (r.distinct) " DISTINCT" else ""
         val i = asString(r.returnItems)

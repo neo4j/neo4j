@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.FreeProjection
 import org.neo4j.cypher.internal.ast.Optional
 import org.neo4j.cypher.internal.ast.ProcedureResult
+import org.neo4j.cypher.internal.ast.RenderedReturnAddedInRewrite
 import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.ReturnAddedInRewrite
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.RewrittenOptional
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
@@ -81,7 +81,7 @@ case object WrapAndExpandProcedureCall extends StatementRewriter with ParsePipel
           val returnItems = unresolved.returnVariables.explicitVariables.map(x => AliasedReturnItem(x))
           val returnClause =
             if (returnItems.nonEmpty)
-              Seq(Return(ReturnItems(FreeProjection, returnItems)(pos), ReturnAddedInRewrite)(pos))
+              Seq(Return(ReturnItems(FreeProjection, returnItems)(pos), RenderedReturnAddedInRewrite)(pos))
             else Seq.empty
           val innerQuery = SingleQuery(expandedCall ++ returnClause)(pos)
           Seq(ScopeClauseSubqueryCall(
