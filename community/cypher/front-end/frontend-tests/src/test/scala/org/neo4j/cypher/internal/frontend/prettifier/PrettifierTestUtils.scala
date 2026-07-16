@@ -114,6 +114,8 @@ trait PrettifierTestUtils extends Matchers {
       val clean = dropQuotedSyntax(statement)
       val prettifiedClean = prettifier.asString(clean)
       try {
+        // Non-parser differences in the AST make it difficult to directly check equality between the original and
+        // re-parsed AST, as they end up differing slightly, so as a compromise we only compare strings rather than ASTs
         pretty should equal(prettifiedClean)
       } catch {
         case e: Exception =>
