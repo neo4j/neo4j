@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.NodeVectorIndexSearch
 import org.neo4j.cypher.internal.logical.plans.NonExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -1364,7 +1365,9 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
   }
 
   test("plan relationship vector index search with previously bound relationship") {
-    val planner = plannerBuilder().build()
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
 
     val query =
       """
@@ -1384,9 +1387,10 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
       planner.planBuilder()
         .produceResults("p", "similarity")
         .projection("a.p AS p")
+        .filter("`  a@0` = a")
         .apply()
         .|.relationshipVectorIndexSearch(
-          pattern = "()-[a]->()",
+          pattern = "()-[`  a@0`]->()",
           typeNames = Seq("ACTS_IN"),
           properties = Seq("script", "workingDays"),
           indexName = "actsInScript",
@@ -1747,6 +1751,53 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
 
       withClue(s"query:\n$query\nexpectedCardinality: $expectedCardinality\n") {
         actualPlanState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
+      }
+    }
+  }
+
+  test("plan relationship vector index search with a previously bound relationship and a hidden type selection") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      """MATCH ()-[r:CONTRIBUTED]->()
+        |WITH r
+        |MATCH ()-[r:CONTRIBUTED]->()
+        |  SEARCH r IN (
+        |    VECTOR INDEX actsInScript
+        |    FOR $embedding
+        |    LIMIT 10
+        |  )
+        |RETURN r.plot""".stripMargin
+
+    val planState = planner.planState(CypherVersion.Cypher25, query)
+
+    planState.logicalPlan shouldEqual
+      planner.planBuilder()
+        .produceResults("`r.plot`")
+        .projection("r.plot AS `r.plot`")
+        .apply()
+        .|.projectEndpoints("(`  UNNAMED2`)-[r:CONTRIBUTED]->(`  UNNAMED3`)", startInScope = true, endInScope = true)
+        .|.filter("`  r@0` = r", "r:CONTRIBUTED")
+        .|.relationshipVectorIndexSearch(
+          pattern = "(`  UNNAMED2`)-[`  r@0`]->(`  UNNAMED3`)",
+          typeNames = Seq("ACTS_IN"),
+          properties = actsInScriptProperties,
+          indexName = "actsInScript",
+          vector = "$embedding",
+          limit = "10",
+          argumentIds = Set("  UNNAMED0", "  UNNAMED1", "r"),
+          getValueFromIndex = Map("script" -> DoNotGetValue, "workingDays" -> DoNotGetValue)
+        )
+        .relationshipTypeScan("(`  UNNAMED0`)-[r:CONTRIBUTED]->(`  UNNAMED1`)")
+        .build()
+
+    val selections = planState.logicalPlan.folder.findAllByClass[Selection]
+    selections should not be empty
+    selections.foreach { s =>
+      withClue(s"labelAndRelTypeInfos should be defined for Selection with id ${s.id}:") {
+        planState.planningAttributes.labelAndRelTypeInfos.isDefinedAt(s.id) shouldBe true
       }
     }
   }

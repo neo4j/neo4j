@@ -2219,30 +2219,13 @@ case class LogicalPlanProducer(
       solver.rewriteLeafPlan(annotatedVectorSearchPlan)
     }
 
-    // If the variable has already been previously solved, we need to add a selection to join
-    // on the vector search results
-    if (argumentIds.contains(resultVariable)) {
-      val renamedVariable =
-        UnPositionedVariable.varFor(AnonymousVariableNameGenerator.genName(
-          context.staticComponents.anonymousVariableNameGenerator,
-          resultVariable.name
-        ))
-
-      val rewrittenAnnotatedPlan = createNodeVectorIndexSearchPlan(renamedVariable)
-
-      val finalPlan =
-        Selection(Seq(Equals(renamedVariable, resultVariable)(InputPosition.NONE)), rewrittenAnnotatedPlan)(idGen)
-
-      annotate(
-        finalPlan,
-        solved,
-        ProvidedOrder.empty,
-        CachedProperties.empty,
-        context
-      )
-    } else {
-      createNodeVectorIndexSearchPlan(resultVariable)
-    }
+    planLeafFilteredOnPreBoundVariable(
+      resultVariable,
+      argumentIds,
+      solved,
+      context,
+      createNodeVectorIndexSearchPlan
+    )
   }
 
   def planRelationshipVectorIndexSearch(
@@ -2315,53 +2298,87 @@ case class LogicalPlanProducer(
     val newArguments = solver.newArguments
     val allArgumentIds = argumentIds.union(newArguments)
 
-    val (startNode, endNode) = patternRelationship.inOrder
+    def createRelationshipVectorIndexSearchPlan(relVariable: LogicalVariable): LogicalPlan = {
+      val (startNode, endNode) = patternRelationship.inOrder
+      val relVectorIndexSearch = patternRelationship.dir match {
+        case SemanticDirection.BOTH => UndirectedRelationshipVectorIndexSearch(
+            idName = Some(relVariable),
+            startNode = Some(startNode),
+            endNode = Some(endNode),
+            typeTokens = indexedTypes,
+            properties = indexedProperties,
+            score = scoreVariable,
+            indexName = indexName,
+            vector = rewrittenEmbedding,
+            limit = rewrittenLimit,
+            // TODO: we only produce match all for now
+            entityFilter = MatchAllQueryExpression,
+            maybePropertyFilter = maybeFilter,
+            argumentIds = allArgumentIds
+          )(idGen)
+        case _ => DirectedRelationshipVectorIndexSearch(
+            idName = Some(relVariable),
+            startNode = Some(startNode),
+            endNode = Some(endNode),
+            typeTokens = indexedTypes,
+            properties = indexedProperties,
+            score = scoreVariable,
+            indexName = indexName,
+            vector = rewrittenEmbedding,
+            limit = rewrittenLimit,
+            // TODO: we only produce match all for now
+            entityFilter = MatchAllQueryExpression,
+            maybePropertyFilter = maybeFilter,
+            argumentIds = allArgumentIds
+          )(idGen)
+      }
 
-    val relVectorIndexSearch = patternRelationship.dir match {
-      case SemanticDirection.BOTH => UndirectedRelationshipVectorIndexSearch(
-          idName = Some(patternRelationship.variable),
-          startNode = Some(startNode),
-          endNode = Some(endNode),
-          typeTokens = indexedTypes,
-          properties = indexedProperties,
-          score = scoreVariable,
-          indexName = indexName,
-          vector = rewrittenEmbedding,
-          limit = rewrittenLimit,
-          // TODO: we only produce match all for now
-          entityFilter = MatchAllQueryExpression,
-          maybePropertyFilter = maybeFilter,
-          argumentIds = allArgumentIds
-        )(idGen)
-      case _ => DirectedRelationshipVectorIndexSearch(
-          idName = Some(patternRelationship.variable),
-          startNode = Some(startNode),
-          endNode = Some(endNode),
-          typeTokens = indexedTypes,
-          properties = indexedProperties,
-          score = scoreVariable,
-          indexName = indexName,
-          vector = rewrittenEmbedding,
-          limit = rewrittenLimit,
-          // TODO: we only produce match all for now
-          entityFilter = MatchAllQueryExpression,
-          maybePropertyFilter = maybeFilter,
-          argumentIds = allArgumentIds
-        )(idGen)
+      val annotatedPlan =
+        annotate(
+          relVectorIndexSearch,
+          solved,
+          ProvidedOrder.empty,
+          cachedPropertiesForIndexedProperties(context, relVariable, indexedProperties),
+          context
+        )
+      val rewritten = solver.rewriteLeafPlan(annotatedPlan)
+
+      planHiddenSelectionIfNeeded(rewritten, selectionsFromUnsolvedTypes, context, patternRelationship)
     }
 
-    val annotatedPlan =
-      annotate(
-        relVectorIndexSearch,
+    planLeafFilteredOnPreBoundVariable(
+      patternRelationship.variable,
+      argumentIds,
+      solved,
+      context,
+      createRelationshipVectorIndexSearchPlan
+    )
+  }
+
+  private def planLeafFilteredOnPreBoundVariable(
+    variable: LogicalVariable,
+    argumentIds: Set[LogicalVariable],
+    solved: SinglePlannerQuery,
+    context: LogicalPlanningContext,
+    createLeaf: LogicalVariable => LogicalPlan
+  ): LogicalPlan =
+    if (argumentIds.contains(variable)) {
+      val renamedVariable = UnPositionedVariable.varFor(AnonymousVariableNameGenerator.genName(
+        context.staticComponents.anonymousVariableNameGenerator,
+        variable.name
+      ))
+      val leaf = createLeaf(renamedVariable)
+      val selection = Selection(Seq(Equals(renamedVariable, variable)(InputPosition.NONE)), leaf)(idGen)
+      annotateSelection(
+        selection,
         solved,
-        ProvidedOrder.empty,
-        cachedPropertiesForIndexedProperties(context, patternRelationship.variable, indexedProperties),
+        ProvidedOrder.Left,
+        CachedProperties.empty,
         context
       )
-    val rewritten = solver.rewriteLeafPlan(annotatedPlan)
-
-    planHiddenSelectionIfNeeded(rewritten, selectionsFromUnsolvedTypes, context, patternRelationship)
-  }
+    } else {
+      createLeaf(variable)
+    }
 
   private def cachedPropertiesForIndexedProperties(
     context: LogicalPlanningContext,
