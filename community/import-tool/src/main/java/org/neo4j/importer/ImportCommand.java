@@ -735,12 +735,6 @@ public class ImportCommand {
                         spec.commandLine(), "Both distributed graph and property shard options have been specified");
             }
 
-            if (isSkidbladnir() && autoSkipHeaders) {
-                throw new ParameterException(
-                        spec.commandLine(),
-                        "ERROR: Skidbladnir import is not supported with '--auto-skip-subsequent-headers'");
-            }
-
             if (threads > DEFAULT_IMPORTER_CONFIG.maxNumberOfWorkerThreads()) {
                 printf(
                         "WARNING: '%s' is set to %d but the total number of cores on this machine is only %d"
@@ -760,11 +754,27 @@ public class ImportCommand {
                 throw new ParameterException(
                         spec.commandLine(), "Delimiter must be a single byte character (In UTF-8)");
             }
-            if (isSkidbladnir() && allowMultibyteDelimiter) {
-                throw new ParameterException(
-                        spec.commandLine(),
-                        "ERROR: Skidbladnir import is not supported with multibyte delimiters "
-                                + "(--accept-multibyte-delimiter)");
+            if (isSkidbladnir()) {
+                if (autoSkipHeaders) {
+                    throw new ParameterException(
+                            spec.commandLine(),
+                            "ERROR: Skidbladnir import is not supported with '--auto-skip-subsequent-headers'");
+                }
+                if (allowMultibyteDelimiter) {
+                    throw new ParameterException(
+                            spec.commandLine(),
+                            "ERROR: Skidbladnir import is not supported with multibyte delimiters "
+                                    + "(--accept-multibyte-delimiter)");
+                }
+                if (defaultIdType == IdType.ACTUAL) {
+                    throw new CommandFailedException(
+                            "ERROR: Skidbladnir import is not supported with '--id-type=actual'.");
+                }
+                if (!"block".equals(resolvedDbFormat)) {
+                    throw new CommandFailedException(
+                            "ERROR: Skidbladnir import is only supported for the 'block' format, but '%s' was specified."
+                                    .formatted(resolvedDbFormat));
+                }
             }
         }
 
@@ -1223,18 +1233,6 @@ public class ImportCommand {
 
         public Full(ExecutionContext ctx) {
             super(ctx);
-        }
-
-        @Override
-        protected void preImportValidation(SchemeFileSystemAbstraction fs, String resolvedDbFormat)
-                throws CommandFailedException {
-            super.preImportValidation(fs, resolvedDbFormat);
-
-            if (isSkidbladnir() && !"block".equals(resolvedDbFormat)) {
-                throw new CommandFailedException(
-                        "ERROR: Skidbladnir import is only supported for the 'block' format, but '%s' was specified."
-                                .formatted(resolvedDbFormat));
-            }
         }
 
         @Override
