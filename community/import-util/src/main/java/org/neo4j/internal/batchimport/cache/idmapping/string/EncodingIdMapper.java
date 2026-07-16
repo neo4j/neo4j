@@ -101,7 +101,7 @@ import org.neo4j.util.concurrent.IdSpaceParallelExecution.Partition;
  *       Since eId has potentially fewer bits than an input id there's a chance multiple different (or equal)
  *       input ids will be encoded into the same eId. These are called collisions.
  */
-public class EncodingIdMapper implements IdMapper.WithHighId {
+public class EncodingIdMapper implements IdMapper {
 
     public interface Monitor {
         /**
@@ -340,7 +340,10 @@ public class EncodingIdMapper implements IdMapper.WithHighId {
         readyForUse = true;
     }
 
-    @Override
+    /**
+     * Returns one more than the highest actual ID that has been set, i.e. the node high id. {@link #prepare} must
+     * have been called first.
+     */
     public long getHighId() {
         return highestSetIndex + 1;
     }

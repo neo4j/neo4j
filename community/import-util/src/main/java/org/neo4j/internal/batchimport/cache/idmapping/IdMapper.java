@@ -30,7 +30,6 @@ import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.idmapping.cuckoo.KeyCollisionException;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.internal.id.IdGenerator;
 
 /**
  * Maps input node ids as specified by data read into {@link InputEntityVisitor} into actual node ids.
@@ -168,16 +167,5 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable {
 
         @Override
         default void close() throws IOException {}
-    }
-
-    interface WithHighId extends IdMapper {
-        /**
-         * Returns one more than the highest actual ID that has been set.
-         * This is equivalent to {@link IdGenerator#getHighId()}.
-         * <p>
-         * {@link #prepare(PropertyValueLookup, Collector, ProgressMonitorFactory, LongSet) prepare} needs to be called before this method, if
-         * {@link #needsPreparation} returns {@code true}.
-         */
-        long getHighId();
     }
 }

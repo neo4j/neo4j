@@ -36,7 +36,6 @@ import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.ReadableGroups;
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.internal.batchimport.HighestId;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.idmapping.cuckoo.CuckooIdMapper;
@@ -56,14 +55,11 @@ import org.neo4j.memory.MemoryTracker;
 public final class IdMappers {
     public static final boolean USE_CUCKOO_MAPPER = flag(IdMappers.class, "use_cuckoo", false);
 
-    private static class ActualIdMapper implements IdMapper.WithHighId, IdMapper.Getter {
-        private final HighestId highestId = new HighestId(-1);
+    private static class ActualIdMapper implements IdMapper, IdMapper.Getter {
 
         @Override
         public Setter newSetter(int workerId) {
-            return (inputId, actualId, group) -> {
-                highestId.offer(actualId);
-            };
+            return (inputId, actualId, group) -> {};
         }
 
         @Override
@@ -74,11 +70,6 @@ public final class IdMappers {
         @Override
         public boolean needsPreparation() {
             return false;
-        }
-
-        @Override
-        public long getHighId() {
-            return highestId.get() + 1;
         }
 
         @Override

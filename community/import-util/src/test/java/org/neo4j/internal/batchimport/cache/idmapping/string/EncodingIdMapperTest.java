@@ -177,7 +177,7 @@ class EncodingIdMapperTest {
     @MethodSource("data")
     void shouldEncodeShortStrings(int processors) throws KeyCollisionException {
         // GIVEN
-        try (IdMapper.WithHighId mapper =
+        try (EncodingIdMapper mapper =
                 mapper(new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors)) {
 
             // WHEN
@@ -263,8 +263,7 @@ class EncodingIdMapperTest {
         // GIVEN
         int size = random.nextInt(10_000) + 2;
         ValueType type = ValueType.values()[random.nextInt(ValueType.values().length)];
-        try (IdMapper.WithHighId mapper =
-                mapper(type.encoder(), type.radix(), EncodingIdMapper.NO_MONITOR, processors)) {
+        try (EncodingIdMapper mapper = mapper(type.encoder(), type.radix(), EncodingIdMapper.NO_MONITOR, processors)) {
 
             // WHEN
             IdMapper.Setter setter = mapper.newSetter(0);
@@ -619,7 +618,7 @@ class EncodingIdMapperTest {
     void shouldHandleHolesInIdSequence(int processors) throws KeyCollisionException {
         // GIVEN
         long highestId = -1;
-        try (IdMapper.WithHighId mapper = mapper(new LongEncoder(), Radix.LONG, NO_MONITOR, processors)) {
+        try (EncodingIdMapper mapper = mapper(new LongEncoder(), Radix.LONG, NO_MONITOR, processors)) {
             IdMapper.Setter setter = mapper.newSetter(0);
             List<Object> ids = new ArrayList<>();
             for (int i = 0; i < 100; i++) {
@@ -987,17 +986,17 @@ class EncodingIdMapperTest {
         };
     }
 
-    private IdMapper.WithHighId strictMapper(
+    private EncodingIdMapper strictMapper(
             Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, int processors) {
         return mapper(encoder, true, radix, monitor, processors);
     }
 
-    private IdMapper.WithHighId mapper(
+    private EncodingIdMapper mapper(
             Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, int processors) {
         return mapper(encoder, false, radix, monitor, processors);
     }
 
-    private IdMapper.WithHighId mapper(
+    private EncodingIdMapper mapper(
             Encoder encoder, boolean strict, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, int processors) {
         return new EncodingIdMapper(
                 NumberArrayFactories.OFF_HEAP,
@@ -1013,7 +1012,7 @@ class EncodingIdMapperTest {
                 INSTANCE);
     }
 
-    private IdMapper.WithHighId mapper(
+    private EncodingIdMapper mapper(
             Encoder encoder,
             Factory<Radix> radix,
             EncodingIdMapper.Monitor monitor,
