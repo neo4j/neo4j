@@ -71,6 +71,11 @@ class ToIntegerFunctionTest extends InterpretedRuntimeTestSuite with CypherScala
       assert(toIntegerFn("0o11") === longValue(9))
     }
 
+    test(s"$name should return null if the argument is an octal prefix without any digits") {
+      assert(toIntegerFn("0o") === NO_VALUE)
+      assert(toIntegerFn("-0o") === NO_VALUE)
+    }
+
     test(s"$name should not return null if the argument has underscore separator") {
       assert(toIntegerFn("1_123_456") === longValue(1_123_456))
     }

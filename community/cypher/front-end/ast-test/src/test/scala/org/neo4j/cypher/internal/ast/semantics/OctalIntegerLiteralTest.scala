@@ -80,6 +80,19 @@ class OctalIntegerLiteralTest extends SemanticFunSuite {
     )
   }
 
+  test("throws error for octal prefix without any digits") {
+    assertSemanticError(
+      GqlHelper.getGql42001_42I07("octal integer", "0o", 4, 0, 4),
+      "0o",
+      "invalid literal number"
+    )
+    assertSemanticError(
+      GqlHelper.getGql42001_42I07("octal integer", "-0o", 4, 0, 4),
+      "-0o",
+      "invalid literal number"
+    )
+  }
+
   // old syntax
   test("throws error for too large old syntax octal numbers") {
     val bigNumber = "010000000000000000000000"

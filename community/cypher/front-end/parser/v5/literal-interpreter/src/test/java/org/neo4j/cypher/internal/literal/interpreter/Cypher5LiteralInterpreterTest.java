@@ -98,6 +98,14 @@ public class Cypher5LiteralInterpreterTest {
     }
 
     @Test
+    void shouldRejectOctalAndHexPrefixesWithoutDigits() {
+        assertThatThrownBy(() -> parseExpression("0o")).isInstanceOf(NumberFormatException.class);
+        assertThatThrownBy(() -> parseExpression("-0o")).isInstanceOf(NumberFormatException.class);
+        assertThatThrownBy(() -> parseExpression("0x")).isInstanceOf(NumberFormatException.class);
+        assertThatThrownBy(() -> parseExpression("-0x")).isInstanceOf(NumberFormatException.class);
+    }
+
+    @Test
     void shouldInterpretString() {
         assertThat(parseExpression("\"a string\"")).isEqualTo("a string");
         assertThat(parseExpression("'ÅÄü'")).isEqualTo("ÅÄü");

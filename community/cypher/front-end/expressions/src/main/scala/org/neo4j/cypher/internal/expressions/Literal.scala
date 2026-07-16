@@ -67,12 +67,20 @@ sealed abstract class OctalIntegerLiteral(stringVal: String) extends IntegerLite
 }
 
 object OctalIntegerLiteral {
-  final private val octalMatcher: Regex = """-?0o(_?[0-7]+)+""" r
+  final private val octalMatcherWithUnderscore: Regex = """-?0o(_?[0-7]+)+""" r
+  final private val octalMatcherWithoutUnderscore: Regex = """-?0o?[0-7]+""" r
 
   def octalToLong(stringValue: String): java.lang.Long = {
-    if (stringValue.contains("_") && octalMatcher.matches(stringValue)) {
+    if (stringValue.contains("_")) {
+      if (!octalMatcherWithUnderscore.matches(stringValue)) {
+        throw new NumberFormatException(s"Invalid octal integer literal: $stringValue")
+      }
       java.lang.Long.decode(stringValue.replace("_", "").replace("o", ""))
     } else {
+      // Requires at least one octal digit, otherwise e.g. "0o" would incorrectly decode as 0.
+      if (!octalMatcherWithoutUnderscore.matches(stringValue)) {
+        throw new NumberFormatException(s"Invalid octal integer literal: $stringValue")
+      }
       java.lang.Long.decode(stringValue.replace("o", ""))
     }
   }

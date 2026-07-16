@@ -359,11 +359,17 @@ class LiteralInterpreterBuilder implements ParseTreeListener {
             var text = ctx.getText();
             ctx.ast = Long.parseLong(text);
         } else if (ctx.UNSIGNED_OCTAL_INTEGER() != null) {
-            var octalString = ctx.getText().replaceFirst("o", "");
-            ctx.ast = Long.parseLong(octalString, 8);
+            var text = ctx.getText();
+            if (!text.matches("-?0o?[0-7]+")) {
+                throw new NumberFormatException("Invalid octal integer literal: " + text);
+            }
+            ctx.ast = Long.parseLong(text.replaceFirst("o", ""), 8);
         } else if (ctx.UNSIGNED_HEX_INTEGER() != null) {
-            var hexString = ctx.getText().replaceFirst("x", "");
-            ctx.ast = Long.parseLong(hexString, 16);
+            var text = ctx.getText();
+            if (!text.matches("-?0x[0-9a-fA-F]+")) {
+                throw new NumberFormatException("Invalid hex integer literal: " + text);
+            }
+            ctx.ast = Long.parseLong(text.replaceFirst("x", ""), 16);
         }
     }
 
