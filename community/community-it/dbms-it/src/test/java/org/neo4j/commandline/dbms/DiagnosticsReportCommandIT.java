@@ -24,9 +24,10 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.cli.CommandTestUtils.withSuppressedOutput;
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.DEFAULT_CLASSIFIERS;
-import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.describeClassifier;
+import static org.neo4j.commandline.dbms.DiagnosticsReportGenerator.describeClassifier;
 
 import java.io.IOException;
 import java.net.URI;
@@ -35,7 +36,10 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.io.output.NullPrintStream;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -55,6 +59,9 @@ import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.diagnostics.DiagnosticsLiveConnection;
+import org.neo4j.kernel.diagnostics.DiagnosticsLiveConnectionFactory;
+import org.neo4j.kernel.diagnostics.DiagnosticsQueryResult;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SkipOnSpd;
@@ -391,13 +398,17 @@ class DiagnosticsReportCommandIT {
                     .isEqualTo(String.format("Finding running instance of neo4j%n"
                             + "No running instance of neo4j was found. Online reports will be omitted.%n"
                             + "All available classifiers:%n"
-                            + "  config     include configuration files%n"
-                            + "  logs       include log files%n"
-                            + "  plugins    include a view of the plugin directory%n"
-                            + "  ps         include a list of running processes%n"
-                            + "  tree       include a view of the tree structure of the data directory%n"
-                            + "  tx         include transaction logs%n"
-                            + "  version    include version of neo4j%n"));
+                            + "  config       include configuration files%n"
+                            + "  databases    include the output of 'SHOW DATABASES YIELD *' (requires --username/--password)%n"
+                            + "  graphcounts  include the output of 'CALL db.stats.retrieve('GRAPH COUNTS')' for each database (requires --username/--password)%n"
+                            + "  indexes      include the output of 'SHOW INDEXES YIELD *' for each database (requires --username/--password)%n"
+                            + "  logs         include log files%n"
+                            + "  plugins      include a view of the plugin directory%n"
+                            + "  ps           include a list of running processes%n"
+                            + "  servers      include the output of 'SHOW SERVERS YIELD *' (requires --username/--password)%n"
+                            + "  tree         include a view of the tree structure of the data directory%n"
+                            + "  tx           include transaction logs%n"
+                            + "  version      include version of neo4j%n"));
         });
     }
 
@@ -484,6 +495,152 @@ class DiagnosticsReportCommandIT {
                     .contains("Java NMT not enabled")
                     .contains("No profilers to run");
         });
+    }
+
+    @Test
+    void authenticatedClassifierRequiresCredentials() {
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            String[] args = {ServersAuthenticatedReportProvider.CLASSIFIER};
+
+            DiagnosticsReportCommand command = populateCommand(ctx, args);
+
+            command.execute();
+            assertThat(ctx.outAsString())
+                    .contains(ServersAuthenticatedReportProvider.CLASSIFIER)
+                    .contains("--username")
+                    .contains("--password");
+        });
+    }
+
+    @Test
+    void collectsIndexesPerDatabase() throws IOException {
+        String[] args = {
+            IndexesAuthenticatedReportProvider.CLASSIFIER,
+            "--username=neo4j",
+            "--password=secret",
+            "--to-path=" + testDirectory.absolutePath() + "/reports"
+        };
+        RecordingConnectionFactory connectionFactory = new RecordingConnectionFactory();
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            DiagnosticsReportCommand command = populateCommand(ctx, args);
+            command.setConnectionFactory(connectionFactory);
+            command.execute();
+        });
+
+        // The 'neo4j' database directory was created in setUp(), so indexes are gathered for it.
+        assertThat(connectionFactory.connection.queries).containsExactly("SHOW INDEXES YIELD *");
+        assertThat(connectionFactory.connection.databases).containsExactly("neo4j");
+
+        Path[] files = FileUtils.listPaths(testDirectory.directory("reports"));
+        assertThat(files.length).isEqualTo(1);
+        try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
+            Path report = fileSystem.getPath(
+                    String.format("databases/%s/%s.json", "neo4j", IndexesAuthenticatedReportProvider.CLASSIFIER));
+            assertTrue(Files.exists(report));
+            assertThat(Files.readString(report))
+                    .contains("\"name\": \"neo4j\"")
+                    .contains("\"address\": \"localhost:7687\"");
+        }
+    }
+
+    @Test
+    void collectsGraphCountsPerDatabase() throws IOException {
+        String[] args = {
+            GraphCountsAuthenticatedReportProvider.CLASSIFIER,
+            "--username=neo4j",
+            "--password=secret",
+            "--to-path=" + testDirectory.absolutePath() + "/reports"
+        };
+        RecordingConnectionFactory connectionFactory = new RecordingConnectionFactory();
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            DiagnosticsReportCommand command = populateCommand(ctx, args);
+            command.setConnectionFactory(connectionFactory);
+            command.execute();
+        });
+
+        // The 'neo4j' database directory was created in setUp(), so graph counts are gathered for it.
+        assertThat(connectionFactory.connection.queries).containsExactly("CALL db.stats.retrieve('GRAPH COUNTS')");
+        assertThat(connectionFactory.connection.databases).containsExactly("neo4j");
+
+        Path[] files = FileUtils.listPaths(testDirectory.directory("reports"));
+        assertThat(files.length).isEqualTo(1);
+        try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
+            Path report = fileSystem.getPath(
+                    String.format("databases/%s/%s.json", "neo4j", GraphCountsAuthenticatedReportProvider.CLASSIFIER));
+            assertTrue(Files.exists(report));
+        }
+    }
+
+    @Test
+    void collectsServersOnce() throws IOException {
+        assertSingleShotClassifier(
+                ServersAuthenticatedReportProvider.CLASSIFIER, "SHOW SERVERS YIELD *", "servers.json");
+    }
+
+    @Test
+    void collectsDatabasesOnce() throws IOException {
+        assertSingleShotClassifier(
+                DatabasesAuthenticatedReportProvider.CLASSIFIER, "SHOW DATABASES YIELD *", "databases.json");
+    }
+
+    private void assertSingleShotClassifier(String classifier, String expectedQuery, String expectedEntry)
+            throws IOException {
+        String[] args = {
+            classifier,
+            "--username=neo4j",
+            "--password=secret",
+            "--to-path=" + testDirectory.absolutePath() + "/reports"
+        };
+        RecordingConnectionFactory connectionFactory = new RecordingConnectionFactory();
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            DiagnosticsReportCommand command = populateCommand(ctx, args);
+            command.setConnectionFactory(connectionFactory);
+            command.execute();
+        });
+
+        // The connection was opened with the supplied credentials and closed afterwards.
+        assertThat(connectionFactory.username).isEqualTo("neo4j");
+        assertTrue(connectionFactory.connection.closed);
+
+        // DBMS-level procedures are run once, against the system database.
+        assertThat(connectionFactory.connection.queries).containsExactly(expectedQuery);
+        assertThat(connectionFactory.connection.databases).containsExactly("system");
+
+        Path[] files = FileUtils.listPaths(testDirectory.directory("reports"));
+        assertThat(files.length).isEqualTo(1);
+        try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
+            assertTrue(Files.exists(fileSystem.getPath(expectedEntry)));
+        }
+    }
+
+    private static final class RecordingConnectionFactory implements DiagnosticsLiveConnectionFactory {
+        private final RecordingConnection connection = new RecordingConnection();
+        private String username;
+
+        @Override
+        public DiagnosticsLiveConnection connect(Config config, String boltUrl, String username, String password) {
+            this.username = username;
+            return connection;
+        }
+    }
+
+    private static final class RecordingConnection implements DiagnosticsLiveConnection {
+        private final List<String> queries = new ArrayList<>();
+        private final List<String> databases = new ArrayList<>();
+        private boolean closed;
+
+        @Override
+        public DiagnosticsQueryResult execute(String database, String query) {
+            queries.add(query);
+            databases.add(database);
+            return new DiagnosticsQueryResult(
+                    List.of("name", "address"), List.of(Map.of("name", "neo4j", "address", "localhost:7687")));
+        }
+
+        @Override
+        public void close() {
+            closed = true;
+        }
     }
 
     private DiagnosticsReportCommand populateCommand(CommandTestUtils.CapturingExecutionContext ctx, String... args) {

@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsFile;
+import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsString;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
@@ -116,6 +118,33 @@ class DiagnosticsReporterTest {
         verifyContent(destination);
     }
 
+    @Test
+    void collectAndDumpAuthenticatedSources() throws IOException {
+        DiagnosticsReporter reporter = new DiagnosticsReporter();
+        MyAuthenticatedProvider provider = new MyAuthenticatedProvider();
+        reporter.registerAuthenticatedProvider(provider);
+
+        assertThat(reporter.getAuthenticatedClassifiers()).contains("authenticated");
+        assertThat(reporter.getAvailableClassifiers()).contains("authenticated");
+        assertThat(reporter.describeAuthenticatedClassifier("authenticated"))
+                .isEqualTo("the authenticated description");
+
+        RecordingConnection connection = new RecordingConnection();
+        reporter.collectAuthenticatedSources(Collections.singleton("authenticated"), connection);
+        assertThat(connection.queries).containsExactly("CALL example()");
+
+        Path destination = testDirectory.file("authenticated.zip");
+        reporter.dump(
+                Collections.singleton("authenticated"), destination, mock(DiagnosticsReporterProgress.class), true);
+
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath());
+        try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
+            List<String> lines = Files.readAllLines(fs.getPath("authenticated/result.txt"));
+            assertEquals(1, lines.size());
+            assertEquals("hello", lines.get(0));
+        }
+    }
+
     private Path createNewFileWithContent(String name, String content) throws IOException {
         Path file = testDirectory.file(name);
         Files.write(file, content.getBytes());
@@ -174,6 +203,45 @@ class DiagnosticsReporterTest {
 
             return sources;
         }
+    }
+
+    private static class MyAuthenticatedProvider extends DiagnosticsAuthenticatedReportProvider {
+        MyAuthenticatedProvider() {
+            super("authenticated");
+        }
+
+        @Override
+        public void init(FileSystemAbstraction fs, Config config, Set<String> databaseNames) {}
+
+        @Override
+        protected String describe(String classifier) {
+            return "the authenticated description";
+        }
+
+        @Override
+        protected Map<String, List<DiagnosticsReportSource>> provideSources(
+                Set<String> classifiers, DiagnosticsLiveConnection connection) {
+            if (!classifiers.contains("authenticated")) {
+                return Map.of();
+            }
+            DiagnosticsQueryResult result = connection.execute(null, "CALL example()");
+            String content =
+                    String.valueOf(result.rows().get(0).get(result.columns().get(0)));
+            return Map.of("authenticated", List.of(newDiagnosticsString("authenticated/result.txt", () -> content)));
+        }
+    }
+
+    private static class RecordingConnection implements DiagnosticsLiveConnection {
+        private final List<String> queries = new ArrayList<>();
+
+        @Override
+        public DiagnosticsQueryResult execute(String database, String query) {
+            queries.add(query);
+            return new DiagnosticsQueryResult(List.of("greeting"), List.of(Map.of("greeting", "hello")));
+        }
+
+        @Override
+        public void close() {}
     }
 
     private static class FailingSource implements DiagnosticsReportSource {

@@ -70,6 +70,9 @@ class ProgressAwareInputStream extends InputStream {
     }
 
     private void recalculatePercent() {
+        if (listener == null) {
+            return;
+        }
         int percent = size > 0 ? (int) (totalRead * 100 / size) : -1;
         if (percent > 100) {
             percent = 100;

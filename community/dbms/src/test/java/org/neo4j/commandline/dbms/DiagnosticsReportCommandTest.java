@@ -45,8 +45,9 @@ class DiagnosticsReportCommandTest {
                 USAGE
 
                 report [-h] [--expand-commands] [--list] [--verbose] [--ignore-disk-space-check
-                       [=true|false]] [--additional-config=<file>] [--database=<database>]
-                       [--to-path=<path>] [<classifier>...] [COMMAND]
+                       [=true|false]] [-a=<address>] [--additional-config=<file>]
+                       [--database=<database>] [-p=<password>] [--to-path=<path>]
+                       [-u=<username>] [<classifier>...] [COMMAND]
 
                 DESCRIPTION
 
@@ -61,6 +62,11 @@ class DiagnosticsReportCommandTest {
 
                 OPTIONS
 
+                  -a, --uri, --address=<address>
+                                          Address of the DBMS to connect to, including the
+                                            scheme (e.g. bolt://localhost:7687 or bolt+ssc:
+                                            //localhost:7687). Defaults to an address derived
+                                            from the instance configuration.
                       --additional-config=<file>
                                           Configuration file with additional configuration.
                       --database=<database>
@@ -75,8 +81,19 @@ class DiagnosticsReportCommandTest {
                                           Ignore disk full warning.
                                             Default: false
                       --list              List all available classifiers.
+                  -p, --password=<password>
+                                          Password for connecting to the running DBMS. Required
+                                            when a classifier that needs a connection to a live
+                                            database is selected. Can be specified as the
+                                            NEO4J_PASSWORD environment variable.
                       --to-path=<path>    Destination directory for reports. Defaults to a
                                             system tmp directory.
-                      --verbose           Enable verbose output.""");
+                  -u, --username=<username>
+                                          Username for connecting to the running DBMS. Required
+                                            when a classifier that needs a connection to a live
+                                            database is selected. Can be specified as the
+                                            NEO4J_USERNAME environment variable.
+                      --verbose           Enable verbose output.
+                """);
     }
 }

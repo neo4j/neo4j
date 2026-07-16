@@ -41,6 +41,7 @@ import org.neo4j.fleetmanagement.communication.upstream.Upstream;
 import org.neo4j.fleetmanagement.configuration.ClusterSync;
 import org.neo4j.fleetmanagement.configuration.Configuration;
 import org.neo4j.fleetmanagement.configuration.State;
+import org.neo4j.fleetmanagement.diagnostics.DiagnosticsService;
 import org.neo4j.fleetmanagement.procedures.MetricNamesSupplier;
 import org.neo4j.fleetmanagement.procedures.Neo4jConfigNamesSupplier;
 import org.neo4j.fleetmanagement.transactions.ITransactor;
@@ -57,6 +58,7 @@ public class FleetManagement extends LifecycleAdapter {
     private ScheduledExecutorService scheduler;
     private State state;
     private ConfigService configService;
+    private DiagnosticsService diagnosticsService;
 
     public FleetManagement(
             LogService logService,
@@ -118,6 +120,9 @@ public class FleetManagement extends LifecycleAdapter {
                 serverIdentity, transactor, upstream, this.state, config, configuration, databaseContextProvider);
 
         var clusterSync = new ClusterSync(transactor, upstream, this.state);
+
+        this.diagnosticsService =
+                new DiagnosticsService(logService, config, fs, databaseManagementService, databaseContextProvider);
 
         this.mainService = new MainService(
                 reportingService,

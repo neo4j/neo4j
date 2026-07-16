@@ -19,44 +19,31 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static java.lang.String.join;
-import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
-import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsString;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Option;
 import static picocli.CommandLine.Parameters;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import org.jutils.jprocesses.JProcesses;
-import org.jutils.jprocesses.model.ProcessInfo;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
-import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
-import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.dbms.diagnostics.profile.ProfileCommand;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
-import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
+import org.neo4j.kernel.diagnostics.DiagnosticsConnectionException;
+import org.neo4j.kernel.diagnostics.DiagnosticsLiveConnection;
+import org.neo4j.kernel.diagnostics.DiagnosticsLiveConnectionFactory;
 import org.neo4j.kernel.diagnostics.DiagnosticsReporter;
 import org.neo4j.kernel.diagnostics.DiagnosticsReporterProgress;
 import org.neo4j.kernel.diagnostics.InteractiveProgress;
 import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
+import org.neo4j.service.Services;
 
 @Command(
         name = "report",
@@ -70,7 +57,6 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
     static final String[] DEFAULT_CLASSIFIERS = {
         "logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps", "version"
     };
-    private static final DateTimeFormatter filenameDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss");
 
     @Option(
             names = "--database",
@@ -101,52 +87,69 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
             description = "Destination directory for reports. Defaults to a system tmp directory.")
     private Path reportDir;
 
+    @Option(
+            names = {"-u", "--username"},
+            paramLabel = "<username>",
+            defaultValue = "${env:NEO4J_USERNAME}",
+            description =
+                    "Username for connecting to the running DBMS. Required when a classifier that needs a "
+                            + "connection to a live database is selected. Can be specified as the NEO4J_USERNAME environment variable.")
+    private String username;
+
+    @Option(
+            names = {"-p", "--password"},
+            paramLabel = "<password>",
+            defaultValue = "${env:NEO4J_PASSWORD}",
+            description =
+                    "Password for connecting to the running DBMS. Required when a classifier that needs a "
+                            + "connection to a live database is selected. Can be specified as the NEO4J_PASSWORD environment variable.")
+    private String password;
+
+    @Option(
+            names = {"-a", "--address", "--uri"},
+            paramLabel = "<address>",
+            description = "Address of the DBMS to connect to, including the scheme (e.g. bolt://localhost:7687 or "
+                    + "bolt+ssc://localhost:7687). Defaults to an address derived from the instance configuration.")
+    private String address;
+
     @Parameters(arity = "0..*", paramLabel = "<classifier>")
     private Set<String> classifiers = new TreeSet<>(List.of(DEFAULT_CLASSIFIERS));
 
-    private JMXDumper jmxDumper;
+    // Null means resolve the factory via service loading, so the core module needs no connection-technology dependency.
+    private DiagnosticsLiveConnectionFactory connectionFactory;
 
     public DiagnosticsReportCommand(ExecutionContext ctx) {
         super(ctx);
     }
 
+    void setConnectionFactory(DiagnosticsLiveConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
+    }
+
     @Override
     public void execute() {
         Config config = getConfig();
-
-        jmxDumper = new JMXDumper(config, ctx.fs(), ctx.out(), ctx.err(), verbose);
+        DiagnosticsReportGenerator generator = new DiagnosticsReportGenerator(ctx, config, verbose);
 
         Set<String> dbNames = getDbNames(config, ctx.fs(), database);
-        DiagnosticsReporter reporter = createAndRegisterSources(config, dbNames);
+        DiagnosticsReporter reporter = generator.createAndRegisterSources(dbNames);
 
         if (list) {
-            listClassifiers(reporter.getAvailableClassifiers());
+            listClassifiers(reporter);
             return;
         }
 
-        validateClassifiers(reporter);
+        generator.validateClassifiers(reporter, classifiers);
+
+        collectAuthenticatedSourcesIfNeeded(config, reporter);
 
         DiagnosticsReporterProgress progress = buildProgress();
 
-        // Start dumping
         try {
-            if (reportDir == null) {
-                reportDir = Path.of(System.getProperty("java.io.tmpdir"))
-                        .resolve("reports")
-                        .toAbsolutePath();
-            }
-            Path reportFile = reportDir.resolve(getDefaultFilename());
-            ctx.out().println("Writing report to " + reportFile.toAbsolutePath());
-            reporter.dump(classifiers, reportFile, progress, ignoreDiskSpaceCheck);
+            generator.dump(reporter, classifiers, reportDir, progress, ignoreDiskSpaceCheck);
         } catch (IOException e) {
             throw new CommandFailedException("Creating archive failed", e);
         }
-    }
-
-    private static String getDefaultFilename() throws UnknownHostException {
-        String hostName = InetAddress.getLocalHost().getHostName();
-        String safeFilename = hostName.replaceAll("[^a-zA-Z0-9._]+", "_");
-        return safeFilename + "-" + LocalDateTime.now().format(filenameDateTimeFormatter) + ".zip";
     }
 
     private DiagnosticsReporterProgress buildProgress() {
@@ -155,183 +158,89 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
                 : new InteractiveProgress(ctx.out(), verbose);
     }
 
-    private void validateClassifiers(DiagnosticsReporter reporter) {
-        Set<String> availableClassifiers = reporter.getAvailableClassifiers();
-        if (classifiers.contains("all")) {
-            if (classifiers.size() != 1) {
-                classifiers.remove("all");
-                throw new CommandFailedException("If you specify 'all' this has to be the only classifier. Found ['"
-                        + join("','", classifiers) + "'] as well.");
-            }
-        } else {
-            if (classifiers.equals(Set.of(DEFAULT_CLASSIFIERS))) {
-                classifiers = new HashSet<>(classifiers);
-                classifiers.retainAll(availableClassifiers);
-            }
-            validateOrphanClassifiers(availableClassifiers, classifiers);
+    private void collectAuthenticatedSourcesIfNeeded(Config config, DiagnosticsReporter reporter) {
+        Set<String> authenticatedClassifiers = reporter.getAuthenticatedClassifiers();
+        if (authenticatedClassifiers.isEmpty()) {
+            return;
+        }
+
+        Set<String> explicitlyRequested = new TreeSet<>(authenticatedClassifiers);
+        explicitlyRequested.retainAll(classifiers);
+        boolean viaAll = classifiers.contains("all");
+        if (explicitlyRequested.isEmpty() && !viaAll) {
+            return;
+        }
+
+        if (viaAll && username == null) {
+            // 'all' was requested without credentials - skip the authenticated reports rather than failing.
+            ctx.out()
+                    .println("No credentials provided (--username/--password). Authenticated reports will be omitted.");
+            return;
+        }
+
+        promptForCredentialsIfNeeded();
+
+        if (username == null || password == null) {
+            ctx.out()
+                    .printf(
+                            "No credentials provided (--username/--password) for classifiers `%s`. Authenticated reports will be omitted.",
+                            String.join(",", classifiers));
+            return;
+        }
+
+        DiagnosticsLiveConnectionFactory factory =
+                connectionFactory != null ? connectionFactory : loadConnectionFactory();
+        DiagnosticsLiveConnection connection;
+        try {
+            connection = factory.connect(config, address, username, password);
+        } catch (DiagnosticsConnectionException e) {
+            // be lenient and continue reporting even if we can't connect to the DBMS
+            ctx.out()
+                    .println("Failed to connect to the running DBMS: " + e.getMessage()
+                            + ": Authenticated reports will be omitted.");
+            return;
+        }
+        try (connection) {
+            reporter.collectAuthenticatedSources(classifiers, connection);
         }
     }
 
-    private static void validateOrphanClassifiers(Set<String> availableClassifiers, Set<String> orphans) {
-        for (String classifier : orphans) {
-            if (!availableClassifiers.contains(classifier)) {
-                throw new CommandFailedException("Unknown classifier: " + classifier);
-            }
-        }
+    private static DiagnosticsLiveConnectionFactory loadConnectionFactory() {
+        return Services.loadAll(DiagnosticsLiveConnectionFactory.class).stream()
+                .findFirst()
+                .orElseThrow(() -> new CommandFailedException("Unable to connect to the running DBMS: "
+                        + "no connection provider is available on the classpath."));
     }
 
-    private void listClassifiers(Set<String> availableClassifiers) {
+    private void listClassifiers(DiagnosticsReporter reporter) {
         ctx.out().println("All available classifiers:");
-        for (String classifier : availableClassifiers) {
-            ctx.out().printf("  %-10s %s%n", classifier, describeClassifier(classifier));
+        for (String classifier : reporter.getAvailableClassifiers()) {
+            ctx.out().printf("  %-12s %s%n", classifier, describeClassifier(reporter, classifier));
         }
-    }
-
-    private DiagnosticsReporter createAndRegisterSources(Config config, Set<String> databaseNames) {
-        DiagnosticsReporter reporter = new DiagnosticsReporter();
-
-        FileSystemAbstraction fs = ctx.fs();
-        reporter.registerAllOfflineProviders(config, fs, databaseNames);
-
-        // Register sources provided by this tool
-        if (fs.isDirectory(ctx.confDir())) {
-            try {
-                Path[] configs = fs.listFiles(ctx.confDir(), path -> {
-                    String fileName = path.getFileName().toString();
-                    return fileName.startsWith("neo4j") && fileName.endsWith(".conf");
-                });
-
-                for (Path cfg : configs) {
-                    String destination = "config/" + cfg.getFileName();
-                    if (fs.isDirectory(cfg)) {
-                        // Likely a kubernetes config
-                        DiagnosticsReportSources.newDiagnosticsMatchingFiles(
-                                        destination + "/",
-                                        fs,
-                                        cfg,
-                                        path -> !fs.isDirectory(path)
-                                                && !path.getFileName()
-                                                        .toString()
-                                                        .startsWith("."))
-                                .forEach(conf -> reporter.registerSource("config", conf));
-                    } else {
-                        // Normal config file
-                        reporter.registerSource(
-                                "config", DiagnosticsReportSources.newDiagnosticsFile(destination, fs, cfg));
-                    }
-                }
-            } catch (IOException e) {
-                reporter.registerSource(
-                        "config",
-                        newDiagnosticsString(
-                                "config error", () -> "Error reading files in directory: " + e.getMessage()));
-                throw new RuntimeException(e);
-            }
-        }
-
-        Path serverLogsConfig = config.get(GraphDatabaseSettings.server_logging_config_path);
-        if (fs.fileExists(serverLogsConfig)) {
-            reporter.registerSource(
-                    "config",
-                    DiagnosticsReportSources.newDiagnosticsFile("config/server-logs.xml", fs, serverLogsConfig));
-        }
-
-        Path userLogsConfig = config.get(GraphDatabaseSettings.user_logging_config_path);
-        if (fs.fileExists(userLogsConfig)) {
-            reporter.registerSource(
-                    "config", DiagnosticsReportSources.newDiagnosticsFile("config/user-logs.xml", fs, userLogsConfig));
-        }
-
-        reporter.registerSource("ps", runningProcesses());
-
-        // Online connection
-        registerJMXSources(reporter);
-        return reporter;
-    }
-
-    private void registerJMXSources(DiagnosticsReporter reporter) {
-        Optional<JmxDump> jmxDump;
-        jmxDump = jmxDumper.getJMXDump();
-        jmxDump.ifPresent(jmx -> {
-            reporter.registerSource("threads", jmx.legacyThreadDumpSource());
-            reporter.registerSource("threads", jmx.jsonThreadDumpSource());
-            reporter.registerSource("heap", jmx.heapDump());
-            reporter.registerSource("sysprop", jmx.systemProperties());
-        });
     }
 
     private Config getConfig() {
         return createPrefilledConfigBuilder().build();
     }
 
-    static String describeClassifier(String classifier) {
-        return switch (classifier) {
-            case "logs" -> "include log files";
-            case "config" -> "include configuration files";
-            case "plugins" -> "include a view of the plugin directory";
-            case "tree" -> "include a view of the tree structure of the data directory";
-            case "tx" -> "include transaction logs";
-            case "metrics" -> "include metrics";
-            case "threads" -> "include a thread dump of the running instance";
-            case "heap" -> "include a heap dump";
-            case "sysprop" -> "include a list of java system properties";
-            case "raft" -> "include the raft log";
-            case "ccstate" -> "include the current cluster state";
-            case "ps" -> "include a list of running processes";
-            case "version" -> "include version of neo4j";
-            default -> throw new IllegalArgumentException("Unknown classifier: " + classifier);
-        };
+    private void promptForCredentialsIfNeeded() {
+        if (System.console() == null) {
+            return;
+        }
+
+        if (username == null) {
+            username = System.console().readLine("username: ");
+        }
+
+        if (username != null && password == null) {
+            password = new String(System.console().readPassword("password: "));
+        }
     }
 
-    private static DiagnosticsReportSource runningProcesses() {
-        return newDiagnosticsString("ps.csv", () -> {
-            List<ProcessInfo> processesList = JProcesses.getProcessList();
-
-            StringBuilder sb = new StringBuilder();
-            sb.append(escapeCsv("Process PID"))
-                    .append(',')
-                    .append(escapeCsv("Process Name"))
-                    .append(',')
-                    .append(escapeCsv("Process Time"))
-                    .append(',')
-                    .append(escapeCsv("User"))
-                    .append(',')
-                    .append(escapeCsv("Virtual Memory"))
-                    .append(',')
-                    .append(escapeCsv("Physical Memory"))
-                    .append(',')
-                    .append(escapeCsv("CPU usage"))
-                    .append(',')
-                    .append(escapeCsv("Start Time"))
-                    .append(',')
-                    .append(escapeCsv("Priority"))
-                    .append(',')
-                    .append(escapeCsv("Full command"))
-                    .append('\n');
-
-            for (final ProcessInfo processInfo : processesList) {
-                sb.append(processInfo.getPid())
-                        .append(',')
-                        .append(escapeCsv(processInfo.getName()))
-                        .append(',')
-                        .append(processInfo.getTime())
-                        .append(',')
-                        .append(escapeCsv(processInfo.getUser()))
-                        .append(',')
-                        .append(processInfo.getVirtualMemory())
-                        .append(',')
-                        .append(processInfo.getPhysicalMemory())
-                        .append(',')
-                        .append(processInfo.getCpuUsage())
-                        .append(',')
-                        .append(processInfo.getStartTime())
-                        .append(',')
-                        .append(processInfo.getPriority())
-                        .append(',')
-                        .append(escapeCsv(processInfo.getCommand()))
-                        .append('\n');
-            }
-            return sb.toString();
-        });
+    private static String describeClassifier(DiagnosticsReporter reporter, String classifier) {
+        String authenticatedDescription = reporter.describeAuthenticatedClassifier(classifier);
+        return authenticatedDescription != null
+                ? authenticatedDescription
+                : DiagnosticsReportGenerator.describeClassifier(classifier);
     }
 }

@@ -47,11 +47,17 @@ import org.neo4j.service.Services;
 
 public class DiagnosticsReporter {
     private final List<DiagnosticsOfflineReportProvider> providers = new ArrayList<>();
+    private final List<DiagnosticsAuthenticatedReportProvider> authenticatedProviders = new ArrayList<>();
     private final Set<String> availableClassifiers = new TreeSet<>();
     private final Map<String, List<DiagnosticsReportSource>> additionalSources = new HashMap<>();
 
     public void registerOfflineProvider(DiagnosticsOfflineReportProvider provider) {
         providers.add(provider);
+        availableClassifiers.addAll(provider.getFilterClassifiers());
+    }
+
+    public void registerAuthenticatedProvider(DiagnosticsAuthenticatedReportProvider provider) {
+        authenticatedProviders.add(provider);
         availableClassifiers.addAll(provider.getFilterClassifiers());
     }
 
@@ -73,6 +79,10 @@ public class DiagnosticsReporter {
             estimateSizeAndCheckAvailableDiskSpace(destination, sources, destinationDir);
         }
 
+        if (progress == null) {
+            progress = DiagnosticsReporterProgress.EMPTY;
+        }
+
         progress.setTotalSteps(sources.size());
         try (ZipOutputStream zip =
                 new ZipOutputStream(new BufferedOutputStream(newOutputStream(destination, CREATE_NEW, WRITE)), UTF_8)) {
@@ -89,7 +99,9 @@ public class DiagnosticsReporter {
             progress.started(step, source.destinationPath());
             try (InputStream rawInput = source.newInputStream();
                     InputStream input = new ProgressAwareInputStream(
-                            new BufferedInputStream(rawInput), source.estimatedSize(), progress::percentChanged)) {
+                            new BufferedInputStream(rawInput),
+                            source.estimatedSize(),
+                            progress == DiagnosticsReporterProgress.EMPTY ? null : progress::percentChanged)) {
                 final ZipEntry entry = new ZipEntry(source.destinationPath());
                 zip.putNextEntry(entry);
 
@@ -140,5 +152,45 @@ public class DiagnosticsReporter {
             provider.init(fs, config, databaseNames);
             registerOfflineProvider(provider);
         }
+    }
+
+    public void registerAllAuthenticatedProviders(Config config, FileSystemAbstraction fs, Set<String> databaseNames) {
+        for (DiagnosticsAuthenticatedReportProvider provider :
+                Services.loadAll(DiagnosticsAuthenticatedReportProvider.class)) {
+            provider.init(fs, config, databaseNames);
+            registerAuthenticatedProvider(provider);
+        }
+    }
+
+    /**
+     * @return the set of classifiers that require a live connection to the running DBMS.
+     */
+    public Set<String> getAuthenticatedClassifiers() {
+        final Set<String> classifiers = new TreeSet<>();
+        authenticatedProviders.forEach(provider -> classifiers.addAll(provider.getFilterClassifiers()));
+        return classifiers;
+    }
+
+    /**
+     * Runs all authenticated providers against the given live connection and registers the sources they produce. Providers
+     * gather their data eagerly within this call, so the connection may be closed once it returns.
+     */
+    public void collectAuthenticatedSources(Set<String> classifiers, DiagnosticsLiveConnection connection) {
+        for (DiagnosticsAuthenticatedReportProvider provider : authenticatedProviders) {
+            provider.getDiagnosticsSources(classifiers, connection)
+                    .forEach((classifier, sources) -> sources.forEach(source -> registerSource(classifier, source)));
+        }
+    }
+
+    /**
+     * @return a description of an authenticated classifier, or {@code null} if it is not provided by any authenticated provider.
+     */
+    public String describeAuthenticatedClassifier(String classifier) {
+        for (DiagnosticsAuthenticatedReportProvider provider : authenticatedProviders) {
+            if (provider.getFilterClassifiers().contains(classifier)) {
+                return provider.describeClassifier(classifier);
+            }
+        }
+        return null;
     }
 }
