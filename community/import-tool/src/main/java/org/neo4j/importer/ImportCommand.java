@@ -760,6 +760,12 @@ public class ImportCommand {
                 throw new ParameterException(
                         spec.commandLine(), "Delimiter must be a single byte character (In UTF-8)");
             }
+            if (isSkidbladnir() && allowMultibyteDelimiter) {
+                throw new ParameterException(
+                        spec.commandLine(),
+                        "ERROR: Skidbladnir import is not supported with multibyte delimiters "
+                                + "(--accept-multibyte-delimiter)");
+            }
         }
 
         protected void validateInputType(FileInputType inputType) {
