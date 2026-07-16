@@ -413,7 +413,7 @@ case class FabricStitcher(
               isImportingAll = false,
               imports,
               apply.inTransactionsParameters,
-              optional = false
+              optional = apply.optional
             )(apply.pos),
             useAppearances = before.useAppearances ++ inner.useAppearances
           )

@@ -125,6 +125,30 @@ class FabricStitcherTest
       )
     }
 
+    "nested OPTIONAL fragment ships the optional flag" in {
+      stitching(
+        init(defaultUse)
+          .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
+          .apply(
+            u =>
+              init(Inherited(u)(pos), Seq("a"))
+                .leaf(Seq(return_(literal(2).as("b"))), Seq("b")),
+            optional = true
+          )
+          .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
+      ).shouldEqual(
+        init(defaultUse)
+          .exec(
+            singleQuery(
+              with_(literal(1).as("a")),
+              optionalScopeClauseSubqueryCall(false, Seq.empty, return_(literal(2).as("b"))),
+              return_(literal(3).as("c"))
+            ),
+            Seq("c")
+          )
+      )
+    }
+
     "nested fragment with nested fragment" in {
       stitching(
         init(defaultUse)

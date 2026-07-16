@@ -119,7 +119,8 @@ class FabricFragmenter(
             Apply(
               input,
               fragmentQuery(Init(use, input.outputColumns, imports), inner),
-              subquery.inTransactionsParameters
+              subquery.inTransactionsParameters,
+              subquery.optional
             )(subquery.position)
         }
     }

@@ -87,8 +87,9 @@ trait FragmentTestUtils {
     def apply(
       fragmentInheritUse: Use => Fragment,
       inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters] = None,
+      optional: Boolean = false,
       pos: InputPosition = InputPosition.NONE
-    ): Apply = Apply(input, fragmentInheritUse(input.use), inTransactionsParameters)(pos)
+    ): Apply = Apply(input, fragmentInheritUse(input.use), inTransactionsParameters, optional)(pos)
 
     def leaf(clauses: Seq[ast.Clause], outputColumns: Seq[String], pos: InputPosition = InputPosition.NONE): Leaf =
       Leaf(input, clauses, outputColumns)(pos)

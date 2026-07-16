@@ -116,7 +116,8 @@ object Fragment {
   final case class Apply(
     input: Fragment.Chain,
     inner: Fragment,
-    inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters]
+    inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters],
+    optional: Boolean = false
   )(
     val pos: InputPosition
   ) extends Fragment.Segment {

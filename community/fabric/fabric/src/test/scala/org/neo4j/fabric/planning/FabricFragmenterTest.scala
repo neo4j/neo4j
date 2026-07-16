@@ -310,7 +310,7 @@ class FabricFragmenterTest
       )
 
       inside(frag) {
-        case Leaf(Apply(_, inner: Leaf, _), _, _) =>
+        case Leaf(Apply(_, inner: Leaf, _, _), _, _) =>
           inner.use.shouldEqual(Declared(use(
             useClauseFunction(Seq("graph"), "byName", varFor("x")),
             parseStringGraphReferences = resolveStrictly
@@ -331,7 +331,7 @@ class FabricFragmenterTest
       )
 
       inside(frag) {
-        case Leaf(Apply(_, inner: Leaf, _), _, _) =>
+        case Leaf(Apply(_, inner: Leaf, _, _), _, _) =>
           inner.use.shouldEqual(Declared(use(
             useClauseFunction(Seq("graph"), "byName", varFor("x")),
             parseStringGraphReferences = resolveStrictly
@@ -401,6 +401,37 @@ class FabricFragmenterTest
       )
 
       frag.as[Fragment.Leaf].input.as[Fragment.Apply].inTransactionsParameters.isDefined.shouldBe(true)
+    }
+  }
+
+  "OPTIONAL CALL: " - {
+
+    "carries the OPTIONAL flag onto the Apply fragment" in {
+      val frag = fragment(
+        """MATCH (a)
+          |OPTIONAL CALL (a) {
+          |  MATCH (a)-->(b)
+          |  RETURN b
+          |}
+          |RETURN a, b
+          |""".stripMargin
+      )
+
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].optional.shouldEqual(true)
+    }
+
+    "leaves a plain CALL non-optional" in {
+      val frag = fragment(
+        """MATCH (a)
+          |CALL (a) {
+          |  MATCH (a)-->(b)
+          |  RETURN b
+          |}
+          |RETURN a, b
+          |""".stripMargin
+      )
+
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].optional.shouldEqual(false)
     }
   }
 
