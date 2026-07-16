@@ -146,7 +146,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
       "estimatedUniqueSize" -> 0,
       "indexProvider" -> "range-1.0"
     )
-    seq(res("data"), "indexes") should contain.only(
+    assertIndexConfigPresentThenStrip(res("data")) should contain.only(
       entry1,
       entry2,
       entry3,
@@ -344,7 +344,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
       "indexType" -> "RANGE",
       "indexProvider" -> "range-1.0"
     )
-    seq(res("data"), "indexes") should contain.only(
+    assertIndexConfigPresentThenStrip(res("data")) should contain.only(
       indexEntry1,
       indexEntry2,
       indexEntry3,
@@ -357,4 +357,14 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
 
   private def seq(map: AnyRef, key: String): IndexedSeq[AnyRef] =
     map.asInstanceOf[Map[String, AnyRef]](key).asInstanceOf[IndexedSeq[AnyRef]]
+
+  // The indexConfig map can contain arrays (e.g. point index spatial settings) which don't compare
+  // structurally, so its presence is asserted here and it is stripped from the returned maps so the
+  // rest of each index can be matched by equality.
+  private def assertIndexConfigPresentThenStrip(data: AnyRef): IndexedSeq[Map[String, AnyRef]] =
+    seq(data, "indexes").map { index =>
+      val map = index.asInstanceOf[Map[String, AnyRef]]
+      map should contain key "indexConfig"
+      map - "indexConfig"
+    }
 }
