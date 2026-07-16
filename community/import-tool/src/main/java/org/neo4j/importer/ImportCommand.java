@@ -352,7 +352,7 @@ public class ImportCommand {
                 description = "Delimiter character between array elements within a value in CSV data. "
                         + "Also accepts 'TAB' and e.g. 'U+20AC' for specifying a character using Unicode. "
                         + DELIMITER_WARNING_CSV
-                        + "For Parquet data, this is only needed if the array is encoded as a string.")
+                        + " For Parquet data, this is only needed if the array is encoded as a string.")
         private char arrayDelimiter = DEFAULT_CSV_CONFIG.arrayDelimiter();
 
         @Option(
@@ -362,7 +362,7 @@ public class ImportCommand {
                 description = "Delimiter character between vector coordinates within a value in CSV data. "
                         + "Also accepts 'TAB' and e.g. 'U+20AC' for specifying a character using Unicode. "
                         + DELIMITER_WARNING_CSV
-                        + "For Parquet data, this is only needed if the vector is encoded as a string.")
+                        + " For Parquet data, this is only needed if the vector is encoded as a string.")
         private char vectorDelimiter = DEFAULT_CSV_CONFIG.vectorDelimiter();
 
         @Option(
