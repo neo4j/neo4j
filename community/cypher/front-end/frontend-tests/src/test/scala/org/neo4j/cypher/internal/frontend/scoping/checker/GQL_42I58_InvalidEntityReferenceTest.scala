@@ -356,7 +356,9 @@ class GQL_42I58_InvalidEntityReferenceTest extends VariableCheckingWithLocalCall
     ),
     TestQuery("""CREATE (a {prop:'p'}) CREATE (a)-[:T]->(b {prop:a.prop})""", Passes, Seq.empty),
     TestQuery("""MATCH (a), (b) CREATE p = (a)-[:X]->(b)""", Passes, Seq.empty),
-    TestQuery("""MATCH (a), (b) CREATE p = (a)<-[:X]-(b)""", Passes, Seq.empty)
+    TestQuery("""MATCH (a), (b) CREATE p = (a)<-[:X]-(b)""", Passes, Seq.empty),
+    TestQuery("""CREATE p = (n {x: length(p)})""", E42I58("p"), Seq.empty),
+    TestQuery("""CREATE p = ((a {x: b.x})-[:R]->(b))""", E42I58("b"), Seq.empty)
   )
 
   private def testCasesInsert = Seq(

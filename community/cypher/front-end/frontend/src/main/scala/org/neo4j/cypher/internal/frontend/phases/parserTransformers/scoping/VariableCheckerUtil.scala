@@ -158,7 +158,7 @@ case class Acc(
 case object Acc {
   def init: Acc = Acc(Unopinionated, Default, NonAggregating, NotInForeach, Set.empty, Set.empty)
 
-  object InRelationshipChain {
+  object NotInRelationshipChain {
 
     def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable])] = acc match {
       case Acc(_, UpdatingPattern(_, _, _, false), _, foreachContext, _, _) =>
@@ -410,7 +410,7 @@ object VariableCheckerUtil {
               if referenced.getVariables.exists(_.name == variable.name) && !allowedToShadow(variable) =>
               Some((acc, variable.name, variable.position))
             case (
-                Acc.InRelationshipChain(acc, allowedToShadow),
+                Acc.NotInRelationshipChain(acc, allowedToShadow),
                 PatternScope(NodePattern(Some(variable), _, _, _), _, referenced, _, _, _)
               ) if referenced.getVariables.exists(_.name == variable.name) && !allowedToShadow(variable) =>
               Some((acc, variable.name, variable.position))

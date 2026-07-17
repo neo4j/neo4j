@@ -338,6 +338,22 @@ class GQL_42N59_VariableAlreadyDeclaredTest extends VariableCheckingWithLocalCal
       Seq("a", "b")
     ),
     TestQuery(
+      """MATCH (r)
+        |MATCH (parRoom)
+        |MERGE p = ((r)-[:IN_AREA]->(parRoom))
+        |RETURN p""".stripMargin,
+      Passes,
+      Seq("p")
+    ),
+    TestQuery(
+      """MATCH (r)
+        |MATCH (parRoom)
+        |CREATE p = ((r)-[:IN_AREA]->(parRoom))
+        |RETURN p""".stripMargin,
+      Passes,
+      Seq("p")
+    ),
+    TestQuery(
       """MATCH (a)-[*..4 {propA: a.prop, propB: b.prop}]-(b) RETURN a, b""".stripMargin,
       Passes,
       Seq("a", "b")

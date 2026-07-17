@@ -55,6 +55,8 @@ import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.ParenthesizedPath
+import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -71,6 +73,8 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.StepSequencer
+
+import scala.annotation.tailrec
 
 case class VariableChecker(
   version: CypherVersion,
@@ -356,6 +360,27 @@ case class VariableChecker(
 
   private def collectSemanticErrors(workingScope: WorkingScope): Acc = walk(Acc.init, workingScope)
 
+  @tailrec
+  private def isRelationshipChain(element: PatternElement): Boolean = element match {
+    case _: RelationshipChain       => true
+    case ParenthesizedPath(part, _) => isRelationshipChain(part.element)
+    case _                          => false
+  }
+
+  private def traversePatternElement(
+    acc: Acc,
+    scope: PatternScope,
+    element: PatternElement,
+    variables: Seq[LogicalVariable]
+  ): FoldingBehavior[Acc] =
+    updateAccAndTraverse(acc, scope)(_acc =>
+      TraverseChildrenNewAccForSiblings(
+        if (_acc.hasPatternVariables) _acc
+        else _acc.withPatternVariables(variables.toSet, isRelationshipChain(element)),
+        acc => acc.inVariableContext(_acc.variableContext)
+      )
+    )
+
   private def visitWorkingScope(ws: WorkingScope, acc: Acc): FoldingBehavior[Acc] = {
     if (isDebugEnabled) debug.foreach(_.logVisit(ws, acc))
     ws match {
@@ -471,29 +496,13 @@ case class VariableChecker(
         )
 
       case s @ PatternScope(np: NamedPatternPart, _, _, Declarations(_, variables, _), _, _) =>
-        val inRelationship = np.element.isInstanceOf[RelationshipChain]
-        updateAccAndTraverse(acc, s)(_acc =>
-          TraverseChildrenNewAccForSiblings(
-            if (_acc.hasPatternVariables) _acc else _acc.withPatternVariables(variables.toSet, inRelationship),
-            acc => acc.inVariableContext(_acc.variableContext)
-          )
-        )
+        traversePatternElement(acc, s, np.element, variables)
 
-      case s @ PatternScope(_: RelationshipChain, _, _, Declarations(_, variables, _), _, _) =>
-        updateAccAndTraverse(acc, s)(_acc =>
-          TraverseChildrenNewAccForSiblings(
-            if (_acc.hasPatternVariables) _acc else _acc.withPatternVariables(variables.toSet, inRelationship = true),
-            acc => acc.inVariableContext(_acc.variableContext)
-          )
-        )
+      case s @ PatternScope(rc: RelationshipChain, _, _, Declarations(_, variables, _), _, _) =>
+        traversePatternElement(acc, s, rc, variables)
 
-      case s @ PatternScope(_: NodePattern, _, _, Declarations(_, variables, _), _, _) =>
-        updateAccAndTraverse(acc, s)(_acc =>
-          TraverseChildrenNewAccForSiblings(
-            if (_acc.hasPatternVariables) _acc else _acc.withPatternVariables(variables.toSet),
-            acc => acc.inVariableContext(_acc.variableContext)
-          )
-        )
+      case s @ PatternScope(np: NodePattern, _, _, Declarations(_, variables, _), _, _) =>
+        traversePatternElement(acc, s, np, variables)
 
       case _ => TraverseChildren(checkWorkingScope(acc, ws))
     }
