@@ -60,7 +60,7 @@ public class Magic {
      * an {@code int[]} for convenience of specifying those.
      * @return the defined {@link Magic} instance.
      */
-    public static Magic define(String description, Charset impliesEncoding, int... bytesAsIntsForConvenience) {
+    private static Magic define(String description, Charset impliesEncoding, int... bytesAsIntsForConvenience) {
         byte[] bytes = new byte[bytesAsIntsForConvenience.length];
         for (int i = 0; i < bytes.length; i++) {
             bytes[i] = (byte) bytesAsIntsForConvenience[i];
@@ -145,7 +145,7 @@ public class Magic {
         return encoding;
     }
 
-    byte[] bytes() {
+    public byte[] bytes() {
         // Defensive copy
         return Arrays.copyOf(bytes, bytes.length);
     }
