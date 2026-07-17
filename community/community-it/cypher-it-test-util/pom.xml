@@ -52,22 +52,14 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-cache</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-runtime-util</artifactId>
+      <artifactId>neo4j-cypher-test-util</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -164,7 +156,6 @@
                 <ignoredUnusedDeclaredDependency>org.scalatestplus:mockito-4-6_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-cache</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.hamcrest:hamcrest</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-runtime-util</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
           </execution>

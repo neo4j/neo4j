@@ -8,10 +8,10 @@
     <version>2026.08.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>neo4j-cypher-runtime-spec-suite</artifactId>
+  <artifactId>neo4j-cypher-tests</artifactId>
   <packaging>jar</packaging>
-  <name>Neo4j - Cypher Runtime Acceptance</name>
-  <description>Neo4j - Cypher Runtime Specification Suite</description>
+  <name>Neo4j - Cypher tests</name>
+  <description>Unit tests for the Neo4j Cypher module, split out so consumers of Cypher test fixtures do not force compilation of the whole test tree</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -21,31 +21,33 @@
   </scm>
 
   <properties>
-    <moduleName>org.neo4j.cypher.internal.runtime.spec</moduleName>
+    <mixed.language.allowed>true</mixed.language.allowed>
+    <moduleName>org.neo4j.cypher.tests</moduleName>
   </properties>
 
   <dependencies>
 
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-reflect</artifactId>
-    </dependency>
+    <!-- neo4j-cypher's test dependencies -->
     <dependency>
       <groupId>co.helmethair</groupId>
       <artifactId>scalatest-junit-runner</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- neo4j-cypher's compile dependencies, referenced by the tests (test scope here) -->
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- external test dependencies -->
-
     <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.collections</groupId>
+      <artifactId>eclipse-collections-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -54,22 +56,19 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- neo4j testing -->
-
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>io-test-utils</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>log-test-utils</artifactId>
+      <artifactId>kernel-api-test-utils</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -87,12 +86,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-collections</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-common</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -103,9 +96,17 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- the module under test -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-cache</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -135,25 +136,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-logical-plan-generator-test-util</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-logical-plans</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-macros-scala3</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-physical-planning</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -171,6 +154,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-planner-spi-test-util</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-runtime-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -178,6 +167,14 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-runtime-util-test-util</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- shared Cypher test fixtures -->
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-test-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -219,12 +216,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-io</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -253,9 +244,6 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-
-    <!-- neo4j -->
-
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
@@ -270,13 +258,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-procedure-api</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-random-values</artifactId>
+      <artifactId>neo4j-notifications</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -300,12 +282,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-token-api</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -316,28 +292,8 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>test-utils</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.community</groupId>
-      <artifactId>it-test-support</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-java-driver</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- shared versions are defined in the parent pom -->
 
     <!-- scala -->
-
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
@@ -349,13 +305,40 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.scalactic</groupId>
       <artifactId>scalactic_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- scala test dependencies -->
-
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-compatible</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-core_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-matchers-core_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-shouldmatchers_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
@@ -363,62 +346,42 @@
     </dependency>
     <dependency>
       <groupId>org.scalatestplus</groupId>
-      <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
+      <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>analyze</id>
+            <goals>
+              <goal>analyze-only</goal>
+            </goals>
+            <configuration>
+              <failOnWarning>true</failOnWarning>
+              <ignoredUnusedDeclaredDependencies>
+                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-logical-plan-builder</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scalatest:*</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scalactic:*</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scalatestplus:*</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scalacheck:*</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>co.helmethair:scalatest-junit-runner</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scala-lang:scala3-library_3</ignoredUnusedDeclaredDependency>
+              </ignoredUnusedDeclaredDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
   <profiles>
-    <profile>
-      <id>skip-cypher-it</id>
-      <activation>
-        <property>
-          <name>skipCypherIT</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>test-spd</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <!-- SPD is not supported on community edition; skip RuntimeTestSuite-based
-                   tests under -Ptest-spd. Non-DBMS tests still run. -->
-              <excludes combine.children="append">
-                <exclude>**/Interpreted*Test.class</exclude>
-                <exclude>**/CommunityInterpreted*Test.class</exclude>
-                <exclude>**/RuntimeSampleTest.class</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
     <profile>
       <id>scala-fatal-warnings</id>
       <activation>
@@ -436,7 +399,6 @@
               <args combine.children="append">
                 <arg>-Xfatal-warnings</arg>
                 <arg>-feature</arg>
-                <arg>-Wconf:msg=match may not be exhaustive:s,msg=Unreachable case:s</arg>
               </args>
             </configuration>
           </plugin>
@@ -444,5 +406,4 @@
       </build>
     </profile>
   </profiles>
-
 </project>

@@ -8,10 +8,10 @@
     <version>2026.08.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>neo4j-cypher-slotted-runtime</artifactId>
+  <artifactId>neo4j-cypher-test-util</artifactId>
   <packaging>jar</packaging>
-  <name>Neo4j - Cypher Slotted Runtime</name>
-  <description>Planner for the physical query plans</description>
+  <name>Neo4j - Cypher test utilities</name>
+  <description>Shared Cypher test fixtures</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -21,50 +21,19 @@
   </scm>
 
   <properties>
-    <moduleName>org.neo4j.cypher.internal.compatibility.runtime.slotted</moduleName>
+    <moduleName>org.neo4j.cypher.testutil</moduleName>
   </properties>
 
   <dependencies>
 
-    <!-- other -->
+    <!-- scalatest (compile scope: these are test utilities) -->
     <dependency>
-      <groupId>org.eclipse.collections</groupId>
-      <artifactId>eclipse-collections</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.collections</groupId>
-      <artifactId>eclipse-collections-api</artifactId>
-      <version>${eclipse-collections.version}</version>
+      <groupId>co.helmethair</groupId>
+      <artifactId>scalatest-junit-runner</artifactId>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ast</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-collections</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-config</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-ir</artifactId>
+      <artifactId>neo4j-cypher</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -74,33 +43,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-macros-scala3</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-physical-planning</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner-spi</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <!-- neo4j-cypher test -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-runtime-util</artifactId>
       <version>${project.version}</version>
     </dependency>
-
-    <!-- neo4j -->
-
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-exceptions</artifactId>
+      <artifactId>neo4j-cypher-runtime-util-test-util</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -115,7 +63,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-io</artifactId>
+      <artifactId>neo4j-internal-notifications</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -125,12 +73,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel-api</artifactId>
+      <artifactId>neo4j-kernel-test-utils</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-unsafe</artifactId>
+      <artifactId>neo4j-notifications</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -143,9 +91,13 @@
       <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>test-utils</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- scala -->
-
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
@@ -155,104 +107,45 @@
       <artifactId>scala3-library_3</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- neo4j testing -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>kernel-api-test-utils</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ast-test-util</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-interpreted-runtime-test-util</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-logical-plan-builder</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel-test-utils</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-test-util</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.scalactic</groupId>
       <artifactId>scalactic_${scala.binary.version}</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-compatible</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-core_${scala.binary.version}</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-matchers-core_${scala.binary.version}</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-shouldmatchers_${scala.binary.version}</artifactId>
-      <scope>test</scope>
     </dependency>
-
-    <!-- scala test dependencies -->
-
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
-      <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.scalatestplus</groupId>
-      <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <build>
     <plugins>
+      <plugin>
+        <!-- disable only the ban-test-dependencies-in-compile enforcer rule
+                since this project creates test utilities -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>ban-test-dependencies-in-compile</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -265,14 +158,10 @@
             <configuration>
               <failOnWarning>true</failOnWarning>
               <ignoredUnusedDeclaredDependencies>
+                <ignoredUnusedDeclaredDependency>org.scala-lang:scala3-library_3</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.scalatest:*</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scalactic:*</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>co.helmethair:scalatest-junit-runner</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
-                <!-- Not sure why this is needed, module fails to compile without this dependency. -->
-                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-logical-plan-builder</ignoredUnusedDeclaredDependency>
-                <!-- Scala 3 macros and test utils are used indirectly -->
-                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-macros-scala3</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-test-util</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
           </execution>
@@ -306,5 +195,4 @@
       </build>
     </profile>
   </profiles>
-
 </project>

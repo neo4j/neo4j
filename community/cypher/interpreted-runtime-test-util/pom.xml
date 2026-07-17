@@ -8,11 +8,10 @@
     <version>2026.08.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
+  <artifactId>neo4j-cypher-interpreted-runtime-test-util</artifactId>
   <packaging>jar</packaging>
-  <name>Neo4j - Cypher Interpreted Runtime</name>
-
-  <description>The traditional cypher interpreted runtime</description>
+  <name>Neo4j - Cypher Interpreted Runtime test utilities</name>
+  <description>Shared test fixtures for the Cypher interpreted runtime</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -22,73 +21,25 @@
   </scm>
 
   <properties>
-    <moduleName>org.neo4j.cypher.internal.runtime.interpreted</moduleName>
+    <moduleName>org.neo4j.cypher.internal.runtime.interpreted.testutil</moduleName>
   </properties>
 
   <dependencies>
 
-    <!-- other -->
-
+    <!-- mockito (compile scope: QueryStateHelper builds mocked query state) -->
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.collections</groupId>
-      <artifactId>eclipse-collections</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.collections</groupId>
-      <artifactId>eclipse-collections-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ast</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-collections</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-common</artifactId>
       <version>${project.version}</version>
     </dependency>
+
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-configuration</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-csv</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-admin-runtime</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-config</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-ir</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-logical-plans</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-macros-scala3</artifactId>
+      <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -101,37 +52,9 @@
       <artifactId>neo4j-cypher-runtime-util</artifactId>
       <version>${project.version}</version>
     </dependency>
-
-    <!-- neo4j -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-exceptions</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-expressions</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-front-end</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-gql-status</artifactId>
-      <version>${project.version}</version>
-    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphdb-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-internal-notifications</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -151,32 +74,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-logging</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-lucene-index</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-procedure-api</artifactId>
+      <artifactId>neo4j-monitoring</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-resource</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-schema</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-unsafe</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -189,33 +92,32 @@
       <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- scala -->
 
+    <!-- scala -->
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-reflect</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-collection-contrib_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala3-library_3</artifactId>
     </dependency>
-
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
+        <!-- disable only the ban-test-dependencies-in-compile enforcer rule
+                since this project creates test utilities -->
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
+        <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
           <execution>
-            <id>create-test-jar</id>
+            <id>ban-test-dependencies-in-compile</id>
             <phase>none</phase>
           </execution>
         </executions>
@@ -231,6 +133,12 @@
             </goals>
             <configuration>
               <failOnWarning>true</failOnWarning>
+              <ignoredUnusedDeclaredDependencies>
+                <ignoredUnusedDeclaredDependency>org.scala-lang:scala3-library_3</ignoredUnusedDeclaredDependency>
+                <!-- FakePipe references cypher.internal.util.attribution.Id; the Scala reference is
+                     invisible to the bytecode analyzer. -->
+                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-util</ignoredUnusedDeclaredDependency>
+              </ignoredUnusedDeclaredDependencies>
             </configuration>
           </execution>
         </executions>
@@ -263,5 +171,4 @@
       </build>
     </profile>
   </profiles>
-
 </project>
