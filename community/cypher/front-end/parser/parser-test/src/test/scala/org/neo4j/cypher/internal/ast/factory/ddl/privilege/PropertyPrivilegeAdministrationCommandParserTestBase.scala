@@ -84,13 +84,14 @@ class PropertyPrivilegeAdministrationCommandParserTestBase extends Administratio
         LiteralExpression(lessThanOrEqual(prop(varFor("n"), "prop1"), literal)), // n.prop1 <= value
         LiteralExpression(not(lessThanOrEqual(prop(varFor("n"), "prop1"), literal))), // NOT n.prop1 <= value
 
-        // Semantic invalid expressions, these should parse correctly to allow them to be rejected in the semantic check with a user-friendly explanation
+        // Property on the right-hand side (Cypher 25 only, rejected in semantic checking for Cypher 5)
         LiteralExpression(equals(literal, prop(varFor("n"), "prop1"))), // value = n.prop1
         LiteralExpression(not(notEquals(literal, prop(varFor("n"), "prop1")))), // NOT value <> n.prop1
 
         LiteralExpression(notEquals(literal, prop(varFor("n"), "prop1"))), // value <> n.prop
         LiteralExpression(not(equals(literal, prop(varFor("n"), "prop1")))), // NOT value = n.prop
 
+        // Semantic invalid expressions, these should parse correctly to allow them to be rejected in the semantic check with a user-friendly explanation
         LiteralExpression(and(
           equals(prop(varFor("n"), "prop1"), literal),
           equals(prop(varFor("n"), "prop2"), literal)
@@ -109,6 +110,7 @@ class PropertyPrivilegeAdministrationCommandParserTestBase extends Administratio
         LiteralExpression(equals(prop(varFor("n"), "prop"), add(literal, literal))), // n.prop = value + value
         LiteralExpression(equals(prop(varFor("n"), "prop"), subtract(literal, literal))), // n.prop = value - value
 
+        // Property on the right-hand side of the ordering operators (Cypher 25 only, rejected in semantic checking for Cypher 5)
         LiteralExpression(greaterThan(literal, prop(varFor("n"), "prop1"))), // value > n.prop1
         LiteralExpression(not(greaterThan(literal, prop(varFor("n"), "prop1")))), // NOT value > n.prop1
 

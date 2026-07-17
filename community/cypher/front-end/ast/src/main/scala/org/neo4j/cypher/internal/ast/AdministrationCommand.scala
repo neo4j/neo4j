@@ -1607,34 +1607,52 @@ sealed abstract class PrivilegeCommand(
       case e                         => e
     }
 
-    def valueInListPropertyFeatureSupport: SemanticCheck =
-      requireFeatureSupport(
-        s"The `$name` clause using a `<value> IN <property>` predicate",
-        SemanticFeature.ValueInListProperty,
-        expression.position
-      )
-
-    def valueInListPropertyFeatureCheck: SemanticCheck = unwrappedExpression match {
-      case In(lhs, _: Property) if !lhs.isInstanceOf[Property] && cypherVersion.isAfter(CypherVersion.Cypher5) =>
-        valueInListPropertyFeatureSupport
-      case Not(In(lhs, _: Property)) if !lhs.isInstanceOf[Property] && cypherVersion.isAfter(CypherVersion.Cypher5) =>
-        valueInListPropertyFeatureSupport
-      case _ => SemanticCheck.success
+    def valueInListPropertyFeatureCheck: SemanticCheck = {
+      def requireValueInListProperty(operator: String): SemanticCheck =
+        requireFeatureSupport(
+          s"The `$name` clause using a `<value> $operator <property>` predicate",
+          SemanticFeature.ValueInListProperty,
+          expression.position
+        )
+      if (cypherVersion.equals(CypherVersion.Cypher5)) {
+        SemanticCheck.success
+      } else {
+        unwrappedExpression match {
+          case In(lhs, _: Property) if !lhs.isInstanceOf[Property]                 => requireValueInListProperty("IN")
+          case Not(In(lhs, _: Property)) if !lhs.isInstanceOf[Property]            => requireValueInListProperty("IN")
+          case Equals(lhs, _: Property) if !lhs.isInstanceOf[Property]             => requireValueInListProperty("=")
+          case NotEquals(lhs, _: Property) if !lhs.isInstanceOf[Property]          => requireValueInListProperty("<>")
+          case GreaterThan(lhs, _: Property) if !lhs.isInstanceOf[Property]        => requireValueInListProperty(">")
+          case GreaterThanOrEqual(lhs, _: Property) if !lhs.isInstanceOf[Property] => requireValueInListProperty(">=")
+          case LessThan(lhs, _: Property) if !lhs.isInstanceOf[Property]           => requireValueInListProperty("<")
+          case LessThanOrEqual(lhs, _: Property) if !lhs.isInstanceOf[Property]    => requireValueInListProperty("<=")
+          case _                                                                   => SemanticCheck.success
+        }
+      }
     }
 
     valueInListPropertyFeatureCheck chain (unwrappedExpression match {
+      // NaN cases
+      // LHS property (RHS = NaN)
       case Equals(_: Property, l: NaN)             => nanError(l)
       case NotEquals(_: Property, l: NaN)          => nanError(l)
       case GreaterThan(_: Property, l: NaN)        => nanError(l)
       case GreaterThanOrEqual(_: Property, l: NaN) => nanError(l)
       case LessThan(_: Property, l: NaN)           => nanError(l)
       case LessThanOrEqual(_: Property, l: NaN)    => nanError(l)
-      case Equals(l: NaN, _: Property)             => nanError(l)
-      case NotEquals(l: NaN, _: Property)          => nanError(l)
-      case GreaterThan(l: NaN, _: Property)        => nanError(l)
-      case GreaterThanOrEqual(l: NaN, _: Property) => nanError(l)
-      case LessThan(l: NaN, _: Property)           => nanError(l)
-      case LessThanOrEqual(l: NaN, _: Property)    => nanError(l)
+
+      // RHS property (LHS = NaN)
+      case Equals(l: NaN, _: Property)                                                  => nanError(l)
+      case NotEquals(l: NaN, _: Property)                                               => nanError(l)
+      case GreaterThan(l: NaN, _: Property)                                             => nanError(l)
+      case GreaterThanOrEqual(l: NaN, _: Property)                                      => nanError(l)
+      case LessThan(l: NaN, _: Property)                                                => nanError(l)
+      case LessThanOrEqual(l: NaN, _: Property)                                         => nanError(l)
+      case In(l: NaN, _: Property) if cypherVersion.isAfter(CypherVersion.Cypher5)      => nanError(l)
+      case Not(In(l: NaN, _: Property)) if cypherVersion.isAfter(CypherVersion.Cypher5) => nanError(l)
+
+      // NULL cases
+      // LHS property (RHS = NULL)
       case Equals(p: Property, l: Null) =>
         propertyAlwaysNullError(
           GqlHelper.getGql22NA0_22NA5,
@@ -1657,6 +1675,8 @@ sealed abstract class PrivilegeCommand(
         propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"${p.propertyKey.name} < NULL", l.position)
       case LessThanOrEqual(p: Property, l: Null) =>
         propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"${p.propertyKey.name} <= NULL", l.position)
+
+      // RHS property (LHS = NULL)
       case Equals(l: Null, p: Property) =>
         propertyAlwaysNullError(
           GqlHelper.getGql22NA0_22NA5,
@@ -1679,12 +1699,50 @@ sealed abstract class PrivilegeCommand(
         propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"NULL < ${p.propertyKey.name}", l.position)
       case LessThanOrEqual(l: Null, p: Property) =>
         propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"NULL <= ${p.propertyKey.name}", l.position)
-      case Equals(_, p: Property)             => propertyPositionError(p, "=")
-      case NotEquals(_, p: Property)          => propertyPositionError(p, "<>")
-      case GreaterThan(_, p: Property)        => propertyPositionError(p, ">")
-      case GreaterThanOrEqual(_, p: Property) => propertyPositionError(p, ">=")
-      case LessThan(_, p: Property)           => propertyPositionError(p, "<")
-      case LessThanOrEqual(_, p: Property)    => propertyPositionError(p, "<=")
+      case In(l: Null, p: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
+        propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"NULL IN ${p.propertyKey.name}", l.position)
+      case Not(In(l: Null, p: Property)) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
+        propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"NULL IN ${p.propertyKey.name}", l.position)
+
+      // Cypher 5: RHS property disallowed
+      case Equals(_, p: Property) if cypherVersion.equals(CypherVersion.Cypher5) =>
+        propertyPositionError(p, "=")
+      case NotEquals(_, p: Property) if cypherVersion.equals(CypherVersion.Cypher5) =>
+        propertyPositionError(p, "<>")
+      case GreaterThan(_, p: Property) if cypherVersion.equals(CypherVersion.Cypher5) =>
+        propertyPositionError(p, ">")
+      case GreaterThanOrEqual(_, p: Property) if cypherVersion.equals(CypherVersion.Cypher5) =>
+        propertyPositionError(p, ">=")
+      case LessThan(_, p: Property) if cypherVersion.equals(CypherVersion.Cypher5) =>
+        propertyPositionError(p, "<")
+      case LessThanOrEqual(_, p: Property) if cypherVersion.equals(CypherVersion.Cypher5) =>
+        propertyPositionError(p, "<=")
+
+      // Cypher 25+: RHS property allowed
+      case Equals(e: Expression, _: Property)             => checkScalarExpression(e)
+      case NotEquals(e: Expression, _: Property)          => checkScalarExpression(e)
+      case GreaterThan(e: Expression, _: Property)        => checkScalarExpression(e)
+      case GreaterThanOrEqual(e: Expression, _: Property) => checkScalarExpression(e)
+      case LessThan(e: Expression, _: Property)           => checkScalarExpression(e)
+      case LessThanOrEqual(e: Expression, _: Property)    => checkScalarExpression(e)
+      case In(e: Expression, _: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
+        checkScalarExpression(e)
+      case Not(In(e: Expression, _: Property)) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
+        checkScalarExpression(e)
+
+      // LHS property allowed
+      case Equals(_: Property, e: Expression)             => checkScalarExpression(e)
+      case NotEquals(_: Property, e: Expression)          => checkScalarExpression(e)
+      case GreaterThan(_: Property, e: Expression)        => checkScalarExpression(e)
+      case GreaterThanOrEqual(_: Property, e: Expression) => checkScalarExpression(e)
+      case LessThan(_: Property, e: Expression)           => checkScalarExpression(e)
+      case LessThanOrEqual(_: Property, e: Expression)    => checkScalarExpression(e)
+      case In(_: Property, e: Expression)                 => checkListExpression(e)
+      case Not(In(_: Property, e: Expression))            => checkListExpression(e)
+
+      case IsNull(_: Property) | IsNotNull(_: Property) => SemanticCheck.success
+
+      // Map expressions
       case map @ MapExpression(items) if items.size > 1 =>
         error(
           ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NA0)
@@ -1702,22 +1760,8 @@ sealed abstract class PrivilegeCommand(
           l.position,
           " Use `WHERE` syntax in combination with `IS NULL` instead."
         )
-      case Equals(_: Property, e: Expression)                                      => checkScalarExpression(e)
-      case NotEquals(_: Property, e: Expression)                                   => checkScalarExpression(e)
-      case In(_: Property, e: Expression)                                          => checkListExpression(e)
-      case Not(In(_: Property, e: Expression))                                     => checkListExpression(e)
-      case In(l: NaN, _: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) => nanError(l)
-      case In(l: Null, p: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
-        propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"NULL IN ${p.propertyKey.name}", l.position)
-      case In(e: Expression, _: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) => checkScalarExpression(e)
-      case Not(In(e: Expression, _: Property)) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
-        checkScalarExpression(e)
-      case IsNull(_: Property) | IsNotNull(_: Property)            => SemanticCheck.success
       case MapExpression(Seq((_: PropertyKeyName, e: Expression))) => checkScalarExpression(e)
-      case GreaterThan(_: Property, e: Expression)                 => checkScalarExpression(e)
-      case GreaterThanOrEqual(_: Property, e: Expression)          => checkScalarExpression(e)
-      case LessThan(_: Property, e: Expression)                    => checkScalarExpression(e)
-      case LessThanOrEqual(_: Property, e: Expression)             => checkScalarExpression(e)
+
       case _ =>
         AdministrationCommandSemanticAnalysis.invalidPropertyBasedAccessControlRuleInvolvingNontrivialPredicatesError(
           expression.asCanonicalStringVal,

@@ -1015,10 +1015,44 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
         }
 
-        // e.g. FOR (n) WHERE 1 = n.prop1
-        testVersions(
-          s"property rules having n.prop on right hand side of operator $operator should fail semantic checking ($qualifierDescription)"
+        // e.g. FOR (n) WHERE 1 = n.prop1 — property on the right, equivalent to the property-on-left form
+        // Only valid from Cypher 25 onwards; Cypher 5 still requires the property on the left (see sibling test below).
+        testVersionsExcept5(
+          s"property rules having n.prop on right hand side of operator $operator should pass semantic checking ($qualifierDescription)"
         ) { version =>
+          val expressionStringifier = ExpressionStringifier()
+          Seq(
+            op(literalInt(1, p), prop(varFor("n"), "prop1")), // 1 = n.prop
+            Not(op(literalInt(1, p), prop(varFor("n"), "prop1")))(p), // NOT 1 = n.prop
+            op(literalString("s1"), prop(varFor("n"), "prop1")), // 's1' = n.prop
+            op(parameter("value", CTAny), prop(varFor("n"), "prop1")), // $value = n.prop
+            // point is the only allow-listed compiler built-in; the temporal functions are covered as
+            // resolved functions in AdministrationCommandResolvedFunctionSemanticAnalysisTest
+            op(function("point", mapOfInt("x" -> 1, "y" -> 2)), prop(varFor("n"), "prop1")) // point(...) = n.prop
+          ).foreach { expression =>
+            withClue(expressionStringifier(expression)) {
+              val privilege = GrantPrivilege(
+                GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+                false,
+                None,
+                qualifierFn(Some(varFor("n", p)), expression),
+                Seq(literalString("role1"))
+              )(p)
+
+              val result =
+                privilege.semanticCheck.run(
+                  initialStateWithFeatureFlags,
+                  versionedSemanticContext(version)
+                )
+              result.errors.isEmpty shouldBe true
+            }
+          }
+        }
+
+        // In Cypher 5 the property-position restriction still applies, with the same error as before
+        test(
+          s"property rules having n.prop on right hand side of operator $operator should fail semantic checking in Cypher 5 ($qualifierDescription)"
+        ) {
           val privilege = GrantPrivilege(
             GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
             false,
@@ -1030,12 +1064,68 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
             Seq(literalString("role1"))
           )(p)
 
-          val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+          val result =
+            privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(CypherVersion.Cypher5))
           result.errors.size shouldBe 1
           val e = result.errors.head
           e.msg shouldBe s"Failed to administer property rule. The property `prop1` must appear on the left hand side of the `$operator` operator."
           e.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
           e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA1.getStatusString
+        }
+
+        // property on the right is gated behind the ValueInListProperty feature flag
+        testVersionsExcept5(
+          s"property rules having n.prop on right hand side of operator $operator should fail when the feature is disabled ($qualifierDescription)"
+        ) { version =>
+          val stateWithoutValueInListProperty =
+            SemanticState.clean
+              .withFeature(SemanticFeature.MultipleDatabases)
+
+          val privilege = GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(Some(varFor("n", p)), op(literalInt(1, p), prop(varFor("n"), "prop1"))),
+            Seq(literalString("role1"))
+          )(p)
+
+          val result =
+            privilege.semanticCheck.run(
+              stateWithoutValueInListProperty,
+              versionedSemanticContext(version)
+            )
+          result.errors.map(_.msg) should contain(
+            s"The `GRANT TRAVERSE` clause using a `<value> $operator <property>` predicate is not available in this implementation of Cypher " +
+              "due to lack of support for access rules checking for a value in a list property."
+          )
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = n.prop2 — a property on both sides is never allowed
+        testVersions(
+          s"property rules having properties on both sides of operator $operator should fail semantic checking ($qualifierDescription)"
+        ) {
+          version =>
+            val privilege = GrantPrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              false,
+              None,
+              qualifierFn(
+                Some(varFor("n", p)),
+                op(prop(varFor("n"), "prop1"), prop(varFor("n"), "prop2"))
+              ),
+              Seq(literalString("role1"))
+            )(p)
+
+            val result =
+              privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+            result.errors.size shouldBe 1
+
+            val gqlStatus = result.errors.head.gqlStatusObject.cause().get().gqlStatus()
+            if (version == CypherVersion.Cypher5) {
+              gqlStatus shouldBe GqlStatusInfoCodes.STATUS_22NA1.getStatusString
+            } else {
+              gqlStatus shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+            }
         }
       }
 
@@ -1463,9 +1553,9 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       }
 
       // e.g. FOR (n) WHERE 1 IN n.prop1 — a scalar tested for membership in a list-valued property
-      test(
+      testVersionsExcept5(
         s"property rules using WHERE syntax with scalar IN property should pass semantic checking($qualifierDescription)"
-      ) {
+      ) { version =>
         val expressionStringifier = ExpressionStringifier()
 
         Seq(
@@ -1479,7 +1569,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           Not(In(parameter("value", CTAny), prop(varFor("n"), "prop1"))(p))(p) // NOT $value IN n.prop
         ).foreach { expression =>
           withClue(expressionStringifier(expression)) {
-            val privilege = new GrantPrivilege(
+            val privilege = GrantPrivilege(
               GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
               false,
               None,
@@ -1490,7 +1580,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
             val result =
               privilege.semanticCheck.run(
                 initialStateWithFeatureFlags,
-                versionedSemanticContext(CypherVersion.Cypher25)
+                versionedSemanticContext(version)
               )
             result.errors.isEmpty shouldBe true
           }
@@ -1498,9 +1588,9 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       }
 
       // value IN a list property is gated behind the ValueInListProperty feature flag
-      test(
+      testVersionsExcept5(
         s"property rules using WHERE syntax with scalar IN property should fail when the feature is disabled($qualifierDescription)"
-      ) {
+      ) { version =>
         val expressionStringifier = ExpressionStringifier()
 
         val stateWithoutValueInListProperty =
@@ -1513,7 +1603,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           Not(Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p))(p) // NOT (NOT 1 IN n.prop)
         ).foreach { expression =>
           withClue(expressionStringifier(expression)) {
-            val privilege = new GrantPrivilege(
+            val privilege = GrantPrivilege(
               GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
               false,
               None,
@@ -1524,7 +1614,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
             val result =
               privilege.semanticCheck.run(
                 stateWithoutValueInListProperty,
-                versionedSemanticContext(CypherVersion.Cypher25)
+                versionedSemanticContext(version)
               )
             result.errors.map(_.msg) should contain(
               "The `GRANT TRAVERSE` clause using a `<value> IN <property>` predicate is not available in this implementation of Cypher " +
@@ -1535,9 +1625,9 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       }
 
       // e.g. FOR (n) WHERE NULL IN n.prop1 — value-in-list-property rejects NULL/NaN scalars and list-on-left, like other PBAC rules
-      test(
+      testVersionsExcept5(
         s"property rules using WHERE syntax with invalid scalar IN property should fail semantic checking($qualifierDescription)"
-      ) {
+      ) { version =>
         val expressionStringifier = ExpressionStringifier()
 
         Seq(
@@ -1560,10 +1650,30 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
             Not(Not(Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p))(p))(p), // NOT (NOT (NOT 1 IN n.prop))
             "Only single, literal-based predicate expressions are allowed for property-based access control.",
             GqlStatusInfoCodes.STATUS_22NA7
+          ),
+          (
+            Not(Not(In(nullLiteral, prop(varFor("n"), "prop1"))(p))(p))(p), // NOT (NOT NULL IN n.prop)
+            "The property value access rule pattern `NULL IN prop1` always evaluates to `NULL`.",
+            GqlStatusInfoCodes.STATUS_22NA4
+          ),
+          (
+            Not(Not(In(NaN()(p), prop(varFor("n"), "prop1"))(p))(p))(p), // NOT (NOT NaN IN n.prop)
+            "`NaN` is not supported for property-based access control.",
+            GqlStatusInfoCodes.STATUS_22NA3
+          ),
+          (
+            Not(Not(Not(In(nullLiteral, prop(varFor("n"), "prop1")))(p))(p))(p), // NOT (NOT (NOT NULL IN n.prop))
+            "Only single, literal-based predicate expressions are allowed for property-based access control.",
+            GqlStatusInfoCodes.STATUS_22NA7
+          ),
+          (
+            Not(Not(Not(In(NaN()(p), prop(varFor("n"), "prop1")))(p))(p))(p), // NOT (NOT (NOT NaN IN n.prop))
+            "Only single, literal-based predicate expressions are allowed for property-based access control.",
+            GqlStatusInfoCodes.STATUS_22NA7
           )
         ).foreach { case (expression, reason, causeCode) =>
           withClue(expressionStringifier(expression)) {
-            val privilege = new GrantPrivilege(
+            val privilege = GrantPrivilege(
               GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
               false,
               None,
@@ -1574,7 +1684,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
             val result =
               privilege.semanticCheck.run(
                 initialStateWithFeatureFlags,
-                versionedSemanticContext(CypherVersion.Cypher25)
+                versionedSemanticContext(version)
               )
             result.errors.size shouldBe 1
             result.errors.head.msg should endWith(reason)
@@ -1599,7 +1709,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           In(NaN()(p), prop(varFor("n"), "prop1"))(p) // NaN IN n.prop
         ).foreach { expression =>
           withClue(expressionStringifier(expression)) {
-            val privilege = new GrantPrivilege(
+            val privilege = GrantPrivilege(
               GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
               false,
               None,

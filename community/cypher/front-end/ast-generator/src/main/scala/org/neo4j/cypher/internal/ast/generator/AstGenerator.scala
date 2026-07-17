@@ -3869,8 +3869,10 @@ class AstGenerator(
       Equals(l, r)(pos),
       NotEquals(l, r)(pos),
       In(l, ListLiteral(Seq(r))(pos))(pos),
-      In(r, l)(pos)
-    ) ++ _inequalitiesPredicate(l, r)
+      In(r, l)(pos),
+      Equals(r, l)(pos),
+      NotEquals(r, l)(pos)
+    ) ++ _inequalitiesPredicate(l, r) ++ _inequalitiesPredicate(r, l)
 
     oneOf(
       predicates ++ _notExpressions(predicates)

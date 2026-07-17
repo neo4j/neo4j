@@ -142,6 +142,20 @@ class AdministrationCommandResolvedFunctionSemanticAnalysisTest extends CypherFu
       Seq(literalString("role1"))
     )(p)
 
+  private def nodePropertyRuleWithPropertyOnRight(fn: Expression): GrantPrivilege =
+    new GrantPrivilege(
+      GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+      false,
+      None,
+      List(PatternQualifier(
+        Seq(LabelQualifier("A")(p)),
+        Some(varFor("n")),
+        Equals(fn, prop(varFor("n"), "prop1"))(p),
+        Node
+      )),
+      Seq(literalString("role1"))
+    )(p)
+
   // -- isBuiltIn ---------------------------------------------------------------
 
   test("ResolvedFunctionInvocation.isBuiltIn reflects the signature builtIn flag") {
@@ -598,5 +612,29 @@ class AdministrationCommandResolvedFunctionSemanticAnalysisTest extends CypherFu
     val result = nodePropertyRuleWith(notBuiltIn).semanticCheck.run(state, context)
     result.errors.size shouldBe 1
     result.errors.head.msg should include("is not supported")
+  }
+
+  test(
+    "property rules with allow-listed temporal functions and the property on the right should pass semantic checking"
+  ) {
+    val stateWithValueInListProperty = state.withFeature(SemanticFeature.ValueInListProperty)
+    val cases = Seq[(String, Expression)](
+      ("date", resolvedBuiltin("date", p, literalString("2024-08-23"))),
+      ("datetime", resolvedBuiltin("datetime", p, literalString("2024-08-24T12:50:35+01:00"))),
+      ("localdatetime", resolvedBuiltin("localdatetime", p, literalString("2024-08-24T12:50:35"))),
+      ("localtime", resolvedBuiltin("localtime", p, literalString("12:50:35"))),
+      ("time", resolvedBuiltin("time", p, literalString("12:50:35+01:00"))),
+      ("duration", resolvedBuiltin("duration", p, literalString("PT30S"))),
+      ("point", function("point", mapOfInt("x" -> 1, "y" -> 2)))
+    )
+    cases.map(_._1) should contain theSameElementsAs AdministrationCommand.propertyRuleAllowedTemporalFunctions
+    cases.foreach { case (name, call) =>
+      withClue(s"$name: ") {
+        nodePropertyRuleWithPropertyOnRight(call).semanticCheck.run(
+          stateWithValueInListProperty,
+          context
+        ).errors shouldBe empty
+      }
+    }
   }
 }
