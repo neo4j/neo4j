@@ -1834,11 +1834,6 @@ object Prettifier {
       }
     }
 
-    def stringifyExpression(expr: ExpressionStringifier): PartialFunction[Expression, String] = {
-      case StringLiteral(s) => expr.quote(s)
-      case p: Parameter     => s"$$${backtickEmpty(p.name)}"
-    }
-
     def stringify: PartialFunction[PrivilegeQualifier, String] = {
       case LabelQualifier(name)        => backtickEmpty(name)
       case RelationshipQualifier(name) => backtickEmpty(name)
@@ -1950,7 +1945,7 @@ object Prettifier {
       case p @ SettingQualifier(_) :: _   => Some(p.map(stringify).mkString(", "))
       case SettingAllQualifier() :: Nil   => Some("*")
       case SecretAllQualifier() :: Nil    => Some("*")
-      case SecretQualifier(secret) :: Nil => Some(stringifyExpression(expr)(secret))
+      case SecretQualifier(secret) :: Nil => Some(expr(secret))
       case _                              => Some("<unknown>")
     }
   }
