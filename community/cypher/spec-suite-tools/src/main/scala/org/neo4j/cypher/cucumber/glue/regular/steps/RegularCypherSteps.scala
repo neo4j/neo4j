@@ -345,14 +345,19 @@ final class RegularCypherSteps @Inject() (
        >""".stripMargin('>') // | margins messes with the tables
   }
 
-  protected def describePlan(actual: QueryExecution): String = Try {
-    Using.resource(db.database.beginTx()) { tx =>
-      tx.execute("EXPLAIN\n" + actual.query, parameters.asJava).getExecutionPlanDescription.toString
+  protected def describePlan(actual: QueryExecution): String =
+    if (conf.useComposite) {
+      "(plan description omitted: EXPLAIN does not route through the composite database)"
+    } else {
+      Try {
+        Using.resource(db.database.beginTx()) { tx =>
+          tx.execute("EXPLAIN\n" + actual.query, parameters.asJava).getExecutionPlanDescription.toString
+        }
+      } match {
+        case Success(planDesc) => planDesc
+        case Failure(error)    => s"Failed to produce plan: " + error
+      }
     }
-  } match {
-    case Success(planDesc) => planDesc
-    case Failure(error)    => s"Failed to produce plan: " + error
-  }
 
   private def assertEqualHeaders(actual: QueryResults, expected: DataTable, approximate: Boolean): Unit = {
     val actualHeaders = actual.results.headers

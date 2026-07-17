@@ -31,7 +31,6 @@ import org.neo4j.cypher.cucumber.synthesise.glue.scenario.Execute
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.ExecuteControl
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.ExecuteControlInOpenTx
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.ExecuteInOpenTx
-import org.neo4j.cypher.cucumber.synthesise.glue.scenario.ExpectError
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.HavingExecuted
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.HavingExecutedInOpenTx
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.QueryExecution
@@ -59,8 +58,8 @@ import scala.util.Try
  * constituent and therefore exercises the fabric planner/fragmenter/stitcher and the remote-fragment execution
  * path. See [[CompositeExecutorPool]] for the composite topology this relies on.
  *
- * Phase 1 is intentionally conservative: only read-only tests, without expected errors, and without queries
- * that already select a graph. Notification assertions are dropped from the generated scenario. Gated by
+ * Read, updating, and expected-error scenarios are all wrapped; queries that already select a graph are excluded.
+ * Notification assertions are dropped from the generated scenario. Gated by
  * `@fails:composite` / `@ignore:composite` tags.
  */
 class CompositeWrap(val args: CucumberSalad.Ingredients) extends ScenarioGenerator with ScenarioRenderer {
@@ -72,10 +71,14 @@ class CompositeWrap(val args: CucumberSalad.Ingredients) extends ScenarioGenerat
   private val includeMuted: Boolean = java.lang.Boolean.getBoolean("cypher.synthesise.composite.include_muted")
   private val MuteTag = "@fails:composite"
 
-  // EXPLAIN / PROFILE must remain the leading token, so the USE clause has to be injected after them.
+  // A leading `CYPHER <version> [options]` preparser directive and EXPLAIN / PROFILE must stay ahead of the injected
+  // USE clause. Peel them off, wrap the remainder, and re-prepend -- otherwise the version prefix is lost and the
+  // query runs under the wrong language (e.g. a `CYPHER 5`-only error scenario silently succeeds under Cypher 25).
+  private val leadingCypherOptions = "(?is)^(\\s*CYPHER\\s+(?:\\d+\\b\\s*)?(?:[a-zA-Z_.]+\\s*=\\s*\\S+\\s*)*)(.*)$".r
   private val leadingExplainOrProfile = "(?is)^(\\s*(?:explain|profile)\\b\\s*)(.*)$".r
 
   private def wrap(cypher: String): String = cypher match {
+    case leadingCypherOptions(prefix, rest)     => prefix + wrap(rest)
     case leadingExplainOrProfile(keyword, rest) => keyword + wrapStatement(rest)
     case _                                      => wrapStatement(cypher)
   }
@@ -93,10 +96,9 @@ class CompositeWrap(val args: CucumberSalad.Ingredients) extends ScenarioGenerat
   override def filter: Filter = {
     compatibilityBase
       .scenario(s => Try(Filter.steps[QueryExecution](s).foreach(e => args.parser.parse(e.cypher))).isSuccess)
-      .steps[ExpectError](_.isEmpty)
       .steps[AssertApproxResults](_.isEmpty)
       .steps[AssertResults](_.forall(r => !r.assertion.isInstanceOf[Result.ParallelOverride]))
-      .testsReadQueries
+      .testQueries(qs => qs.nonEmpty && qs.forall(isNotCommand))
       .setupQueries(_.forall(q => isNotCommand(q) && isSingleGraphWrappable(q)))
       .testQueries(_.forall(isSingleGraphWrappable))
   }
