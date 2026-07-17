@@ -647,21 +647,22 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      *
      * @param updates {@link IndexEntryUpdate updates} to apply.
      * @throws UncheckedIOException potentially thrown from index updating.
-     * @throws KernelException potentially thrown from index updating.
+     * @throws KernelException      potentially thrown from index updating.
      */
     @Override
     public void applyUpdates(Iterator<IndexEntryUpdate> updates, CursorContext cursorContext, boolean parallel)
             throws KernelException {
-        if (state == State.NOT_STARTED) {
-            // We're in recovery, which means we'll be telling indexes to apply with additional care for making
-            // idempotent changes.
-            apply(updates, IndexUpdateMode.RECOVERY, cursorContext, parallel);
-        } else if (state == State.RUNNING || state == State.STARTING) {
-            apply(updates, IndexUpdateMode.ONLINE, cursorContext, parallel);
-        } else {
-            throw new IllegalStateException(
-                    "Can't apply index updates " + Iterators.asList(updates) + " while indexing service is " + state);
-        }
+        apply(updates, getIndexUpdateMode(state, updates), cursorContext, parallel);
+    }
+
+    private static IndexUpdateMode getIndexUpdateMode(State currentState, Iterator<IndexEntryUpdate> updates) {
+        return switch (currentState) {
+            case NOT_STARTED -> IndexUpdateMode.RECOVERY;
+            case RUNNING, STARTING -> IndexUpdateMode.ONLINE;
+            default ->
+                throw new IllegalStateException("Can't apply index updates " + Iterators.asList(updates)
+                        + " while indexing service is " + currentState);
+        };
     }
 
     private void apply(

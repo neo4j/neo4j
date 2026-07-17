@@ -37,6 +37,7 @@ import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.index.internal.gbptree.DataTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -46,6 +47,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.async.AsyncBlockAccessor;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -68,6 +70,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     private final NativeIndexHeaderWriter headerWriter;
     protected final LogProvider logProvider;
     protected final TokenNameLookup tokenNameLookup;
+    private final int extraWriterParallelFlags;
 
     NativeIndexAccessor(
             DatabaseIndexContext databaseIndexContext,
@@ -80,12 +83,14 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
             TokenNameLookup tokenNameLookup) {
         super(databaseIndexContext, layout, indexFiles, descriptor, openOptions, readOnly);
         this.tokenNameLookup = tokenNameLookup;
-        singleUpdater = new NativeIndexUpdater<>(
+        this.singleUpdater = new NativeIndexUpdater<>(
                 layout.newKey(),
                 indexUpdateIgnoreStrategy(),
                 new ThrowingConflictDetector<>(true, descriptor.schema(), tokenNameLookup));
-        headerWriter = new NativeIndexHeaderWriter(BYTE_ONLINE);
+        this.headerWriter = new NativeIndexHeaderWriter(BYTE_ONLINE);
         this.logProvider = logProvider;
+        this.extraWriterParallelFlags =
+                openOptions.contains(PageCacheOpenOptions.MULTI_VERSIONED) ? DataTree.W_ESCALATING_COORDINATION : 0;
     }
 
     @Override
@@ -108,7 +113,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
                                         !descriptor.isUnique() || mode.includeEntityIdInUniqueness(),
                                         descriptor.schema(),
                                         tokenNameLookup))
-                        .initialize(tree.writer(cursorContext));
+                        .initialize(tree.writer(extraWriterParallelFlags, cursorContext));
             } else {
                 assert mode.includeEntityIdInUniqueness();
                 return singleUpdater.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
