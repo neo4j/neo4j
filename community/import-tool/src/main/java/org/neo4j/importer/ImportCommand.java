@@ -754,6 +754,13 @@ public class ImportCommand {
                 throw new ParameterException(
                         spec.commandLine(), "Delimiter must be a single byte character (In UTF-8)");
             }
+
+            if ("block".equals(resolvedDbFormat) && highIo != OnOffAuto.AUTO) {
+                throw new CommandFailedException(
+                        "ERROR: '--high-parallel-io=%s' is not supported for the 'block' format."
+                                .formatted(highIo.name().toLowerCase(Locale.ROOT)));
+            }
+
             if (isSkidbladnir()) {
                 if (autoSkipHeaders) {
                     throw new ParameterException(
