@@ -278,6 +278,29 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes, RawBytes
                 .isTrue();
     }
 
+    @Test
+    void totalSpaceOfKeyChildAtShouldMatchForOffloadedKeys() throws IOException {
+        initializeInternal();
+        long stable = 3;
+        long unstable = 4;
+        internal.setChildAt(cursor, 10, 0, stable, unstable);
+        var inlinedKey = new RawBytes(new byte[] {1, 2, 3});
+        internal.insertKeyAndRightChildAt(cursor, inlinedKey, 11, 0, 0, stable, unstable, NULL_CONTEXT);
+        TreeNodeUtil.setKeyCount(cursor, 1);
+        var offloadedKey = new RawBytes(new byte[DynamicSizeUtil.inlineKeyValueSizeCapInternalNode(PAGE_SIZE) + 1]);
+        internal.insertKeyAndRightChildAt(cursor, offloadedKey, 12, 1, 1, stable, unstable, NULL_CONTEXT);
+        TreeNodeUtil.setKeyCount(cursor, 2);
+        assertThat(internal.offloadIdAt(cursor, 0)).isEqualTo(NO_OFFLOAD_ID);
+        assertThat(internal.offloadIdAt(cursor, 1)).isNotEqualTo(NO_OFFLOAD_ID);
+
+        var readKey = layout.newKey();
+        for (int pos = 0; pos < 2; pos++) {
+            assertEquals(
+                    internal.totalSpaceOfKeyChild(internal.keyAt(cursor, readKey, pos, NULL_CONTEXT)),
+                    internal.totalSpaceOfKeyChildAt(cursor, pos));
+        }
+    }
+
     private void verifyOverhead(
             LeafNodeBehaviour<RawBytes, RawBytes> leaf, int keySize, int valueSize, int expectedOverhead)
             throws IOException {

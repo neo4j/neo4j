@@ -231,6 +231,38 @@ class LongSpinLatchTest extends LatchTestBase {
         latch.releaseRead();
     }
 
+    @Test
+    void shouldPeekUpgradeabilityAsSoleReader() {
+        LongSpinLatch latch = latch();
+        latch.acquireRead();
+
+        assertTrue(latch.couldUpgradeToWrite());
+        latch.releaseRead();
+    }
+
+    @Test
+    void shouldPeekUpgradeabilityWithMultipleReaders() {
+        LongSpinLatch latch = latch();
+        latch.acquireRead();
+        latch.acquireRead();
+
+        assertFalse(latch.couldUpgradeToWrite());
+
+        latch.releaseRead();
+
+        assertTrue(latch.couldUpgradeToWrite());
+        latch.releaseRead();
+    }
+
+    @Test
+    void shouldPeekUpgradeabilityWithWriter() {
+        LongSpinLatch latch = latch();
+        latch.acquireWrite();
+
+        assertFalse(latch.couldUpgradeToWrite());
+        latch.releaseWrite();
+    }
+
     private LongSpinLatch latch() {
         return new LongSpinLatch(1, removeAction);
     }

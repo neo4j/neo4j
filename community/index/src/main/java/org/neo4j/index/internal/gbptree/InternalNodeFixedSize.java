@@ -208,6 +208,16 @@ final class InternalNodeFixedSize<KEY> implements InternalNodeBehaviour<KEY> {
     }
 
     @Override
+    public int totalSpaceOfKeyChildAt(PageCursor cursor, int pos) {
+        return keySize + SIZE_PAGE_REFERENCE;
+    }
+
+    @Override
+    public int maxEntrySizeBound(CursorCreator cursorCreator, long treeNodeId, int keyCount) {
+        return keySize + SIZE_PAGE_REFERENCE;
+    }
+
+    @Override
     public void defragment(PageCursor cursor, int keyCount) {
         // no-op
     }

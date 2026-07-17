@@ -73,6 +73,10 @@ public sealed interface InternalNodeBehaviour<KEY> extends SharedNodeBehaviour<K
 
     int totalSpaceOfKeyChild(KEY key);
 
+    int totalSpaceOfKeyChildAt(PageCursor cursor, int pos);
+
+    int maxEntrySizeBound(CursorCreator cursorCreator, long treeNodeId, int keyCount) throws IOException;
+
     void defragment(PageCursor cursor, int keyCount);
 
     void doSplit(

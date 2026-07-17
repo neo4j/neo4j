@@ -186,6 +186,16 @@ class LongSpinLatch {
     }
 
     /**
+     * Non-blocking advisory call, to be used by a thread currently holding a read lock on this latch.
+     * @return whether at this instant the caller is the sole reader and no writer holds the latch.
+     */
+    boolean couldUpgradeToWrite() {
+        long bits = getAcquireBits();
+        assertAlive(bits);
+        return (bits & LOCK_MASK) == 1;
+    }
+
+    /**
      * Blocking call.
      * Acquire a write latch.
      */

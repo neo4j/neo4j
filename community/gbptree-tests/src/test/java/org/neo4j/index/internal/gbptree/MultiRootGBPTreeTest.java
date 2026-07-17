@@ -62,6 +62,8 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -255,8 +257,9 @@ class MultiRootGBPTreeTest {
         race.goUnchecked();
     }
 
-    @Test
-    void shouldWriteToMultipleRootsInParallel() throws Exception {
+    @ParameterizedTest
+    @ValueSource(ints = {0, DataTree.W_ESCALATING_COORDINATION})
+    void shouldWriteToMultipleRootsInParallel(int writerFlags) throws Exception {
         // given
         var numRoots = random.nextInt(2, 50);
         var numThreads = random.nextInt(2, 16);
@@ -294,7 +297,7 @@ class MultiRootGBPTreeTest {
                     var numEntries = random.nextInt(1, 5);
                     writeTasks.add(() -> {
                         try (var writer = tree.access(rootKeyLayout.key(externalIds[rootIndex]))
-                                .writer(NULL_CONTEXT)) {
+                                .writer(writerFlags, NULL_CONTEXT)) {
                             for (var e = 0; e < numEntries; e++) {
                                 var entrySeed = externalIds[rootIndex] + numWritten[rootIndex].getAndIncrement();
                                 writer.put(layout.key(entrySeed), layout.value(entrySeed));

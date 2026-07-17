@@ -281,6 +281,16 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             public void treeShrink() {
                 delegate.treeShrink();
             }
+
+            @Override
+            public void treeWriterEscalated(boolean deep) {
+                delegate.treeWriterEscalated(deep);
+            }
+
+            @Override
+            public void treeWriterFlippedToPessimistic() {
+                delegate.treeWriterFlippedToPessimistic();
+            }
         }
 
         /**
@@ -358,6 +368,17 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
          * Report tree shrink, when root becomes empty.
          */
         void treeShrink();
+
+        /**
+         * Report that an optimistic writer absorbed a leaf split at an ancestor by upgrading latches.
+         * deep is true when the absorption happened above the leaf's immediate parent.
+         */
+        default void treeWriterEscalated(boolean deep) {}
+
+        /**
+         * Report that an optimistic writer gave up and flipped to pessimistic mode for the current operation.
+         */
+        default void treeWriterFlippedToPessimistic() {}
     }
 
     /**

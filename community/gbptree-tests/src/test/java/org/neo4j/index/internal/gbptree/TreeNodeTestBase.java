@@ -352,6 +352,31 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     }
 
     @Test
+    void totalSpaceOfKeyChildAtShouldMatchMaterializedEntrySize() throws IOException {
+        initializeInternal();
+        long stable = 3;
+        long unstable = 4;
+        internal.setChildAt(cursor, 10, 0, stable, unstable);
+        int keyCount = 0;
+        for (long seed = 11; keyCount < 5; seed++) {
+            KEY key = key(seed);
+            if (internal.overflow(cursor, keyCount, key) != Overflow.NO) {
+                break;
+            }
+            internal.insertKeyAndRightChildAt(cursor, key, seed, keyCount, keyCount, stable, unstable, NULL_CONTEXT);
+            keyCount++;
+            TreeNodeUtil.setKeyCount(cursor, keyCount);
+        }
+
+        KEY readKey = getLayout().newKey();
+        for (int pos = 0; pos < keyCount; pos++) {
+            assertEquals(
+                    internal.totalSpaceOfKeyChild(internal.keyAt(cursor, readKey, pos, NULL_CONTEXT)),
+                    internal.totalSpaceOfKeyChildAt(cursor, pos));
+        }
+    }
+
+    @Test
     void shouldSetAndGetKeyCount() {
         // GIVEN
         initializeLeaf();

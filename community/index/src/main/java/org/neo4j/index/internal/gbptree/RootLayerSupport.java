@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
-import static org.neo4j.index.internal.gbptree.LatchCrabbingCoordination.DEFAULT_RESET_FREQUENCY;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
@@ -231,13 +230,38 @@ class RootLayerSupport {
             int flags,
             byte layerType)
             throws IOException {
-        boolean parallel = (flags & DataTree.W_BATCHED_SINGLE_THREADED) == 0;
-        TreeWriterCoordination traversalMonitor = parallel
-                ? new LatchCrabbingCoordination(latchService, leafNode.underflowThreshold(), DEFAULT_RESET_FREQUENCY)
-                : TreeWriterCoordination.NO_COORDINATION;
-        GBPTreeWriter<K, V> writer =
-                newWriter(layout, rootChangeMonitor, leafNode, internalNode, traversalMonitor, parallel, layerType);
+        boolean singleThreaded = (flags & DataTree.W_BATCHED_SINGLE_THREADED) != 0;
+        boolean escalating = (flags & DataTree.W_ESCALATING_COORDINATION) != 0;
+        var traversalMonitor = selectCoordination(leafNode, internalNode, singleThreaded, escalating);
+        var writer = newWriter(
+                layout,
+                rootChangeMonitor,
+                leafNode,
+                internalNode,
+                traversalMonitor,
+                !singleThreaded || escalating,
+                layerType);
         return initializeWriter(writer, flags, cursorContext);
+    }
+
+    private <K, V> TreeWriterCoordination selectCoordination(
+            LeafNodeBehaviour<K, V> leafNode,
+            InternalNodeBehaviour<K> internalNode,
+            boolean singleThreaded,
+            boolean escalating) {
+        if (singleThreaded) {
+            return TreeWriterCoordination.NO_COORDINATION;
+        }
+        if (escalating) {
+            return new EscalatingLatchCrabbingCoordination(
+                    latchService,
+                    internalNode::maxEntrySizeBound,
+                    leafNode.underflowThreshold(),
+                    LatchCrabbingCoordination.DEFAULT_RESET_FREQUENCY,
+                    monitor);
+        }
+        return new LatchCrabbingCoordination(
+                latchService, leafNode.underflowThreshold(), LatchCrabbingCoordination.DEFAULT_RESET_FREQUENCY);
     }
 
     <K, V> GBPTreeWriter<K, V> newWriter(

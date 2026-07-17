@@ -29,9 +29,10 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * variant which always has a single {@link DataTree}.
  */
 public interface DataTree<KEY, VALUE> extends Seeker.Factory<KEY, VALUE> {
-    int W_BATCHED_SINGLE_THREADED = 0x1;
-    int W_SPLIT_KEEP_ALL_LEFT = 0x2;
-    int W_SPLIT_KEEP_ALL_RIGHT = 0x4;
+    int W_BATCHED_SINGLE_THREADED = 0b0001;
+    int W_SPLIT_KEEP_ALL_LEFT = 0b0010;
+    int W_SPLIT_KEEP_ALL_RIGHT = 0b0100;
+    int W_ESCALATING_COORDINATION = 0b1000;
 
     /**
      * Defaults to parallel writer, i.e. no special flags set.
