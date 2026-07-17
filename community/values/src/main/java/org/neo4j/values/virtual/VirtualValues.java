@@ -188,6 +188,21 @@ public final class VirtualValues {
 
     public static PathReference pathReference(
             List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships) {
+        checkPathReferenceInput(nodes, relationships);
+        return PathReference.path(nodes, relationships);
+    }
+
+    /**
+     * @param elementsHeapSize the combined {@link AnyValue#estimatedHeapUsage()} of the given nodes and relationships
+     */
+    public static PathReference pathReference(
+            List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships, long elementsHeapSize) {
+        checkPathReferenceInput(nodes, relationships);
+        return PathReference.path(nodes, relationships, elementsHeapSize);
+    }
+
+    private static void checkPathReferenceInput(
+            List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships) {
         assert nodes != null;
         assert relationships != null;
         if ((nodes.size() + relationships.size()) % 2 == 0) {
@@ -199,8 +214,6 @@ public final class VirtualValues {
         // This is to catch if we have a use case where the relationship list does not support random access,
         // because then we may need to optimize PathReferenceReferences.
         assert relationships instanceof RandomAccess;
-
-        return PathReference.path(nodes, relationships);
     }
 
     public static PathValue path(NodeValue[] nodes, RelationshipValue[] relationships) {

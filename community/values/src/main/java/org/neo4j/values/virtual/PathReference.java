@@ -20,8 +20,11 @@
 package org.neo4j.values.virtual;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -37,6 +40,14 @@ public abstract class PathReference extends VirtualPathValue {
 
     public static PathReference path(List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships) {
         return new PathReferenceReferences(nodes, relationships);
+    }
+
+    /**
+     * @param elementsHeapSize the combined {@link AnyValue#estimatedHeapUsage()} of the given nodes and relationships
+     */
+    public static PathReference path(
+            List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships, long elementsHeapSize) {
+        return new PathReferenceReferences(nodes, relationships, elementsHeapSize);
     }
 
     @Override
@@ -55,7 +66,7 @@ public abstract class PathReference extends VirtualPathValue {
 
         @Override
         public long estimatedHeapUsage() {
-            return SHALLOW_SIZE;
+            return SHALLOW_SIZE + sizeOf(nodes) + sizeOf(relationships);
         }
 
         @Override
@@ -181,19 +192,44 @@ public abstract class PathReference extends VirtualPathValue {
     }
 
     private static class PathReferenceReferences extends PathReference {
-        private static final long SHALLOW_SIZE = shallowSizeOfInstance(PathReferencePrimitive.class);
+        private static final long SHALLOW_SIZE = shallowSizeOfInstance(PathReferenceReferences.class);
+        private static final long ARRAY_LIST_SHALLOW_SIZE = shallowSizeOfInstance(ArrayList.class);
 
         private final List<VirtualNodeValue> nodes;
         private final List<VirtualRelationshipValue> relationships;
+        private final long payloadSize;
 
         PathReferenceReferences(List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships) {
+            this(nodes, relationships, elementsHeapSize(nodes, relationships));
+        }
+
+        PathReferenceReferences(
+                List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships, long elementsHeapSize) {
             this.nodes = nodes;
             this.relationships = relationships;
+            // The concrete list implementations are not known, so they are estimated
+            // as ArrayLists backed by exactly sized object arrays.
+            this.payloadSize = elementsHeapSize
+                    + 2 * ARRAY_LIST_SHALLOW_SIZE
+                    + shallowSizeOfObjectArray(nodes.size())
+                    + shallowSizeOfObjectArray(relationships.size());
+        }
+
+        private static long elementsHeapSize(
+                List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships) {
+            long heapSize = 0;
+            for (VirtualNodeValue node : nodes) {
+                heapSize += node.estimatedHeapUsage();
+            }
+            for (VirtualRelationshipValue relationship : relationships) {
+                heapSize += relationship.estimatedHeapUsage();
+            }
+            return heapSize;
         }
 
         @Override
         public long estimatedHeapUsage() {
-            return SHALLOW_SIZE;
+            return SHALLOW_SIZE + payloadSize;
         }
 
         @Override

@@ -21,6 +21,7 @@ package org.neo4j.cypher.operations;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -99,6 +100,26 @@ class PathValueBuilderTest {
 
         // Then
         assertThat(builder.build()).isEqualTo(path(n1, r1, n2, r2, n3));
+    }
+
+    @Test
+    void shouldEstimateSameHeapUsageAsEquivalentComputedPath() {
+        // Given  (n1)<--(n2)-->(n3)
+        VirtualNodeValue n1 = node(42);
+        VirtualNodeValue n2 = node(43);
+        VirtualNodeValue n3 = node(44);
+        VirtualRelationshipValue r1 = relationship(1337, n2, n1);
+        VirtualRelationshipValue r2 = relationship(1338, n2, n3);
+        PathValueBuilder builder = builder(n1, n2, n3, r1, r2);
+
+        // When (n1)<--(n2)--(n3)
+        builder.addNode(n1);
+        builder.addIncoming(r1);
+        builder.addUndirected(r2);
+
+        // Then
+        PathReference built = (PathReference) builder.build();
+        assertEquals(path(n1, r1, n2, r2, n3).estimatedHeapUsage(), built.estimatedHeapUsage());
     }
 
     @Test

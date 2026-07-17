@@ -51,6 +51,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
     private final DbAccess dbAccess;
     private final RelationshipScanCursor cursor;
     private boolean seenNoValue;
+    private long payloadSize;
 
     public PathValueBuilder(DbAccess dbAccess, RelationshipScanCursor cursor) {
         this.dbAccess = dbAccess;
@@ -67,7 +68,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
             throw new IllegalStateException("This PathValueBuilder has already been used and reuse is not allowed.");
         }
         hasBeenBuilt = true;
-        return seenNoValue ? NO_VALUE : pathReference(nodes, rels);
+        return seenNoValue ? NO_VALUE : pathReference(nodes, rels, payloadSize);
     }
 
     /**
@@ -135,6 +136,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
 
     @CalledFromGeneratedCode
     public void addRelationship(VirtualRelationshipValue value) {
+        payloadSize += value.estimatedHeapUsage();
         rels.add(value);
     }
 
@@ -145,6 +147,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
      */
     @CalledFromGeneratedCode
     public void addNode(VirtualNodeValue nodeValue) {
+        payloadSize += nodeValue.estimatedHeapUsage();
         nodes.add(nodeValue);
     }
 
@@ -167,8 +170,8 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
      */
     @CalledFromGeneratedCode
     public void addIncoming(VirtualRelationshipValue relationship) {
-        nodes.add(VirtualValues.node(relationship.startNodeId(this)));
-        rels.add(relationship);
+        addNode(VirtualValues.node(relationship.startNodeId(this)));
+        addRelationship(relationship);
     }
 
     /**
@@ -190,13 +193,13 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
      */
     @CalledFromGeneratedCode
     public void addOutgoing(VirtualRelationshipValue relationship) {
-        nodes.add(VirtualValues.node(relationship.endNodeId(this)));
-        rels.add(relationship);
+        addNode(VirtualValues.node(relationship.endNodeId(this)));
+        addRelationship(relationship);
     }
 
     private void add(VirtualRelationshipValue relationship, VirtualNodeValue nextNode) {
-        rels.add(relationship);
-        nodes.add(nextNode);
+        addRelationship(relationship);
+        addNode(nextNode);
     }
 
     /**
@@ -259,8 +262,8 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
         relationships.forEach(r -> {
             if (r == last) {
                 if (notNoValue(last)) {
-                    nodes.add(target);
-                    rels.add(((VirtualRelationshipValue) last));
+                    addNode(target);
+                    addRelationship(((VirtualRelationshipValue) last));
                 }
             } else {
                 addIncoming(r);
@@ -326,8 +329,8 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
         relationships.forEach(r -> {
             if (r == last) {
                 if (notNoValue(last)) {
-                    rels.add(((VirtualRelationshipValue) last));
-                    nodes.add(target);
+                    addRelationship(((VirtualRelationshipValue) last));
+                    addNode(target);
                 }
             } else {
                 addOutgoing(r);
@@ -393,8 +396,8 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
         relationships.forEach(r -> {
             if (r == last) {
                 if (notNoValue(last)) {
-                    rels.add(((VirtualRelationshipValue) last));
-                    nodes.add(target);
+                    addRelationship(((VirtualRelationshipValue) last));
+                    addNode(target);
                 }
             } else {
                 addUndirected(r);
