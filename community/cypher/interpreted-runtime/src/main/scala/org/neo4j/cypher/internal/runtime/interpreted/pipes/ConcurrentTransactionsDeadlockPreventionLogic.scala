@@ -23,8 +23,9 @@ import org.neo4j.collection.trackable.HeapTrackingObjectLongHashMap
 import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.debug.DebugSupport
+import org.neo4j.cypher.internal.runtime.debug.events.Debug
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.debug.events.BatchFormation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConcurrentTransactionsDeadlockPreventionLogic.BatchState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DependencyTrackingTransactionBatch.WAIT_MARKER_BATCH
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionRetryLogic.RetryState
@@ -277,9 +278,7 @@ private[pipes] class DependencyTrackingTransactionBatch(
       },
       s"${getClass.getSimpleName}: Illegal state transition from $state to $newState"
     )
-    if (DebugSupport.DEBUG_BATCH_FORMATION) {
-      DebugSupport.BATCH_FORMATION.log("State changed to %s on batch %s", newState, this)
-    }
+    Debug.log(BatchFormation.StateChanged(newState, this.toString))
     state = newState
   }
 
@@ -379,9 +378,7 @@ private[pipes] class DeadlockPreventingBatchIterator(
           // free up dependencies or free up batch slots.
           // We signal this by returning WAIT_MARKER_BATCH
           nextReadyBatch = WAIT_MARKER_BATCH
-          if (DebugSupport.DEBUG_BATCH_FORMATION) {
-            DebugSupport.BATCH_FORMATION.log("%s: waiting for in-flight batches to complete", this)
-          }
+          Debug.log(BatchFormation.WaitingForInFlight(this.toString))
         } else if (hasBatchesInFormation) {
           throw new IllegalStateException(
             s"No ready batches and no in-flight batches, but $batchesInFormationCount batches still in formation"
@@ -485,9 +482,7 @@ private[pipes] class DeadlockPreventingBatchIterator(
       } else {
         // We have no more input rows
         sourceExhausted = true
-        if (DebugSupport.DEBUG_BATCH_FORMATION) {
-          DebugSupport.BATCH_FORMATION.log("%s: source exhausted!", this)
-        }
+        Debug.log(BatchFormation.SourceExhausted(this.toString))
         // Force-select an executable batch even though it may not be filled yet
         readyBatch = findNextReadyBatch(force = true)
       }

@@ -28,6 +28,11 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>com.lihaoyi</groupId>
+      <artifactId>sourcecode_${scala.binary.version}</artifactId>
+    </dependency>
+
     <!-- other -->
 
     <dependency>

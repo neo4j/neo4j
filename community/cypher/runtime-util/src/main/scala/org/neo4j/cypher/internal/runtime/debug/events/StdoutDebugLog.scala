@@ -17,14 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.debug
+package org.neo4j.cypher.internal.runtime.debug.events
 
-import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
+import org.neo4j.cypher.internal.runtime.debug.events.Debug.LogContext
 
-class DebugSupportTest extends RuntimeUtilTestSuite {
+/**
+ * Default [[DebugLog]] implementation — writes lines to stdout.
+ */
+final class StdoutDebugLog(
+  renderer: DebugEventRenderer = DebugEventRenderer.loaded
+) extends DebugLog {
 
-  test("I think you forgot to disable DebugSupport after debugging...") {
-    DebugSupport.DEBUG_GENERATED_SOURCE_CODE shouldBe false
-    DebugSupport.DEBUG_GENERATED_IR_CODE shouldBe false
+  override def log(event: DebugEvent, context: LogContext): Unit = {
+    // Not using println because that is synchronized and can hide parallel problems.
+    print(renderer.render(event, context) + "\n")
   }
+}
+
+object StdoutDebugLog {
+  val default: StdoutDebugLog = new StdoutDebugLog()
 }

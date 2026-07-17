@@ -26,10 +26,11 @@ import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.App
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ArgumentSizes
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.LiveVariables
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
+import org.neo4j.cypher.internal.physicalplanning.debug.events.PhysicalPlanning
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.ParameterMapping
-import org.neo4j.cypher.internal.runtime.debug.DebugSupport
+import org.neo4j.cypher.internal.runtime.debug.events.Debug
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableExpressionVariables
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
@@ -50,10 +51,7 @@ object PhysicalPlanner {
     cancellationChecker: CancellationChecker,
     allocatePipelinedSlots: Boolean = false
   ): PhysicalPlan = {
-    DebugSupport.PHYSICAL_PLANNING.log(
-      "======== BEGIN Physical Planning with %-31s ===========================",
-      breakingPolicy.getClass.getSimpleName
-    )
+    Debug.log(PhysicalPlanning.Begin(breakingPolicy.getClass.getSimpleName))
     val Result(logicalPlan, nExpressionSlots, availableExpressionVars) =
       expressionVariableAllocation.allocate(beforeRewrite)
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)
@@ -73,9 +71,7 @@ object PhysicalPlanner {
     )
     val finalLogicalPlan = new SlottedRewriter(tokenContext)
       .apply(withSlottedParameters, slotMetaData.slotConfigurations, slotMetaData.trailPlans, slotMetaData.acyclicPlans)
-    DebugSupport.PHYSICAL_PLANNING.log(
-      "======== END Physical Planning =================================================================="
-    )
+    Debug.log(PhysicalPlanning.End)
     PhysicalPlan(
       finalLogicalPlan,
       nExpressionSlots,

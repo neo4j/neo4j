@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.runtime.InputDataStreamTestSupport
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.TestSubscriber
-import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.runtime.spec.Edition.SpdConfig
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport.WorkloadMode
 import org.neo4j.cypher.internal.runtime.spec.execution.RuntimeTestSupportExecution
@@ -522,7 +521,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](
 ) extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode, testPlanCombinationRewriterHints) {
 
   override protected def beforeEach(): Unit = {
-    DebugSupport.TIMELINE.beginTime()
     restartDB()
     createRuntimeTestSupport()
     super.beforeEach()
@@ -531,7 +529,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](
   override protected def afterEach(): Unit = {
     try {
       closeRuntimeTestSupport()
-      DebugSupport.TIMELINE.log("")
     } finally {
       try {
         shutdownDatabase()
@@ -562,7 +559,6 @@ abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](
 
   override protected def beforeEach(): Unit = {
     if (shouldSetup) {
-      DebugSupport.TIMELINE.beginTime()
       createRuntimeTestSupport()
     }
     super.beforeEach()
@@ -571,7 +567,6 @@ abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](
   override protected def afterEach(): Unit = {
     if (shouldSetup) {
       closeRuntimeTestSupport()
-      DebugSupport.TIMELINE.log("")
     }
     super.afterEach()
   }

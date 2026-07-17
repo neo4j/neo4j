@@ -26,8 +26,11 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.PrefetchingIterator
-import org.neo4j.cypher.internal.runtime.debug.DebugSupport
+import org.neo4j.cypher.internal.runtime.debug.events.Debug
+import org.neo4j.cypher.internal.runtime.debug.events.DebugCategory
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.debug.events.ConcurrentTransactions
+import org.neo4j.cypher.internal.runtime.interpreted.debug.events.ConcurrentTransactionsWorker
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.createRetryLogic
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.evaluateBatchSize
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.evaluateConcurrency
@@ -147,16 +150,15 @@ abstract class AbstractConcurrentTransactionsPipe(
     }
 
     final override def produceNext(): Option[CypherRow] = {
-      logMessageWithVerboseStatus("-- PRODUCE NEXT --")
+      Debug.log(ConcurrentTransactions.ProduceNext(this.toString))
+      logVerboseStatus()
 
       maybeEnqueueTasks()
       doWhile {
         if (!hasAvailableOutputRow) {
           // TODO: Maybe remove the separate awaitPendingRetries method and just enter this if to call pollOutputQueue
           if (pendingTaskCount > 0) {
-            if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
-              logMessage(s"Waiting on output queue pendingTaskCount=$pendingTaskCount")
-            }
+            Debug.log(ConcurrentTransactions.WaitingOnOutputQueue(this.toString, pendingTaskCount))
             val taskResult = pollOutputQueue() // NOTE: blocking operation!
             if (taskResult != null) {
               pendingTaskCount -= 1
@@ -173,13 +175,13 @@ abstract class AbstractConcurrentTransactionsPipe(
               currentOutputIterator = taskResult.outputIterator
             }
           } else if (!awaitPendingRetries() && !hasAvailableInput) {
-            logMessage("No more rows to prefetch. Iterator will finish on next call to .next")
+            Debug.log(ConcurrentTransactions.NoMoreRowsToPrefetch(this.toString))
             return None
           }
           maybeEnqueueTasks()
         }
       }(!hasAvailableOutputRow)
-      logMessage("Outputting row")
+      Debug.log(ConcurrentTransactions.OutputtingRow(this.toString))
       Some(currentOutputIterator.next())
     }
 
@@ -205,12 +207,7 @@ abstract class AbstractConcurrentTransactionsPipe(
       while (pendingTaskCount > 0) {
         val taskOutputResult = outputQueue.take()
         val newError = taskOutputResult.nonRecoverableError
-        if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
-          DebugSupport.CONCURRENT_TRANSACTIONS.log(
-            "Drained %s",
-            if (newError != null) newError else "<committed>"
-          )
-        }
+        Debug.log(ConcurrentTransactions.Drained((if (newError != null) newError else "<committed>").toString))
         if (error != null && newError != null && newError != error && shouldReportError(newError)) {
           error.addSuppressed(newError)
         }
@@ -238,7 +235,7 @@ abstract class AbstractConcurrentTransactionsPipe(
           if (!batch.isMarker) {
             inputQueue.add(batch)
             addedToQueue = true
-            logMessage("Queued an input batch")
+            Debug.log(ConcurrentTransactions.QueuedAnInputBatch(this.toString))
           }
         }
       }
@@ -265,7 +262,7 @@ abstract class AbstractConcurrentTransactionsPipe(
             if (input != null && !input.isMarker) {
               executeTask(input)
               pendingTaskCount += 1
-              logMessage("Created new task")
+              Debug.log(ConcurrentTransactions.CreatedNewTask(this.toString))
               return true
             }
             activeTaskCount.getAndDecrement()
@@ -308,39 +305,28 @@ abstract class AbstractConcurrentTransactionsPipe(
       currentOutputIterator != null && currentOutputIterator.hasNext
     }
 
-    protected def logMessage(message: String, verbose: Boolean = false): Unit = {
-      if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
-        def doLogMessage(message: String): Unit =
-          DebugSupport.CONCURRENT_TRANSACTIONS.log(String.format("[%s] %s", this, message))
-
-        doLogMessage(message)
-
-        if (verbose) {
-          if (hasAvailableInput) {
-            if (input.hasNext) {
-              doLogMessage("Pending input is a NEW BATCH")
-            } else if (!inputQueue.isEmpty) {
-              doLogMessage("Pending input is a QUEUED BATCH")
-            }
-          } else {
-            doLogMessage("Pending input NOT AVAILABLE")
+    private inline def logVerboseStatus(): Unit = {
+      Debug.ifEnabled[DebugCategory.ConcurrentTransactions] {
+        if (hasAvailableInput) {
+          if (input.hasNext) {
+            Debug.log(ConcurrentTransactions.PendingInputNewBatch(this.toString))
+          } else if (!inputQueue.isEmpty) {
+            Debug.log(ConcurrentTransactions.PendingInputQueuedBatch(this.toString))
           }
-
-          if (hasPendingOutput) {
-            if (currentOutputIterator != null && currentOutputIterator.hasNext) {
-              doLogMessage("Pending output is READY")
-            }
-          } else {
-            doLogMessage("Pending output NOT AVAILABLE")
-          }
-
-          doLogMessage(s"Have $pendingTaskCount pending tasks")
+        } else {
+          Debug.log(ConcurrentTransactions.PendingInputNotAvailable(this.toString))
         }
-      }
-    }
 
-    private def logMessageWithVerboseStatus(message: String): Unit = {
-      logMessage(message, verbose = true)
+        if (hasPendingOutput) {
+          if (currentOutputIterator != null && currentOutputIterator.hasNext) {
+            Debug.log(ConcurrentTransactions.PendingOutputReady(this.toString))
+          }
+        } else {
+          Debug.log(ConcurrentTransactions.PendingOutputNotAvailable(this.toString))
+        }
+
+        Debug.log(ConcurrentTransactions.HavePendingTasks(this.toString, pendingTaskCount))
+      }
     }
 
     override def toString: String = {
@@ -408,9 +394,7 @@ abstract class AbstractConcurrentTransactionsPipe(
       if (retryBatch != null) {
         val delay = retryBatch.nanosUntilRetry()
         if (delay > 0L) {
-          if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
-            logMessage(s"Waiting on retry queue: delay=$delay")
-          }
+          Debug.log(ConcurrentTransactions.WaitingOnRetryQueue(this.toString, delay))
           LockSupport.parkNanos(delay)
           return true
         }
@@ -427,9 +411,7 @@ abstract class AbstractConcurrentTransactionsPipe(
         // NOTE: Even if the delay is 0 we can poll the output queue here since we are going to make sure that
         //       we have saturated active tasks before we return the next output row.
         val taskResult = {
-          if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
-            logMessage(s"Timed waiting on output queue: delay=$delay")
-          }
+          Debug.log(ConcurrentTransactions.TimedWaitingOnOutputQueue(this.toString, delay))
           // TODO: Make sure we respect outer transaction termination/timeout!
           outputQueue.poll(delay, java.util.concurrent.TimeUnit.NANOSECONDS) // NOTE: blocking operation!
         }
@@ -440,9 +422,7 @@ abstract class AbstractConcurrentTransactionsPipe(
     }
 
     override protected def processTaskResult(taskResult: TaskOutputResult): Unit = {
-      if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
-        logMessage(s"Processing task result $taskResult")
-      }
+      Debug.log(ConcurrentTransactions.ProcessingTaskResult(this.toString, taskResult.toString))
       if (taskResult.retryBatch != null) {
         val batch = taskResult.retryBatch
         require(taskResult.completedBatch == null)
@@ -452,7 +432,7 @@ abstract class AbstractConcurrentTransactionsPipe(
 
           case _ =>
             val retryableBatch = batch.computeNextRetryState(retryLogic)
-            logMessage("Adding batch to retry queue")
+            Debug.log(ConcurrentTransactions.AddingBatchToRetryQueue(this.toString))
             retryQueue.add(retryableBatch)
         }
       } else {
@@ -473,15 +453,10 @@ abstract class AbstractConcurrentTransactionsPipe(
       try {
         initializeMemoryTracker()
         outputResult = consumeBatch()
-        DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Done", this)
+        Debug.log(ConcurrentTransactionsWorker.Done(this.toString))
       } catch {
         case e: Throwable =>
-          DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log(
-            "[%s] %s\n%s",
-            this,
-            e.toString,
-            e.getStackTrace.mkString("\n")
-          )
+          Debug.log(ConcurrentTransactionsWorker.Exception(this.toString, e))
           outputResult = TaskOutputResult(NonRecoverableError, null, nonRecoverableError = e)
           throw e
       } finally {
@@ -542,9 +517,9 @@ abstract class AbstractConcurrentTransactionsPipe(
       ) {
 
     override protected def consumeBatch(): TaskOutputResult = {
-      DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Starting batch of %d rows", this, batch.rows.size)
+      Debug.log(ConcurrentTransactionsWorker.StartingBatch(this.toString, batch.rows.size))
       val innerResult: TransactionResult = innerPipe.createResults(state, batch, memoryTracker)
-      DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Have results", this)
+      Debug.log(ConcurrentTransactionsWorker.HaveResults(this.toString))
 
       val retryDecision = innerResult.retryDecision
       val shouldRetry = RetryDecision.shouldRetry(retryDecision)
@@ -600,9 +575,9 @@ abstract class AbstractConcurrentTransactionsPipe(
       ) {
 
     override protected def consumeBatch(): TaskOutputResult = {
-      DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Starting batch of %d rows", this, batch.rows.size)
+      Debug.log(ConcurrentTransactionsWorker.StartingBatch(this.toString, batch.rows.size))
       val result = innerPipe.consume(state, batch)
-      DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Have results", this)
+      Debug.log(ConcurrentTransactionsWorker.HaveResults(this.toString))
 
       val retryDecision = result.retryDecision
       val shouldRetry = RetryDecision.shouldRetry(retryDecision)

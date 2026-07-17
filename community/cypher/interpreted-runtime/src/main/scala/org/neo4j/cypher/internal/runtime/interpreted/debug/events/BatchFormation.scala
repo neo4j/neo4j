@@ -17,14 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.debug
+package org.neo4j.cypher.internal.runtime.interpreted.debug.events
 
-import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
+import org.neo4j.cypher.internal.runtime.debug.events.DebugCategory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConcurrentTransactionsDeadlockPreventionLogic.BatchState
 
-class DebugSupportTest extends RuntimeUtilTestSuite {
+enum BatchFormation extends DebugCategory.BatchFormation {
 
-  test("I think you forgot to disable DebugSupport after debugging...") {
-    DebugSupport.DEBUG_GENERATED_SOURCE_CODE shouldBe false
-    DebugSupport.DEBUG_GENERATED_IR_CODE shouldBe false
-  }
+  case StateChanged(newState: BatchState, batch: String)
+
+  case WaitingForInFlight(owner: String)
+
+  case SourceExhausted(owner: String)
 }

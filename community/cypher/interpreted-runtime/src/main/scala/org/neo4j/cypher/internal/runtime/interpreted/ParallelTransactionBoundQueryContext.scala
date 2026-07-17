@@ -32,9 +32,10 @@ import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.WriteQueryContext
-import org.neo4j.cypher.internal.runtime.debug.DebugSupport
+import org.neo4j.cypher.internal.runtime.debug.events.Debug
 import org.neo4j.cypher.internal.runtime.interpreted.ParallelTransactionBoundQueryContext.UnsupportedWriteQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.runtime.interpreted.debug.events.TransactionalContext
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.internal.kernel.api.MutatingEntityCursor
@@ -61,13 +62,7 @@ sealed class ParallelTransactionBoundQueryContext(
     with UnsupportedWriteQueryContext {
 
   override def close(): Unit = {
-    if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
-      DebugSupport.TRANSACTIONAL_CONTEXT.log(
-        "%s.close() thread=%s",
-        this.getClass.getSimpleName,
-        Thread.currentThread().getName
-      )
-    }
+    Debug.log(TransactionalContext.Close)
     try {
       super.close()
       resources.close()

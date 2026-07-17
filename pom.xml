@@ -1959,6 +1959,8 @@
                 <ignoredUnusedDeclaredDependency>org.scala-lang:scala-reflect</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>io.github.json4s:json4s-native_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-macros-scala3</ignoredUnusedDeclaredDependency>
+                <!-- Referenced only from inline-method bodies (Tasty), invisible to bytecode analysis. -->
+                <ignoredUnusedDeclaredDependency>com.lihaoyi:sourcecode_${scala.binary.version}</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
               <ignoredUsedUndeclaredDependencies>
                 <ignoredUsedUndeclaredDependency>org.apiguardian:apiguardian-api</ignoredUsedUndeclaredDependency>
