@@ -229,15 +229,6 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
     }
 
     @Override
-    public boolean beforeAccessingRightSiblingLeaf(long siblingNodeId) {
-        if (pessimistic) {
-            return true;
-        }
-        inc(Stat.FAIL_NEED_UPDATE_SIBLING_LEAF);
-        return false;
-    }
-
-    @Override
     public boolean pessimistic() {
         return pessimistic;
     }

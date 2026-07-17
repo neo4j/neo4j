@@ -286,7 +286,6 @@ class EscalatingLatchCrabbingCoordinationTest {
         coordination.beforeSplitInternal(1L);
         coordination.beforeUnderflowInLeaf(2L);
         assertTrue(coordination.beforeRemovalFromLeaf(10));
-        assertTrue(coordination.beforeAccessingRightSiblingLeaf(7L));
         assertTrue(coordination.checkForceReset());
     }
 
@@ -362,11 +361,6 @@ class EscalatingLatchCrabbingCoordinationTest {
 
         assertFalse(coordination.beforeRemovalFromLeaf(10));
         assertTrue(coordination.beforeRemovalFromLeaf(2));
-    }
-
-    @Test
-    void shouldFailAccessingRightSiblingLeafOptimistically() {
-        assertFalse(coordination.beforeAccessingRightSiblingLeaf(7L));
     }
 
     @Test

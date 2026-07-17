@@ -244,11 +244,6 @@ class EscalatingLatchCrabbingCoordination implements TreeWriterCoordination {
     }
 
     @Override
-    public boolean beforeAccessingRightSiblingLeaf(long siblingNodeId) {
-        return pessimistic;
-    }
-
-    @Override
     public boolean pessimistic() {
         return pessimistic;
     }
