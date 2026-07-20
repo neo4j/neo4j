@@ -44,12 +44,15 @@ import org.neo4j.values.virtual.MapValue;
 
 public interface OpenAiBase<PARAMS> extends TextStructuredCompletion.Provider.Implementation, OpenAiRequestSupport {
 
+    @Override
     URI endpoint();
 
+    @Override
     HttpService httpService();
 
     PARAMS params();
 
+    @Override
     String[] authHeader();
 
     void extendPayload(MutableMap<String, Object> payload);

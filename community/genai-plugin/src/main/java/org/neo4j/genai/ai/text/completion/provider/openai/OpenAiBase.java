@@ -36,12 +36,15 @@ import org.neo4j.util.VisibleForTesting;
 
 public interface OpenAiBase<PARAMS> extends TextCompletion.Provider.Implementation, OpenAiRequestSupport {
 
+    @Override
     URI endpoint();
 
+    @Override
     HttpService httpService();
 
     PARAMS params();
 
+    @Override
     String[] authHeader();
 
     void extendPayload(MutableMap<String, Object> payload);

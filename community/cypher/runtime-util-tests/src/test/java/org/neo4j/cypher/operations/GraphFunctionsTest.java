@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -116,7 +117,7 @@ public class GraphFunctionsTest {
     @ParameterizedTest
     @ValueSource(strings = {"composite.local", "composite.remote"})
     void graphByNameUpperCase(String name) {
-        DatabaseReference graph = GraphFunctions.graphByName(name.toUpperCase(), composite, securityContext);
+        DatabaseReference graph = GraphFunctions.graphByName(name.toUpperCase(Locale.ROOT), composite, securityContext);
         assertThat(graph.fullName().name()).isEqualTo(name);
     }
 

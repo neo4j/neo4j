@@ -24,6 +24,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.util.Locale;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -187,8 +188,8 @@ class ShortStringPropertyEncodeTest {
     }
 
     private void assertCanEncodeInBothCasings(String string) {
-        assertCanEncode(string.toLowerCase());
-        assertCanEncode(string.toUpperCase());
+        assertCanEncode(string.toLowerCase(Locale.ROOT));
+        assertCanEncode(string.toUpperCase(Locale.ROOT));
     }
 
     private void assertCanEncode(String string) {

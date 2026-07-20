@@ -45,6 +45,7 @@ public class LongBloomFilter implements BloomFilter {
         return x;
     }
 
+    @Override
     public void add(long id) {
         long hash = hash64(id);
         long a = (hash >>> 32) | (hash << 32);
@@ -54,6 +55,7 @@ public class LongBloomFilter implements BloomFilter {
         }
     }
 
+    @Override
     public boolean mayContain(long id) {
         long hash = hash64(id);
         long a = (hash >>> 32) | (hash << 32);

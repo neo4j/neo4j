@@ -102,10 +102,12 @@ public final class EntityUpdates extends AbstractEntityUpdates<EntityUpdates.Pro
 
     public record PropertyValue(Value before, Value after, PropertyValueType type) implements PropertyValueInterface {
 
+        @Override
         public boolean hasBefore() {
             return before != null;
         }
 
+        @Override
         public boolean hasAfter() {
             return after != null;
         }

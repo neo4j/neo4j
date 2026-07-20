@@ -283,6 +283,7 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
     }
 
     @VisibleForTesting
+    @Override
     public void recordStatisticsOfTransactionAboutToClose(long hits, long faults, long transactionSequenceNumber) {
         aggregatedStatistics.recordStatisticsOfTransactionAboutToClose(hits, faults, transactionSequenceNumber);
     }
@@ -290,6 +291,7 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
     /**
      * A transaction executing part of this query is closing; record its page cache statistics (including commit).
      */
+    @Override
     public void recordStatisticsOfClosedTransaction(
             long hits, long faults, long transactionSequenceNumber, CommitPhaseStatisticsListener listener) {
         aggregatedStatistics.recordStatisticsOfClosedTransaction(hits, faults, transactionSequenceNumber, listener);
@@ -614,18 +616,22 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
         this.previousQuery = previousQuery;
     }
 
+    @Override
     public long pageHitsOfClosedTransactions() {
         return aggregatedStatistics.pageHitsOfClosedTransactions();
     }
 
+    @Override
     public long pageFaultsOfClosedTransactions() {
         return aggregatedStatistics.pageFaultsOfClosedTransactions();
     }
 
+    @Override
     public long pageHitsOfClosedTransactionCommits() {
         return aggregatedStatistics.pageHitsOfClosedTransactionCommits();
     }
 
+    @Override
     public long pageFaultsOfClosedTransactionCommits() {
         return aggregatedStatistics.pageFaultsOfClosedTransactionCommits();
     }

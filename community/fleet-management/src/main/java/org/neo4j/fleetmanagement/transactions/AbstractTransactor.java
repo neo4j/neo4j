@@ -24,6 +24,7 @@ import static org.neo4j.fleetmanagement.common.TransactionUtil.withTransaction;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -211,7 +212,7 @@ public abstract class AbstractTransactor {
                         String status = result.getString("status");
                         license.daysLeftOnTrial = result.getInteger("daysLeft", null);
 
-                        switch (status.toLowerCase()) {
+                        switch (status.toLowerCase(Locale.ROOT)) {
                             case "valid":
                                 license.state = Server.License.LicenseState.VALID;
                                 license.type = Server.License.LicenseType.COMMERCIAL;

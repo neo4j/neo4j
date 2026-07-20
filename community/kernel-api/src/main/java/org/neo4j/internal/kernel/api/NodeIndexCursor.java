@@ -25,6 +25,7 @@ package org.neo4j.internal.kernel.api;
 public interface NodeIndexCursor extends NodeCursor, EntityIndexCursor {
     void node(NodeCursor cursor);
 
+    @Override
     long nodeReference();
 
     @Override

@@ -2032,7 +2032,8 @@ public final class Extractors {
         BOOLEAN_TRUE_CHARACTERS = new char[trueStr.length()];
         trueStr.getChars(0, BOOLEAN_TRUE_CHARACTERS.length, BOOLEAN_TRUE_CHARACTERS, 0);
         BOOLEAN_TRUE_CHARACTERS_UPPER = new char[trueStr.length()];
-        trueStr.toUpperCase().getChars(0, BOOLEAN_TRUE_CHARACTERS_UPPER.length, BOOLEAN_TRUE_CHARACTERS_UPPER, 0);
+        trueStr.toUpperCase(Locale.ROOT)
+                .getChars(0, BOOLEAN_TRUE_CHARACTERS_UPPER.length, BOOLEAN_TRUE_CHARACTERS_UPPER, 0);
     }
 
     private static boolean extractBoolean(char[] data, int originalOffset, int fullLength) {

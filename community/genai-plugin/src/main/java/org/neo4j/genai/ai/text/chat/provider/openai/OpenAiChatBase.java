@@ -35,12 +35,15 @@ import org.neo4j.genai.util.JsonUtils;
 import org.neo4j.genai.util.MalformedGenAIResponseException;
 
 public interface OpenAiChatBase<PARAMS> extends TextChat.Provider.Implementation, OpenAiRequestSupport {
+    @Override
     URI endpoint();
 
+    @Override
     HttpService httpService();
 
     PARAMS params();
 
+    @Override
     String[] authHeader();
 
     void extendPayload(MutableMap<String, Object> payload);

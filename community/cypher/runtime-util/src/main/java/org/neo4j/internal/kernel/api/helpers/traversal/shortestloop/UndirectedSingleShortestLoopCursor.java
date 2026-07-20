@@ -293,6 +293,7 @@ public final class UndirectedSingleShortestLoopCursor extends UndirectedShortest
         return false;
     }
 
+    @Override
     public void setTracer(KernelReadTracer tracer) {
         if (nodeCursor != null) {
             nodeCursor.setTracer(tracer);
@@ -302,6 +303,7 @@ public final class UndirectedSingleShortestLoopCursor extends UndirectedShortest
         }
     }
 
+    @Override
     public Iterator<PathReference> shortestPathIterator() {
         next();
         return Iterators.iterator(pathReference);

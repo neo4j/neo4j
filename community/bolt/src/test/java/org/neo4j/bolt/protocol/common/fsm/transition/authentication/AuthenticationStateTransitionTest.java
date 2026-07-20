@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
@@ -129,7 +130,7 @@ class AuthenticationStateTransitionTest
                             .onMetadata(
                                     AuthenticationFlag.CREDENTIALS_EXPIRED
                                             .name()
-                                            .toLowerCase(),
+                                            .toLowerCase(Locale.ROOT),
                                     Values.TRUE);
                     inOrder.verify(this.context).defaultState(States.READY);
                 }));

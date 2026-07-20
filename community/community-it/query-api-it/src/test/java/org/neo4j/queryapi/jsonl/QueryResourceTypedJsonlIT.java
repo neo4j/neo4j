@@ -50,6 +50,7 @@ class QueryResourceTypedJsonlIT extends AbstractQueryResourcedTypedJsonlIT {
     }
 
     @Test
+    @Override
     void uuid() throws IOException, InterruptedException {
         var response = testClient.autoCommitJsonl(QueryRequest.newBuilder()
                 .statement("RETURN UUID('ca3d9a43-09e3-4b66-9384-87ea25e27d01') AS theUUID")

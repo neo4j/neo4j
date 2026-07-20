@@ -56,6 +56,7 @@ public class Transactor implements ITransactor {
         }
     }
 
+    @Override
     public void init(DatabaseManagementService databaseManagementService) {
         this.editionTransactor.init(databaseManagementService);
     }

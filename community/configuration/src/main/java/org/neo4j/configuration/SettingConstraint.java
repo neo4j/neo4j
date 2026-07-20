@@ -28,7 +28,7 @@ import org.neo4j.graphdb.config.Setting;
  * @param <T> the type of the objects this constraint is working on.
  */
 public abstract class SettingConstraint<T> {
-    private Function<T, String> valueToString = T::toString;
+    private Function<T, String> valueToString = Object::toString;
 
     /**
      * Validates if an object is satisfying the constraint.

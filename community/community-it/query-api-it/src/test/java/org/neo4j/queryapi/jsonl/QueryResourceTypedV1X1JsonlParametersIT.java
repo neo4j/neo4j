@@ -49,6 +49,7 @@ class QueryResourceTypedV1X1JsonlParametersIT extends AbstractQueryResourceTyped
     }
 
     @Test
+    @Override
     void uuid() throws IOException, InterruptedException {
         var response =
                 testClient.sendRawJsonl("{\"statement\": \"RETURN $parameter\"," + "\"parameters\": {\"parameter\": "

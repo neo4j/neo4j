@@ -58,6 +58,7 @@ public class MetricsService extends AbstractReportingService {
         this.metricsCollection.start();
     }
 
+    @Override
     public void report() {
         if (!this.state.isConnected()) {
             // Fleet manager is not connected - skip metrics collection
@@ -89,6 +90,7 @@ public class MetricsService extends AbstractReportingService {
             this.metricsService = metricsService;
         }
 
+        @Override
         protected void execute() {
             if (this.state.isConnected()) {
                 this.metricsService.report();

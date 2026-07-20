@@ -104,7 +104,6 @@ public class IndexConfigUtils {
         String settingName();
     }
 
-    @FunctionalInterface
     public interface HasSetting extends NamedSetting {
         IndexSetting setting();
 

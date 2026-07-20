@@ -63,6 +63,7 @@ public class CommunityTransactor extends AbstractTransactor implements ITransact
         return instanceMap;
     }
 
+    @Override
     public Map<String, List<Database>> getDatabases() {
         return withSystemTransaction(databaseManagementService, tx -> {
             Map<String, List<Database>> databasesByInstance = new HashMap<>();
@@ -80,6 +81,7 @@ public class CommunityTransactor extends AbstractTransactor implements ITransact
         });
     }
 
+    @Override
     public Server.License getLicense() {
         var license = new Server.License();
         license.type = Server.License.LicenseType.FREE;
@@ -87,6 +89,7 @@ public class CommunityTransactor extends AbstractTransactor implements ITransact
         return license;
     }
 
+    @Override
     public void setToken(String token) {
         super.setToken(token);
     }

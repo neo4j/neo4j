@@ -81,6 +81,7 @@ public class FabricSocketNettyConnectorTest extends AbstractNettyConnectorTest<F
         bossGroup.shutdownNow();
     }
 
+    @Override
     protected FabricSocketNettyConnector createConnector(SocketAddress bindAddress) {
         var config = SocketConnectorConfiguration.factory()
                 .advertisedAddress(bindAddress)

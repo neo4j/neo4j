@@ -116,10 +116,12 @@ public final class LazyEntityUpdates extends AbstractEntityUpdates<LazyEntityUpd
             PropertyValueType type)
             implements PropertyValueInterface {
 
+        @Override
         public boolean hasBefore() {
             return before != NULL_SUPPLIER;
         }
 
+        @Override
         public boolean hasAfter() {
             return after != NULL_SUPPLIER;
         }

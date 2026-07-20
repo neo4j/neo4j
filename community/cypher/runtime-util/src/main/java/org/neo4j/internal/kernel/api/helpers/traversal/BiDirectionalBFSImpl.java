@@ -164,6 +164,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements ShortestPathBFS {
      *
      * @return an iterator over the set of shortest paths between the source and target nodes specified at instantiation.
      */
+    @Override
     public Iterator<PathReference> shortestPathIterator() {
         assert (algorithmState == State.CAN_SEARCH_FOR_INTERSECTION);
 
@@ -200,6 +201,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements ShortestPathBFS {
         targetBFS.close();
     }
 
+    @Override
     public void setTracer(KernelReadTracer tracer) {
         sourceBFS.setTracer(tracer);
         targetBFS.setTracer(tracer);

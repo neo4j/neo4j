@@ -60,6 +60,7 @@ public final class ConcurrentLongBloomFilter implements BloomFilter {
 
     private static final VarHandle LONG_ARRAY = VarHandleUtils.arrayElementVarHandle(long[].class);
 
+    @Override
     public void add(long id) {
         long hash = hash64(id);
         long a = (hash >>> 32) | (hash << 32);
@@ -70,6 +71,7 @@ public final class ConcurrentLongBloomFilter implements BloomFilter {
         }
     }
 
+    @Override
     public boolean mayContain(long id) {
         long hash = hash64(id);
         long a = (hash >>> 32) | (hash << 32);

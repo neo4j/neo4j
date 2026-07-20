@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 class SortedLabelsTest {
     @Test
+    @SuppressWarnings("SelfAssertion")
     void testEquals() {
         int[] longsA = new int[] {1, 2, 3};
         int[] longsB = new int[] {3, 2, 1};

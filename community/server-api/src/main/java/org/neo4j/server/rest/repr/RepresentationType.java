@@ -22,6 +22,7 @@ package org.neo4j.server.rest.repr;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -132,7 +133,7 @@ public final class RepresentationType {
     }
 
     static RepresentationType valueOf(Class<? extends Number> type) {
-        return types.get(type.getSimpleName().toLowerCase());
+        return types.get(type.getSimpleName().toLowerCase(Locale.ROOT));
     }
 
     @Override

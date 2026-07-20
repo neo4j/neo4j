@@ -62,6 +62,7 @@ public interface NettyConnectorConfiguration extends ConnectorConfiguration {
 
     interface Factory<SELF extends Factory<SELF>> extends ConnectorConfiguration.Factory<SELF> {
 
+        @Override
         NettyConnectorConfiguration build();
 
         SELF enableMergeCumulator(boolean value);

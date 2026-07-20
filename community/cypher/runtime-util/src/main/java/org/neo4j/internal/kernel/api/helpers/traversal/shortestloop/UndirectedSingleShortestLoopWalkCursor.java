@@ -78,6 +78,7 @@ public final class UndirectedSingleShortestLoopWalkCursor extends UndirectedShor
         this.closed = false;
     }
 
+    @Override
     public boolean next() {
         if (path == null) {
             return search();
@@ -121,10 +122,12 @@ public final class UndirectedSingleShortestLoopWalkCursor extends UndirectedShor
         return false;
     }
 
+    @Override
     public PathReference path() {
         return path;
     }
 
+    @Override
     public void closeInternal() {
         if (!closed) {
             for (long key : pathTracing.keySet().toArray()) {
@@ -135,15 +138,18 @@ public final class UndirectedSingleShortestLoopWalkCursor extends UndirectedShor
         }
     }
 
+    @Override
     public boolean isClosed() {
         return closed;
     }
 
+    @Override
     public Iterator<PathReference> shortestPathIterator() {
         search(); // Initialize the paths
         return Iterators.iterator(path);
     }
 
+    @Override
     public void setTracer(KernelReadTracer tracer) {
         if (nodeCursor != null) {
             nodeCursor.setTracer(tracer);

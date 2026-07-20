@@ -42,6 +42,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
@@ -246,7 +247,7 @@ public final class HTTP {
         String contentEncoding;
         if (contentEncodings != null && (contentEncoding = Iterables.singleOrNull(contentEncodings)) != null) {
             // Specifically, this is never used for character encoding.
-            contentEncoding = contentEncoding.toLowerCase();
+            contentEncoding = contentEncoding.toLowerCase(Locale.ROOT);
             assertThat(contentEncoding)
                     .satisfiesAnyOf(
                             s -> assertThat(s).contains("gzip"),

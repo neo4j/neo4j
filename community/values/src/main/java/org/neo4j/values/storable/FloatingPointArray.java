@@ -22,8 +22,10 @@ package org.neo4j.values.storable;
 import org.neo4j.hashing.HashFunction;
 
 public abstract sealed class FloatingPointArray extends NumberArray permits FloatArray, DoubleArray {
+    @Override
     public abstract float floatValue(int offset);
 
+    @Override
     public abstract double doubleValue(int offset);
 
     @Override

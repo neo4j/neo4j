@@ -129,5 +129,12 @@ class RootMappingLayout<ROOT_KEY> extends Layout.Adapter<ROOT_KEY, RootMappingLa
         public boolean equals(Object o) {
             return o instanceof RootMappingValue that && rootId == that.rootId && rootGeneration == that.rootGeneration;
         }
+
+        @Override
+        public int hashCode() {
+            int result = Long.hashCode(rootId);
+            result = 31 * result + Long.hashCode(rootGeneration);
+            return result;
+        }
     }
 }

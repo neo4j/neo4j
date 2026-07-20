@@ -217,6 +217,7 @@ public class MigrationToAuraService extends AbstractReportingService implements 
             this.migrationToAuraService = migrationToAuraService;
         }
 
+        @Override
         protected void execute() {
             if (this.state.isConnected()) {
                 this.migrationToAuraService.report();

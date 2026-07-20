@@ -1706,6 +1706,7 @@ public class KernelTransactionImplementation
         }
     }
 
+    @Override
     public void retryQuery() {
         transactionMonitor.transactionRetry();
         transactionLocalRetries++;

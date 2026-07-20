@@ -179,6 +179,7 @@ public class Dumper {
                     !fs.isDirectory(path), "FileOutput must target a file, not a directory: %s".formatted(path));
         }
 
+        @Override
         public OutputStream stream() throws IOException {
             // Always create the file to be sure that we are the owner.
             checkWritableDirectory(path.getParent());

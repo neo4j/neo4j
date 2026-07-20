@@ -49,6 +49,7 @@ public class TopologyService extends AbstractReportingService {
         this.topologyMapper = new TopologyMapper(config, fs, transactor, serverIdentity);
     }
 
+    @Override
     public void report() {
         if (!this.state.isConnected()) {
             // Fleet manager is not connected - skip report
@@ -88,6 +89,7 @@ public class TopologyService extends AbstractReportingService {
             this.topologyService = topologyService;
         }
 
+        @Override
         protected void execute() {
             if (this.state.isConnected()) {
                 this.topologyService.report();

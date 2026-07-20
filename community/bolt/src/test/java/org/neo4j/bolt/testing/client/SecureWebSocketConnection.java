@@ -77,6 +77,7 @@ public final class SecureWebSocketConnection extends WebSocketConnection impleme
         }
     }
 
+    @Override
     protected URI webSocketAddress() {
         try {
             return new URI("wss", null, this.address.getHostString(), this.address.getPort(), "/", null, null);

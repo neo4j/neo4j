@@ -81,6 +81,7 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
         bossGroup.shutdownNow();
     }
 
+    @Override
     protected SocketNettyConnector createConnector(SocketAddress bindAddress) {
         var config = SocketConnectorConfiguration.factory()
                 .advertisedAddress(bindAddress)

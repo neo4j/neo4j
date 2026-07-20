@@ -24,6 +24,7 @@ import java.beans.PropertyChangeSupport;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.neo4j.fleetmanagement.communication.model.ConfigurationResponse;
@@ -103,7 +104,7 @@ public class Configuration {
 
         public static TaskType fromString(String type) {
             try {
-                return TaskType.valueOf(type.toUpperCase());
+                return TaskType.valueOf(type.toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException e) {
                 return UNKNOWN;
             }

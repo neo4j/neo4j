@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import java.util.Locale;
 import java.util.UUID;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.InternalException;
@@ -483,12 +484,12 @@ public enum ValueRepresentation {
                 // Type which is not supported to be stored in lists in properties e.g. vector or map
                 if (value instanceof Value v)
                     throw CypherTypeException.expectedPrimitivePropertyValue(
-                            String.valueOf(v), v.prettify(), v.getTypeName().toUpperCase(), true);
+                            String.valueOf(v), v.prettify(), v.getTypeName().toUpperCase(Locale.ROOT), true);
                 else
                     throw CypherTypeException.expectedPrimitivePropertyValue(
                             String.valueOf(value),
                             String.valueOf(value),
-                            value.getTypeName().toUpperCase(),
+                            value.getTypeName().toUpperCase(Locale.ROOT),
                             true);
             }
             prev = value;
@@ -534,13 +535,13 @@ public enum ValueRepresentation {
             throw CypherTypeException.expectedPrimitivePropertyValue(
                     java.lang.String.valueOf(v),
                     v.prettyPrint(),
-                    v.getTypeName().toUpperCase(),
+                    v.getTypeName().toUpperCase(Locale.ROOT),
                     false);
         else
             throw CypherTypeException.expectedPrimitivePropertyValue(
                     java.lang.String.valueOf(got),
                     java.lang.String.valueOf(got),
-                    got.getTypeName().toUpperCase(),
+                    got.getTypeName().toUpperCase(Locale.ROOT),
                     false);
     }
 }

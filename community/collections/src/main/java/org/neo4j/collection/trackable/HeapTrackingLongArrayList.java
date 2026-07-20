@@ -146,6 +146,7 @@ public class HeapTrackingLongArrayList extends LongIterableAdapter implements Re
         return this;
     }
 
+    @Override
     public long[] toArray() {
         return Arrays.copyOf(elementData, size);
     }

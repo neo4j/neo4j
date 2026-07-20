@@ -116,6 +116,7 @@ public class DefaultIndexSettingsValidator implements IndexSettingsValidator {
         }
     }
 
+    @Override
     public IndexSettingRecordsByState validate(SettingsAccessor accessor) {
         Set<String> expectedSettingNames = extractors.settingNames();
         Collection<UnrecognizedSetting> unrecognizedSettings = new ArrayList<>();

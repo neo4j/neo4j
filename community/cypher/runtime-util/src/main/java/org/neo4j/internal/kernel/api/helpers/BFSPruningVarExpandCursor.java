@@ -313,6 +313,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                     : EmitState.NO;
         }
 
+        @Override
         public final boolean next() {
             if (done) {
                 return false;
@@ -535,6 +536,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             currentDepth = 1;
         }
 
+        @Override
         public final boolean next() {
             if (done) {
                 return false;
@@ -746,6 +748,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             this.nodeUniqueness = nodeUniqueness;
         }
 
+        @Override
         public final boolean next() {
             if (done) {
                 return false;

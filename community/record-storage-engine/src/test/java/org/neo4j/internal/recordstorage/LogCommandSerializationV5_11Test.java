@@ -355,6 +355,7 @@ public class LogCommandSerializationV5_11Test extends LogCommandSerializationV5_
         return createRandomPropertyRecord(id, true);
     }
 
+    @Override
     PropertyRecord createRandomPropertyRecord(long id) {
         return createRandomPropertyRecord(id, false);
     }
@@ -388,6 +389,7 @@ public class LogCommandSerializationV5_11Test extends LogCommandSerializationV5_
         return createRandomNodeRecord(id, true);
     }
 
+    @Override
     NodeRecord createRandomNodeRecord(long id) {
         return createRandomNodeRecord(id, random.nextBoolean());
     }

@@ -895,7 +895,7 @@ public final class CypherFunctions {
 
     private static String invalidSimilarityFunctionInputErrorMessage(VectorSimilarityFunction function, String reason) {
         return "Invalid input for 'vector.similarity.%s()': %s."
-                .formatted(function.functionName().toLowerCase(), reason);
+                .formatted(function.functionName().toLowerCase(Locale.ROOT), reason);
     }
 
     public static AnyValue startNode(AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor) {

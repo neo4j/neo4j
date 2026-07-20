@@ -22,6 +22,7 @@ package org.neo4j.values.storable;
 import static java.lang.String.format;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.neo4j.hashing.HashFunction;
@@ -58,12 +59,12 @@ public abstract class StringValue extends TextValue {
 
     @Override
     public TextValue toLower() {
-        return new StringWrappingStringValue(value().toLowerCase());
+        return new StringWrappingStringValue(value().toLowerCase(Locale.ROOT));
     }
 
     @Override
     public TextValue toUpper() {
-        return new StringWrappingStringValue(value().toUpperCase());
+        return new StringWrappingStringValue(value().toUpperCase(Locale.ROOT));
     }
 
     @Override

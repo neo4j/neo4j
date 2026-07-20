@@ -43,6 +43,7 @@ class LegacyCredentialTest {
     }
 
     @Test
+    @SuppressWarnings("SelfAssertion")
     void testInaccessibleCredentials() {
         LegacyCredential credential = new LegacyCredential(INACCESSIBLE.salt(), INACCESSIBLE.passwordHash());
 

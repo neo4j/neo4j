@@ -223,6 +223,7 @@ public final class DeprecatedBedrock implements Provider<DeprecatedBedrock.Param
                "normalized": (normalize:boolean)
            }
         */
+        @Override
         protected Object buildPayload(String resource) {
             return Maps.mutable.of("inputText", resource);
         }
@@ -253,6 +254,7 @@ public final class DeprecatedBedrock implements Provider<DeprecatedBedrock.Param
                "normalized": (normalize:boolean)
            }
         */
+        @Override
         protected Object buildPayload(String resource) {
             return Maps.mutable.of("inputText", resource);
         }
@@ -296,6 +298,7 @@ public final class DeprecatedBedrock implements Provider<DeprecatedBedrock.Param
                "embeddingConfig": { "outputEmbeddingLength": (dimensions:int) }
            }
         */
+        @Override
         protected Object buildPayload(String resource) {
             final Map<String, Object> payload = Maps.mutable.of("inputText", resource);
             configuration.dimensions.ifPresent(
@@ -343,6 +346,7 @@ public final class DeprecatedBedrock implements Provider<DeprecatedBedrock.Param
                "normalized": (normalize:boolean)
            }
         */
+        @Override
         protected Object buildPayload(String resource) {
             final Map<String, Object> payload = Maps.mutable.of("inputText", resource);
             configuration.dimensions.ifPresent(dimensions -> payload.put("dimensions", dimensions));

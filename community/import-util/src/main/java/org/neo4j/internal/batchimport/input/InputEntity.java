@@ -516,11 +516,13 @@ public class InputEntity implements InputEntityVisitor {
             return value instanceof Value v ? v : Values.of(value);
         }
 
+        @Override
         public String keyName() {
             assert keyName != null : "The key name isn't present";
             return keyName;
         }
 
+        @Override
         public int keyId() {
             assert keyId != NO_TOKEN : "The key id isn't present";
             return keyId;

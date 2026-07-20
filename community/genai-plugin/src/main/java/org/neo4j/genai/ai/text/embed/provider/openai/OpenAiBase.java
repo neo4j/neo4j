@@ -44,12 +44,15 @@ import org.neo4j.values.storable.VectorValue;
 public interface OpenAiBase<PARAMS> extends VectorEmbedding.Provider.Implementation, OpenAiRequestSupport {
     String ENCODING_FORMAT = "float";
 
+    @Override
     URI endpoint();
 
+    @Override
     HttpService httpService();
 
     PARAMS params();
 
+    @Override
     String[] authHeader();
 
     void extendPayload(MutableMap<String, Object> payload);

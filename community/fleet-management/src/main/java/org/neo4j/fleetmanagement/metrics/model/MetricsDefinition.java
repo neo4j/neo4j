@@ -20,6 +20,7 @@
 package org.neo4j.fleetmanagement.metrics.model;
 
 import java.util.List;
+import java.util.Locale;
 import org.neo4j.fleetmanagement.communication.model.MetricsDefinitionResponse;
 
 public class MetricsDefinition {
@@ -70,7 +71,8 @@ public class MetricsDefinition {
                 metricsDefinitionResponse.tags,
                 new JmxMetricSpecification() {
                     {
-                        metricType = MetricTypeEnum.valueOf(metricsDefinitionResponse.metricType.toUpperCase());
+                        metricType =
+                                MetricTypeEnum.valueOf(metricsDefinitionResponse.metricType.toUpperCase(Locale.ROOT));
                     }
                 });
     }

@@ -78,6 +78,7 @@ public class PingService extends AbstractReportingService {
             this.pingService = pingService;
         }
 
+        @Override
         protected void execute() {
             if (this.state.isConnected()) {
                 this.pingService.report();

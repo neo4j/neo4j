@@ -43,6 +43,7 @@ public class EnterpriseTransactor extends AbstractTransactor implements ITransac
         super(state);
     }
 
+    @Override
     public Map<String, Server> getServers() {
         return withSystemTransaction(databaseManagementService, tx -> {
             try (Result r =
@@ -65,6 +66,7 @@ public class EnterpriseTransactor extends AbstractTransactor implements ITransac
         });
     }
 
+    @Override
     public Map<String, List<Database>> getDatabases() {
         return withSystemTransaction(databaseManagementService, tx -> {
             try (Result r = tx.execute("SHOW DATABASES YIELD *")) {
@@ -82,6 +84,7 @@ public class EnterpriseTransactor extends AbstractTransactor implements ITransac
         });
     }
 
+    @Override
     public Server.License getLicense() {
         return licenseCacheMethod.GetCachedOrRun(() -> {
             var license = new Server.License();
@@ -121,6 +124,7 @@ public class EnterpriseTransactor extends AbstractTransactor implements ITransac
         });
     }
 
+    @Override
     public void setToken(String token) {
         super.setToken(token);
     }

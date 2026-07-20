@@ -179,6 +179,7 @@ public class ConnectService extends BaseService {
             this.connectService = connectService;
         }
 
+        @Override
         protected void execute() {
             if (this.state.isActive() && !this.state.isRotatingToken()) {
                 connectService.ensureConnected();

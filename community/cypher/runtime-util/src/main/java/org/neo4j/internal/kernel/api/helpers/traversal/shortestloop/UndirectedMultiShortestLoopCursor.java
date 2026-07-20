@@ -308,6 +308,7 @@ public final class UndirectedMultiShortestLoopCursor extends UndirectedShortestL
         return isClosed;
     }
 
+    @Override
     public void setTracer(KernelReadTracer tracer) {
         if (nodeCursor != null) {
             nodeCursor.setTracer(tracer);
@@ -317,6 +318,7 @@ public final class UndirectedMultiShortestLoopCursor extends UndirectedShortestL
         }
     }
 
+    @Override
     public Iterator<PathReference> shortestPathIterator() {
         if (dfs == null) {
             if (!bfs()) { // Initialize without advancing
@@ -392,6 +394,7 @@ public final class UndirectedMultiShortestLoopCursor extends UndirectedShortestL
             return pathReference(nodes, relationships);
         }
 
+        @Override
         public void close() {
             stack.close();
         }
@@ -421,6 +424,7 @@ public final class UndirectedMultiShortestLoopCursor extends UndirectedShortestL
             }
         }
 
+        @Override
         protected PathReference fetchNextOrNull() {
             while (!stack.isEmpty()) {
                 State current = stack.pop();
@@ -466,6 +470,7 @@ public final class UndirectedMultiShortestLoopCursor extends UndirectedShortestL
             return false;
         }
 
+        @Override
         public void close() {
             stack.close();
         }

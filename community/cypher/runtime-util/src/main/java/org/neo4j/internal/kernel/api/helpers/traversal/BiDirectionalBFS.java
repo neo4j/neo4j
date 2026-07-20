@@ -272,6 +272,7 @@ public class BiDirectionalBFS implements ShortestPathBFS {
         inner.resetForNewRow(sourceNodeId, targetNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
     }
 
+    @Override
     public Iterator<PathReference> shortestPathIterator() {
         return inner.shortestPathIterator();
     }
@@ -281,6 +282,7 @@ public class BiDirectionalBFS implements ShortestPathBFS {
         inner.close();
     }
 
+    @Override
     public void setTracer(KernelReadTracer tracer) {
         inner.setTracer(tracer);
     }

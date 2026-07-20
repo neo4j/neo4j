@@ -81,6 +81,11 @@ public final class Manifest {
         return Arrays.equals(files, that.files);
     }
 
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(files);
+    }
+
     public ManifestRecord[] files() {
         return files;
     }

@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -146,14 +147,14 @@ public class BuiltInDbmsProcedures {
                             defaultValue = "",
                             description = "A string that filters on the name of config settings.")
                     String searchString) {
-        String lowerCasedSearchString = searchString.toLowerCase();
+        String lowerCasedSearchString = searchString.toLowerCase(Locale.ROOT);
         List<ConfigResult> results = new ArrayList<>();
 
         Config config = graph.getDependencyResolver().resolveDependency(Config.class);
 
         config.getDeclaredSettings().values().forEach(setting -> {
             if (!((SettingImpl<?>) setting).internal()
-                    && setting.name().toLowerCase().contains(lowerCasedSearchString)) {
+                    && setting.name().toLowerCase(Locale.ROOT).contains(lowerCasedSearchString)) {
                 results.add(new ConfigResult(setting, config));
             }
         });
@@ -180,7 +181,7 @@ public class BuiltInDbmsProcedures {
 
         Config config = graph.getDependencyResolver().resolveDependency(Config.class);
         config.getDeclaredSettings().values().forEach(setting -> {
-            if (browserSettings.contains(setting.name().toLowerCase())) {
+            if (browserSettings.contains(setting.name().toLowerCase(Locale.ROOT))) {
                 results.add(new ConfigResult(setting, config));
             }
         });

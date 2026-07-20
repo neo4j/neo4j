@@ -1195,10 +1195,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         return slice(0, n);
     }
 
+    @Override
     public ListValue reverse() {
         return new ReversedList(this);
     }
 
+    @Override
     public ListValue asListValue() {
         return this;
     }
@@ -1270,6 +1272,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 values, thisSize + valueSize, itemValueRepresentation().coerce(other.itemValueRepresentation()));
     }
 
+    @Override
     public ListValue insertAt(int index, AnyValue value) {
         if (index == 0) {
             return prepend(value);
@@ -1280,6 +1283,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
     }
 
+    @Override
     public ListValue remove(int index) {
         if (index == 0) {
             return slice(1, intSize());

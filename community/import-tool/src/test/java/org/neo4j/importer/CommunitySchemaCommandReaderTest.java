@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class CommunitySchemaCommandReaderTest extends SchemaCommandReaderTest {
+    @Override
     public SchemaCommandReader createReader(FileSystemAbstraction fs, SchemaCommandReader.ReaderConfig readerConfig) {
         return new SchemaCommandReader(
                 fs,

@@ -120,10 +120,12 @@ public class LogCommandSerializationV5_0Test extends LogCommandSerializationV5Ba
         }
     }
 
+    @Override
     CommandReader createReader() {
         return LogCommandSerializationV5_0.INSTANCE;
     }
 
+    @Override
     LogCommandSerialization writer() {
         return LogCommandSerializationV5_0.INSTANCE;
     }

@@ -106,6 +106,7 @@ final class ServiceLoadedGlobalProviders implements Supplier<GlobalProviders> {
 interface ProcedureProvider<T> extends ThrowingFunction<Context, T, ProcedureException> {}
 
 class HttpServiceProvider implements ProcedureProvider<HttpService> {
+    @Override
     public HttpService apply(Context ctx) throws ProcedureException {
         return new HttpService(ctx.urlAccessChecker());
     }
@@ -113,6 +114,7 @@ class HttpServiceProvider implements ProcedureProvider<HttpService> {
 
 record TxtCompProv(HttpServiceProvider httpService, ImmutableList<TextCompletion.Provider> providers)
         implements ProcedureProvider<TextCompletion.Providers> {
+    @Override
     public TextCompletion.Providers apply(Context context) throws ProcedureException {
         return new TextCompletion.Providers.Impl(providers, httpService.apply(context));
     }
@@ -124,6 +126,7 @@ record TxtCompProv(HttpServiceProvider httpService, ImmutableList<TextCompletion
 
 record TxtCompStructProv(HttpServiceProvider httpService, ImmutableList<TextStructuredCompletion.Provider> providers)
         implements ProcedureProvider<TextStructuredCompletion.Providers> {
+    @Override
     public TextStructuredCompletion.Providers apply(Context context) throws ProcedureException {
         return new TextStructuredCompletion.Providers.Impl(providers, httpService.apply(context));
     }
@@ -135,6 +138,7 @@ record TxtCompStructProv(HttpServiceProvider httpService, ImmutableList<TextStru
 
 record TxtChatProv(HttpServiceProvider httpService, ImmutableList<TextChat.Provider> providers)
         implements ProcedureProvider<TextChat.Providers> {
+    @Override
     public TextChat.Providers apply(Context context) throws ProcedureException {
         return new TextChat.Providers.Impl(providers, httpService.apply(context));
     }
@@ -146,6 +150,7 @@ record TxtChatProv(HttpServiceProvider httpService, ImmutableList<TextChat.Provi
 
 record TxtTokenCountProv(HttpServiceProvider httpService, ImmutableList<TextTokenCount.Provider> providers)
         implements ProcedureProvider<TextTokenCount.Providers> {
+    @Override
     public TextTokenCount.Providers apply(Context context) throws ProcedureException {
         return new TextTokenCount.Providers.Impl(providers, httpService.apply(context));
     }
@@ -157,6 +162,7 @@ record TxtTokenCountProv(HttpServiceProvider httpService, ImmutableList<TextToke
 
 record VectorEmbeddingProv(HttpServiceProvider httpService, ImmutableList<VectorEmbedding.Provider> providers)
         implements ProcedureProvider<VectorEmbedding.Providers> {
+    @Override
     public VectorEmbedding.Providers apply(Context context) throws ProcedureException {
         return new VectorEmbedding.Providers.Impl(providers, httpService.apply(context));
     }
@@ -168,6 +174,7 @@ record VectorEmbeddingProv(HttpServiceProvider httpService, ImmutableList<Vector
 
 record ImgVectorEmbeddingProv(HttpServiceProvider httpService, ImmutableList<ImageVectorEmbedding.Provider> providers)
         implements ProcedureProvider<ImageVectorEmbedding.Providers> {
+    @Override
     public ImageVectorEmbedding.Providers apply(Context context) throws ProcedureException {
         return new ImageVectorEmbedding.Providers.Impl(providers, httpService.apply(context));
     }

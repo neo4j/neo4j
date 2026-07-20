@@ -89,6 +89,7 @@ public class UndirectedShortestLoopWalkCursor extends UndirectedShortestLoopCurs
         this.iterator = null;
     }
 
+    @Override
     public boolean next() {
         if (iterator != null) {
             if (iterator.hasNext()) {
@@ -139,10 +140,12 @@ public class UndirectedShortestLoopWalkCursor extends UndirectedShortestLoopCurs
         return !pathTracing.isEmpty();
     }
 
+    @Override
     public PathReference path() {
         return path;
     }
 
+    @Override
     public void closeInternal() {
         if (!closed) {
             for (long key : pathTracing.keySet().toArray()) {
@@ -153,6 +156,7 @@ public class UndirectedShortestLoopWalkCursor extends UndirectedShortestLoopCurs
         }
     }
 
+    @Override
     public boolean isClosed() {
         return closed;
     }
@@ -164,10 +168,12 @@ public class UndirectedShortestLoopWalkCursor extends UndirectedShortestLoopCurs
             this.rel = 0;
         }
 
+        @Override
         public boolean hasNext() {
             return !pathTracing.isEmpty() && rel < pathTracing.get(startNode).size();
         }
 
+        @Override
         public PathReference next() {
             if (!hasNext()) {
                 throw new NoSuchElementException();
@@ -191,6 +197,7 @@ public class UndirectedShortestLoopWalkCursor extends UndirectedShortestLoopCurs
             targets = pathTracing.keySet().toArray();
         }
 
+        @Override
         public boolean hasNext() {
             if (pathTracing.isEmpty()) {
                 return false;
@@ -204,6 +211,7 @@ public class UndirectedShortestLoopWalkCursor extends UndirectedShortestLoopCurs
             }
         }
 
+        @Override
         public PathReference next() {
             if (pathTracing.get(targets[target]).size() - 1 > endRel) {
                 endRel++;
@@ -222,6 +230,7 @@ public class UndirectedShortestLoopWalkCursor extends UndirectedShortestLoopCurs
         }
     }
 
+    @Override
     public Iterator<PathReference> shortestPathIterator() {
         search(); // Initialize the paths
         if (pathTracing.containsKey(startNode)) {
@@ -231,6 +240,7 @@ public class UndirectedShortestLoopWalkCursor extends UndirectedShortestLoopCurs
         }
     }
 
+    @Override
     public void setTracer(KernelReadTracer tracer) {
         if (nodeCursor != null) {
             nodeCursor.setTracer(tracer);

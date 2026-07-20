@@ -400,7 +400,7 @@ class ProblemReportersTest {
     private static String formatJson(String json) {
         return json
                 // strip out all non-content WS
-                .replaceAll("\s\s+", "")
+                .replaceAll("\\s\\s+", "")
                 // tidy up field separators
                 .replace("\": ", "\":")
                 // drop all new lines that are left

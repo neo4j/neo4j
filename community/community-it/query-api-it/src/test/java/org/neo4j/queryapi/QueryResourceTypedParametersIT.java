@@ -42,6 +42,7 @@ class QueryResourceTypedParametersIT extends AbstractQueryResourceTypedParameter
     }
 
     @Test
+    @Override
     void uuid() throws IOException, InterruptedException {
         var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\"," + "\"parameters\": {\"parameter\": "
                 + "{\"$type\": \"UUID\", \"_value\": \"ca3d9a43-09e3-4b66-9384-87ea25e27d01\"}}}");

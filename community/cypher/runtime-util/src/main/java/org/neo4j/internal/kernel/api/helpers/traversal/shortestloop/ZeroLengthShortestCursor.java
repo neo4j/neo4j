@@ -72,5 +72,6 @@ public final class ZeroLengthShortestCursor extends UndirectedShortestLoopCursor
         return false;
     }
 
+    @Override
     public void setTracer(KernelReadTracer tracer) {}
 }
