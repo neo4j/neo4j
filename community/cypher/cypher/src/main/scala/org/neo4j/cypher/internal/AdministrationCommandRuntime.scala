@@ -322,8 +322,7 @@ object AdministrationCommandRuntime {
          |$nativeAuthCypher
          |$homeDatabaseCypher })
          |WITH u
-         |CALL {
-         |  WITH u
+         |CALL (u) {
          |  UNWIND $$`$authKey` AS auth
          |  CREATE (u)-[:$HAS_AUTH]->(:$AUTH {$AUTH_PROVIDER_PROPERTY: auth.provider, $AUTH_ID_PROPERTY: auth.id})
          |}
@@ -508,8 +507,7 @@ object AdministrationCommandRuntime {
              |  OPTIONAL MATCH (user)-[:$HAS_AUTH]->(a:$AUTH {$AUTH_PROVIDER_PROPERTY: auth})""".stripMargin
 
       s"""WITH user, oldCredentials
-         |CALL {
-         |  WITH user
+         |CALL (user) {
          |  WITH user,
          |  CASE
          |    WHEN $$`$removeNativeKey` THEN {credentials: null, change: null}
@@ -518,8 +516,7 @@ object AdministrationCommandRuntime {
          |  SET user.$USER_CREDENTIALS_PROPERTY = cMap.credentials, user.$USER_CREDENTIALS_EXPIRED_PROPERTY = cMap.change
          |}
          |WITH user, oldCredentials
-         |CALL {
-         |  WITH user
+         |CALL (user) {
          |  $authMatch
          |  DETACH DELETE (a)
          |}""".stripMargin
@@ -544,8 +541,7 @@ object AdministrationCommandRuntime {
 
     val addAuthString =
       s"""WITH user, oldCredentials
-         |CALL {
-         |  WITH user
+         |CALL (user) {
          |  UNWIND $$`$setAuthKey` AS auth
          |  MERGE (user)-[:$HAS_AUTH]->(a:$AUTH {$AUTH_PROVIDER_PROPERTY: auth.provider}) SET a.$AUTH_ID_PROPERTY = auth.id
          |}""".stripMargin

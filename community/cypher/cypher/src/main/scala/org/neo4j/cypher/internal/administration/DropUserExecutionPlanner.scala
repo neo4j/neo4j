@@ -49,8 +49,7 @@ case class DropUserExecutionPlanner(
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""MATCH (user:$USER {$USER_NAME_PROPERTY: $$`${userNameFields.nameKey}`})
-         |CALL {
-         |  WITH user
+         |CALL (user) {
          |  OPTIONAL MATCH (user)-[:$HAS_AUTH]->(auth)
          |  DETACH DELETE auth
          |}

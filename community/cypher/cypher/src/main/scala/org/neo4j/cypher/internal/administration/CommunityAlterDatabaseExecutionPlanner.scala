@@ -71,7 +71,7 @@ case class CommunityAlterDatabaseExecutionPlanner(
       "AlterDatabase",
       normalExecutionEngine,
       securityAuthorizationHandler,
-      s"""CALL {
+      s"""CALL () {
          |  OPTIONAL MATCH (:$DATABASE_NAME ${nameFields.asNodeFilter(
           context.runtimeContext.cypherVersion
         )})-[:$TARGETS]->(aliasedDb:$DATABASE)

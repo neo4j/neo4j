@@ -154,7 +154,7 @@ case class DoNothingExecutionPlanner(
       // thus we needed to split up into this and the method above
       // since we need to save the database uuid for the wait part of the plan
       s"""
-          CALL {
+          CALL () {
             MATCH (dn:$DATABASE_NAME ${nameFields.asNodeFilter(context.runtimeContext.cypherVersion)}) RETURN dn
             UNION
             MATCH (dn:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`})
@@ -244,7 +244,7 @@ case class DoNothingExecutionPlanner(
       securityAuthorizationHandler,
       // Need to be backward compatible to 4.4 here because the upgrade to 5.0 uses CREATE DATABASE IF NOT EXISTS
       s"""
-          CALL {
+          CALL () {
             MATCH (dn:$DATABASE_NAME ${nameFields.asNodeFilter(context.runtimeContext.cypherVersion)}) RETURN dn
             UNION
             MATCH (dn:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`})
