@@ -1555,7 +1555,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Description("A feature toggle behind which property-based access control rules matching a value "
             + "against a list-valued property (`<value> IN n.property`) are developed")
     public static final Setting<Boolean> value_in_list_property = newBuilder(
-                    "internal.dbms.feature_flag.value_in_list_property", BOOL, false)
+                    "internal.dbms.feature_flag.value_in_list_property", BOOL, true)
             .build();
 
     @Internal

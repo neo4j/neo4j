@@ -59,7 +59,8 @@ trait FrontEndCompilationPhases {
     AttributeBasedAccessControl.productPrefix,
     ComposableCommands.productPrefix,
     UserTags.productPrefix,
-    GroupByClause.productPrefix
+    GroupByClause.productPrefix,
+    ValueInListProperty.productPrefix
   )
 
   def enabledSemanticFeatures(features: Set[String]): Seq[SemanticFeature] =
