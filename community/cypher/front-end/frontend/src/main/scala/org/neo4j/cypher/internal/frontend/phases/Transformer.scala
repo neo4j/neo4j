@@ -107,8 +107,8 @@ object Transformer {
         val next = stmt.endoRewrite(rewriter)
         if (next != stmt)
           println(s"######## DEBUG $bundleName/${step.getClass.getSimpleName.stripSuffix("$")} changed the statement")
-          if (Debug.LogStatementsAsQueries) println(prettifier.asString(next))
-          if (Debug.LogStatements) println(AstString.render(next))
+        if (Debug.LogStatementsAsQueries) println(prettifier.asString(next))
+        if (Debug.LogStatements) println(AstString.render(next))
         next
       }
     } else {

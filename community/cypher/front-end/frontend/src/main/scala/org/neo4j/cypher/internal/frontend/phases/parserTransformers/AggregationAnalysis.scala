@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpTo
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.VariableChecker
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
+import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.ReturnItemsAreAliased
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -98,7 +99,8 @@ case object AggregationAnalysis extends VisitorPhase[BaseContext, BaseState]
     BaseContains[Statement](),
     ExpressionsHaveComputedDependencies,
     FunctionInvocationsResolved,
-    UpToDateScopes
+    UpToDateScopes,
+    ReturnItemsAreAliased
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty

@@ -55,6 +55,8 @@ sealed trait ProjectionItem {
   def expression: Expression
   def alias: Option[LogicalVariable]
 
+  def isPassthrough: Boolean = alias.contains(expression)
+
   def scopeSymbol: LogicalVariable = alias.getOrElse(referenceableVariable)
 
   def aliasString: String = alias.map(a => s"its alias `${a.name}`").getOrElse("an alias")
@@ -117,7 +119,6 @@ sealed trait RecognizingItem extends ProjectionItem {
   def aggregatingRecognizableExpression: Option[Expression]
   def subclauseRecognizableExpression: Option[Expression]
   def subclauseRecognizableSymbols: Set[Expression]
-  def isPassthrough: Boolean = alias.contains(expression)
 }
 
 case class GroupingKey(expression: Expression, alias: Option[LogicalVariable], explicit: Boolean)
@@ -286,7 +287,7 @@ case class ProjectionSpecification(
       !nonAggregatingItems.exists(pi => pi.expression == gk.expression || pi.alias == gk.alias)
     )
 
-  private val nonPassthroughAliases = items.filterNot(_.isPassthrough) ++ groupingKeys
+  private val nonPassthroughAliases = (items ++ groupingKeys).filterNot(_.isPassthrough)
 
   private val nonPassthroughAliasSetLazy: LazyVal[Set[LogicalVariable]] =
     LazyVal(nonPassthroughAliases.iterator.flatMap(_.alias).toSet)
