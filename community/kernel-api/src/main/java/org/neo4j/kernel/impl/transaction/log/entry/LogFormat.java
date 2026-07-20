@@ -659,25 +659,32 @@ public enum LogFormat {
      * happen simultaneously on any additional cluster members.
      */
     public static LogFormat fromConfigAndKernelVersion(Config config, KernelVersion kernelVersion) {
+        var logFormat = fromKernelVersion(kernelVersion);
+        if (kernelVersion.isLessThan(KernelVersion.VERSION_ENVELOPED_TRANSACTION_CAN_EXIST_FROM)) {
+            return logFormat;
+        }
+
+        // We check both settings because BaseLogHeaderFactory uses a synthetic config to create headers that doesn't
+        // force merged_log if it's not already on
+        if (config.get(GraphDatabaseInternalSettings.merged_log)
+                || config.get(GraphDatabaseInternalSettings.merge_log_on_latest)) {
+            return V11;
+        }
+
         // To be able to test upgrade that doesn't turn on the new format,
         // VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED
         // (that in the future will control the version enveloped logs are guaranteed from) needs the
         // additional test only envelope_log_format_on_future setting on to actually turn on envelopes.
-        var logFormat = fromKernelVersion(kernelVersion);
-        if (kernelVersion.isAtLeast(KernelVersion.VERSION_ENVELOPED_TRANSACTION_CAN_EXIST_FROM)) {
-            if (kernelVersion.isAtLeast(KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED)
-                    && config.get(GraphDatabaseInternalSettings.envelope_log_format_on_future)) {
-                return logFormat.getVersionByte() < V10.getVersionByte() ? V10 : logFormat;
-            }
-            if (config.get(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create)) {
-                if (config.get(GraphDatabaseInternalSettings.merge_log_on_latest)) {
-                    return V11;
-                }
-                return logFormat.getVersionByte() < V10.getVersionByte() ? V10 : logFormat;
-            }
-            return V9;
+        if (kernelVersion.isAtLeast(KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED)
+                && config.get(GraphDatabaseInternalSettings.envelope_log_format_on_future)) {
+            return logFormat.getVersionByte() < V10.getVersionByte() ? V10 : logFormat;
         }
-        return logFormat;
+
+        if (config.get(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create)) {
+            return logFormat.getVersionByte() < V10.getVersionByte() ? V10 : logFormat;
+        }
+
+        return V9;
     }
 
     // The serialization of the upgrade command with log format doesn't exist before 2025.05
