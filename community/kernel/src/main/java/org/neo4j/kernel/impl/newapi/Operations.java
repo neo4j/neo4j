@@ -218,8 +218,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private final IndexingService indexingService;
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
-    private final boolean dependentConstraintsEnabled;
-    private final boolean relationshipEndpointLabelAndNodeLabelExistenceConstraintsEnabled;
     private final boolean alwaysUseLatestIndexProvider;
     private final boolean noPropUpdateOnSameValue;
     private final TransactionStateBehaviour transactionStateBehaviour;
@@ -270,9 +268,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         this.indexingService = indexingService;
         this.memoryTracker = memoryTracker;
         this.additionLockVerification = config.get(additional_lock_verification);
-        this.dependentConstraintsEnabled = config.get(GraphDatabaseInternalSettings.dependent_constraints_enabled);
-        this.relationshipEndpointLabelAndNodeLabelExistenceConstraintsEnabled = config.get(
-                GraphDatabaseInternalSettings.relationship_endpoint_label_and_node_label_existence_constraints);
         this.alwaysUseLatestIndexProvider = config.get(GraphDatabaseInternalSettings.always_use_latest_index_provider);
         this.noPropUpdateOnSameValue = config.get(GraphDatabaseInternalSettings.no_property_update_on_identical_value);
         this.transactionStateBehaviour = transactionStateBehaviour;
@@ -2789,18 +2784,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             EndpointType endpointType)
             throws KernelException {
         ensureCursors();
-        if (relationshipEndpointLabelAndNodeLabelExistenceConstraintsEnabled) {
-            assertSupportedInVersion(
-                    KernelVersion.VERSION_RELATIONSHIP_ENDPOINT_LABEL_AND_LABEL_EXISTENCE_CONSTRAINTS_INTRODUCED,
-                    "Creating a relationship endpoint constraint");
-        } else {
-            throw InvalidArgumentException.unsupportedWithoutSetting(
-                    "A relationship endpoint constraint",
-                    "DBMS",
-                    GraphDatabaseInternalSettings.relationship_endpoint_label_and_node_label_existence_constraints
-                            .name(),
-                    Boolean.toString(true));
-        }
+        assertSupportedInVersion(
+                KernelVersion.VERSION_RELATIONSHIP_ENDPOINT_LABEL_AND_LABEL_EXISTENCE_CONSTRAINTS_INTRODUCED,
+                "Creating a relationship endpoint constraint");
 
         RelationshipEndpointLabelConstraintDescriptor constraint =
                 lockAndValidateRelationshipEndpointLabelConstraint(schema, name, endpointLabelId, endpointType);
@@ -2886,18 +2872,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     public ConstraintDescriptor nodeLabelExistenceConstraintCreate(
             NodeLabelExistenceSchemaDescriptor schema, String name, int requiredLabelId) throws KernelException {
         ensureCursors();
-        if (relationshipEndpointLabelAndNodeLabelExistenceConstraintsEnabled) {
-            assertSupportedInVersion(
-                    KernelVersion.VERSION_RELATIONSHIP_ENDPOINT_LABEL_AND_LABEL_EXISTENCE_CONSTRAINTS_INTRODUCED,
-                    "Creating a label existence constraint");
-        } else {
-            throw InvalidArgumentException.unsupportedWithoutSetting(
-                    "A label existence constraint",
-                    "DBMS",
-                    GraphDatabaseInternalSettings.relationship_endpoint_label_and_node_label_existence_constraints
-                            .name(),
-                    Boolean.toString(true));
-        }
+        assertSupportedInVersion(
+                KernelVersion.VERSION_RELATIONSHIP_ENDPOINT_LABEL_AND_LABEL_EXISTENCE_CONSTRAINTS_INTRODUCED,
+                "Creating a label existence constraint");
 
         NodeLabelExistenceConstraintDescriptor constraint =
                 lockAndValidateNodeLabelExistenceConstraint(schema, name, requiredLabelId);
@@ -3013,13 +2990,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             assertValidDescriptor(descriptor, CONSTRAINT_CREATION);
             ConstraintDescriptor constraint =
                     constraintFunction.apply(descriptor).withName(name);
-            if (!dependentConstraintsEnabled && constraint.graphTypeDependence() == GraphTypeDependence.DEPENDENT) {
-                throw InvalidArgumentException.unsupportedWithoutSetting(
-                        "A GraphType dependent constraint",
-                        "DBMS",
-                        GraphDatabaseInternalSettings.dependent_constraints_enabled.name(),
-                        Boolean.toString(true));
-            }
             constraint = ensureConstraintHasName(constraint);
             exclusiveSchemaNameLock(constraint.getName());
             assertNoBlockingSchemaRulesExists(constraint);

@@ -19,21 +19,17 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.CommunityShowFuncProcAcceptanceTest.readAll
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 
-import java.lang.Boolean.TRUE
 import java.nio.file.NoSuchFileException
 
 class CommunityCombineCommandsAcceptanceTestBase extends TransactionCommandAcceptanceTestSupport
     with ShowSettingsAcceptanceTestSupport {
 
   override def databaseConfig(): Map[Setting[?], Object] = super.databaseConfig() ++ Map(
-    GraphDatabaseInternalSettings.composable_commands -> TRUE,
-    GraphDatabaseInternalSettings.graph_type_enabled -> TRUE,
     GraphDatabaseSettings.default_language -> GraphDatabaseSettings.CypherVersion.Cypher25
   )
 

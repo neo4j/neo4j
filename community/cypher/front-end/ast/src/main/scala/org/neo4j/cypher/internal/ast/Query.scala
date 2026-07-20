@@ -317,7 +317,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   ): SemanticCheck =
     checkStandaloneCall(clauses) chain
       withScopedState(clauseCheck(clauses)) chain
-      checkComposableNonTransactionCommandsAllowed(context) chain
       checkOrder(clauses, canOmitReturnClause, context) chain
       checkNoCallInTransactionsAfterWriteClause(clauses) chain
       checkInputDataStream(clauses) chain
@@ -332,7 +331,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   ): SemanticCheck =
     checkStandaloneCall(clauses) chain
       withScopedState(clauseCheck(clauses)) chain
-      checkComposableNonTransactionCommandsAllowed(context) chain
       checkOrder(clauses, canOmitReturnClause, context) chain
       checkNoCallInTransactionsAfterWriteClause(clauses) chain
       checkInputDataStream(clauses) chain
@@ -544,33 +542,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
             c.asInstanceOf[With].withType.isInstanceOf[AddedInRewriteGeneral]
         ))
     )
-  }
-
-  private def checkComposableNonTransactionCommandsAllowed(context: UnaliasedNotAllowed): SemanticCheck = {
-    // Combining commands other than show and terminate transactions are hidden behind a feature flag
-    // Same with combining any command with any regular Cypher clause (except their YIELD and RETURN)
-    val nonTransactionCommands = getCommandClauses.filter(c => !c.isInstanceOf[TransactionsCommandClause])
-    val partOfLargerQuery = context != ImportingWithSubqueryCall
-
-    if (
-      getCommandClauses.nonEmpty && (
-        partOfLargerQuery || containsNonCommandClause(clauses, onlyAllowReturnIfAddedInRewriter = false)
-      )
-    ) {
-      requireFeatureSupport(
-        "Composing `SHOW` and `TERMINATE` commands with regular Cypher",
-        SemanticFeature.ComposableCommands,
-        position
-      )
-    } else if (getCommandClauses.size > 1 && nonTransactionCommands.nonEmpty) {
-      requireFeatureSupport(
-        "Composing commands other than `SHOW TRANSACTIONS` and `TERMINATE TRANSACTIONS`",
-        SemanticFeature.ComposableCommands,
-        position
-      )
-    } else {
-      success
-    }
   }
 
   private def checkOrderForCommandClauses(clauses: Seq[Clause], context: UnaliasedNotAllowed) = {

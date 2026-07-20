@@ -37,10 +37,6 @@ class GraphSchemaOptimizationsPlanningIntegrationTest extends CypherPlannerTestS
     with LogicalPlanningAttributesTestSupport
     with AstConstructionTestSupport {
 
-  override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
-    super.plannerBuilder()
-      .enableGraphTypes()
-
   val plannerWithNodeLabelConstraints: StatisticsBackedLogicalPlanningConfigurationBuilder =
     plannerBuilder()
       .setLabelCardinality("Person", 1000)

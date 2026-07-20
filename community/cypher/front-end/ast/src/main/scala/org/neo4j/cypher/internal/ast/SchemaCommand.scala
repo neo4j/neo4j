@@ -24,9 +24,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.ast.semantics._
+import org.neo4j.cypher.internal.ast.semantics.liftSemanticEitherFunc
 import org.neo4j.cypher.internal.expressions.DynamicLabelExpression
 import org.neo4j.cypher.internal.expressions.DynamicRelTypeExpression
 import org.neo4j.cypher.internal.expressions.ElementTypeName
@@ -886,11 +885,7 @@ case class AlterCurrentGraphType(
   override val commandDescription: String = "ALTER CURRENT GRAPH TYPE " + operation.name()
 
   override def semanticCheck: SemanticCheck =
-    requireFeatureSupport(
-      "`ALTER CURRENT GRAPH TYPE`",
-      SemanticFeature.GraphTypes,
-      position
-    ) chain SemanticCheck.fromState { (state: SemanticState) =>
+    SemanticCheck.fromState { (state: SemanticState) =>
       SemanticCheck.setState(state.copy(graphTypeMode = operation)) chain graphType.semanticCheck
     }
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)

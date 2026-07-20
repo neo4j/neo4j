@@ -54,7 +54,6 @@ import org.junit.jupiter.api.function.Executable;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -257,9 +256,7 @@ abstract class OperationsTest {
                 constraintIndexCreator,
                 mock(ConstraintSemantics.class),
                 indexingService,
-                Config.defaults(Map.of(
-                        GraphDatabaseInternalSettings.relationship_endpoint_label_and_node_label_existence_constraints,
-                        true)),
+                Config.defaults(),
                 INSTANCE,
                 () -> StaticAccessMode.FULL,
                 TransactionStateBehaviour.DEFAULT_BEHAVIOUR);

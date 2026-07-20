@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.CypherVersionHelpers.versionedSemanticContext
 import org.neo4j.cypher.internal.CypherVersionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.BooleanType
@@ -37,7 +36,7 @@ import scala.collection.immutable.ArraySeq
 
 class SchemaCommandTest extends CypherFunSuite with AstConstructionTestSupport with CypherVersionTestSupport {
 
-  private val initialState = SemanticState.clean.withFeature(SemanticFeature.GraphTypes)
+  private val initialState = SemanticState.clean
 
   private val p = InputPosition.withLength(13, 12, 11, 10)
   private val p2 = InputPosition.withLength(42, 7, 8, 9)

@@ -46,7 +46,6 @@ class GraphSchemaOptimisationCardinalityIntegrationTest extends CypherPlannerTes
 
   private val planner =
     plannerBuilder()
-      .enableGraphTypes()
       .setAllNodesCardinality(allNodes)
       .setAllRelationshipsCardinality(allRels)
       .setLabelCardinality("B", bCount)

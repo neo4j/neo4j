@@ -57,14 +57,6 @@ object SemanticFeature {
     override def name: String = "USE single graph selector"
   }
 
-  case object ComposableCommands extends SemanticFeature with FeatureToString {
-    override def name: String = "composable commands"
-  }
-
-  case object GraphTypes extends SemanticFeature with FeatureToString {
-    override def name: String = "`GRAPH TYPE` schema management"
-  }
-
   case object ExperimentalCypherVersions extends SemanticFeature with FeatureToString {
     override def name: String = "experimental cypher versions"
   }
@@ -146,8 +138,6 @@ object SemanticFeature {
     UseAsSingleGraphSelector,
     ShowSetting,
     OidcCredentialForwarding,
-    ComposableCommands,
-    GraphTypes,
     ExperimentalCypherVersions,
     RelationshipPropertyValueAccessRules,
     VectorSearchWithComplexPattern,

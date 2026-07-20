@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.runtime.QueryStatistics
@@ -36,7 +35,6 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.gqlstatus.NotificationClassification
 import org.neo4j.graphdb.NotificationCategory
 import org.neo4j.graphdb.SeverityLevel
-import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
@@ -102,12 +100,6 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
       )
     )
   }
-
-  override def databaseConfig(): Map[Setting[?], Object] = super.databaseConfig() ++ Map(
-    GraphDatabaseInternalSettings.graph_type_enabled -> java.lang.Boolean.TRUE,
-    GraphDatabaseInternalSettings.dependent_constraints_enabled -> java.lang.Boolean.TRUE,
-    GraphDatabaseInternalSettings.relationship_endpoint_label_and_node_label_existence_constraints -> java.lang.Boolean.TRUE
-  )
 
   // Index commands
 

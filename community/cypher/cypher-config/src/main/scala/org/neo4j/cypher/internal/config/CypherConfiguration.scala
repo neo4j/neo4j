@@ -267,9 +267,6 @@ class CypherConfiguration private (val config: Config) {
   val planningGraphSchemaOptimizationsEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.planning_graph_schema_optimizations_enabled).booleanValue()
 
-  val graphTypeEnabled: Boolean =
-    config.get(GraphDatabaseInternalSettings.graph_type_enabled).booleanValue()
-
   val optionalMatchRemoverEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.optional_match_remover_enabled).booleanValue()
 

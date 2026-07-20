@@ -3011,39 +3011,6 @@ case class ShowConstraintsClause(
 
   override def getClauseWithoutSubclauses: CommandClause =
     copy(where = None, yieldItems = List.empty, yieldWith = None)(InputPosition.NONE)
-
-  override def getFilteredColumns(features: Set[SemanticFeature]): Seq[LogicalVariable] =
-    if (!features(SemanticFeature.GraphTypes)) {
-      def filterOutGraphTypeColumns(name: String) =
-        Seq(ShowConstraintsClause.enforcedLabelColumn, ShowConstraintsClause.classificationColumn).contains(name)
-
-      val filteredUnfilteredColumns =
-        unfilteredColumns.columns.filterNot { (s: ShowColumn) => filterOutGraphTypeColumns(s.name) }
-
-      filteredUnfilteredColumns.map(_.variable)
-    } else {
-      unfilteredColumns.columns.map(_.variable)
-    }
-
-  // Don't want to declare the graph type columns without the feature flag enabled
-  override def clauseSpecificSemanticCheck: SemanticCheck = fromState { s =>
-    val (updatedColumnsAsMap, updatedUnfilteredColumns) = if (!s.features(SemanticFeature.GraphTypes)) {
-      def filterOutGraphTypeColumns(name: String) =
-        Seq(ShowConstraintsClause.enforcedLabelColumn, ShowConstraintsClause.classificationColumn).contains(name)
-
-      val filteredColumnsAsMap = columnsAsMap.filterNot { case (name, _) => filterOutGraphTypeColumns(name) }
-      val filteredUnfilteredColumns =
-        unfilteredColumns.columns.filterNot { (s: ShowColumn) => filterOutGraphTypeColumns(s.name) }
-
-      (filteredColumnsAsMap, filteredUnfilteredColumns)
-    } else {
-      (columnsAsMap, unfilteredColumns.columns)
-    }
-
-    // This is the same things `super.clauseSpecificSemanticCheck` does (with the values of the else case directly)
-    if (yieldItems.nonEmpty) yieldItems.foldSemanticCheck(_.semanticCheck(updatedColumnsAsMap))
-    else semanticCheckFold(updatedUnfilteredColumns)(sc => declareVariable(sc.variable, sc.cypherType))
-  }
 }
 
 object ShowConstraintsClause {
@@ -3123,10 +3090,6 @@ case class ShowCurrentGraphTypeClause(
 
   override def getClauseWithoutSubclauses: CommandClause =
     copy(where = None, yieldItems = List.empty, yieldWith = None)(InputPosition.NONE)
-
-  override def clauseSpecificSemanticCheck: SemanticCheck =
-    requireFeatureSupport("`SHOW CURRENT GRAPH TYPE`", SemanticFeature.GraphTypes, position) chain
-      super.clauseSpecificSemanticCheck
 }
 
 object ShowCurrentGraphTypeClause {

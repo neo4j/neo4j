@@ -22,28 +22,19 @@ package org.neo4j.graphdb;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SkipOnSpd;
 
-@DbmsExtension(configurationCallback = "configure")
+@DbmsExtension()
 public final class NodeLabelExistenceConstraintCommunityIT {
     @Inject
     private GraphDatabaseAPI graphDatabaseAPI;
-
-    @ExtensionCallback
-    void configure(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(
-                GraphDatabaseInternalSettings.relationship_endpoint_label_and_node_label_existence_constraints, true);
-    }
 
     @Test
     @SkipOnSpd(reason = "Spd runs on enterprise, will not throw", notes = SkipOnSpd.Note.incompatible)

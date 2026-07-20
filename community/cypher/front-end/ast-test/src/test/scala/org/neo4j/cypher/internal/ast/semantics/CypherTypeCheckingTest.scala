@@ -60,7 +60,7 @@ class CypherTypeCheckingTest extends CypherFunSuite with AstConstructionTestSupp
   private val pos4 = InputPosition(37, 8, 9)
   private val pos5 = InputPosition(42, 11, 14)
 
-  private val initialState = SemanticState.clean.withFeature(SemanticFeature.GraphTypes)
+  private val initialState = SemanticState.clean
 
   // Dependent constraints allow non-nullable types (including non-nullable lists).
   // Otherwise, the rules are the same for all sort of property type constraints.

@@ -19,12 +19,10 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.AttributeBasedAccessControl
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ComposableCommands
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.DisableTypeCheckingInSemanticAnalysis
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.EnableParsingOfObfuscatedLiterals
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExperimentalCypherVersions
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.FulltextSearch
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.GraphTypes
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.GroupByClause
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LocalCallables
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
@@ -54,10 +52,8 @@ trait FrontEndCompilationPhases {
     MultipleDatabases.productPrefix,
     ShowSetting.productPrefix,
     OidcCredentialForwarding.productPrefix,
-    GraphTypes.productPrefix,
     RelationshipPropertyValueAccessRules.productPrefix,
     AttributeBasedAccessControl.productPrefix,
-    ComposableCommands.productPrefix,
     UserTags.productPrefix,
     GroupByClause.productPrefix,
     ValueInListProperty.productPrefix
@@ -147,8 +143,6 @@ object FrontEndCompilationPhases extends FrontEndCompilationPhases {
     Seq(
       GraphDatabaseInternalSettings.show_setting -> ShowSetting.productPrefix,
       GraphDatabaseInternalSettings.oidc_credential_forwarding_enabled -> OidcCredentialForwarding.productPrefix,
-      GraphDatabaseInternalSettings.composable_commands -> ComposableCommands.productPrefix,
-      GraphDatabaseInternalSettings.graph_type_enabled -> GraphTypes.productPrefix,
       GraphDatabaseInternalSettings.enable_experimental_cypher_versions -> ExperimentalCypherVersions.productPrefix,
       GraphDatabaseInternalSettings.relationship_property_value_access_rules -> RelationshipPropertyValueAccessRules.productPrefix,
       GraphDatabaseInternalSettings.cypher_uuid_type_enabled -> UUIDType.productPrefix,

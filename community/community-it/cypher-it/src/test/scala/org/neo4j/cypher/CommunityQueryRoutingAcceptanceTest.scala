@@ -20,10 +20,8 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
-import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlException
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
@@ -49,9 +47,6 @@ class CommunityQueryRoutingHttpAcceptanceTest extends CommunityQueryRoutingAccep
 abstract class CommunityQueryRoutingAcceptanceTest extends CypherITTestSuite
     with FeatureDatabaseManagementService.TestBase
     with BeforeAndAfterAll {
-
-  override def baseConfig: Config.Builder =
-    super.baseConfig.set(GraphDatabaseInternalSettings.composable_commands, java.lang.Boolean.TRUE)
 
   val db: FeatureDatabaseManagementService = dbms
 

@@ -69,7 +69,6 @@ class AcyclicCardinalityIntegrationTest extends CypherPlannerTestSuite with Card
 
   private val planner =
     plannerBuilder()
-      .enableGraphTypes()
       .setAllNodesCardinality(allNodes)
       .setAllRelationshipsCardinality(allRels)
       .setRelationshipCardinality("()-[:R]->()", rRels)

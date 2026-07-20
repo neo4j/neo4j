@@ -1301,10 +1301,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     withSetting(GraphDatabaseSettings.cypher_infer_schema_parts_strategy, strategy)
   }
 
-  def enableGraphTypes(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    withSetting(GraphDatabaseInternalSettings.graph_type_enabled, Boolean.box(enabled))
-  }
-
   def setDatabaseReferenceRepository(
     databaseReferenceRepository: DatabaseReferenceRepository
   ): StatisticsBackedLogicalPlanningConfigurationBuilder =
