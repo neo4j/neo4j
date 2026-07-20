@@ -124,6 +124,16 @@ class FormatTest {
     }
 
     @Test
+    void hexStringOfInt() {
+        assertThat(Format.hexString(0)).isEqualTo("00000000");
+        assertThat(Format.hexString(255)).isEqualTo("000000FF");
+        assertThat(Format.hexString(0xABCDEF12)).isEqualTo("ABCDEF12");
+        assertThat(Format.hexString(-1)).isEqualTo("FFFFFFFF");
+        assertThat(Format.hexString(Integer.MAX_VALUE)).isEqualTo("7FFFFFFF");
+        assertThat(Format.hexString(Integer.MIN_VALUE)).isEqualTo("80000000");
+    }
+
+    @Test
     void numberToStringWithGroups() {
         // given
         long number1 = 123_456_789;

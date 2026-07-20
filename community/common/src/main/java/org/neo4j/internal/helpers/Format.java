@@ -70,6 +70,10 @@ public final class Format {
         return HEX_FORMAT.formatHex(bytes);
     }
 
+    public static String hexString(int value) {
+        return HEX_FORMAT.toHexDigits(value);
+    }
+
     public static byte[] parseHexString(String hexString) {
         return HEX_FORMAT.parseHex(hexString);
     }
