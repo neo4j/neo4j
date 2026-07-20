@@ -463,6 +463,10 @@ class FreeListIdProviderTest {
             }
         }
         freelist.flush(stableGeneration, unstableGeneration, writeCursor(pagedFile));
+        // Mirror the checkpoint sequence: the generation is bumped after flushing released ids, so any ids just
+        // flushed at the previous unstable generation belong to the stable generation by the time rewrite runs.
+        stableGeneration = unstableGeneration;
+        unstableGeneration = stableGeneration + 1;
         var freelistPagesBefore = LongSets.mutable.empty();
         var freeIdsBefore = LongSets.mutable.empty();
         freelist.visitFreelist(
