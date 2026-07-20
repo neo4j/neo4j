@@ -29,6 +29,7 @@ import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -78,6 +79,8 @@ public class IndexStatisticsStore extends LifecycleAdapter
     // Let IndexStatisticsValue be immutable in this map so that checkpoint doesn't have to coordinate with concurrent
     // writers. It's assumed that the data in this map will be so small that everything can just be in it always.
     private final ConcurrentHashMap<IndexStatisticsKey, IndexStatisticsValue> cache = new ConcurrentHashMap<>();
+    private final AtomicLong checkpointedChangeCounter = new AtomicLong();
+    private final AtomicLong changeCounter = new AtomicLong();
 
     public IndexStatisticsStore(
             PageCache pageCache,
@@ -185,6 +188,11 @@ public class IndexStatisticsStore extends LifecycleAdapter
             }
             return newValue;
         });
+        markChanged();
+    }
+
+    private void markChanged() {
+        changeCounter.incrementAndGet();
     }
 
     /**
@@ -234,11 +242,13 @@ public class IndexStatisticsStore extends LifecycleAdapter
         value.set(IndexStatisticsValue.INDEX_SAMPLE_UPDATES_COUNT, sample.updates());
         value.set(IndexStatisticsValue.INDEX_SAMPLE_INDEX_SIZE, sample.indexSize());
         cache.put(new IndexStatisticsKey(indexId, TYPE_SAMPLE), value);
+        markChanged();
     }
 
     public void removeIndex(long indexId) {
         cache.remove(new IndexStatisticsKey(indexId, TYPE_SAMPLE));
         cache.remove(new IndexStatisticsKey(indexId, TYPE_USAGE));
+        markChanged();
     }
 
     public void incrementIndexUpdates(long indexId, long delta) {
@@ -249,6 +259,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
                     copy.get(IndexStatisticsValue.INDEX_SAMPLE_UPDATES_COUNT) + delta);
             return copy;
         });
+        markChanged();
     }
 
     @Override
@@ -284,9 +295,15 @@ public class IndexStatisticsStore extends LifecycleAdapter
             FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
             throws IOException {
         // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
-        clearTree(cursorContext);
-        writeCacheContentsIntoTree(cursorContext);
+        long checkpointedChangeCounter = this.checkpointedChangeCounter.get();
+        long changeCounter = this.changeCounter.get();
+        if (checkpointedChangeCounter != changeCounter) {
+            clearTree(cursorContext);
+            writeCacheContentsIntoTree(cursorContext);
+        }
+
         tree.checkpoint(flushEvent, asyncBlockAccessor, cursorContext);
+        this.checkpointedChangeCounter.set(changeCounter);
     }
 
     @Override

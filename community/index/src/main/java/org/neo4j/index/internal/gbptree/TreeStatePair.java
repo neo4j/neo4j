@@ -97,7 +97,7 @@ final class TreeStatePair {
      */
     static TreeState selectNewestValidState(Pair<TreeState, TreeState> states) {
         return selectNewestValidStateOptionally(states)
-                .orElseThrow(() -> new TreeInconsistencyException(
+                .orElseThrow(() -> new UnexpectedTreeStatesException(
                         "Unexpected combination of state.%n  STATE_A[%s]%n  STATE_B[%s]",
                         states.getLeft(), states.getRight()));
     }

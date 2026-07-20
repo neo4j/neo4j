@@ -31,8 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
@@ -40,6 +45,7 @@ import static org.neo4j.index.internal.gbptree.GBPTreeStructure.visitState;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheck;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.fs.FileUtils.blockSize;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
@@ -85,6 +91,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.ByteUnit;
@@ -669,6 +676,7 @@ class GBPTreeTest {
                 index.checkpoint(
                         cursor -> cursor.putBytes(expected), FileFlushEvent.NULL, asyncBlockAccessor, NULL_CONTEXT);
                 random.nextBytes(expected);
+                index.writer(NULL_CONTEXT).close();
                 index.checkpoint(
                         cursor -> cursor.putBytes(expected), FileFlushEvent.NULL, asyncBlockAccessor, NULL_CONTEXT);
             };
@@ -693,6 +701,101 @@ class GBPTreeTest {
 
             // THEN
             verifyHeader(pageCache, headerBytes);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldSkipActualCheckpointIfNoChangesSinceLastCheckpointAndNoHeaderChange(boolean explicitlyWriteSameHeader)
+            throws IOException {
+        // GIVEN
+        try (var pageCache = createPageCache(defaultPageSize);
+                var index = index(pageCache).build()) {
+            try (var writer = index.writer(NULL_CONTEXT)) {
+                writer.put(new MutableLong(0), new MutableLong(1));
+            }
+            var firstCheckpointEvent = mockedFileFlushEventForCheckpoint();
+            Consumer<PageCursor> additionalHeaderDataWriter = cursor -> cursor.putInt(5);
+            index.checkpoint(additionalHeaderDataWriter, firstCheckpointEvent, asyncBlockAccessor, NULL_CONTEXT);
+            var firstTreeStates = extractTreeStates(pageCache, indexFile);
+            verify(firstCheckpointEvent, atLeastOnce()).startFlush(any());
+
+            // WHEN
+            var secondCheckpointEvent = mock(FileFlushEvent.class);
+            if (explicitlyWriteSameHeader) {
+                index.checkpoint(additionalHeaderDataWriter, secondCheckpointEvent, asyncBlockAccessor, NULL_CONTEXT);
+            } else {
+                index.checkpoint(secondCheckpointEvent, asyncBlockAccessor, NULL_CONTEXT);
+            }
+            var secondTreeStates = extractTreeStates(pageCache, indexFile);
+
+            // THEN
+            verifyNoInteractions(secondCheckpointEvent);
+            assertThat(secondTreeStates).isEqualTo(firstTreeStates);
+        }
+    }
+
+    @Test
+    void shouldDoActualCheckpointIfNoChangesSinceLastCheckpointButHasHeaderChange() throws IOException {
+        // GIVEN
+        try (var pageCache = createPageCache(defaultPageSize);
+                var index = index(pageCache).build()) {
+            try (var writer = index.writer(NULL_CONTEXT)) {
+                writer.put(new MutableLong(0), new MutableLong(1));
+            }
+            var firstCheckpointEvent = mockedFileFlushEventForCheckpoint();
+            index.checkpoint(cursor -> cursor.putInt(5), firstCheckpointEvent, asyncBlockAccessor, NULL_CONTEXT);
+            var firstTreeStates = extractTreeStates(pageCache, indexFile);
+            verify(firstCheckpointEvent, atLeastOnce()).startFlush(any());
+
+            // WHEN
+            var secondCheckpointEvent = mockedFileFlushEventForCheckpoint();
+            index.checkpoint(cursor -> cursor.putInt(6), secondCheckpointEvent, asyncBlockAccessor, NULL_CONTEXT);
+            var secondTreeStates = extractTreeStates(pageCache, indexFile);
+
+            // THEN
+            verify(secondCheckpointEvent, atLeastOnce()).startFlush(any());
+            assertThat(secondTreeStates).isNotEqualTo(firstTreeStates);
+        }
+    }
+
+    @Test
+    void shouldSkipActualFirstCheckpointAfterCleanStartup() throws IOException {
+        // GUVEN
+        try (var pageCache = createPageCache(defaultPageSize)) {
+            try (var index = index(pageCache).build()) {
+                index.writer(NULL_CONTEXT).close();
+                index.checkpoint(FileFlushEvent.NULL, asyncBlockAccessor, NULL_CONTEXT);
+            }
+
+            // WHEN
+            try (var index = index(pageCache).build()) {
+                var checkpointEvent = mock(FileFlushEvent.class);
+                index.checkpoint(checkpointEvent, asyncBlockAccessor, NULL_CONTEXT);
+
+                // THEN
+                verifyNoInteractions(checkpointEvent);
+            }
+        }
+    }
+
+    @Test
+    void shouldDoActualFirstCheckpointAfterDirtyStartup() throws IOException {
+        // GUVEN
+        try (var pageCache = createPageCache(defaultPageSize)) {
+            try (var index = index(pageCache).build()) {
+                index.writer(NULL_CONTEXT).close();
+                // no checkpoint
+            }
+
+            // WHEN
+            try (var index = index(pageCache).build()) {
+                var checkpointEvent = mockedFileFlushEventForCheckpoint();
+                index.checkpoint(checkpointEvent, asyncBlockAccessor, NULL_CONTEXT);
+
+                // THEN
+                verify(checkpointEvent, atLeastOnce()).startFlush(any());
+            }
         }
     }
 
@@ -2660,6 +2763,22 @@ class GBPTreeTest {
             assertTrue(job.hasFailed());
             assertThat(job.getCause().getMessage()).contains("File").contains("unmapped");
         }
+    }
+
+    private Pair<TreeState, TreeState> extractTreeStates(PageCache pageCache, Path indexFile) throws IOException {
+        try (PagedFile pagedFile = pageCache.map(
+                        new StoreFile(indexFile), pageCache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
+                PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+            return TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B);
+        }
+    }
+
+    private static FileFlushEvent mockedFileFlushEventForCheckpoint() {
+        var firstCheckpointEvent = mock(FileFlushEvent.class);
+        when(firstCheckpointEvent.beginFlush(any(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(FlushEvent.NULL);
+        when(firstCheckpointEvent.startChunk(any())).thenReturn(FileFlushEvent.ChunkEvent.NULL);
+        return firstCheckpointEvent;
     }
 
     private static class CheckpointControlledMonitor extends Monitor.Adaptor {

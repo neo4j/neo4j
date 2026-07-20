@@ -23,6 +23,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -51,6 +58,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -433,6 +441,25 @@ class IndexStatisticsStoreTest {
                 .isEqualTo(sessionsPerThread * queriesWithFilterPerSession * numThreads);
         assertThat(usageStats.trackedSince()).isLessThan(usageStats.lastRead());
         assertThat(usageStats.trackedSince()).isEqualTo(expectedMinTimeMillis.get());
+    }
+
+    @Test
+    void shouldSkipWritingOnNoCacheChange() throws IOException {
+        // given
+        var firstFlushEvent = mock(FileFlushEvent.class);
+        when(firstFlushEvent.startChunk(any())).thenReturn(FileFlushEvent.ChunkEvent.NULL);
+        when(firstFlushEvent.beginFlush(any(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(FlushEvent.NULL);
+        store.setSampleStats(1, new IndexSample(1, 2, 3));
+        store.checkpoint(firstFlushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, CursorContext.NULL_CONTEXT);
+        verify(firstFlushEvent, atLeastOnce()).startChunk(any());
+
+        // when
+        var secondFlushEvent = mock(FileFlushEvent.class);
+        store.checkpoint(secondFlushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, CursorContext.NULL_CONTEXT);
+
+        // then
+        verifyNoInteractions(secondFlushEvent);
     }
 
     private void replaceAndVerifySample(long indexId, IndexSample indexSample) {

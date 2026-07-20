@@ -21,7 +21,6 @@ package org.neo4j.kernel.database;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.eclipse.collections.impl.factory.Sets.mutable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -33,13 +32,9 @@ import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,14 +42,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.api.set.MutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.index.internal.gbptree.GBPTreeStructure;
-import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.io.async.AsyncBlockAccessor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -62,10 +54,7 @@ import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
@@ -328,7 +317,7 @@ class DatabaseIT {
             int numFlushesDuringCheckpoint = mappedFile.getLocalFlushCount() - flushCounts.get(mappedFile);
             assertThat(numFlushesDuringCheckpoint)
                     .as(mappedFile.path().getFileName() + " should flush")
-                    .isEqualTo(numberOfExpectedFlushesAtCheckpoint(mappedFile.path()));
+                    .isGreaterThanOrEqualTo(1);
         }
     }
 
@@ -349,45 +338,6 @@ class DatabaseIT {
             assertThat(numFlushesDuringShutdown)
                     .as(mappedFile.path().getFileName() + " should flush on shutdown")
                     .isPositive();
-        }
-    }
-
-    private int numberOfExpectedFlushesAtCheckpoint(Path storeFile) {
-        PageCache pageCache = database.getDependencyResolver().resolveDependency(PageCache.class);
-        MutableSet<OpenOption> openOptions = mutable.empty();
-        try {
-            PagedFile pagedFile =
-                    pageCache.getExistingMapping(new StoreFile(storeFile)).orElseThrow();
-            try (PageCursor cursor = pagedFile.io(
-                    0, PagedFile.PF_SHARED_READ_LOCK | PagedFile.PF_NO_FAULT, CursorContext.NULL_CONTEXT)) {
-                if (Objects.equals(cursor.getByteOrder(), ByteOrder.BIG_ENDIAN)) {
-                    openOptions.add(PageCacheOpenOptions.BIG_ENDIAN);
-                }
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        try {
-            GBPTreeVisitor.Adaptor<?, ?, ?> visitor = new GBPTreeVisitor.Adaptor<>();
-            String dbName = "CheckIfGBPTree";
-            // If we can visit both Meta and State (pages 0,1,2) without Exception we can assume it's a GBPTree
-            GBPTreeStructure.visitMeta(
-                    pageCacheWrapper,
-                    storeFile,
-                    visitor,
-                    dbName,
-                    CursorContext.NULL_CONTEXT,
-                    openOptions.toImmutable());
-            GBPTreeStructure.visitState(
-                    pageCacheWrapper,
-                    storeFile,
-                    visitor,
-                    dbName,
-                    CursorContext.NULL_CONTEXT,
-                    openOptions.toImmutable());
-            return 3; // GPBTree files flush 3 times during checkpoint
-        } catch (Exception e) {
-            return 1; // Other store files flushes just once
         }
     }
 

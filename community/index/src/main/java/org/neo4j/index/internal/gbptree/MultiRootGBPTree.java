@@ -40,6 +40,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
@@ -54,6 +55,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
@@ -68,6 +70,7 @@ import org.neo4j.io.async.AsyncBlockAccessor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
@@ -658,6 +661,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 initializeAfterCreation(cursorContext);
                 dirtyOnStartup = false;
                 cleaning = CleanupJob.CLEAN;
+                changesSinceLastCheckpoint.set(true);
             } else {
                 initialize(pagedFile, headerReader, cursorContext);
                 dirtyOnStartup = !clean;
@@ -670,6 +674,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                         forceState(flushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, cursorContext);
                     }
                     cleaning = createCleanupJob(recoveryCleanupWorkCollector, dirtyOnStartup);
+                    changesSinceLastCheckpoint.set(dirtyOnStartup);
                 } else {
                     cleaning = CleanupJob.CLEAN;
                 }
@@ -811,7 +816,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     private void initialize(PagedFile pagedFile, Header.Reader headerReader, CursorContext cursorContext)
             throws IOException {
         var openOptions = this.openOptions;
-        TreeState state = readHeaderFromPagedFiled(pagedFile, headerReader, cursorContext, openOptions);
+        TreeState state = readHeaderFromPagedFile(pagedFile, headerReader, cursorContext, openOptions);
         generation = Generation.generation(state.stableGeneration(), state.unstableGeneration());
         var root = new Root(state.rootId(), state.rootGeneration());
         rootLayer.initialize(root, cursorContext);
@@ -910,7 +915,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             throws IOException, MetadataMismatchException {
         try (PagedFile pagedFile =
                 openExistingIndexFile(pageCache, indexFile, cursorContext, databaseName, openOptions)) {
-            readHeaderFromPagedFiled(pagedFile, headerReader, cursorContext, openOptions);
+            readHeaderFromPagedFile(pagedFile, headerReader, cursorContext, openOptions);
         } catch (Throwable t) {
             // Decorate outgoing exceptions with basic tree information. This is similar to how the constructor
             // appends its information, but the constructor has read more information at that point so this one
@@ -920,7 +925,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         }
     }
 
-    private static TreeState readHeaderFromPagedFiled(
+    private static TreeState readHeaderFromPagedFile(
             PagedFile pagedFile, Reader headerReader, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions)
             throws IOException {
         Pair<TreeState, TreeState> states = loadStatePages(pagedFile, cursorContext);
@@ -1210,6 +1215,10 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             return CompactionReport.EMPTY;
         }
 
+        if (!changesSinceLastCheckpoint.get() && !headerDataChanged(headerWriter, cursorContext)) {
+            return CompactionReport.EMPTY;
+        }
+
         awaitCleaner();
         try {
             // Drain writers and flip state so that writers after this point on will do co-operative flushing
@@ -1273,6 +1282,31 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         } finally {
             // Safeguard, let's never leave this method with eager flushing for writers enabled.
             writersMustEagerlyFlush = false;
+        }
+    }
+
+    /**
+     * In the case of making a checkpoint where no changes have happened since the last checkpoint,
+     * this additional check is made which also check if the would-be additional header data would write
+     * data that has changed from the previous checkpoint. Checkpoint is only skipped if the header data
+     * is also unchanged.
+     */
+    private boolean headerDataChanged(Header.Writer headerWriter, CursorContext cursorContext) throws IOException {
+        if (headerWriter == CARRY_OVER_PREVIOUS_HEADER) {
+            return false;
+        }
+
+        MutableObject<ByteBuffer> prevHeader = new MutableObject<>();
+        try {
+            readHeaderFromPagedFile(pagedFile, (Reader) prevHeader::setValue, cursorContext, openOptions);
+            ByteBuffer toBuffer =
+                    ByteBuffer.allocate(prevHeader.get().remaining()).order(getEndianness(openOptions));
+            headerWriter.write(null, 0, new ByteArrayPageCursor(toBuffer));
+            toBuffer.flip();
+            return !toBuffer.equals(prevHeader.get());
+        } catch (BufferOverflowException | UnexpectedTreeStatesException e) {
+            // this header data definitely has/needs changed
+            return true;
         }
     }
 
