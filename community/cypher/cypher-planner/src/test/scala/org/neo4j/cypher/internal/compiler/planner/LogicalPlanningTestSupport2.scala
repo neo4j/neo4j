@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.FakeLeafPlan
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.parsing
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
@@ -68,7 +69,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentIDP
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CompressAnonymousVariables
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
@@ -630,7 +630,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
 
       val metrics = metricsFactory.newMetrics(
         planContext,
-        simpleExpressionEvaluator,
+        TestExpressionEvaluator.noEval,
         config.executionModel,
         CancellationChecker.neverCancelled()
       )
@@ -652,7 +652,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(
         planContext,
-        simpleExpressionEvaluator,
+        TestExpressionEvaluator.noEval,
         config.executionModel,
         CancellationChecker.neverCancelled()
       )
@@ -664,7 +664,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(
         planContext,
-        simpleExpressionEvaluator,
+        TestExpressionEvaluator.noEval,
         config.executionModel,
         CancellationChecker.neverCancelled()
       )
@@ -688,7 +688,8 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
         semanticTable = semanticTable,
         costComparisonListener = devNullListener,
         readOnly = false,
-        labelInferenceStrategy = NoInference
+        labelInferenceStrategy = NoInference,
+        expressionEvaluator = TestExpressionEvaluator.noEval
       )
 
       val settings = Settings(

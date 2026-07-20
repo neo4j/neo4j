@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringIn
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
@@ -218,7 +219,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherPlannerTestSuite with Logi
     val metrics: Metrics =
       environment.metricsFactory.newMetrics(
         GIVEN.planContext,
-        simpleExpressionEvaluator,
+        TestExpressionEvaluator.noEval,
         ExecutionModel.default,
         CancellationChecker.neverCancelled()
       )
@@ -237,7 +238,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherPlannerTestSuite with Logi
       semanticTable = null,
       costComparisonListener = devNullListener,
       readOnly = false,
-      labelInferenceStrategy = NoInference
+      labelInferenceStrategy = NoInference,
+      expressionEvaluator = TestExpressionEvaluator.noEval
     )
 
     val settings = Settings(

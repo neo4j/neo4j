@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
 import org.neo4j.cypher.internal.compiler.helpers.FakeLeafPlan
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQueryTransformer
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -141,6 +142,7 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.schema.EndpointType
 import org.neo4j.internal.schema.constraints.SchemaValueType
+import org.neo4j.values.virtual.MapValue
 
 import scala.util.Success
 import scala.util.Try
@@ -258,7 +260,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
   def newMetricsFactory = SimpleMetricsFactory
 
   def newExpressionEvaluator = new ExpressionEvaluator {
-    override def evaluateExpression(expr: Expression): Option[Any] = None
+    override def evaluateExpression(expr: Expression, parameters: MapValue): Option[Any] = None
   }
 
   def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics): Metrics = {
@@ -431,7 +433,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
       semanticTable = semanticTable,
       costComparisonListener = costComparisonListener,
       readOnly = false,
-      labelInferenceStrategy = NoInference
+      labelInferenceStrategy = NoInference,
+      expressionEvaluator = TestExpressionEvaluator.noEval
     )
 
     val config = CypherPlannerConfiguration.withSettings(configSettings)

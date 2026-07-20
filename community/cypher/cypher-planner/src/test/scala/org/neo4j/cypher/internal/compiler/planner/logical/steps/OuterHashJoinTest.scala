@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
@@ -35,7 +36,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -68,7 +68,7 @@ class OuterHashJoinTest extends CypherPlannerTestSuite with LogicalPlanningTestS
   private def newMockedMetrics(factory: MetricsFactory): Metrics =
     factory.newMetrics(
       planContext,
-      simpleExpressionEvaluator,
+      TestExpressionEvaluator.noEval,
       ExecutionModel.default,
       CancellationChecker.neverCancelled()
     )

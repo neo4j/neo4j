@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.helpers.TokenContainer
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration.PlanningResult
@@ -56,13 +57,13 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelationshipEndpointLabelConstraintDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.defaultSettingsOverrides
+import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -177,7 +178,8 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     databaseReferenceRepository: DatabaseReferenceRepository = ContextHelper.mockDatabaseReferenceRepository,
     printNotifications: Boolean = false,
     parallelRepeatHeuristic: CypherParallelRepeatHeuristicOption = CypherParallelRepeatHeuristicOption.disabled,
-    plannerVersionOption: CypherPlannerVersionOption = CypherPlannerVersionOption.default
+    plannerVersionOption: CypherPlannerVersionOption = CypherPlannerVersionOption.default,
+    expressionEvaluator: ExpressionEvaluator = TestExpressionEvaluator.noEval
   )
 
   case class Cardinalities(
@@ -1317,6 +1319,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     copy(autoResolvePropertiesDuringPlanning = enabled)
   }
 
+  def setExpressionEvaluator(expressionEvaluator: ExpressionEvaluator)
+    : StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(expressionEvaluator = expressionEvaluator))
+  }
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -1880,7 +1887,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
     )
     val metrics = SimpleMetricsFactory.newMetrics(
       planContext,
-      simpleExpressionEvaluator,
+      options.expressionEvaluator,
       options.executionModel,
       CancellationChecker.neverCancelled(),
       labelInferenceStrategy

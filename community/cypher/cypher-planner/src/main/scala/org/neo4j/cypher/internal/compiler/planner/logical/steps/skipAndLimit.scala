@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanTransformer
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 import scala.annotation.tailrec
@@ -49,10 +51,25 @@ object skipAndLimit extends PlanTransformer {
       }
   }
 
-  def planLimitOnTopOf(plan: LogicalPlan, count: Expression)(implicit idGen: IdGen): LogicalPlan =
-    if (shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(count)))
-      ExhaustiveLimit(plan, count)(idGen)
-    else Limit(plan, count)(idGen)
+  def planLimitOnTopOf(
+    plan: LogicalPlan,
+    count: Expression,
+    expressionEvaluator: ExpressionEvaluator
+  )(implicit idGen: IdGen): LogicalPlan = {
+    doPlanLimitOnTopOf(plan, expressionEvaluator.evaluateLongIfStable(count), count)
+  }
+
+  def planLimitOnTopOf(plan: LogicalPlan, count: Long)(implicit idGen: IdGen): LogicalPlan = {
+    val countExpr = SignedDecimalIntegerLiteral(count.toString)(InputPosition.NONE)
+    doPlanLimitOnTopOf(plan, Some(count), countExpr)
+  }
+
+  private def doPlanLimitOnTopOf(plan: LogicalPlan, maybeCount: Option[Long], countExpr: Expression)(implicit
+    idGen: IdGen): LogicalPlan = {
+    if (shouldPlanExhaustiveLimit(plan, maybeCount))
+      ExhaustiveLimit(plan, countExpr)(idGen)
+    else Limit(plan, countExpr)(idGen)
+  }
 
   def apply(plan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     plan match {
@@ -91,7 +108,10 @@ object skipAndLimit extends PlanTransformer {
               limitExpr,
               query.interestingOrder,
               context,
-              shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(limitExpr))
+              shouldPlanExhaustiveLimit(
+                plan,
+                context.staticComponents.expressionEvaluator.evaluateLongIfStable(limitExpr)
+              )
             ))
 
           case (Some(skipExpr), Some(limitExpr)) =>
@@ -108,7 +128,10 @@ object skipAndLimit extends PlanTransformer {
             Some(context.staticComponents.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context))
 
           case (_, Some(limitExpr))
-            if shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(limitExpr)) =>
+            if shouldPlanExhaustiveLimit(
+              plan,
+              context.staticComponents.expressionEvaluator.evaluateLongIfStable(limitExpr)
+            ) =>
             Some(context.staticComponents.logicalPlanProducer.planExhaustiveLimit(
               plan,
               limitExpr,

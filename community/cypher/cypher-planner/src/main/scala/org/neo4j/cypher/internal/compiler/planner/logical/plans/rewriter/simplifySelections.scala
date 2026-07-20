@@ -23,10 +23,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.pla
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
@@ -42,7 +40,7 @@ case object simplifySelections extends Rewriter with BottomUpMergeableRewriter {
 
   override val innerRewriter: Rewriter = Rewriter.lift {
     case s @ Selection(Ands(preds), source) if isFalse(preds) =>
-      planLimitOnTopOf(source, SignedDecimalIntegerLiteral("0")(InputPosition.NONE))(SameId(s.id))
+      planLimitOnTopOf(source, 0L)(SameId(s.id))
 
     case Selection(Ands(preds), source) if isTrue(preds) => source
   }

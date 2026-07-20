@@ -83,6 +83,7 @@ trait PlannerContext extends BaseContext {
   def securityLog: AbstractSecurityLog
   def internalNotificationStats: InternalNotificationStats
   def labelInferenceStrategy: LabelInferenceStrategy
+  def expressionEvaluator: ExpressionEvaluator
 
   /** Resolved batch strategy for `CALL ... IN CONCURRENT TRANSACTIONS` (setting + preparser-option override). */
   def transactionBatchStrategy: CypherTransactionBatchStrategyOption
@@ -177,7 +178,8 @@ final class PlannerContextImpl(
   override val sessionDatabase: DatabaseReference,
   override val semanticFeatures: Seq[SemanticFeature],
   override val shadowedFunctions: Set[String],
-  override val transactionBatchStrategy: CypherTransactionBatchStrategyOption
+  override val transactionBatchStrategy: CypherTransactionBatchStrategyOption,
+  override val expressionEvaluator: ExpressionEvaluator
 ) extends PlannerContext {
 
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
@@ -217,7 +219,8 @@ final class PlannerContextImpl(
     sessionDatabase = sessionDatabase,
     semanticFeatures = semanticFeatures,
     shadowedFunctions = shadowedFunctions,
-    transactionBatchStrategy = transactionBatchStrategy
+    transactionBatchStrategy = transactionBatchStrategy,
+    expressionEvaluator = expressionEvaluator
   )
 
   override def isScopeQuery: Boolean = false
@@ -305,7 +308,8 @@ object PlannerContext {
       sessionDatabase,
       semanticFeatures = semanticFeatures,
       shadowedFunctions = shadowedFunctions,
-      transactionBatchStrategy = transactionBatchStrategy
+      transactionBatchStrategy = transactionBatchStrategy,
+      expressionEvaluator = evaluator
     )
   }
 }

@@ -31,16 +31,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInde
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.schema.GraphSchemaOptimizations
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
-import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.StringDecimalInteger
-import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction.isFunctionDeterministic
-import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
@@ -55,10 +48,8 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
-import org.neo4j.cypher.internal.util.CypherException
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
-import org.neo4j.values.storable.NumberValue
 
 object Metrics {
 
@@ -228,56 +219,6 @@ object Metrics {
    */
   type RelTypeInfo = Map[LogicalVariable, RelTypeName]
   val RelTypeInfo: Map.type = Map
-}
-
-trait ExpressionEvaluator {
-
-  def hasParameters(expr: Expression): Boolean = expr.folder.findAllByClass[Expression].exists {
-    case Parameter(_, _, _) => true
-    case _                  => false
-  }
-
-  def isDeterministic(expr: Expression): Boolean = {
-    expr.folder.findAllByClass[Expression].forall {
-      case func: FunctionInvocation => isFunctionDeterministic(func.function)
-      // for UDFs we don't know but the result might be non-deterministic
-      case _: ResolvedFunctionInvocation => false
-      case _                             => true
-    }
-  }
-
-  def evaluateExpression(expr: Expression): Option[Any]
-
-  /*
-   * Returns the evaluated long value from the specified expression if the expression is stable and can be evaluated to a long.
-   */
-  def evaluateLongIfStable(expression: Expression): Option[Long] = {
-    def isStable(expression: Expression): Boolean = {
-      !hasParameters(expression) && isDeterministic(expression)
-    }
-
-    expression match {
-      case literal: StringDecimalInteger => Some(literal.value)
-      case nonLiteral if isStable(nonLiteral) =>
-        evaluateExpression(nonLiteral)
-          .collect { case number: NumberValue => number.longValue() }
-      case _ => None
-    }
-  }
-}
-
-/**
- * Wrapper around [[SimpleInternalExpressionEvaluator]] that catches exceptions and returns an Option.
- */
-object simpleExpressionEvaluator extends ExpressionEvaluator {
-  private val expressionEvaluator = new SimpleInternalExpressionEvaluator()
-
-  override def evaluateExpression(expr: Expression): Option[Any] =
-    try {
-      Some(expressionEvaluator.evaluate(expr))
-    } catch {
-      case _: CypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
-    }
 }
 
 case class Metrics(cost: CostModel, cardinality: CardinalityModel)

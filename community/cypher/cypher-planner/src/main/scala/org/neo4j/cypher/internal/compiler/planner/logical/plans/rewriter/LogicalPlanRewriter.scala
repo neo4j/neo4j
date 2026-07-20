@@ -149,7 +149,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
       Some(simplifySelections),
       Some(limitNestedPlanExpressions(
         cardinalities,
-        otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos, solveds, providedOrders)
+        otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos, solveds, providedOrders),
+        context.expressionEvaluator
       )),
       Some(combineHasLabels),
       Some(truncateDatabaseDeeagerizer),

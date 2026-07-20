@@ -71,7 +71,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolverMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
@@ -700,7 +699,7 @@ final class TransformingPlanner private[planning] (
       maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
       clock,
       new SequentialIdGen(),
-      simpleExpressionEvaluator,
+      SimpleExceptionsIgnoringExpressionEvaluator,
       params,
       transactionalContextWrapper.cancellationChecker,
       options.materializedEntitiesMode,

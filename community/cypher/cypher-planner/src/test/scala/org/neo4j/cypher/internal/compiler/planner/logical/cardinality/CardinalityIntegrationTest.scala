@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.InferSchemaPartsStrategy
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
@@ -46,11 +48,12 @@ import org.neo4j.cypher.internal.util.ProcedureName
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.values.storable.Values
 
 import scala.math.sqrt
 
 class CardinalityIntegrationTest extends CypherPlannerTestSuite with CardinalityIntegrationTestSupport
-    with LogicalPlanningAttributesTestSupport {
+    with LogicalPlanningAttributesTestSupport with AstConstructionTestSupport {
 
   private val allNodes = 733.0
   private val personCount = 324.0
@@ -181,9 +184,14 @@ class CardinalityIntegrationTest extends CypherPlannerTestSuite with Cardinality
 
   test("query containing LIMIT by expression") {
     val i = personCount
+    val expressionEvaluator = TestExpressionEvaluator.hardcoded(
+      function("toInteger", literal(2)) -> Values.longValue(2)
+    )
+
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
+      .setExpressionEvaluator(expressionEvaluator)
       .build()
     queryShouldHaveCardinality(config, "MATCH (n:Person) WITH n LIMIT toInteger(1+1)", Math.min(i, 2.0))
   }
@@ -203,9 +211,13 @@ class CardinalityIntegrationTest extends CypherPlannerTestSuite with Cardinality
 
   test("query containing SKIP by expression") {
     val i = personCount
+    val expressionEvaluator = TestExpressionEvaluator.hardcoded(
+      function("toInteger", literal(personCount - 2)) -> Values.doubleValue(personCount - 2)
+    )
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
+      .setExpressionEvaluator(expressionEvaluator)
       .build()
     queryShouldHaveCardinality(config, s"MATCH (n:Person) WITH n SKIP toInteger($personCount - 2)", Math.min(i, 2.0))
   }

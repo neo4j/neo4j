@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
@@ -40,7 +41,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.Expression
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculatorTest.IndexDescriptorHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.schema.GraphSchemaOptimizations
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
@@ -2217,7 +2217,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherPlannerTestSuit
     implicit val cardinalityModel: CardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(
       SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, compositeCalculator),
       compositeCalculator,
-      simpleExpressionEvaluator
+      TestExpressionEvaluator.noEval
     )
 
     implicit val graphSchemaOptimizations: GraphSchemaOptimizations = GraphSchemaOptimizations.Disabled

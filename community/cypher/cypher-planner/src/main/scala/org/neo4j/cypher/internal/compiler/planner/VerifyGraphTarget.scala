@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.*
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.functions.GraphByElementId
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.dbms.api.DatabaseNotFoundHelper
 import org.neo4j.exceptions.InvalidSemanticsException
-import org.neo4j.kernel.database._
+import org.neo4j.kernel.database.*
 import org.neo4j.values.ElementIdDecoder
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.virtual.MapValue
@@ -71,7 +71,8 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
         value.statement(),
         context.databaseId,
         context.config.queryRouterForCompositeQueriesEnabled,
-        context.params
+        context.params,
+        context.expressionEvaluator
       )
     }
   }
@@ -158,9 +159,10 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
     statement: Statement,
     databaseId: NamedDatabaseId,
     allowCompositeQueries: Boolean,
-    params: MapValue
+    params: MapValue,
+    expressionEvaluator: ExpressionEvaluator
   ): Unit = {
-    evaluateGraphSelection(statement, databaseReferenceRepository, params) match {
+    evaluateGraphSelection(statement, databaseReferenceRepository, params, expressionEvaluator) match {
       case Some(graphNameWithContext) =>
         // add deprecation for aliases that need to be quoted if it's not a composite. This needs to be updated when we pass here for composite databases
         if (graphNameWithContext.graphName.resolveByDisplayName) {
@@ -189,9 +191,11 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
   private def evaluateGraphSelection(
     statement: Statement,
     databaseReferenceRepository: DatabaseReferenceRepository,
-    params: MapValue
+    params: MapValue,
+    expressionEvaluator: ExpressionEvaluator
   ): Option[GraphNameWithContext] =
-    findGraphSelection(statement).map(evaluateGraphSelection(_, databaseReferenceRepository, params))
+    findGraphSelection(statement)
+      .map(evaluateGraphSelection(_, databaseReferenceRepository, params, expressionEvaluator))
 
   private def findGraphSelection(statement: Statement): Option[PositionalGraphSelection] = {
     // Semantic analysis ensures correct position and use of graph selection.
@@ -212,14 +216,15 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
   private def evaluateGraphSelection(
     graphSelection: PositionalGraphSelection,
     databaseReferenceRepository: DatabaseReferenceRepository,
-    params: MapValue
+    params: MapValue,
+    expressionEvaluator: ExpressionEvaluator
   ): GraphNameWithContext =
     graphSelection.graphSelection.graphReference match {
       case direct: GraphDirectReference => GraphNameWithContext(direct.catalogName, !graphSelection.leading)
       case byElementId: GraphFunctionReference if byElementId.functionInvocation.function.equals(GraphByElementId) =>
         val elementIdExpr = byElementId.arguments.head.asInstanceOf[FunctionInvocation].args.head
         val elementIdValue =
-          new SimpleInternalExpressionEvaluator().evaluate(elementIdExpr, params = params).asInstanceOf[StringValue]
+          expressionEvaluator.evaluateExpression(elementIdExpr, params).get.asInstanceOf[StringValue]
         val databaseId = ElementIdDecoder.database(elementIdValue.stringValue())
 
         GraphNameWithContext(

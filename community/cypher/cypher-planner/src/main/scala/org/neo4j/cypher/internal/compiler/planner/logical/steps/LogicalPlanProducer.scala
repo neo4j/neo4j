@@ -3000,7 +3000,7 @@ case class LogicalPlanProducer(
           planSelectionWithGivenSolved(source, Seq(filterExpr), solved, context)
         }
 
-        val limit = planLimitOnTopOf(filtered, limitExpr)
+        val limit = planLimitOnTopOf(filtered, limitExpr, context.staticComponents.expressionEvaluator)
         annotate(limit, solved, ProvidedOrder.Left, cachedPropertiesPerPlan.get(filtered.id), context)
     }
   }
@@ -3459,7 +3459,11 @@ case class LogicalPlanProducer(
       )
     ).withInterestingOrder(interestingOrder))
     val providedOrderRule = ProvidedOrder.Left
-    val limitPlan = planLimitOnTopOf(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE))
+    val limitPlan = planLimitOnTopOf(
+      inner,
+      SignedDecimalIntegerLiteral("1")(InputPosition.NONE),
+      context.staticComponents.expressionEvaluator
+    )
     val annotatedLimitPlan =
       annotate(limitPlan, solved, providedOrderRule, cachedPropertiesPerPlan.get(inner.id), context)
 

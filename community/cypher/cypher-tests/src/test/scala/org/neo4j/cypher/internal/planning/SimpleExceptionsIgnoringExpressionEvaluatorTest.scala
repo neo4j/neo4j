@@ -21,38 +21,43 @@ package org.neo4j.cypher.internal.planning
 
 import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 
-class simpleExpressionEvaluatorTest extends CommunityCypherTestSuite with AstConstructionTestSupport {
+class SimpleExceptionsIgnoringExpressionEvaluatorTest extends CommunityCypherTestSuite with AstConstructionTestSupport {
 
   private val randInvocation: FunctionInvocation =
     FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)
 
   test("isNonDeterministic should not care about capitalization") {
-    val evaluator = simpleExpressionEvaluator
+    val evaluator = SimpleExceptionsIgnoringExpressionEvaluator
     evaluator.isDeterministic(randInvocation) shouldBe false
   }
 
   test("evaluateLongIfStable on IntegerLiteral") {
-    simpleExpressionEvaluator.evaluateLongIfStable(literalInt(5)) should be(Some(5))
+    SimpleExceptionsIgnoringExpressionEvaluator.evaluateLongIfStable(literalInt(5)) should be(Some(5))
   }
 
   test("evaluateLongIfStable on non-deterministic expression") {
-    simpleExpressionEvaluator.evaluateLongIfStable(randInvocation) should be(None)
+    SimpleExceptionsIgnoringExpressionEvaluator.evaluateLongIfStable(randInvocation) should be(None)
   }
 
   test("evaluateLongIfStable on expression with parameters") {
-    simpleExpressionEvaluator.evaluateLongIfStable(add(literalInt(5), parameter("p", CTInteger))) should be(None)
+    SimpleExceptionsIgnoringExpressionEvaluator.evaluateLongIfStable(add(
+      literalInt(5),
+      parameter("p", CTInteger)
+    )) should be(None)
   }
 
   test("evaluateLongIfStable on int expression") {
-    simpleExpressionEvaluator.evaluateLongIfStable(add(literalInt(5), literalInt(6))) should be(Some(11))
+    SimpleExceptionsIgnoringExpressionEvaluator.evaluateLongIfStable(add(
+      literalInt(5),
+      literalInt(6)
+    )) should be(Some(11))
   }
 
   test("evaluateLongIfStable on string expression") {
-    simpleExpressionEvaluator.evaluateLongIfStable(literalString("foo")) should be(None)
+    SimpleExceptionsIgnoringExpressionEvaluator.evaluateLongIfStable(literalString("foo")) should be(None)
   }
 }

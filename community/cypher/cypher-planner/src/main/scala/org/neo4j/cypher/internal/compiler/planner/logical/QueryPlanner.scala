@@ -122,6 +122,7 @@ case object QueryPlanner
       costComparisonListener = CostComparisonListener.givenDebugOptions(context.debugOptions, context.log),
       readOnly = from.query.readOnly,
       labelInferenceStrategy = context.labelInferenceStrategy,
+      expressionEvaluator = context.expressionEvaluator,
       idpLogger = IDPLogger.givenDebugOptions(context.debugOptions),
       graphSchemaOptimizations =
         GraphSchemaOptimizations.fromConfig(enableGraphSchemaOptimizations, context.planContext),

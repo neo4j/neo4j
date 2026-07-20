@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -29,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy.NoInference
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeRelationshipUniqueIndexSeekLeafPlanner
@@ -97,7 +97,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
   ): LogicalPlanningContext = {
     val metrics = config.metricsFactory.newMetrics(
       config.planContext,
-      simpleExpressionEvaluator,
+      TestExpressionEvaluator.noEval,
       config.executionModel,
       CancellationChecker.neverCancelled()
     )
@@ -119,7 +119,8 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
       semanticTable = config.semanticTable,
       costComparisonListener = devNullListener,
       readOnly = false,
-      labelInferenceStrategy = NoInference
+      labelInferenceStrategy = NoInference,
+      expressionEvaluator = TestExpressionEvaluator.noEval
     )
 
     val settings = Settings(

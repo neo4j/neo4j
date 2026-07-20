@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.schema.GraphSchemaOptimizations
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.ElementTypeName
@@ -57,7 +57,7 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
         compositeCalculator
       ),
       compositeCalculator,
-      simpleExpressionEvaluator
+      TestExpressionEvaluator.noEval
     )
     (exp: Expression) => {
       compositeCalculator(

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
@@ -35,7 +36,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -70,7 +70,7 @@ class IdSeekLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlanningT
   private val planContext = notImplementedPlanContext(hardcodedStatistics)
   // NOTE: rewriters make sure that all EQUALS will be rewritten to IN so here only the latter should be tested
 
-  private val evaluator = simpleExpressionEvaluator
+  private val evaluator = TestExpressionEvaluator.noEval
 
   test("simple node by id seek with a collection of node ids") {
     // given

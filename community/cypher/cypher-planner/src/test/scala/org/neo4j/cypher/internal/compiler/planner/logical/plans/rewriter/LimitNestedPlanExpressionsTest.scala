@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -38,7 +39,9 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.util.attribution.Attributes
 
 class LimitNestedPlanExpressionsTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport {
-  private val rewriter = limitNestedPlanExpressions(new StubCardinalities, Attributes[LogicalPlan](idGen))
+
+  private val rewriter =
+    limitNestedPlanExpressions(new StubCardinalities, Attributes[LogicalPlan](idGen), TestExpressionEvaluator.noEval)
 
   private val aLit: StringLiteral = StringLiteral("a")(pos.withInputLength(0))
 

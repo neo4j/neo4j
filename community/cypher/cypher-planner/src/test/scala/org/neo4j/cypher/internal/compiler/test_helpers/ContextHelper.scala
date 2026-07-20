@@ -27,9 +27,11 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
 import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
+import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.PlannerContextImpl
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations
+import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
@@ -99,7 +101,8 @@ object ContextHelper extends MockitoSugar {
     labelInferenceStrategy: LabelInferenceStrategy = NoInference,
     sessionDatabase: DatabaseReference = null,
     semanticFeatures: Seq[SemanticFeature] = Seq.empty,
-    transactionBatchStrategy: CypherTransactionBatchStrategyOption = CypherTransactionBatchStrategyOption.default
+    transactionBatchStrategy: CypherTransactionBatchStrategyOption = CypherTransactionBatchStrategyOption.default,
+    expressionEvaluator: ExpressionEvaluator = TestExpressionEvaluator.noEval
   ): PlannerContext = {
     new PlannerContextImpl(
       version,
@@ -133,7 +136,8 @@ object ContextHelper extends MockitoSugar {
       sessionDatabase,
       semanticFeatures,
       shadowedFunctions = Set.empty,
-      transactionBatchStrategy = transactionBatchStrategy
+      transactionBatchStrategy = transactionBatchStrategy,
+      expressionEvaluator = expressionEvaluator
     )
   }
 

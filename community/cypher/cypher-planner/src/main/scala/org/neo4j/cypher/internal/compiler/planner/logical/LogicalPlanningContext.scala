@@ -101,6 +101,7 @@ object LogicalPlanningContext {
     costComparisonListener: CostComparisonListener,
     readOnly: Boolean,
     labelInferenceStrategy: LabelInferenceStrategy,
+    expressionEvaluator: ExpressionEvaluator,
     idpLogger: IDPLogger = IDPLogger.NoLogging,
     graphSchemaOptimizations: GraphSchemaOptimizations = GraphSchemaOptimizations.Disabled,
     planningStepsLogger: PlanningStepsLogger = PlanningStepsLogger.NoLogging

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.planLimitOnTopOf
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -39,7 +40,8 @@ import org.neo4j.cypher.internal.util.collection.immutable.ListSet
  */
 case class EagerProcedureCallRewriter(
   cardinalities: Cardinalities,
-  attributesWithoutCardinalities: Attributes[LogicalPlan]
+  attributesWithoutCardinalities: Attributes[LogicalPlan],
+  expressionEvaluator: ExpressionEvaluator
 ) extends EagerRewriter(attributesWithoutCardinalities.withAlso(cardinalities)) {
 
   /**
@@ -59,7 +61,7 @@ case class EagerProcedureCallRewriter(
 
       // LIMIT E => E LIMIT
       case limit @ Limit(eager @ Eager(source, reasons), _) =>
-        val newLimit = planLimitOnTopOf(source, limit.count)(SameId(limit.id))
+        val newLimit = planLimitOnTopOf(source, limit.count, expressionEvaluator)(SameId(limit.id))
         val newEager = eager.copy(source = newLimit, reasons)(attributesWithoutCardinalities.copy(eager.id))
         cardinalities.copy(limit.id, newEager.id)
         newEager

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.MarkStableLeafPlans
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -69,7 +70,8 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     val attributes: Attributes[LogicalPlan] = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
     val cardinalities = from.planningAttributes.cardinalities
     val stableLeafPlans = from.planningAttributes.stableLeafPlans
-    val lPStateWithEagerProcedureCall = eagerizeProcedureCalls(from, cardinalities, attributes.without(cardinalities))
+    val lPStateWithEagerProcedureCall =
+      eagerizeProcedureCalls(from, cardinalities, attributes.without(cardinalities), context.expressionEvaluator)
 
     val newPlan = context.updateStrategy match {
       case `eagerUpdateStrategy` => EagerEverywhereRewriter(attributes).eagerize(
@@ -135,14 +137,12 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
   private def eagerizeProcedureCalls(
     from: LogicalPlanState,
     cardinalities: Cardinalities,
-    attributesWithoutCardinalities: Attributes[LogicalPlan]
+    attributesWithoutCardinalities: Attributes[LogicalPlan],
+    expressionEvaluator: ExpressionEvaluator
   ): LogicalPlanState =
     from.withMaybeLogicalPlan(Some(
-      EagerProcedureCallRewriter(cardinalities, attributesWithoutCardinalities).eagerize(
-        from.logicalPlan,
-        from.semanticTable(),
-        from.anonymousVariableNameGenerator
-      )
+      EagerProcedureCallRewriter(cardinalities, attributesWithoutCardinalities, expressionEvaluator)
+        .eagerize(from.logicalPlan, from.semanticTable(), from.anonymousVariableNameGenerator)
     ))
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
