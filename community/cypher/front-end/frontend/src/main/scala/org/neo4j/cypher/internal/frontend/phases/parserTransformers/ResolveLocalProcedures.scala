@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.ast.TopLevelBraces
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LocalCallables
 import org.neo4j.cypher.internal.ast.semantics.scoping.LocalProcedureScopeSignature
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -73,18 +74,20 @@ case object ResolveLocalProceduresStep1 extends Phase[BaseContext, BaseState, Ba
     with ParsePipelineTransformerFactory {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    val recordedScopes = from.scopeState().recordedScopes
-    val rewriter = topDown(
-      Rewriter.lift {
-        case uc: UnresolvedCall =>
-          recordedScopes.get(Ref(uc)).flatMap { ws =>
-            ws.incoming.localCallables.collectFirst {
-              case sig: LocalProcedureScopeSignature if sig.name.fullNameEqual(uc.procedureName) => sig
-            }
-          }.map(sig => ResolvedLocalCall(uc, sig).coerceArguments).getOrElse(uc)
-      }
-    )
-    from.withStatement(from.statement().endoRewrite(rewriter))
+    if (context.semanticFeatures.contains(LocalCallables)) {
+      val recordedScopes = from.scopeState().recordedScopes
+      val rewriter = topDown(
+        Rewriter.lift {
+          case uc: UnresolvedCall =>
+            recordedScopes.get(Ref(uc)).flatMap { ws =>
+              ws.incoming.localCallables.collectFirst {
+                case sig: LocalProcedureScopeSignature if sig.name.fullNameEqual(uc.procedureName) => sig
+              }
+            }.map(sig => ResolvedLocalCall(uc, sig).coerceArguments).getOrElse(uc)
+        }
+      )
+      from.withStatement(from.statement().endoRewrite(rewriter))
+    } else from
   }
 
   override def phase = AST_REWRITE
@@ -128,7 +131,9 @@ case object ResolveLocalProceduresStep2 extends Phase[BaseContext, BaseState, Ba
   }
 
   override def process(from: BaseState, context: BaseContext): BaseState =
-    from.withStatement(rewriteStatement(from.statement()))
+    if (context.semanticFeatures.contains(LocalCallables))
+      from.withStatement(rewriteStatement(from.statement()))
+    else from
 
   private def rewriteStatement(statement: Statement): Statement =
     statement match {
@@ -190,38 +195,38 @@ case object ResolveLocalProceduresStep2 extends Phase[BaseContext, BaseState, Ba
         )
 
       case braces @ TopLevelBraces(innerQuery, use) =>
-        val (rewrittenQuery, _) = rewriteQuery(innerQuery, visibleCallables)
+        val (rewrittenQuery, innerContainsUpdates) = rewriteQuery(innerQuery, visibleCallables)
         val rewrittenBraces =
           braces.copy(query = rewrittenQuery, use = use)(braces.position)
-        (rewrittenBraces, containsUpdates(rewrittenBraces, visibleCallables))
+        (rewrittenBraces, innerContainsUpdates)
 
       case union @ UnionAll(lhs, rhs) =>
-        val (rewrittenLhs, _) = rewriteQuery(lhs, visibleCallables)
-        val (rewrittenRhs, _) = rewritePartQuery(rhs, visibleCallables)
+        val (rewrittenLhs, lhsContainsUpdates) = rewriteQuery(lhs, visibleCallables)
+        val (rewrittenRhs, rhsContainsUpdates) = rewritePartQuery(rhs, visibleCallables)
         val rewrittenUnion =
           union.copy(lhs = rewrittenLhs, rhs = rewrittenRhs)(union.position)
-        (rewrittenUnion, containsUpdates(rewrittenUnion, visibleCallables))
+        (rewrittenUnion, lhsContainsUpdates || rhsContainsUpdates)
 
       case union @ UnionDistinct(lhs, rhs) =>
-        val (rewrittenLhs, _) = rewriteQuery(lhs, visibleCallables)
-        val (rewrittenRhs, _) = rewritePartQuery(rhs, visibleCallables)
+        val (rewrittenLhs, lhsContainsUpdates) = rewriteQuery(lhs, visibleCallables)
+        val (rewrittenRhs, rhsContainsUpdates) = rewritePartQuery(rhs, visibleCallables)
         val rewrittenUnion =
           union.copy(lhs = rewrittenLhs, rhs = rewrittenRhs)(union.position)
-        (rewrittenUnion, containsUpdates(rewrittenUnion, visibleCallables))
+        (rewrittenUnion, lhsContainsUpdates || rhsContainsUpdates)
 
       case union @ ProjectingUnionAll(lhs, rhs, unionMappings) =>
-        val (rewrittenLhs, _) = rewriteQuery(lhs, visibleCallables)
-        val (rewrittenRhs, _) = rewritePartQuery(rhs, visibleCallables)
+        val (rewrittenLhs, lhsContainsUpdates) = rewriteQuery(lhs, visibleCallables)
+        val (rewrittenRhs, rhsContainsUpdates) = rewritePartQuery(rhs, visibleCallables)
         val rewrittenUnion =
           union.copy(lhs = rewrittenLhs, rhs = rewrittenRhs, unionMappings = unionMappings)(union.position)
-        (rewrittenUnion, containsUpdates(rewrittenUnion, visibleCallables))
+        (rewrittenUnion, lhsContainsUpdates || rhsContainsUpdates)
 
       case union @ ProjectingUnionDistinct(lhs, rhs, unionMappings) =>
-        val (rewrittenLhs, _) = rewriteQuery(lhs, visibleCallables)
-        val (rewrittenRhs, _) = rewritePartQuery(rhs, visibleCallables)
+        val (rewrittenLhs, lhsContainsUpdates) = rewriteQuery(lhs, visibleCallables)
+        val (rewrittenRhs, rhsContainsUpdates) = rewritePartQuery(rhs, visibleCallables)
         val rewrittenUnion =
           union.copy(lhs = rewrittenLhs, rhs = rewrittenRhs, unionMappings = unionMappings)(union.position)
-        (rewrittenUnion, containsUpdates(rewrittenUnion, visibleCallables))
+        (rewrittenUnion, lhsContainsUpdates || rhsContainsUpdates)
 
       case conditional @ ConditionalQueryWhen(branches, default) =>
         val rewrittenBranches = branches.map(rewriteConditionalBranch(_, visibleCallables))
@@ -233,32 +238,37 @@ case object ResolveLocalProceduresStep2 extends Phase[BaseContext, BaseState, Ba
           )(conditional.position)
         (
           rewrittenConditional,
-          containsUpdates(rewrittenConditional, visibleCallables)
+          rewrittenBranches.exists(_._2) || rewrittenDefault.exists(_._2)
         )
 
       case next @ NextStatement(queries) =>
         val rewrittenQueries = queries.map(rewriteQuery(_, visibleCallables))
         val rewrittenNext = next.copy(queries = rewrittenQueries.map(_._1))(next.position)
-        (rewrittenNext, containsUpdates(rewrittenNext, visibleCallables))
+        (rewrittenNext, rewrittenQueries.exists(_._2))
 
       case singleQuery: SingleQuery =>
-        val rewrittenQuery = rewriteSingleQuery(singleQuery, visibleCallables)
-        (rewrittenQuery, containsUpdates(rewrittenQuery, visibleCallables))
+        rewriteSingleQuery(singleQuery, visibleCallables)
     }
 
-  private def rewriteSingleQuery(singleQuery: SingleQuery, visibleCallables: VisibleCallables): Query =
-    singleQuery.endoRewrite(topDown(
+  private def rewriteSingleQuery(
+    singleQuery: SingleQuery,
+    visibleCallables: VisibleCallables
+  ): (Query, Boolean) = {
+    var nestedContainsUpdates = false
+    val rewritten = singleQuery.endoRewrite(topDown(
       Rewriter.lift {
         case subqueryCall @ ImportingWithSubqueryCall(innerQuery, _, _) =>
-          subqueryCall.copy(
-            innerQuery = rewriteQuery(innerQuery, visibleCallables)._1
-          )(subqueryCall.position)
+          val (rewrittenInner, innerContainsUpdates) = rewriteQuery(innerQuery, visibleCallables)
+          nestedContainsUpdates ||= innerContainsUpdates
+          subqueryCall.copy(innerQuery = rewrittenInner)(subqueryCall.position)
         case subqueryCall @ ScopeClauseSubqueryCall(innerQuery, _, _, _, _, _) =>
-          subqueryCall.copy(
-            innerQuery = rewriteQuery(innerQuery, visibleCallables)._1
-          )(subqueryCall.position)
+          val (rewrittenInner, innerContainsUpdates) = rewriteQuery(innerQuery, visibleCallables)
+          nestedContainsUpdates ||= innerContainsUpdates
+          subqueryCall.copy(innerQuery = rewrittenInner)(subqueryCall.position)
         case subqueryExpression: FullSubqueryExpression =>
-          subqueryExpression.withQuery(rewriteQuery(subqueryExpression.query, visibleCallables)._1)
+          val (rewrittenInner, innerContainsUpdates) = rewriteQuery(subqueryExpression.query, visibleCallables)
+          nestedContainsUpdates ||= innerContainsUpdates
+          subqueryExpression.withQuery(rewrittenInner)
         case call: ResolvedLocalCall if visibleCallables.updatingProcedures(call.procedureName) =>
           call.withBodyContainsUpdates(true)
       },
@@ -267,6 +277,8 @@ case object ResolveLocalProceduresStep2 extends Phase[BaseContext, BaseState, Ba
         case _                            => false
       }
     ))
+    (rewritten, nestedContainsUpdates || containsUpdates(rewritten, visibleCallables))
+  }
 
   private def rewritePartQuery(
     query: PartQuery,
@@ -297,11 +309,14 @@ case object ResolveLocalProceduresStep2 extends Phase[BaseContext, BaseState, Ba
     expression: Expression,
     visibleCallables: VisibleCallables
   ): (Expression, Boolean) = {
+    var nestedContainsUpdates = false
     val rewrittenExpression = expression.endoRewrite(topDown(Rewriter.lift {
       case subqueryExpression: FullSubqueryExpression =>
-        subqueryExpression.withQuery(rewriteQuery(subqueryExpression.query, visibleCallables)._1)
+        val (rewrittenInner, innerContainsUpdates) = rewriteQuery(subqueryExpression.query, visibleCallables)
+        nestedContainsUpdates ||= innerContainsUpdates
+        subqueryExpression.withQuery(rewrittenInner)
     }))
-    (rewrittenExpression, containsUpdates(rewrittenExpression, visibleCallables))
+    (rewrittenExpression, containsUpdates(rewrittenExpression, visibleCallables) || nestedContainsUpdates)
   }
 
   private def containsUpdates(query: Query, visibleCallables: VisibleCallables): Boolean =
@@ -315,8 +330,8 @@ case object ResolveLocalProceduresStep2 extends Phase[BaseContext, BaseState, Ba
       case _: LocalCallableDefinition =>
         (acc: Boolean) => SkipChildren(acc)
 
-      case subqueryExpression: FullSubqueryExpression =>
-        (acc: Boolean) => SkipChildren(acc || containsUpdates(subqueryExpression.query, visibleCallables))
+      case _: ImportingWithSubqueryCall | _: ScopeClauseSubqueryCall | _: FullSubqueryExpression =>
+        (acc: Boolean) => SkipChildren(acc)
 
       case functionInvocation: FunctionInvocation =>
         (acc: Boolean) =>
@@ -337,8 +352,7 @@ case object ResolveLocalProceduresStep2 extends Phase[BaseContext, BaseState, Ba
 
   private def containsUpdatesInExpressionTree(expression: Expression, visibleCallables: VisibleCallables): Boolean =
     expression.folder.treeFold(false) {
-      case subqueryExpression: FullSubqueryExpression =>
-        (acc: Boolean) => SkipChildren(acc || containsUpdates(subqueryExpression.query, visibleCallables))
+      case _: FullSubqueryExpression => (acc: Boolean) => SkipChildren(acc)
 
       case functionInvocation: FunctionInvocation =>
         (acc: Boolean) =>

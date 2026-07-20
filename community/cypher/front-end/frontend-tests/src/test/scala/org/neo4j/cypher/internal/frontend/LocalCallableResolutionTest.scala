@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LocalCallables
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -2938,7 +2939,7 @@ class LocalCallableResolutionTest extends CypherFunSuite with TestName with AstC
   }
 
   private def initContext(cypherVersion: CypherVersion) =
-    new ErrorCollectingContext(cypherVersion) {
+    new ErrorCollectingContext(cypherVersion, semanticFeatures = Seq(LocalCallables)) {
       override def errorMessageProvider: ErrorMessageProvider = messageProvider
     }
 

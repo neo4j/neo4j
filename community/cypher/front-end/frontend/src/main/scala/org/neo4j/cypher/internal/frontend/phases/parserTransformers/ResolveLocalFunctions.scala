@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.phases.parserTransformers
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LocalCallables
 import org.neo4j.cypher.internal.ast.semantics.scoping.LocalFunctionScopeSignature
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.functions.LocalFunction
@@ -40,34 +41,35 @@ case object LocalFunctionsResolved extends Condition
 case object ResolveLocalFunctions extends StatementRewriter with StepSequencer.Step
     with ParsePipelineTransformerFactory {
 
-  override def instance(from: BaseState, context: BaseContext): Rewriter = {
-    val recordedScopes = from.scopeState().recordedScopes
-    topDown(
-      Rewriter.lift {
-        case fi: FunctionInvocation if fi.maybeLocalFunction.isEmpty =>
-          recordedScopes.get(Ref(fi)).flatMap(ws =>
-            ws.incoming.localCallables.collectFirst {
-              case sig @ LocalFunctionScopeSignature(name, _, _, _) if name.fullNameEqual(fi.functionName) => sig
-            }
-          ) match {
-            case None => fi
-            case Some(sig) =>
-              val (optionalInputFieldSignature, mandatoryInputFieldSignature) =
-                sig.inputSignature.toIndexedSeq.partition(fs => fs.hasDefault)
+  override def instance(from: BaseState, context: BaseContext): Rewriter =
+    if (context.semanticFeatures.contains(LocalCallables)) {
+      val recordedScopes = from.scopeState().recordedScopes
+      topDown(
+        Rewriter.lift {
+          case fi: FunctionInvocation if fi.maybeLocalFunction.isEmpty =>
+            recordedScopes.get(Ref(fi)).flatMap(ws =>
+              ws.incoming.localCallables.collectFirst {
+                case sig @ LocalFunctionScopeSignature(name, _, _, _) if name.fullNameEqual(fi.functionName) => sig
+              }
+            ) match {
+              case None => fi
+              case Some(sig) =>
+                val (optionalInputFieldSignature, mandatoryInputFieldSignature) =
+                  sig.inputSignature.toIndexedSeq.partition(fs => fs.hasDefault)
 
-              fi.copy(maybeLocalFunction =
-                Some(LocalFunction(
-                  functionName = fi.functionName,
-                  parameterTypes = mandatoryInputFieldSignature.map(p => p.name -> p.getType),
-                  optionalParameterTypes = optionalInputFieldSignature.map(p => p.name -> p.getType),
-                  defaultArguments = optionalInputFieldSignature.map(_.default.get),
-                  outputSignature = sig.outputSignature
-                ))
-              )(fi.position)
-          }
-      }
-    )
-  }
+                fi.copy(maybeLocalFunction =
+                  Some(LocalFunction(
+                    functionName = fi.functionName,
+                    parameterTypes = mandatoryInputFieldSignature.map(p => p.name -> p.getType),
+                    optionalParameterTypes = optionalInputFieldSignature.map(p => p.name -> p.getType),
+                    defaultArguments = optionalInputFieldSignature.map(_.default.get),
+                    outputSignature = sig.outputSignature
+                  ))
+                )(fi.position)
+            }
+        }
+      )
+    } else Rewriter.noop
 
   override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[Statement](), UpToDateScopes)
 
