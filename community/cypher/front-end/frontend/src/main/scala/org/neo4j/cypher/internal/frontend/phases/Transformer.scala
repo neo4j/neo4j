@@ -105,10 +105,11 @@ object Transformer {
     if (Debug.LogInnerRewriters) {
       steps.foldLeft(statement) { case (stmt, (step, rewriter)) =>
         val next = stmt.endoRewrite(rewriter)
-        if (next != stmt)
+        if (next != stmt) {
           println(s"######## DEBUG $bundleName/${step.getClass.getSimpleName.stripSuffix("$")} changed the statement")
           if (Debug.LogStatementsAsQueries) println(prettifier.asString(next))
           if (Debug.LogStatements) println(AstString.render(next))
+        }
         next
       }
     } else {

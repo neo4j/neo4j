@@ -234,6 +234,34 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
     )
   }
 
+  test("RETURN: ORDER BY over a grouping key that references a passthrough grouping key uses the alias") {
+    assertRewritten(
+      """WITH {p: 1} AS a, 2 AS b
+        |RETURN coalesce(a.p, b) AS x, b, count(*) AS cnt
+        |  ORDER BY abs(coalesce(a.p, b))""".stripMargin,
+      """WITH {p: 1} AS a, 2 AS b
+        |RETURN coalesce(a.p, b) AS x, b, count(*) AS cnt
+        |  ORDER BY abs(x) ASCENDING""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WITH: ORDER BY over a grouping key that references a passthrough grouping key uses the alias") {
+    assertRewritten(
+      """WITH {p: 1} AS a, 2 AS b
+        |WITH coalesce(a.p, b) AS x, b, count(*) AS cnt
+        |  ORDER BY abs(coalesce(a.p, b))
+        |RETURN x, b, cnt""".stripMargin,
+      """WITH {p: 1} AS a, 2 AS b
+        |WITH coalesce(a.p, b) AS x, b, count(*) AS cnt
+        |  ORDER BY abs(x) ASCENDING
+        |RETURN x, b, cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
   test("RETURN: inset complex grouping key inside a list comprehension is rewritten in source and inner scope") {
     assertRewritten(
       """WITH {p: [1, 2, 3]} AS a
@@ -609,16 +637,15 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
     )
   }
 
-  test("WITH: aggregation in WHERE is hoisted even when it matches a projection item") {
+  test("WITH: aggregation in WHERE matching a projection item is substituted with its alias") {
     assertRewritten(
       """WITH 1 AS a, 2 AS b
         |WITH a, b, count(b) AS cnt WHERE count(b) > 0
         |RETURN a, b, cnt""".stripMargin,
       """WITH 1 AS a, 2 AS b
-        |WITH a AS `  UNNAMED1`, b AS `  UNNAMED2`, count(b) AS `  UNNAMED3`
-        |WITH `  UNNAMED1` AS a, `  UNNAMED2` AS b, `  UNNAMED3` AS cnt
-        |  WHERE `  UNNAMED3` > 0
-        |RETURN a AS a, b AS b, cnt AS cnt""".stripMargin,
+        |WITH a, b, count(b) AS cnt
+        |  WHERE cnt > 0
+        |RETURN a, b, cnt""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )

@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AggregationAnalysis
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.NormalizeWithAndReturnClausesTransformer
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.frontend.scoping.E42I18
 import org.neo4j.cypher.internal.frontend.scoping.Passes
 import org.neo4j.cypher.internal.frontend.scoping.Versioned.ignoreBeforeCypher25
@@ -33,7 +35,7 @@ class GQL_42I18_ReferenceToNonGroupingSubExpressionTest extends VariableChecking
 
   // Thrown by AggregationChecker
   override val checkersUnderTest: Seq[Transformer[BaseContext, BaseState, BaseState]] =
-    Seq(AggregationAnalysis)
+    Seq(NormalizeWithAndReturnClausesTransformer andThen ScopeSurveyor andThen AggregationAnalysis)
 
   override def testCases(): Seq[TestQuery] = Seq(
     // Negative tests
