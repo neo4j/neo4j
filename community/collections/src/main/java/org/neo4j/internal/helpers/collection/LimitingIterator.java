@@ -26,7 +26,7 @@ import java.util.Iterator;
  *
  * @param <T> the type of items in this {@link Iterator}.
  */
-public class LimitingIterator<T> extends PrefetchingIterator<T> {
+public class LimitingIterator<T> extends PrefetchingResourceIterator<T> {
     private int returned;
     private final Iterator<T> source;
     private final int limit;
@@ -54,5 +54,10 @@ public class LimitingIterator<T> extends PrefetchingIterator<T> {
         } finally {
             returned++;
         }
+    }
+
+    @Override
+    public void close() {
+        Iterators.tryCloseResource(source);
     }
 }

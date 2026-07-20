@@ -19,9 +19,13 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
+import static org.neo4j.graphdb.ResourceUtils.tryCloseResource;
+
 import java.util.LinkedList;
 import java.util.Queue;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceUtils;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
@@ -31,7 +35,7 @@ import org.neo4j.graphdb.traversal.TraversalContext;
  * which has many relationships. It delays traversing those super nodes until
  * after all non-super nodes have been traversed.
  */
-public class LiteDepthFirstSelector implements BranchSelector {
+public class LiteDepthFirstSelector implements BranchSelector, Resource {
     private final Queue<TraversalBranch> superNodes = new LinkedList<>();
     private TraversalBranch current;
     private final int threshold;
@@ -67,5 +71,11 @@ public class LiteDepthFirstSelector implements BranchSelector {
             result = current;
         }
         return result;
+    }
+
+    @Override
+    public void close() {
+        tryCloseResource(current);
+        superNodes.forEach(ResourceUtils::tryCloseResource);
     }
 }

@@ -156,7 +156,8 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     }
 
     protected boolean isNodeBased(KernelTransaction tx) {
-        var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
-        return cursor instanceof DefaultNodeBasedRelationshipTypeIndexCursor;
+        try (var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT)) {
+            return cursor instanceof DefaultNodeBasedRelationshipTypeIndexCursor;
+        }
     }
 }

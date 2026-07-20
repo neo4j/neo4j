@@ -567,8 +567,16 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         }.unzip match { case (a, b) => (a.toArray, b.toArray[AnyValue]) }
 
       val paramsMap = VirtualValues.map(keys, values)
-      val result =
-        executableQuery.run(queryContext, executionMode, paramsMap, prePopulateResults, input, subscriber)
+      var result: RuntimeResult = null
+      try {
+        result =
+          executableQuery.run(queryContext, executionMode, paramsMap, prePopulateResults, input, subscriber)
+      } catch {
+        case t: Throwable => {
+          queryContext.resources.close()
+          throw t
+        }
+      }
 
       val assertAllReleased = workloadMode match {
         case WorkloadMode.On => () => ()

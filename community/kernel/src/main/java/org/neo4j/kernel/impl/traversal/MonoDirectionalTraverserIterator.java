@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import static org.neo4j.graphdb.ResourceUtils.tryCloseResource;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
@@ -78,5 +80,10 @@ class MonoDirectionalTraverserIterator extends AbstractTraverserIterator {
     @Override
     public boolean isUnique(TraversalBranch branch) {
         return uniqueness.check(branch);
+    }
+
+    @Override
+    public void close() {
+        tryCloseResource(selector);
     }
 }

@@ -19,13 +19,16 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import static org.neo4j.graphdb.ResourceUtils.tryCloseResource;
+
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.Resource;
 
 /**
  * Selects {@link TraversalBranch}s according to postorder depth first pattern,
  * see http://en.wikipedia.org/wiki/Depth-first_search
  */
-class PostorderDepthFirstSelector implements BranchSelector {
+class PostorderDepthFirstSelector implements BranchSelector, Resource {
     private TraversalBranch current;
     private final PathExpander expander;
 
@@ -51,5 +54,10 @@ class PostorderDepthFirstSelector implements BranchSelector {
             }
         }
         return result;
+    }
+
+    @Override
+    public void close() {
+        tryCloseResource(current);
     }
 }

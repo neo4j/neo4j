@@ -182,8 +182,7 @@ public class ShortestPath implements PathFinder<Path> {
 
     @Override
     public Path findSinglePath(Node start, Node end) {
-        Iterator<Path> paths = internalPaths(start, end, true).iterator();
-        Path path = paths.hasNext() ? paths.next() : null;
+        Path path = Iterators.firstOrNull(internalPaths(start, end, true).iterator());
         memoryTracker.reset();
         return path;
     }

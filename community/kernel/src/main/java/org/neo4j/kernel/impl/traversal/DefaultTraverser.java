@@ -24,14 +24,16 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceUtils;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
-public class DefaultTraverser implements Traverser {
+public class DefaultTraverser implements Traverser, Resource {
     private final Factory<TraverserIterator> traverserIteratorFactory;
 
-    private TraversalMetadata lastIterator;
+    private TraverserIterator lastIterator;
 
     DefaultTraverser(Factory<TraverserIterator> traverserIteratorFactory) {
         this.traverserIteratorFactory = traverserIteratorFactory;
@@ -76,6 +78,7 @@ public class DefaultTraverser implements Traverser {
 
     @Override
     public Iterator<Path> iterator() {
+        ResourceUtils.tryCloseResource(lastIterator);
         TraverserIterator traverserIterator = traverserIteratorFactory.newInstance();
         lastIterator = traverserIterator;
         return traverserIterator;
@@ -84,6 +87,11 @@ public class DefaultTraverser implements Traverser {
     @Override
     public TraversalMetadata metadata() {
         return lastIterator;
+    }
+
+    @Override
+    public void close() {
+        ResourceUtils.tryCloseResource(lastIterator);
     }
 
     private abstract static class PathIterableWrapper<T> implements Iterable<T> {

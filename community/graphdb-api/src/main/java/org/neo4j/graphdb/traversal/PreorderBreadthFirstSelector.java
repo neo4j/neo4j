@@ -19,16 +19,20 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import static org.neo4j.graphdb.ResourceUtils.tryCloseResource;
+
 import java.util.LinkedList;
 import java.util.Queue;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceUtils;
 
 /**
  * Selects {@link TraversalBranch}s according to breadth first
  * pattern, the most natural ordering in a breadth first search, see
  * http://en.wikipedia.org/wiki/Breadth-first_search
  */
-class PreorderBreadthFirstSelector implements BranchSelector {
+class PreorderBreadthFirstSelector implements BranchSelector, Resource {
     private final Queue<TraversalBranch> queue = new LinkedList<>();
     private TraversalBranch current;
     private final PathExpander expander;
@@ -54,5 +58,11 @@ class PreorderBreadthFirstSelector implements BranchSelector {
             }
         }
         return result;
+    }
+
+    @Override
+    public void close() {
+        tryCloseResource(current);
+        queue.forEach(ResourceUtils::tryCloseResource);
     }
 }

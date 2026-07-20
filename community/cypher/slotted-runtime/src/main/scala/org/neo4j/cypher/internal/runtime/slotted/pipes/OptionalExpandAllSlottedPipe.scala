@@ -74,6 +74,7 @@ abstract class OptionalExpandAllSlottedPipe(
             val read = state.query.transactionalContext.dataRead
             read.singleNode(fromNode, nodeCursor)
             if (!nodeCursor.next()) {
+              relCursor.close()
               ClosingIterator.single(withNulls(inputRow))
             } else {
               val selectionCursor = dir match {
@@ -98,6 +99,11 @@ abstract class OptionalExpandAllSlottedPipe(
                 ClosingIterator.single(withNulls(inputRow))
               else
                 matchIterator
+            }
+          } catch {
+            case t: Throwable => {
+              relCursor.close()
+              throw t
             }
           } finally {
             nodeCursor.close()

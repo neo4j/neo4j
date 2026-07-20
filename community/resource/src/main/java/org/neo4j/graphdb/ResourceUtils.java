@@ -48,4 +48,10 @@ public class ResourceUtils {
     public static <T extends Resource> void closeAll(Stream<T> resources) {
         resources.filter(Objects::nonNull).forEach(Resource::close);
     }
+
+    public static void tryCloseResource(Object potentiallyResource) {
+        if (potentiallyResource instanceof Resource resource) {
+            resource.close();
+        }
+    }
 }

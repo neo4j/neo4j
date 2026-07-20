@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import static org.neo4j.graphdb.ResourceUtils.tryCloseResource;
+
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -156,5 +158,10 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator {
     @Override
     public boolean isUnique(TraversalBranch branch) {
         return uniqueness.check(branch);
+    }
+
+    @Override
+    public void close() {
+        tryCloseResource(selector);
     }
 }

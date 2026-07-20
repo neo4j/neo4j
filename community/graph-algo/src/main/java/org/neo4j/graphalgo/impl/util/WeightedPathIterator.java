@@ -23,10 +23,12 @@ import java.util.Iterator;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.helpers.MathUtil;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
-public class WeightedPathIterator extends PrefetchingIterator<WeightedPath> {
+public class WeightedPathIterator extends PrefetchingIterator<WeightedPath> implements Resource {
     private final Iterator<Path> paths;
     private final CostEvaluator<Double> costEvaluator;
     private Double foundWeight;
@@ -67,5 +69,10 @@ public class WeightedPathIterator extends PrefetchingIterator<WeightedPath> {
         }
         foundWeight = path.weight();
         return path;
+    }
+
+    @Override
+    public void close() {
+        Iterators.tryCloseResource(paths);
     }
 }

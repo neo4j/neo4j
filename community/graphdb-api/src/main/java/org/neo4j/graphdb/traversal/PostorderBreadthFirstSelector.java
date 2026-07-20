@@ -19,10 +19,14 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import static org.neo4j.graphdb.ResourceUtils.tryCloseResource;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceUtils;
 
 /**
  * Selects {@link TraversalBranch}s according to postorder breadth first
@@ -30,7 +34,7 @@ import org.neo4j.graphdb.PathExpander;
  * deepest levels are returned first, see
  * http://en.wikipedia.org/wiki/Breadth-first_search
  */
-class PostorderBreadthFirstSelector implements BranchSelector {
+class PostorderBreadthFirstSelector implements BranchSelector, Resource {
     private Iterator<TraversalBranch> sourceIterator;
     private final TraversalBranch current;
     private final PathExpander expander;
@@ -80,5 +84,11 @@ class PostorderBreadthFirstSelector implements BranchSelector {
             }
         }
         return level;
+    }
+
+    @Override
+    public void close() {
+        tryCloseResource(current);
+        sourceIterator.forEachRemaining(ResourceUtils::tryCloseResource);
     }
 }

@@ -42,6 +42,7 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterators;
 
 /**
  * Implementation of A* algorithm, see {@link AStar}, but using the traversal
@@ -97,7 +98,7 @@ public class TraversalAStar<T> implements PathFinder<WeightedPath> {
 
     @Override
     public WeightedPath findSinglePath(Node start, Node end) {
-        return Iterables.firstOrNull(findPaths(start, end, false));
+        return Iterators.firstOrNull(findPaths(start, end, false).iterator());
     }
 
     private Iterable<WeightedPath> findPaths(Node start, Node end, boolean multiplePaths) {

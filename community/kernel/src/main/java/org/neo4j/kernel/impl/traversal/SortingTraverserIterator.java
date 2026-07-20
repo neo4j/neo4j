@@ -75,6 +75,11 @@ class SortingTraverserIterator extends PrefetchingIterator<Path> implements Trav
     }
 
     @Override
+    public void close() {
+        source.close();
+    }
+
+    @Override
     protected Path fetchNextOrNull() {
         if (sortedResultIterator == null) {
             sortedResultIterator = fetchAndSortResult();

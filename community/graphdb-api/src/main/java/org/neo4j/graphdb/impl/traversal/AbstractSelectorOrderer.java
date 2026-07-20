@@ -19,13 +19,16 @@
  */
 package org.neo4j.graphdb.impl.traversal;
 
+import static org.neo4j.graphdb.ResourceUtils.tryCloseResource;
+
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.SideSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 
-public abstract class AbstractSelectorOrderer<T> implements SideSelector {
+public abstract class AbstractSelectorOrderer<T> implements SideSelector, Resource {
     private static final BranchSelector EMPTY_SELECTOR = metadata -> null;
 
     private final BranchSelector[] selectors;
@@ -84,5 +87,12 @@ public abstract class AbstractSelectorOrderer<T> implements SideSelector {
     @Override
     public Direction currentSide() {
         return selectorIndex == 0 ? Direction.OUTGOING : Direction.INCOMING;
+    }
+
+    @Override
+    public void close() {
+        for (BranchSelector selector : selectors) {
+            tryCloseResource(selector);
+        }
     }
 }

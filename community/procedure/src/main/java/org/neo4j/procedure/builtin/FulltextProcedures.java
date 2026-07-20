@@ -142,15 +142,20 @@ public class FulltextProcedures {
                     + entityType + ", so it cannot be queried for nodes.");
         }
         NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor(tx.cursorContext(), tx.memoryTracker());
-        IndexReadSession indexSession = tx.dataRead().indexReadSession(indexReference);
-        IndexQueryConstraints constraints = queryConstraints(options);
-        tx.dataRead()
-                .nodeIndexSeek(
-                        tx.queryContext(),
-                        indexSession,
-                        cursor,
-                        constraints,
-                        PropertyIndexQuery.fulltextSearch(query, queryAnalyzer(options)));
+        try {
+            IndexReadSession indexSession = tx.dataRead().indexReadSession(indexReference);
+            IndexQueryConstraints constraints = queryConstraints(options);
+            tx.dataRead()
+                    .nodeIndexSeek(
+                            tx.queryContext(),
+                            indexSession,
+                            cursor,
+                            constraints,
+                            PropertyIndexQuery.fulltextSearch(query, queryAnalyzer(options)));
+        } catch (Throwable t) {
+            cursor.close();
+            throw t;
+        }
 
         Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<>() {
             @Override
@@ -228,15 +233,20 @@ public class FulltextProcedures {
         }
         RelationshipValueIndexCursor cursor =
                 tx.cursors().allocateRelationshipValueIndexCursor(tx.cursorContext(), tx.memoryTracker());
-        IndexReadSession indexReadSession = tx.dataRead().indexReadSession(indexReference);
-        IndexQueryConstraints constraints = queryConstraints(options);
-        tx.dataRead()
-                .relationshipIndexSeek(
-                        tx.queryContext(),
-                        indexReadSession,
-                        cursor,
-                        constraints,
-                        PropertyIndexQuery.fulltextSearch(query, queryAnalyzer(options)));
+        try {
+            IndexReadSession indexReadSession = tx.dataRead().indexReadSession(indexReference);
+            IndexQueryConstraints constraints = queryConstraints(options);
+            tx.dataRead()
+                    .relationshipIndexSeek(
+                            tx.queryContext(),
+                            indexReadSession,
+                            cursor,
+                            constraints,
+                            PropertyIndexQuery.fulltextSearch(query, queryAnalyzer(options)));
+        } catch (Throwable t) {
+            cursor.close();
+            throw t;
+        }
 
         Spliterator<RelationshipOutput> spliterator = new SpliteratorAdaptor<>() {
             @Override

@@ -19,14 +19,17 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import static org.neo4j.graphdb.ResourceUtils.tryCloseResource;
+
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.Resource;
 
 /**
  * Selects {@link TraversalBranch}s according to preorder depth first pattern,
  * the most natural ordering in a depth first search, see
  * http://en.wikipedia.org/wiki/Depth-first_search
  */
-class PreorderDepthFirstSelector implements BranchSelector {
+class PreorderDepthFirstSelector implements BranchSelector, Resource {
     private TraversalBranch current;
     private final PathExpander expander;
 
@@ -51,5 +54,10 @@ class PreorderDepthFirstSelector implements BranchSelector {
             result = current;
         }
         return result;
+    }
+
+    @Override
+    public void close() {
+        tryCloseResource(current);
     }
 }

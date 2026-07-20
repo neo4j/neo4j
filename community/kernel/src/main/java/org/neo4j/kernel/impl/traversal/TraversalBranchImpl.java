@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
@@ -35,7 +36,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
 
-class TraversalBranchImpl implements TraversalBranch {
+class TraversalBranchImpl implements TraversalBranch, Resource {
     final TraversalBranch parent;
     private final Relationship howIGotHere;
     private final Node source;
@@ -309,5 +310,17 @@ class TraversalBranchImpl implements TraversalBranch {
     @Override
     public Object state() {
         return null;
+    }
+
+    @Override
+    public void close() {
+        if (relationships != null) {
+            relationships.close();
+        }
+        relationships = null;
+
+        if (parent != null && parent instanceof Resource resourceParent) {
+            resourceParent.close();
+        }
     }
 }
