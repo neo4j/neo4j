@@ -36,4 +36,6 @@ public interface EnvelopeLogRangeReader {
     StoreChannelsForTransfer storeChannels(long fromIndex, long desiredToIndex) throws IOException;
 
     long term(long index) throws IOException;
+
+    long highestReadableIndex();
 }

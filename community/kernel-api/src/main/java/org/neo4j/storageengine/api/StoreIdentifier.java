@@ -42,10 +42,24 @@ public record StoreIdentifier(long randomValueIdentifier, StoreId storeId) {
     }
 
     public boolean matches(StoreId anotherId) {
+        if (anotherId == null) {
+            return false;
+        }
         if (storeId != null) {
             return storeId.equals(anotherId);
         }
         return randomValueIdentifier == anotherId.getRandom();
+    }
+
+    public boolean matches(StoreIdentifier anotherIdentifier) {
+        if (anotherIdentifier == null) {
+            return false;
+        }
+        return randomValueIdentifier == anotherIdentifier.randomValueIdentifier;
+    }
+
+    public boolean isUnknown() {
+        return randomValueIdentifier == UNKNOWN.randomValueIdentifier;
     }
 
     @Override

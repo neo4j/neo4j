@@ -103,4 +103,9 @@ public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
         // process.
         throw new IOException("No log file found for index " + index + " unable to determine the term for the entry");
     }
+
+    @Override
+    public long highestReadableIndex() {
+        return envelopedLogFiles.currentWriteChannel().currentIndex();
+    }
 }

@@ -80,6 +80,7 @@ public class BaseLogHeaderFactory implements LogHeaderFactory {
         this.currentAppendedDatabaseVersion = databaseVersion;
     }
 
+    @Override
     public void setStoreIdentifier(StoreIdentifier storeIdentifier) {
         if (storeIdentifierFinalized.compareAndSet(false, true)) {
             this.storeIdentifier = storeIdentifier;
@@ -87,6 +88,11 @@ public class BaseLogHeaderFactory implements LogHeaderFactory {
             throw new IllegalStateException(
                     "Store identifier can not be changed current:" + this.storeIdentifier + " new:" + storeIdentifier);
         }
+    }
+
+    @Override
+    public void allowStoreIdentifierChange() {
+        storeIdentifierFinalized.set(false);
     }
 
     public KernelVersion getCurrentDatabaseVersion() {

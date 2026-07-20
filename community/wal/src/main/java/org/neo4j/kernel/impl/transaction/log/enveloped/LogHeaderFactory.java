@@ -34,4 +34,6 @@ public interface LogHeaderFactory {
 
     // When starting, if we have logs we will replace the store identifier if one exists.
     default void setStoreIdentifier(StoreIdentifier storeIdentifier) {}
+
+    default void allowStoreIdentifierChange() {}
 }

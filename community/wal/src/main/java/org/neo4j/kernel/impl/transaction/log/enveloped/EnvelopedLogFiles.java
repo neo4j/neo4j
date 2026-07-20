@@ -177,7 +177,6 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 logHeaderCache.cache(logHeader);
             }
         }
-        log.info("Populated log header cache");
     }
 
     public void clearCache() {
@@ -190,7 +189,15 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
      * log files have been replaced by a store copy. This method should not be used if there's a
      * chance that the log is corrupt.
      */
-    public long resetWriteChannelToLatestIndex() throws IOException {
+    public long resetWriteChannelToLatestIndex(boolean allowStoreIdentifierChange) throws IOException {
+        if (allowStoreIdentifierChange) {
+            // TODO MERGELOG: It would be nicer if we didn't have to make the header factory mutable. The alternative
+            //                is to create a completely different EnvelopedLogFiles object when there's a need to
+            //                replace the store with a different one. However, this requires replacing references to
+            //                EnvelopedLogFiles with some sort of holder/manager in many places, so is left to a
+            //                followup.
+            logHeaderFactory.allowStoreIdentifierChange();
+        }
         return recoverLogTail(logsRepository.latestVersion(), false);
     }
 
