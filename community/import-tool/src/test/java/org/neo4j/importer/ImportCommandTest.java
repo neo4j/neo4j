@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ContextInjectingFactory;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
@@ -234,6 +235,61 @@ class ImportCommandTest {
                 "--relationships=" + rels,
                 "--delimiter=U+20AC",
                 "--accept-multibyte-delimiter");
+
+        // then - should not throw
+        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+    }
+
+    @Test
+    void shouldAcceptSkidbladnirWithoutMultilineFieldsAndDefaultToTrue() {
+        var nodes = testDir.createFile("nodes.csv");
+        var command = new ImportCommand.Full(getExecutionContext());
+
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
+
+        // then - should not throw
+        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        // and multiline-fields should be true
+        assertThat(command.multilineFieldOptions().multilineFields()).isEqualToIgnoringCase(Boolean.TRUE.toString());
+    }
+
+    @Test
+    void shouldRejectSkidbladnirWithMultilineFieldsFalse() {
+        var nodes = testDir.createFile("nodes.csv");
+        var command = new ImportCommand.Full(getExecutionContext());
+
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir", "--multiline-fields=false");
+
+        assertThatThrownBy(() ->
+                        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("--multiline-fields=true");
+    }
+
+    @Test
+    void shouldRejectSkidbladnirWithMultilineFieldsFormatV2() {
+        var nodes = testDir.createFile("nodes.csv");
+        var command = new ImportCommand.Full(getExecutionContext());
+
+        CommandLine.populateCommand(
+                command,
+                "--nodes=" + nodes,
+                "--skidbladnir",
+                "--multiline-fields=" + nodes,
+                "--multiline-fields-format=v2");
+
+        assertThatThrownBy(() ->
+                        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("--multiline-fields-format=v1");
+    }
+
+    @Test
+    void shouldAcceptSkidbladnirWithMultilineFieldsTrue() {
+        var nodes = testDir.createFile("nodes.csv");
+        var command = new ImportCommand.Full(getExecutionContext());
+
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir", "--multiline-fields=true");
 
         // then - should not throw
         command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");

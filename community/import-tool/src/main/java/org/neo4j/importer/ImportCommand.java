@@ -293,6 +293,10 @@ public class ImportCommand {
                             + "true or false. When set to v2, the value for " + MULTILINE_FIELDS
                             + " should be the list of files that contain multiline fields.")
             private MultilineFormat multilineFormat = MultilineFormat.V1;
+
+            String multilineFields() {
+                return multilineFields;
+            }
         }
 
         @Option(
@@ -719,6 +723,10 @@ public class ImportCommand {
             return skidbladnir;
         }
 
+        MultilineFieldOptions multilineFieldOptions() {
+            return multilineFieldOptions;
+        }
+
         /**
          * @param resolvedDbFormat the format that is either specified in the command line or resolved from the database config
          */
@@ -782,6 +790,29 @@ public class ImportCommand {
                             "ERROR: Skidbladnir import is only supported for the 'block' format, but '%s' was specified."
                                     .formatted(resolvedDbFormat));
                 }
+                validateSkidbladnirMultilineFields();
+            }
+        }
+
+        private void validateSkidbladnirMultilineFields() {
+            if (multilineFieldOptions != null && multilineFieldOptions.multilineFormat == MultilineFormat.V2) {
+                throw new CommandFailedException(
+                        "ERROR: Skidbladnir import is only supported with '%s=v1'.".formatted(MULTILINE_FIELDS_FORMAT));
+            }
+
+            if (!spec.commandLine().getParseResult().hasMatchedOption(MULTILINE_FIELDS)) {
+                // default is true for Skidbladnir
+                if (multilineFieldOptions == null) {
+                    multilineFieldOptions = new MultilineFieldOptions();
+                }
+                multilineFieldOptions.multilineFields = "true";
+            }
+
+            boolean multilineEnabled = multilineFieldOptions != null
+                    && Boolean.TRUE.toString().equalsIgnoreCase(multilineFieldOptions.multilineFields);
+            if (!multilineEnabled) {
+                throw new CommandFailedException(
+                        "ERROR: Skidbladnir import is only supported with '%s=true'.".formatted(MULTILINE_FIELDS));
             }
         }
 
