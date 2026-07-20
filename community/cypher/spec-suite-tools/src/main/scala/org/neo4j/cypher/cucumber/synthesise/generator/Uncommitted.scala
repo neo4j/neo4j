@@ -39,6 +39,7 @@ import org.neo4j.cypher.cucumber.synthesise.glue.scenario.RecordedStep
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.RegisterProcedure
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.RegisterUserFunction
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.TransactionHandling
+import org.neo4j.cypher.internal.ast.Search
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.expressions.PatternPart
 
@@ -57,6 +58,8 @@ class Uncommitted(val args: CucumberSalad.Ingredients) extends ScenarioGenerator
     .steps[AssertGqlWarning](_.isEmpty)
     .steps[TransactionHandling](_.isEmpty)
     .testQueries(_.exists(containsAst[PatternPart]))
+    // SEARCH hits eventually-consistent indexes that never see uncommitted writes.
+    .testQueries(_.forall(doNotContainAst[Search]))
     .queries[Execute](_.forall(doNotContainAst[InTransactionsParameters]))
 
   def generateScenarios(filteredScenarios: View[RecordedScenario]): IterableOnce[GeneratedScenario] = {
