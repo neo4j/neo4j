@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.ProcedureLookup
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver
@@ -29,7 +30,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
 
-class SignatureResolverTest extends CypherPlannerTestSuite with AstConstructionTestSupport {
+class SignatureResolverTest extends CommunityCypherTestSuite with AstConstructionTestSupport {
 
   private val funcName = functionName("my", "func")
   private val aggFuncName = functionName("my", "aggFunc")
