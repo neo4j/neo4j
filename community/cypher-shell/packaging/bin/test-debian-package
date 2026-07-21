@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -eu
-# test-rpm-package:
+# test-debian-package:
 # Test Neo4j Cypher Shell Debian package
 
 if [ $# -ne 2 ]
@@ -30,5 +30,13 @@ function cleanup {
 # Always remove docker image
 trap cleanup EXIT
 
-docker build . -t ${docker_image_tag}
+for attempt in 1 2 3; do
+  docker build . -t ${docker_image_tag} && break
+  if [ ${attempt} -eq 3 ]; then
+    echo "docker build failed after ${attempt} attempts"
+    exit 1
+  fi
+  echo "docker build failed (attempt ${attempt}), retrying in 15s..."
+  sleep 15
+done
 docker run --rm ${docker_image_tag} --version
