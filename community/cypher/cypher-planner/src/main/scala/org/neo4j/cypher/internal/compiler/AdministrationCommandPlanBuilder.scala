@@ -1450,6 +1450,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   dbName,
                   DropCompositeDatabaseAction
                 ))
+                  .map(plans.AssertNotInvalidActionOnShard(
+                    _,
+                    dbName,
+                    "CREATE OR REPLACE COMPOSITE DATABASE",
+                    "replace"
+                  ))
                   .map(plans.EnsureDatabaseSafeToDelete(_, dbName, Restrict))
                   .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false, Restrict))
               case IfExistsDoNothing =>
