@@ -24,6 +24,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Arrays;
 import java.util.Objects;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
@@ -35,10 +36,19 @@ public class SkipTestExtension implements ExecutionCondition {
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
         return AnnotationUtils.findAnnotation(context.getElement(), Skip.class)
-                .filter(s -> Objects.equals(System.getProperty(s.key()), s.value()))
+                .filter(s -> {
+                    String property = System.getProperty(s.key());
+                    String[] values = s.values();
+                    for (String value : values) {
+                        if (Objects.equals(property, value)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                })
                 .map(s -> ConditionEvaluationResult.disabled(String.format(
                         "Skipping test annotated with @%s(%s=%s), matching system property.",
-                        s.annotationType().getSimpleName(), s.key(), s.value())))
+                        s.annotationType().getSimpleName(), s.key(), Arrays.toString(s.values()))))
                 .orElse(ConditionEvaluationResult.enabled("Test enabled. No matching system property found."));
     }
 
@@ -49,6 +59,6 @@ public class SkipTestExtension implements ExecutionCondition {
     public @interface Skip {
         String key();
 
-        String value();
+        String[] values();
     }
 }
