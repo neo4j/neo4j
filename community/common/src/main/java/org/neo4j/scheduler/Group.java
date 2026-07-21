@@ -19,6 +19,8 @@
  */
 package org.neo4j.scheduler;
 
+import static org.neo4j.scheduler.ExecutorServiceFactory.singleThread;
+
 import java.util.OptionalInt;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +36,7 @@ public enum Group {
      */
     TASK_SCHEDULER("Scheduler", ExecutorServiceFactory.unschedulable()),
     /* Page cache background eviction. */
-    PAGE_CACHE_EVICTION("PageCacheEviction"),
+    PAGE_CACHE_EVICTION("PageCacheEviction", singleThread()),
     /* Page cache background eviction. */
     PAGE_CACHE_PRE_FETCHER("PageCachePreFetcher", ExecutorServiceFactory.cachedWithDiscard(), 4),
     PAGE_PRE_FETCHER("PagePreFetcher"),
@@ -106,7 +108,7 @@ public enum Group {
      */
     DATABASE_RECONCILER("DatabaseReconciler"),
 
-    UDC("UserDataCollector", ExecutorServiceFactory.singleThread(), true),
+    UDC("UserDataCollector", singleThread(), true),
 
     // CYPHER.
     /**
@@ -141,7 +143,7 @@ public enum Group {
      */
     BOLT_WORKER("BoltWorker", ExecutorServiceFactory.unschedulable()),
     BOLT_ADMISSION_CONTROL("AdmissionControl"),
-    BOLT_MONITORING("BoltMonitoring", ExecutorServiceFactory.singleThread()),
+    BOLT_MONITORING("BoltMonitoring", singleThread()),
 
     // CAUSAL CLUSTER, TOPOLOGY & BACKUP.
     RAFT_CLIENT("RaftClient"),
@@ -157,11 +159,10 @@ public enum Group {
     CORE_STATE_APPLIER("CoreStateApplier"),
     MEMBERSHIP_LIST_NOTIFIER("MembershipNotifier"),
     LIGHTHOUSE_GOSSIP("LighthouseGossip"),
-    LIGHTHOUSE_RECEIVER("LighthouseReceiver", ExecutorServiceFactory.singleThread()),
-    LIGHTHOUSE_JOIN_LEAVE_JOB("LighthouseJoinLeaveWorker", ExecutorServiceFactory.singleThread()),
-    LIGHTHOUSE_JOIN_LEAVE_MANAGER("LighthouseJoinLeaveManager", ExecutorServiceFactory.singleThread()),
-    LIGHTHOUSE_MEMBER_STATE_TRANSITION_SCHEDULER(
-            "LighthouseMemberStateScheduler", ExecutorServiceFactory.singleThread()),
+    LIGHTHOUSE_RECEIVER("LighthouseReceiver", singleThread()),
+    LIGHTHOUSE_JOIN_LEAVE_JOB("LighthouseJoinLeaveWorker", singleThread()),
+    LIGHTHOUSE_JOIN_LEAVE_MANAGER("LighthouseJoinLeaveManager", singleThread()),
+    LIGHTHOUSE_MEMBER_STATE_TRANSITION_SCHEDULER("LighthouseMemberStateScheduler", singleThread()),
     DOWNLOAD_SNAPSHOT("DownloadSnapshot"),
     SEEDING("Seeding"),
     CATCHUP_CHANNEL_POOL("CatchupChannelPool"),
@@ -173,14 +174,14 @@ public enum Group {
     PANIC_SERVICE("PanicService"),
     TOPOLOGY_NOTIFIER("TopologyNotifier"),
     TOPOLOGY_MAINTENANCE("TopologyMaintenance"),
-    TOPOLOGY_GRAPH_DBMS_MODEL("TopologyGraphDbmsModel", ExecutorServiceFactory.singleThread()),
+    TOPOLOGY_GRAPH_DBMS_MODEL("TopologyGraphDbmsModel", singleThread()),
     CONNECTIVITY_CHECKS("ConnectivityChecks"),
     RAFTED_STATUS_CHECKS("RaftedStatusChecks"),
     COMMIT_COORDINATOR("CommitCoordinator"),
     RAFT_INFREQUENT_TASKS("RaftInfrequentTasks"),
 
     // AURA
-    SECONDARY_QUIESCE("SecondaryQuiesce", ExecutorServiceFactory.singleThread()),
+    SECONDARY_QUIESCE("SecondaryQuiesce", singleThread()),
 
     /**
      * Rolls back idle transactions on the server.
