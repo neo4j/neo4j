@@ -33,16 +33,6 @@
     <dependency>
       <groupId>org.apache.shiro</groupId>
       <artifactId>shiro-core</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.shiro.crypto</groupId>
-          <artifactId>shiro-hashes-argon2</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.shiro.crypto</groupId>
-          <artifactId>shiro-hashes-bcrypt</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.shiro</groupId>
