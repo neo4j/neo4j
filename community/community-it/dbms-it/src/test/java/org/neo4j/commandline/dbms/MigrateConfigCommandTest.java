@@ -450,7 +450,8 @@ class MigrateConfigCommandTest {
                 "-XX:FlightRecorderOptions=stackdepth=256",
                 "-XX:+UnlockDiagnosticVMOptions",
                 "-XX:+DebugNonSafepoints",
-                "-Dlog4j.layout.jsonTemplate.maxStringLength=32768");
+                "-Dlog4j.layout.jsonTemplate.maxStringLength=32768",
+                "--add-modules=jdk.incubator.vector");
         templateSettings.removeAll(ignoredFromTemplate);
         Collection<String> jvmArgs = ConfigFileMigrator.recommendedJvmAdditionals().stream()
                 .map(ConfigFileMigrator.JvmArg::arg)
