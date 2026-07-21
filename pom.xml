@@ -1172,6 +1172,14 @@
             <groupId>*</groupId>
             <artifactId>shiro-config-ogdl</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>org.apache.shiro.crypto</groupId>
+            <artifactId>shiro-hashes-argon2</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.shiro.crypto</groupId>
+            <artifactId>shiro-hashes-bcrypt</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
