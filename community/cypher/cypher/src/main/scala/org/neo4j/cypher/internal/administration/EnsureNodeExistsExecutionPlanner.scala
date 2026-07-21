@@ -45,8 +45,8 @@ import org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.ROLE
 import org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.ROLE_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.USER
 import org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.USER_NAME_PROPERTY
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL_DESCRIPTION
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModelConstants.DATABASE_NAME
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModelConstants.DATABASE_NAME_LABEL_DESCRIPTION
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.InvalidArgumentException

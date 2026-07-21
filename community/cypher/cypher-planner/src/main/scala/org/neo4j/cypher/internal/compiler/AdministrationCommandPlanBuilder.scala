@@ -194,7 +194,7 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModelConstants.PRIMARY_PROPERTY
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation

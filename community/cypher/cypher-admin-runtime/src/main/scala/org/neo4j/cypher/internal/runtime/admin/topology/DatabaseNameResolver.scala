@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.ParameterProvider
 import org.neo4j.cypher.internal.util.AssertionRunner
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModelConstants.DEFAULT_NAMESPACE
 import org.neo4j.exceptions.InternalException
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceImpl

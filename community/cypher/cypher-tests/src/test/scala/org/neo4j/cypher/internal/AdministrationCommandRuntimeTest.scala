@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModelConstants.DEFAULT_NAMESPACE
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.values.storable.Values
