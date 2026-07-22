@@ -339,13 +339,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     })
   }
 
-  protected def excludedTestNames: Set[String] = Set.empty
-
   override protected def runTest(testName: String, args: Args): Status = {
-    if (excludedTestNames.contains(testName)) {
-      // Excluded by the implementer. See the overriding excludedTestNames for rationale.
-      SucceededStatus
-    } else if (includeOnlyTestNames == null || includeOnlyTestNames.contains(testName)) {
+    if (includeOnlyTestNames == null || includeOnlyTestNames.contains(testName)) {
       super.runTest(testName, args)
     } else {
       SucceededStatus // Maybe not optimal. If we could filter before run that would be better.
