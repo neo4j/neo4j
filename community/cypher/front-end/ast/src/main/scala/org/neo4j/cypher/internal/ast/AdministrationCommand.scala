@@ -1787,7 +1787,7 @@ sealed abstract class PrivilegeCommand(
 
     val secretsManagerFeatureCheck = privilege match {
       case DbmsPrivilege(_: SecretManagementAction) =>
-        requireFeatureSupport(s"The `$name` clause", SemanticFeature.SecretsManager, position)
+        requireFeatureSupport(s"The `$name` clause", SemanticFeature.SecretManager, position)
       case _ => SemanticCheck.success
     }
 

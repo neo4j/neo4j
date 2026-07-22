@@ -127,8 +127,8 @@ object SemanticFeature {
     override def name: String = "access rules checking for a value in a list property"
   }
 
-  case object SecretsManager extends SemanticFeature with FeatureToString {
-    override def name: String = "secrets manager"
+  case object SecretManager extends SemanticFeature with FeatureToString {
+    override def name: String = "secret manager"
   }
 
   private val allSemanticFeatures = Set(
@@ -153,7 +153,7 @@ object SemanticFeature {
     UserTags,
     GroupByClause,
     ValueInListProperty,
-    SecretsManager
+    SecretManager
   )
 
   def fromString(str: String): SemanticFeature =
