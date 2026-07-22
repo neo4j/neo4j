@@ -1457,7 +1457,7 @@ public final class CypherFunctions {
     }
 
     public static AnyValue trim(AnyValue trimSpecification, AnyValue trimSource) {
-        if (trimSource == NO_VALUE) {
+        if (trimSpecification == NO_VALUE || trimSource == NO_VALUE) {
             return NO_VALUE;
         }
 
@@ -1466,10 +1466,11 @@ public final class CypherFunctions {
         }
 
         if (trimSpecification instanceof TextValue trimSpec) {
-            return switch (trimSpec.stringValue()) {
+            return switch (trimSpec.stringValue().toUpperCase(Locale.ROOT)) {
                 case "LEADING" -> ltrim(trimSource);
                 case "TRAILING" -> rtrim(trimSource);
-                default -> btrim(trimSource);
+                case "BOTH" -> btrim(trimSource);
+                default -> throw InvalidArgumentException.unknownTrimSpecification(trimSpec.stringValue());
             };
         } else {
             throw notAString("trim", trimSpecification);
@@ -1477,7 +1478,7 @@ public final class CypherFunctions {
     }
 
     public static AnyValue trim(AnyValue trimSpecification, AnyValue trimSource, AnyValue trimCharacterString) {
-        if (trimSource == NO_VALUE) {
+        if (trimSpecification == NO_VALUE || trimSource == NO_VALUE || trimCharacterString == NO_VALUE) {
             return NO_VALUE;
         }
 
@@ -1497,10 +1498,11 @@ public final class CypherFunctions {
                             "The argument `trimCharacterString` in the `trim()` function must be of length 1.");
                 }
             }
-            return switch (trimSpec.stringValue()) {
+            return switch (trimSpec.stringValue().toUpperCase(Locale.ROOT)) {
                 case "LEADING" -> ltrim(trimSource, trimCharacterString);
                 case "TRAILING" -> rtrim(trimSource, trimCharacterString);
-                default -> btrim(trimSource, trimCharacterString);
+                case "BOTH" -> btrim(trimSource, trimCharacterString);
+                default -> throw InvalidArgumentException.unknownTrimSpecification(trimSpec.stringValue());
             };
         } else {
             throw notAString("trim", trimSpecification);

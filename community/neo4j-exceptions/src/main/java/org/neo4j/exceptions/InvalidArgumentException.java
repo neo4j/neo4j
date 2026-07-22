@@ -171,6 +171,16 @@ public class InvalidArgumentException extends Neo4jException {
         return new InvalidArgumentException(gql, "Unknown normal form. Valid values are: NFC, NFD, NFKC, NFKD.");
     }
 
+    public static InvalidArgumentException unknownTrimSpecification(String trimSpecification) {
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
+                .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42NAP)
+                        .withParam(GqlParams.StringParam.input, trimSpecification)
+                        .build())
+                .build();
+        return new InvalidArgumentException(
+                gql, "Unknown trim specification. Valid values are: LEADING, TRAILING, BOTH.");
+    }
+
     public static InvalidArgumentException invalidPatternCharacter(String type) {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42I65)

@@ -2777,6 +2777,13 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             "'CALL { ... } IN TRANSACTIONS' is not supported in combination with 'DEFINE'.",
             "invalid use of CALL IN TRANSACTIONS and local callables",
             ErrorClassification.CLIENT_ERROR),
+    STATUS_42NAP(
+            "Unknown trim specification: { %s }.",
+            new GqlParams.GqlParam[] {
+                new NonSensitiveGqlParam(GqlParams.StringParam.input, List.of(PROCEDURES_FUNCTIONS))
+            },
+            "unsupported trim specification",
+            ErrorClassification.CLIENT_ERROR),
     STATUS_42NFC(
             "Authentication and/or authorization could not be validated. See security logs for details.",
             "auth info validation error",
