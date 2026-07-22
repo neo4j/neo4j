@@ -574,7 +574,6 @@ expression8
 
 expression7
    : expression6 comparisonExpression6?
-   | propertyExistsPredicate
    ;
 
 // Making changes here? Consider looking at extendedWhen too.
@@ -655,6 +654,7 @@ expression1
    | vectorDistanceFunction
    | vectorNormFunction
    | trimFunction
+   | propertyExistsPredicate
    | patternExpression
    | shortestPathExpression
    | parenthesizedExpression
@@ -2442,6 +2442,7 @@ unescapedSymbolicNameString_
    | PROCEDURES
    | PROPERTIES
    | PROPERTY
+   | PROPERTY_EXISTS
    | PROVIDER
    | PROVIDERS
    | RANGE

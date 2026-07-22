@@ -1352,6 +1352,21 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test(
+    "CREATE CONSTRAINT property_exists FOR (n:address) REQUIRE n.id IS NOT NULL"
+  ) {
+    assertAst(
+      ast.CreateConstraint.createNodePropertyExistenceConstraint(
+        varFor("n"),
+        labelName("address"),
+        prop("n", "id"),
+        Some("property_exists"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos)
+    )
+  }
+
+  test(
     "CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NOT NULL"
   ) {
     assertAst(

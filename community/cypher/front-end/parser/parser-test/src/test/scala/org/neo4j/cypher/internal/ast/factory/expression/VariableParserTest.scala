@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.ast.factory.expression
 
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.test.util.AstParsing
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParserInTest
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
@@ -141,21 +140,13 @@ class VariableParserTest extends AstParsingTestBase
 
     names.distinct.foreach { name =>
       val cypher = cleanName(name)
-      if (cypher == "PROPERTY_EXISTS") {
-        // Reserved keyword in Cypher 25; not a valid variable name.
-        cypher should parseIn[Variable] {
-          case AstParsing.Cypher5 => _.toAst(varFor(cypher))
-          case _ => _.withSyntaxErrorContaining("Invalid input 'PROPERTY_EXISTS': expected a variable name")
-        }
-      } else {
-        if (Character.isAlphabetic(cypher.charAt(0))) {
-          cypher should parseTo[Variable](varFor(cypher))
-        }
-        if (cypher != "``") {
-          s"`$cypher`" should parseIn[Variable] {
-            case Cypher5 => _.toAst(varFor(cypher, isIsolated = true))
-            case _       => _.toAst(varFor(cypher, isIsolated = false))
-          }
+      if (Character.isAlphabetic(cypher.charAt(0))) {
+        cypher should parseTo[Variable](varFor(cypher))
+      }
+      if (cypher != "``") {
+        s"`$cypher`" should parseIn[Variable] {
+          case Cypher5 => _.toAst(varFor(cypher, isIsolated = true))
+          case _       => _.toAst(varFor(cypher, isIsolated = false))
         }
       }
     }
