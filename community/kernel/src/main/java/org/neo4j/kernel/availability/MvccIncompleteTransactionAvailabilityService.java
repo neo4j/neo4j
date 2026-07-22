@@ -27,14 +27,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.kernel.impl.api.ChunkedTransactionTracker;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class MultiVersionRollbackAvailabilityService extends LifecycleAdapter {
+public class MvccIncompleteTransactionAvailabilityService extends LifecycleAdapter {
 
     private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final ChunkedTransactionTracker chunkedTransactionTracker;
     private volatile Set<Long> transactionsToRollback;
     private volatile boolean available;
 
-    public MultiVersionRollbackAvailabilityService(
+    public MvccIncompleteTransactionAvailabilityService(
             DatabaseAvailabilityGuard databaseAvailabilityGuard, ChunkedTransactionTracker chunkedTransactionTracker) {
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.chunkedTransactionTracker = chunkedTransactionTracker;
@@ -52,7 +52,7 @@ public class MultiVersionRollbackAvailabilityService extends LifecycleAdapter {
         this.transactionsToRollback = createTxIdSet(transactionsToRollback);
     }
 
-    public void registerRollback(long transactionId) {
+    public void completeTransaction(long transactionId) {
         if (available) {
             return;
         }

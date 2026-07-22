@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery.facade;
 import java.io.IOException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.ChunkedTransactionTracker;
+import org.neo4j.kernel.recovery.IncompleteTransactionAction;
 import org.neo4j.kernel.recovery.RecoveryMode;
 
 class EmptyRecoveryFacade implements RecoveryFacade {
@@ -36,14 +37,17 @@ class EmptyRecoveryFacade implements RecoveryFacade {
             RecoveryFacadeMonitor recoveryFacadeMonitor,
             RecoveryMode recoveryMode,
             ChunkedTransactionTracker chunkedTransactionTracker,
-            boolean rollbackIncompleteTransactions,
+            IncompleteTransactionAction incompleteTransactionAction,
             boolean forceFailOnCorruptedLogs)
             throws IOException {
         // noop
     }
 
     @Override
-    public void performRecovery(DatabaseLayout databaseLayout, ChunkedTransactionTracker chunkedTransactionTracker)
+    public void performRecovery(
+            DatabaseLayout databaseLayout,
+            IncompleteTransactionAction incompleteTransactionAction,
+            ChunkedTransactionTracker chunkedTransactionTracker)
             throws IOException {}
 
     @Override
@@ -51,7 +55,8 @@ class EmptyRecoveryFacade implements RecoveryFacade {
             DatabaseLayout databaseLayout,
             RecoveryFacadeMonitor monitor,
             RecoveryMode mode,
-            boolean forceFailOnCorruptedLogs)
+            boolean forceFailOnCorruptedLogs,
+            ChunkedTransactionTracker chunkedTransactionTracker)
             throws IOException {
         // noop
     }
@@ -61,7 +66,7 @@ class EmptyRecoveryFacade implements RecoveryFacade {
             DatabaseLayout databaseLayout,
             RecoveryCriteria recoveryCriteria,
             RecoveryFacadeMonitor monitor,
-            boolean recoverOnlyAvailableTransactions)
+            IncompleteTransactionAction incompleteTransactionAction)
             throws IOException {
         // noop
     }
@@ -71,7 +76,7 @@ class EmptyRecoveryFacade implements RecoveryFacade {
             DatabaseLayout databaseLayout,
             RecoveryFacadeMonitor monitor,
             RecoveryMode recoveryMode,
-            boolean rollbackIncompleteTransactions) {
+            IncompleteTransactionAction incompleteTransactionAction) {
         // noop
     }
 }

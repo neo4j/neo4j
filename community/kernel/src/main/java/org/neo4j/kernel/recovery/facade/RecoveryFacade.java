@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery.facade;
 import java.io.IOException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.ChunkedTransactionTracker;
+import org.neo4j.kernel.recovery.IncompleteTransactionAction;
 import org.neo4j.kernel.recovery.RecoveryMode;
 
 public interface RecoveryFacade {
@@ -33,31 +34,35 @@ public interface RecoveryFacade {
             RecoveryFacadeMonitor recoveryFacadeMonitor,
             RecoveryMode recoveryMode,
             ChunkedTransactionTracker chunkedTransactionTracker,
-            boolean rollbackIncompleteTransactions,
+            IncompleteTransactionAction incompleteTransactionAction,
             boolean forceFailOnCorruptedLogs)
             throws IOException;
 
-    void performRecovery(DatabaseLayout databaseLayout, ChunkedTransactionTracker chunkedTransactionTracker)
+    void performRecovery(
+            DatabaseLayout databaseLayout,
+            IncompleteTransactionAction incompleteTransactionAction,
+            ChunkedTransactionTracker chunkedTransactionTracker)
             throws IOException;
 
     void performRecovery(
             DatabaseLayout databaseLayout,
             RecoveryFacadeMonitor monitor,
             RecoveryMode mode,
-            boolean forceFailOnCorruptedLogs)
+            boolean forceFailOnCorruptedLogs,
+            ChunkedTransactionTracker chunkedTransactionTracker)
             throws IOException;
 
     void performRecovery(
             DatabaseLayout databaseLayout,
             RecoveryCriteria recoveryCriteria,
             RecoveryFacadeMonitor monitor,
-            boolean recoverOnlyAvailableTransactions)
+            IncompleteTransactionAction incompleteTransactionAction)
             throws IOException;
 
     void forceRecovery(
             DatabaseLayout databaseLayout,
             RecoveryFacadeMonitor monitor,
             RecoveryMode recoveryMode,
-            boolean rollbackIncompleteTransactions)
+            IncompleteTransactionAction incompleteTransactionAction)
             throws IOException;
 }

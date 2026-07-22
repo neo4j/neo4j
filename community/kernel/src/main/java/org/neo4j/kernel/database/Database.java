@@ -100,7 +100,7 @@ import org.neo4j.kernel.api.database.transaction.TransactionLogServiceImpl;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.availability.MultiVersionRollbackAvailabilityService;
+import org.neo4j.kernel.availability.MvccIncompleteTransactionAvailabilityService;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -700,7 +700,7 @@ public class Database extends AbstractDatabase {
         databaseDependencies.satisfyDependency(multiVersionDatabaseRollbackService);
 
         var rollBackAvailabilityService =
-                new MultiVersionRollbackAvailabilityService(databaseAvailabilityGuard, chunkedTransactionTracker);
+                new MvccIncompleteTransactionAvailabilityService(databaseAvailabilityGuard, chunkedTransactionTracker);
         databaseDependencies.satisfyDependency(rollBackAvailabilityService);
         life.add(rollBackAvailabilityService);
         life.add(onStop(() -> {

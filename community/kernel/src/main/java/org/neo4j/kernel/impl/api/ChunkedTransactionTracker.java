@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
-
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.kernel.KernelVersion;
@@ -33,9 +31,7 @@ public class ChunkedTransactionTracker {
     }
 
     public long firstBatchAppendIndex(long transactionId) {
-        var firstBatchAppendIndex = registry.get(transactionId).firstBatchAppendIndex;
-        assert firstBatchAppendIndex != UNKNOWN_APPEND_INDEX : "First batch append index isn't set properly.";
-        return firstBatchAppendIndex;
+        return registry.get(transactionId).firstBatchAppendIndex;
     }
 
     public void registerChunkedTransaction(

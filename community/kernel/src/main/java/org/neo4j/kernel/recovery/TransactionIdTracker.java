@@ -65,13 +65,13 @@ public class TransactionIdTracker {
 
     long[] notCompletedTransactionAppendIndexes() {
         return notCompletedTransactionChunks.values().stream()
-                .mapToLong(PartialLastTransactionChunk::appendIndex)
+                .mapToLong(PartialLastTransactionChunk::lastSeenAppendIndex)
                 .sorted()
                 .toArray();
     }
 
     long lastNotCompletedTransactionChunk(long transactionId) {
-        return notCompletedTransactionChunks.get(transactionId).chunkId();
+        return notCompletedTransactionChunks.get(transactionId).lastSeenChunkId();
     }
 
     public void trackBatch(CommittedCommandBatchRepresentation committedBatch) {
@@ -89,12 +89,14 @@ public class TransactionIdTracker {
             }
         } else {
             if (!completedTransactionsWindow.contains(transactionId)) {
-                // we encountered transaction that we never completed, so we will need to rollback it
-                if (!notCompletedTransactionChunks.containsKey(transactionId)) {
-                    notCompletedTransactionChunks.put(
-                            transactionId,
-                            new PartialLastTransactionChunk(transactionId, committedBatch.appendIndex(), chunkId));
-                }
+                // we encountered transaction that we never completed, so we will need to rollback/commit it once the db
+                // starts.
+                PartialLastTransactionChunk lastSeenTransactionChunk = notCompletedTransactionChunks.get(transactionId);
+                lastSeenTransactionChunk = lastSeenTransactionChunk == null
+                        ? new PartialLastTransactionChunk(
+                                transactionId, commandBatch.appendIndex(), committedBatch.appendIndex(), chunkId)
+                        : lastSeenTransactionChunk.updateEarliestSeenAppendIndex(commandBatch.appendIndex());
+                notCompletedTransactionChunks.put(transactionId, lastSeenTransactionChunk);
             }
             // we are not really interested in keeping the whole set; window of this transaction is gone now
             // so, we can stop tracking it now
@@ -106,9 +108,15 @@ public class TransactionIdTracker {
 
     public Collection<PartialLastTransactionChunk> getPartialLastTransactionChunks() {
         return notCompletedTransactionChunks.values().stream()
-                .sorted(Comparator.comparingLong(PartialLastTransactionChunk::appendIndex))
+                .sorted(Comparator.comparingLong(PartialLastTransactionChunk::lastSeenAppendIndex))
                 .toList();
     }
 
-    record PartialLastTransactionChunk(long transactionId, long appendIndex, long chunkId) {}
+    record PartialLastTransactionChunk(
+            long transactionId, long earliestSeenAppendIndex, long lastSeenAppendIndex, long lastSeenChunkId) {
+        public PartialLastTransactionChunk updateEarliestSeenAppendIndex(long earliestSeenAppendIndex) {
+            return new PartialLastTransactionChunk(
+                    transactionId, earliestSeenAppendIndex, lastSeenAppendIndex, lastSeenChunkId);
+        }
+    }
 }

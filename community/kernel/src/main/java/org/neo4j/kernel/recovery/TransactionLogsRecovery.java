@@ -467,9 +467,9 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         for (PartialLastTransactionChunk partialLastTransactionChunk : notCompletedTransactionChunks) {
             chunkedTransactionTracker.registerChunkedTransaction(
                     partialLastTransactionChunk.transactionId(),
-                    UNKNOWN_APPEND_INDEX,
-                    partialLastTransactionChunk.appendIndex(),
-                    partialLastTransactionChunk.chunkId(),
+                    partialLastTransactionChunk.earliestSeenAppendIndex(),
+                    partialLastTransactionChunk.lastSeenAppendIndex(),
+                    partialLastTransactionChunk.lastSeenChunkId(),
                     kernelVersion,
                     LeaseService.NO_LEASE);
         }
@@ -646,7 +646,6 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         CommittedCommandBatchRepresentation lastReversedCommandBatch = null;
 
         var oldestNotVisibleTransactionLogPosition = recoveryStartInformation.oldestNotVisibleTransactionLogPosition();
-        var checkpointedLogPosition = recoveryStartInformation.transactionLogPosition();
 
         long lowestRecoveredAppendIndex = recoveryStartInformation.firstAppendIndexAfterLastCheckPoint();
         try (var transactionsToRecover = recoveryService.getCommandBatchesInReverseOrder(
@@ -662,7 +661,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 }
                 transactionIdTracker.trackBatch(commandBatch);
                 // we need to unroll only transactions located after checkpointed position
-                if (transactionsToRecover.position().isAfterOrSame(checkpointedLogPosition)) {
+                if (transactionsToRecover.position().isAfterOrSame(oldestNotVisibleTransactionLogPosition)) {
                     recoveryVisitor.visit(commandBatch);
                 }
                 lowestRecoveredAppendIndex = commandBatch.appendIndex();
