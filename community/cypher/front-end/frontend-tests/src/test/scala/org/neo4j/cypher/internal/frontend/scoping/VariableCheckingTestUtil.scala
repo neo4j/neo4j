@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
  * Shared helpers for the variable-checking / scoping test suites.
  *
  * Intended home for formatting, comparison, and dump utilities that are
- * useful across `VariableCheckingTestSuite`, `ScopeSurveyorReferenceTest`,
- * and ad-hoc dump probes (e.g. `NamespacerParityTestSupport.dumpSymbolGroupsAtNamespacer`).
+ * useful across `VariableCheckingTestSuite` and `ScopeSurveyorReferenceTest`.
  */
 private[scoping] object VariableCheckingTestUtil {
 

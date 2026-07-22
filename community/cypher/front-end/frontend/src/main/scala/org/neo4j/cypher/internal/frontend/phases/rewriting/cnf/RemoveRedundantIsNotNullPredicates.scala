@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.AndsAboveOrs
-import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NormalizePredicates
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -55,9 +54,6 @@ case object RemoveRedundantIsNotNullPredicates extends CnfPhaseRewriter with Def
     !AndsAboveOrs,
     !AndRewrittenToAnds
   )
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] =
-    SemanticInfoAvailable
 
   override def instance(from: BaseState, context: BaseContext): Rewriter = {
     new RemoveIsNotNullRewriter(context.cancellationChecker)

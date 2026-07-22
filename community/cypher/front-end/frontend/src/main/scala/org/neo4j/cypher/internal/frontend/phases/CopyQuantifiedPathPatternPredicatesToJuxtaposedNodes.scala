@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.NoUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NormalizePredicates
@@ -40,7 +41,7 @@ case object CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] =
-    Set(ExpressionsHaveComputedDependencies)
+    Set(ExpressionsHaveComputedDependencies, UpToDateScopes)
 
   def instance(from: BaseState, context: BaseContext): Rewriter =
     CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriter.instance

@@ -141,8 +141,6 @@ case object simplifyPredicates extends CnfPhaseRewriter {
 
   override def postConditions: Set[StepSequencer.Condition] = Set(PredicatesSimplified)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
-
   override def instance(from: BaseState, context: BaseContext): Rewriter =
     this(from.semantics(), context.cancellationChecker)
 

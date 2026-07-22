@@ -73,9 +73,6 @@ case object normalizeSargablePredicates extends CnfPhaseRewriter {
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoInequalityInsideNot)
 
-  // Can invalidate semantic info as it may introduce a new AST
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
-
   override def instance(from: BaseState, context: BaseContext): Rewriter =
     normalizeSargablePredicatesRewriter(from.semanticTable())
 

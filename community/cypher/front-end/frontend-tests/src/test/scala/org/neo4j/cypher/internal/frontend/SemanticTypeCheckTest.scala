@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.RewritePhaseTest.reanalyze
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ListCoercedToBooleanCheck
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticTypeCheck
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
@@ -41,7 +41,7 @@ class SemanticTypeCheckTest extends CypherFunSuite with CypherVersionTestSupport
 
   private def pipeline = Parse andThen
     PreparatoryRewriting andThen
-    SemanticAnalysis(warn = Some(false)) andThen
+    reanalyze andThen
     SemanticTypeCheck
 
   // PatternExpressionInNonExistenceCheck

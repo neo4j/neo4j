@@ -94,6 +94,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExtractLocal
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ComputeExpressionDependencies
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.ir.PatternLength
@@ -580,20 +581,27 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
       ExpandClauses andThen
       ScopeSurveyor andThen
       ExpandSubclauses andThen
+      ScopeSurveyor andThen
       SemanticAnalysis(warn = Some(true)) andThen
+      ComputeExpressionDependencies andThen
       AstRewriting() andThen
       ExtractLocalDefinitions andThen
       ResolveCallablesFromPlanContext andThen
+      ScopeSurveyor andThen
       SemanticAnalysis(warn = Some(true)) andThen
+      ComputeExpressionDependencies andThen
       Namespacer andThen
       isolateAggregation andThen
+      ScopeSurveyor andThen
       SemanticAnalysis(warn = Some(true)) andThen
+      ComputeExpressionDependencies andThen
       Namespacer andThen
       ProjectNamedPathsRewriter andThen
       rewriteEqualityToInPredicate andThen
       cnfNormalizerTransformer andThen
       collapseMultipleInPredicates andThen
       MoveBoundaryNodePredicates andThen
+      ComputeExpressionDependencies andThen
       CreatePlannerQueryTransformer andThen
       NameDeduplication
 

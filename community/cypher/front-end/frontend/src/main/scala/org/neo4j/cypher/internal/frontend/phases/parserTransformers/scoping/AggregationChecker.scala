@@ -74,12 +74,6 @@ case object AggregationChecker extends VariableCheckerUtil {
       if !scs.importedVariables.forall(lv => ctx.isConstantForPart(lv, NonAggregatingSubclausePart)) =>
       scs.importedVariables.filterNot(lv => ctx.isConstantForPart(lv, NonAggregatingSubclausePart))
         .map(lv => SemanticError.inaccessibleVariable(lv.name, clauseName, lv.position, groupBySupported)).toSet
-    // Subquery expression matched as a sub-expression of a larger sort/WHERE:
-    // recognition wraps it in a `recognizedLeafScope` with empty children, so the
-    // inner Query's `a`-references aren't reachable via the leaf's own scope.
-    // Look up the matching projection item via the spec and read its recorded
-    // scope's references (the item's own scope, built without recognition, has
-    // the inner refs).
     case ExpressionScope(fse: FullSubqueryExpression, ctx: ProjectionExpressionContext, _, _, _) =>
       ctx.projectionSpecification.allItems.find(_.expression == fse)
         .map(item =>
@@ -88,10 +82,6 @@ case object AggregationChecker extends VariableCheckerUtil {
             .map(lv => SemanticError.inaccessibleVariable(lv.name, clauseName, lv.position, groupBySupported))
         )
         .getOrElse(Set.empty)
-    // Recognized-leaf scope (non-variable expression matched via sub-expression).
-    // Per CIP-248 Rule 2 the variables the user actually wrote live in
-    // `hiddenReferences`; the public `referenced` only carries the resolved
-    // alias. Flag any caller whose target isn't constant in this subclause part.
     case scope @ ExpressionScope(_, ctx, _, _, _) if scope.hiddenReferences.getVariables.nonEmpty =>
       scope.hiddenReferences.getVariables
         .filterNot(lv => ctx.isConstantForPart(lv, NonAggregatingSubclausePart))
@@ -165,14 +155,11 @@ case object AggregationChecker extends VariableCheckerUtil {
     isTopLevel: Boolean = true
   ): Set[SemanticError] = {
     scope match {
-      // Top-level subclause expression that the user wrote identically to a
-      // projection item (alias / exact full match / recognizable form) is
-      // allowed by CIP-248 Rule 2 — no traversal, no check. Sub-level recognized
-      // leaves below the top are NOT skipped: they represent sub-expression
-      // matches and their inner variables may still be inaccessible.
       case ExpressionScope(expr: Expression, ProjectionExpressionContext(_, _, _, spec, _), _, _, _)
         if isTopLevel && (spec.isSubclauseRecognizable(expr) || spec.allItems.exists(_.expression == expr)) =>
         Set.empty
+      case _ if !isTopLevel && scope.isRecognizedLeaf(isSubExpression = true) =>
+        check.applyOrElse(scope, (_: WorkingScope) => Set.empty)
       case _ =>
         check.applyOrElse(scope, (_: WorkingScope) => Set.empty) ++
           scope.children.flatMap(ws => checkScope(ws, check, isTopLevel = false))

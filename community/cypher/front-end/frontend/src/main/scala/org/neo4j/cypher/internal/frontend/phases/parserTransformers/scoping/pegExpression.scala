@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping
 import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionScope
+import org.neo4j.cypher.internal.ast.semantics.scoping.ProjectionItem
 import org.neo4j.cypher.internal.ast.semantics.scoping.References
 import org.neo4j.cypher.internal.ast.semantics.scoping.RegularContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
@@ -80,27 +81,39 @@ object pegExpression {
     )
   }
 
-  private def applyUncached(expression: Expression, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
-    val children = scopeExpression(expression, incoming)
+  private def applyUncached(
+    expression: Expression,
+    incoming: RegularContext,
+    recognizeRoot: Boolean = true
+  )(implicit c: PegContext): WorkingScope = {
+    val children = scopeExpression(expression, incoming, recognizeRoot)
     onlyChildIfSelfOrElse(children, expression, () => incoming.expressionResultScope(expression, children))
   }
 
   private def scopeExpression(
     expression: Expression,
-    incoming: RegularContext
+    incoming: RegularContext,
+    recognizeRoot: Boolean
   )(implicit c: PegContext): Seq[ExpressionScope] = {
     def collect(scope: ExpressionScope)
       : Seq[ExpressionScope] => FoldingBehavior[Seq[ExpressionScope]] =
       acc => SkipChildren(acc :+ scope)
+
+    object RecognizedLeaf {
+      def unapply(node: Any): Option[(Expression, ProjectionItem)] = node match {
+        case expr: Expression if recognizeRoot || (expr ne expression) =>
+          incoming.recognizeExpression(expr, isSubExpression = true).map(expr -> _)
+        case _ => None
+      }
+    }
 
     expression.folder.treeFold(Seq[ExpressionScope]()) {
 
       /**
        *  Recognize expression in projection context
        */
-      case expr: Expression if incoming.recognizeExpression(expr, isSubExpression = true).isDefined =>
-        val recognizedItem = incoming.recognizeExpression(expr, isSubExpression = true).get
-        collect(incoming.recognizedLeafScope(expr, recognizedItem))
+      case RecognizedLeaf(expr, recognizedItem) =>
+        collect(incoming.recognizedLeafScope(expr, recognizedItem, scopeRecognizedSubtree(expr, incoming)))
 
       /**
        * Variable
@@ -244,6 +257,14 @@ object pegExpression {
         collect(incoming.expressionResultScope(r, Seq(initResult, listResult, accumulatorScope)))
     }
   }
+
+  /**
+   * Scopes a recognized subclause expression's subtree WITHOUT re-recognizing the root, so nested
+   * ExpressionWithComputedDependencies get recorded scopes. The recognized leaf keeps its own `referenced`.
+   */
+  def scopeRecognizedSubtree(expression: Expression, incoming: RegularContext)(implicit
+    c: PegContext): Seq[WorkingScope] =
+    applyUncached(expression, incoming, recognizeRoot = false).children
 
   @inline private def onlyChildIsSelf(children: Seq[WorkingScope], self: ASTNode): Boolean =
     children.size == 1 && children.head.astNode == self

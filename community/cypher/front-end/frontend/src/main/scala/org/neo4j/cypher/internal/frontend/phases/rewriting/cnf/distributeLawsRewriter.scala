@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.AndsAboveOrs
 import org.neo4j.cypher.internal.rewriting.conditions.OrRewrittenToOrs
-import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.copyVariables
 import org.neo4j.cypher.internal.rewriting.rewriters.repeatWithSizeLimit
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -159,8 +158,6 @@ case object DistributeLawsRewriterPhase extends CnfPhase {
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(AndsAboveOrs)
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 }
 
 case class DistributeLawsRewriterTransformer(subqueryDuplicationAllowed: Boolean)

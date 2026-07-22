@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.Search
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
@@ -42,7 +43,9 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ListCoercedT
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.MatchChecks.SearchCheck
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PatternExpressionInNonExistenceCheck.patternExpressionInNonExistenceCheck
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticTypeCheck.SemanticErrorCheck
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -80,7 +83,9 @@ case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState]
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     BaseContains[Statement](),
-    BaseContains[SemanticTable]()
+    BaseContains[SemanticTable](),
+    ExpressionsHaveComputedDependencies,
+    UpToDateScopes
   ) ++ SemanticInfoAvailable
 
   // necessary because VisitorPhase defines empty postConditions
@@ -173,25 +178,26 @@ object MatchChecks {
       baseState.statement().folder.treeFold(Seq.empty[SemanticError]) {
         case Search(bindingVariable, _, _, _, embedding, where, _, _, _) =>
           errors =>
+            val scopeState = baseState.scopeState()
             val newErrors = Seq.empty[SemanticError] ++
-              Option.when(embedding.dependencies.contains(bindingVariable)) {
+              Option.when(scopeState.getReferenced(embedding).contains(bindingVariable)) {
                 // To be removed again in PLAN-3087
                 SemanticError.singleStageWithEmbeddingReferencingEntity(
                   embedding.asCanonicalStringVal,
                   bindingVariable.name,
                   embedding.position
                 )
-              } ++ where.toSeq.map(_.expression).flatMap(checkWhereClause)
+              } ++ where.toSeq.map(_.expression).flatMap(expr => checkWhereClause(expr, scopeState))
 
             SkipChildren(errors ++ newErrors)
       }
     }
   }
 
-  private def checkWhereClause(expression: Expression): Seq[SemanticError] =
+  private def checkWhereClause(expression: Expression, scopeState: ScopeState): Seq[SemanticError] =
     expression match {
       case VectorFilterExpression(variable: LogicalVariable, rhs: Expression, _: VectorFilterExpression) =>
-        Option.when(rhs.dependencies.contains(variable)) {
+        Option.when(scopeState.getReferenced(rhs, Set.empty).contains(variable)) {
           // To be removed again in PLAN-3087
           SemanticError.singleStageWithPredicateReferencingEntity(
             rhs.asCanonicalStringVal,
@@ -199,9 +205,9 @@ object MatchChecks {
             rhs.position
           )
         }.toSeq
-      case And(lhs, rhs) => checkWhereClause(lhs) ++ checkWhereClause(rhs)
+      case And(lhs, rhs) => checkWhereClause(lhs, scopeState) ++ checkWhereClause(rhs, scopeState)
       case Ands(exprs) =>
-        exprs.map(checkWhereClause).foldLeft(Seq.empty[SemanticError])(_ ++ _)
+        exprs.map(expr => checkWhereClause(expr, scopeState)).foldLeft(Seq.empty[SemanticError])(_ ++ _)
       case _ =>
         // Ignore. Will be caught during semantic analysis in Search.asFilterExpressions.
         Seq.empty

@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExpandClauses
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ReplacePatternComprehensionWithCollectSubqueryRewriter
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.rewriting.conditions.NoReferenceEqualityAmongVariables
@@ -36,9 +35,9 @@ class CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriterTest
     ReplacePatternComprehensionWithCollectSubqueryRewriter andThen
       ScopeSurveyor andThen
       ExpandClauses andThen
-      SemanticAnalysis(Some(false)) andThen
+      RewritePhaseTest.reanalyze andThen
       AstRewriting() andThen
-      SemanticAnalysis(Some(false)) andThen
+      RewritePhaseTest.reanalyze andThen
       flattenBooleanOperators andThen
       Namespacer
 

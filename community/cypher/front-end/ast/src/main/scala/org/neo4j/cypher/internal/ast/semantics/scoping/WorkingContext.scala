@@ -241,7 +241,8 @@ sealed trait RegularContext extends WorkingContext {
    */
   def recognizedLeafScope(
     expression: Expression,
-    recognizedItem: ProjectionItem
+    recognizedItem: ProjectionItem,
+    children: Seq[WorkingScope] = WorkingScope.noChildren
   ): ExpressionScope = {
     val aliasRefs = expression match {
       case lv: LogicalVariable =>
@@ -252,7 +253,7 @@ sealed trait RegularContext extends WorkingContext {
           case None        => References.empty
         }
     }
-    val scope = expressionResultScope(expression, WorkingScope.noChildren, Some(aliasRefs))
+    val scope = expressionResultScope(expression, children, Some(aliasRefs))
     expression match {
       case _: LogicalVariable => scope
       case other =>

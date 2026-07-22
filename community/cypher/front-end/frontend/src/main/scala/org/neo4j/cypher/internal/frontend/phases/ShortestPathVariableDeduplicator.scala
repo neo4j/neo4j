@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.ast.semantics.Scope
+import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -63,9 +63,11 @@ case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseStat
     val statementWithPredicates = from.statement().endoRewrite(
       topDown(Rewriter.lift {
         case clause: Match =>
-          val currentScope = from.semantics().recordedScopes(clause).scope
+          val clauseScope = from.scopeState().scopeOfOpt(clause).getOrElse(
+            throw new IllegalStateException(s"No working scope was recorded for MATCH clause: $clause")
+          )
           clause.endoRewrite(
-            clauseRewriter(from.anonymousVariableNameGenerator, currentScope, renamings)
+            clauseRewriter(from.anonymousVariableNameGenerator, clauseScope, renamings)
           )
       })
     )
@@ -90,7 +92,7 @@ case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseStat
 
   private def clauseRewriter(
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    currentScope: Scope,
+    clauseScope: WorkingScope,
     renamings: mutable.Map[Ref[LogicalVariable], LogicalVariable]
   ): Rewriter = {
     val innerRewriter = patternElementRewriter(anonymousVariableNameGenerator, renamings)
@@ -111,9 +113,7 @@ case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseStat
             case (_, variables) =>
               val firstVariable = variables.head
               val variableDefinedInThisClause =
-                currentScope
-                  .symbolTable(firstVariable.name)
-                  .definition.asVariable.position == firstVariable.position
+                !clauseScope.incoming.allSymbols.exists(_.name == firstVariable.name)
               if (variableDefinedInThisClause) {
                 variables.tail.map(generateRenaming(anonymousVariableNameGenerator))
               } else {
@@ -182,10 +182,12 @@ case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseStat
     }.to(ListSet)
 
   override def preConditions: Set[StepSequencer.Condition] =
-    // Reads scope of MATCH clauses
-    SemanticInfoAvailable +
+    Set(
+      // Reads the WorkingScope of MATCH clauses
+      UpToDateScopes,
       // Rewrites predicates
       NormalizePredicates.completed
+    )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] =
     SemanticInfoAvailable + UpToDateScopes // Introduces new AST nodes

@@ -28,8 +28,10 @@ import org.neo4j.cypher.internal.frontend.phases.ResolveCallables
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ComputeExpressionDependencies
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.conditions.NoReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 
@@ -66,6 +68,7 @@ case object ParsePipelineTransformer extends StepSequencer.Step {
   private val postObfuscatorSet: Set[StepSequencer.Step & ParsePipelineTransformerFactory] = Set(
     ScopeSurveyor,
     SemanticAnalysis,
+    ComputeExpressionDependencies,
     SemanticTypeCheck,
     SyntaxDeprecationWarningsAndReplacements(Deprecations.SemanticallyDeprecatedFeatures),
     AggregationAnalysis,
@@ -81,7 +84,7 @@ case object ParsePipelineTransformer extends StepSequencer.Step {
   val AccumulatedSteps(preObfuscatorSteps, preObfuscatorPostConditions) =
     StepSequencer[StepSequencer.Step & ParsePipelineTransformerFactory]().orderSteps(
       preObfuscatorSet,
-      initialConditions = Set(BaseContains[Statement]())
+      initialConditions = Set(BaseContains[Statement](), NoReferenceEqualityAmongVariables)
     )
 
   private val postObfuscatorEstablishes: Set[StepSequencer.Condition] =

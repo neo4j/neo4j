@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.OptionalTransformer
 import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.frontend.phases.RewritePhaseTest.reanalyze
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting
@@ -169,7 +170,7 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite with CypherVersionTestSup
       OptionalTransformer(extraStepBefore) andThen
       SemanticAnalysis(warn = Some(true)) andThen
       OptionalTransformer(extraStepInBetween) andThen
-      SemanticAnalysis(warn = Some(false)) andThen
+      reanalyze andThen
       SemanticTypeCheck
   }
 

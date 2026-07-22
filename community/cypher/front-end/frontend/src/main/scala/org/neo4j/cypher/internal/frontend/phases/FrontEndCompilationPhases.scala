@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ParsePipelineTransformer
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ResolveSimpleDynamicExpressions
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ComputeExpressionDependencies
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.values.virtual.MapValue
@@ -130,8 +131,10 @@ trait FrontEndCompilationPhases {
       StrictResolveCallables(resolver) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
       SemanticAnalysis(warn = Some(true)) andThen
+      ComputeExpressionDependencies andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
       SemanticAnalysis(warn = Some(true)) andThen
+      ComputeExpressionDependencies andThen
       ObfuscationMetadataCollection andThen
       ExtractLocalDefinitions
   }

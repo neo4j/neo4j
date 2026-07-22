@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.AggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.HasAggregateButIsNotAggregate
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
@@ -187,7 +188,8 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // Can introduces new ambiguous variable names itself.
-    Namespacer.completed
+    Namespacer.completed,
+    UpToDateScopes
   ) ++ SemanticInfoAvailable // Adds a WITH clause with no SemanticInfo
 
   override def getTransformer(planPipelineConfig: PlanPipelineTransformerConfig)

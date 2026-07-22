@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState.RecordedScopes
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope.noLocalCallables
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope.unitVariables
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternAtom
@@ -84,6 +85,21 @@ sealed trait WorkingScope extends Product with Foldable {
    * Derived from [[referenced]]'s hidden channel, so it survives every `copy`.
    */
   final def hiddenReferences: References = referenced.hiddenRefs
+
+  /**
+   * True iff this scope is a recognized leaf — an [[ExpressionScope]] in a projection context whose
+   * expression the context recognizes as (part of) a projection item (see
+   * [[WorkingContext.recognizedLeafScope]], e.g. a grouping key). Consumers use this to stop
+   * descending into the recorded subtree children, whose inner variables are legal via the grouping key
+   * and live in [[hiddenReferences]] rather than [[referenced]].
+   *
+   * @param isSubExpression whether recognition of a sub-expression (not just the whole item) counts.
+   */
+  final def isRecognizedLeaf(isSubExpression: Boolean): Boolean = this match {
+    case ExpressionScope(expr: Expression, ctx: ProjectionExpressionContext, _, _, _) =>
+      ctx.recognizeExpression(expr, isSubExpression).isDefined
+    case _ => false
+  }
 
   def declared: Declarations
   def outgoing: RegularContext

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.compiler.AdministrationCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.SchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
@@ -72,7 +73,9 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ParsePipelin
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ShadowedFunctionsUnresolved
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ComputeExpressionDependencies
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.simplifyPredicates
@@ -92,6 +95,8 @@ object CompilationPhases extends FrontEndCompilationPhases {
       .orderSteps(
         Set(
           SemanticAnalysis,
+          ScopeSurveyor,
+          ComputeExpressionDependencies,
           Namespacer,
           ProjectNamedPathsRewriter,
           isolateAggregation,
@@ -109,9 +114,11 @@ object CompilationPhases extends FrontEndCompilationPhases {
             ++ PreparatoryRewriting.postConditions
             ++ ParsePipelineTransformer.postConditions
             ++ AstRewriting.postConditions
-            // ExpressionsHaveComputedDependencies is introduced by SemanticAnalysis.
+            // ExpressionsHaveComputedDependencies is introduced by ComputeExpressionDependencies.
             // It is currently not allowed to then also have it as an initial condition
             - ExpressionsHaveComputedDependencies
+            - UpToDateScopes
+            - BaseContains[WorkingScope]()
             - PatternExpressionsHaveSemanticInfo
             - BaseContains[SemanticState]()
             - BaseContains[SemanticTable]()

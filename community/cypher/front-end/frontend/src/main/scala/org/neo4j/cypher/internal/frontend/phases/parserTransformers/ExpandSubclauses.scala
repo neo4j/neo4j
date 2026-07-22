@@ -82,7 +82,8 @@ case object ExpandSubclauses extends StatementRewriter
   override def preConditions: Set[Condition] = Set(
     UpToDateScopes,
     FunctionInvocationsResolved,
-    AggregationsChecked
+    AggregationsChecked,
+    SemanticTypeCheckCompleted
   )
 
   override def postConditions: Set[Condition] = Set(SubclausesExpanded)

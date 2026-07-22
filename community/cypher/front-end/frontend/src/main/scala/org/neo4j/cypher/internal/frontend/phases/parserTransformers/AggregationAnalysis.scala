@@ -38,8 +38,8 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.Subc
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.SubclauseExpressionClassifier.Classification
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.VariableChecker
+import org.neo4j.cypher.internal.rewriting.conditions.ContainsNoExpandableClauses
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
-import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.ReturnItemsAreAliased
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -97,7 +97,7 @@ case object AggregationAnalysis extends VisitorPhase[BaseContext, BaseState]
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     BaseContains[Statement](),
-    ExpressionsHaveComputedDependencies,
+    ContainsNoExpandableClauses,
     FunctionInvocationsResolved,
     UpToDateScopes,
     ReturnItemsAreAliased

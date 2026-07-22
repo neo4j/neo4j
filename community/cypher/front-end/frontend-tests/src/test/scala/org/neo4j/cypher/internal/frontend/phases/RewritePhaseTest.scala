@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ComputeExpressionDependencies
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.NormalizeWithAndReturnClauses
@@ -49,6 +50,16 @@ case class PhaseTestConfig(
   checkSemantics: Boolean = true,
   semanticFeatures: Seq[SemanticFeature] = Seq.empty
 )
+
+object RewritePhaseTest {
+
+  /**
+   * Re-establish semantic analysis, a fresh scope survey, and expression dependencies after a rewrite.
+   * [[ComputeExpressionDependencies]] reads the survey, so it must follow [[ScopeSurveyor]].
+   */
+  def reanalyze: Transformer[BaseContext, BaseState, BaseState] =
+    ScopeSurveyor andThen SemanticAnalysis(Some(false)) andThen ComputeExpressionDependencies
+}
 
 trait RewritePhaseTest extends CypherVersionTestSupport {
   self: CypherFunSuite with AstConstructionTestSupport =>

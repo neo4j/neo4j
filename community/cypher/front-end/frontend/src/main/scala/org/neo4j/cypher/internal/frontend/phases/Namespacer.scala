@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.ProjectingUnionAll
 import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.Scop
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.ContainsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.util.ProcedureOutput
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
@@ -98,7 +100,8 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState]
     )
   }
 
-  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+  override def preConditions: Set[StepSequencer.Condition] =
+    Set(BaseContains[SemanticTable](), ExpressionsHaveComputedDependencies)
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
     ContainsNoNodesOfType[UnionAll](),

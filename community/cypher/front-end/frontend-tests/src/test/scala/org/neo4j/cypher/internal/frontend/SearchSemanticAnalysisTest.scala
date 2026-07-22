@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticTypeCheck
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.notification.IdentifierShadowsVariableNotification
 import org.neo4j.cypher.internal.util.InputPosition
@@ -43,6 +44,7 @@ class SearchSemanticAnalysisTest extends CypherFunSuite with NameBasedSemanticAn
       AstRewriting() andThen
       rewriteEqualityToInPredicate andThen
       SemanticAnalysis(warn = Some(false)) andThen
+      ScopeSurveyor andThen
       SemanticTypeCheck
 
   private def semanticFeatures(complexPatternAllowed: Boolean): Seq[SemanticFeature] = {
@@ -1008,6 +1010,26 @@ class SearchSemanticAnalysisTest extends CypherFunSuite with NameBasedSemanticAn
           InputPosition(122 + optionalLength, 5, 36)
         )
       )
+    }
+
+    test(
+      s"""${maybeOptional}MATCH (movie: Movie)
+         |  SEARCH movie IN (
+         |    VECTOR INDEX moviePlots
+         |    FOR [1, 2, 3]
+         |    WHERE movie.imdbRating >= COUNT { MATCH (movie)-->() }
+         |    LIMIT 5
+         |  )
+         |RETURN movie.title AS title
+         |// complexPatternAllowed = $complexPatternAllowed
+         |""".stripMargin
+    ) {
+      runSearchWithRewriter(complexPatternAllowed).assert { result =>
+        result.errors.exists(error =>
+          error.position == InputPosition(117 + optionalLength, 5, 31) &&
+            error.msg == "Vector search filter predicate referencing the search binding variable"
+        ) shouldBe true
+      }
     }
 
     for (

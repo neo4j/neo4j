@@ -49,9 +49,10 @@ object SubclauseExpressionClassifier {
 
   private val stringifier: ExpressionStringifier = ExpressionStringifier.pretty(_ => "")
 
-  def aggArgRefs(scope: WorkingScope): Set[LogicalVariable] = scope match {
-    case ExpressionScope(IsAggregate(_), _, _, _, _) => outerRefs(scope)
-    case _                                           => scope.children.flatMap(aggArgRefs).toSet
+  def aggArgRefs(scope: WorkingScope, isSubExpression: Boolean = false): Set[LogicalVariable] = scope match {
+    case ExpressionScope(IsAggregate(_), _, _, _, _) => outerRefs(scope, isSubExpression)
+    case s if s.isRecognizedLeaf(isSubExpression)    => Set.empty
+    case _ => scope.children.flatMap(aggArgRefs(_, isSubExpression = true)).toSet
   }
 
   /**
@@ -66,14 +67,15 @@ object SubclauseExpressionClassifier {
    * Then recurse into children to pick up nested recognized leaves and ordinary
    * variable scopes.
    */
-  def outerRefs(scope: WorkingScope): Set[LogicalVariable] = {
+  def outerRefs(scope: WorkingScope, isSubExpression: Boolean = false): Set[LogicalVariable] = {
     val here = scope match {
       case ExpressionScope(_: LogicalVariable, _, referenced, _, _) =>
         referenced.getVariables.toSet
       case _ =>
         scope.hiddenReferences.getVariables.toSet
     }
-    here ++ scope.children.flatMap(outerRefs).toSet
+    if (scope.isRecognizedLeaf(isSubExpression)) here
+    else here ++ scope.children.flatMap(outerRefs(_, isSubExpression = true)).toSet
   }
 
   /**

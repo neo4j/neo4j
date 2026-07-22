@@ -97,12 +97,16 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.TableResultWithNotYetKnow
 import org.neo4j.cypher.internal.ast.semantics.scoping.UnexpectedAstNodeScopingError
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope.unitVariables
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable
+import org.neo4j.cypher.internal.expressions.VectorFilterExpression
 import org.neo4j.cypher.internal.frontend.phases.ResolvedLocalCall
 import org.neo4j.cypher.internal.frontend.phases.ResolvedNonLocalCall
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 
 object pegClause {
@@ -474,8 +478,13 @@ object pegClause {
         incoming.aggregatingConstantChildContext
 
     updatedIncoming.recognizeExpression(expression, isSubExpression = false) match {
-      case Some(item) => updatedIncoming.recognizedLeafScope(expression, item)
-      case None       => pegExpression(expression, updatedIncoming)
+      case Some(item) =>
+        updatedIncoming.recognizedLeafScope(
+          expression,
+          item,
+          pegExpression.scopeRecognizedSubtree(expression, updatedIncoming)
+        )
+      case None => pegExpression(expression, updatedIncoming)
     }
   }
 
@@ -487,8 +496,13 @@ object pegClause {
   )(implicit c: PegContext): Seq[WorkingScope] = {
     groupingItems.map(item => {
       incoming.recognizeExpression(item.expression, isSubExpression = false) match {
-        case Some(recognised) => incoming.recognizedLeafScope(item.expression, recognised)
-        case None             => pegExpression(item.expression, incoming)
+        case Some(recognised) =>
+          incoming.recognizedLeafScope(
+            item.expression,
+            recognised,
+            pegExpression.scopeRecognizedSubtree(item.expression, incoming)
+          )
+        case None => pegExpression(item.expression, incoming)
       }
     }) ++
       aggregationItems.map(item => pegExpression(item.expression, aggregatingExpressionContext))
@@ -636,14 +650,19 @@ object pegClause {
     incomingConstants: Set[LogicalVariable],
     clauseType: ClauseType,
     hasSideEffect: Boolean,
+    projectionType: ProjectionType,
     incoming: RegularContext
   ): References = {
     val referencedInChildren = WorkingScope.referencedInChildren(children)
     val allRefs = (clauseType, hasSideEffect) match {
       case (_: WithType, false) => referencedInChildren
       case (_: WithType, true) =>
-        val shadowedConstantNames = incoming.variables.iterator.map(_.name).toSet
-        val effectiveConstants = incomingConstants.filterNot(c => shadowedConstantNames.contains(c.name))
+        val effectiveConstants =
+          if (projectionType == FreeProjection) Set.empty[LogicalVariable]
+          else {
+            val shadowedConstantNames = incoming.variables.iterator.map(_.name).toSet
+            incomingConstants.filterNot(c => shadowedConstantNames.contains(c.name))
+          }
         referencedInChildren union References.connect(
           (includedIncomingVariables union effectiveConstants).toSeq,
           incoming.allSymbols
@@ -742,6 +761,7 @@ object pegClause {
         incoming.constants,
         clauseType,
         hasSideEffects,
+        projectionType,
         incoming
       ) union References.connect(passThroughItems.flatMap(_.alias), incoming.allSymbolsAndKeys)
 
@@ -889,7 +909,7 @@ object pegClause {
 
     val bindingVariableScope = pegExpression(bindingVariable, constantIncoming)
     val embeddingScope = pegExpression(embedding, constantIncoming)
-    val whereScopeOpt = where.map(where => pegExpression(where.expression, constantIncoming))
+    val whereScopeOpt = where.map(w => scopeSearchWhere(w.expression, constantIncoming))
     val analyzerScopeOpt = analyzer.map(analyzer => pegExpression(analyzer, constantIncoming))
     val skipScopeOpt = skip.map(skip => pegExpression(skip.expression, constantIncoming))
     val limitScope = pegExpression(limit.expression, constantIncoming)
@@ -911,4 +931,22 @@ object pegClause {
     incoming.noResultScope(outgoing, children, referenced, declared = Declarations(Seq.empty, score.toSeq))
 
   }
+
+  private def scopeSearchWhere(expression: Expression, incoming: RegularContext)(implicit c: PegContext): WorkingScope =
+    expression match {
+      case And(lhs, rhs) =>
+        incoming.expressionResultScope(
+          expression,
+          Seq(scopeSearchWhere(lhs, incoming), scopeSearchWhere(rhs, incoming))
+        )
+      case Ands(exprs) =>
+        incoming.expressionResultScope(expression, exprs.toSeq.map(scopeSearchWhere(_, incoming)))
+      case VectorFilterExpression(variable, rhs, _) if rhs.position != InputPosition.NONE =>
+        incoming.expressionResultScope(
+          expression,
+          Seq(pegExpression(variable, incoming), pegExpression(rhs, incoming))
+        )
+      case other =>
+        pegExpression(other, incoming)
+    }
 }

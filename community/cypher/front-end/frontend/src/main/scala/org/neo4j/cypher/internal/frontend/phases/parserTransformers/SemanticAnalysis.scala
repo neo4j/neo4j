@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -40,18 +39,12 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting.SemanticAnalysisPossible
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.VariableChecker
 import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.ContainsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
-import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
-import org.neo4j.cypher.internal.util.Ref
-import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.topDown
 
 /**
  * Do variable binding, typing, type checking and other semantic checks.
@@ -112,32 +105,7 @@ case class SemanticAnalysis(warn: Option[Boolean])
         SemanticTable(types = cleanedTypeTable, recordedScopes = state.recordedScopes.view.mapValues(_.scope).toMap)
     }
 
-    val rewrittenStatement =
-      if (allErrors.isEmpty) {
-        // Some expressions record some semantic information in themselves.
-        // This is done by the computeDependenciesForExpressions rewriter.
-        // We need to apply it after each pass of SemanticAnalysis.
-        // Disabled until Namespacer interactions can be solved.
-        if (false) {
-          val upToDateScopes = ScopeSurveyor.process(from, context)
-          from.statement().endoRewrite(
-            topDown(Rewriter.lift {
-              case x: ExpressionWithComputedDependencies =>
-                val scope = upToDateScopes.scopeState().recordedScopes(Ref(x))
-                x.withComputedIntroducedVariables(scope.declared.allSymbols.toSet)
-                  .withComputedScopeDependencies(scope.referenced.getVariables.toSet)
-            })
-          )
-        } else {
-          from.statement().endoRewrite(computeDependenciesForExpressions(state))
-        }
-      } else {
-        // If we have errors we should rather avoid running computeDependenciesForExpressions, since the state might be incomplete.
-        from.statement()
-      }
-
     from
-      .withStatement(rewrittenStatement)
       .withSemanticState(state)
       .withSemanticTable(table)
       .withSemanticsUpToDate(true)
@@ -164,11 +132,10 @@ case object SemanticAnalysis extends StepSequencer.Step with ParsePipelineTransf
   override def postConditions: Set[StepSequencer.Condition] = Set(
     BaseContains[SemanticState](),
     ContainsNoNodesOfType[UnaliasedReturnItem](),
-    BaseContains[SemanticTable](),
-    ExpressionsHaveComputedDependencies
+    BaseContains[SemanticTable]()
   ) ++ SemanticInfoAvailable
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(UpToDateScopes)
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   /**
    * Transformer for the parse pipeline

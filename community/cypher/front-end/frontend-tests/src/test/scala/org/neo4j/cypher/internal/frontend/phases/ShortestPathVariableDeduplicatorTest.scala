@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExpandClauses
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -35,11 +34,12 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
   override def preProcessTransformer: Transformer[BaseContext, BaseState, BaseState] = {
     ScopeSurveyor andThen
       ExpandClauses andThen
-      SemanticAnalysis(Some(false)) andThen
+      RewritePhaseTest.reanalyze andThen
       AstRewriting() andThen
-      SemanticAnalysis(Some(false)) andThen
+      RewritePhaseTest.reanalyze andThen
       flattenBooleanOperators andThen
-      SemanticAnalysis(Some(false))
+      RewritePhaseTest.reanalyze andThen
+      ScopeSurveyor
   }
 
   test("should rewrite repeated interior nodes and leave exterior nodes") {
@@ -287,6 +287,14 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
         ),
         return_(aliasedReturnItem(varFor("b")))
       )
+    )
+  }
+
+  test("should rewrite mix of interior variables bound in this and in previous clauses") {
+    assertRewritten(
+      "MATCH (x) MATCH ANY SHORTEST ((s)-->+(x)-->+(x)-->+(m)-->+(m)-->+(e)) RETURN s",
+      "MATCH (x) MATCH ANY SHORTEST ((s)-->+(`  x@1`)-->+(`  x@2`)-->+(m)-->+(`  m@0`)-->+(e) " +
+        "WHERE `  x@2` = x AND `  m@0` = m AND `  x@1` = x) RETURN s"
     )
   }
 
