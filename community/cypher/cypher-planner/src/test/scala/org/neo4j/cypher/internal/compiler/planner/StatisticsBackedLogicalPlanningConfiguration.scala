@@ -139,7 +139,6 @@ import org.neo4j.internal.schema.IndexType.RANGE
 import org.neo4j.internal.schema.IndexType.TEXT
 import org.neo4j.internal.schema.IndexType.VECTOR
 import org.neo4j.internal.schema.constraints.ConstrainableType
-import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
 
@@ -175,7 +174,6 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     txStateHasChanges: Boolean = false,
     deduplicateNames: Boolean = true,
     semanticFeatures: Seq[SemanticFeature] = Seq.empty,
-    databaseReferenceRepository: DatabaseReferenceRepository = ContextHelper.mockDatabaseReferenceRepository,
     printNotifications: Boolean = false,
     parallelRepeatHeuristic: CypherParallelRepeatHeuristicOption = CypherParallelRepeatHeuristicOption.disabled,
     plannerVersionOption: CypherPlannerVersionOption = CypherPlannerVersionOption.default,
@@ -1303,11 +1301,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     withSetting(GraphDatabaseSettings.cypher_infer_schema_parts_strategy, strategy)
   }
 
-  def setDatabaseReferenceRepository(
-    databaseReferenceRepository: DatabaseReferenceRepository
-  ): StatisticsBackedLogicalPlanningConfigurationBuilder =
-    this.copy(options = options.copy(databaseReferenceRepository = databaseReferenceRepository))
-
   def enablePrintNotifications(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder =
     this.copy(options = options.copy(printNotifications = enabled))
 
@@ -1907,7 +1900,6 @@ class StatisticsBackedLogicalPlanningConfiguration(
       statefulShortestPlanningMode = plannerConfiguration.statefulShortestPlanningMode(),
       planVarExpandInto = plannerConfiguration.planVarExpandInto(),
       parallelRepeatHeuristic = options.parallelRepeatHeuristic,
-      databaseReferenceRepository = options.databaseReferenceRepository,
       labelInferenceStrategy = labelInferenceStrategy,
       notificationLogger = notificationLogger,
       semanticFeatures = options.semanticFeatures

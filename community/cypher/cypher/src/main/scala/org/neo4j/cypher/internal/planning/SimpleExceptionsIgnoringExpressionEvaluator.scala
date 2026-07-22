@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.CypherException
-import org.neo4j.values.virtual.MapValue
 
 /**
  * Wrapper around [[SimpleInternalExpressionEvaluator]] that catches exceptions and returns an Option.
@@ -31,9 +30,9 @@ import org.neo4j.values.virtual.MapValue
 case object SimpleExceptionsIgnoringExpressionEvaluator extends ExpressionEvaluator {
   private val expressionEvaluator = new SimpleInternalExpressionEvaluator()
 
-  override def evaluateExpression(expr: Expression, parameters: MapValue): Option[Any] = {
+  override def evaluateExpression(expr: Expression): Option[Any] = {
     try {
-      Some(expressionEvaluator.evaluate(expr, parameters))
+      Some(expressionEvaluator.evaluate(expr))
     } catch {
       case _: CypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
     }

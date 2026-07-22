@@ -26,13 +26,10 @@ import org.neo4j.cypher.internal.expressions.StringDecimalInteger
 import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction.isFunctionDeterministic
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.values.storable.NumberValue
-import org.neo4j.values.virtual.MapValue
 
 trait ExpressionEvaluator {
 
-  // Avoid evaluating parameters as it does not work well with query caching.
-  // Only allowed temporary to support existing usages.
-  def evaluateExpression(expr: Expression, parameters: MapValue): Option[Any]
+  def evaluateExpression(expr: Expression): Option[Any]
 
   private def hasParameters(expr: Expression): Boolean = expr.folder.findAllByClass[Expression].exists {
     case Parameter(_, _, _) => true
@@ -59,7 +56,7 @@ trait ExpressionEvaluator {
     expression match {
       case literal: StringDecimalInteger => Some(literal.value)
       case nonLiteral if isStable(nonLiteral) =>
-        evaluateExpression(nonLiteral, MapValue.EMPTY)
+        evaluateExpression(nonLiteral)
           .collect { case number: NumberValue => number.longValue() }
       case _ => None
     }

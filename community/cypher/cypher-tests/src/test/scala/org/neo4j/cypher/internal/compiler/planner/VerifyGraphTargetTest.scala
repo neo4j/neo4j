@@ -21,29 +21,40 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CypherVersion
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsSingleGraphSelector
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.StrictResolveCallables
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
-import org.neo4j.cypher.internal.parser.AstParserFactory
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planning.CypherGraphTargetVerifier
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlException
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.dbms.api.DatabaseNotFoundException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
-import org.neo4j.kernel.database._
+import org.neo4j.kernel.database.DatabaseIdFactory
+import org.neo4j.kernel.database.DatabaseReferenceImpl
+import org.neo4j.kernel.database.NamedDatabaseId
+import org.neo4j.kernel.database.TestDatabaseReferenceRepository
 
 import java.util.UUID
 
-class VerifyGraphTargetTest extends CypherPlannerTestSuite {
+class VerifyGraphTargetTest extends CommunityCypherTestSuite {
 
   val neo4j: DatabaseReferenceImpl.Internal = TestDatabaseReferenceRepository.internalDatabaseReference("neo4j")
   val foo: DatabaseReferenceImpl.Internal = TestDatabaseReferenceRepository.internalDatabaseReference("foo")
@@ -122,7 +133,7 @@ class VerifyGraphTargetTest extends CypherPlannerTestSuite {
         """
           |CALL {
           |  USE neo4j
-          |  RETURN 1
+          |  RETURN 1 AS one
           |}
           |RETURN 1
           |""".stripMargin
@@ -136,7 +147,7 @@ class VerifyGraphTargetTest extends CypherPlannerTestSuite {
         """
           |CALL {
           |  USE foo
-          |  RETURN 1
+          |  RETURN 1 AS one
           |}
           |RETURN 1
           |""".stripMargin
@@ -243,7 +254,7 @@ class VerifyGraphTargetTest extends CypherPlannerTestSuite {
       if (allowCompositeQueries && targetsComposite) Seq(UseAsMultipleGraphsSelector)
       else Seq(UseAsSingleGraphSelector)
     when(plannerContext.semanticFeatures).thenReturn(semanticFeatures)
-    when(plannerContext.databaseReferenceRepository).thenReturn(databaseReferenceRepository)
+    when(plannerContext.graphTargetVerifier).thenReturn(CypherGraphTargetVerifier(databaseReferenceRepository))
     when(plannerContext.databaseId).thenReturn(sessionDb)
     when(plannerContext.cancellationChecker).thenReturn(mock[CancellationChecker])
     when(plannerContext.notificationLogger).thenReturn(mock[InternalNotificationLogger])
@@ -272,14 +283,16 @@ class VerifyGraphTargetTest extends CypherPlannerTestSuite {
     cause.cause() shouldBe empty
   }
 
-  private def parse(version: CypherVersion, query: String): Query =
-    AstParserFactory(version)(
-      query,
-      Neo4jCypherExceptionFactory(query, None),
-      None,
-      Seq()
-    ).singleStatement() match {
+  private def parse(version: CypherVersion, query: String): Query = {
+    val parsing = CompilationPhases.parsing(ParsingConfig(resolveCallables = StrictResolveCallables.NoResolver))
+    val state = InitialState(query, IDPPlannerName, new AnonymousVariableNameGenerator)
+    val ctx = new TestContext(cypherVersion = version) {
+      override def errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
+    }
+    parsing.transform(state, ctx)
+      .statement() match {
       case q: Query => q
       case _        => fail(s"Must be a Query, it's not in $version")
     }
+  }
 }

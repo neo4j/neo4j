@@ -710,7 +710,6 @@ final class TransformingPlanner private[planning] (
         options.queryOptions.plannerVersionOption
       ),
       options.queryOptions.parallelRepeatHeuristic,
-      databaseReferenceRepository,
       transactionalContextWrapper.databaseId,
       log,
       securityLog,
@@ -725,7 +724,8 @@ final class TransformingPlanner private[planning] (
       shadowedFunctions = transactionalContextWrapper.procedures.shadowedNamespaces(
         QueryLanguage.toKernelScope(options.resolvedLanguage)
       ).asScala.toSet,
-      transactionBatchStrategy = options.queryOptions.transactionBatchStrategy
+      transactionBatchStrategy = options.queryOptions.transactionBatchStrategy,
+      graphTargetVerifier = CypherGraphTargetVerifier(databaseReferenceRepository)
     )
 
     // Prepare query for caching

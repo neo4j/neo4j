@@ -143,7 +143,6 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.schema.EndpointType
 import org.neo4j.internal.schema.constraints.SchemaValueType
-import org.neo4j.values.virtual.MapValue
 
 import scala.util.Success
 import scala.util.Try
@@ -261,7 +260,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
   def newMetricsFactory = SimpleMetricsFactory
 
   def newExpressionEvaluator = new ExpressionEvaluator {
-    override def evaluateExpression(expr: Expression, parameters: MapValue): Option[Any] = None
+    override def evaluateExpression(expr: Expression): Option[Any] = None
   }
 
   def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics): Metrics = {

@@ -19,20 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
-import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.compiler.planner.GraphTargetVerifier
+import org.neo4j.kernel.database.NamedDatabaseId
+import org.neo4j.values.virtual.MapValue
 
-object TestExpressionEvaluator {
+case object TestGraphTargetVerifier extends GraphTargetVerifier {
 
-  val noEval: ExpressionEvaluator = new ExpressionEvaluator {
-    override def evaluateExpression(expr: Expression): Option[Any] = None
-  }
-
-  def hardcoded(inputOutputPairs: (Expression, Any)*): ExpressionEvaluator = {
-    val resultMap = inputOutputPairs.toMap
-    new ExpressionEvaluator {
-      override def evaluateExpression(expr: Expression): Option[Any] =
-        resultMap.get(expr)
-    }
-  }
+  override def verifyGraphTarget(
+    statement: Statement,
+    databaseId: NamedDatabaseId,
+    allowCompositeQueries: Boolean,
+    params: MapValue
+  ): Unit = ()
 }

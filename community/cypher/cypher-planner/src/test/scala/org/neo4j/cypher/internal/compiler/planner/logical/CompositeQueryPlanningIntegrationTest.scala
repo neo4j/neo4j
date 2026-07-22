@@ -19,16 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.mockito.Mockito.when
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.kernel.database.DatabaseReference
-import org.neo4j.kernel.database.DatabaseReferenceImpl
-import org.neo4j.kernel.database.DatabaseReferenceRepository
-import org.neo4j.kernel.database.NormalizedDatabaseName
 
 class CompositeQueryPlanningIntegrationTest extends CypherPlannerTestSuite with LogicalPlanningIntegrationTestSupport {
 
@@ -37,31 +32,10 @@ class CompositeQueryPlanningIntegrationTest extends CypherPlannerTestSuite with 
     """
       |""".stripMargin
 
-  final private val productsDatabaseReference = mock[DatabaseReference]
-
-  when(productsDatabaseReference.fullName())
-    .thenReturn(new NormalizedDatabaseName("db.products"))
-
-  final private val customersDatabaseReference = mock[DatabaseReference]
-
-  when(customersDatabaseReference.fullName())
-    .thenReturn(new NormalizedDatabaseName("db.customers"))
-
-  final private val compositeDatabaseReference = mock[DatabaseReferenceImpl.Composite]
-
-  when(compositeDatabaseReference.constituents())
-    .thenReturn(java.util.List.of(productsDatabaseReference, customersDatabaseReference))
-
-  final private val databaseReferenceRepository = mock[DatabaseReferenceRepository]
-
-  when(databaseReferenceRepository.getCompositeDatabaseReferences)
-    .thenReturn(java.util.Set.of(compositeDatabaseReference))
-
   final private val planner =
     plannerBuilder()
       .addSemanticFeature(SemanticFeature.UseAsMultipleGraphsSelector)
       .withSetting(GraphDatabaseInternalSettings.composite_queries_with_query_router, Boolean.box(true))
-      .setDatabaseReferenceRepository(databaseReferenceRepository)
       .setAllNodesCardinality(0)
       .build()
 

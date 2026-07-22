@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
+import org.neo4j.cypher.internal.compiler.planner.GraphTargetVerifier
 import org.neo4j.cypher.internal.compiler.planner.Optimisation
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
@@ -54,7 +55,6 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
 import org.neo4j.kernel.database.DatabaseReference
-import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.logging.Log
 import org.neo4j.values.virtual.MapValue
@@ -77,13 +77,13 @@ trait PlannerContext extends BaseContext {
   def planVarExpandInto: CypherPlanVarExpandInto
   def optimisations: Set[Optimisation]
   def parallelRepeatHeuristic: CypherParallelRepeatHeuristicOption
-  def databaseReferenceRepository: DatabaseReferenceRepository
   def databaseId: NamedDatabaseId
   def log: Log
   def securityLog: AbstractSecurityLog
   def internalNotificationStats: InternalNotificationStats
   def labelInferenceStrategy: LabelInferenceStrategy
   def expressionEvaluator: ExpressionEvaluator
+  def graphTargetVerifier: GraphTargetVerifier
 
   /** Resolved batch strategy for `CALL ... IN CONCURRENT TRANSACTIONS` (setting + preparser-option override). */
   def transactionBatchStrategy: CypherTransactionBatchStrategyOption
@@ -168,7 +168,6 @@ final class PlannerContextImpl(
   override val planVarExpandInto: CypherPlanVarExpandInto,
   override val optimisations: Set[Optimisation],
   override val parallelRepeatHeuristic: CypherParallelRepeatHeuristicOption,
-  override val databaseReferenceRepository: DatabaseReferenceRepository,
   override val databaseId: NamedDatabaseId,
   override val log: Log,
   override val securityLog: AbstractSecurityLog,
@@ -179,7 +178,8 @@ final class PlannerContextImpl(
   override val semanticFeatures: Seq[SemanticFeature],
   override val shadowedFunctions: Set[String],
   override val transactionBatchStrategy: CypherTransactionBatchStrategyOption,
-  override val expressionEvaluator: ExpressionEvaluator
+  override val expressionEvaluator: ExpressionEvaluator,
+  override val graphTargetVerifier: GraphTargetVerifier
 ) extends PlannerContext {
 
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
@@ -209,7 +209,6 @@ final class PlannerContextImpl(
     planVarExpandInto = planVarExpandInto,
     optimisations = optimisations,
     parallelRepeatHeuristic = parallelRepeatHeuristic,
-    databaseReferenceRepository = databaseReferenceRepository,
     databaseId = databaseId,
     log = log,
     securityLog = securityLog,
@@ -220,7 +219,8 @@ final class PlannerContextImpl(
     semanticFeatures = semanticFeatures,
     shadowedFunctions = shadowedFunctions,
     transactionBatchStrategy = transactionBatchStrategy,
-    expressionEvaluator = expressionEvaluator
+    expressionEvaluator = expressionEvaluator,
+    graphTargetVerifier = graphTargetVerifier
   )
 
   override def isScopeQuery: Boolean = false
@@ -254,7 +254,6 @@ object PlannerContext {
     planVarExpandInto: CypherPlanVarExpandInto,
     optimisations: Set[Optimisation],
     parallelRepeatHeuristic: CypherParallelRepeatHeuristicOption,
-    databaseReferenceRepository: DatabaseReferenceRepository,
     databaseId: NamedDatabaseId,
     log: Log,
     securityLog: AbstractSecurityLog,
@@ -263,7 +262,8 @@ object PlannerContext {
     sessionDatabase: DatabaseReference,
     semanticFeatures: Seq[SemanticFeature],
     shadowedFunctions: Set[String],
-    transactionBatchStrategy: CypherTransactionBatchStrategyOption
+    transactionBatchStrategy: CypherTransactionBatchStrategyOption,
+    graphTargetVerifier: GraphTargetVerifier
   ): PlannerContextImpl = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
     val labelInferenceStrategy = LabelInferenceStrategy.fromConfig(planContext, labelInference, optimisations)
@@ -298,7 +298,6 @@ object PlannerContext {
       planVarExpandInto,
       optimisations,
       parallelRepeatHeuristic,
-      databaseReferenceRepository,
       databaseId,
       log,
       securityLog,
@@ -309,7 +308,8 @@ object PlannerContext {
       semanticFeatures = semanticFeatures,
       shadowedFunctions = shadowedFunctions,
       transactionBatchStrategy = transactionBatchStrategy,
-      expressionEvaluator = evaluator
+      expressionEvaluator = evaluator,
+      graphTargetVerifier = graphTargetVerifier
     )
   }
 }

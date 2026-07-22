@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
 import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.helpers.TestGraphTargetVerifier
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.PlannerContextImpl
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations
@@ -58,7 +59,6 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog
 import org.neo4j.kernel.database.DatabaseReference
-import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.logging.NullLog
 import org.neo4j.values.virtual.MapValue
@@ -94,7 +94,6 @@ object ContextHelper extends MockitoSugar {
     plannerVersion: CypherPlannerVersionWithOptimisations =
       CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.latest),
     parallelRepeatHeuristic: CypherParallelRepeatHeuristicOption = CypherParallelRepeatHeuristicOption.disabled,
-    databaseReferenceRepository: DatabaseReferenceRepository = mockDatabaseReferenceRepository,
     databaseId: NamedDatabaseId = mockDatabaseId,
     internalNotificationStats: InternalNotificationStats = new InternalNotificationStats(),
     internalSyntaxUsageStats: InternalUsageStats = InternalUsageStats.newImpl(),
@@ -126,7 +125,6 @@ object ContextHelper extends MockitoSugar {
       planVarExpandInto,
       plannerVersion.allSupportedOptimisations,
       parallelRepeatHeuristic,
-      databaseReferenceRepository,
       databaseId,
       NullLog.getInstance(),
       CommunitySecurityLog.NULL_LOG,
@@ -137,7 +135,8 @@ object ContextHelper extends MockitoSugar {
       semanticFeatures,
       shadowedFunctions = Set.empty,
       transactionBatchStrategy = transactionBatchStrategy,
-      expressionEvaluator = expressionEvaluator
+      expressionEvaluator = expressionEvaluator,
+      graphTargetVerifier = TestGraphTargetVerifier
     )
   }
 
@@ -146,9 +145,6 @@ object ContextHelper extends MockitoSugar {
     when(mockDbId.name()).thenReturn(DEFAULT_DATABASE_NAME)
     mockDbId
   }
-
-  def mockDatabaseReferenceRepository: DatabaseReferenceRepository =
-    mock[DatabaseReferenceRepository]
 
   object MockedMonitors extends Monitors {
     override def addMonitorListener[T](monitor: T, tags: String*): Unit = {}

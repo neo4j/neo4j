@@ -139,11 +139,11 @@ class CypherQueryObfuscatorFactory {
       null,
       null,
       null,
-      null,
       semanticFeatures = Seq.empty,
       shadowedFunctions = Set.empty,
       transactionBatchStrategy = CypherTransactionBatchStrategyOption.default,
-      expressionEvaluator = null
+      expressionEvaluator = null,
+      graphTargetVerifier = null
     )
 
   private class PlanContextWithProceduresRegistry(version: CypherVersion) extends PlanContext {
