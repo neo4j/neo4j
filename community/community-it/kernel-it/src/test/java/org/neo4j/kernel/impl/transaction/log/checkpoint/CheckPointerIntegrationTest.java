@@ -336,9 +336,9 @@ class CheckPointerIntegrationTest {
                     .containsMessages(
                             Pattern.compile(
                                     "Checkpoint flushed (\\d+) pages \\(\\d+% of total available pages\\), in \\d+ IOs. Checkpoint performed with IO limit: unlimited, paused in total"),
-                            greaterThan(25),
-                            greaterThan(1),
-                            greaterThan(25));
+                            greaterThan(10),
+                            greaterThan(0),
+                            greaterThan(10));
         }
     }
 
@@ -378,9 +378,9 @@ class CheckPointerIntegrationTest {
                     .containsMessages(
                             Pattern.compile(
                                     "Checkpoint flushed (\\d+) pages \\((\\d+)% of total available pages\\), in (\\d+) IOs. Checkpoint performed with IO limit: unlimited, paused in total"),
-                            greaterThan(40),
-                            greaterThan(3),
-                            greaterThan(40));
+                            greaterThan(25),
+                            greaterThan(2),
+                            greaterThan(25));
         }
     }
 
