@@ -53,7 +53,8 @@ public interface ValueWriter<E extends Exception> {
         ZONED_TIME,
         LOCAL_TIME,
         DURATION,
-        UUID
+        UUID,
+        VECTOR
     }
 
     void writeNull() throws E;

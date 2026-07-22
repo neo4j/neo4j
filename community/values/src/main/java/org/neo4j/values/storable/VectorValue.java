@@ -109,4 +109,15 @@ public abstract sealed class VectorValue extends HashMemoizingScalarValue
             }
         }
     }
+
+    public static int bytesPerDimension(Vector.CoordinateType coordinateType) {
+        return switch (coordinateType) {
+            case INTEGER8 -> Byte.BYTES;
+            case INTEGER16 -> Short.BYTES;
+            case INTEGER32 -> Integer.BYTES;
+            case INTEGER64 -> Long.BYTES;
+            case FLOAT32 -> Float.BYTES;
+            case FLOAT64 -> Double.BYTES;
+        };
+    }
 }

@@ -82,6 +82,7 @@ import org.neo4j.values.storable.TimeArray;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.UUIDArray;
 import org.neo4j.values.storable.UUIDValue;
+import org.neo4j.values.storable.VectorArray;
 import org.neo4j.values.storable.VectorValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
@@ -285,6 +286,10 @@ public interface ValueMapper<Base> {
         return mapSequence(value);
     }
 
+    default Base mapVectorArray(VectorArray value) {
+        return mapSequence(value);
+    }
+
     abstract class JavaMapper implements ValueMapper<Object> {
         @Override
         public Object mapNoValue() {
@@ -427,6 +432,11 @@ public interface ValueMapper<Base> {
 
         @Override
         public UUID mapUUID(UUIDValue value) {
+            return value.asObjectCopy();
+        }
+
+        @Override
+        public VectorValue[] mapVectorArray(VectorArray value) {
             return value.asObjectCopy();
         }
     }

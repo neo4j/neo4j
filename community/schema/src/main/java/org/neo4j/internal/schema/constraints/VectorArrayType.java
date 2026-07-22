@@ -19,13 +19,30 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import java.io.Serializable;
 import org.neo4j.graphdb.schema.PropertyType;
 
-// Marker interface for Constrainable types
-public sealed interface ConstrainableType extends TypeRepresentation, Serializable
-        permits SchemaValueType, VectorType, VectorArrayType {
-    String serialize();
+public final class VectorArrayType implements ConstrainableType {
+    public static final VectorArrayType INSTANCE = new VectorArrayType();
 
-    PropertyType toPublicApi();
+    private VectorArrayType() {}
+
+    @Override
+    public String serialize() {
+        return "VectorArray";
+    }
+
+    @Override
+    public PropertyType toPublicApi() {
+        return PropertyType.LIST_VECTOR_NOT_NULL;
+    }
+
+    @Override
+    public String userDescription() {
+        return "LIST<VECTOR NOT NULL>";
+    }
+
+    @Override
+    public Ordering order() {
+        return Ordering.LIST_VECTOR_ORDER;
+    }
 }

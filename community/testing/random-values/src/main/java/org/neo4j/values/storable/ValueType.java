@@ -73,6 +73,7 @@ import static org.neo4j.values.storable.ExtremeValuesLibrary.EXTREME_TIME;
 import static org.neo4j.values.storable.ExtremeValuesLibrary.EXTREME_TIME_ARRAY;
 import static org.neo4j.values.storable.ExtremeValuesLibrary.EXTREME_UUID;
 import static org.neo4j.values.storable.ExtremeValuesLibrary.EXTREME_UUID_ARRAY;
+import static org.neo4j.values.storable.ExtremeValuesLibrary.EXTREME_VECTOR_ARRAY;
 
 import java.util.Arrays;
 
@@ -133,6 +134,7 @@ public enum ValueType {
     INT64_VECTOR(ValueRepresentation.INT64_VECTOR, Int64Vector.class, EXTREME_INT64_VECTOR),
     FLOAT32_VECTOR(ValueRepresentation.FLOAT32_VECTOR, Float32Vector.class, EXTREME_FLOAT32_VECTOR),
     FLOAT64_VECTOR(ValueRepresentation.FLOAT64_VECTOR, Float64Vector.class, EXTREME_FLOAT64_VECTOR),
+    VECTOR_ARRAY(ValueRepresentation.VECTOR_ARRAY, VectorArray.class, true, EXTREME_VECTOR_ARRAY),
     UUID(ValueRepresentation.UUID, UUIDValue.class, EXTREME_UUID),
     UUID_ARRAY(ValueRepresentation.UUID_ARRAY, UUIDArray.class, true, EXTREME_UUID_ARRAY);
 

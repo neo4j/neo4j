@@ -132,6 +132,7 @@ public enum KernelVersion {
     // related to IntegrityValidator
     public static final KernelVersion LATEST_SCHEMA_CHANGE = VERSION_VECTOR_BINARY_QUANTIZATION;
     public static final KernelVersion VERSION_UUID_VALUE_INTRODUCED = GLORIOUS_FUTURE;
+    public static final KernelVersion VERSION_VECTOR_ARRAY_VALUE_INTRODUCED = GLORIOUS_FUTURE;
 
     // All neo4j 5.0-5.6 members defaulted to this version when bootstrapping a rafted database
     public static final KernelVersion DEFAULT_BOOTSTRAP_VERSION = V5_0;

@@ -86,6 +86,7 @@ import org.neo4j.values.storable.UUIDArray;
 import org.neo4j.values.storable.UUIDValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.storable.VectorArray;
 import org.neo4j.values.storable.VectorValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -148,7 +149,8 @@ public enum ValuesReader {
     VECTOR_FLOAT32((byte) 43, Float32Vector.class, ValuesReader::readFloat32Vector),
     VECTOR_FLOAT64((byte) 44, Float64Vector.class, ValuesReader::readFloat64Vector),
     UID((byte) 45, UUIDValue.class, ValuesReader::readUUID),
-    UID_ARRAY((byte) 46, UUIDArray.class, ValuesReader::readUUIDArray);
+    UID_ARRAY((byte) 46, UUIDArray.class, ValuesReader::readUUIDArray),
+    VECTOR_ARRAY((byte) 47, VectorArray.class, ValuesReader::readVectorArray);
 
     public static final ImmutableByteObjectMap<ValuesReader> BY_ID =
             ByteObjectMaps.immutable.from(List.of(ValuesReader.values()), ValuesReader::id, v -> v);
@@ -600,6 +602,23 @@ public enum ValuesReader {
             uuids[i] = new UUID(buffer.getLong(), buffer.getLong());
         }
         return Values.uuidArray(uuids);
+    }
+
+    public static VectorArray readVectorArray(ByteBuffer buffer) {
+        int length = buffer.getInt();
+        VectorValue[] vectors = new VectorValue[length];
+        for (int i = 0; i < length; i++) {
+            // VectorArray items are each written with their own byte type header, just like any other "high-level"
+            // value because a VectorArray may contain varying types of vector values in its items.
+            AnyValue candidate = from(buffer);
+            if (candidate instanceof VectorValue vectorValue) {
+                vectors[i] = vectorValue;
+            } else {
+                throw new IllegalStateException(
+                        "Item in VectorArray not a VectorValue, was a " + candidate.getTypeName());
+            }
+        }
+        return Values.vectorArray(vectors);
     }
 
     public byte id() {

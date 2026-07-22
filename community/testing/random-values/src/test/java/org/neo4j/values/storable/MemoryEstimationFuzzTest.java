@@ -96,7 +96,8 @@ class MemoryEstimationFuzzTest {
                 .filter(t -> t != ValueType.STRING_ARRAY
                         && t != ValueType.STRING_ALPHANUMERIC_ARRAY
                         && t != ValueType.STRING_ASCII_ARRAY
-                        && t != ValueType.STRING_BMP_ARRAY)
+                        && t != ValueType.STRING_BMP_ARRAY
+                        && t != ValueType.VECTOR_ARRAY)
                 .iterator();
     }
 }

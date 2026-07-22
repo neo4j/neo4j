@@ -31,6 +31,12 @@ import java.util.Arrays;
 import java.util.StringJoiner;
 import org.neo4j.graphdb.Vector.CoordinateType;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.values.storable.Float32Vector;
+import org.neo4j.values.storable.Float64Vector;
+import org.neo4j.values.storable.Int16Vector;
+import org.neo4j.values.storable.Int32Vector;
+import org.neo4j.values.storable.Int64Vector;
+import org.neo4j.values.storable.Int8Vector;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -82,7 +88,6 @@ public abstract sealed class VectorKeyType extends Type
     }
 
     static final class Int8VectorKey extends VectorKeyType {
-
         Int8VectorKey(byte typeId) {
             super(CoordinateType.INTEGER8, typeId, Byte.BYTES);
         }
@@ -94,20 +99,27 @@ public abstract sealed class VectorKeyType extends Type
 
         @Override
         int arrayCompare(byte[] left, byte[] right, int numBytes) {
+            return compareBytes(left, right, numBytes);
+        }
+
+        static int compareBytes(byte[] left, byte[] right, int numBytes) {
             return Arrays.compare(left, 0, numBytes, right, 0, numBytes);
         }
 
         @Override
         public Value asValue(GenericKey<?> state) {
-            ByteBuffer bb = ByteBuffer.wrap(state.byteArray);
-            byte[] copy = new byte[elementSize * dimension(state)];
+            return asValue(dimension(state), state.byteArray);
+        }
+
+        static Int8Vector asValue(int dimensions, byte[] data) {
+            ByteBuffer bb = ByteBuffer.wrap(data);
+            byte[] copy = new byte[dimensions];
             bb.get(copy, 0, copy.length);
             return Values.int8Vector(copy);
         }
     }
 
     static final class Int16VectorKey extends VectorKeyType {
-
         Int16VectorKey(byte typeId) {
             super(CoordinateType.INTEGER16, typeId, Short.BYTES);
         }
@@ -119,23 +131,29 @@ public abstract sealed class VectorKeyType extends Type
 
         @Override
         int arrayCompare(byte[] l, byte[] r, int numBytes) {
-            ShortBuffer lb = ByteBuffer.wrap(l, 0, numBytes).asShortBuffer();
-            ShortBuffer rb = ByteBuffer.wrap(r, 0, numBytes).asShortBuffer();
+            return compareBytes(l, r, numBytes);
+        }
+
+        static int compareBytes(byte[] left, byte[] right, int numBytes) {
+            ShortBuffer lb = ByteBuffer.wrap(left, 0, numBytes).asShortBuffer();
+            ShortBuffer rb = ByteBuffer.wrap(right, 0, numBytes).asShortBuffer();
             return lb.compareTo(rb);
         }
 
         @Override
         public Value asValue(GenericKey<?> state) {
-            ByteBuffer bb = ByteBuffer.wrap(state.byteArray);
-            ShortBuffer sb = bb.asShortBuffer();
-            short[] copy = new short[dimension(state)];
-            sb.get(copy, 0, copy.length);
+            return asValue(dimension(state), state.byteArray);
+        }
+
+        static Int16Vector asValue(int dimensions, byte[] data) {
+            ShortBuffer bb = ByteBuffer.wrap(data).asShortBuffer();
+            short[] copy = new short[dimensions];
+            bb.get(copy, 0, copy.length);
             return Values.int16Vector(copy);
         }
     }
 
     static final class Int32VectorKey extends VectorKeyType {
-
         Int32VectorKey(byte typeId) {
             super(CoordinateType.INTEGER32, typeId, Integer.BYTES);
         }
@@ -147,22 +165,29 @@ public abstract sealed class VectorKeyType extends Type
 
         @Override
         int arrayCompare(byte[] l, byte[] r, int numBytes) {
-            IntBuffer lb = ByteBuffer.wrap(l, 0, numBytes).asIntBuffer();
-            IntBuffer rb = ByteBuffer.wrap(r, 0, numBytes).asIntBuffer();
+            return compareBytes(l, r, numBytes);
+        }
+
+        static int compareBytes(byte[] left, byte[] right, int numBytes) {
+            IntBuffer lb = ByteBuffer.wrap(left, 0, numBytes).asIntBuffer();
+            IntBuffer rb = ByteBuffer.wrap(right, 0, numBytes).asIntBuffer();
             return lb.compareTo(rb);
         }
 
         @Override
         public Value asValue(GenericKey<?> state) {
-            IntBuffer bb = ByteBuffer.wrap(state.byteArray).asIntBuffer();
-            int[] copy = new int[dimension(state)];
+            return asValue(dimension(state), state.byteArray);
+        }
+
+        static Int32Vector asValue(int dimensions, byte[] data) {
+            IntBuffer bb = ByteBuffer.wrap(data).asIntBuffer();
+            int[] copy = new int[dimensions];
             bb.get(copy, 0, copy.length);
             return Values.int32Vector(copy);
         }
     }
 
     static final class Int64VectorKey extends VectorKeyType {
-
         Int64VectorKey(byte typeId) {
             super(CoordinateType.INTEGER64, typeId, Long.BYTES);
         }
@@ -174,30 +199,41 @@ public abstract sealed class VectorKeyType extends Type
 
         @Override
         int arrayCompare(byte[] l, byte[] r, int numBytes) {
-            LongBuffer lb = ByteBuffer.wrap(l, 0, numBytes).asLongBuffer();
-            LongBuffer rb = ByteBuffer.wrap(r, 0, numBytes).asLongBuffer();
+            return compareBytes(l, r, numBytes);
+        }
+
+        static int compareBytes(byte[] left, byte[] right, int numBytes) {
+            LongBuffer lb = ByteBuffer.wrap(left, 0, numBytes).asLongBuffer();
+            LongBuffer rb = ByteBuffer.wrap(right, 0, numBytes).asLongBuffer();
             return lb.compareTo(rb);
         }
 
         @Override
         public Value asValue(GenericKey<?> state) {
-            LongBuffer bb = ByteBuffer.wrap(state.byteArray).asLongBuffer();
-            long[] copy = new long[dimension(state)];
+            return asValue(dimension(state), state.byteArray);
+        }
+
+        static Int64Vector asValue(int dimensions, byte[] data) {
+            LongBuffer bb = ByteBuffer.wrap(data).asLongBuffer();
+            long[] copy = new long[dimensions];
             bb.get(copy, 0, copy.length);
             return Values.int64Vector(copy);
         }
     }
 
     static final class Float32VectorKey extends VectorKeyType {
-
         Float32VectorKey(byte typeId) {
             super(CoordinateType.FLOAT32, typeId, Float.BYTES);
         }
 
         @Override
         int arrayCompare(byte[] l, byte[] r, int numBytes) {
-            FloatBuffer lb = ByteBuffer.wrap(l, 0, numBytes).asFloatBuffer();
-            FloatBuffer rb = ByteBuffer.wrap(r, 0, numBytes).asFloatBuffer();
+            return compareBytes(l, r, numBytes);
+        }
+
+        static int compareBytes(byte[] left, byte[] right, int numBytes) {
+            FloatBuffer lb = ByteBuffer.wrap(left, 0, numBytes).asFloatBuffer();
+            FloatBuffer rb = ByteBuffer.wrap(right, 0, numBytes).asFloatBuffer();
             return lb.compareTo(rb);
         }
 
@@ -208,23 +244,30 @@ public abstract sealed class VectorKeyType extends Type
 
         @Override
         public Value asValue(GenericKey<?> state) {
-            FloatBuffer bb = ByteBuffer.wrap(state.byteArray).asFloatBuffer();
-            float[] copy = new float[dimension(state)];
+            return asValue(dimension(state), state.byteArray);
+        }
+
+        static Float32Vector asValue(int dimensions, byte[] data) {
+            FloatBuffer bb = ByteBuffer.wrap(data).asFloatBuffer();
+            float[] copy = new float[dimensions];
             bb.get(copy, 0, copy.length);
             return Values.float32Vector(copy);
         }
     }
 
     static final class Float64VectorKey extends VectorKeyType {
-
         Float64VectorKey(byte typeId) {
             super(CoordinateType.FLOAT64, typeId, Double.BYTES);
         }
 
         @Override
         int arrayCompare(byte[] l, byte[] r, int numBytes) {
-            DoubleBuffer lb = ByteBuffer.wrap(l, 0, numBytes).asDoubleBuffer();
-            DoubleBuffer rb = ByteBuffer.wrap(r, 0, numBytes).asDoubleBuffer();
+            return compareBytes(l, r, numBytes);
+        }
+
+        static int compareBytes(byte[] left, byte[] right, int numBytes) {
+            DoubleBuffer lb = ByteBuffer.wrap(left, 0, numBytes).asDoubleBuffer();
+            DoubleBuffer rb = ByteBuffer.wrap(right, 0, numBytes).asDoubleBuffer();
             return lb.compareTo(rb);
         }
 
@@ -235,8 +278,12 @@ public abstract sealed class VectorKeyType extends Type
 
         @Override
         public Value asValue(GenericKey<?> state) {
-            DoubleBuffer bb = ByteBuffer.wrap(state.byteArray).asDoubleBuffer();
-            double[] copy = new double[dimension(state)];
+            return asValue(dimension(state), state.byteArray);
+        }
+
+        static Float64Vector asValue(int dimensions, byte[] data) {
+            DoubleBuffer bb = ByteBuffer.wrap(data).asDoubleBuffer();
+            double[] copy = new double[dimensions];
             bb.get(copy, 0, copy.length);
             return Values.float64Vector(copy);
         }
@@ -259,7 +306,7 @@ public abstract sealed class VectorKeyType extends Type
         state.long0 = VectorValue.MAX_VECTOR_DIMENSIONS + 1;
     }
 
-    private static boolean isExtremeValue(GenericKey<?> state) {
+    static boolean isExtremeValue(GenericKey<?> state) {
         return state.long0 == (VectorValue.MIN_VECTOR_DIMENSIONS - 1)
                 || state.long0 == (VectorValue.MAX_VECTOR_DIMENSIONS + 1);
     }

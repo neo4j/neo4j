@@ -150,10 +150,9 @@ public class PageCursorUtil {
      * @return the 3 bytes as an {@code int}.
      */
     public static int get3BInt(PageCursor cursor) {
-        int offset = cursor.getOffset();
-        int result = get3BInt(cursor, offset);
-        cursor.setOffset(offset + 3);
-        return result;
+        int lsb = getUnsignedShort(cursor);
+        int msb = getUnsignedByte(cursor);
+        return construct3BInt(lsb, msb);
     }
 
     /**
@@ -166,6 +165,10 @@ public class PageCursorUtil {
     public static int get3BInt(PageCursor cursor, int offset) {
         int lsb = getUnsignedShort(cursor, offset);
         int msb = getUnsignedByte(cursor, offset + Short.BYTES);
+        return construct3BInt(lsb, msb);
+    }
+
+    private static int construct3BInt(int lsb, int msb) {
         return lsb | (msb << Short.SIZE);
     }
 

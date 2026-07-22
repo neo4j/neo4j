@@ -36,6 +36,9 @@ import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import org.neo4j.internal.helpers.ArrayUtil;
 
@@ -147,6 +150,19 @@ class ExtremeValuesLibrary {
         Values.float64Vector(ArrayUtil.filled(MAX_VECTOR_DIMENSIONS, -Double.MAX_VALUE)),
         Values.float64Vector(ArrayUtil.filled(MAX_VECTOR_DIMENSIONS, -Double.MIN_VALUE)),
     };
+    static final Value[] EXTREME_VECTOR_ARRAY;
+
+    static {
+        List<Value> values = new ArrayList<>();
+        values.addAll(Arrays.asList(EXTREME_INT8_VECTOR));
+        values.addAll(Arrays.asList(EXTREME_INT16_VECTOR));
+        values.addAll(Arrays.asList(EXTREME_INT32_VECTOR));
+        values.addAll(Arrays.asList(EXTREME_INT64_VECTOR));
+        values.addAll(Arrays.asList(EXTREME_FLOAT32_VECTOR));
+        values.addAll(Arrays.asList(EXTREME_FLOAT64_VECTOR));
+        EXTREME_VECTOR_ARRAY = values.toArray(new Value[0]);
+    }
+
     static final Value[] EXTREME_UUID = new Value[] {
         Values.uuidValue(0, 0),
         Values.uuidValue(Long.MAX_VALUE, Long.MAX_VALUE),

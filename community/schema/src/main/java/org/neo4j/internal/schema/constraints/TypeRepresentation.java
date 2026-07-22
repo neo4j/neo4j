@@ -54,6 +54,7 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.UUIDArray;
 import org.neo4j.values.storable.UUIDValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.VectorArray;
 
 public sealed interface TypeRepresentation permits ConstrainableType, SpecialTypes {
 
@@ -94,6 +95,7 @@ public sealed interface TypeRepresentation permits ConstrainableType, SpecialTyp
         LIST_ZONED_DATETIME_ORDER,
         LIST_DURATION_ORDER,
         LIST_POINT_ORDER,
+        LIST_VECTOR_ORDER,
 
         LIST_ANY_ORDER,
         ANY_ORDER
@@ -163,6 +165,7 @@ public sealed interface TypeRepresentation permits ConstrainableType, SpecialTyp
             case TimeArray ignored -> SchemaValueType.LIST_ZONED_TIME;
             case LocalTimeArray ignored -> SchemaValueType.LIST_LOCAL_TIME;
             case PointArray ignored -> SchemaValueType.LIST_POINT;
+            case VectorArray ignored -> VectorArrayType.INSTANCE;
             case ArrayValue ignored -> SpecialTypes.LIST_ANY;
             default -> SpecialTypes.ANY;
         };

@@ -205,7 +205,7 @@ record ValueCreatorUtil<KEY extends NativeIndexKey<KEY>>(
         private boolean extremeValueOfTypeCanBeStoredInIndex(ValueType value) {
             return switch (value) {
                 /* The extreme value of these types can not be stored in a single page, and does hence not fit in the index key */
-                case INT16_VECTOR, INT32_VECTOR, INT64_VECTOR, FLOAT32_VECTOR, FLOAT64_VECTOR -> false;
+                case INT16_VECTOR, INT32_VECTOR, INT64_VECTOR, FLOAT32_VECTOR, FLOAT64_VECTOR, VECTOR_ARRAY -> false;
                 default -> true;
             };
         }

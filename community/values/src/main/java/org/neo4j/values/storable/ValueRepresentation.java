@@ -343,11 +343,21 @@ public enum ValueRepresentation {
         public ArrayValue arrayOf(SequenceValue values) {
             return Values.vectorArray(values);
         }
+
+        @Override
+        ValueRepresentation coerceMismatch(ValueRepresentation other) {
+            return coerceVectorArrayMismatch(this, other);
+        }
     },
     INT16_VECTOR(ValueGroup.INT16_VECTOR, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
             return Values.vectorArray(values);
+        }
+
+        @Override
+        ValueRepresentation coerceMismatch(ValueRepresentation other) {
+            return coerceVectorArrayMismatch(this, other);
         }
     },
     INT32_VECTOR(ValueGroup.INT32_VECTOR, true) {
@@ -355,11 +365,21 @@ public enum ValueRepresentation {
         public ArrayValue arrayOf(SequenceValue values) {
             return Values.vectorArray(values);
         }
+
+        @Override
+        ValueRepresentation coerceMismatch(ValueRepresentation other) {
+            return coerceVectorArrayMismatch(this, other);
+        }
     },
     INT64_VECTOR(ValueGroup.INT64_VECTOR, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
             return Values.vectorArray(values);
+        }
+
+        @Override
+        ValueRepresentation coerceMismatch(ValueRepresentation other) {
+            return coerceVectorArrayMismatch(this, other);
         }
     },
     FLOAT32_VECTOR(ValueGroup.FLOAT32_VECTOR, true) {
@@ -367,11 +387,21 @@ public enum ValueRepresentation {
         public ArrayValue arrayOf(SequenceValue values) {
             return Values.vectorArray(values);
         }
+
+        @Override
+        ValueRepresentation coerceMismatch(ValueRepresentation other) {
+            return coerceVectorArrayMismatch(this, other);
+        }
     },
     FLOAT64_VECTOR(ValueGroup.FLOAT64_VECTOR, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
             return Values.vectorArray(values);
+        }
+
+        @Override
+        ValueRepresentation coerceMismatch(ValueRepresentation other) {
+            return coerceVectorArrayMismatch(this, other);
         }
     },
     UUID(ValueGroup.UUID, true) {
@@ -397,9 +427,7 @@ public enum ValueRepresentation {
     }
 
     public boolean canCreateArrayOfValueGroup() {
-        // ensure cannot create VectorArray this way until we are ready
-        // todo: remove VECTOR check when we want to allow Cypher to automatically create VectorArrays
-        return canCreateArrayOf && group.category() != ValueCategory.VECTOR;
+        return canCreateArrayOf;
     }
 
     public ValueGroup valueGroup() {
@@ -475,9 +503,7 @@ public enum ValueRepresentation {
             } else if (value instanceof SequenceValue) {
                 // Nested lists cannot be stored as a property
                 throw CypherTypeException.propertyWithCollectionInCollection(serializeList(values, value));
-            } else if (prev != null
-                    && prev.valueRepresentation().valueGroup()
-                            != (value.valueRepresentation().valueGroup())) {
+            } else if (prev != null && !sameValueGroup(prev, value)) {
                 // Mixed type lists cannot be stored as a property
                 throw CypherTypeException.genericPropertyError(String.valueOf(value));
             } else if (!value.valueRepresentation().canCreateArrayOfValueGroup()) {
@@ -503,6 +529,16 @@ public enum ValueRepresentation {
                         prev.getTypeName()));
     }
 
+    private boolean sameValueGroup(AnyValue prev, AnyValue value) {
+        if (prev.valueRepresentation().valueGroup().category() == ValueCategory.VECTOR
+                && value.valueRepresentation().valueGroup().category() == ValueCategory.VECTOR) {
+            // special-case for vector arrays where items can be of different vector types.
+            return true;
+        }
+        return prev.valueRepresentation().valueGroup()
+                == value.valueRepresentation().valueGroup();
+    }
+
     /**
      * Finds a representation which fits this and provided representation.
      * @param other the representation to coerce.
@@ -514,8 +550,27 @@ public enum ValueRepresentation {
         } else if (valueGroup() == ValueGroup.ANYTHING) {
             return other;
         } else {
-            return ValueRepresentation.UNKNOWN;
+            return coerceMismatch(other);
         }
+    }
+
+    /**
+     * Invoked when trying to coerce two values whose {@link ValueGroup} differ AND where none of the types
+     * is {@link ValueGroup#ANYTHING}.
+     * @param other the {@link ValueRepresentation} of the value to coerce and that mismatched on {@link ValueGroup}.
+     * @return the coerced {@link ValueRepresentation} from _this_ representation and {@code other} where
+     * the {@link ValueGroup} differ.
+     */
+    ValueRepresentation coerceMismatch(ValueRepresentation other) {
+        return UNKNOWN;
+    }
+
+    private static ValueRepresentation coerceVectorArrayMismatch(ValueRepresentation first, ValueRepresentation other) {
+        if (first.valueGroup().category() == ValueCategory.VECTOR
+                && other.valueGroup().category() == ValueCategory.VECTOR) {
+            return first;
+        }
+        return UNKNOWN;
     }
 
     private static <T> T getOrFail(AnyValue value, Class<T> type, SequenceValue values, int getIdx) {

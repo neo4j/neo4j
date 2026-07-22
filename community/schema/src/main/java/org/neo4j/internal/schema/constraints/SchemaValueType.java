@@ -109,9 +109,9 @@ public enum SchemaValueType implements ConstrainableType {
             case LIST_ZONED_DATETIME_NOT_NULL -> SchemaValueType.LIST_ZONED_DATETIME;
             case LIST_DURATION_NOT_NULL -> SchemaValueType.LIST_DURATION;
             case LIST_POINT_NOT_NULL -> SchemaValueType.LIST_POINT;
-            case VECTOR ->
-                throw new IllegalArgumentException("Using PropertyType.VECTOR is not supported via the API."
-                        + " Please use a Cypher statement instead.");
+            case VECTOR, LIST_VECTOR_NOT_NULL ->
+                throw new IllegalArgumentException("Using PropertyType." + propertyType.name()
+                        + " is not supported via the API." + " Please use a Cypher statement instead.");
         };
     }
 

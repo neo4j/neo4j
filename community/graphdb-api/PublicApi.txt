@@ -526,6 +526,7 @@ org.neo4j.graphdb.schema.PropertyType::LIST_LOCAL_TIME_NOT_NULL org.neo4j.graphd
 org.neo4j.graphdb.schema.PropertyType::LIST_POINT_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
 org.neo4j.graphdb.schema.PropertyType::LIST_STRING_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
 org.neo4j.graphdb.schema.PropertyType::LIST_UUID_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_VECTOR_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
 org.neo4j.graphdb.schema.PropertyType::LIST_ZONED_DATETIME_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
 org.neo4j.graphdb.schema.PropertyType::LIST_ZONED_TIME_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
 org.neo4j.graphdb.schema.PropertyType::LOCAL_DATETIME org.neo4j.graphdb.schema.PropertyType public static final

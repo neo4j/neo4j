@@ -59,5 +59,6 @@ public enum PropertyType {
      * This value can be returned from {@link ConstraintDefinition#getPropertyType()}. It does not specify the
      * coordinate type and dimension. If that information is needed, Cypher must be used.
      */
-    VECTOR
+    VECTOR,
+    LIST_VECTOR_NOT_NULL;
 }

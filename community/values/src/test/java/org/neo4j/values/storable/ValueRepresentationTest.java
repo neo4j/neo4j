@@ -19,7 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
@@ -41,10 +40,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 import java.util.Arrays;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
@@ -190,21 +186,6 @@ class ValueRepresentationTest {
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N39)
                 .hasStatusDescription(
                         "error: data exception - unsupported property value type. Value [[42]] cannot be stored in properties.");
-    }
-
-    // Feel free to update or remove this test if it is no longer true for vectors.
-    // Its aim is to exercise the !value.valueRepresentation().canCreateArrayOfValueGroup() case
-    @ParameterizedTest
-    @MethodSource
-    void shouldFailToCreateArrayOfVector(ValueRepresentation vectorValueRepresentaiton) {
-        assertThat(vectorValueRepresentaiton.canCreateArrayOfValueGroup())
-                .as("remove when VectorArray is storable, IND-468")
-                .isFalse();
-    }
-
-    private static Stream<ValueRepresentation> shouldFailToCreateArrayOfVector() {
-        return Arrays.stream(ValueRepresentation.values())
-                .filter(rep -> rep.valueGroup().category() == ValueCategory.VECTOR);
     }
 
     @Test

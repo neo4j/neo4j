@@ -360,6 +360,7 @@ public class RandomValues {
             case INT64_VECTOR -> nextInt64Vector();
             case FLOAT32_VECTOR -> nextFloat32Vector();
             case FLOAT64_VECTOR -> nextFloat64Vector();
+            case VECTOR_ARRAY -> nextVectorArray();
             case UUID -> nextUUIDValue();
             case UUID_ARRAY -> nextUUIDArray();
         };
@@ -429,6 +430,25 @@ public class RandomValues {
     public Float64Vector nextFloat64Vector() {
         final int dimension = chooseDimension(Double.BYTES);
         return nextFloat64Vector(dimension, dimension);
+    }
+
+    public VectorArray nextVectorArray() {
+        return nextVectorArray(minArray(), maxArray());
+    }
+
+    private int adaptDimensionsToVectorArrayItem(int dimensions) {
+        return Math.clamp(dimensions / 100, Math.min(dimensions, 40), dimensions);
+    }
+
+    public VectorArray nextVectorArray(int minLength, int maxLength) {
+        int length = intBetween(minLength, maxLength);
+        int minDim = adaptDimensionsToVectorArrayItem(configuration.minVectorDimensions());
+        int maxDim = adaptDimensionsToVectorArrayItem(configuration.maxVectorDimensions());
+        VectorValue[] vectors = new VectorValue[length];
+        for (int i = 0; i < length; i++) {
+            vectors[i] = nextVectorValue(minDim, maxDim);
+        }
+        return Values.vectorArray(vectors);
     }
 
     public UUID nextUUID() {
@@ -772,6 +792,10 @@ public class RandomValues {
 
     public VectorValue nextVectorValue(int minDim, int maxDim) {
         final ValueType type = among(typesOfCategories(ValueCategory.VECTOR));
+        return nextVectorValue(type, minDim, maxDim);
+    }
+
+    public VectorValue nextVectorValue(ValueType type, int minDim, int maxDim) {
         return switch (type) {
             case INT8_VECTOR -> nextInt8Vector(minDim, maxDim);
             case INT16_VECTOR -> nextInt16Vector(minDim, maxDim);
@@ -1745,8 +1769,10 @@ public class RandomValues {
         int generate();
     }
 
-    public static final Predicate<ValueType> IS_VECTOR_TYPE =
-            t -> t.valueRepresentation.valueGroup().category() == ValueCategory.VECTOR;
+    public static final Predicate<ValueType> IS_VECTOR_TYPE = t -> {
+        ValueCategory category = t.valueRepresentation.valueGroup().category();
+        return category == ValueCategory.VECTOR || category == ValueCategory.VECTOR_ARRAY;
+    };
 
     /**
      * An immutable and thread-safe configuration builder.

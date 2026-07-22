@@ -20,16 +20,16 @@
 package org.neo4j.values.storable;
 
 import java.util.Arrays;
-import org.apache.commons.lang3.NotImplementedException;
 import org.neo4j.graphdb.Vector;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.VectorCandidate;
+import org.neo4j.values.storable.ValueWriter.ArrayType;
 
 public class VectorArray extends NonPrimitiveArray<VectorValue> {
     private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(VectorArray.class);
+    public static final String TYPE_NAME = "VectorArray";
+
     private final VectorValue[] vectors;
 
     VectorArray(VectorValue... vectors) {
@@ -38,7 +38,7 @@ public class VectorArray extends NonPrimitiveArray<VectorValue> {
 
     @Override
     public String getTypeName() {
-        return "VectorArray";
+        return TYPE_NAME;
     }
 
     @Override
@@ -57,6 +57,11 @@ public class VectorArray extends NonPrimitiveArray<VectorValue> {
     }
 
     @Override
+    protected int unsafeCompareTo(Value other) {
+        return compareToNonPrimitiveArray((VectorArray) other);
+    }
+
+    @Override
     public boolean equals(Value other) {
         if (other instanceof VectorArray that) {
             return Arrays.equals(this.vectors, that.vectors);
@@ -66,22 +71,27 @@ public class VectorArray extends NonPrimitiveArray<VectorValue> {
 
     @Override
     public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
-        // todo: needs ValueWriter implementation
-        throw new NotImplementedException("needs ValueWriter implementation");
+        writer.beginArray(vectors.length, ArrayType.VECTOR);
+        for (VectorValue vector : vectors) {
+            vector.writeTo(writer);
+        }
+        writer.endArray();
     }
 
     @Override
     public <T> T map(ValueMapper<T> mapper) {
-        // todo: needs ValueMapper implementation
-        throw new NotImplementedException("needs ValueMapper implementation");
+        return mapper.mapVectorArray(this);
     }
 
     @Override
     public boolean hasCompatibleType(AnyValue value) {
-        return value instanceof Vector
-                || value instanceof VectorCandidate
-                || (value instanceof SequenceValue sequence
-                        && sequence.asListValue().itemValueRepresentation().valueGroup() == ValueGroup.NUMBER);
+        return value instanceof Vector;
+
+        // TODO temporarily disable NumberArray -> Vector coersion
+        //                || value instanceof VectorCandidate
+        //                || (value instanceof SequenceValue sequence
+        //                        && sequence.asListValue().itemValueRepresentation().valueGroup() ==
+        // ValueGroup.NUMBER);
     }
 
     @Override

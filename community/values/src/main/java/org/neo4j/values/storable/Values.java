@@ -439,7 +439,7 @@ public final class Values {
         VectorValue[] vectors = new VectorValue[sequence.intSize()];
         int i = 0;
         for (AnyValue value : sequence) {
-            vectors[i] = Values.vectorValue(value);
+            vectors[i++] = Values.vectorValue(value);
         }
         return vectorArray(vectors);
     }

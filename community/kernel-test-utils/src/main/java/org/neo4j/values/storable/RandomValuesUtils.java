@@ -66,6 +66,9 @@ public class RandomValuesUtils {
         if (kernelVersion.isLessThan(KernelVersion.VERSION_UUID_VALUE_INTRODUCED)) {
             builder = builder.disallowedTypes(ValueType.UUID, ValueType.UUID_ARRAY);
         }
+        if (kernelVersion.isLessThan(KernelVersion.VERSION_VECTOR_ARRAY_VALUE_INTRODUCED)) {
+            builder = builder.disallowedTypes(ValueType.VECTOR_ARRAY);
+        }
         return builder;
     }
 

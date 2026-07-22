@@ -237,7 +237,7 @@ public final class ArrayEncoder {
                 case POINT -> 'P';
                 case ZONED_DATE_TIME, LOCAL_DATE_TIME, DATE, ZONED_TIME, LOCAL_TIME -> 'T';
                 case DURATION -> 'A';
-                case UUID -> throw new UnsupportedOperationException("Not supported array type: " + arrayType);
+                case UUID, VECTOR -> throw new UnsupportedOperationException("Not supported array type: " + arrayType);
             };
         }
     }
