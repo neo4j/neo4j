@@ -457,6 +457,31 @@ class DateTimeValueTest {
     }
 
     @Test
+    void shouldConstructDateTimeFromEpochSeconds() {
+        assertEqualTemporal(
+                datetime(1000000000L, 0, clock.getZone()),
+                fromValues(builder(clock)).add("epochSeconds", 1000000000L).build());
+        assertEqualTemporal(
+                datetime(0L, 0, clock.getZone()),
+                fromValues(builder(clock)).add("epochSeconds", 0L).build());
+    }
+
+    @Test
+    void shouldFailOnOverflowingEpochSeconds() {
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> fromValues(builder(clock))
+                        .add("epochSeconds", Long.MAX_VALUE)
+                        .build())
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessage("Instant exceeds minimum or maximum instant")
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22007)
+                .hasStatusDescription("error: data exception - invalid date, time, or datetime format")
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N11)
+                .hasStatusDescription(
+                        "error: data exception - invalid argument. Invalid argument: cannot process 'epochSeconds'.");
+    }
+
+    @Test
     void shouldAddDurationToDateTimes() {
         assertEquals(
                 datetime(date(2018, 2, 1), time(1, 17, 3, 0, UTC)),
