@@ -34,7 +34,7 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 trait LoggingTestSupport extends GraphDatabaseTestSupport {
   self: CypherITTestSuite =>
 
-  protected val securityLogProvider: AssertableLogProvider = new AssertableLogProvider()
+  protected val securityLogProvider: AssertableLogProvider = new AssertableLogProvider(false, true, true, true)
   protected val userLogProvider: AssertableLogProvider = new AssertableLogProvider()
   protected val logService: LogService = new SimpleLogService(userLogProvider, securityLogProvider)
 

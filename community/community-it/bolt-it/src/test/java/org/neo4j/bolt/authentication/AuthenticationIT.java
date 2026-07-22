@@ -84,7 +84,7 @@ import org.neo4j.values.virtual.VirtualValues;
 @IncludeTransport({TransportType.TCP, TransportType.UNIX, TransportType.LOCAL})
 class AuthenticationIT {
 
-    protected final AssertableLogProvider securityLogProvider = new AssertableLogProvider();
+    protected final AssertableLogProvider securityLogProvider = new AssertableLogProvider(false, true, true, true);
     protected final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     protected final LogService logService = new SimpleLogService(userLogProvider, securityLogProvider);
 

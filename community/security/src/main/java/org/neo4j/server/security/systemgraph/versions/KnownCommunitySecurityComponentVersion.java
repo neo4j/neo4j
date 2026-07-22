@@ -71,11 +71,11 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
             boolean passwordChangeRequired,
             boolean suspended) {
         // NOTE: If username already exists we will violate a constraint
-        securityLog.info(String.format(
+        securityLog.info(
                 "CREATE USER %s PASSWORD ****** CHANGE %s%s",
                 username,
                 passwordChangeRequired ? "REQUIRED" : "NOT REQUIRED",
-                suspended ? " SET STATUS SUSPENDED" : ""));
+                suspended ? " SET STATUS SUSPENDED" : "");
         Node node = tx.createNode(USER_LABEL);
         node.setProperty(USER_NAME_PROPERTY, username);
         node.setProperty(USER_CREDENTIALS_PROPERTY, credentials.serialize());

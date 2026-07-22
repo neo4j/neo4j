@@ -39,7 +39,7 @@ public class AssertableLogProvider extends AbstractLogProvider<InternalLog> {
     private final Queue<LogCall> logCalls = new LinkedBlockingQueue<>();
 
     public AssertableLogProvider() {
-        this(false, false, false, false);
+        this(false);
     }
 
     public AssertableLogProvider(boolean debugEnabled) {

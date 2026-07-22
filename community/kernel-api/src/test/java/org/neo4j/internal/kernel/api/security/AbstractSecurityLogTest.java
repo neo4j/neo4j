@@ -112,4 +112,30 @@ public class AbstractSecurityLogTest {
         ll.formatAsString(sb);
         assertThat(sb).hasToString("[authUser:executingUser]: Exception thrown, 42NFF: message1 message2 message3");
     }
+
+    @Test
+    public void testNewlinesScrubbedFromFormattedArguments() {
+        AbstractSecurityLog.SecurityLogLine ll =
+                new AbstractSecurityLog.SecurityLogLine("message %s", new Object[] {"line1\nline2\r\nline3"});
+
+        StringBuilder sb = new StringBuilder();
+        ll.formatAsString(sb);
+        assertThat(sb).hasToString("message line1 line2 line3");
+    }
+
+    @Test
+    public void testMapPopulatedOnAccess() {
+        AbstractSecurityLog.SecurityLogLine ll = new AbstractSecurityLog.SecurityLogLine(
+                new ContextInfo(ClientConnectionInfo.EMBEDDED_CONNECTION, "database", "authUser", "executingUser"),
+                "message %d",
+                new Object[] {42},
+                GqlStatusInfoCodes.STATUS_42NFF.getGqlStatus());
+
+        assertThat(ll.get("type")).isEqualTo("security");
+        assertThat(ll.get("database")).isEqualTo("database");
+        assertThat(ll.get("executingUser")).isEqualTo("executingUser");
+        assertThat(ll.get("authenticatedUser")).isEqualTo("authUser");
+        assertThat(ll.get("message")).isEqualTo("message 42");
+        assertThat(ll.asString("JSON")).contains("\"message\":\"message 42\"");
+    }
 }

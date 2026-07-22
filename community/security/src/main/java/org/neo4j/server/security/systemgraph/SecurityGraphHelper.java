@@ -64,7 +64,7 @@ public class SecurityGraphHelper {
      * @return user record containing user and auth information
      */
     public User getUserByName(String username) {
-        if (securityLog.isDebugEnabled()) securityLog.debug(String.format("Looking up user '%s'", username));
+        securityLog.debug("Looking up user '%s'", username);
         if (username == null) {
             securityLog.debug("Cannot look up user 'null'");
             return null;
@@ -72,13 +72,13 @@ public class SecurityGraphHelper {
         try (var tx = systemSupplier.get().beginTx()) {
             Node userNode = tx.findNode(USER_LABEL, USER_NAME_PROPERTY, username);
             if (userNode == null) {
-                securityLog.debug(String.format("User '%s' not found", username));
+                securityLog.debug("User '%s' not found", username);
                 return null;
             }
             return getUser(userNode);
         } catch (NotFoundException n) {
             // Can occur if the user was dropped by another thread after the null check.
-            securityLog.debug(String.format("User '%s' not found", username));
+            securityLog.debug("User '%s' not found", username);
             return null;
         }
     }
@@ -93,7 +93,7 @@ public class SecurityGraphHelper {
             try {
                 credential = SystemGraphCredential.deserialize(rawCredentials, secureHasher);
             } catch (FormatException e) {
-                securityLog.debug(String.format("Wrong format of credentials for user %s.", username));
+                securityLog.debug("Wrong format of credentials for user %s.", username);
                 return null;
             }
         }
@@ -105,7 +105,7 @@ public class SecurityGraphHelper {
                 requirePasswordChange,
                 false,
                 credential == null ? Collections.emptySet() : Set.of(new User.Auth(NATIVE_AUTH, userId)));
-        securityLog.debug(String.format("Found user: %s", user));
+        securityLog.debug("Found user: %s", user);
         return user;
     }
 

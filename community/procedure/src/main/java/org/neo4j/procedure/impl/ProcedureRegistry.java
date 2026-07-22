@@ -103,8 +103,8 @@ public class ProcedureRegistry {
                 if (!fullAccess && NamingRestrictions.isDeprecatedProcedureNamespace(name, scope)) {
                     if (securityLog != null) {
                         securityLog.warn(
-                                "Procedure `%s` is in a deprecated namespace. Please rename to an unused namespace."
-                                        .formatted(name.toString()));
+                                "Procedure `%s` is in a deprecated namespace. Please rename to an unused namespace.",
+                                name.toString());
                     }
                 } else {
                     throw ProcedureException.procedureNameAlreadyInUse(name.toString());
@@ -133,8 +133,9 @@ public class ProcedureRegistry {
 
             if (!signature.isBuiltIn() && NamingRestrictions.isDeprecatedFunctionNamespace(name, scope)) {
                 if (NamingRestrictions.isShadowingBuiltInFunction(name, scope) && securityLog != null) {
-                    securityLog.warn("Function `%s` is in a deprecated namespace. Please rename to an unused namespace."
-                            .formatted(name.toString()));
+                    securityLog.warn(
+                            "Function `%s` is in a deprecated namespace. Please rename to an unused namespace.",
+                            name.toString());
                 }
                 addShadowedName(name.toString(), scope);
             }
@@ -174,8 +175,8 @@ public class ProcedureRegistry {
             if (!signature.isBuiltIn() && NamingRestrictions.isDeprecatedFunctionNamespace(name, scope)) {
                 if (NamingRestrictions.isShadowingBuiltInFunction(name, scope) && securityLog != null) {
                     securityLog.warn(
-                            "Aggregation function `%s` is in a deprecated namespace. Please rename to an unused namespace."
-                                    .formatted(name.toString()));
+                            "Aggregation function `%s` is in a deprecated namespace. Please rename to an unused namespace.",
+                            name.toString());
                 }
                 addShadowedName(name.toString(), scope);
             }

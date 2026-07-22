@@ -36,47 +36,125 @@ public abstract class AbstractSecurityLog {
     }
 
     public void debug(String message) {
-        inner.debug(new SecurityLogLine(message));
+        if (inner.isDebugEnabled()) {
+            inner.debug(new SecurityLogLine(message));
+        }
+    }
+
+    public void debug(String format, Object... args) {
+        if (inner.isDebugEnabled()) {
+            inner.debug(new SecurityLogLine(format, args));
+        }
     }
 
     public void debug(ContextInfo context, String message) {
-        inner.debug(new SecurityLogLine(context, message, null));
+        if (inner.isDebugEnabled()) {
+            inner.debug(new SecurityLogLine(context, message, null));
+        }
+    }
+
+    public void debug(ContextInfo context, String format, Object... args) {
+        if (inner.isDebugEnabled()) {
+            inner.debug(new SecurityLogLine(context, format, args, null));
+        }
     }
 
     public void info(String message) {
-        inner.info(new SecurityLogLine(message));
+        if (inner.isInfoEnabled()) {
+            inner.info(new SecurityLogLine(message));
+        }
+    }
+
+    public void info(String format, Object... args) {
+        if (inner.isInfoEnabled()) {
+            inner.info(new SecurityLogLine(format, args));
+        }
     }
 
     public void info(ContextInfo context, String message) {
-        inner.info(new SecurityLogLine(context, message, null));
+        if (inner.isInfoEnabled()) {
+            inner.info(new SecurityLogLine(context, message, null));
+        }
+    }
+
+    public void info(ContextInfo context, String format, Object... args) {
+        if (inner.isInfoEnabled()) {
+            inner.info(new SecurityLogLine(context, format, args, null));
+        }
     }
 
     public void warn(String message) {
-        inner.warn(new SecurityLogLine(message));
+        if (inner.isWarnEnabled()) {
+            inner.warn(new SecurityLogLine(message));
+        }
+    }
+
+    public void warn(String format, Object... args) {
+        if (inner.isWarnEnabled()) {
+            inner.warn(new SecurityLogLine(format, args));
+        }
     }
 
     public void warn(ContextInfo context, String message) {
-        inner.warn(new SecurityLogLine(context, message, null));
+        if (inner.isWarnEnabled()) {
+            inner.warn(new SecurityLogLine(context, message, null));
+        }
+    }
+
+    public void warn(ContextInfo context, String format, Object... args) {
+        if (inner.isWarnEnabled()) {
+            inner.warn(new SecurityLogLine(context, format, args, null));
+        }
     }
 
     public void error(String message) {
-        inner.error(new SecurityLogLine(message));
+        if (inner.isErrorEnabled()) {
+            inner.error(new SecurityLogLine(message));
+        }
+    }
+
+    public void error(String format, Object... args) {
+        if (inner.isErrorEnabled()) {
+            inner.error(new SecurityLogLine(format, args));
+        }
     }
 
     public void error(String message, GqlStatus gqlStatus) {
-        inner.error(new SecurityLogLine(null, null, null, null, message, gqlStatus));
+        if (inner.isErrorEnabled()) {
+            inner.error(new SecurityLogLine(null, null, null, null, message, null, gqlStatus));
+        }
     }
 
     public void error(ContextInfo context, String message) {
-        error(context, message, null);
+        error(context, message, (GqlStatus) null);
+    }
+
+    public void error(ContextInfo context, String format, Object... args) {
+        if (inner.isErrorEnabled()) {
+            inner.error(new SecurityLogLine(context, format, args, null));
+        }
     }
 
     public void error(ContextInfo context, String message, GqlStatus gqlStatus) {
-        inner.error(new SecurityLogLine(context, message, gqlStatus));
+        if (inner.isErrorEnabled()) {
+            inner.error(new SecurityLogLine(context, message, gqlStatus));
+        }
     }
 
     public boolean isDebugEnabled() {
         return inner.isDebugEnabled();
+    }
+
+    public boolean isInfoEnabled() {
+        return inner.isInfoEnabled();
+    }
+
+    public boolean isWarnEnabled() {
+        return inner.isWarnEnabled();
+    }
+
+    public boolean isErrorEnabled() {
+        return inner.isErrorEnabled();
     }
 
     public record ContextInfo(
@@ -114,16 +192,25 @@ public abstract class AbstractSecurityLog {
         private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\R+");
 
         SecurityLogLine(String message) {
-            this(null, null, null, null, message, null);
+            this(null, null, null, null, message, null, null);
+        }
+
+        SecurityLogLine(String format, Object[] args) {
+            this(null, null, null, null, format, args, null);
         }
 
         SecurityLogLine(ContextInfo contextInfo, String message, GqlStatus gqlStatus) {
+            this(contextInfo, message, null, gqlStatus);
+        }
+
+        SecurityLogLine(ContextInfo contextInfo, String format, Object[] args, GqlStatus gqlStatus) {
             this(
                     contextInfo.connectionInfo,
                     contextInfo.database,
                     contextInfo.executingUser,
                     contextInfo.authenticatedUser,
-                    message,
+                    format,
+                    args,
                     gqlStatus);
         }
 
@@ -132,13 +219,13 @@ public abstract class AbstractSecurityLog {
                 String database,
                 String executingUser,
                 String authenticatedUser,
-                String message,
+                String format,
+                Object[] args,
                 GqlStatus gqlStatus) {
             super(7);
             String sourceString = connectionInfo != null ? connectionInfo.asConnectionDetails() : "";
             this.executingUser = executingUser;
-            // clean message of newlines
-            this.message = NEWLINE_PATTERN.matcher(message).replaceAll(" ");
+            this.message = NEWLINE_PATTERN.matcher(formatMessage(format, args)).replaceAll(" ");
             this.authenticatedUser = authenticatedUser;
             this.gqlStatus = gqlStatus;
 
@@ -157,6 +244,10 @@ public abstract class AbstractSecurityLog {
                 with("errorInfo", Map.of("GQLSTATUS", gqlStatus.gqlStatusString()));
             }
             with("message", this.message);
+        }
+
+        private String formatMessage(String format, Object[] args) {
+            return args == null || args.length == 0 ? format : String.format(format, args);
         }
 
         @Override

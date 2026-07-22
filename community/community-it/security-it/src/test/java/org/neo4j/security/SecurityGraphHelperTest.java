@@ -73,9 +73,8 @@ class SecurityGraphHelperTest {
 
         // THEN
         assertThat(result).isNull();
-        verify(securityLog).debug("Looking up user 'null'");
+        verify(securityLog).debug("Looking up user '%s'", (Object[]) null);
         verify(securityLog).debug("Cannot look up user 'null'");
-        verify(securityLog).isDebugEnabled();
         verifyNoMoreInteractions(securityLog);
     }
 
@@ -92,11 +91,8 @@ class SecurityGraphHelperTest {
         assertThat(result.id()).isEqualTo("userId");
         assertThat(result.name()).isEqualTo("alice");
         assertThat(result.auth()).hasSameElementsAs(Set.of(new User.Auth(NATIVE_AUTH, "userId")));
-        verify(securityLog).debug("Looking up user 'alice'");
-        verify(securityLog)
-                .debug(
-                        "Found user: User[name=alice, id=userId, credential=*****, passwordChangeRequired=false, suspended=false, auth=[Auth[provider=native, id=userId]]]");
-        verify(securityLog).isDebugEnabled();
+        verify(securityLog).debug("Looking up user '%s'", "alice");
+        verify(securityLog).debug("Found user: %s", result);
         verifyNoMoreInteractions(securityLog);
     }
 
@@ -112,11 +108,8 @@ class SecurityGraphHelperTest {
         assertThat(result.id()).isEqualTo("userId");
         assertThat(result.name()).isEqualTo("alice");
         assertThat(result.auth()).hasSameElementsAs(Set.of());
-        verify(securityLog).debug("Looking up user 'alice'");
-        verify(securityLog)
-                .debug(
-                        "Found user: User[name=alice, id=userId, credential=null, passwordChangeRequired=false, suspended=false, auth=[]]");
-        verify(securityLog).isDebugEnabled();
+        verify(securityLog).debug("Looking up user '%s'", "alice");
+        verify(securityLog).debug("Found user: %s", result);
         verifyNoMoreInteractions(securityLog);
     }
 
@@ -127,9 +120,8 @@ class SecurityGraphHelperTest {
 
         // THEN
         assertThat(result).isNull();
-        verify(securityLog).debug("Looking up user 'alice'");
-        verify(securityLog).debug("User 'alice' not found");
-        verify(securityLog).isDebugEnabled();
+        verify(securityLog).debug("Looking up user '%s'", "alice");
+        verify(securityLog).debug("User '%s' not found", "alice");
         verifyNoMoreInteractions(securityLog);
     }
 
