@@ -25,6 +25,7 @@ import io.cucumber.scala.Scenario
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Assumptions.assumeFalse
+import org.neo4j.cypher.cucumber.glue.regular.CompositeExecutorPool
 import org.neo4j.cypher.cucumber.glue.regular.DbAccessor
 import org.neo4j.cypher.cucumber.glue.regular.Executors
 import org.neo4j.cypher.cucumber.glue.regular.Expectations
@@ -121,16 +122,6 @@ final class RegularCypherSteps @Inject() (
     if (openTx != null) openTx.close()
     if (db != null) db.unregisterProcedures(registeredProcedures)
     if (dbmsAccessor != null) executors.release(dbmsAccessor)
-  }
-
-  override def registerProcedure(signature: String, results: DataTable): Unit = {
-    val output = results.cells().stream()
-      .skip(1) // Header row
-      .map(row => row.stream().map(v => ValueUtils.asValue(parse(v))).toArray(i => new Array[AnyValue](i)))
-      .toArray(i => new Array[Array[AnyValue]](i))
-    val procedure = ProcedureBuilder.createProcedure(signature, output)
-    db.registerProcedure(procedure)
-    registeredProcedures = registeredProcedures.appended(procedure.signature().name())
   }
 
   override def registerProcedure(
@@ -266,7 +257,8 @@ final class RegularCypherSteps @Inject() (
   override def sideEffectsShouldBe(expectedTable: DataTable): Unit = {
     val actual = lastGraphState match {
       case state: KernelGraphState => state.sideEffects(KernelGraphState.recordGraphState(db.database))
-      case state: CypherGraphState => state.sideEffects(CypherGraphState.recordGraphState(openTx))
+      case state: CypherGraphState =>
+        state.sideEffects(CypherGraphState.recordGraphState(openTx, graphStateRoutePrefix))
     }
     val expected = SideEffects.from(expectedTable)
     if (actual != expected) {
@@ -295,7 +287,7 @@ final class RegularCypherSteps @Inject() (
   }
 
   override def executingQueryInOpenTx(cypher: String): Unit = {
-    lastGraphState = CypherGraphState.recordGraphState(openTx)
+    lastGraphState = CypherGraphState.recordGraphState(openTx, graphStateRoutePrefix)
     lastResult = executeInOpenTx(conf.preparserPrefix + cypher)
   }
 
@@ -344,6 +336,9 @@ final class RegularCypherSteps @Inject() (
        >${describePlan(actual)}
        >""".stripMargin('>') // | margins messes with the tables
   }
+
+  private def graphStateRoutePrefix: String =
+    if (conf.useComposite) s"USE ${CompositeExecutorPool.Constituent}\n" else ""
 
   protected def describePlan(actual: QueryExecution): String =
     if (conf.useComposite) {

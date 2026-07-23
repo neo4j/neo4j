@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
+import org.neo4j.kernel.api.QueryLanguage
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -225,6 +226,13 @@ trait ScenarioRenderer {
     heading + "\n" + (if (value.isEmpty) "|" else value.toString.trim)
   }
 
+  private def procedureVersionSuffix(supportedLanguages: Set[QueryLanguage]): String =
+    supportedLanguages.toSeq match {
+      case Seq(QueryLanguage.CYPHER_5)  => " only in Cypher 5"
+      case Seq(QueryLanguage.CYPHER_25) => " only in Cypher 25"
+      case _                            => ""
+    }
+
   private def renderStep(step: RecordedStep): String = step match {
     case execution: QueryExecution => execution match {
         case HavingExecuted(cypher)         => tripleQuote("And having executed:", cypher)
@@ -265,8 +273,8 @@ trait ScenarioRenderer {
       render("And the side effects should be:", expected)
     case Comment(comment) =>
       s"# $comment"
-    case RegisterProcedure(signature, results) =>
-      render(s"And there exists a procedure $signature:", results)
+    case RegisterProcedure(signature, results, supportedLanguages) =>
+      render(s"And there exists a procedure $signature${procedureVersionSuffix(supportedLanguages)}:", results)
     case CreateCsvFile(param, table) =>
       render(s"And there exists a CSV file with URL as ${"$" + param}, with rows:", table)
     case RegisterUserFunction(name) =>

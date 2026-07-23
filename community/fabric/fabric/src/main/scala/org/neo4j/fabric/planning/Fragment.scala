@@ -59,6 +59,9 @@ sealed trait Fragment extends Fragment.RewritingSupport {
   /** Whether this fragment produces final query output */
   def producesResults: Boolean
 
+  /** Columns yielded as final query output; empty when the fragment produces no results */
+  def resultColumns: Seq[String] = if (producesResults) outputColumns else Seq.empty
+
   /** ExecutionPlanDescription */
   def description: Fragment.Description
   /* Original input position */

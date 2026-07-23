@@ -765,6 +765,19 @@ class FabricFragmenterTest
           .leaf(Seq(returnVars("n")), Seq("n"))
       )
     }
+
+    "a query ending in a unit subquery call produces no result columns" in {
+      val f = fragment(
+        """MATCH (n)
+          |CALL {
+          |  CREATE (a)
+          |}
+          |""".stripMargin
+      )
+      f.producesResults shouldEqual false
+      f.outputColumns shouldEqual Seq("n")
+      f.resultColumns shouldEqual Seq.empty
+    }
   }
 
   "Procedures:" - {

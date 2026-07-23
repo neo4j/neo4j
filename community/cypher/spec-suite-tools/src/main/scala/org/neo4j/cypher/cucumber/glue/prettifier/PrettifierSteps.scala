@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.internal.helpers.Exceptions
+import org.neo4j.kernel.api.QueryLanguage
 
 import scala.util.Failure
 import scala.util.Success
@@ -143,7 +144,12 @@ final class PrettifierSteps @Inject() () extends CypherCucumberSteps {
   override def executingControlQueryInOpenTx(cypher: String): Unit = roundTripCheck(cypher)
 
   override def parametersAre(params: Map[String, String]): Unit = {}
-  override def registerProcedure(signature: String, results: DataTable): Unit = {}
+
+  override def registerProcedure(
+    signature: String,
+    results: DataTable,
+    supportedLanguages: Set[QueryLanguage]
+  ): Unit = {}
   override def registerUserFunction(name: String): Unit = {}
   override def givenCsvFile(urlParam: String, content: DataTable): Unit = {}
   override def resultShouldBe(expected: DataTable, assertions: Result.Assertions): Unit = {}

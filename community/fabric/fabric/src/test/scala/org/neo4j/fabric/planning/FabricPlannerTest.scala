@@ -188,6 +188,18 @@ class FabricPlannerTest
         ))
     }
 
+    "MERGE with a pattern comprehension is not rewritten to COLLECT in the remote fragment" in {
+      val remote = asRemote(
+        """MERGE (n {p: [ ()-->() | 1 ]})
+          |RETURN n.p AS p
+          |""".stripMargin
+      )
+
+      remote.query.should(include("MERGE"))
+      remote.query.should(not(include("COLLECT")))
+      parse(remote.query).as[SingleQuery]
+    }
+
     "single schema command with USE" in {
       val remote = asRemote(
         """USE foo
@@ -516,6 +528,20 @@ class FabricPlannerTest
         )
       )
       local.state.queryText should endWith("RETURN true AS `true`")
+    }
+  }
+
+  "Result columns: " - {
+
+    "a returning query exposes its return columns as result columns" in {
+      val query = plan(
+        """MATCH (n)
+          |RETURN n
+          |""".stripMargin
+      ).query
+
+      query.producesResults shouldEqual true
+      query.resultColumns shouldEqual Seq("n")
     }
   }
 

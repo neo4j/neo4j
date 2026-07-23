@@ -35,7 +35,8 @@ case class ParsingConfig(
   /* TODO: This is not part of configuration - Move to BaseState */
   parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,
   resolveSimpleDynamicExpressions: Boolean = false,
-  enabledVirtualGraph: Boolean = false
+  enabledVirtualGraph: Boolean = false,
+  isFabricPipeline: Boolean = false
 ) {
 
   def literalExtractionStrategy: LiteralExtractionStrategy = extractLiterals match {

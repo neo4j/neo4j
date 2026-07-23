@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.frontend.phases.NoOp
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
@@ -153,7 +154,8 @@ case object ReplacePatternComprehensionWithCollectSubqueryRewriter extends Phase
       )
     )
 
-  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = this
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
+    if (config.isFabricPipeline) NoOp[BaseContext, BaseState, BaseState]() else this
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // When rewriting `RETURN [...]`, we need to have given the ReturnItem an alias before rewriting it to COLLECT

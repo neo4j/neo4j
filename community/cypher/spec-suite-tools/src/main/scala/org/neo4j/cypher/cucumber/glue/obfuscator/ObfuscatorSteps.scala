@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.internal.helpers.Exceptions
+import org.neo4j.kernel.api.QueryLanguage
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -195,7 +196,8 @@ final class ObfuscatorSteps @Inject() (
 
   override def parametersAre(params: Map[String, String]): Unit = inner.parametersAre(params)
 
-  override def registerProcedure(sign: String, results: DataTable): Unit = inner.registerProcedure(sign, results)
+  override def registerProcedure(sign: String, results: DataTable, supportedLanguages: Set[QueryLanguage]): Unit =
+    inner.registerProcedure(sign, results, supportedLanguages)
   override def registerUserFunction(name: String): Unit = inner.registerUserFunction(name)
   override def givenCsvFile(urlParam: String, content: DataTable): Unit = inner.givenCsvFile(urlParam, content)
   override def havingExecuted(q: String): Unit = inner.havingExecuted(tagQuery(q))

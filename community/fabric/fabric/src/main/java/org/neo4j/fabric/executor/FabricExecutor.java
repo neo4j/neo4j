@@ -262,7 +262,7 @@ public class FabricExecutor {
                 // EXPLAIN queries always give OMITTED RESULT
                 gqlStatusObjects.add(StandardGqlStatusObject.OMITTED_RESULT);
                 return StatementResults.emptyStream(
-                        asJava(query.outputColumns()),
+                        asJava(query.resultColumns()),
                         new MergedSummary(
                                 plan.query().description(),
                                 QueryStatistics.EMPTY,

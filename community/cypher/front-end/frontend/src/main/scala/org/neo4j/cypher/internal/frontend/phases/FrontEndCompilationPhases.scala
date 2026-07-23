@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExtractLocal
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.LiteralExtraction
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ParsePipelineTransformer
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ReplacePatternComprehensionWithCollectSubqueryRewriter
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ResolveSimpleDynamicExpressions
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ComputeExpressionDependencies
@@ -130,6 +131,8 @@ trait FrontEndCompilationPhases {
     ScopeSurveyor andThen
       StrictResolveCallables(resolver) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
+      SemanticAnalysis(warn = Some(true)) andThen
+      ReplacePatternComprehensionWithCollectSubqueryRewriter andThen
       SemanticAnalysis(warn = Some(true)) andThen
       ComputeExpressionDependencies andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen

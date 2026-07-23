@@ -34,6 +34,7 @@ import org.neo4j.cypher.cucumber.steps.CypherCucumberSteps
 import org.neo4j.cypher.cucumber.steps.CypherCucumberSteps.ExpectedGqlError
 import org.neo4j.cypher.cucumber.steps.CypherCucumberSteps.ExpectedGqlNotification
 import org.neo4j.cypher.cucumber.steps.Result
+import org.neo4j.kernel.api.QueryLanguage
 
 import java.net.URI
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -87,8 +88,8 @@ final class ScenarioRecordingSteps @Inject() (
   override def executingControlQueryInOpenTx(cypher: String): Unit = add(ExecuteControlInOpenTx(cypher))
   override def commitOpenTx(): Unit = add(CommitTransaction)
 
-  override def registerProcedure(signature: String, results: DataTable): Unit =
-    add(RegisterProcedure(signature, results))
+  override def registerProcedure(signature: String, results: DataTable, supportedLanguages: Set[QueryLanguage]): Unit =
+    add(RegisterProcedure(signature, results, supportedLanguages))
 
   override def queryLogShouldContain(expectedJsonLog: String): Unit = {}
 }
@@ -136,7 +137,12 @@ sealed trait TransactionHandling extends RecordedStep
 case object OpenTransaction extends TransactionHandling
 case object CommitTransaction extends TransactionHandling
 case class SetParams(params: Map[String, String]) extends RecordedStep
-case class RegisterProcedure(signature: String, results: DataTable) extends RecordedStep
+
+case class RegisterProcedure(
+  signature: String,
+  results: DataTable,
+  supportedLanguages: Set[QueryLanguage] = QueryLanguage.ALL.asScala.toSet
+) extends RecordedStep
 case class CreateCsvFile(urlParam: String, content: DataTable) extends RecordedStep
 case class RegisterUserFunction(name: String) extends RecordedStep
 sealed trait SetupExecution extends QueryExecution

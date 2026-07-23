@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 /**
  * Step definitions of all Cypher Cucumber steps (from the .feature test files).
@@ -60,7 +61,7 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
   }
 
   Given("^there exists a procedure (?!.*? only in Cypher \\d)(.+):$") { (signature: String, results: DataTable) =>
-    registerProcedure(signature, results)
+    registerProcedure(signature, results, QueryLanguage.ALL.asScala.toSet)
   }
 
   Given("^there exists a procedure (.+?) only in Cypher (\\d+):$") {
@@ -190,10 +191,7 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
   }
   def loadNamedGraph(name: String): Unit = havingExecuted(readNamedGraphCypher(name))
   def parametersAre(params: Map[String, String]): Unit
-  def registerProcedure(signature: String, results: DataTable): Unit
-
-  def registerProcedure(signature: String, results: DataTable, supportedLanguages: Set[QueryLanguage]): Unit =
-    registerProcedure(signature, results)
+  def registerProcedure(signature: String, results: DataTable, supportedLanguages: Set[QueryLanguage]): Unit
 
   def registerUserFunction(name: String): Unit
 

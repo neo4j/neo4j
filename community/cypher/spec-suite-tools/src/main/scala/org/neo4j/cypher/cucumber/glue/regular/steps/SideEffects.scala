@@ -174,29 +174,31 @@ case class CypherGraphState(
 object CypherGraphState {
   case class Property(entityId: Long, isNode: Boolean, propKey: String, propValue: Value)
 
-  def recordGraphState(tx: CypherExecutorTransaction): CypherGraphState = {
+  def recordGraphState(tx: CypherExecutorTransaction, routePrefix: String = ""): CypherGraphState = {
     val nodeIds = LongSets.mutable.empty()
     val relIds = LongSets.mutable.empty()
     val labelIds = Sets.mutable.empty[String]()
     val props = Sets.mutable.empty[Property]()
 
-    tx.execute("match (n) return id(n)").consume(ResultValueMapper).rows
+    tx.execute(s"${routePrefix}match (n) return id(n)").consume(ResultValueMapper).rows
       .forEach(row => nodeIds.add(row.get(0).asInstanceOf[Long]))
-    tx.execute("match ()-[r]->() return id(r)").consume(ResultValueMapper).rows
+    tx.execute(s"${routePrefix}match ()-[r]->() return id(r)").consume(ResultValueMapper).rows
       .forEach(row => relIds.add(row.get(0).asInstanceOf[Long]))
-    tx.execute("match (n) unwind labels(n) as label return distinct label").consume(ResultValueMapper).rows
+    tx.execute(
+      s"${routePrefix}match (n) unwind labels(n) as label return distinct label"
+    ).consume(ResultValueMapper).rows
       .forEach(row => labelIds.add(row.get(0).asInstanceOf[String]))
     tx.execute(
-      """match (n)
-        |with n, properties(n) as props
-        |unwind keys(props) AS key
-        |return id(n) AS id, true as isNode, key, props[key] AS value
-        |union all
-        |match ()-[r]->()
-        |with r, properties(r) as props
-        |unwind keys(props) AS key
-        |return id(r) AS id, false as isNode, key, props[key] AS value
-        |""".stripMargin
+      s"""${routePrefix}match (n)
+         |with n, properties(n) as props
+         |unwind keys(props) AS key
+         |return id(n) AS id, true as isNode, key, props[key] AS value
+         |union all
+         |${routePrefix}match ()-[r]->()
+         |with r, properties(r) as props
+         |unwind keys(props) AS key
+         |return id(r) AS id, false as isNode, key, props[key] AS value
+         |""".stripMargin
     ).consume(ResultValueMapper).rows
       .forEach { row =>
         val propValue = row.get(3) match {

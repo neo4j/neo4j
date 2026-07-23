@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.SemanticAnalysisTest.gql42N29
 import org.neo4j.cypher.internal.frontend.SemanticAnalysisTest.gql42NA5
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.WrapAndExpandProcedureCall
 import org.neo4j.cypher.internal.notification.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
@@ -62,6 +63,15 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite with AstConstructio
     SemanticFeature.MultipleGraphs,
     SemanticFeature.UseAsSingleGraphSelector
   )
+
+  private val standaloneCallWhereMessage =
+    "Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)"
+
+  private val concludeWithWithMessage =
+    "Query cannot conclude with WITH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD)."
+
+  private val procedureCallExpansion =
+    semanticAnalysisTwice(extraStepBefore = Some(WrapAndExpandProcedureCall))
 
   private val emptyTokenErrorMessage =
     "'' is not a valid token name. Token names cannot be empty or contain any null-bytes."
@@ -1604,6 +1614,46 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite with AstConstructio
   test("Query ending in CALL ... YIELD ...") {
     run("MATCH (a) CALL proc.foo() YIELD bar")
       .hasError(getGql42001_42N71(10, 1, 11), "Query cannot conclude with CALL together with YIELD", p(10, 1, 11))
+  }
+
+  test("Standalone call with WHERE is rejected with 42NAB") {
+    run("CALL test.proc() YIELD i WHERE i = 3", pipeline = procedureCallExpansion)
+      .hasErrorMessages(standaloneCallWhereMessage, concludeWithWithMessage)
+  }
+
+  test("Standalone call with WHERE keeps 42NAB behind a leading USE") {
+    run(
+      "USE comp.data\nCALL test.proc() YIELD i WHERE i = 3",
+      pipeline = procedureCallExpansion,
+      semanticFeatures = useAsMulti,
+      isComposite = true,
+      sessionDatabase = "comp"
+    ).hasErrorMessages(standaloneCallWhereMessage, concludeWithWithMessage)
+  }
+
+  test("Standalone call with WHERE and a RETURN is valid behind a leading USE") {
+    run(
+      "USE comp.data\nCALL test.proc() YIELD i WHERE i = 3 RETURN i",
+      pipeline = procedureCallExpansion,
+      semanticFeatures = useAsMulti,
+      isComposite = true,
+      sessionDatabase = "comp"
+    ).hasNoErrors
+  }
+
+  test("Standalone call without WHERE is valid behind a leading USE") {
+    Seq(
+      "USE comp.data\nCALL test.proc()",
+      "USE comp.data\nCALL test.proc() YIELD i"
+    ).foreach { query =>
+      run(
+        query,
+        pipeline = procedureCallExpansion,
+        semanticFeatures = useAsMulti,
+        isComposite = true,
+        sessionDatabase = "comp"
+      ).hasNoErrors
+    }
   }
 
   test("Query with only importing WITH") {

@@ -502,16 +502,9 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   private def checkStandaloneCall(clauses: Seq[Clause]): SemanticCheck = {
     clauses match {
       case Seq(_: CallClause, where @ With(_, _, _, _, _, _, _, AddedInRewriteProcCall)) =>
-        val gql = GqlHelper.getGql42001_42N71_42NAB(
-          where.position.offset,
-          where.position.line,
-          where.position.column
-        )
-        error(
-          gql,
-          "Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)",
-          where.position
-        )
+        standaloneCallWithWhereError(where)
+      case Seq(_: GraphSelection, _: CallClause, where @ With(_, _, _, _, _, _, _, AddedInRewriteProcCall)) =>
+        standaloneCallWithWhereError(where)
       case Seq(_: GraphSelection, _: CallClause) =>
         // USE clause and standalone procedure call
         success
@@ -527,6 +520,19 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       case _ =>
         success
     }
+  }
+
+  private def standaloneCallWithWhereError(where: With): SemanticCheck = {
+    val gql = GqlHelper.getGql42001_42N71_42NAB(
+      where.position.offset,
+      where.position.line,
+      where.position.column
+    )
+    error(
+      gql,
+      "Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)",
+      where.position
+    )
   }
 
   private def containsNonCommandClause(clauses: Seq[Clause], onlyAllowReturnIfAddedInRewriter: Boolean): Boolean = {

@@ -129,7 +129,8 @@ case class FabricFrontEnd(
       extractLiterals = cypherConfig.extractLiterals,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params, cypherConfig.useParameterSizeHint),
       resolveSimpleDynamicExpressions = cypherConfig.resolveSimpleDynamicExpressions,
-      enabledVirtualGraph = cypherConfig.useVirtualGraph
+      enabledVirtualGraph = cypherConfig.useVirtualGraph,
+      isFabricPipeline = true
     )
 
     private val context: BaseContext = BaseContextImpl(
