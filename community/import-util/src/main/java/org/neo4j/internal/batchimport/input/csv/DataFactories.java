@@ -538,6 +538,16 @@ public class DataFactories {
         }
 
         @Override
+        public Header create(
+                CharSeeker dataSeeker, Configuration config, IdType idType, Groups groups, Monitor monitor) {
+            // Per-header state: idIndex is derived from column ordinal within this file, so reset before
+            // each file. Otherwise stale indexes make getSpecificIdType(...) return null and the extractor
+            // falls back to the global id-type instead of inheriting the id space's declared type.
+            relIdGroupTypes.clear();
+            return super.create(dataSeeker, config, idType, groups, monitor);
+        }
+
+        @Override
         public Entry createSpecific(
                 String sourceDescription,
                 int entryIndex,

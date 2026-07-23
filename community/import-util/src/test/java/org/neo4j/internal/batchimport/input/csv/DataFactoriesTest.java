@@ -498,6 +498,47 @@ class DataFactoriesTest {
     }
 
     @Test
+    void relationshipShouldInheritNodeIdTypeRegardlessOfColumnPositionAcrossFiles() throws Exception {
+        // GIVEN a node header declaring the id space's id-type ...
+        var extractors = new Extractors();
+        try (var seeker = seeker("id:ID(MyGroup){id-type:long}")) {
+            defaultFormatNodeFileHeader().create(seeker, COMMAS, IdType.STRING, groups);
+        }
+        var group = groups.get("MyGroup");
+
+        // ... and a single relationship header factory reused across multiple relationship files,
+        // exactly as CsvInput does for a whole relationship input.
+        var relationshipHeaderFactory = defaultFormatRelationshipFileHeader();
+
+        // WHEN the first relationship file has :START_ID/:END_ID at columns 0 and 1
+        try (var seeker = seeker(":START_ID(MyGroup),:END_ID(MyGroup),type:TYPE")) {
+            var header = relationshipHeaderFactory.create(seeker, COMMAS, IdType.STRING, groups);
+
+            // THEN the id columns inherit the node-declared long id-type (not the global STRING default)
+            assertThat(header.entries())
+                    .containsExactly(array(
+                            entry(null, Type.START_ID, group, extractors.long_()),
+                            entry(null, Type.END_ID, group, extractors.long_()),
+                            entry("type", Type.TYPE, extractors.string())));
+        }
+
+        // WHEN a subsequent relationship file (parsed by the SAME factory) places :START_ID/:END_ID at
+        // different column positions
+        try (var seeker = seeker("type:TYPE,:START_ID(MyGroup),:END_ID(MyGroup)")) {
+            var header = relationshipHeaderFactory.create(seeker, COMMAS, IdType.STRING, groups);
+
+            // THEN the id columns still inherit the node-declared long id-type. Before the fix, the shifted
+            // column positions caused getSpecificIdType(...) to return null and the extractor to fall back to
+            // the global STRING default, mismatching the id space's long encoder.
+            assertThat(header.entries())
+                    .containsExactly(array(
+                            entry("type", Type.TYPE, extractors.string()),
+                            entry(null, Type.START_ID, group, extractors.long_()),
+                            entry(null, Type.END_ID, group, extractors.long_())));
+        }
+    }
+
+    @Test
     void shouldParsePropertyHeaderWithColonInName() {
         // GIVEN
         var seeker = seeker("uri:ID,http://example.com/property/name:string[]");
