@@ -299,8 +299,8 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
     }
 
     @Override
-    public void setRequestLog(RequestLog requestLog) {
-        this.requestLog = requestLog;
+    public void setRequestLog(WebServerRequestLog requestLog) {
+        this.requestLog = new JettyWebServerServerLogAdapter(requestLog);
     }
 
     public Server getJetty() {

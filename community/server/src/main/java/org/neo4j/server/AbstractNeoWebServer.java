@@ -77,7 +77,7 @@ import org.neo4j.server.queryapi.driver.LocalChannelDriverFactory;
 import org.neo4j.server.queryapi.driver.QueryApiBoltConnectionProviderFactory;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
 import org.neo4j.server.rest.repr.RepresentationBasedMessageBodyWriter;
-import org.neo4j.server.web.RotatingRequestLog;
+import org.neo4j.server.web.RotatingWebServerRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.ssl.SslPolicy;
@@ -131,7 +131,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     protected final SystemNanoClock clock;
 
     protected ConnectorPortRegister connectorPortRegister;
-    private RotatingRequestLog requestLog;
+    private RotatingWebServerRequestLog requestLog;
     private LocalChannelDriverFactory driverFactory;
 
     protected abstract Iterable<ServerModule> createServerModules();
@@ -387,7 +387,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         }
 
         LogService logService = globalDependencies.resolveDependency(LogService.class);
-        requestLog = new RotatingRequestLog(logService.getInternalLogProvider());
+        requestLog = new RotatingWebServerRequestLog(logService.getInternalLogProvider());
         webServer.setRequestLog(requestLog);
     }
 

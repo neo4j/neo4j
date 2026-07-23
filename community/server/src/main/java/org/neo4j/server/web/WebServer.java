@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import javax.servlet.Filter;
-import org.eclipse.jetty.server.RequestLog;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.ssl.SslPolicy;
@@ -36,7 +35,7 @@ public interface WebServer {
 
     void setSslPolicy(SslPolicy sslPolicy);
 
-    void setRequestLog(RequestLog requestLog);
+    void setRequestLog(WebServerRequestLog requestLog);
 
     void setMaxThreads(int maxThreads);
 
