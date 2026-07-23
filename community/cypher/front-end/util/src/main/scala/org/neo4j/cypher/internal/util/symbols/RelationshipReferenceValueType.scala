@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
+import org.neo4j.cypher.internal.util.AssertionRunner.ASSERTIONS_ENABLED
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class RelationshipReferenceValueType(
@@ -26,6 +27,19 @@ case class RelationshipReferenceValueType(
   destination: NodeReferenceValueType,
   override val isNullable: Boolean
 )(val position: InputPosition) extends AbstractRecordType {
+
+  if (ASSERTIONS_ENABLED && !source.isNullable) {
+    throw new AssertionError(
+      s"The source of a RelationshipReferenceValueType cannot be null, but they are not in ${this.description}"
+    )
+  }
+
+  if (ASSERTIONS_ENABLED && !destination.isNullable) {
+    throw new AssertionError(
+      s"The destination of a RelationshipReferenceValueType cannot be null, but they are not in ${this.description}"
+    )
+  }
+
   val isOpen: Boolean = isFieldOpen
 
   override def parentType: CypherType = ???
@@ -43,7 +57,7 @@ case class RelationshipReferenceValueType(
 
   override def toCypherTypeString: String = {
     val semantics = if (isOpen) "ANY " else ""
-    val labelString = label.map(l => s"$l ").getOrElse("")
+    val labelString = label.map(l => s":$l ").getOrElse("")
     val propertiesString = toFieldTypesString
     val sourceString = source.toCypherTypeString
     val destinationString = destination.toCypherTypeString
@@ -63,6 +77,8 @@ object RelationshipReferenceValueType {
     destination: NodeReferenceValueType,
     isNullable: Boolean
   )(position: InputPosition): RelationshipReferenceValueType = {
+    assert(!source.isNullable)
+    assert(!destination.isNullable)
     val defaultFieldType = if (isFieldOpen) AnyType(isNullable = true)(position) else NothingType()(position)
     RelationshipReferenceValueType(label, fields, defaultFieldType, source, destination, isNullable)(position)
   }
@@ -86,8 +102,8 @@ object RelationshipReferenceValueType {
           label,
           fields,
           AnyType(true),
-          NodeReferenceValueType.Any(true),
-          NodeReferenceValueType.Any(true),
+          NodeReferenceValueType.Any(false),
+          NodeReferenceValueType.Any(false),
           isNullable
         ) if label.isEmpty && fields.isEmpty => Some(isNullable)
       case _ => None

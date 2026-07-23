@@ -124,6 +124,11 @@ trait CypherType extends ASTNode {
   def toCypherTypeString: String
 
   def toClassString: String
+
+  inline def isNothing: Boolean = this match {
+    case _: NothingType => true
+    case _              => false
+  }
 }
 
 object CypherType {

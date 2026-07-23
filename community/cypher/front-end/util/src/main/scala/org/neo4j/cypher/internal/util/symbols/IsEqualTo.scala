@@ -41,6 +41,9 @@ object IsEqualTo {
     // legacy relationship type
     case (RelationshipType(aNullable), RelationshipReferenceValueType.Any(bNullable)) => true
 
+    // normalized dynamic union
+    case (a, b) if CypherType.normalizeTypes(a) == CypherType.normalizeTypes(b) => true
+
     // default
     case _ => false
   }

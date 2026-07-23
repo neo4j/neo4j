@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.util.symbols.CTLocalTime
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTNull
+import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -63,7 +64,7 @@ class IsEqualToTest extends CypherTypeTestSuite {
     CTFloat32,
     CTVector,
     CTString,
-    CTList(nullableAnyType),
+    CTList(CTAny),
     CTMap,
     rt("z" :: CTBoolean),
     CTPath,
@@ -102,8 +103,8 @@ class IsEqualToTest extends CypherTypeTestSuite {
       Option.empty,
       Map.empty,
       isFieldOpen = true,
-      NodeReferenceValueType(Set.empty, Map.empty, isFieldOpen = true, isNullable = true)(pos),
-      NodeReferenceValueType(Set.empty, Map.empty, isFieldOpen = true, isNullable = true)(pos),
+      NodeReferenceValueType(Set.empty, Map.empty, isFieldOpen = true, isNullable = false)(pos),
+      NodeReferenceValueType(Set.empty, Map.empty, isFieldOpen = true, isNullable = false)(pos),
       isNullable = true
     )(pos)
   )
@@ -118,6 +119,21 @@ class IsEqualToTest extends CypherTypeTestSuite {
       assertIsEqualToIgnoringNullability(lt.nullable, nt.notNull)
       assertIsEqualToIgnoringNullability(nt.notNull, lt.nullable)
       assertIsEqualToIgnoringNullability(nt.nullable, lt.notNull)
+    }
+  }
+
+  test("types should be equal to their normalized form") {
+    val ts = types union Set(
+      CTNumber | CTString,
+      CTInteger | CTFloat | CTInteger32,
+      CTDate,
+      CTBoolean.notNull,
+      l(CTNumber | CTString),
+      l(CTInteger | CTFloat | CTInteger32),
+      l(CTDate | CTBoolean.notNull)
+    )
+    for (t <- ts) {
+      assertIsEqualTo(t, CypherType.normalizeTypes(t))
     }
   }
 

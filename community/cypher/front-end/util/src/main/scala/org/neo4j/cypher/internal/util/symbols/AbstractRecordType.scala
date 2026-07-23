@@ -40,4 +40,9 @@ trait AbstractRecordType extends CypherType {
       }
     fieldStringsWithDefaults.mkString("{", ", ", "}")
   }
+
+  def fieldType(name: String): CypherType = fields.getOrElse(name, defaultFieldType)
+
+  // type only contains the empty record
+  def onlyEmpty: Boolean = fields.isEmpty && defaultFieldType.isNothing
 }

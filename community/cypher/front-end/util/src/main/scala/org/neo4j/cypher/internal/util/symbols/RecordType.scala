@@ -39,6 +39,9 @@ case class RecordType(
     (if (isFieldOpen) "ANY " else "") + toFieldTypesString
 
   override def toClassString: String = "Record"
+
+  // type only contains the empty record
+  override def onlyEmpty: Boolean = super.onlyEmpty && !isBaseTypeOpen
 }
 
 object RecordType {

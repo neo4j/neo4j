@@ -40,7 +40,7 @@ case class NodeReferenceValueType(
 
   override def toCypherTypeString: String = {
     val semantics = if (isOpen) "ANY " else ""
-    val labelsString = if (labels.isEmpty) " " else labels.mkString(":", "&", " ")
+    val labelsString = if (labels.isEmpty) "" else labels.mkString(":", "&", " ")
     val propertiesString = toFieldTypesString
     s"${semantics}NODE ($labelsString$propertiesString)"
   }
