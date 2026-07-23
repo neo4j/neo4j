@@ -186,8 +186,6 @@ class ImportCommandTest {
                 ctx,
                 "--nodes",
                 nodeData(true, COMMAS, nodeIds, TRUE).toAbsolutePath().toString(),
-                "--high-parallel-io",
-                "off",
                 "--relationships",
                 relationshipData(true, COMMAS, nodeIds, TRUE, true)
                         .toAbsolutePath()
@@ -212,8 +210,6 @@ class ImportCommandTest {
                         db.databaseName(),
                         "--nodes",
                         nodeData(true, COMMAS, nodeIds, TRUE).toAbsolutePath().toString(),
-                        "--high-parallel-io",
-                        "off",
                         "--relationships",
                         relationshipData(true, COMMAS, nodeIds, TRUE, true)
                                 .toAbsolutePath()
@@ -236,8 +232,6 @@ class ImportCommandTest {
                         dbName,
                         "--nodes",
                         nodeData(true, config, nodeIds, TRUE).toAbsolutePath().toString(),
-                        "--high-parallel-io",
-                        "off",
                         "--relationships",
                         relationshipData(true, config, nodeIds, TRUE, true)
                                 .toAbsolutePath()
