@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.notification.InternalNotifications
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.DiffPrinter
 import org.reflections.Reflections
 import org.reflections.scanners.Scanners
@@ -28,7 +29,7 @@ import org.reflections.util.ConfigurationBuilder
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class InternalNotificationTest extends CypherPlannerTestSuite {
+class InternalNotificationTest extends CypherFunSuite {
 
   private val reflections = new Reflections(new ConfigurationBuilder()
     .forPackages("org.neo4j")

@@ -185,11 +185,6 @@
     </dependency>
     <dependency>
       <groupId>com.lihaoyi</groupId>
-      <artifactId>fansi_${scala.binary.version}</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.lihaoyi</groupId>
       <artifactId>pprint_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
@@ -269,11 +264,6 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-test-util</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.reflections</groupId>
-      <artifactId>reflections</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
