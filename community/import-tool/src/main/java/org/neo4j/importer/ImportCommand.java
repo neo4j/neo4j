@@ -727,6 +727,10 @@ public class ImportCommand {
             return multilineFieldOptions;
         }
 
+        long bufferSize() {
+            return bufferSize;
+        }
+
         /**
          * @param resolvedDbFormat the format that is either specified in the command line or resolved from the database config
          */
@@ -791,6 +795,10 @@ public class ImportCommand {
                                     .formatted(resolvedDbFormat));
                 }
                 validateSkidbladnirMultilineFields();
+                if (!spec.commandLine().getParseResult().hasMatchedOption("--read-buffer-size")) {
+                    // Default is different for Skidbladnir
+                    bufferSize = org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR;
+                }
             }
         }
 
@@ -1049,20 +1057,8 @@ public class ImportCommand {
                     .withQuotationCharacter(quote)
                     .withEmptyQuotedStringsAsNull(ignoreEmptyStrings)
                     .withTrimStrings(trimStrings)
-                    .withLegacyStyleQuoting(legacyStyleQuoting);
-
-            if (bufferSize == DEFAULT_CSV_CONFIG.bufferSize()) {
-                // Use default value
-                if (skidbladnir) {
-                    builder.withBufferSize(
-                            org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR);
-                } else {
-                    builder.withBufferSize(DEFAULT_CSV_CONFIG.bufferSize());
-                }
-            } else {
-                // Use provided value
-                builder.withBufferSize(toIntExact(bufferSize));
-            }
+                    .withLegacyStyleQuoting(legacyStyleQuoting)
+                    .withBufferSize(toIntExact(bufferSize));
 
             if (multilineFieldOptions != null) {
                 final var multilineFields = multilineFieldOptions.multilineFields;

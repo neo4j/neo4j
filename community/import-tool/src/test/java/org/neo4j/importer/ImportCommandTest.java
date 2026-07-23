@@ -71,7 +71,7 @@ class ImportCommandTest {
     @Test
     void readBufferSizeDefaultShouldBeSet() {
         // We want "--help" to print the default value that is applied when we don't use
-        // "--skidbladnir", for now. This will have to be changed later.
+        // "--skidbladnir".
         final var command = new ImportCommand.Full(getExecutionContext());
         final var help = getUsageHelp(command);
         Object readBufferSizeDefault =
@@ -293,6 +293,20 @@ class ImportCommandTest {
 
         // then - should not throw
         command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+    }
+
+    @Test
+    void bufferSizeDefaultIsOverwrittenForSkidbladnir() {
+        var nodes = testDir.createFile("nodes.csv");
+        var command = new ImportCommand.Full(getExecutionContext());
+
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
+
+        // when
+        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        // then
+        assertThat(command.bufferSize())
+                .isEqualTo(org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR);
     }
 
     private void assertIdTypeAliases(List<String> requiredArgs, List<String> aliases, IdType idType) {
