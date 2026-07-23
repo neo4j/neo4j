@@ -24,7 +24,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.Provider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.server.queryapi.QueryMimeTypes;
-import org.neo4j.server.queryapi.response.format.View;
+import org.neo4j.server.queryapi.types.View;
 
 @Provider
 @Produces(QueryMimeTypes.TYPED_JSONL_V1x1)

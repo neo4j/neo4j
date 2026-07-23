@@ -22,7 +22,7 @@ package org.neo4j.server.queryapi.response.writer;
 import javax.ws.rs.Produces;
 import javax.ws.rs.ext.Provider;
 import org.neo4j.server.queryapi.QueryMimeTypes;
-import org.neo4j.server.queryapi.response.format.View;
+import org.neo4j.server.queryapi.types.View;
 
 @Provider
 @Produces({QueryMimeTypes.TYPED_JSONL_V1x0})

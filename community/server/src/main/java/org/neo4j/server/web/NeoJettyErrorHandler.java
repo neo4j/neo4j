@@ -31,7 +31,7 @@ import org.eclipse.jetty.ee8.servlet.ErrorPageErrorHandler;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.queryapi.response.format.QueryAPICodec;
-import org.neo4j.server.queryapi.response.format.View;
+import org.neo4j.server.queryapi.types.View;
 
 public class NeoJettyErrorHandler extends ErrorPageErrorHandler {
 

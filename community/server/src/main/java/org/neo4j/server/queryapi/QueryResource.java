@@ -141,7 +141,8 @@ public class QueryResource {
         if (request.accessMode() != null && request.accessMode().equals(AccessMode.READ)) {
             monitor.readRequest();
         }
-        if (request.parameters() != null && !request.parameters().isEmpty()) {
+        if (request.maybeParameters().isPresent()
+                && !request.maybeParameters().get().isEmpty()) {
             monitor.parameter();
         }
     }

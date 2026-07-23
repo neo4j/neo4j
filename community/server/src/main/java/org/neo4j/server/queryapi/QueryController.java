@@ -90,7 +90,8 @@ public class QueryController {
         var txConfig = buildTxConfig(request);
         try {
             var timers = QueryResponseTimers.start();
-            var result = session.run(request.statement(), request.parametersOrSupplied(Map::of), txConfig);
+            var result =
+                    session.run(request.statement(), request.maybeParameters().orElseGet(Map::of), txConfig);
             timers.notifyResultAvailable();
             var resultContainer = new QueryResponseAutoCommit(result, session, timers, request.includeCounters());
             return Response.accepted(resultContainer).build();
@@ -179,7 +180,8 @@ public class QueryController {
         try {
             if (request.statement() != null && !request.statement().isEmpty()) {
                 var timers = QueryResponseTimers.start();
-                var result = transaction.run(request.statement(), request.parameters());
+                var result = transaction.run(
+                        request.statement(), request.maybeParameters().orElseGet(Map::of));
                 timers.notifyResultAvailable();
                 txCleanUpAction = TxHandling.KEEP_OPEN;
                 return successWithResultResponse(
@@ -241,9 +243,7 @@ public class QueryController {
         if (request.maxExecutionTime() > 0) {
             txConfigBuilder.withTimeout(Duration.ofSeconds(request.maxExecutionTime()));
         }
-        if (request.txMetadata() != null) {
-            txConfigBuilder.withMetadata(request.txMetadata());
-        }
+        request.maybeTxMetadata().ifPresent(txConfigBuilder::withMetadata);
         return txConfigBuilder.build();
     }
 

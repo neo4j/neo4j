@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request;
+package org.neo4j.server.queryapi.request.common;
 
 import static java.lang.String.format;
 
@@ -29,20 +29,40 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Function;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.Values;
+import org.neo4j.server.queryapi.exception.ExceptionsUnwrapper;
 import org.neo4j.server.queryapi.exception.QueryApiException;
+import org.neo4j.server.queryapi.request.QueryRequestCypherValue;
+import org.neo4j.server.queryapi.request.QueryRequestCypherValues;
 
-public class ParameterDeserializer extends StdDeserializer<Map<String, Object>> {
+/**
+ * Common implementation of the {@link QueryRequestCypherValues} deserializer.
+ * <p/>
+ * This holds algorithm for reading keys and values from the JSON object independent of the
+ * {@link org.neo4j.server.queryapi.QueryMimeTypes} used while allowing the specific type implementation
+ * to be supplied on the constructor.
+ *
+ * @param <T> The sub implementation of {@link QueryRequestCypherValue} used in the context.
+ */
+public abstract class QueryRequestCypherValuesDeserializer<T extends QueryRequestCypherValue>
+        extends StdDeserializer<QueryRequestCypherValues> {
 
-    public ParameterDeserializer() {
-        super(TypeFactory.defaultInstance().constructMapType(Map.class, String.class, Object.class));
+    private final Function<Value, QueryRequestCypherValue> driverToQueryValue;
+    private final Class<T> queryRequestCypherValueClass;
+
+    protected QueryRequestCypherValuesDeserializer(
+            Function<Value, QueryRequestCypherValue> driverToQueryValue, Class<T> queryRequestCypherValueClass) {
+        super(TypeFactory.defaultInstance().constructType(QueryRequestCypherValues.class));
+
+        this.driverToQueryValue = driverToQueryValue;
+        this.queryRequestCypherValueClass = queryRequestCypherValueClass;
     }
 
     @Override
-    public Map<String, Object> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        var map = new HashMap<String, Object>();
+    public QueryRequestCypherValues deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+        var map = new HashMap<String, QueryRequestCypherValue>();
 
         var t = p.currentToken();
         if (t != JsonToken.START_OBJECT && t != JsonToken.FIELD_NAME) {
@@ -55,10 +75,10 @@ public class ParameterDeserializer extends StdDeserializer<Map<String, Object>> 
         } else {
             var token = p.currentToken();
             if (token == JsonToken.END_OBJECT) {
-                return map;
+                return QueryRequestCypherValues.of(map);
             }
             if (token != JsonToken.FIELD_NAME) {
-                ctxt.reportWrongTokenException(this, JsonToken.FIELD_NAME, null);
+                ctx.reportWrongTokenException(this, JsonToken.FIELD_NAME, null);
             }
             keyString = p.currentName();
         }
@@ -67,18 +87,19 @@ public class ParameterDeserializer extends StdDeserializer<Map<String, Object>> 
             JsonToken nextToken = p.nextToken();
             try {
                 if (nextToken == JsonToken.VALUE_NULL) {
-                    map.put(keyString, NullValue.NULL);
+                    map.put(keyString, driverToQueryValue.apply(Values.NULL));
                     continue;
                 }
-                var value = p.readValueAs(Value.class);
+                var value = p.readValueAs(queryRequestCypherValueClass);
                 map.put(keyString, value);
             } catch (QueryApiException e) {
                 throw e;
             } catch (Exception e) {
+                ExceptionsUnwrapper.unwrapAndThrowNeo4jAndQueryApiExceptions(e);
                 throw new JsonParseException(format("Unable to read value for field %s", keyString));
             }
         }
 
-        return map;
+        return QueryRequestCypherValues.of(map);
     }
 }

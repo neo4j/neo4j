@@ -107,7 +107,8 @@ public final class QueryResponseAssertions
     }
 
     public QueryResponseAssertions hasErrorStatus(int httpCode, Status status, String message) {
-        return hasErrorStatus(httpCode, status, actual -> Objects.equals(actual, message));
+        return hasErrorStatus(
+                httpCode, status, actual -> Assertions.assertThat(message).isEqualTo(actual));
     }
 
     public QueryResponseAssertions hasErrorStatus(int httpCode, Status status, Consumer<String> messageRequirements) {

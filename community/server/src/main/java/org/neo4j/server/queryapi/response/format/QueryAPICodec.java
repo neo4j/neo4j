@@ -21,6 +21,7 @@ package org.neo4j.server.queryapi.response.format;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.neo4j.driver.types.TypeSystem;
+import org.neo4j.server.queryapi.types.View;
 
 public class QueryAPICodec extends ObjectMapper {
 

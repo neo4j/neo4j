@@ -34,7 +34,7 @@ import javax.ws.rs.ext.Provider;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.queryapi.QueryMimeTypes;
 import org.neo4j.server.queryapi.response.format.QueryAPICodec;
-import org.neo4j.server.queryapi.response.format.View;
+import org.neo4j.server.queryapi.types.View;
 
 @Provider
 @Produces(QueryMimeTypes.ALL_JSON)

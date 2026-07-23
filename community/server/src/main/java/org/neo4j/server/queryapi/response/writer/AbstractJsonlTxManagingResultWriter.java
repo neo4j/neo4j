@@ -35,8 +35,8 @@ import org.neo4j.server.queryapi.exception.ExceptionsUnwrapper;
 import org.neo4j.server.queryapi.response.QueryResponseTxManaged;
 import org.neo4j.server.queryapi.response.format.QueryAPICodec;
 import org.neo4j.server.queryapi.response.format.QueryBodyFormatter;
-import org.neo4j.server.queryapi.response.format.View;
 import org.neo4j.server.queryapi.tx.TransactionManager;
+import org.neo4j.server.queryapi.types.View;
 
 abstract class AbstractJsonlTxManagingResultWriter implements MessageBodyWriter<QueryResponseTxManaged> {
 

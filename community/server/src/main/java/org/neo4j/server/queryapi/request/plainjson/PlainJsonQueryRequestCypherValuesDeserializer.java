@@ -17,19 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request.typed;
+package org.neo4j.server.queryapi.request.plainjson;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.ext.Provider;
-import org.neo4j.server.queryapi.QueryMimeTypes;
-import org.neo4j.server.queryapi.request.DefaultRequestModule;
-import org.neo4j.server.queryapi.response.format.View;
+import org.neo4j.server.queryapi.request.common.QueryRequestCypherValuesDeserializer;
 
-@Provider
-@Consumes({QueryMimeTypes.TYPED_JSON_V1x1})
-public class TypedJsonMessageBodyReaderV1x1 extends AbstractTypedJsonMessageBodyReader {
+public class PlainJsonQueryRequestCypherValuesDeserializer
+        extends QueryRequestCypherValuesDeserializer<PlainJsonQueryRequestCypherValue> {
 
-    public TypedJsonMessageBodyReaderV1x1() {
-        super(new DefaultRequestModule(View.TYPED_JSON_V1x1));
+    public PlainJsonQueryRequestCypherValuesDeserializer() {
+        super(PlainJsonQueryRequestCypherValue::ofValue, PlainJsonQueryRequestCypherValue.class);
     }
 }

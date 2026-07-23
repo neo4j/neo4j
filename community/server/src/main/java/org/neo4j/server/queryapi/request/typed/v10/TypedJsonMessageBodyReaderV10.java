@@ -17,19 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request.typed;
+package org.neo4j.server.queryapi.request.typed.v10;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.ext.Provider;
 import org.neo4j.server.queryapi.QueryMimeTypes;
-import org.neo4j.server.queryapi.request.DefaultRequestModule;
-import org.neo4j.server.queryapi.response.format.View;
+import org.neo4j.server.queryapi.request.typed.common.AbstractTypedJsonMessageBodyReader;
+import org.neo4j.server.queryapi.request.typed.common.TypedJsonRequestModule;
+import org.neo4j.server.queryapi.types.View;
 
 @Provider
 @Consumes({QueryMimeTypes.TYPED_JSON, QueryMimeTypes.TYPED_JSON_V1x0})
-public class TypedJsonMessageBodyReaderV1x0 extends AbstractTypedJsonMessageBodyReader {
+public class TypedJsonMessageBodyReaderV10 extends AbstractTypedJsonMessageBodyReader {
 
-    public TypedJsonMessageBodyReaderV1x0() {
-        super(new DefaultRequestModule(View.TYPED_JSON));
+    public TypedJsonMessageBodyReaderV10() {
+        super(new TypedJsonRequestModule(View.TYPED_JSON));
     }
 }

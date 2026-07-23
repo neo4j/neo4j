@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.response.format;
+package org.neo4j.server.queryapi.types;
 
 import java.util.Arrays;
 import java.util.List;
-import org.neo4j.server.queryapi.types.CypherTypes;
+import org.neo4j.server.queryapi.response.format.Fieldnames;
 
 public enum View {
     PLAIN_JSON,
     TYPED_JSON(true, CypherTypes.Unsupported, CypherTypes.Vector, CypherTypes.UUID),
-    TYPED_JSON_V1x1(true, CypherTypes.UUID),
-    TYPED_JSON_V1x2(true);
+    TYPED_JSON_V11(true, CypherTypes.UUID),
+    TYPED_JSON_V12(true);
 
     private final List<CypherTypes> unsupportedTypes;
     private final boolean typed;

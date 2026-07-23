@@ -32,7 +32,7 @@ import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.queryapi.response.QueryResponseBookmarks;
 import org.neo4j.server.queryapi.response.format.QueryAPICodec;
 import org.neo4j.server.queryapi.response.format.QueryBodyFormatter;
-import org.neo4j.server.queryapi.response.format.View;
+import org.neo4j.server.queryapi.types.View;
 
 abstract class AbstractBookmarkWriter implements MessageBodyWriter<QueryResponseBookmarks> {
 

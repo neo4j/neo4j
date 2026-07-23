@@ -25,10 +25,10 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.queryapi.QueryResource;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsFilter;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
-import org.neo4j.server.queryapi.request.JsonMessageBodyReader;
-import org.neo4j.server.queryapi.request.typed.TypedJsonMessageBodyReaderV1x0;
-import org.neo4j.server.queryapi.request.typed.TypedJsonMessageBodyReaderV1x1;
-import org.neo4j.server.queryapi.request.typed.TypedJsonMessageBodyReaderV1x2;
+import org.neo4j.server.queryapi.request.plainjson.PlainJsonMessageBodyReader;
+import org.neo4j.server.queryapi.request.typed.v10.TypedJsonMessageBodyReaderV10;
+import org.neo4j.server.queryapi.request.typed.v11.TypedJsonMessageBodyReaderV11;
+import org.neo4j.server.queryapi.request.typed.v12.TypedJsonMessageBodyReaderV12;
 import org.neo4j.server.queryapi.response.error.ErrorResponseWriter;
 import org.neo4j.server.queryapi.response.error.InternalServerExceptionMapper;
 import org.neo4j.server.queryapi.response.error.JsonlErrorResponseWriter;
@@ -112,10 +112,10 @@ public class QueryModule implements ServerModule {
                 TypedJsonTxInfoWriter.class,
                 TypedJsonBookmarkWriter.class,
                 PlainJsonBookmarkWriter.class,
-                JsonMessageBodyReader.class,
-                TypedJsonMessageBodyReaderV1x0.class,
-                TypedJsonMessageBodyReaderV1x1.class,
-                TypedJsonMessageBodyReaderV1x2.class,
+                PlainJsonMessageBodyReader.class,
+                TypedJsonMessageBodyReaderV10.class,
+                TypedJsonMessageBodyReaderV11.class,
+                TypedJsonMessageBodyReaderV12.class,
                 Neo4jExceptionMapper.class,
                 QueryApiExceptionMapper.class,
                 WebApplicationExceptionMapper.class,

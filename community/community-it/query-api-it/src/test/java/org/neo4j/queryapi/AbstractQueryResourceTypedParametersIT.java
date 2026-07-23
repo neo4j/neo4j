@@ -83,11 +83,31 @@ abstract class AbstractQueryResourceTypedParametersIT {
 
     @ParameterizedTest
     @MethodSource("paramTypes")
-    void shouldHandleParameters(String typeString, Object value) throws IOException, InterruptedException {
+    void shouldHandleParametersTypeFirst(String typeString, Object value) throws IOException, InterruptedException {
         var response = testClient.sendRaw(format(
                 "{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": {\"$type\":\"%s\",\"_value\": \"%s\"}}}}}",
                 typeString, value));
+
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(contentType())
+                .wasSuccessful();
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE).asText())
+                .isEqualTo(value.toString());
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).asText())
+                .isEqualTo(typeString);
+    }
+
+    @ParameterizedTest
+    @MethodSource("paramTypes")
+    void shouldHandleParametersValueFirst(String typeString, Object value) throws IOException, InterruptedException {
+        var response = testClient.sendRaw(format(
+                "{\"statement\": \"RETURN $parameter\","
+                        + "\"parameters\": {\"parameter\": {\"_value\": \"%s\", \"$type\":\"%s\"}}}}}",
+                value, typeString));
 
         QueryResponseAssertions.assertThat(response)
                 .hasContentType(contentType())

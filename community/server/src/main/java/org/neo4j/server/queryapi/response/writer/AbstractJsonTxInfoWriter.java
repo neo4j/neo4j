@@ -32,7 +32,7 @@ import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.queryapi.response.QueryResponseTxInfo;
 import org.neo4j.server.queryapi.response.format.QueryAPICodec;
 import org.neo4j.server.queryapi.response.format.QueryBodyFormatter;
-import org.neo4j.server.queryapi.response.format.View;
+import org.neo4j.server.queryapi.types.View;
 
 abstract class AbstractJsonTxInfoWriter implements MessageBodyWriter<QueryResponseTxInfo> {
     private final JsonFactory factory;

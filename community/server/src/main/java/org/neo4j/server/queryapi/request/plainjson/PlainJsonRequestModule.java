@@ -17,22 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request;
+package org.neo4j.server.queryapi.request.plainjson;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import java.util.Map;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.value.ListValue;
-import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.internal.value.VectorValue;
-import org.neo4j.server.queryapi.response.format.View;
+import org.neo4j.server.queryapi.request.QueryRequestCypherValues;
 
-public class DefaultRequestModule extends SimpleModule {
-    public DefaultRequestModule(View view) {
-        this.addDeserializer(Map.class, new ParameterDeserializer());
-        this.addDeserializer(Value.class, new ValueDeserializer(view));
-        this.addDeserializer(VectorValue.class, new VectorValueDeserializer());
-        this.addDeserializer(ListValue.class, new ListValueDeserializer());
-        this.addDeserializer(MapValue.class, new MapValueDeserializer());
+/**
+ * The JSON module implementation for {@link org.neo4j.server.queryapi.QueryMimeTypes#PLAIN_JSON}
+ */
+public class PlainJsonRequestModule extends SimpleModule {
+    public PlainJsonRequestModule() {
+        this.addDeserializer(QueryRequestCypherValues.class, new PlainJsonQueryRequestCypherValuesDeserializer());
+        this.addDeserializer(
+                PlainJsonQueryRequestCypherValue.class, new PlainJsonQueryRequestCypherValueDeserializer());
     }
 }

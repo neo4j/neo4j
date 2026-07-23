@@ -24,14 +24,14 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.Provider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.server.queryapi.QueryMimeTypes;
-import org.neo4j.server.queryapi.response.format.View;
 import org.neo4j.server.queryapi.tx.TransactionManager;
+import org.neo4j.server.queryapi.types.View;
 
 @Provider
 @Produces({QueryMimeTypes.TYPED_JSONL_V1x2})
 public class TypedJsonlTxManagingResultWriterV12 extends AbstractJsonlTxManagingResultWriter {
     public TypedJsonlTxManagingResultWriterV12(
             @Context InternalLog logger, @Context TransactionManager transactionManager) {
-        super(logger, View.TYPED_JSON_V1x2, transactionManager);
+        super(logger, View.TYPED_JSON_V12, transactionManager);
     }
 }

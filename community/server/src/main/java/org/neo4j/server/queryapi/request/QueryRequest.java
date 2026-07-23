@@ -21,32 +21,36 @@ package org.neo4j.server.queryapi.request;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.Optional;
 
 public record QueryRequest(
         String statement,
-        Map<String, Object> parameters,
+        QueryRequestCypherValues parameters,
         boolean includeCounters,
         AccessMode accessMode,
         int maxExecutionTime,
         List<String> bookmarks,
         String impersonatedUser,
         String txType,
-        Map<String, Object> txMetadata) {
+        QueryRequestCypherValues txMetadata) {
 
     public QueryRequest(String statement, List<String> bookmarks) {
-        this(statement, Map.of(), false, AccessMode.WRITE, 0, bookmarks, null, null, null);
+        this(statement, null, false, AccessMode.WRITE, 0, bookmarks, null, null, null);
     }
 
     public QueryRequest(String statement) {
-        this(statement, Map.of(), false, AccessMode.WRITE, 0, List.of(), null, null, null);
+        this(statement, null, false, AccessMode.WRITE, 0, List.of(), null, null, null);
     }
 
     public QueryRequest() {
-        this(null, Map.of(), false, AccessMode.WRITE, 0, List.of(), null, null, null);
+        this(null, null, false, AccessMode.WRITE, 0, List.of(), null, null, null);
     }
 
-    public Map<String, Object> parametersOrSupplied(Supplier<Map<String, Object>> parametersSupplier) {
-        return parameters != null ? parameters : parametersSupplier.get();
+    public Optional<Map<String, Object>> maybeParameters() {
+        return Optional.ofNullable(parameters).map(QueryRequestCypherValues::values);
+    }
+
+    public Optional<Map<String, Object>> maybeTxMetadata() {
+        return Optional.ofNullable(txMetadata).map(QueryRequestCypherValues::values);
     }
 }

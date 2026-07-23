@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.io.InputStream;
 import org.junit.jupiter.api.Test;
-import org.neo4j.server.queryapi.request.PeekedFirstByteInputStream;
+import org.neo4j.server.queryapi.request.common.PeekedFirstByteInputStream;
 
 public class PeekedFirstByteInputStreamTest {
 

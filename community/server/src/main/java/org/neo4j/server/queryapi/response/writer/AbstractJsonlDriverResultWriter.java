@@ -33,7 +33,7 @@ import org.neo4j.server.queryapi.exception.ExceptionsUnwrapper;
 import org.neo4j.server.queryapi.response.QueryResponseAutoCommit;
 import org.neo4j.server.queryapi.response.format.QueryAPICodec;
 import org.neo4j.server.queryapi.response.format.QueryBodyFormatter;
-import org.neo4j.server.queryapi.response.format.View;
+import org.neo4j.server.queryapi.types.View;
 
 abstract class AbstractJsonlDriverResultWriter implements MessageBodyWriter<QueryResponseAutoCommit> {
 

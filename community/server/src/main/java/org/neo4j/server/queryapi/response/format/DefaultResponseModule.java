@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.queryapi.response.format;
 
-import static org.neo4j.server.queryapi.response.format.View.elementId;
-import static org.neo4j.server.queryapi.response.format.View.endNodeElementId;
-import static org.neo4j.server.queryapi.response.format.View.labels;
-import static org.neo4j.server.queryapi.response.format.View.startNodeElementId;
-import static org.neo4j.server.queryapi.response.format.View.type;
+import static org.neo4j.server.queryapi.types.View.elementId;
+import static org.neo4j.server.queryapi.types.View.endNodeElementId;
+import static org.neo4j.server.queryapi.types.View.labels;
+import static org.neo4j.server.queryapi.types.View.startNodeElementId;
+import static org.neo4j.server.queryapi.types.View.type;
 
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -64,6 +64,7 @@ import org.neo4j.server.queryapi.exception.UnsupportedTypeException;
 import org.neo4j.server.queryapi.response.format.vector.VectorRenderFactory;
 import org.neo4j.server.queryapi.types.CypherTypes;
 import org.neo4j.server.queryapi.types.CypherVectorTypes;
+import org.neo4j.server.queryapi.types.View;
 import org.neo4j.values.storable.DurationValue;
 
 /**

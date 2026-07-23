@@ -17,26 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request;
+package org.neo4j.server.queryapi.request.typed.common.value;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import java.io.IOException;
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.Values;
 
-public class MapValueDeserializer extends StdDeserializer<MapValue> {
+@JsonTypeName(value = "Boolean")
+public class TypedJsonBooleanQueryRequestCypherValue extends TypedJsonQueryRequestCypherValue {
 
-    public MapValueDeserializer() {
-        super(MapValue.class);
+    protected TypedJsonBooleanQueryRequestCypherValue(Value value) {
+        super(value);
     }
 
-    @Override
-    public MapValue deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        Map<String, Value> map = p.readValueAs(new TypeReference<Map<String, Value>>() {});
-        return new MapValue(map);
+    @JsonCreator
+    public static TypedJsonBooleanQueryRequestCypherValue of(
+            @JsonProperty(value = "_value", required = true) String value, @JsonProperty("$type") String ignored) {
+        return new TypedJsonBooleanQueryRequestCypherValue(Values.value(Boolean.parseBoolean(value)));
     }
 }
