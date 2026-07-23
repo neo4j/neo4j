@@ -93,7 +93,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-runtime-util</artifactId>
+      <artifactId>neo4j-cypher-runtime-expressions</artifactId>
       <version>${project.version}</version>
     </dependency>
 

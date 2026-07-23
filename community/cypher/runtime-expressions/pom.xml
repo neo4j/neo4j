@@ -8,10 +8,11 @@
     <version>2026.08.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>neo4j-cypher-rendering</artifactId>
+  <artifactId>neo4j-cypher-runtime-expressions</artifactId>
   <packaging>jar</packaging>
-  <name>Neo4j - Cypher Rendering</name>
-  <description>Rendering of Cypher AST</description>
+  <name>Neo4j - Cypher Runtime Expressions</name>
+
+  <description>Cypher runtime expressions</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -21,12 +22,10 @@
   </scm>
 
   <properties>
-    <moduleName>org.neo4j.cypher.rendering</moduleName>
+    <moduleName>org.neo4j.cypher.internal.runtime.ast</moduleName>
   </properties>
 
   <dependencies>
-
-    <!-- neo4j -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ast</artifactId>
@@ -34,7 +33,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-runtime-expressions</artifactId>
+      <artifactId>neo4j-exceptions</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -44,15 +43,17 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-front-end</artifactId>
+      <artifactId>neo4j-util</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-util</artifactId>
+      <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
     </dependency>
+
     <!-- scala -->
+
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>

@@ -26,6 +26,7 @@
     <module>cypher-admin-runtime</module>
     <module>cypher-logical-plans</module>
     <module>front-end</module>
+    <module>runtime-expressions</module>
     <module>runtime-util</module>
     <module>runtime-util-test-util</module>
     <module>runtime-util-tests</module>

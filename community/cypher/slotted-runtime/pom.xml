@@ -87,6 +87,11 @@
       <artifactId>neo4j-cypher-planner-spi</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-runtime-expressions</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- neo4j-cypher test -->
 
