@@ -171,6 +171,8 @@ class CypherQueryObfuscatorFactory {
 
     override def nodeVectorIndexByName(indexName: String): Nothing = fail()
     override def relationshipVectorIndexByName(indexName: String): Nothing = fail()
+    override def nodeFulltextIndexByName(indexName: String): Nothing = fail()
+    override def relationshipFulltextIndexByName(indexName: String): Nothing = fail()
     override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Nothing = fail()
     override def getNodePropertiesWithExistenceConstraint(labelName: String): Nothing = fail()
 

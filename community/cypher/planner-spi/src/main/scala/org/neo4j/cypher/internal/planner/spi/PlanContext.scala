@@ -167,8 +167,14 @@ trait PlanContext extends ReadTokenContext with ScopedProcedureSignatureResolver
   /**
    * Gets a VECTOR index if it exists for a given name, without taking any schema locks.
    */
-  def nodeVectorIndexByName(indexName: String): Either[VectorIndexError, NodeVectorIndexDescriptor]
-  def relationshipVectorIndexByName(indexName: String): Either[VectorIndexError, RelationshipVectorIndexDescriptor]
+  def nodeVectorIndexByName(indexName: String): Either[IndexLookupError, NodeVectorIndexDescriptor]
+  def relationshipVectorIndexByName(indexName: String): Either[IndexLookupError, RelationshipVectorIndexDescriptor]
+
+  /**
+   * Gets a FULLTEXT index if it exists for a given name, without taking any schema locks.
+   */
+  def nodeFulltextIndexByName(indexName: String): Either[IndexLookupError, NodeFulltextIndexDescriptor]
+  def relationshipFulltextIndexByName(indexName: String): Either[IndexLookupError, RelationshipFulltextIndexDescriptor]
 
   def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 

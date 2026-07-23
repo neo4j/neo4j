@@ -19,28 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.planner.spi.VectorIndexError
+import org.neo4j.cypher.internal.planner.spi.IndexLookupError
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.VectorIndexSearchException
-import org.neo4j.graphdb.schema.IndexType
 
 import java.util.Locale
 
 case object VectorSearchExceptionHandler {
 
-  def handleErrors(indexDescriptorError: VectorIndexError, indexName: String, bindingVariableName: String) = {
+  def handleErrors(indexDescriptorError: IndexLookupError, indexName: String, bindingVariableName: String) = {
     indexDescriptorError match {
-      case VectorIndexError.NotFound =>
+      case IndexLookupError.NotFound =>
         throw VectorIndexSearchException.indexNotFound(indexName)
-      case VectorIndexError.Populating =>
+      case IndexLookupError.Populating =>
         throw VectorIndexSearchException.indexInPopulatingState(indexName)
-      case VectorIndexError.WrongIndexType(wrongIndexType) =>
+      case IndexLookupError.WrongIndexType(expectedIndexType, givenIndexType) =>
         throw InvalidArgumentException.wrongIndexType(
           indexName,
-          IndexType.VECTOR.name().toLowerCase(Locale.ROOT), // must be a VECTOR index
-          wrongIndexType.name().toLowerCase(Locale.ROOT) // the index type of the index name that was provided
+          expectedIndexType.name().toLowerCase(Locale.ROOT),
+          givenIndexType.name().toLowerCase(Locale.ROOT)
         )
-      case VectorIndexError.WrongEntityType(variableType, indexType) =>
+      case IndexLookupError.WrongEntityType(variableType, indexType) =>
         throw VectorIndexSearchException.wrongBindingVariableType(
           bindingVariableName,
           // the required type (for the binding variable) for the index name that was provided

@@ -101,6 +101,8 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.IndexLookupError
+import org.neo4j.cypher.internal.planner.spi.IndexLookupError.WrongEntityType
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
@@ -112,8 +114,6 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.RelationshipVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.VectorIndexError
-import org.neo4j.cypher.internal.planner.spi.VectorIndexError.WrongEntityType
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
@@ -392,7 +392,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
         case (indexDef: IndexDef, indexAttributes: IndexAttributes) => newIndexDescriptor(indexDef, indexAttributes)
       }.toIterator
 
-      override def nodeVectorIndexByName(indexName: String): Either[VectorIndexError, NodeVectorIndexDescriptor] =
+      override def nodeVectorIndexByName(indexName: String): Either[IndexLookupError, NodeVectorIndexDescriptor] =
         config.vectorIndexes.get(indexName) match {
           case Some(NodeVectorIndexDefinition(_, labels, property, additionalProperties)) =>
             Right(NodeVectorIndexDescriptor(
@@ -402,11 +402,11 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
             ))
           case Some(_) =>
             Left(WrongEntityType(EntityType.NODE, EntityType.RELATIONSHIP))
-          case None => Left(VectorIndexError.NotFound)
+          case None => Left(IndexLookupError.NotFound)
         }
 
       override def relationshipVectorIndexByName(indexName: String)
-        : Either[VectorIndexError, RelationshipVectorIndexDescriptor] =
+        : Either[IndexLookupError, RelationshipVectorIndexDescriptor] =
         config.vectorIndexes.get(indexName) match {
           case Some(RelationshipVectorIndexDefinition(_, relTypes, property, additionalProperties)) =>
             Right(RelationshipVectorIndexDescriptor(
@@ -416,7 +416,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
             ))
           case Some(_) =>
             Left(WrongEntityType(EntityType.RELATIONSHIP, EntityType.NODE))
-          case None => Left(VectorIndexError.NotFound)
+          case None => Left(IndexLookupError.NotFound)
         }
 
       override def procedureSignatureVersion: Long = -1

@@ -225,3 +225,17 @@ final case class RelationshipVectorIndexDescriptor(
   property: PropertyKeyId,
   additionalProperties: Seq[PropertyKeyId]
 ) extends VectorIndexDescriptor
+
+sealed trait FulltextIndexDescriptor {
+  def properties: Seq[PropertyKeyId]
+}
+
+final case class NodeFulltextIndexDescriptor(
+  labelIds: Seq[LabelId],
+  properties: Seq[PropertyKeyId]
+) extends FulltextIndexDescriptor
+
+final case class RelationshipFulltextIndexDescriptor(
+  relTypeIds: Seq[RelTypeId],
+  properties: Seq[PropertyKeyId]
+) extends FulltextIndexDescriptor

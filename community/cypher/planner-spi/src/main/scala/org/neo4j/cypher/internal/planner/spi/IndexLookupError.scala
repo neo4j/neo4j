@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.planner.spi
 import org.neo4j.common.EntityType
 import org.neo4j.internal.schema.IndexType
 
-sealed trait VectorIndexError
+sealed trait IndexLookupError
 
-object VectorIndexError {
-  case object NotFound extends VectorIndexError
-  case object Populating extends VectorIndexError
-  case class WrongEntityType(variableType: EntityType, indexType: EntityType) extends VectorIndexError
-  case class WrongIndexType(givenIndexType: IndexType) extends VectorIndexError
+object IndexLookupError {
+  case object NotFound extends IndexLookupError
+  case object Populating extends IndexLookupError
+  case class WrongEntityType(variableType: EntityType, indexType: EntityType) extends IndexLookupError
+  case class WrongIndexType(expectedIndexType: IndexType, givenIndexType: IndexType) extends IndexLookupError
 }

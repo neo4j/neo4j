@@ -26,12 +26,14 @@ import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexLookupError
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.NodeFulltextIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.NodeVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.RelationshipFulltextIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.RelationshipVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.VectorIndexError
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.ProcedureName
 import org.neo4j.internal.schema.EndpointType
@@ -62,10 +64,16 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def relationshipTokenIndex: Option[TokenIndexDescriptor] = ???
 
-  override def nodeVectorIndexByName(indexName: String): Either[VectorIndexError, NodeVectorIndexDescriptor] = ???
+  override def nodeVectorIndexByName(indexName: String): Either[IndexLookupError, NodeVectorIndexDescriptor] = ???
 
   override def relationshipVectorIndexByName(indexName: String)
-    : Either[VectorIndexError, RelationshipVectorIndexDescriptor] = ???
+    : Either[IndexLookupError, RelationshipVectorIndexDescriptor] = ???
+
+  override def nodeFulltextIndexByName(indexName: String): Either[IndexLookupError, NodeFulltextIndexDescriptor] =
+    ???
+
+  override def relationshipFulltextIndexByName(indexName: String)
+    : Either[IndexLookupError, RelationshipFulltextIndexDescriptor] = ???
 
   override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
 

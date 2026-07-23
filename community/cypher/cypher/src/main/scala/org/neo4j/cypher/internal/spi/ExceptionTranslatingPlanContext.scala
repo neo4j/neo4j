@@ -26,12 +26,14 @@ import org.neo4j.cypher.internal.macros.TranslateExceptionMacros3.translateExcep
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexLookupError
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.NodeFulltextIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.NodeVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.RelationshipFulltextIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.RelationshipVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.VectorIndexError
 import org.neo4j.cypher.internal.planning.ExceptionTranslationSupport
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.ProcedureName
@@ -141,12 +143,19 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def relationshipTokenIndex: Option[TokenIndexDescriptor] =
     translateException(tokenNameLookup, inner.relationshipTokenIndex)
 
-  override def nodeVectorIndexByName(indexName: String): Either[VectorIndexError, NodeVectorIndexDescriptor] =
+  override def nodeVectorIndexByName(indexName: String): Either[IndexLookupError, NodeVectorIndexDescriptor] =
     translateException(tokenNameLookup, inner.nodeVectorIndexByName(indexName))
 
   override def relationshipVectorIndexByName(indexName: String)
-    : Either[VectorIndexError, RelationshipVectorIndexDescriptor] =
+    : Either[IndexLookupError, RelationshipVectorIndexDescriptor] =
     translateException(tokenNameLookup, inner.relationshipVectorIndexByName(indexName))
+
+  override def nodeFulltextIndexByName(indexName: String): Either[IndexLookupError, NodeFulltextIndexDescriptor] =
+    translateException(tokenNameLookup, inner.nodeFulltextIndexByName(indexName))
+
+  override def relationshipFulltextIndexByName(indexName: String)
+    : Either[IndexLookupError, RelationshipFulltextIndexDescriptor] =
+    translateException(tokenNameLookup, inner.relationshipFulltextIndexByName(indexName))
 
   override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
     translateException(tokenNameLookup, inner.hasNodePropertyExistenceConstraint(labelName, propertyKey))

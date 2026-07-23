@@ -37,14 +37,16 @@ import org.neo4j.cypher.internal.planner.spi.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexLookupError
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
+import org.neo4j.cypher.internal.planner.spi.NodeFulltextIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.NodeVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.RelationshipFulltextIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.RelationshipVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.VectorIndexError
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundReadTokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
@@ -218,75 +220,92 @@ class TransactionBoundPlanContext(
       .flatMap(getOnlineIndex)
   }
 
-  def nodeVectorIndexByName(indexName: String): Either[VectorIndexError, NodeVectorIndexDescriptor] = {
-    val indexDescriptor = tc.schemaRead.indexGetForName(indexName)
-    for {
-      _ <- ensureIndexExists(indexDescriptor)
-      _ <- ensureIsVectorIndex(indexDescriptor)
-      labelIds <- validateNodeIndexType(indexDescriptor)
-      (property, additionalProperties) = getIndexPropertyIds(indexDescriptor)
-      _ <- ensureIndexCanBeUsed(indexDescriptor)
-    } yield NodeVectorIndexDescriptor(labelIds, property, additionalProperties)
-  }
+  def nodeVectorIndexByName(indexName: String): Either[IndexLookupError, NodeVectorIndexDescriptor] =
+    indexByName(
+      indexName,
+      IndexType.VECTOR,
+      EntityType.NODE,
+      LabelId.apply,
+      (labels, props) => NodeVectorIndexDescriptor(labels, props.head, props.tail)
+    )
 
-  def relationshipVectorIndexByName(indexName: String): Either[VectorIndexError, RelationshipVectorIndexDescriptor] = {
+  def relationshipVectorIndexByName(indexName: String): Either[IndexLookupError, RelationshipVectorIndexDescriptor] =
+    indexByName(
+      indexName,
+      IndexType.VECTOR,
+      EntityType.RELATIONSHIP,
+      RelTypeId.apply,
+      (types, props) => RelationshipVectorIndexDescriptor(types, props.head, props.tail)
+    )
+
+  def nodeFulltextIndexByName(indexName: String): Either[IndexLookupError, NodeFulltextIndexDescriptor] =
+    indexByName(
+      indexName,
+      IndexType.FULLTEXT,
+      EntityType.NODE,
+      LabelId.apply,
+      (labels, props) => NodeFulltextIndexDescriptor(labels, props)
+    )
+
+  def relationshipFulltextIndexByName(indexName: String)
+    : Either[IndexLookupError, RelationshipFulltextIndexDescriptor] =
+    indexByName(
+      indexName,
+      IndexType.FULLTEXT,
+      EntityType.RELATIONSHIP,
+      RelTypeId.apply,
+      (types, props) => RelationshipFulltextIndexDescriptor(types, props)
+    )
+
+  private def indexByName[T, D](
+    indexName: String,
+    requiredIndexType: IndexType,
+    requiredEntityType: EntityType,
+    toTokenId: Int => T,
+    build: (Seq[T], Seq[PropertyKeyId]) => D
+  ): Either[IndexLookupError, D] = {
     val indexDescriptor = tc.schemaRead.indexGetForName(indexName)
     for {
       _ <- ensureIndexExists(indexDescriptor)
-      _ <- ensureIsVectorIndex(indexDescriptor)
-      relTypeIds <- validateRelationshipIndexType(indexDescriptor)
-      (property, additionalProperties) = getIndexPropertyIds(indexDescriptor)
+      _ <- ensureIndexType(indexDescriptor, requiredIndexType)
+      tokenIds <- validateEntityType(indexDescriptor, requiredEntityType, toTokenId)
+      propertyIds = indexDescriptor.schema().getPropertyIds.map(PropertyKeyId.apply).toSeq
       _ <- ensureIndexCanBeUsed(indexDescriptor)
-    } yield RelationshipVectorIndexDescriptor(relTypeIds, property, additionalProperties)
+    } yield build(tokenIds, propertyIds)
   }
 
   final private def ensureIndexExists(indexDescriptor: schema.IndexDescriptor)
-    : Either[VectorIndexError.NotFound.type, Unit] = {
-    Either.cond(indexDescriptor != schema.IndexDescriptor.NO_INDEX, (), VectorIndexError.NotFound)
+    : Either[IndexLookupError.NotFound.type, Unit] = {
+    Either.cond(indexDescriptor != schema.IndexDescriptor.NO_INDEX, (), IndexLookupError.NotFound)
   }
 
-  final private def ensureIndexCanBeUsed(indexDescriptor: schema.IndexDescriptor): Either[VectorIndexError, Unit] = {
+  final private def ensureIndexType(
+    indexDescriptor: schema.IndexDescriptor,
+    requiredIndexType: IndexType
+  ): Either[IndexLookupError.WrongIndexType, Unit] = {
+    val actual = indexDescriptor.getIndexType
+    Either.cond(actual == requiredIndexType, (), IndexLookupError.WrongIndexType(requiredIndexType, actual))
+  }
+
+  final private def validateEntityType[T](
+    indexDescriptor: schema.IndexDescriptor,
+    requiredEntityType: EntityType,
+    toTokenId: Int => T
+  ): Either[IndexLookupError.WrongEntityType, Seq[T]] = {
+    val schema = indexDescriptor.schema()
+    Either.cond(
+      schema.entityType() == requiredEntityType,
+      schema.getEntityTokenIds.toSeq.map(toTokenId),
+      IndexLookupError.WrongEntityType(requiredEntityType, schema.entityType())
+    )
+  }
+
+  final private def ensureIndexCanBeUsed(indexDescriptor: schema.IndexDescriptor): Either[IndexLookupError, Unit] = {
     val indexState = tc.schemaRead.indexGetStateNonLocking(indexDescriptor)
     for {
-      _ <- Either.cond(indexState != InternalIndexState.POPULATING, (), VectorIndexError.Populating)
-      _ <- Either.cond(indexCanBeUsed(indexDescriptor), (), VectorIndexError.NotFound)
+      _ <- Either.cond(indexState != InternalIndexState.POPULATING, (), IndexLookupError.Populating)
+      _ <- Either.cond(indexCanBeUsed(indexDescriptor), (), IndexLookupError.NotFound)
     } yield ()
-  }
-
-  final private def ensureIsVectorIndex(indexDescriptor: schema.IndexDescriptor)
-    : Either[VectorIndexError.WrongIndexType, Unit] = {
-    val indexType = indexDescriptor.getIndexType
-    Either.cond(indexType == IndexType.VECTOR, (), VectorIndexError.WrongIndexType(indexType))
-  }
-
-  final private def validateNodeIndexType(
-    indexDescriptor: schema.IndexDescriptor
-  ): Either[VectorIndexError.WrongEntityType, Seq[LabelId]] = {
-    val schema = indexDescriptor.schema()
-    val tokenIds = schema.getEntityTokenIds
-    schema.entityType() match {
-      case EntityType.NODE => Right(tokenIds.map(LabelId.apply))
-      case indexType       => Left(VectorIndexError.WrongEntityType(EntityType.NODE, indexType))
-    }
-  }
-
-  final private def validateRelationshipIndexType(
-    indexDescriptor: schema.IndexDescriptor
-  ): Either[VectorIndexError.WrongEntityType, Seq[RelTypeId]] = {
-    val schema = indexDescriptor.schema()
-    val tokenIds = schema.getEntityTokenIds
-    schema.entityType() match {
-      case EntityType.RELATIONSHIP => Right(tokenIds.map(RelTypeId.apply))
-      case indexType               => Left(VectorIndexError.WrongEntityType(EntityType.RELATIONSHIP, indexType))
-    }
-  }
-
-  final private def getIndexPropertyIds(indexDescriptor: schema.IndexDescriptor)
-    : (PropertyKeyId, Seq[PropertyKeyId]) = {
-    val schema = indexDescriptor.schema()
-    val propertyIds = schema.getPropertyIds
-    val propertyKeyIds = propertyIds.map(PropertyKeyId.apply)
-    (propertyKeyIds.head, propertyKeyIds.tail)
   }
 
   override def propertyIndexesGetAll(): Iterator[IndexDescriptor] =

@@ -91,6 +91,8 @@ import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexLookupError
+import org.neo4j.cypher.internal.planner.spi.IndexLookupError.NotFound
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
@@ -100,8 +102,6 @@ import org.neo4j.cypher.internal.planner.spi.NotImplementedPlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.RelationshipVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.VectorIndexError
-import org.neo4j.cypher.internal.planner.spi.VectorIndexError.NotFound
 import org.neo4j.cypher.internal.planner.spi.histogram.Histogram
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -1780,7 +1780,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
         }
       }
 
-      override def nodeVectorIndexByName(indexName: String): Either[VectorIndexError, NodeVectorIndexDescriptor] =
+      override def nodeVectorIndexByName(indexName: String): Either[IndexLookupError, NodeVectorIndexDescriptor] =
         indexes.vectorIndexes.collectFirst {
           case NodeVectorIndexDefinition(name, labels, property, additionalProperties) if name == indexName =>
             Right(NodeVectorIndexDescriptor(
@@ -1791,14 +1791,14 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
               additionalProperties = additionalProperties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
             ))
           case RelationshipVectorIndexDefinition(name, _, _, _) if name == indexName =>
-            Left(VectorIndexError.WrongEntityType(common.EntityType.NODE, common.EntityType.RELATIONSHIP))
-        }.getOrElse(Left(VectorIndexError.NotFound))
+            Left(IndexLookupError.WrongEntityType(common.EntityType.NODE, common.EntityType.RELATIONSHIP))
+        }.getOrElse(Left(IndexLookupError.NotFound))
 
       override def relationshipVectorIndexByName(indexName: String)
-        : Either[VectorIndexError, RelationshipVectorIndexDescriptor] =
+        : Either[IndexLookupError, RelationshipVectorIndexDescriptor] =
         indexes.vectorIndexes.collectFirst {
           case NodeVectorIndexDefinition(name, _, _, _) if name == indexName =>
-            Left(VectorIndexError.WrongEntityType(common.EntityType.RELATIONSHIP, common.EntityType.NODE))
+            Left(IndexLookupError.WrongEntityType(common.EntityType.RELATIONSHIP, common.EntityType.NODE))
           case RelationshipVectorIndexDefinition(name, relTypes, property, additionalProperties) if name == indexName =>
             Right(RelationshipVectorIndexDescriptor(
               relTypeIds = relTypes.map(relType => RelTypeId(resolver.getRelTypeId(relType.relType))),
