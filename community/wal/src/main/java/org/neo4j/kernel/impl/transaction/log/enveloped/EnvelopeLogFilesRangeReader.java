@@ -39,15 +39,50 @@ public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
 
     @Override
     public StoreChannelsForTransfer storeChannels(long fromIndex, long desiredToIndex) throws IOException {
+        return channels(fromIndex, desiredToIndex, false);
+    }
+
+    @Override
+    public StoreChannelsForTransfer entryStreamChannels(long fromIndex, long desiredToIndex) throws IOException {
+        return channels(fromIndex, desiredToIndex, true);
+    }
+
+    private StoreChannelsForTransfer channels(long fromIndex, long desiredToIndex, boolean entryStream)
+            throws IOException {
         return retryOnConcurrentDeletion(() -> {
-            var logFilesMetadata = envelopedLogFiles.logFilesMetadata(false);
-            logFilesMetadata.next();
-            long availableFromIndex = logFilesMetadata.get().logHeader().getLastAppendIndex() + 1;
-            return storeChannelsIfAvailable(fromIndex, availableFromIndex, desiredToIndex);
+            long toIndex = capToIndex(desiredToIndex);
+            long availableFromIndex = availableFromIndex();
+            if (fromIndex == -1) {
+                return channelsFor(availableFromIndex, toIndex, entryStream);
+            }
+            if (fromIndex < availableFromIndex) {
+                return StoreChannelsForTransfer.nothingToTransfer(availableFromIndex, fromIndex);
+            }
+            return channelsFor(fromIndex, toIndex, entryStream);
         });
     }
 
-    protected StoreChannelsForTransfer retryOnConcurrentDeletion(
+    private StoreChannelsForTransfer channelsFor(long fromIndex, long toIndex, boolean entryStream) throws IOException {
+        if (toIndex < fromIndex) {
+            return StoreChannelsForTransfer.nothingToTransfer(fromIndex, toIndex);
+        }
+        return entryStream
+                ? envelopedLogFiles.entryStreamChannels(fromIndex, toIndex)
+                : envelopedLogFiles.storeChannels(fromIndex, toIndex);
+    }
+
+    /** Subclasses bound the range end by their own visibility marker (commit index, flushed index, ...). */
+    protected long capToIndex(long desiredToIndex) {
+        return desiredToIndex;
+    }
+
+    protected long availableFromIndex() throws IOException {
+        var logFilesMetadata = envelopedLogFiles.logFilesMetadata(false);
+        logFilesMetadata.next();
+        return logFilesMetadata.get().logHeader().getLastAppendIndex() + 1;
+    }
+
+    private StoreChannelsForTransfer retryOnConcurrentDeletion(
             ThrowingSupplier<StoreChannelsForTransfer, IOException> supplier) throws IOException {
         IOException lastException = null;
         for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -64,19 +99,6 @@ public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
         log.warn(
                 "Failed to obtain store channels for transfer after " + (MAX_RETRIES + 1) + " attempts", lastException);
         throw lastException;
-    }
-
-    protected StoreChannelsForTransfer storeChannelsIfAvailable(long fromIndex, long availableFromIndex, long toIndex)
-            throws IOException {
-        if (fromIndex == -1) {
-            fromIndex = availableFromIndex;
-        } else if (fromIndex < availableFromIndex) {
-            return StoreChannelsForTransfer.nothingToTransfer(availableFromIndex, fromIndex);
-        }
-        if (toIndex < fromIndex) {
-            return StoreChannelsForTransfer.nothingToTransfer(fromIndex, toIndex);
-        }
-        return envelopedLogFiles.storeChannels(fromIndex, toIndex);
     }
 
     @Override

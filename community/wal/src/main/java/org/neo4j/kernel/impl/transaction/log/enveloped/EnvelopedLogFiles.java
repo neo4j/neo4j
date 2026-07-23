@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
@@ -36,6 +37,8 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.EnvelopeType;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
@@ -49,6 +52,10 @@ import org.neo4j.util.VisibleForTesting;
 
 public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoCloseable {
     public static final int MINIMUM_SEGMENTS = 2;
+    private static final int HEADER_SIZE = LogEnvelopeHeader.HEADER_SIZE;
+    // Envelope header layout: [payload checksum: int][type: byte][payload length: int]...
+    private static final int ENVELOPE_TYPE_OFFSET = Integer.BYTES;
+    private static final int PAYLOAD_LENGTH_OFFSET = ENVELOPE_TYPE_OFFSET + Byte.BYTES;
     private final int segmentBlockSize;
     private final int writerBufferedBlocks;
     private final MemoryTracker memoryTracker;
@@ -674,7 +681,25 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         logsRepository.deleteLogFilesFrom(0);
     }
 
+    /**
+     * Channels over the physical byte range: follow-on channels start at their file's first data segment and
+     * so deliver any leading START_OFFSET filler as part of the stream.
+     */
     public StoreChannelsForTransfer storeChannels(long fromIndex, long toIndex) throws IOException {
+        return storeChannels(fromIndex, toIndex, false);
+    }
+
+    /**
+     * Channels over the pure entry stream: every channel is positioned at its first entry byte, so local
+     * layout — file headers and leading START_OFFSET fillers — never reaches the consumer. Each channel's
+     * intra-segment grid offset is {@link StoreChannelsForTransfer#segmentOffset(int)}.
+     */
+    public StoreChannelsForTransfer entryStreamChannels(long fromIndex, long toIndex) throws IOException {
+        return storeChannels(fromIndex, toIndex, true);
+    }
+
+    private StoreChannelsForTransfer storeChannels(long fromIndex, long toIndex, boolean skipLocalLayout)
+            throws IOException {
         if (toIndex < fromIndex) {
             throw new IllegalArgumentException(
                     String.format("From index %d is higher than to index %d", fromIndex, toIndex));
@@ -752,11 +777,38 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 midChannel.position(segmentBlockSize);
             }
 
+            if (skipLocalLayout) {
+                // The first channel is at an entry already (goToEntry lands past any START_OFFSET filler);
+                // follow-on channels sit at their file's first data segment and may need the skip.
+                for (var i = 1; i < storeChannels.size(); i++) {
+                    skipLeadingStartOffset(storeChannels.get(i));
+                }
+            }
+
             return new StoreChannelsForTransfer(storeChannels, toPosition, fromIndex, toIndex, segmentBlockSize);
         } catch (Exception e) {
             IOUtils.closeAllSilently(storeChannels);
             throw e;
         }
+    }
+
+    /**
+     * A file created by truncation opens its first data segment with a START_OFFSET filler standing in for the
+     * bytes that remained in the predecessor's last segment. It is local layout, not entry data, so the entry
+     * stream must start past it; its size then reappears as the channel's intra-segment offset (the filler is
+     * always smaller than a segment, so the skip never crosses a segment boundary).
+     */
+    private static void skipLeadingStartOffset(StoreChannel channel) throws IOException {
+        long position = channel.position();
+        var header = ByteBuffer.allocate(HEADER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+        while (header.hasRemaining() && channel.read(header) >= 0) {
+            // keep reading; a file this short cannot start with a START_OFFSET envelope anyway
+        }
+        if (header.hasRemaining() || header.get(ENVELOPE_TYPE_OFFSET) != EnvelopeType.START_OFFSET.typeValue) {
+            channel.position(position);
+            return;
+        }
+        channel.position(position + HEADER_SIZE + header.getInt(PAYLOAD_LENGTH_OFFSET));
     }
 
     private static class EnvelopedLogRotation implements LogRotation {

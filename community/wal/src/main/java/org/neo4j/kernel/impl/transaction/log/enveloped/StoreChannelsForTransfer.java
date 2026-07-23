@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
+import java.io.IOException;
 import java.util.List;
 import org.neo4j.io.fs.StoreChannel;
 
@@ -26,10 +27,11 @@ import org.neo4j.io.fs.StoreChannel;
  * Contains a list of {@link StoreChannel} for transfer reflecting the range of bytes for the given index range in the
  * log.
  * @param storeChannels    a list of {@link StoreChannel} each channel is positioned at their start and end positions
- *                         for that file's log range. The first channel start is positioned at {@code fromIndex}, all
- *                         other channels are positioned from the start of their first log entry, omitting the log
- *                         header (which for envelopes should be from the second segment). Note: these include
- *                         START_OFFSET envelopes as well.
+ *                         for that file's log range. The first channel start is positioned at {@code fromIndex}. The
+ *                         positioning of the other channels depends on which {@link EnvelopedLogFiles} method produced
+ *                         the transfer: {@code storeChannels} leaves them at their file's first data segment (so any
+ *                         leading START_OFFSET envelope is part of the stream), {@code entryStreamChannels} positions
+ *                         them at their first entry byte (header and START_OFFSET skipped).
  * @param toPosition       reflects the end position of {@code toIndex}. This is always for the last channel in the
  *                         list.
  * @param fromIndex        first index in the range
@@ -41,5 +43,15 @@ public record StoreChannelsForTransfer(
 
     public static StoreChannelsForTransfer nothingToTransfer(long fromIndex, long toIndex) {
         return new StoreChannelsForTransfer(List.of(), -1, fromIndex, toIndex, 0);
+    }
+
+    /**
+     * The intra-segment offset of the first byte channel {@code i} will deliver. Files are segment-aligned from
+     * byte 0, so the offset is the position's remainder: for an entry-stream channel positioned past a
+     * START_OFFSET filler this is the filler's size (a filler sits at the start of the first data segment and is
+     * smaller than a segment), and for a physical follow-on channel at a segment boundary it is 0.
+     */
+    public int segmentOffset(int i) throws IOException {
+        return segmentBlockSize == 0 ? 0 : (int) (storeChannels.get(i).position() % segmentBlockSize);
     }
 }

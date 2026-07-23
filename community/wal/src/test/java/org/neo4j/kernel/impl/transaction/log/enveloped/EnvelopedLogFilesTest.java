@@ -1167,6 +1167,72 @@ class EnvelopedLogFilesTest {
     }
 
     @Test
+    void entryStreamChannelsShouldSkipLeadingStartOffsetOfTruncationCreatedFile() throws IOException {
+        var smallData = EIGHT_BYTES_MESSAGE.getBytes(StandardCharsets.UTF_8);
+
+        envelopedLogFiles.initialise();
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, smallData, 0); // index 0
+        writeData(writeChannel, smallData, 0); // index 1
+        writeData(writeChannel, smallData, 0); // index 2
+        writeChannel.prepareForFlush().flush();
+
+        // Cut mid-segment: the successor file opens with a START_OFFSET filler standing in for the bytes that
+        // remained in this segment, so entries resume at the same intra-segment offset they continue from.
+        long cutOffset = writeChannel.position() % segmentBlockSize;
+        envelopedLogFiles.truncate(2);
+        writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, smallData, 1); // index 2, rewritten in the truncation-created file
+        writeChannel.prepareForFlush().flush();
+        cutOffset -= smallData.length + LogEnvelopeHeader.HEADER_SIZE; // entry 2 was cut too
+
+        var physical = envelopedLogFiles.storeChannels(0, 2);
+        try {
+            assertThat(physical.storeChannels()).hasSize(2);
+            assertThat(physical.storeChannels().get(1).position()).isEqualTo(segmentBlockSize);
+            assertThat(physical.segmentOffset(1)).isZero();
+        } finally {
+            IOUtils.closeAllSilently(physical.storeChannels());
+        }
+
+        var entryStream = envelopedLogFiles.entryStreamChannels(0, 2);
+        try {
+            assertThat(entryStream.storeChannels()).hasSize(2);
+            assertThat(entryStream.storeChannels().get(1).position()).isEqualTo(segmentBlockSize + cutOffset);
+            assertThat(entryStream.segmentOffset(1)).isEqualTo((int) cutOffset);
+            assertThat(entryStream.segmentOffset(0)).isZero();
+        } finally {
+            IOUtils.closeAllSilently(entryStream.storeChannels());
+        }
+    }
+
+    @Test
+    void entryStreamChannelsShouldNotSkipEntryEnvelopesOfRotationCreatedFiles() throws IOException {
+        // A boundary created by ordinary rotation carries no START_OFFSET filler: the entry stream is the
+        // physical stream, and a real entry envelope must never be mistaken for a filler.
+        var smallData = EIGHT_BYTES_MESSAGE.getBytes(StandardCharsets.UTF_8);
+        var largeData = new byte[(int) (segmentBlockSize * ((2 * totalSegments) - 0.5))];
+
+        envelopedLogFiles.initialise();
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, smallData); // index 0
+        writeData(writeChannel, largeData); // index 1
+        writeData(writeChannel, largeData); // index 2
+        writeChannel.prepareForFlush().flush();
+
+        var entryStream = envelopedLogFiles.entryStreamChannels(0, 2);
+        try {
+            assertThat(entryStream.storeChannels()).hasSize(7);
+            for (var i = 0; i < entryStream.storeChannels().size(); i++) {
+                assertThat(entryStream.storeChannels().get(i).position()).isEqualTo(segmentBlockSize);
+                assertThat(entryStream.segmentOffset(i)).isZero();
+            }
+        } finally {
+            IOUtils.closeAllSilently(entryStream.storeChannels());
+        }
+    }
+
+    @Test
     void shouldFindRangeForTransferHead() throws IOException {
         var smallData = EIGHT_BYTES_MESSAGE.getBytes(StandardCharsets.UTF_8);
         var largeData = new byte[(int) (segmentBlockSize * ((2 * totalSegments) - 0.5))];
