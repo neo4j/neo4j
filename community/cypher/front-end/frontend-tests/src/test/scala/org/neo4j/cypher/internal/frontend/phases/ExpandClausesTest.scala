@@ -1320,6 +1320,33 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
     )
   }
 
+  test("importing WITH in a subquery survives NEXT expansion") {
+    assertRewritten(
+      """WITH 1 AS x, 2 AS a
+        |CALL {
+        |  WITH *
+        |  WITH *, 2 AS y
+        |  WITH x, y
+        |  RETURN y
+        |}
+        |RETURN *
+        |NEXT
+        |RETURN 1 AS z""".stripMargin,
+      """WITH 1 AS x, 2 AS a
+        |CALL {
+        |  WITH x AS x
+        |  WITH x AS x, 2 AS y
+        |  WITH x AS x, y AS y
+        |  RETURN y AS y
+        |}
+        |WITH a AS a, x AS x, y AS y
+        |RETURN 1 AS z""".stripMargin,
+      excludedVersions = Set(CypherVersion.Cypher5),
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
   test("rewrites * in importing with 2") {
     assertRewritten(
       """UNWIND [1, 2, 3] AS i

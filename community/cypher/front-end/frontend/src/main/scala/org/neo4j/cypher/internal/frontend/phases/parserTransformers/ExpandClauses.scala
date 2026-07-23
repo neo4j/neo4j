@@ -292,7 +292,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
 
       private def importingWithFor(sq: SingleQuery): Option[PositionedNode[With]] =
         if (
-          scopeState.recordedScopes.get(Ref(sq)).exists {
+          scopeState.scopeOfOpt(sq).exists {
             case StatementScope(_, _, _, _, _, _, _, true) => true
             case _                                         => false
           }
