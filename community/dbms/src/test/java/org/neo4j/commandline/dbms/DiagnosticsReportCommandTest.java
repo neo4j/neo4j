@@ -66,7 +66,7 @@ class DiagnosticsReportCommandTest {
                                           Address of the DBMS to connect to, including the
                                             scheme (e.g. bolt://localhost:7687 or bolt+ssc:
                                             //localhost:7687). Defaults to an address derived
-                                            from the instance configuration.
+                                            from the Neo4j configuration.
                       --additional-config=<file>
                                           Configuration file with additional configuration.
                       --database=<database>

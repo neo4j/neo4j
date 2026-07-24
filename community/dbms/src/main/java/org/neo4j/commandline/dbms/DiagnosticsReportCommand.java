@@ -109,7 +109,7 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
             names = {"-a", "--address", "--uri"},
             paramLabel = "<address>",
             description = "Address of the DBMS to connect to, including the scheme (e.g. bolt://localhost:7687 or "
-                    + "bolt+ssc://localhost:7687). Defaults to an address derived from the instance configuration.")
+                    + "bolt+ssc://localhost:7687). Defaults to an address derived from the Neo4j configuration.")
     private String address;
 
     @Parameters(arity = "0..*", paramLabel = "<classifier>")
