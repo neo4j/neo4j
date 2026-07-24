@@ -28,13 +28,11 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.index.nativeimpl.NativeIndexCapability;
 import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexQuery;
-import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -43,10 +41,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.Preconditions;
 import org.neo4j.values.ElementIdMapper;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Native index able to handle all value types in a single {@link GBPTree}. Single-key as well as composite-key is supported.
@@ -107,7 +102,7 @@ import org.neo4j.values.storable.ValueCategory;
  * As of writing this, there is no such filtering implementation.
  */
 public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayout> {
-    public static final IndexCapability CAPABILITY = new RangeIndexCapability();
+    public static final IndexCapability CAPABILITY = NativeIndexCapability.RANGE;
 
     public RangeIndexProvider(
             DatabaseIndexContext databaseIndexContext,
@@ -214,96 +209,5 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
     @Override
     public IndexType getIndexType() {
         return IndexType.RANGE;
-    }
-
-    private static class RangeIndexCapability implements IndexCapability {
-        @Override
-        public boolean supportsOrdering() {
-            return true;
-        }
-
-        @Override
-        public boolean supportsReturningValues() {
-            return true;
-        }
-
-        @Override
-        public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
-            Preconditions.requireNonEmpty(valueCategories);
-            Preconditions.requireNoNullElements(valueCategories);
-            return true;
-        }
-
-        @Override
-        public boolean areValuesAccepted(Value... values) {
-            Preconditions.requireNonEmpty(values);
-            Preconditions.requireNoNullElements(values);
-            return true;
-        }
-
-        @Override
-        public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
-            if (!areValueCategoriesAccepted(valueCategory)) {
-                return false;
-            }
-
-            return switch (queryType) {
-                case ALL_ENTRIES, EXISTS, EXACT, RANGE, STRING_PREFIX -> true;
-                default -> false;
-            };
-        }
-
-        @Override
-        public double getCostMultiplier(IndexQueryType... queryTypes) {
-            return COST_MULTIPLIER_STANDARD;
-        }
-
-        @Override
-        public boolean supportPartitionedScan(IndexQuery... queries) {
-            Preconditions.requireNonEmpty(queries);
-            Preconditions.requireNoNullElements(queries);
-
-            for (int i = 0; i < queries.length; i++) {
-                IndexQuery query = queries[i];
-                IndexQueryType type = query.type();
-
-                switch (type) {
-                    case ALL_ENTRIES, EXISTS, EXACT, STRING_PREFIX:
-                        break;
-                    case RANGE:
-                        switch (((PropertyIndexQuery) query).valueGroup()) {
-                            case GEOMETRY, GEOMETRY_ARRAY:
-                                return false;
-                            default:
-                                break;
-                        }
-                        break;
-                    default:
-                        return false;
-                }
-
-                if (i > 0) {
-                    IndexQueryType prevType = queries[i - 1].type();
-                    switch (type) {
-                        case EXISTS:
-                            switch (prevType) {
-                                case EXISTS, EXACT, RANGE, STRING_PREFIX:
-                                    break;
-                                default:
-                                    return false;
-                            }
-                            break;
-                        case EXACT, RANGE, STRING_PREFIX:
-                            if (prevType != IndexQueryType.EXACT) {
-                                return false;
-                            }
-                            break;
-                        default:
-                            return false;
-                    }
-                }
-            }
-            return true;
-        }
     }
 }

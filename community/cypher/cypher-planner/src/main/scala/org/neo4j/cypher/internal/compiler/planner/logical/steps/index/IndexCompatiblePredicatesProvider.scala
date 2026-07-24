@@ -53,9 +53,9 @@ import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.PointType
 import org.neo4j.cypher.internal.util.symbols.StringType
+import org.neo4j.index.nativeimpl.NativeIndexCapability
 import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 import org.neo4j.values.storable.ValueCategory
 
 trait IndexCompatiblePredicatesProvider {
@@ -319,7 +319,7 @@ object IndexCompatiblePredicatesProvider {
   }
 
   private val allPossibleRangeIndexRequirements: Set[IndexRequirement] = {
-    val rangeIndexCapability: IndexCapability = RangeIndexProvider.CAPABILITY
+    val rangeIndexCapability: IndexCapability = NativeIndexCapability.RANGE
     val supportedQueryTypes = IndexQueryType.values().collect {
       case queryType if rangeIndexCapability.isQuerySupported(queryType, ValueCategory.ANYTHING) =>
         IndexRequirement.SupportsIndexQuery(queryType)

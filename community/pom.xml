@@ -90,6 +90,7 @@
     <module>cypher</module>
     <module>cypher-shell</module>
     <module>fleet-management</module>
+    <module>native-index</module>
   </modules>
 
   <profiles>

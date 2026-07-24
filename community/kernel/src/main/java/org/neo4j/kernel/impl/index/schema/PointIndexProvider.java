@@ -30,13 +30,12 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.nativeimpl.NativeIndexCapability;
 import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexQuery;
-import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -48,13 +47,12 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.Preconditions;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 
 public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayout> {
-    public static final IndexCapability CAPABILITY = new PointIndexCapability();
+    public static final IndexCapability CAPABILITY = NativeIndexCapability.POINT;
 
     // Ignore everything except GEOMETRY values
     static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY =
@@ -228,53 +226,5 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
     @Override
     public IndexType getIndexType() {
         return IndexType.POINT;
-    }
-
-    private static class PointIndexCapability implements IndexCapability {
-        @Override
-        public boolean supportsOrdering() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsReturningValues() {
-            // The point index has values for all the queries it supports.
-            return true;
-        }
-
-        @Override
-        public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
-            Preconditions.requireNonEmpty(valueCategories);
-            Preconditions.requireNoNullElements(valueCategories);
-            return valueCategories.length == 1 && valueCategories[0] == ValueCategory.GEOMETRY;
-        }
-
-        @Override
-        public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
-            if (queryType == IndexQueryType.ALL_ENTRIES) {
-                return true;
-            }
-
-            if (!areValueCategoriesAccepted(valueCategory)) {
-                return false;
-            }
-
-            return switch (queryType) {
-                case EXACT, BOUNDING_BOX -> true;
-                default -> false;
-            };
-        }
-
-        @Override
-        public double getCostMultiplier(IndexQueryType... queryTypes) {
-            return COST_MULTIPLIER_STANDARD;
-        }
-
-        @Override
-        public boolean supportPartitionedScan(IndexQuery... queries) {
-            Preconditions.requireNonEmpty(queries);
-            Preconditions.requireNoNullElements(queries);
-            return false;
-        }
     }
 }

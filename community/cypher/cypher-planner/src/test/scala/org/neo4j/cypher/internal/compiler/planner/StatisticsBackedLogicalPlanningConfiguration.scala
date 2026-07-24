@@ -358,8 +358,8 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     val text_1_0: IndexCapability = org.neo4j.kernel.api.impl.schema.TextIndexCapability.text()
     val text_2_0: IndexCapability = org.neo4j.kernel.api.impl.schema.TextIndexCapability.trigram()
     val text_3_0: IndexCapability = org.neo4j.kernel.api.impl.schema.TextIndexCapability.trigram()
-    val point: IndexCapability = org.neo4j.kernel.impl.index.schema.PointIndexProvider.CAPABILITY
-    val range: IndexCapability = org.neo4j.kernel.impl.index.schema.RangeIndexProvider.CAPABILITY
+    val point: IndexCapability = org.neo4j.index.nativeimpl.NativeIndexCapability.POINT
+    val range: IndexCapability = org.neo4j.index.nativeimpl.NativeIndexCapability.RANGE
   }
 
   sealed trait DatabaseFormat extends Product {
