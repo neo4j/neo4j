@@ -1006,7 +1006,8 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
 
         InsertResult result = InsertResult.NO_SPLIT;
         if (overflow == NO_NEED_DEFRAG) {
-            int keyCountAfterDeframent = leafNode.defragment(cursor, keyCount, cursorContext);
+            int keyCountAfterDeframent =
+                    leafNode.defragment(cursor, keyCount, stableGeneration, unstableGeneration, cursorContext);
             if (keyCountAfterDeframent != keyCount) {
                 keyCount = keyCountAfterDeframent;
                 // need to find new insert position
@@ -1725,6 +1726,8 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
                             keyCount,
                             keysToRebalance,
                             structurePropagation,
+                            stableGeneration,
+                            unstableGeneration,
                             cursorContext);
                 } else if (keysToRebalance == -1) {
                     // No need to create new unstable version of left sibling.
@@ -1884,7 +1887,13 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
             CursorContext cursorContext)
             throws IOException {
         leafNode.copyKeyValuesFromLeftToRight(
-                leftSiblingCursor, leftSiblingKeyCount, rightSiblingCursor, rightSiblingKeyCount, cursorContext);
+                leftSiblingCursor,
+                leftSiblingKeyCount,
+                rightSiblingCursor,
+                rightSiblingKeyCount,
+                stableGeneration,
+                unstableGeneration,
+                cursorContext);
 
         // Update successor of left sibling to be right sibling
         TreeNodeUtil.setSuccessor(
@@ -1904,10 +1913,19 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
             int rightKeyCount,
             int numberOfKeysToMove,
             StructurePropagation<KEY> structurePropagation,
+            long stableGeneration,
+            long unstableGeneration,
             CursorContext cursorContext)
             throws IOException {
         leafNode.moveKeyValuesFromLeftToRight(
-                leftCursor, leftKeyCount, rightCursor, rightKeyCount, leftKeyCount - numberOfKeysToMove, cursorContext);
+                leftCursor,
+                leftKeyCount,
+                rightCursor,
+                rightKeyCount,
+                leftKeyCount - numberOfKeysToMove,
+                stableGeneration,
+                unstableGeneration,
+                cursorContext);
 
         // Propagate change
         structurePropagation.hasLeftKeyReplace = true;

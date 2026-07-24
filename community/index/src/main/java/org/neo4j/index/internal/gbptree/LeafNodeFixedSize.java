@@ -281,7 +281,13 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     }
 
     @Override
-    public int defragment(PageCursor cursor, int keyCount, CursorContext cursorContext) throws IOException {
+    public int defragment(
+            PageCursor cursor,
+            int keyCount,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException {
         return keyCount;
     }
 
@@ -428,9 +434,12 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
             PageCursor rightCursor,
             int rightKeyCount,
             int fromPosInLeftNode,
+            long stableGeneration,
+            long unstableGeneration,
             CursorContext cursorContext)
             throws IOException {
-        int newRightKeyCount = defragment(rightCursor, rightKeyCount, cursorContext);
+        int newRightKeyCount =
+                defragment(rightCursor, rightKeyCount, stableGeneration, unstableGeneration, cursorContext);
         int numberOfKeysToMove = leftKeyCount - fromPosInLeftNode;
 
         // Push keys and values in right sibling to the right
@@ -450,9 +459,12 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
             int leftKeyCount,
             PageCursor rightCursor,
             int rightKeyCount,
+            long stableGeneration,
+            long unstableGeneration,
             CursorContext cursorContext)
             throws IOException {
-        int newRightKeyCount = defragment(rightCursor, rightKeyCount, cursorContext);
+        int newRightKeyCount =
+                defragment(rightCursor, rightKeyCount, stableGeneration, unstableGeneration, cursorContext);
 
         // Push keys and values in right sibling to the right
         insertKeyValueSlots(rightCursor, leftKeyCount, newRightKeyCount);

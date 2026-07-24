@@ -81,7 +81,13 @@ public interface LeafNodeBehaviour<KEY, VALUE> extends SharedNodeBehaviour<KEY> 
     /**
      * returns new key count after defragment
      */
-    int defragment(PageCursor cursor, int keyCount, CursorContext cursorContext) throws IOException;
+    int defragment(
+            PageCursor cursor,
+            int keyCount,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException;
 
     boolean underflow(PageCursor cursor, int keyCount);
 
@@ -140,6 +146,8 @@ public interface LeafNodeBehaviour<KEY, VALUE> extends SharedNodeBehaviour<KEY> 
             PageCursor rightCursor,
             int rightKeyCount,
             int fromPosInLeftNode,
+            long stableGeneration,
+            long unstableGeneration,
             CursorContext cursorContext)
             throws IOException;
 
@@ -148,6 +156,8 @@ public interface LeafNodeBehaviour<KEY, VALUE> extends SharedNodeBehaviour<KEY> 
             int leftKeyCount,
             PageCursor rightCursor,
             int rightKeyCount,
+            long stableGeneration,
+            long unstableGeneration,
             CursorContext cursorContext)
             throws IOException;
 

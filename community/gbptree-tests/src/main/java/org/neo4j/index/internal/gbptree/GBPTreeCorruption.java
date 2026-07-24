@@ -161,7 +161,7 @@ public final class GBPTreeCorruption {
             var newCount = leafNode.removeKeyValueAt(
                     cursor, higherKeyPos, keyCount, stableGeneration1, unstableGeneration1, NULL_CONTEXT);
             TreeNodeUtil.setKeyCount(cursor, newCount);
-            leafNode.defragment(cursor, newCount, NULL_CONTEXT);
+            leafNode.defragment(cursor, newCount, stableGeneration1, unstableGeneration1, NULL_CONTEXT);
 
             // Insert key and value in lower position
             long stableGeneration = treeState.stableGeneration();
@@ -252,7 +252,7 @@ public final class GBPTreeCorruption {
             long unstableGeneration1 = treeState.unstableGeneration();
             leafNode.removeKeyValueAt(cursor, keyPos, keyCount, stableGeneration1, unstableGeneration1, NULL_CONTEXT);
             TreeNodeUtil.setKeyCount(cursor, keyCount - 1);
-            leafNode.defragment(cursor, keyCount - 1, NULL_CONTEXT);
+            leafNode.defragment(cursor, keyCount - 1, stableGeneration1, unstableGeneration1, NULL_CONTEXT);
 
             // Insert new key and value
             long stableGeneration = treeState.stableGeneration();
