@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphReference
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.TopLevelBraces
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
@@ -90,9 +91,17 @@ case object RemoveDuplicateUseClauses extends StatementRewriter with StepSequenc
       case class State(useClausesToRemove: Set[Ref[Clause]], currentWorkGraph: Option[GraphReference])
 
       // Accumulate USE clauses to delete
-      val State(useClausesToRemove, _) =
-        ref.folder(cancellationChecker).treeFold(State(Set.empty[Ref[Clause]], workGraph)) {
-          case _: SingleQuery =>
+      def collect(ref: AnyRef, state: State): State =
+        ref.folder(cancellationChecker).treeFold(state) {
+          case TopLevelBraces(query, Some(useGraph @ UseGraph(reference))) =>
+            acc =>
+              val scoped = if (acc.currentWorkGraph.isEmpty || !acc.currentWorkGraph.contains(reference))
+                State(acc.useClausesToRemove, Some(reference))
+              else State(acc.useClausesToRemove + Ref(useGraph), acc.currentWorkGraph)
+
+              val innerTraversal = collect(query, scoped)
+              SkipChildren(innerTraversal.copy(currentWorkGraph = acc.currentWorkGraph))
+          case _: SingleQuery | _: TopLevelBraces =>
             acc =>
               // Restore current work graph when done processing a single query
               TraverseChildrenNewAccForSiblings(acc, _.copy(currentWorkGraph = acc.currentWorkGraph))
@@ -106,9 +115,13 @@ case object RemoveDuplicateUseClauses extends StatementRewriter with StepSequenc
               SkipChildren(newState)
         }
 
+      val State(useClausesToRemove, _) = collect(ref, State(Set.empty[Ref[Clause]], workGraph))
+
       // Actually delete the USE clauses
       val rewriter = topDown(
         Rewriter.lift {
+          case tlb @ TopLevelBraces(query, useOpt) =>
+            tlb.copy(query, useOpt.filterNot(c => useClausesToRemove.contains(Ref(c))))(tlb.position)
           case sq @ SingleQuery(clauses) =>
             sq.copy(clauses.filterNot(c => useClausesToRemove.contains(Ref(c))))(sq.position)
         },

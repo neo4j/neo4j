@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.RemoveDuplicateUseClauses
@@ -259,6 +260,124 @@ class RemoveDuplicateUseClausesTest extends CypherFunSuite with RewritePhaseTest
         |UNION
         |RETURN 1 as n
         |""".stripMargin
+    )
+  }
+
+  test("do not remove use clause in union sibling after top level braces") {
+    assertNotRewritten(
+      """USE `neo4j` {
+        |  MATCH (n)
+        |  RETURN n
+        |}
+        |UNION
+        |USE `neo4j`
+        |MATCH (n)
+        |RETURN n""".stripMargin,
+      Set(CypherVersion.Cypher5)
+    )
+  }
+
+  test("do not remove use clause in top level braces when both sides of union use them") {
+    assertNotRewritten(
+      """USE graph.byName("mega.myGraph0") {
+        |  RETURN 1 AS n
+        |}
+        |UNION
+        |USE graph.byName("mega.myGraph0") {
+        |  RETURN 1 AS n
+        |}""".stripMargin,
+      Set(CypherVersion.Cypher5)
+    )
+  }
+
+  test("do not remove use clause on right hand side after conditional when block") {
+    assertNotRewritten(
+      """USE graph.byName("mega.myGraph0") {
+        |  WHEN false THEN RETURN 1 AS x
+        |  ELSE RETURN 3 AS x
+        |}
+        |UNION
+        |USE graph.byName("mega.myGraph0")
+        |MATCH (n)
+        |RETURN n.age AS x""".stripMargin,
+      Set(CypherVersion.Cypher5)
+    )
+  }
+
+  test("remove duplicate use clauses inside top level braces but not siblings") {
+    assertRewritten(
+      """USE neo4j {
+        |  USE neo4j
+        |  MATCH (n)
+        |  RETURN n
+        |}
+        |UNION
+        |USE neo4j
+        |MATCH (n)
+        |RETURN n""".stripMargin,
+      """USE neo4j {
+        |  MATCH (n)
+        |  RETURN n
+        |}
+        |UNION
+        |USE neo4j
+        |MATCH (n)
+        |RETURN n""".stripMargin,
+      excludedVersions = Set(CypherVersion.Cypher5)
+    )
+  }
+
+  test("remove duplicate use clauses inside double nested top level braces but not siblings") {
+    assertRewritten(
+      """USE neo4j {
+        |  USE neo4j {
+        |    USE neo4j
+        |    MATCH (n)
+        |    RETURN n
+        |  }
+        |}
+        |UNION
+        |USE neo4j
+        |MATCH (n)
+        |RETURN n""".stripMargin,
+      """USE neo4j {
+        |   {
+        |     MATCH (n)
+        |     RETURN n
+        |   }
+        |}
+        |UNION
+        |USE neo4j
+        |MATCH (n)
+        |RETURN n""".stripMargin,
+      excludedVersions = Set(CypherVersion.Cypher5)
+    )
+  }
+
+  test("remove duplicate use clauses inside double nested top level braces with empty outer but not siblings") {
+    assertRewritten(
+      """{
+        |  USE neo4j {
+        |    USE neo4j
+        |    MATCH (n)
+        |    RETURN n
+        |  }
+        |}
+        |UNION
+        |USE neo4j
+        |MATCH (n)
+        |RETURN n""".stripMargin,
+      """{
+        |   USE neo4j {
+        |     MATCH (n)
+        |     RETURN n
+        |   }
+        |}
+        |UNION
+        |USE neo4j
+        |MATCH (n)
+        |RETURN n""".stripMargin,
+      excludedVersions = Set(CypherVersion.Cypher5)
     )
   }
 }
