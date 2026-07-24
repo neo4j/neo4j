@@ -135,8 +135,9 @@ class KernelAPIParallelTraversalStressIT {
         NodeAndTraverseCursors(KernelTransaction tx, Kernel kernel) {
             statement = tx.acquireStatement();
             executionContext = tx.createExecutionContext();
-            nodeCursor = kernel.cursors().allocateNodeCursor(executionContext.cursorContext());
-            traversalCursor = kernel.cursors().allocateRelationshipTraversalCursor(executionContext.cursorContext());
+            nodeCursor = executionContext.cursors().allocateNodeCursor(executionContext.cursorContext());
+            traversalCursor =
+                    executionContext.cursors().allocateRelationshipTraversalCursor(executionContext.cursorContext());
         }
 
         @Override

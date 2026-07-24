@@ -79,7 +79,8 @@ class KernelAPIParallelLabelScanStressIT {
                 tx -> {
                     var statement = tx.acquireStatement();
                     var executionContext = tx.createExecutionContext();
-                    var cursor = tx.cursors().allocateNodeLabelIndexCursor(executionContext.cursorContext());
+                    var cursor =
+                            executionContext.cursors().allocateNodeLabelIndexCursor(executionContext.cursorContext());
                     return new WorkerContext<>(cursor, executionContext, tx, statement);
                 },
                 (read, workerContext) ->

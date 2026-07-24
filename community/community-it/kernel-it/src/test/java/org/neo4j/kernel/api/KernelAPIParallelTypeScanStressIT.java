@@ -109,7 +109,9 @@ class KernelAPIParallelTypeScanStressIT {
                 tx -> {
                     var statement = tx.acquireStatement();
                     var executionContext = tx.createExecutionContext();
-                    var cursor = kernel.cursors().allocateRelationshipTypeIndexCursor(executionContext.cursorContext());
+                    var cursor = executionContext
+                            .cursors()
+                            .allocateRelationshipTypeIndexCursor(executionContext.cursorContext());
                     return new WorkerContext<>(cursor, executionContext, tx, statement);
                 },
                 (read, workerContext) -> typeScan(read, workerContext, types[random.nextInt(types.length)]));

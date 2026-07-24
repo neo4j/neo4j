@@ -93,7 +93,8 @@ class KernelAPIParallelNodeValueIndexScanStressIT {
                 tx -> {
                     var statement = tx.acquireStatement();
                     var executionContext = tx.createExecutionContext();
-                    var cursor = tx.cursors()
+                    var cursor = executionContext
+                            .cursors()
                             .allocateNodeValueIndexCursor(
                                     executionContext.cursorContext(), EmptyMemoryTracker.INSTANCE);
                     return new WorkerContext<>(cursor, executionContext, tx, statement);
