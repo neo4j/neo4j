@@ -96,7 +96,7 @@ trait ScenarioGenerator extends ScenarioRenderer {
 
   def filter: Filter = Filter(args.parser, Seq.empty)
     .scenario(isCompatible(args.targetConf))
-    .scenario(excludeTags("@fails", "@ignore", "@ignore:generator", s"@ignore:generator:$name"))
+    .scenario(excludeTags("@fails", s"@fails:$name", "@ignore", "@ignore:generator", s"@ignore:generator:$name"))
     .scenario(s => !s.tags.exists(_.startsWith("@conf:")))
 
   def generateScenarios(filteredScenarios: View[RecordedScenario]): IterableOnce[GeneratedScenario]

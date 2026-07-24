@@ -612,10 +612,12 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
               case (SingleQuery(_ :+ x), _, false) if x.isInstanceOf[UpdateClause] => Seq.empty[Clause]
               case (SingleQuery(_ :+ Return(_, _, _, _, _, _, _, _, _)), _, false) => Seq.empty[Clause]
               case (_, TableResult(_), _) =>
+                val mappedReturns = incomingLayout.semanticContext.mappedReturns
                 val items =
-                  if (incomingLayout.semanticContext.mappedReturns.nonEmpty)
-                    incomingLayout.semanticContext.mappedReturns.map { case (_, v) => AliasedReturnItem(v) }.toSeq
-                  else returnsMapped.map { case (k, v) => AliasedReturnItem(v.copyId, k.copyId)(k.position) }.toSeq
+                  if (mappedReturns.nonEmpty)
+                    resultColumns.map(k => AliasedReturnItem(mappedReturns.getOrElse(k, k)))
+                  else
+                    resultColumns.map(k => AliasedReturnItem(returnsMapped(k).copyId, k.copyId)(k.position))
                 Seq(Return(ReturnItems(FreeProjection, items)(ast.position))(ast.position))
               case _ => Seq(Finish()(ast.position))
             }

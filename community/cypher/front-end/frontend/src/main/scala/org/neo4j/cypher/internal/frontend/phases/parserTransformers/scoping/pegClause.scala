@@ -834,25 +834,27 @@ object pegClause {
       pegStatement(callClause.innerQuery, innerQueryIncoming, callClause.isInstanceOf[ImportingWithSubqueryCall])
     val (inTransactionsChildren, declaredInTransactionsVariables) =
       scopeInTransactionParameters(inTransactionsParameters, incoming.constantChildContext(), innerQueryIncoming)
-    val (outgoing, declaredVariables) = innerQueryScope.result match {
-      case TableResult(columns) => (incoming.amendedWith((columns ++ declaredInTransactionsVariables).toSet), columns)
-      case TableResultWithNotYetKnownColumns => (incoming.amendedWith(declaredInTransactionsVariables.toSet), Seq.empty)
-      case OmittedResult                     => (incoming.amendedWith(declaredInTransactionsVariables.toSet), Seq.empty)
-      case NoResult                          =>
+    val (outgoing, declaredVariables, result) = innerQueryScope.result match {
+      case TableResult(columns) =>
+        (incoming.amendedWith((columns ++ declaredInTransactionsVariables).toSet), columns, NoResult)
+      case TableResultWithNotYetKnownColumns =>
+        (incoming.amendedWith(declaredInTransactionsVariables.toSet), Seq.empty, NoResult)
+      case OmittedResult => (incoming.amendedWith(declaredInTransactionsVariables.toSet), Seq.empty, OmittedResult)
+      case NoResult      =>
         // subquery does not end with the right clause,
         // so this is a best effort:
-        (incoming.amendedWith(declaredInTransactionsVariables.toSet), Seq.empty)
+        (incoming.amendedWith(declaredInTransactionsVariables.toSet), Seq.empty, NoResult)
       case ExpressionResult =>
         throw new IllegalStateException("inner query cannot have an expression result")
     }
     val children = innerQueryScope +: inTransactionsChildren
 
     val referenced = Some(References.connectOrDrop(
-      (innerQueryScope.referenced.getVariables ++ explicitlyImportedVariables).toSeq,
+      (innerQueryScope.referenced.getVariables ++ explicitlyImportedVariables),
       incoming.allSymbols
     ))
     val declared = Declarations(Seq.empty, declaredVariables ++ declaredInTransactionsVariables)
-    incoming.noResultScope(outgoing, children, referenced, declared)
+    incoming.resultScope(outgoing, result, children, referenced, declared)
   }
 
   private def scopeInTransactionParameters(

@@ -3398,7 +3398,7 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
           Ast("""CALL () {
                 |  CALL db.info()
                 |}""".stripMargin),
-          ExpectedResult.NoResult,
+          ExpectedResult.OmittedResult,
           ExpectedWorkingScope(
             Ast("CALL db.info()"), // query level
             ExpectedResult.OmittedResult,

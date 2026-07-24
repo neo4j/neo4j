@@ -88,6 +88,83 @@ class GQL_42N39_IncompatibleReturnColumnNamesTest extends VariableCheckingWithLo
         |RETURN x, y""".stripMargin,
       Passes,
       Seq("x", "y")
+    ),
+    TestQuery(
+      """CREATE ()
+        |UNION
+        |CREATE ()""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """CREATE ()
+        |UNION
+        |FINISH""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """FINISH
+        |UNION
+        |CREATE ()""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """CALL () {
+        |  CREATE ()
+        |}
+        |UNION
+        |FINISH""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """CALL () {
+        |  CREATE ()
+        |}
+        |UNION
+        |CALL () {
+        |  CREATE ()
+        |}""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """CALL {
+        |  CREATE ()
+        |}
+        |UNION
+        |FINISH""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """CALL {
+        |  CREATE ()
+        |}
+        |UNION
+        |CALL {
+        |  CREATE ()
+        |}""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """MERGE ()
+        |UNION
+        |FINISH""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """CALL () {
+        |  MERGE ()
+        |}
+        |UNION
+        |FINISH""".stripMargin,
+      Passes,
+      Seq()
     )
   )
 }

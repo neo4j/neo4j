@@ -61,6 +61,56 @@ class GQL_42N3A_IncompatibleConditionalQueryTest extends VariableCheckingWithLoc
         |WHEN false THEN { MERGE(:A {x: 1}) FINISH }""".stripMargin,
       ignoreBeforeCypher25(Passes),
       Seq.empty
+    ),
+    TestQuery(
+      """WHEN true THEN CREATE ()
+        |ELSE CREATE ()""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq()
+    ),
+    TestQuery(
+      """WHEN true THEN CREATE ()
+        |ELSE FINISH""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq()
+    ),
+    TestQuery(
+      """WHEN true THEN FINISH
+        |ELSE CREATE ()""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq()
+    ),
+    TestQuery(
+      """WHEN true THEN CALL () {
+        |  CREATE ()
+        |}
+        |ELSE FINISH""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq()
+    ),
+    TestQuery(
+      """WHEN true THEN CALL () {
+        |  CREATE ()
+        |}
+        |ELSE CALL () {
+        |  CREATE ()
+        |}""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq()
+    ),
+    TestQuery(
+      """WHEN true THEN MERGE ()
+        |ELSE FINISH""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq()
+    ),
+    TestQuery(
+      """WHEN true THEN CALL () {
+        |  MERGE ()
+        |}
+        |ELSE FINISH""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq()
     )
   )
 }

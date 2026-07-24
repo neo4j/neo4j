@@ -24,6 +24,7 @@ import org.neo4j.cypher.cucumber.synthesise.generator.AddIndex
 import org.neo4j.cypher.cucumber.synthesise.generator.CachingParser
 import org.neo4j.cypher.cucumber.synthesise.generator.CombineUncommitted
 import org.neo4j.cypher.cucumber.synthesise.generator.CompositeWrap
+import org.neo4j.cypher.cucumber.synthesise.generator.Namespacing
 import org.neo4j.cypher.cucumber.synthesise.generator.Paginate
 import org.neo4j.cypher.cucumber.synthesise.generator.ScenarioGenerator
 import org.neo4j.cypher.cucumber.synthesise.generator.Uncommitted
@@ -50,6 +51,9 @@ object CucumberSalad {
   /** Wrap queries with `USE comp.data` so they run through a composite database's remote fragment. */
   def compositeWrap(args: Ingredients): ScenarioGenerator = new CompositeWrap(args)
 
+  /** Wrap the query under test so every variable also lives in a second scope, stressing the Namespacer. */
+  def namespacing(args: Ingredients): ScenarioGenerator = new Namespacing(args)
+
   case class Ingredients(
     source: Seq[RecordedScenario],
     rand: RandomSupport,
@@ -57,7 +61,7 @@ object CucumberSalad {
     targetConf: TestConf
   ) {
 
-    private lazy val cypherVersion: CypherVersion = CypherVersion.values()
+    lazy val cypherVersion: CypherVersion = CypherVersion.values()
       .find(version => targetConf.expectFailureTags.contains(s"@fails:cypher-${version.versionName}"))
       .getOrElse(CypherVersion.Legacy.legacyVersion())
     lazy val parser = new CachingParser(cypherVersion)

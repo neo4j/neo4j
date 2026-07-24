@@ -1347,6 +1347,86 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
     )
   }
 
+  test("NEXT expansion preserves the final projection's column order") {
+    assertRewritten(
+      """FINISH
+        |NEXT
+        |RETURN 1 AS length, 2 AS some_nodes, 3 AS p0, 4 AS p1, 5 AS p2, 6 AS someEntity0, 7 AS someEntity1, 8 AS someEntity2
+        |UNION ALL
+        |RETURN 10 AS length, 20 AS some_nodes, 30 AS p0, 40 AS p1, 50 AS p2, 60 AS someEntity0, 70 AS someEntity1, 80 AS someEntity2""".stripMargin,
+      """WITH count(NULL) AS `  UNNAMED0`
+        |CALL () {
+        |  RETURN 1 AS length, 2 AS some_nodes, 3 AS p0, 4 AS p1, 5 AS p2, 6 AS someEntity0, 7 AS someEntity1, 8 AS someEntity2
+        |  UNION ALL
+        |  RETURN 10 AS length, 20 AS some_nodes, 30 AS p0, 40 AS p1, 50 AS p2, 60 AS someEntity0, 70 AS someEntity1, 80 AS someEntity2
+        |}
+        |RETURN length AS length, some_nodes AS some_nodes, p0 AS p0, p1 AS p1, p2 AS p2, someEntity0 AS someEntity0, someEntity1 AS someEntity1, someEntity2 AS someEntity2""".stripMargin,
+      excludedVersions = Set(CypherVersion.Cypher5),
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("NEXT between returning queries preserves the final projection's column order") {
+    assertRewritten(
+      """RETURN 1 AS length, 2 AS some_nodes, 3 AS p0, 4 AS p1, 5 AS p2, 6 AS someEntity0, 7 AS someEntity1, 8 AS someEntity2
+        |NEXT
+        |RETURN length, some_nodes, p0, p1, p2, someEntity0, someEntity1, someEntity2""".stripMargin,
+      """WITH 1 AS length, 2 AS some_nodes, 3 AS p0, 4 AS p1, 5 AS p2, 6 AS someEntity0, 7 AS someEntity1, 8 AS someEntity2
+        |RETURN length AS length, some_nodes AS some_nodes, p0 AS p0, p1 AS p1, p2 AS p2, someEntity0 AS someEntity0, someEntity1 AS someEntity1, someEntity2 AS someEntity2""".stripMargin,
+      excludedVersions = Set(CypherVersion.Cypher5),
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("top-level braces preserve the projection's column order") {
+    assertRewritten(
+      """{
+        |  RETURN 1 AS length, 2 AS some_nodes, 3 AS p0, 4 AS p1, 5 AS p2, 6 AS someEntity0, 7 AS someEntity1, 8 AS someEntity2
+        |  UNION ALL
+        |  RETURN 10 AS length, 20 AS some_nodes, 30 AS p0, 40 AS p1, 50 AS p2, 60 AS someEntity0, 70 AS someEntity1, 80 AS someEntity2
+        |}""".stripMargin,
+      """RETURN 1 AS length, 2 AS some_nodes, 3 AS p0, 4 AS p1, 5 AS p2, 6 AS someEntity0, 7 AS someEntity1, 8 AS someEntity2
+        |UNION ALL
+        |RETURN 10 AS length, 20 AS some_nodes, 30 AS p0, 40 AS p1, 50 AS p2, 60 AS someEntity0, 70 AS someEntity1, 80 AS someEntity2""".stripMargin,
+      excludedVersions = Set(CypherVersion.Cypher5),
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("WHEN branches preserve the projection's column order") {
+    assertRewritten(
+      """WHEN true
+        |  THEN RETURN 1 AS length, 2 AS some_nodes, 3 AS p0, 4 AS p1, 5 AS p2, 6 AS someEntity0, 7 AS someEntity1, 8 AS someEntity2
+        |ELSE RETURN 10 AS length, 20 AS some_nodes, 30 AS p0, 40 AS p1, 50 AS p2, 60 AS someEntity0, 70 AS someEntity1, 80 AS someEntity2""".stripMargin,
+      """WITH CASE
+        |  WHEN true THEN 0
+        |  ELSE 1
+        |END AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`) {
+        |  WITH `  UNNAMED0` AS `  UNNAMED0`
+        |    WHERE `  UNNAMED0` = 0
+        |  CALL () {
+        |    RETURN 1 AS length, 2 AS some_nodes, 3 AS p0, 4 AS p1, 5 AS p2, 6 AS someEntity0, 7 AS someEntity1, 8 AS someEntity2
+        |  }
+        |  RETURN length AS length, some_nodes AS some_nodes, p0 AS p0, p1 AS p1, p2 AS p2, someEntity0 AS someEntity0, someEntity1 AS someEntity1, someEntity2 AS someEntity2
+        |  UNION ALL
+        |  WITH `  UNNAMED0` AS `  UNNAMED0`
+        |    WHERE `  UNNAMED0` = 1
+        |  CALL () {
+        |    RETURN 10 AS length, 20 AS some_nodes, 30 AS p0, 40 AS p1, 50 AS p2, 60 AS someEntity0, 70 AS someEntity1, 80 AS someEntity2
+        |  }
+        |  RETURN length AS length, some_nodes AS some_nodes, p0 AS p0, p1 AS p1, p2 AS p2, someEntity0 AS someEntity0, someEntity1 AS someEntity1, someEntity2 AS someEntity2
+        |}
+        |RETURN length AS length, some_nodes AS some_nodes, p0 AS p0, p1 AS p1, p2 AS p2, someEntity0 AS someEntity0, someEntity1 AS someEntity1, someEntity2 AS someEntity2""".stripMargin,
+      excludedVersions = Set(CypherVersion.Cypher5),
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
   test("rewrites * in importing with 2") {
     assertRewritten(
       """UNWIND [1, 2, 3] AS i
