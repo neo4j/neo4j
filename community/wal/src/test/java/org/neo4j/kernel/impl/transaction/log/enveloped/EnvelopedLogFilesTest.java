@@ -100,6 +100,8 @@ class EnvelopedLogFilesTest {
 
     private EnvelopedLogFiles envelopedLogFiles;
 
+    private BaseLogHeaderFactory logHeaderFactory;
+
     private LogsRepository mirroringRepository;
 
     private static void writeData(EnvelopeWriteChannel writeChannel, byte[] data) throws IOException {
@@ -131,8 +133,7 @@ class EnvelopedLogFilesTest {
         var baseFolder = testDirectory.directory("logsFolder");
         var filesHelper = new SequentialFileNameHelper(baseFolder, baseFileName);
         mirroringRepository = new LogsRepository(fs, filesHelper);
-        var logHeaderFactory =
-                new BaseLogHeaderFactory(kernelVersion, StoreIdentifier.newStoreIdentifier(12345), clock);
+        logHeaderFactory = new BaseLogHeaderFactory(kernelVersion, StoreIdentifier.newStoreIdentifier(12345), clock);
         envelopedLogFiles = new EnvelopedLogFiles(
                 mirroringRepository,
                 logHeaderFactory,
@@ -835,6 +836,133 @@ class EnvelopedLogFilesTest {
             assertThat(new String(readData)).isEqualTo(message2);
             assertThat(reader.entryIndex()).isZero();
         }
+    }
+
+    @Test
+    void truncateAcrossUpgradeBoundarySetsHeaderFactoryBackToPreviousVersion() throws IOException {
+        envelopedLogFiles.initialise();
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, "one".getBytes(), 0);
+        writeData(writeChannel, "two".getBytes(), 1);
+        writeChannel.prepareForFlush().flush();
+        rotateForUpgradeTo(KernelVersion.GLORIOUS_FUTURE);
+        writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, "three".getBytes(), 2);
+        writeChannel.prepareForFlush().flush();
+        assertThat(logHeaderFactory.getCurrentDatabaseVersion()).isEqualTo(KernelVersion.GLORIOUS_FUTURE);
+
+        envelopedLogFiles.truncate(1);
+
+        assertThat(logHeaderFactory.getCurrentDatabaseVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
+        // truncation always rotates; the fresh file's header proves the version was rolled back before that rotation
+        var landingFileVersion = envelopedLogFiles.currentWriteLogPosition().getLogVersion();
+        assertThat(headerVersion(landingFileVersion)).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
+    }
+
+    @Test
+    void truncateToFirstEntryAfterUpgradeStaysInTheNewVersionFile() throws IOException {
+        envelopedLogFiles.initialise();
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, "one".getBytes(), 0);
+        writeData(writeChannel, "two".getBytes(), 1);
+        writeChannel.prepareForFlush().flush();
+        rotateForUpgradeTo(KernelVersion.GLORIOUS_FUTURE);
+        writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, "three".getBytes(), 2);
+        writeData(writeChannel, "four".getBytes(), 3);
+        writeChannel.prepareForFlush().flush();
+
+        envelopedLogFiles.truncate(2);
+
+        assertThat(logHeaderFactory.getCurrentDatabaseVersion()).isEqualTo(KernelVersion.GLORIOUS_FUTURE);
+        var landingFileVersion = envelopedLogFiles.currentWriteLogPosition().getLogVersion();
+        assertThat(headerVersion(landingFileVersion)).isEqualTo(KernelVersion.GLORIOUS_FUTURE);
+
+        writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, "replacement".getBytes(), 2);
+        writeChannel.prepareForFlush().flush();
+        try (var reader = envelopedLogFiles.openReadChannel()) {
+            assertNextEntry(reader, "one", 0);
+            assertNextEntry(reader, "two", 1);
+            assertNextEntry(reader, "replacement", 2);
+        }
+    }
+
+    @Test
+    void initialiseSetsHeaderFactoryVersionFromTailFileHeader() throws IOException {
+        envelopedLogFiles.initialise();
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, "one".getBytes(), 0);
+        writeChannel.prepareForFlush().flush();
+        rotateForUpgradeTo(KernelVersion.GLORIOUS_FUTURE);
+        writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, "two".getBytes(), 1);
+        writeChannel.prepareForFlush().flush();
+        envelopedLogFiles.close();
+
+        recreateEnvelopedLogFiles(LatestVersions.LATEST_KERNEL_VERSION);
+        envelopedLogFiles.initialise();
+
+        assertThat(logHeaderFactory.getCurrentDatabaseVersion()).isEqualTo(KernelVersion.GLORIOUS_FUTURE);
+    }
+
+    @Test
+    void initialiseSetsHeaderFactoryVersionFromTheFileContainingTheLastEntry() throws IOException {
+        envelopedLogFiles.initialise();
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, "one".getBytes(), 0);
+        writeChannel.prepareForFlush().flush();
+        rotateForUpgradeTo(KernelVersion.GLORIOUS_FUTURE);
+        envelopedLogFiles.close();
+
+        // bootstrap and the newest (empty) file both say GLORIOUS_FUTURE; the last entry's file must win
+        recreateEnvelopedLogFiles(KernelVersion.GLORIOUS_FUTURE);
+        envelopedLogFiles.initialise();
+
+        assertThat(logHeaderFactory.getCurrentDatabaseVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
+    }
+
+    @Test
+    void truncateToLastSafeEntrySetsHeaderFactoryVersionFromTheLandingFile() throws IOException {
+        envelopedLogFiles.initialise();
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, "one".getBytes(), 0);
+        writeChannel.prepareForFlush().flush();
+        rotateForUpgradeTo(KernelVersion.GLORIOUS_FUTURE);
+        // a nonzero checksum with a ZERO envelope type reads as an incomplete entry, breaking the whole tail file
+        var garbage = new byte[segmentBlockSize];
+        garbage[0] = 1;
+        envelopedLogFiles.currentWriteChannel().directPutAll(ByteBuffer.wrap(garbage), -1);
+
+        envelopedLogFiles.truncateToLastSafeEntry(0);
+
+        assertThat(logHeaderFactory.getCurrentDatabaseVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
+        var landingFileVersion = envelopedLogFiles.currentWriteLogPosition().getLogVersion();
+        assertThat(headerVersion(landingFileVersion)).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
+    }
+
+    private void rotateForUpgradeTo(KernelVersion version) throws IOException {
+        logHeaderFactory.setVersion(version);
+        envelopedLogFiles.forceRotate();
+    }
+
+    private KernelVersion headerVersion(long fileVersion) throws IOException {
+        try (var metadata = envelopedLogFiles.logFilesMetadata()) {
+            while (metadata.next()) {
+                LogHeader header = metadata.get().logHeader();
+                if (header.getLogVersion() == fileVersion) {
+                    return header.getKernelVersion();
+                }
+            }
+        }
+        throw new AssertionError("No log file with version " + fileVersion);
+    }
+
+    private static void assertNextEntry(EnvelopeReadChannel reader, String message, long index) throws IOException {
+        var readData = new byte[message.length()];
+        reader.read(ByteBuffer.wrap(readData));
+        assertThat(new String(readData)).isEqualTo(message);
+        assertThat(reader.entryIndex()).isEqualTo(index);
     }
 
     @Test

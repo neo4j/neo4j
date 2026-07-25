@@ -32,6 +32,7 @@ import java.nio.file.NoSuchFileException;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -68,6 +69,7 @@ public class EnvelopedLogTailChecker {
 
     public record EnvelopedLogTailInfo(
             StoreIdentifier storeIdentifier,
+            KernelVersion kernelVersion,
             LogPosition lastValidatedPosition,
             long lastValidAppendIndex,
             long lastValidTerm,
@@ -79,6 +81,7 @@ public class EnvelopedLogTailChecker {
         public static EnvelopedLogTailInfo empty(StoreIdentifier identifier) {
             return new EnvelopedLogTailInfo(
                     identifier,
+                    null,
                     new LogPosition(0L, 0L),
                     UNSPECIFIED_INDEX,
                     UNSPECIFIED_TERM,
@@ -145,6 +148,7 @@ public class EnvelopedLogTailChecker {
                     // first entry we have is incomplete, so just preserve header values and rebuild
                     return new EnvelopedLogTailInfo(
                             storeIdentifier,
+                            logHeader.getKernelVersion(),
                             new LogPosition(
                                     version, logHeader.getStartPosition().getByteOffset()),
                             logHeader.getLastAppendIndex(),
@@ -157,6 +161,7 @@ public class EnvelopedLogTailChecker {
 
                 return new EnvelopedLogTailInfo(
                         storeIdentifier,
+                        logHeader.getKernelVersion(),
                         lastGoodPosition,
                         lastValidAppendIndex,
                         lastValidTerm,

@@ -52,10 +52,6 @@ import org.neo4j.util.VisibleForTesting;
 
 public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoCloseable {
     public static final int MINIMUM_SEGMENTS = 2;
-    private static final int HEADER_SIZE = LogEnvelopeHeader.HEADER_SIZE;
-    // Envelope header layout: [payload checksum: int][type: byte][payload length: int]...
-    private static final int ENVELOPE_TYPE_OFFSET = Integer.BYTES;
-    private static final int PAYLOAD_LENGTH_OFFSET = ENVELOPE_TYPE_OFFSET + Byte.BYTES;
     private final int segmentBlockSize;
     private final int writerBufferedBlocks;
     private final MemoryTracker memoryTracker;
@@ -215,6 +211,9 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 memoryTracker,
                 logProvider);
         var tailInfo = tailChecker.checkEnvelopedLogTail(fromVersion);
+        if (tailInfo.kernelVersion() != null) {
+            logHeaderFactory.setVersion(tailInfo.kernelVersion());
+        }
         if (tailInfo.createInitial()) {
             log.info("No previous enveloped raft log files found. Creating new log file. " + tailInfo);
             long startVersion = tailInfo.lastValidatedPosition().getLogVersion();
@@ -344,6 +343,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             position = readChannel.position();
             prevChecksum = readChannel.logHeader().getPreviousLogFileChecksum();
             boolean envelopesRead = true;
+            logHeaderFactory.setVersion(readChannel.logHeader().getKernelVersion());
             while (readChannel.entryIndex() < fromIndex) {
                 // don't read values from the channel until it has definitely read an envelope header
                 if (!envelopesRead) {
@@ -681,19 +681,12 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         logsRepository.deleteLogFilesFrom(0);
     }
 
-    /**
-     * Channels over the physical byte range: follow-on channels start at their file's first data segment and
-     * so deliver any leading START_OFFSET filler as part of the stream.
-     */
+    /** Channels over the physical byte range, leading START_OFFSET fillers included. */
     public StoreChannelsForTransfer storeChannels(long fromIndex, long toIndex) throws IOException {
         return storeChannels(fromIndex, toIndex, false);
     }
 
-    /**
-     * Channels over the pure entry stream: every channel is positioned at its first entry byte, so local
-     * layout — file headers and leading START_OFFSET fillers — never reaches the consumer. Each channel's
-     * intra-segment grid offset is {@link StoreChannelsForTransfer#segmentOffset(int)}.
-     */
+    /** Channels over the pure entry stream, per the {@link EnvelopeLogRangeReader#entryStreamChannels} contract. */
     public StoreChannelsForTransfer entryStreamChannels(long fromIndex, long toIndex) throws IOException {
         return storeChannels(fromIndex, toIndex, true);
     }
@@ -800,15 +793,17 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
      */
     private static void skipLeadingStartOffset(StoreChannel channel) throws IOException {
         long position = channel.position();
-        var header = ByteBuffer.allocate(HEADER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+        var header = ByteBuffer.allocate(LogEnvelopeHeader.HEADER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
         while (header.hasRemaining() && channel.read(header) >= 0) {
-            // keep reading; a file this short cannot start with a START_OFFSET envelope anyway
+            // EOF before a full header just means no filler — a file this short cannot start with one
         }
-        if (header.hasRemaining() || header.get(ENVELOPE_TYPE_OFFSET) != EnvelopeType.START_OFFSET.typeValue) {
+        if (header.hasRemaining()
+                || header.get(LogEnvelopeHeader.ENVELOPE_TYPE_OFFSET) != EnvelopeType.START_OFFSET.typeValue) {
             channel.position(position);
             return;
         }
-        channel.position(position + HEADER_SIZE + header.getInt(PAYLOAD_LENGTH_OFFSET));
+        channel.position(
+                position + LogEnvelopeHeader.HEADER_SIZE + header.getInt(LogEnvelopeHeader.PAYLOAD_LENGTH_OFFSET));
     }
 
     private static class EnvelopedLogRotation implements LogRotation {

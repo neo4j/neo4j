@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.storageengine.api.StoreIdentifier;
 
@@ -34,6 +35,8 @@ public interface LogHeaderFactory {
 
     // When starting, if we have logs we will replace the store identifier if one exists.
     default void setStoreIdentifier(StoreIdentifier storeIdentifier) {}
+
+    default void setVersion(KernelVersion kernelVersion) {}
 
     default void allowStoreIdentifierChange() {}
 }

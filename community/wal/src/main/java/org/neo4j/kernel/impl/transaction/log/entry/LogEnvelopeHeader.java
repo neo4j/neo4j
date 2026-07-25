@@ -43,6 +43,9 @@ public class LogEnvelopeHeader {
             + Long.BYTES // term
             + Byte.BYTES; // content type
 
+    public static final int ENVELOPE_TYPE_OFFSET = Integer.BYTES;
+    public static final int PAYLOAD_LENGTH_OFFSET = ENVELOPE_TYPE_OFFSET + Byte.BYTES;
+
     public static final int MAX_ZERO_PADDING_SIZE = Long.BYTES + LogEnvelopeHeader.HEADER_SIZE;
 
     public static final byte IGNORE_CONTENT_VERSION = -1;

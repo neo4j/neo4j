@@ -76,8 +76,13 @@ public class BaseLogHeaderFactory implements LogHeaderFactory {
                 clock.millis());
     }
 
+    @Override
     public void setVersion(KernelVersion databaseVersion) {
         this.currentAppendedDatabaseVersion = databaseVersion;
+    }
+
+    public boolean isCurrentVersion(KernelVersion databaseVersion) {
+        return currentAppendedDatabaseVersion == databaseVersion;
     }
 
     @Override
