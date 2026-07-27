@@ -371,7 +371,7 @@ class CsvInputTest {
 
     @ParameterizedTest
     @EnumSource(MultilineSetting.class)
-    void shouldNotAllowNodesWithoutIdHeader(MultilineSetting setting) throws Exception {
+    void shouldAllowNodesWithoutIdHeader(MultilineSetting setting) throws Exception {
         // GIVEN
         DataFactory data = data("""
                 name:string,level:int
@@ -390,9 +390,14 @@ class CsvInputTest {
                 NO_MONITOR,
                 groups,
                 INSTANCE);
-        assertThatThrownBy(() -> input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("There are no :ID columns in the header.");
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        // WHEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            // THEN
+            assertNextNode(nodes, null, null, properties("name", "Mattias", "level", 1), labels());
+            assertNextNode(nodes, null, null, properties("name", "Johan", "level", 2), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
     }
 
     @ParameterizedTest

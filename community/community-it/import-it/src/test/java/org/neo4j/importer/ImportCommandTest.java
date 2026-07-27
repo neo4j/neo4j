@@ -1347,6 +1347,25 @@ class ImportCommandTest {
     }
 
     @Test
+    void shouldSkipEmptyFiles() throws Exception {
+        // GIVEN
+        Path data = data("");
+
+        // WHEN
+        runImport("--nodes", data.toAbsolutePath().toString());
+
+        // THEN
+        GraphDatabaseService graphDatabaseService = getDatabaseApi();
+        try (Transaction tx = graphDatabaseService.beginTx();
+                ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+            assertThat(Iterables.asList(allNodes))
+                    .as("Expected database to be empty")
+                    .isEmpty();
+            tx.commit();
+        }
+    }
+
+    @Test
     void shouldIgnoreEmptyQuotedStringsIfConfiguredTo() throws Exception {
         // GIVEN
         Path data = data(":ID,one,two,three", "1,\"\",,value");
