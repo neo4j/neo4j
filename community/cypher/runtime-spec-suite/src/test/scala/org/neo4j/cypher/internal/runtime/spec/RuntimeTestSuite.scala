@@ -100,6 +100,10 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Random
 import scala.util.Using
 
+object BaseRuntimeTestSuite {
+  private val dummyPos = new org.scalactic.source.Position("", "", -1)
+}
+
 object RuntimeTestSuite {
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
   def isParallel(runtime: CypherRuntime[_]): Boolean = runtime.name.toLowerCase(Locale.ROOT) == "parallel"
@@ -331,12 +335,13 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   }
 
   // shadows the `test` method
-  protected def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit d: DummyImplicit): Unit = {
-    super.test(testName, Tag(runtime.name) +: testTags: _*)({
+  inline def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit d: DummyImplicit): Unit = {
+    registerTest(testName, Tag(runtime.name) +: testTags: _*)({
       testFun
       // Close the transaction here so that any errors resulting from that will be visible as test failures
       closeRuntimeTestSupport()
-    })
+    })(using
+      BaseRuntimeTestSuite.dummyPos) // not actually used by registerTest, provided to avoid generating a position via macro expansion
   }
 
   override protected def runTest(testName: String, args: Args): Status = {
