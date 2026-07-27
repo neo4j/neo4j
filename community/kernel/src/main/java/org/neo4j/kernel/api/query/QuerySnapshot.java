@@ -125,6 +125,12 @@ public class QuerySnapshot {
                 : ObfuscatedQuery.optional(obfuscation.defaultView()).map(ObfuscatedQuery::text);
     }
 
+    public Optional<String> typedObfuscatedQueryText(QueryObfuscator.ObfuscatedLiteralRenderer renderer) {
+        return obfuscation == null
+                ? Optional.empty()
+                : ObfuscatedQuery.optional(obfuscation.typed(renderer)).map(ObfuscatedQuery::text);
+    }
+
     public Optional<Function<InputPosition, InputPosition>> obfuscatePosition() {
         return obfuscation == null
                 ? Optional.empty()

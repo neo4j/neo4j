@@ -340,6 +340,12 @@ class ExecutingQueryTest {
             public ObfuscatedQuery fullyObfuscatedQuery(String rawQueryText, MapValue rawQueryParameters, int offset) {
                 return new ObfuscatedQuery("all-view", rawQueryParameters, Function.identity());
             }
+
+            @Override
+            public ObfuscatedQuery typedObfuscatedQuery(
+                    String rawQueryText, MapValue rawQueryParameters, int offset, ObfuscatedLiteralRenderer renderer) {
+                return new ObfuscatedQuery("typed-view", rawQueryParameters, Function.identity());
+            }
         };
 
         query.onObfuscatorReady(obfuscator, 0);
@@ -349,6 +355,7 @@ class ExecutingQueryTest {
 
         QuerySnapshot snapshot = query.snapshot();
         assertThat(snapshot.obfuscatedQueryText()).contains("default-view");
+        assertThat(snapshot.typedObfuscatedQueryText(typeName -> typeName)).contains("typed-view");
     }
 
     @Test
@@ -376,6 +383,15 @@ class ExecutingQueryTest {
             public MapValue obfuscateParameters(MapValue rawQueryParameters) {
                 throw new StackOverflowError("deeply nested");
             }
+
+            @Override
+            public ObfuscatedQuery typedObfuscatedQuery(
+                    String rawQueryText,
+                    MapValue rawQueryParameters,
+                    int preparserOffset,
+                    ObfuscatedLiteralRenderer renderer) {
+                throw new StackOverflowError("deeply nested");
+            }
         };
 
         query.onObfuscatorReady(throwingError, 0);
@@ -383,6 +399,8 @@ class ExecutingQueryTest {
         assertThat(query.obfuscatedQueryText()).isEmpty();
         assertThat(query.fullyObfuscatedQueryText()).isEmpty();
         assertThat(query.snapshot().obfuscatedQueryText()).isEmpty();
+        assertThat(query.snapshot().typedObfuscatedQueryText(typeName -> typeName))
+                .isEmpty();
     }
 
     @Test

@@ -131,4 +131,51 @@ class ObfuscationMetadataCollectionTest extends CypherFunSuite with AstConstruct
     metadata.sensitiveLiteralOffsets.head.length shouldBe None
     metadata.allLiteralOffsets should contain(metadata.sensitiveLiteralOffsets.head)
   }
+
+  test("collects the literal type of each primitive kind") {
+    val metadata = collect(parse("RETURN 'str', 42, 4.5, true, null"), extractWith = None)
+    // Offsets are normalized into ascending start order, so they match the textual order above.
+    metadata.allLiteralOffsets.map(_.literalTypeName) shouldBe Vector(
+      "STRING",
+      "INTEGER",
+      "FLOAT",
+      "BOOLEAN",
+      "NULL"
+    )
+  }
+
+  test("tags each inner literal of a list with its own type (leaf tagging)") {
+    val metadata = collect(parse("RETURN [1, 'two']"), extractWith = None)
+    metadata.allLiteralOffsets.map(_.literalTypeName) shouldBe Vector(
+      "INTEGER",
+      "STRING"
+    )
+  }
+
+  test("tags each literal inside a point constructor with its own type") {
+    val metadata = collect(
+      parse("WITH point({longitude: 12.34, latitude: 56.78, crs: 'WGS-84'}) AS p RETURN p"),
+      extractWith = None
+    )
+    metadata.allLiteralOffsets.map(_.literalTypeName) shouldBe Vector(
+      "FLOAT",
+      "FLOAT",
+      "STRING"
+    )
+  }
+
+  test("tags each literal inside a VECTOR constructor with its own type") {
+    val metadata = collect(parse("RETURN VECTOR([1, 2, 3], 3, INT64) AS v"), extractWith = None)
+    metadata.allLiteralOffsets.map(_.literalTypeName) shouldBe Vector(
+      "INTEGER",
+      "INTEGER",
+      "INTEGER",
+      "INTEGER"
+    )
+  }
+
+  test("tags a literal inside a temporal constructor with its own type") {
+    val metadata = collect(parse("RETURN date('2023-01-01') AS d"), extractWith = None)
+    metadata.allLiteralOffsets.map(_.literalTypeName) shouldBe Vector("STRING")
+  }
 }

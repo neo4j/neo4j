@@ -18,12 +18,20 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.BooleanLiteral
+import org.neo4j.cypher.internal.expressions.DoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Infinity
+import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.Literal
+import org.neo4j.cypher.internal.expressions.NaN
+import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.METADATA_COLLECTION
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
@@ -37,6 +45,12 @@ import org.neo4j.cypher.internal.util.LiteralOffset
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTNull
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 case object ObfuscationMetadataCollected extends Condition
 
@@ -89,7 +103,8 @@ case object ObfuscationMetadataCollection
         val offset = LiteralOffset(
           literal.position.offset,
           literal.position.line,
-          Some(literal.literalLength)
+          Some(literal.literalLength),
+          literalTypeOf(literal)
         )
         SkipChildren(Offsets(sensitive :+ offset, all :+ offset))
       }
@@ -99,7 +114,8 @@ case object ObfuscationMetadataCollection
           val offset = LiteralOffset(
             sensitiveLiteral.position.offset,
             sensitiveLiteral.position.line,
-            Some(sensitiveLiteral.literalLength)
+            Some(sensitiveLiteral.literalLength),
+            literalTypeOf(literal)
           )
           SkipChildren(Offsets(sensitive, all :+ offset))
         } else {
@@ -111,10 +127,15 @@ case object ObfuscationMetadataCollection
           case Some(originalExp) =>
             // contributes when the original holds plain Literals (e.g. a sensitive procedure/function argument).
             val offsets = originalExp.folder.findAllByClass[Literal]
-              .map(_.asSensitiveLiteral)
               .collect {
-                case l if l.literalLength > 0 =>
-                  LiteralOffset(l.position.offset, l.position.line, Some(l.literalLength))
+                case original if original.asSensitiveLiteral.literalLength > 0 =>
+                  val l = original.asSensitiveLiteral
+                  LiteralOffset(
+                    l.position.offset,
+                    l.position.line,
+                    Some(l.literalLength),
+                    literalTypeOf(original)
+                  )
               }
               .toVector
             SkipChildren(Offsets(sensitive ++ offsets, all ++ offsets))
@@ -136,6 +157,16 @@ case object ObfuscationMetadataCollection
     extractedParamNames: Set[String]
   ): Set[String] =
     queryParams.folder.findAllByClass[SensitiveParameter].map(_.name).toSet -- extractedParamNames
+
+  // Only primitive leaf literals carry a type; lists and maps are not Literals, so the fold tags their inner leaves.
+  private def literalTypeOf(node: Any): String = node match {
+    case _: IntegerLiteral                            => CTInteger.toCypherTypeString
+    case _: DoubleLiteral | _: Infinity | _: NaN      => CTFloat.toCypherTypeString
+    case _: StringLiteral | _: SensitiveStringLiteral => CTString.toCypherTypeString
+    case _: BooleanLiteral                            => CTBoolean.toCypherTypeString
+    case _: Null                                      => CTNull.toCypherTypeString
+    case _                                            => CTAny.toCypherTypeString
+  }
 
   override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = this
 }

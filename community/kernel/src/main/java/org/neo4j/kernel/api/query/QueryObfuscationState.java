@@ -24,10 +24,10 @@ import org.neo4j.kernel.api.query.QueryObfuscator.ObfuscatedQuery;
 import org.neo4j.values.virtual.MapValue;
 
 /**
- * Immutable, query-bound inputs plus a per-query memo of the two obfuscated views. Shared by reference between
- * the live {@link ExecutingQuery} and all its snapshots, so each view is computed at most once. Thread-safe via
- * idempotent recompute: the inputs are immutable and {@link #computeSafely} always returns a non-null bundle, so a
- * benign race just recomputes an equal value (no lock).
+ * Immutable, query-bound inputs plus a per-query memo of the obfuscated views. Shared by reference between
+ * the live {@link ExecutingQuery} and all its snapshots, so each memoized view is computed at most once.
+ * Thread-safe via idempotent recompute: the inputs are immutable and {@link #computeSafely} always returns a
+ * non-null bundle, so a benign race just recomputes an equal value (no lock).
  */
 final class QueryObfuscationState {
     private final QueryObfuscator obfuscator;
@@ -61,6 +61,10 @@ final class QueryObfuscationState {
             defaultView = d;
         }
         return d;
+    }
+
+    ObfuscatedQuery typed(QueryObfuscator.ObfuscatedLiteralRenderer renderer) {
+        return computeSafely(() -> obfuscator.typedObfuscatedQuery(rawText, rawParameters, preparserOffset, renderer));
     }
 
     private ObfuscatedQuery computeSafely(Supplier<ObfuscatedQuery> view) {

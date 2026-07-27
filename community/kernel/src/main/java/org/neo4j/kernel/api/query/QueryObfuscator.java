@@ -75,6 +75,22 @@ public interface QueryObfuscator {
         return sensitiveObfuscatedQuery(rawQueryText, rawQueryParameters, preparserOffset);
     }
 
+    /**
+     * Renders the replacement token for one redacted literal in the typed view.
+     */
+    @FunctionalInterface
+    interface ObfuscatedLiteralRenderer {
+        String render(String typeName);
+    }
+
+    /**
+     * The typed view: like the default view, but each redacted literal is replaced by a typed token.
+     */
+    default ObfuscatedQuery typedObfuscatedQuery(
+            String rawQueryText, MapValue rawQueryParameters, int preparserOffset, ObfuscatedLiteralRenderer renderer) {
+        return ObfuscatedQuery.absent();
+    }
+
     QueryObfuscator PASSTHROUGH = new QueryObfuscator() {
 
         @Override
@@ -96,6 +112,15 @@ public interface QueryObfuscator {
         public ObfuscatedQuery fullyObfuscatedQuery(
                 String rawQueryText, MapValue rawQueryParameters, int preparserOffset) {
             return new ObfuscatedQuery(rawQueryText, rawQueryParameters, Function.identity());
+        }
+
+        @Override
+        public ObfuscatedQuery typedObfuscatedQuery(
+                String rawQueryText,
+                MapValue rawQueryParameters,
+                int preparserOffset,
+                ObfuscatedLiteralRenderer renderer) {
+            return defaultObfuscatedQuery(rawQueryText, rawQueryParameters, preparserOffset);
         }
     };
 }

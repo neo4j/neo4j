@@ -94,16 +94,34 @@ class CypherQueryObfuscator(
     if (policy.fullLiteralsByDefault) fullyObfuscatedQuery(rawQueryText, rawQueryParameters, preparserOffset)
     else sensitiveObfuscatedQuery(rawQueryText, rawQueryParameters, preparserOffset)
 
+  override def typedObfuscatedQuery(
+    rawQueryText: String,
+    rawQueryParameters: MapValue,
+    preparserOffset: Int,
+    renderer: QueryObfuscator.ObfuscatedLiteralRenderer
+  ): ObfuscatedQuery = {
+    val offsets = if (policy.fullLiteralsByDefault) state.allLiteralOffsets else state.sensitiveLiteralOffsets
+    // Tokens are rendered once and shared by the text and the position map, so their lengths always agree.
+    val replacements = offsets.map(o => renderer.render(o.literalTypeName))
+    new ObfuscatedQuery(
+      obfuscateTextWith(offsets, rawQueryText, preparserOffset, replacements.apply),
+      obfuscateParameters(rawQueryParameters),
+      obfuscatePositionWith(offsets, rawQueryText, preparserOffset, replacements.apply)
+    )
+  }
+
   private def obfuscateTextWith(
     offsets: Vector[LiteralOffset],
     rawQueryText: String,
-    preParserOffset: Int
+    preParserOffset: Int,
+    replacementAt: Int => String = _ => CypherQueryObfuscator.OBFUSCATED_LITERAL
   ): String =
     if (offsets.isEmpty)
       rawQueryText
     else {
       val sb = new mutable.StringBuilder()
       var i = 0
+      var idx = 0
       for (literalOffset <- offsets) {
         val start = literalOffset.start(preParserOffset)
         if (start >= rawQueryText.length || start < i) {
@@ -111,8 +129,9 @@ class CypherQueryObfuscator(
         }
 
         sb.append(rawQueryText.substring(i, start))
-        sb.append(CypherQueryObfuscator.OBFUSCATED_LITERAL)
+        sb.append(replacementAt(idx))
         i = start + literalOffset.length.getOrElse(literalStringLength(rawQueryText, start))
+        idx += 1
       }
       if (i < rawQueryText.length) {
         sb.append(rawQueryText.substring(i))
@@ -144,7 +163,8 @@ class CypherQueryObfuscator(
   private def obfuscatePositionWith(
     offsets: Vector[LiteralOffset],
     rawQueryText: String,
-    preparserOffset: Int
+    preparserOffset: Int,
+    replacementAt: Int => String = _ => CypherQueryObfuscator.OBFUSCATED_LITERAL
   ): function.Function[graphdb.InputPosition, graphdb.InputPosition] = {
     if (offsets.isEmpty) function.Function.identity()
     else {
@@ -152,16 +172,18 @@ class CypherQueryObfuscator(
       in => {
         var obfuscatedOffset = in.getOffset
         var obfuscatedColumn = in.getColumn
-        val obfuscatedLength = CypherQueryObfuscator.OBFUSCATED_LITERAL.length
+        var idx = 0
         for (literalOffset <- offsets) {
           val start = literalOffset.start(preparserOffset)
           if (start < in.getOffset) {
+            val obfuscatedLength = replacementAt(idx).length
             val length = literalOffset.length.getOrElse(literalStringLength(rawQueryText, start))
             obfuscatedOffset += obfuscatedLength - length
             if (literalOffset.line(lineOffset) == in.getLine) {
               obfuscatedColumn += obfuscatedLength - length
             }
           }
+          idx += 1
         }
         new graphdb.InputPosition(obfuscatedOffset, in.getLine, obfuscatedColumn)
       }

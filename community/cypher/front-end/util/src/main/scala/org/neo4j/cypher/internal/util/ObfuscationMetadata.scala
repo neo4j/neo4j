@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.util.symbols.CTAny
+
 /**
  * Obfuscation metadata collected during parsing, carrying two separate views of the literals to redact
  */
@@ -71,8 +73,14 @@ object ObfuscationMetadata {
  * @param start offset of the literal relative to the query string without preparser options
  * @line line number of the literal relative to the query string without preparser options
  * @param length length of literal in query string
+ * @param literalTypeName Cypher type name of the literal, e.g. "STRING"; "ANY" when unknown
  */
-case class LiteralOffset(private val start: Int, private val line: Int, length: Option[Int]) {
+case class LiteralOffset(
+  private val start: Int,
+  private val line: Int,
+  length: Option[Int],
+  literalTypeName: String = CTAny.toCypherTypeString
+) {
   def start(preParserOffset: Int): Int = start + preParserOffset
   def line(preParserLineOffset: Int): Int = line + preParserLineOffset
 }
