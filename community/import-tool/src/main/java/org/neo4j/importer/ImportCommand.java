@@ -25,6 +25,7 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
 import static org.eclipse.collections.impl.tuple.Tuples.pair;
 import static org.neo4j.batchimport.api.Configuration.DEFAULT;
+import static org.neo4j.cloud.storage.StorageSettingsDeclaration.adaptPathForSampling;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.importer.FileImporter.FileInputType.NO_INPUT;
@@ -36,9 +37,11 @@ import static picocli.CommandLine.Help.Visibility.NEVER;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,12 +73,14 @@ import org.neo4j.cli.Converters.MaxOffHeapMemoryConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.cli.ExitCode;
 import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
+import org.neo4j.cloud.storage.StoragePath;
 import org.neo4j.cloud.storage.StorageUtils;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.csv.reader.Magic;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.importer.FileImporter.FileInputType;
 import org.neo4j.importer.SchemaCommandReader.ReaderConfig;
@@ -88,6 +93,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction.PatternStyle;
 import org.neo4j.io.fs.FileSystemUtils;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -799,6 +805,7 @@ public class ImportCommand {
                     // Default is different for Skidbladnir
                     bufferSize = org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR;
                 }
+                rejectCompressedInput(fs);
             }
         }
 
@@ -821,6 +828,46 @@ public class ImportCommand {
             if (!multilineEnabled) {
                 throw new CommandFailedException(
                         "ERROR: Skidbladnir import is only supported with '%s=true'.".formatted(MULTILINE_FIELDS));
+            }
+        }
+
+        private void rejectCompressedInput(SchemeFileSystemAbstraction fs) {
+            if (nodes != null) {
+                for (NodeFilesGroup group : nodes) {
+                    rejectCompressedInput(fs, group);
+                }
+            }
+            for (RelationshipFilesGroup group : relationships) {
+                rejectCompressedInput(fs, group);
+            }
+        }
+
+        private void rejectCompressedInput(SchemeFileSystemAbstraction fs, InputFilesGroup<?> group) {
+            for (Path path : group.toPathArray(fs, patternStyle)) {
+                Magic magic = detectCompression(fs, path);
+                if (magic == Magic.ZIP || magic == Magic.GZIP) {
+                    throw new CommandFailedException(
+                            "ERROR: Skidbladnir import is not supported for compressed (ZIP/GZIP) input, but '%s' is %s-compressed."
+                                    .formatted(path, magic == Magic.ZIP ? "ZIP" : "GZIP"));
+                }
+            }
+        }
+
+        private static Magic detectCompression(FileSystemAbstraction fs, Path path) {
+            if (path instanceof StoragePath sp) {
+                // We only need the first few bytes
+                path = adaptPathForSampling(sp);
+            }
+
+            try (StoreChannel channel = fs.open(path, Set.of(StandardOpenOption.READ))) {
+                ByteBuffer buffer = ByteBuffer.allocate(Magic.longest());
+                channel.read(buffer, 0);
+                buffer.flip();
+                byte[] bytes = new byte[buffer.remaining()];
+                buffer.get(bytes);
+                return Magic.of(bytes);
+            } catch (IOException e) {
+                return Magic.NONE;
             }
         }
 
