@@ -28,13 +28,13 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.ResolveCallablesFromPlanContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.frontend.helpers.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.Namespacer

@@ -32,10 +32,10 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.CacheStrategy
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.PreParserCache
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
-import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.phases.BaseContextImpl
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.defaultSemanticFeatures

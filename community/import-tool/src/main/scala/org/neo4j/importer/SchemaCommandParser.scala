@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.ast.AlterCurrentGraphType.AlterOperation
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.compiler.CypherParsingConfig
-import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.PlannerName
+import org.neo4j.cypher.internal.frontend.phases.BaseContextImpl
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStatsNoOp

@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
-import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
+import org.neo4j.cypher.internal.frontend.helpers.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator

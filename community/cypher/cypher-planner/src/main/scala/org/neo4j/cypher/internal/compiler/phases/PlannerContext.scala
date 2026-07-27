@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
-import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
 import org.neo4j.cypher.internal.compiler.planner.GraphTargetVerifier
 import org.neo4j.cypher.internal.compiler.planner.Optimisation
@@ -33,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
+import org.neo4j.cypher.internal.frontend.helpers.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.frontend.notification.InternalNotificationStats
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -88,62 +88,6 @@ trait PlannerContext extends BaseContext {
   /** Resolved batch strategy for `CALL ... IN CONCURRENT TRANSACTIONS` (setting + preparser-option override). */
   def transactionBatchStrategy: CypherTransactionBatchStrategyOption
   def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlannerContext
-}
-
-class BaseContextImpl(
-  final override val cypherVersion: CypherVersion,
-  final override val cypherExceptionFactory: CypherExceptionFactory,
-  final override val tracer: CompilationPhaseTracer,
-  final override val notificationLogger: InternalNotificationLogger,
-  final override val monitors: Monitors,
-  final override val cancellationChecker: CancellationChecker,
-  final override val internalUsageStats: InternalUsageStats,
-  final override val sessionDatabase: DatabaseReference,
-  final override val semanticFeatures: Seq[SemanticFeature],
-  final override val isScopeQuery: Boolean,
-  final override val shadowedFunctions: Set[String],
-  final override val isDebugSession: Boolean
-) extends BaseContext {
-
-  final override val errorHandler: Seq[SemanticErrorDef] => Unit =
-    SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
-
-  final override def errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
-}
-
-object BaseContextImpl {
-
-  def apply(
-    cypherVersion: CypherVersion,
-    tracer: CompilationPhaseTracer,
-    notificationLogger: InternalNotificationLogger,
-    queryText: String,
-    offset: Option[InputPosition],
-    monitors: Monitors,
-    cancellationChecker: CancellationChecker,
-    internalSyntaxUsageStats: InternalUsageStats,
-    sessionDatabase: DatabaseReference,
-    semanticFeatures: Seq[SemanticFeature],
-    isScopeQuery: Boolean,
-    shadowedFunctions: Set[String],
-    isDebugSession: Boolean
-  ): BaseContextImpl = {
-    val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
-    new BaseContextImpl(
-      cypherVersion,
-      exceptionFactory,
-      tracer,
-      notificationLogger,
-      monitors,
-      cancellationChecker,
-      internalSyntaxUsageStats,
-      sessionDatabase,
-      semanticFeatures,
-      isScopeQuery,
-      shadowedFunctions,
-      isDebugSession
-    )
-  }
 }
 
 final class PlannerContextImpl(

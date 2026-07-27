@@ -108,12 +108,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner</artifactId>
+      <artifactId>neo4j-exceptions</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-exceptions</artifactId>
+      <artifactId>neo4j-front-end</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
