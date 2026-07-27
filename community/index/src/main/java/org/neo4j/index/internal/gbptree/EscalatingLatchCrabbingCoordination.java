@@ -48,7 +48,8 @@ import org.neo4j.io.pagecache.PageCursor;
  * node, the operation forces a path reset. This is required for correctness, because {@link InternalTreeLogic}
  * caches key range bounds.
  */
-class EscalatingLatchCrabbingCoordination implements TreeWriterCoordination {
+public class EscalatingLatchCrabbingCoordination implements TreeWriterCoordination {
+    private static final int RESET_FREQUENCY = 20;
     private static final int NO_TARGET = -1;
 
     @FunctionalInterface
@@ -59,7 +60,6 @@ class EscalatingLatchCrabbingCoordination implements TreeWriterCoordination {
     private final TreeNodeLatchService latchService;
     private final EntrySizeLookup entrySizeLookup;
     private final int leafUnderflowThreshold;
-    private final int resetFrequency;
     private final MultiRootGBPTree.Monitor monitor;
     private DepthData[] dataByDepth = new DepthData[10];
     private int depth = -1;
@@ -69,17 +69,16 @@ class EscalatingLatchCrabbingCoordination implements TreeWriterCoordination {
     private boolean escalationActive;
     private int escalationTarget;
     private boolean deepEscalation;
+    private boolean stableParentUpgrade;
 
     EscalatingLatchCrabbingCoordination(
             TreeNodeLatchService latchService,
             EntrySizeLookup entrySizeLookup,
             int leafUnderflowThreshold,
-            int resetFrequency,
             MultiRootGBPTree.Monitor monitor) {
         this.latchService = latchService;
         this.entrySizeLookup = entrySizeLookup;
         this.leafUnderflowThreshold = leafUnderflowThreshold;
-        this.resetFrequency = resetFrequency;
         this.monitor = monitor;
     }
 
@@ -90,7 +89,7 @@ class EscalatingLatchCrabbingCoordination implements TreeWriterCoordination {
 
     @Override
     public boolean checkForceReset() {
-        var result = pessimistic || deepEscalation || operationCounter >= resetFrequency;
+        var result = pessimistic || deepEscalation || stableParentUpgrade || operationCounter >= RESET_FREQUENCY;
         if (result) {
             operationCounter = 0;
         }
@@ -102,6 +101,7 @@ class EscalatingLatchCrabbingCoordination implements TreeWriterCoordination {
         this.pessimistic = false;
         this.escalationActive = false;
         this.deepEscalation = false;
+        this.stableParentUpgrade = false;
         this.operationCounter++;
     }
 
@@ -145,9 +145,8 @@ class EscalatingLatchCrabbingCoordination implements TreeWriterCoordination {
                 // siblings sits under a neighbouring parent which isn't latched, so fall back to pessimistic.
                 return false;
             }
-            return tryUpgradeUnstableParentReadLatchToWrite();
+            return tryUpgradeParentReadLatchToWrite();
         }
-
         return true;
     }
 
@@ -239,8 +238,7 @@ class EscalatingLatchCrabbingCoordination implements TreeWriterCoordination {
         }
 
         int availableSpaceAfterRemoval = dataByDepth[depth].availableSpace + sizeOfLeafEntryToRemove;
-        boolean leafWillUnderflow = availableSpaceAfterRemoval > leafUnderflowThreshold;
-        return !leafWillUnderflow;
+        return availableSpaceAfterRemoval <= leafUnderflowThreshold;
     }
 
     @Override
@@ -304,13 +302,19 @@ class EscalatingLatchCrabbingCoordination implements TreeWriterCoordination {
         IOUtils.closeAllUnchecked(dataByDepth);
     }
 
-    private boolean tryUpgradeUnstableParentReadLatchToWrite() {
-        if (depth == 0 || dataByDepth[depth - 1].isStable) {
-            // If the parent needs a successor too then that change propagates yet another level up,
-            // fall back to pessimistic for that.
+    private boolean tryUpgradeParentReadLatchToWrite() {
+        if (depth == 0) {
             return false;
         }
-        return tryUpgradeReadLatchToWrite(depth - 1);
+        // A leaf successor only needs a child pointer replaced which does not create successor of the parent
+        // Force reset afterward to prevent holding write latch on hot parent page across operations
+        if (tryUpgradeReadLatchToWrite(depth - 1)) {
+            if (dataByDepth[depth - 1].isStable) {
+                stableParentUpgrade = true;
+            }
+            return true;
+        }
+        return false;
     }
 
     private boolean tryUpgradeReadLatchToWrite(int depth) {

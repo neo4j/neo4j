@@ -31,7 +31,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.index.internal.gbptree.LatchCrabbingCoordination.DEFAULT_RESET_FREQUENCY;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -47,7 +46,7 @@ class EscalatingLatchCrabbingCoordinationTest {
     private final EscalatingLatchCrabbingCoordination.EntrySizeLookup entrySizeLookup =
             mock(EscalatingLatchCrabbingCoordination.EntrySizeLookup.class);
     private final EscalatingLatchCrabbingCoordination coordination = new EscalatingLatchCrabbingCoordination(
-            latchService, entrySizeLookup, MERGE_THRESHOLD, DEFAULT_RESET_FREQUENCY, MultiRootGBPTree.NO_MONITOR);
+            latchService, entrySizeLookup, MERGE_THRESHOLD, MultiRootGBPTree.NO_MONITOR);
 
     @BeforeEach
     void setUp() {

@@ -254,11 +254,7 @@ class RootLayerSupport {
         }
         if (escalating) {
             return new EscalatingLatchCrabbingCoordination(
-                    latchService,
-                    internalNode::maxEntrySizeBound,
-                    leafNode.underflowThreshold(),
-                    LatchCrabbingCoordination.DEFAULT_RESET_FREQUENCY,
-                    monitor);
+                    latchService, internalNode::maxEntrySizeBound, leafNode.underflowThreshold(), monitor);
         }
         return new LatchCrabbingCoordination(
                 latchService, leafNode.underflowThreshold(), LatchCrabbingCoordination.DEFAULT_RESET_FREQUENCY);
