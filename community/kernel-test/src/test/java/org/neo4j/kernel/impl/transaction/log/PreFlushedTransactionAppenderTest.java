@@ -170,6 +170,7 @@ public class PreFlushedTransactionAppenderTest {
                 appendIndex,
                 new LogPosition(INITIAL_LOG_VERSION, appendIndex * 64),
                 new LogPosition(INITIAL_LOG_VERSION, (appendIndex + 1) * 64 - 1),
-                (int) (-appendIndex));
+                (int) (-appendIndex),
+                LATEST_KERNEL_VERSION);
     }
 }

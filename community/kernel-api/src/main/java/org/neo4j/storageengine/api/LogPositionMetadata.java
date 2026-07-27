@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 /**
@@ -29,21 +30,26 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
  * {@link #metadataWithJustAppendIndex(long)} method is encouraged as an alternative to manually constructing a new
  * instance of this class.
  *
- * @param appendIndex the append index of the log entry.
- * @param prePosition the {@link LogPosition} of the start of the entry.
- * @param postPosition the {@link LogPosition} of the end of the entry.
- * @param checksum the checksum of the log entry.
+ * @param appendIndex   the append index of the log entry.
+ * @param prePosition   the {@link LogPosition} of the start of the entry.
+ * @param postPosition  the {@link LogPosition} of the end of the entry.
+ * @param checksum      the checksum of the log entry.
+ * @param kernelVersion the version of the log entry.
  */
-public record LogPositionMetadata(long appendIndex, LogPosition prePosition, LogPosition postPosition, int checksum) {
+public record LogPositionMetadata(
+        long appendIndex,
+        LogPosition prePosition,
+        LogPosition postPosition,
+        int checksum,
+        KernelVersion kernelVersion) {
     private static final int UNKNOWN_CHECKSUM = -1;
 
     public static final LogPositionMetadata NO_METADATA =
-            new LogPositionMetadata(UNKNOWN_APPEND_INDEX, UNSPECIFIED, UNSPECIFIED, UNKNOWN_CHECKSUM);
+            new LogPositionMetadata(UNKNOWN_APPEND_INDEX, UNSPECIFIED, UNSPECIFIED, UNKNOWN_CHECKSUM, null);
 
     /**
      * Returns a new {@link LogPositionMetadata} with a usable append index, but invalid positional/checksum data. If
-     * log position is available on creation, then use of the {@link #LogPositionMetadata(long, LogPosition,
-     * LogPosition, int)} constructor is encouraged.
+     * log position is available on creation, then use of the {@link #LogPositionMetadata(long, LogPosition, LogPosition, int, KernelVersion)} constructor is encouraged.
      *
      * @param appendIndex the append index of the log entry.
      */
@@ -53,7 +59,8 @@ public record LogPositionMetadata(long appendIndex, LogPosition prePosition, Log
             return NO_METADATA;
         }
 
-        return new LogPositionMetadata(appendIndex, LogPosition.UNSPECIFIED, LogPosition.UNSPECIFIED, UNKNOWN_CHECKSUM);
+        return new LogPositionMetadata(
+                appendIndex, LogPosition.UNSPECIFIED, LogPosition.UNSPECIFIED, UNKNOWN_CHECKSUM, null);
     }
 
     /**
