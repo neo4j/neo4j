@@ -1981,6 +1981,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("A setting used only in tests to override the memery limit for batches used during store creation. "
+            + "Its purpose is being able to test the code path dealing with oversized nodes "
+            + "without creating an IT with huge number of relationships and consuming too much memory.")
+    public static final Setting<Integer> spd_import_batch_memory_limit_override = newBuilder(
+                    "internal.db.spd_import.batch_memory_limit_override", INT, null)
+            .build();
+
+    @Internal
     @Description("")
     public static final Setting<Duration> spd_import_rpc_poll_interval = newBuilder(
                     "internal.db.spd_import.rpc.poll_interval", DURATION, ofSeconds(1))
