@@ -39,7 +39,9 @@ object FuzzTestGraphCreation {
     "long" -> Seq(ValueType.LONG),
     "boolean" -> Seq(ValueType.BOOLEAN),
     "string" -> Seq(ValueType.STRING),
-    "rand" -> ValueType.ALL_TYPES.filter(v => v != ValueType.UUID && v != ValueType.UUID_ARRAY)
+    "rand" -> ValueType.ALL_TYPES.filter(v =>
+      v != ValueType.UUID && v != ValueType.UUID_ARRAY && v != ValueType.VECTOR_ARRAY
+    )
   )
 
   object GraphType extends Enumeration {
