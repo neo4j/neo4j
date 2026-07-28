@@ -381,6 +381,15 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
       def anonymizedIncoming: Boolean = original != incoming
     }
 
+    def orderByInnerColumns(
+      columns: Seq[LogicalVariable],
+      inner: Query,
+      innerNameOf: LogicalVariable => LogicalVariable
+    ): Seq[LogicalVariable] = {
+      val innerOrder = inner.returnColumns.map(_.name).zipWithIndex.toMap
+      columns.sortBy(c => innerOrder.getOrElse(innerNameOf(c).name, Int.MaxValue))
+    }
+
     object NextExpansion {
 
       /**
@@ -615,9 +624,11 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
                 val mappedReturns = incomingLayout.semanticContext.mappedReturns
                 val items =
                   if (mappedReturns.nonEmpty)
-                    resultColumns.map(k => AliasedReturnItem(mappedReturns.getOrElse(k, k)))
+                    orderByInnerColumns(resultColumns, rewrittenQuery, k => mappedReturns.getOrElse(k, k))
+                      .map(k => AliasedReturnItem(mappedReturns.getOrElse(k, k)))
                   else
-                    resultColumns.map(k => AliasedReturnItem(returnsMapped(k).copyId, k.copyId)(k.position))
+                    orderByInnerColumns(resultColumns, rewrittenQuery, returnsMapped)
+                      .map(k => AliasedReturnItem(returnsMapped(k).copyId, k.copyId)(k.position))
                 Seq(Return(ReturnItems(FreeProjection, items)(ast.position))(ast.position))
               case _ => Seq(Finish()(ast.position))
             }
@@ -785,9 +796,10 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
 
         def inNextPostface: Option[Clause] =
           Option.when(resultColumns.exists(incomingSymbols.contains)) {
-            val items = returnsMapped.map { case (k, v) =>
+            val items = resultColumns.map { k =>
+              val v = returnsMapped.getOrElse(k, k)
               AliasedReturnItem(v.copyId, incomingLayout.resultMapping.getOrElse(k, k).copyId)(v.position)
-            }.toSeq
+            }
             With(ReturnItems(FreeProjection, items)(ast.position), withType = AddedInRewriteGeneral())(ast.position)
           }
 
@@ -833,11 +845,12 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
           val postface: Clause =
             if (innerRewritten.isReturning) {
               val items =
-                if (layoutWithUse.resultMapping.nonEmpty)
-                  layoutWithUse.resultMapping.map { case (_, v) =>
-                    AliasedReturnItem(v.copyId, v.copyId)(v.position)
-                  }
-                else innerRewritten.returnVariables.explicitVariables.map(AliasedReturnItem(_))
+                if (layoutWithUse.resultMapping.nonEmpty) {
+                  val innerOrder = innerRewritten.returnColumns.map(_.name).zipWithIndex.toMap
+                  layoutWithUse.resultMapping.values.toSeq
+                    .sortBy(v => (innerOrder.getOrElse(v.name, Int.MaxValue), v.name))
+                    .map(v => AliasedReturnItem(v.copyId, v.copyId)(v.position))
+                } else innerRewritten.returnVariables.explicitVariables.map(AliasedReturnItem(_))
               val returnItems = ReturnItems(FreeProjection, items.toSeq)(ast.position)
               Return(returnItems)(ast.position)
             } else Finish()(ast.position)

@@ -737,7 +737,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  WITH (`  UNNAMED0`[`  UNNAMED4`])[0] AS a, (`  UNNAMED1`[`  UNNAMED4`])[0] AS b, (`  UNNAMED2`[`  UNNAMED4`])[0] AS x
         |  RETURN DISTINCT a AS `  UNNAMED5`, b AS `  UNNAMED7`, x AS `  UNNAMED6`
         |}
-        |RETURN `  UNNAMED5` AS a, `  UNNAMED6` AS x, `  UNNAMED7` AS b""".stripMargin,
+        |RETURN `  UNNAMED5` AS a, `  UNNAMED7` AS b, `  UNNAMED6` AS x""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -1106,7 +1106,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  }
         |  RETURN b AS `  UNNAMED4`, x AS `  UNNAMED3`, z AS `  UNNAMED5`
         |}
-        |RETURN `  UNNAMED3` AS x, `  UNNAMED4` AS b, `  UNNAMED5` AS z""".stripMargin,
+        |RETURN `  UNNAMED4` AS b, `  UNNAMED3` AS x, `  UNNAMED5` AS z""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -3242,7 +3242,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  }
         |  RETURN b AS `  UNNAMED4`, x AS `  UNNAMED3`, z AS `  UNNAMED5`
         |}
-        |RETURN `  UNNAMED3` AS x, `  UNNAMED4` AS b, `  UNNAMED5` AS z""".stripMargin,
+        |RETURN `  UNNAMED4` AS b, `  UNNAMED3` AS x, `  UNNAMED5` AS z""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
@@ -5983,6 +5983,38 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  RETURN (n.x + m.x) + o.x AS `n.x + m.x + o.x`
         |}
         |RETURN `n.x + m.x + o.x` AS `n.x + m.x + o.x`""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("next should produce same column order as normal expand star") {
+    assertRewritten(
+      """RETURN 1 AS unused
+        |
+        |NEXT
+        |
+        |WITH 1 AS x
+        |WITH *, 3 AS b
+        |RETURN *
+        |UNION
+        |WITH 1 AS x
+        |WITH *, 3 AS b
+        |RETURN *""".stripMargin,
+      """WITH 1 AS unused
+        |WITH count(*) AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`) {
+        |  UNWIND range(0, `  UNNAMED0` - 1) AS `  UNNAMED1`
+        |  WITH 1 AS x
+        |  WITH x AS x, 3 AS b
+        |  RETURN b AS b, x AS x
+        |  UNION
+        |  UNWIND range(0, `  UNNAMED0` - 1) AS `  UNNAMED1`
+        |  WITH 1 AS x
+        |  WITH x AS x, 3 AS b
+        |  RETURN b AS b, x AS x
+        |}
+        |RETURN b AS b, x AS x""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )
