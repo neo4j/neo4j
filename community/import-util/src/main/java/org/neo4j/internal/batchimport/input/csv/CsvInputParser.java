@@ -28,6 +28,7 @@ import org.neo4j.batchimport.api.input.ApplicationMode;
 import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.InputEntityVisitor;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
@@ -76,6 +77,7 @@ public class CsvInputParser implements Closeable {
         int i = 0;
         Header.Entry entry = null;
         Header.Entry[] entries = header.entries();
+        EntityType invalidIdEntityType = null;
         try {
             boolean doContinue = true;
             idValueBuilder.clear();
@@ -103,7 +105,36 @@ public class CsvInputParser implements Closeable {
                 }
 
                 var extractor = entry.extractor();
-                Object value = seeker.tryExtract(mark, extractor, entry.optionalParameter());
+                Object value;
+                try {
+                    value = seeker.tryExtract(mark, extractor, entry.optionalParameter());
+                } catch (NumberFormatException | ArithmeticException e) {
+                    // We only allow integer/string ids; a value that violates its declared :ID/:START_ID/:END_ID
+                    // integer id-type fails extraction with one of these, and is a bad entry rather than a fatal
+                    // error. Collect the raw value, discard anything read for this row and stop the column scan
+                    // (doContinue = false); the row is skipped but still returned below. Tolerance is gated on the
+                    // step the id came from (nodes vs relationships).
+                    String invalidIdValue = null;
+                    if (entry.type() == Type.ID) {
+                        invalidIdValue = extractRawValue(entry);
+                        invalidIdEntityType = EntityType.NODE;
+                    } else if (entry.type() == Type.START_ID || entry.type() == Type.END_ID) {
+                        invalidIdValue = extractRawValue(entry);
+                        invalidIdEntityType = EntityType.RELATIONSHIP;
+                    }
+                    if (invalidIdEntityType != null) {
+                        badCollector.collectInvalidID(
+                                seeker.sourceDescription(), lineNumber, invalidIdValue, invalidIdEntityType);
+                        // Skip rest of the row
+                        doContinue = false;
+                        // Reset values we might have processed already
+                        idValueBuilder.clear();
+                        startIdValueBuilder.clear();
+                        endIdValueBuilder.clear();
+                        continue;
+                    }
+                    throw e;
+                }
                 if (extractor.isEmpty(value)) {
                     continue;
                 }
@@ -175,7 +206,13 @@ public class CsvInputParser implements Closeable {
                     badCollector.collectExtraColumns(seeker.sourceDescription(), lineNumber, value);
                 }
             }
-            visitor.endOfEntity();
+            if (invalidIdEntityType == null) {
+                visitor.endOfEntity();
+            } else {
+                // The row had an invalid id and was bad-collected: emit no entity, but still return below so the
+                // caller counts it as one processed row (per-row progress reporting, see BatchNodeWorker).
+                visitor.reset();
+            }
             return true;
         } catch (final InputException e) {
             throw e;
@@ -196,6 +233,14 @@ public class CsvInputParser implements Closeable {
                     seeker, entry + ":" + (i + 1), header, stringValue != null ? stringValue : "??", e.getMessage());
 
             throw new InputException(message, e);
+        }
+    }
+
+    private String extractRawValue(Header.Entry entry) {
+        try {
+            return seeker.tryExtract(mark, stringExtractor, entry.optionalParameter());
+        } catch (RuntimeException e) {
+            return null;
         }
     }
 

@@ -21,12 +21,13 @@ package org.neo4j.internal.batchimport.input;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.batchimport.input.BadCollector.ALL_SCHEMA_VIOLATIONS;
-import static org.neo4j.internal.batchimport.input.BadCollector.BAD_RELATIONSHIPS;
+import static org.neo4j.internal.batchimport.input.BadCollector.BAD_RELATIONSHIP;
 import static org.neo4j.internal.batchimport.input.BadCollector.DATA_AFTER_QUOTE;
 import static org.neo4j.internal.batchimport.input.BadCollector.DUPLICATE_NODES;
 import static org.neo4j.internal.batchimport.input.BadCollector.EXTRA_COLUMNS;
 import static org.neo4j.internal.batchimport.input.BadCollector.ILLEGAL_QUOTE;
-import static org.neo4j.internal.batchimport.input.BadCollector.INVALID_ID;
+import static org.neo4j.internal.batchimport.input.BadCollector.INVALID_NODE_ID;
+import static org.neo4j.internal.batchimport.input.BadCollector.INVALID_RELATIONSHIP_ID;
 import static org.neo4j.internal.batchimport.input.BadCollector.MISSING_ID_COLUMN;
 import static org.neo4j.internal.batchimport.input.BadCollector.NODE_SCHEMA_VIOLATIONS;
 import static org.neo4j.internal.batchimport.input.BadCollector.OTHER_NODE_VIOLATION;
@@ -192,8 +193,8 @@ public class ProblemReporters {
         return new IllegalQuoteProblemReporter(source, row, value);
     }
 
-    public static ProblemReporter invalidIdReporter(String source, long row, String value) {
-        return new InvalidIdProblemReporter(source, row, value);
+    public static ProblemReporter invalidIdReporter(String source, long row, String value, EntityType entityType) {
+        return new InvalidIdProblemReporter(source, row, value, entityType);
     }
 
     public static ProblemReporter idColumnMissingReporter(String source, long row, int columnIndex) {
@@ -254,7 +255,7 @@ public class ProblemReporters {
                 Object specificValue,
                 String source,
                 long lineNumber) {
-            super(BAD_RELATIONSHIPS);
+            super(BAD_RELATIONSHIP);
             this.startId = startId;
             this.startIdGroup = startIdGroup;
             this.relType = relType;
@@ -467,7 +468,7 @@ public class ProblemReporters {
                 EntityType entityType,
                 String sourceDescription,
                 long lineNumber) {
-            super(entityType == EntityType.NODE ? VIOLATING_NODES : BAD_RELATIONSHIPS);
+            super(entityType == EntityType.NODE ? VIOLATING_NODES : BAD_RELATIONSHIP);
             this.id = id;
             this.actualId = actualId;
             this.properties = properties;
@@ -540,7 +541,7 @@ public class ProblemReporters {
                 Group endIdGroup,
                 String sourceDescription,
                 long lineNumber) {
-            super(BAD_RELATIONSHIPS);
+            super(BAD_RELATIONSHIP);
             this.properties = properties;
             this.constraintDescription = constraintDescription;
             this.startId = startId;
@@ -751,8 +752,8 @@ public class ProblemReporters {
         private final long row;
         private final String value;
 
-        private InvalidIdProblemReporter(String source, long row, String value) {
-            super(INVALID_ID);
+        private InvalidIdProblemReporter(String source, long row, String value, EntityType entityType) {
+            super(entityType == EntityType.NODE ? INVALID_NODE_ID : INVALID_RELATIONSHIP_ID);
             this.source = source;
             this.row = row;
             this.value = value;

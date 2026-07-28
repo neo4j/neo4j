@@ -66,7 +66,7 @@ public interface Collector extends AutoCloseable {
 
     void collectIllegalQuote(String source, long row, String value);
 
-    void collectInvalidID(String source, long row, String value);
+    void collectInvalidID(String source, long row, String value, EntityType entityType);
 
     void collectExtraColumns(String source, long row, String value);
 
@@ -250,7 +250,7 @@ public interface Collector extends AutoCloseable {
         public void collectIllegalQuote(String source, long row, String value) {}
 
         @Override
-        public void collectInvalidID(String source, long row, String value) {}
+        public void collectInvalidID(String source, long row, String value, EntityType entityType) {}
 
         @Override
         public void collectOtherNodeViolation(String problem) {}
@@ -317,7 +317,7 @@ public interface Collector extends AutoCloseable {
         }
 
         @Override
-        public void collectInvalidID(String source, long row, String value) {
+        public void collectInvalidID(String source, long row, String value, EntityType entityType) {
             throw new IllegalStateException(invalidIDMessage(source, row, value));
         }
 
@@ -433,7 +433,7 @@ public interface Collector extends AutoCloseable {
         public void collectIllegalQuote(String source, long row, String value) {}
 
         @Override
-        public void collectInvalidID(String source, long row, String value) {}
+        public void collectInvalidID(String source, long row, String value, EntityType entityType) {}
 
         @Override
         public void collectOtherNodeViolation(String problem) {}

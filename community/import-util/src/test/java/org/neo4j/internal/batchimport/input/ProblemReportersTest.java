@@ -369,15 +369,18 @@ class ProblemReportersTest {
                         some.file: line 13
                         Column content: `duff`.
                         """),
-                new Problem(ProblemReporters.invalidIdReporter(SOURCE, LINE, DUFF), formatJson("""
+                new Problem(
+                        ProblemReporters.invalidIdReporter(SOURCE, LINE, DUFF, EntityType.RELATIONSHIP),
+                        formatJson("""
                     {
-                        "problem":"InvalidId",
+                        "problem":"InvalidRelationshipId",
                         "message":"ID value is invalid for the id type specified.\\nsome.file: line 13\\nInvalid ID value: `duff`.",
                         "source":"some.file",
                         "line":13,
                         "value":"duff"
                     }
-                    """), """
+                    """),
+                        """
                         ID value is invalid for the id type specified.
                         some.file: line 13
                         Invalid ID value: `duff`.

@@ -196,6 +196,23 @@ class EncodingIdMapperTest {
     }
 
     @Test
+    void shouldReturnNotFoundForNonNumericLookupInLongIdSpace() throws KeyCollisionException {
+        // an id space backed by LongEncoder
+        try (IdMapper mapper = mapper(new LongEncoder(), Radix.LONG, EncodingIdMapper.NO_MONITOR, 1)) {
+            IdMapper.Setter setter = mapper.newSetter(0);
+            setter.put(123L, 0, globalGroup);
+            setter.put(456L, 1, globalGroup);
+            mapper.prepare(values(123L, 456L), mock(Collector.class), NONE, LongSets.immutable.empty());
+
+            // a non-numeric lookup id is reported as not found rather than throwing NumberFormatException
+            try (var getter = mapper.newGetter(0)) {
+                assertThat(getter.get(123L, globalGroup)).isZero();
+                assertThat(getter.get("id", globalGroup)).isEqualTo(IdMapper.ID_NOT_FOUND);
+            }
+        }
+    }
+
+    @Test
     void shouldDiscardEmptyStringWhenEmptyNotMapped() throws KeyCollisionException {
         // GIVEN
         try (IdMapper mapper = mapper(new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, 1)) {

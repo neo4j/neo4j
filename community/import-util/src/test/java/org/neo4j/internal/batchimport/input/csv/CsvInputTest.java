@@ -57,6 +57,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -101,6 +102,7 @@ import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.function.Predicates;
+import org.neo4j.internal.batchimport.input.BadCollector;
 import org.neo4j.internal.batchimport.input.DuplicateHeaderException;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.HeaderException;
@@ -206,6 +208,296 @@ class CsvInputTest {
         try (InputIterator relationships = input.relationships(EMPTY).iterator()) {
             assertNextRelationship(relationships, "node1", "node2", "KNOWS", properties("since", 1234567L));
             assertNextRelationship(relationships, "node2", "node10", "HACKS", properties("since", 987654L));
+        }
+    }
+
+    @Test
+    void shouldCollectRelationshipIdViolatingItsDeclaredIdTypeWhenSkippingBadRelationships() throws Exception {
+        // one relationship has a non-numeric :START_ID that violates the group's declared id-type:long
+        Input input = new CsvInput(
+                dataIterable(data("""
+                        :ID(Person){id-type:long},name
+                        1,Alice
+                        2,Bob""")),
+                defaultFormatNodeFileHeader(),
+                dataIterable(data("""
+                        :START_ID(Person),:END_ID(Person),:TYPE
+                        1,2,KNOWS
+                        notALong,2,KNOWS
+                        2,1,KNOWS""")),
+                defaultFormatRelationshipFileHeader(),
+                IdType.STRING,
+                config(MultilineSetting.DISALLOW),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        // skipBadRelationships => an invalid relationship id is tolerated
+        try (Collector collector = badCollector(true, false);
+                InputIterator relationships = input.relationships(collector).iterator()) {
+            assertThat(readAll(relationships)).isEqualTo(3);
+            assertThat(collector.badEntries()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldFailOnRelationshipIdViolatingItsDeclaredIdTypeWhenNotSkippingBadRelationships() throws Exception {
+        Input input = new CsvInput(
+                dataIterable(data("""
+                        :ID(Person){id-type:long},name
+                        1,Alice
+                        2,Bob""")),
+                defaultFormatNodeFileHeader(),
+                dataIterable(data("""
+                        :START_ID(Person),:END_ID(Person),:TYPE
+                        1,2,KNOWS
+                        notALong,2,KNOWS
+                        2,1,KNOWS""")),
+                defaultFormatRelationshipFileHeader(),
+                IdType.STRING,
+                config(MultilineSetting.DISALLOW),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        // only skipDuplicateNodes => a bad relationship id is NOT tolerated and aborts
+        try (Collector collector = badCollector(false, true)) {
+            assertThatThrownBy(() -> {
+                        try (InputIterator relationships =
+                                input.relationships(collector).iterator()) {
+                            readAll(relationships);
+                        }
+                    })
+                    .isInstanceOf(InputException.class)
+                    .hasMessageContaining("notALong");
+        }
+    }
+
+    @Test
+    void shouldCollectNodeIdViolatingItsDeclaredIdTypeWhenSkippingDuplicateNodes() throws Exception {
+        // one node has a non-numeric :ID that violates the group's declared id-type:long
+        Input input = new CsvInput(
+                dataIterable(data("""
+                        :ID(Person){id-type:long},name
+                        1,Alice
+                        notALong,Bob
+                        2,Carol""")),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.STRING,
+                config(MultilineSetting.DISALLOW),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        // skipDuplicateNodes => an invalid node id is tolerated
+        try (Collector collector = badCollector(false, true);
+                InputIterator nodes = input.nodes(collector).iterator()) {
+            // all three rows are processed (two good nodes, one bad-collected); next() returns once per row
+            assertThat(readAll(nodes)).isEqualTo(3);
+            assertThat(collector.badEntries()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldFailOnNodeIdViolatingItsDeclaredIdTypeWhenNotSkippingDuplicateNodes() throws Exception {
+        Input input = new CsvInput(
+                dataIterable(data("""
+                        :ID(Person){id-type:long},name
+                        1,Alice
+                        notALong,Bob
+                        2,Carol""")),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.STRING,
+                config(MultilineSetting.DISALLOW),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        // only skipBadRelationships => a bad node id is NOT tolerated and aborts
+        try (Collector collector = badCollector(true, false)) {
+            assertThatThrownBy(() -> {
+                        try (InputIterator nodes = input.nodes(collector).iterator()) {
+                            readAll(nodes);
+                        }
+                    })
+                    .isInstanceOf(InputException.class)
+                    .hasMessageContaining("notALong");
+        }
+    }
+
+    @Test
+    void shouldNotConsumeFollowingRowWhenSkippingNodeWithInvalidIdOnShortRow() throws Exception {
+        // the bad-id row has fewer columns than the header (a tolerated shape for well-formed rows);
+        // skipping it must not consume any fields of the following row
+        Input input = new CsvInput(
+                dataIterable(data("""
+                        :ID(Person){id-type:long},name
+                        1,Alice
+                        notALong
+                        2,Carol""")),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.STRING,
+                config(MultilineSetting.DISALLOW),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        try (Collector collector = badCollector(false, true);
+                InputIterator nodes = input.nodes(collector).iterator()) {
+            assertThat(readAll(nodes)).isEqualTo(3);
+            assertThat(collector.badEntries()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldSkipNodeWithInvalidIdOnShortLastRow() throws Exception {
+        // the bad-id row is the last line of the input and has fewer columns than the header;
+        // it should be collected and skipped, not abort the import
+        Input input = new CsvInput(
+                dataIterable(data("""
+                        :ID(Person){id-type:long},name
+                        1,Alice
+                        notALong""")),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.STRING,
+                config(MultilineSetting.DISALLOW),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        try (Collector collector = badCollector(false, true);
+                InputIterator nodes = input.nodes(collector).iterator()) {
+            // both rows are processed (one good node, one bad-collected), so next() returns twice
+            assertThat(readAll(nodes)).isEqualTo(2);
+            assertThat(collector.badEntries()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldCollectNodeWhenSecondOfMultipleIdColumnsViolatesDeclaredIdType() throws Exception {
+        // composite id from two integer id columns, with non-id columns before, between and after them;
+        // the second id column holds the offending value
+        Input input = new CsvInput(
+                dataIterable(data("""
+                        name,id1:ID(Person){id-type:long},age,id2:ID(Person){id-type:long},city
+                        Alice,1,30,2,NYC
+                        Bob,3,40,notALong,LA
+                        Carol,5,50,6,SF""")),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.STRING,
+                config(MultilineSetting.DISALLOW),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        try (Collector collector = badCollector(false, true);
+                InputIterator nodes = input.nodes(collector).iterator()) {
+            assertThat(readAll(nodes)).isEqualTo(3);
+            assertThat(collector.badEntries()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldCollectNodeWhenFirstOfMultipleIdColumnsViolatesDeclaredIdType() throws Exception {
+        // composite id from two integer id columns preceded by a non-id column;
+        // the first id column holds the offending value
+        Input input = new CsvInput(
+                dataIterable(data("""
+                        name,id1:ID(Person){id-type:long},id2:ID(Person){id-type:long}
+                        Alice,1,2
+                        Bob,notALong,4
+                        Carol,5,6""")),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.STRING,
+                config(MultilineSetting.DISALLOW),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        try (Collector collector = badCollector(false, true);
+                InputIterator nodes = input.nodes(collector).iterator()) {
+            assertThat(readAll(nodes)).isEqualTo(3);
+            assertThat(collector.badEntries()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldCollectRelationshipWhenEndIdViolatesDeclaredIdType() throws Exception {
+        // the offending value is in the :END_ID column (the second of the relationship's two id columns)
+        Input input = new CsvInput(
+                dataIterable(data("""
+                        :ID(Person){id-type:long},name
+                        1,Alice
+                        2,Bob""")),
+                defaultFormatNodeFileHeader(),
+                dataIterable(data("""
+                        :START_ID(Person),:END_ID(Person),:TYPE
+                        1,2,KNOWS
+                        1,notALong,KNOWS
+                        2,1,KNOWS""")),
+                defaultFormatRelationshipFileHeader(),
+                IdType.STRING,
+                config(MultilineSetting.DISALLOW),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        try (Collector collector = badCollector(true, false);
+                InputIterator relationships = input.relationships(collector).iterator()) {
+            assertThat(readAll(relationships)).isEqualTo(3);
+            assertThat(collector.badEntries()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldReturnOncePerRowIncludingBadRowsForProgressReporting() throws Exception {
+        // next() must return once per processed row so per-row progress counters stay in sync with the input
+        // (BatchNodeWorker increments its node count on every next()); a bad row is skipped but still counts as
+        // one processed row. With five rows, two holding an invalid id, next() must fire five times - otherwise
+        // progress would under-report by the number of bad rows.
+        Input input = new CsvInput(
+                dataIterable(data("""
+                        :ID(Person){id-type:long},name
+                        1,Alice
+                        notALong,Bob
+                        2,Carol
+                        alsoBad,Dave
+                        3,Eve""")),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.STRING,
+                config(MultilineSetting.DISALLOW),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        try (Collector collector = badCollector(false, true);
+                InputIterator nodes = input.nodes(collector).iterator()) {
+            assertThat(readAll(nodes)).isEqualTo(5);
+            assertThat(collector.badEntries()).isEqualTo(2);
         }
     }
 
@@ -3221,6 +3513,21 @@ class CsvInputTest {
             return false;
         }
         return chunk.next(visitor);
+    }
+
+    private int readAll(InputIterator data) throws IOException {
+        int count = 0;
+        while (readNext(data)) {
+            count++;
+        }
+        return count;
+    }
+
+    private static Collector badCollector(boolean skipBadRelationships, boolean skipDuplicateNodes) {
+        return BadCollector.create(
+                new ByteArrayOutputStream(),
+                BadCollector.UNLIMITED_TOLERANCE,
+                BadCollector.collectFlag(skipBadRelationships, skipDuplicateNodes, false, false));
     }
 
     private static Map<String, Object> properties(Object... keysAndValues) {

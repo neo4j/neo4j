@@ -369,7 +369,16 @@ public class EncodingIdMapper implements IdMapper {
 
         long low = 0;
         long high = highestSetTrackerIndex;
-        long x = encode(inputId);
+        long x;
+        try {
+            x = encode(inputId);
+        } catch (NumberFormatException e) {
+            // A lookup id that cannot be encoded (e.g. a non-numeric value in an id space backed by
+            // LongEncoder) can never have been stored, so from a lookup point of view it simply does
+            // not exist. Reporting it as not found lets the caller route it to the bad collector
+            // instead of failing the whole import with a raw NumberFormatException.
+            return ID_NOT_FOUND;
+        }
         int rIndex = radixOf(x);
         for (int k = 0; k < sortBuckets.length; k++) {
             if (rIndex <= sortBuckets[k].highRadixRange) // bucketRange[k] > rIndex )

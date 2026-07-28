@@ -85,7 +85,7 @@ public final class BadCollector implements Collector {
 
     static final Monitor NO_MONITOR = new Monitor() {};
 
-    static final int BAD_RELATIONSHIPS = 0x1;
+    static final int BAD_RELATIONSHIP = 0x1;
     static final int DUPLICATE_NODES = 0x2;
     static final int EXTRA_COLUMNS = 0x4;
     static final int VIOLATING_NODES = 0x8;
@@ -94,16 +94,18 @@ public final class BadCollector implements Collector {
     static final int OTHER_RELATIONSHIP_VIOLATION = 0x40;
     static final int DATA_AFTER_QUOTE = 0x80;
     static final int ILLEGAL_QUOTE = 0x100;
-    static final int INVALID_ID = 0x200;
+    static final int INVALID_NODE_ID = 0x200;
     static final int MISSING_ID_COLUMN = 0x400;
-    static final int BAD_NODES = DUPLICATE_NODES | VIOLATING_NODES | OTHER_NODE_VIOLATION;
+    static final int INVALID_RELATIONSHIP_ID = 0x800;
+    static final int BAD_NODES = DUPLICATE_NODES | VIOLATING_NODES | OTHER_NODE_VIOLATION | INVALID_NODE_ID;
+    static final int BAD_RELATIONSHIPS = BAD_RELATIONSHIP | INVALID_RELATIONSHIP_ID;
 
     static final int ALL_SCHEMA_VIOLATIONS = VIOLATING_SCHEMA | BAD_NODES | BAD_RELATIONSHIPS;
     static final int NODE_SCHEMA_VIOLATIONS = VIOLATING_SCHEMA | BAD_NODES;
     static final int REL_SCHEMA_VIOLATIONS = VIOLATING_SCHEMA | BAD_RELATIONSHIPS;
 
     private static final Map<Integer, String> PROBLEM_TYPES = Map.ofEntries(
-            Map.entry(BAD_RELATIONSHIPS, "BadRelationship"),
+            Map.entry(BAD_RELATIONSHIP, "BadRelationship"),
             Map.entry(DUPLICATE_NODES, "DuplicateNode"),
             Map.entry(EXTRA_COLUMNS, "ExtraColumn"),
             Map.entry(VIOLATING_NODES, "NodeViolation"),
@@ -115,7 +117,8 @@ public final class BadCollector implements Collector {
             Map.entry(REL_SCHEMA_VIOLATIONS, "RelationshipSchemaViolation"),
             Map.entry(DATA_AFTER_QUOTE, "DataAfterQuote"),
             Map.entry(ILLEGAL_QUOTE, "IllegalQuote"),
-            Map.entry(INVALID_ID, "InvalidId"),
+            Map.entry(INVALID_NODE_ID, "InvalidNodeId"),
+            Map.entry(INVALID_RELATIONSHIP_ID, "InvalidRelationshipId"),
             Map.entry(MISSING_ID_COLUMN, "MissingIdColumn"));
 
     static final int COLLECT_ALL = -1;
@@ -301,8 +304,8 @@ public final class BadCollector implements Collector {
     }
 
     @Override
-    public void collectInvalidID(String source, long row, String value) {
-        collect(ProblemReporters.invalidIdReporter(source, row, value));
+    public void collectInvalidID(String source, long row, String value, EntityType entityType) {
+        collect(ProblemReporters.invalidIdReporter(source, row, value, entityType));
     }
 
     @Override
