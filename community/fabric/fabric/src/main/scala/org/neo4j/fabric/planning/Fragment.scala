@@ -114,10 +114,18 @@ object Fragment {
     override val pos: InputPosition = InputPosition.NONE
   }
 
+  sealed trait SubqueryImport
+
+  object SubqueryImport {
+    case object ScopeClause extends SubqueryImport
+    case object ImportingWith extends SubqueryImport
+  }
+
   final case class Apply(
     input: Fragment.Chain,
     inner: Fragment,
-    inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters]
+    inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters],
+    importMode: SubqueryImport = SubqueryImport.ImportingWith
   )(
     val pos: InputPosition
   ) extends Fragment.Segment {

@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Finish
 import org.neo4j.cypher.internal.ast.GraphSelection
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.InputDataStream
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
@@ -94,7 +96,8 @@ case class FabricStitcher(
     // Go over the fragment chain and process CALL IN TX Apply if present
     case apply: Apply if apply.inTransactionsParameters.isDefined => {
       val newExec = apply.inner match {
-        case exec: Exec => constructCallInTransactionExec(exec, apply.inTransactionsParameters.get)
+        case exec: Exec =>
+          constructCallInTransactionExec(exec, apply.inTransactionsParameters.get, apply.importMode)
         // At the end of stitching an Apply can have only Exec as the inner fragment
         case f => throw new IllegalArgumentException("Unexpected fragment: " + f);
       }
@@ -108,7 +111,8 @@ case class FabricStitcher(
 
   private def constructCallInTransactionExec(
     originalExec: Exec,
-    inTransactionsParameters: SubqueryCall.InTransactionsParameters
+    inTransactionsParameters: SubqueryCall.InTransactionsParameters,
+    importMode: Fragment.SubqueryImport
   ): Fragment = {
     val pos = originalExec.pos
     val clauses = originalExec.query match {
@@ -136,14 +140,25 @@ case class FabricStitcher(
     )(pos))(pos)
 
     val adjustedParameters = adjustInTransactionsParameters(inTransactionsParameters)
-    val call =
-      ScopeClauseSubqueryCall(
-        SingleQuery(clausesWithoutInsertedWith)(pos),
-        isImportingAll = false,
-        originalExec.importColumns.map(x => Variable(x)(pos, Variable.isIsolatedDefault)),
-        Some(adjustedParameters),
-        optional = false
-      )(pos)
+    val innerQuery = SingleQuery(clausesWithoutInsertedWith)(pos)
+    // Reconstruct the original call form. For importing-WITH the imports are carried by the leading WITH already in
+    // the body; for scope-clause they are declared on the CALL and supplied by the argument mechanism.
+    val call = importMode match {
+      case Fragment.SubqueryImport.ScopeClause =>
+        ScopeClauseSubqueryCall(
+          innerQuery,
+          isImportingAll = false,
+          originalExec.importColumns.map(x => Variable(x)(pos, Variable.isIsolatedDefault)),
+          Some(adjustedParameters),
+          optional = false
+        )(pos)
+      case Fragment.SubqueryImport.ImportingWith =>
+        ImportingWithSubqueryCall(
+          innerQuery,
+          Some(adjustedParameters),
+          optional = false
+        )(pos)
+    }
     val outputColumns = callInTxOutputColumns(originalExec, adjustedParameters)
     val returnClause = aliasedReturn(outputColumns, pos)
 
@@ -211,7 +226,86 @@ case class FabricStitcher(
         input
 
     case apply: Fragment.Apply =>
-      apply.copy(input = convertSeparate(apply.input, lastInChain = false), inner = convert(apply.inner))(apply.pos)
+      val convertedInner = apply.importMode match {
+        case Fragment.SubqueryImport.ScopeClause if apply.inTransactionsParameters.isEmpty =>
+          convertScopeClause(apply.inner)
+        case _ => convert(apply.inner)
+      }
+      apply.copy(
+        input = convertSeparate(apply.input, lastInChain = false),
+        inner = convertedInner
+      )(apply.pos)
+  }
+
+  /**
+   * Convert the inner of a separate scope-clause subquery, wrapping each stitched remote query so
+   * the imports stay pinned. Decomposes a union that cannot stitch to one query and wraps
+   * each branch; falls back to a plain conversion for anything that neither stitches nor is a union.
+   */
+  private def convertScopeClause(fragment: Fragment): Fragment =
+    stitchedScopeClauseWrapped(fragment).getOrElse(fragment match {
+      case union: Fragment.Union =>
+        union.copy(lhs = convertScopeClause(union.lhs), rhs = convertScopeClauseChain(union.rhs))(union.pos)
+      case other => convert(other)
+    })
+
+  private def convertScopeClauseChain(chain: Fragment.Chain): Fragment.Chain =
+    stitchedScopeClauseWrapped(chain).getOrElse(convertChain(chain))
+
+  /**
+   * Stitch a single-graph scope-clause subquery to one remote query, then wrap its body in a scope-clause
+   * `CALL (imports){…}` so the imports stay pinned across intervening WITH clauses instead of being delisted by the
+   * flattening. The wrapped (valid) form is what gets validated. Returns None when the inner does not stitch to a
+   * single query.
+   */
+  private def stitchedScopeClauseWrapped(fragment: Fragment): Option[Fragment.Exec] =
+    stitchedQueryOf(fragment).map { case (init, query, outputColumns) =>
+      asExec(init, wrapScopeClauseImports(query, fragment.importColumns, outputColumns), outputColumns)
+    }
+
+  private def wrapScopeClauseImports(
+    statement: Statement,
+    imports: Seq[String],
+    outputColumns: Seq[String]
+  ): Statement = {
+    def wrapSingle(sq: SingleQuery): SingleQuery = {
+      val pos = sq.position
+      def isImportBinding(w: With): Boolean =
+        w.returnItems.items.nonEmpty && w.returnItems.items.forall {
+          case AliasedReturnItem(p: ExplicitParameter, v) =>
+            imports.contains(v.name) && p.name == Columns.paramName(v.name)
+          case _ => false
+        }
+      val inputStreams = sq.clauses.takeWhile(_.isInstanceOf[InputDataStream])
+      sq.clauses.drop(inputStreams.size) match {
+        case (binding: With) :: body if isImportBinding(binding) && body.nonEmpty =>
+          val bodyQuery = SingleQuery(body)(pos)
+          val call = ScopeClauseSubqueryCall(
+            bodyQuery,
+            isImportingAll = false,
+            imports.map(x => Variable(x)(pos, Variable.isIsolatedDefault)),
+            None,
+            optional = false
+          )(pos)
+          val terminal: Clause =
+            if (bodyQuery.isReturning) Ast.aliasedReturn(outputColumns, pos) else Finish()(pos)
+          SingleQuery(((inputStreams :+ binding) :+ call) :+ terminal)(pos)
+        case _ => sq
+      }
+    }
+    // A union stitches to a UnionQuery whose branches each carry the import binding; wrap every branch.
+    def wrapQuery(query: Query): Query = query match {
+      case sq: SingleQuery  => wrapSingle(sq)
+      case u: UnionDistinct => u.copy(lhs = wrapQuery(u.lhs), rhs = wrapSingle(u.rhs))(u.position)
+      case u: UnionAll      => u.copy(lhs = wrapQuery(u.lhs), rhs = wrapSingle(u.rhs))(u.position)
+      case other            => other
+    }
+    if (imports.isEmpty) statement
+    else
+      statement match {
+        case q: Query => wrapQuery(q)
+        case other    => other
+      }
   }
 
   def validateNoTransactionalSubquery(fragment: Fragment): Unit = {
@@ -257,7 +351,15 @@ case class FabricStitcher(
    * Transform the entire fragment tree into exec, by stitching it back together.
    * Returns a value when the entire query targets the same graph, statically
    */
-  def stitched(fragment: Fragment): Option[Fragment.Exec] = {
+  def stitched(fragment: Fragment): Option[Fragment.Exec] =
+    stitchedQueryOf(fragment).map { case (init, query, outputColumns) => asExec(init, query, outputColumns) }
+
+  /**
+   * Stitch the fragment tree back into a single query without producing the exec, so callers can rewrite the query
+   * before it is validated. Returns (init, query, outputColumns) when the entire query targets the same graph,
+   * statically; None otherwise.
+   */
+  private def stitchedQueryOf(fragment: Fragment): Option[(Fragment.Init, Statement, Seq[String])] = {
     val noPos = InputPosition.NONE
     val stitched = stitcher(
       fragment,
@@ -280,7 +382,7 @@ case class FabricStitcher(
 
       case (_, _, None, None) =>
         val init = Fragment.Init(stitched.lastUse, fragment.argumentColumns, fragment.importColumns)
-        Some(asExec(init, stitched.query, fragment.outputColumns))
+        Some((init, stitched.query, fragment.outputColumns))
 
       case (_, _, _, _) => None
     }
@@ -428,14 +530,24 @@ case class FabricStitcher(
           val innerImports = inner.query.importColumns
           val scopeImports = apply.inner.importColumns
           val imports = (innerImports ++ scopeImports).distinct.map(Variable(_)(apply.pos, Variable.isIsolatedDefault))
+          val call = apply.importMode match {
+            case Fragment.SubqueryImport.ScopeClause =>
+              ScopeClauseSubqueryCall(
+                inner.query,
+                isImportingAll = false,
+                imports,
+                apply.inTransactionsParameters,
+                optional = false
+              )(apply.pos)
+            case Fragment.SubqueryImport.ImportingWith =>
+              ImportingWithSubqueryCall(
+                inner.query,
+                apply.inTransactionsParameters,
+                optional = false
+              )(apply.pos)
+          }
           before.copy(
-            clauses = before.clauses :+ ScopeClauseSubqueryCall(
-              inner.query,
-              isImportingAll = false,
-              imports,
-              apply.inTransactionsParameters,
-              optional = false
-            )(apply.pos),
+            clauses = before.clauses :+ call,
             useAppearances = before.useAppearances ++ inner.useAppearances
           )
 

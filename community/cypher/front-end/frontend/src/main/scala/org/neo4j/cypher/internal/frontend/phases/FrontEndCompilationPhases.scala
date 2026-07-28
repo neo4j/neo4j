@@ -100,7 +100,7 @@ trait FrontEndCompilationPhases {
       ExpandStarRewriter andThen
       TryRewriteProcedureCalls(resolver) andThen
       ObfuscationMetadataCollection andThen
-      SemanticAnalysis(warn = true, config.semanticFeatures: _*)
+      SemanticAnalysis(warn = false, config.semanticFeatures: _*)
   }
 
   // Phase 1.1 (Fabric)

@@ -423,7 +423,7 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .planBuilder()
       .produceResults("product", "customer")
       .apply()
-      .|.distinct("pId AS pId", "customer AS customer")
+      .|.distinct("customer AS customer")
       .|.union()
       .|.|.projection("customer AS customer")
       .|.|.runQueryAt(
@@ -442,7 +442,7 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .|.projection("customer AS customer")
       .|.union()
       .|.|.projection("customer AS customer")
-      .|.|.projection("{id: i} AS customer", "pId AS pId")
+      .|.|.projection("{id: i} AS customer")
       .|.|.unwind("[1, 2, 3] AS i")
       .|.|.argument()
       .|.projection("customer AS customer")

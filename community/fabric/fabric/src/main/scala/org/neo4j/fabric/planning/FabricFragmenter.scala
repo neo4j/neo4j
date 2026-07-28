@@ -23,11 +23,9 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.GraphDirectReference
-import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.semantics.Scope
-import org.neo4j.cypher.internal.rewriting.rewriters.addDependenciesToProjectionsInSubqueryExpressions
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.fabric.planning.Fragment.Apply
 import org.neo4j.fabric.planning.Fragment.Init
@@ -105,25 +103,20 @@ class FabricFragmenter(
               case _                             => Seq.empty
             }
 
-            val inner = subquery match {
-              case call: ScopeClauseSubqueryCall   => avoidDelisting(call)
-              case call: ImportingWithSubqueryCall => call.innerQuery
+            val importMode = subquery match {
+              case _: ScopeClauseSubqueryCall => Fragment.SubqueryImport.ScopeClause
+              case _                          => Fragment.SubqueryImport.ImportingWith
             }
             // Subquery: Recurse and start the child chain with Init
             val use = Use.Inherited(input.use)(subquery.innerQuery.position)
             Apply(
               input,
-              fragmentQuery(Init(use, input.outputColumns, imports), inner),
-              subquery.inTransactionsParameters
+              fragmentQuery(Init(use, input.outputColumns, imports), subquery.innerQuery),
+              subquery.inTransactionsParameters,
+              importMode
             )(subquery.position)
         }
     }
-  }
-
-  private def avoidDelisting(call: ast.ScopeClauseSubqueryCall): ast.Query = {
-    call.endoRewrite(
-      addDependenciesToProjectionsInSubqueryExpressions.subqueryExpressionAndCallClauseRewriter
-    ).innerQuery
   }
 
   private def isDistinct(uq: ast.Union) =

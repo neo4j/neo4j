@@ -477,7 +477,7 @@ class addDependenciesToProjectionInSubqueryExpressionsTest
     )
   }
 
-  test("should rewrite innerquery of SubqueryCall into single WITH") {
+  test("should not thread scope-clause imports into the subquery's inner WITH clauses") {
     assertRewrite(
       """WITH 1 AS a
         |CALL(a) {
@@ -489,8 +489,8 @@ class addDependenciesToProjectionInSubqueryExpressionsTest
         |""".stripMargin,
       """WITH 1 AS a
         |CALL(a) {
-        |WITH 2 AS b, a AS a
-        |WITH 3 AS c, a AS a
+        |WITH 2 AS b
+        |WITH 3 AS c
         |RETURN a + c AS res
         |}
         |RETURN res AS res
@@ -498,7 +498,7 @@ class addDependenciesToProjectionInSubqueryExpressionsTest
     )
   }
 
-  test("should rewrite innerquery of SubqueryCall and return not split") {
+  test("should not thread scope-clause imports into inner WITH clauses (RETURN not split)") {
     assertRewrite(
       """WITH 1 AS a
         |CALL(a) {
@@ -511,9 +511,9 @@ class addDependenciesToProjectionInSubqueryExpressionsTest
         |""".stripMargin,
       """WITH 1 AS a
         |CALL(a) {
-        |WITH 2 AS b, a AS a
-        |WITH 3 AS c, a AS a
-        |WITH a + c AS res, a AS a
+        |WITH 2 AS b
+        |WITH 3 AS c
+        |WITH a + c AS res
         |RETURN res AS res LIMIT 1
         |}
         |RETURN res AS res LIMIT 1
@@ -537,7 +537,7 @@ class addDependenciesToProjectionInSubqueryExpressionsTest
     val rewriter =
       inSequence(
         computeDependenciesForExpressions(checkResult.state),
-        addDependenciesToProjectionsInSubqueryExpressions.subqueryExpressionAndCallClauseRewriter
+        addDependenciesToProjectionsInSubqueryExpressions.subqueryExpressionRewriter
       )
 
     val result = normalizedWithAndReturnClauses.rewrite(rewriter)
