@@ -30,6 +30,7 @@ import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
+import org.neo4j.kernel.impl.transaction.log.LogTermProvider;
 import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -55,6 +56,7 @@ public record TransactionLogFilesContext(
         DatabaseHealth databaseHealth,
         KernelVersionProvider emptyDbKernelVersionProvider,
         LogFormatVersionProvider emptyDbLogFormatVersionProvider,
+        LogTermProvider logTermProvider,
         Clock clock,
         String databaseName,
         Config config,

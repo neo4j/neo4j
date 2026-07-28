@@ -43,8 +43,16 @@ public class LogEnvelopeHeader {
             + Long.BYTES // term
             + Byte.BYTES; // content type
 
-    public static final int ENVELOPE_TYPE_OFFSET = Integer.BYTES;
-    public static final int PAYLOAD_LENGTH_OFFSET = ENVELOPE_TYPE_OFFSET + Byte.BYTES;
+    public static final int CHECKSUM_SIZE = Integer.BYTES;
+
+    public static final int OFFSET_CHECKSUM = 0;
+    public static final int OFFSET_ENVELOPE_TYPE = OFFSET_CHECKSUM + CHECKSUM_SIZE;
+    public static final int OFFSET_PAYLOAD_LENGTH = OFFSET_ENVELOPE_TYPE + Byte.BYTES;
+    public static final int OFFSET_APPEND_INDEX = OFFSET_PAYLOAD_LENGTH + Integer.BYTES;
+    public static final int OFFSET_KERNEL_VERSION = OFFSET_APPEND_INDEX + Long.BYTES;
+    public static final int OFFSET_PREVIOUS_CHECKSUM = OFFSET_KERNEL_VERSION + Byte.BYTES;
+    public static final int OFFSET_TERM = OFFSET_PREVIOUS_CHECKSUM + CHECKSUM_SIZE;
+    public static final int OFFSET_CONTENT_TYPE = OFFSET_TERM + Long.BYTES;
 
     public static final int MAX_ZERO_PADDING_SIZE = Long.BYTES + LogEnvelopeHeader.HEADER_SIZE;
 

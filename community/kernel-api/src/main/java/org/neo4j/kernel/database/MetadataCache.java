@@ -21,5 +21,6 @@ package org.neo4j.kernel.database;
 
 import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.LogTermRepository;
 
-public interface MetadataCache extends KernelVersionRepository, LogFormatVersionRepository {}
+public interface MetadataCache extends KernelVersionRepository, LogFormatVersionRepository, LogTermRepository {}

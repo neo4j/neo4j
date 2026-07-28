@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
+import org.neo4j.kernel.impl.transaction.log.LogTermProvider;
 import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.LogMetadataProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -89,6 +90,10 @@ public class TransactionLogFilesProviders {
         if (overrides.logFormatVersionProvider() != null) {
             return overrides.logFormatVersionProvider();
         }
+        return logMetadataProvider;
+    }
+
+    public LogTermProvider getLogTermProvider() {
         return logMetadataProvider;
     }
 

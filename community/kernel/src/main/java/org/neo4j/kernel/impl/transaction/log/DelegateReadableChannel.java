@@ -96,6 +96,11 @@ public class DelegateReadableChannel implements ReadableLogPositionAwareChannel 
     }
 
     @Override
+    public long getTerm() throws IOException {
+        return delegate.getTerm();
+    }
+
+    @Override
     public byte markAndGetVersion(LogPositionMarker marker) throws IOException {
         if (delegate instanceof ReadableLogPositionAwareChannel posChannel) {
             return posChannel.markAndGetVersion(marker);
@@ -162,6 +167,13 @@ public class DelegateReadableChannel implements ReadableLogPositionAwareChannel 
             positionAwareChannel.skip(length);
         }
         throw new IllegalStateException("Skipping bytes not supported");
+    }
+
+    @Override
+    public void reloadChannelStateBeforeCurrentPosition() throws IOException {
+        if (delegate instanceof ReadableLogPositionAwareChannel positionAwareChannel) {
+            positionAwareChannel.reloadChannelStateBeforeCurrentPosition();
+        }
     }
 
     @Override

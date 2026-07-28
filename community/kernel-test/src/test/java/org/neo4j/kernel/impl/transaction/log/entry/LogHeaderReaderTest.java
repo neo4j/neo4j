@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.LOG_VERSION_MASK;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.encodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
@@ -203,7 +204,7 @@ class LogHeaderReaderTest {
                                 LogFormat.V6.getVersionByte(),
                                 logVersion,
                                 previousCommittedTx,
-                                -1,
+                                BASE_TERM,
                                 null,
                                 LogFormat.V6.getHeaderSize(),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
@@ -246,7 +247,7 @@ class LogHeaderReaderTest {
                                 LogFormat.V7.getVersionByte(),
                                 logVersion,
                                 previousCommittedTx,
-                                -1,
+                                BASE_TERM,
                                 null,
                                 LogFormat.V7.getHeaderSize(),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
@@ -290,7 +291,7 @@ class LogHeaderReaderTest {
                         return LogFormat.V8.newHeader(
                                 logVersion,
                                 previousCommittedTx,
-                                LogHeader.UNKNOWN_TERM,
+                                BASE_TERM,
                                 StoreIdentifier.newStoreIdentifier(storeId),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
@@ -333,7 +334,7 @@ class LogHeaderReaderTest {
                         return LogFormat.V9.newHeader(
                                 logVersion,
                                 appendIndex,
-                                LogHeader.UNKNOWN_TERM,
+                                BASE_TERM,
                                 StoreIdentifier.newStoreIdentifier(storeId),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,

@@ -137,6 +137,16 @@ public interface WritableChannel extends WritableByteChannel, ChecksumWriter {
     }
 
     /**
+     * Buffer a term to be written with the next write to this channel if the channel includes headers.
+     * Implementations may choose to ignore this value.
+     * @param term the new term for the next log entry.
+     * @return this channel, for fluent usage.
+     */
+    default WritableChannel putTerm(long term) {
+        return this;
+    }
+
+    /**
      * Write an append index represented by a {@code long} to this channel.
      * <p>
      * Implementations can keep append index information separate from the stream of data, so

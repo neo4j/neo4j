@@ -69,4 +69,9 @@ public interface FlushableChannel extends WritableChannel {
     default FlushableChannel putContentType(byte contentType) {
         return this;
     }
+
+    @Override
+    default FlushableChannel putTerm(long term) {
+        return this;
+    }
 }

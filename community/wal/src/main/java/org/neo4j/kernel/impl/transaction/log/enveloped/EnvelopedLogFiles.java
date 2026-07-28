@@ -348,7 +348,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 // don't read values from the channel until it has definitely read an envelope header
                 if (!envelopesRead) {
                     prevChecksum = readChannel.getChecksum();
-                    prevTerm = readChannel.currentTerm();
+                    prevTerm = readChannel.getTerm();
                     version = readChannel.getLogVersion();
                 }
                 position = readChannel.goToNextEnvelope();
@@ -532,7 +532,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             long lastValidPosition = readChannel.position();
             long recoveredIndex = readChannel.entryIndex();
             int recoveredChecksum = readChannel.getChecksum();
-            long recoveredTerm = readChannel.currentTerm();
+            long recoveredTerm = readChannel.getTerm();
 
             // Check if there's incomplete data after the last valid position
             if (lastValidPosition < currentPosition) {
@@ -798,12 +798,12 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             // EOF before a full header just means no filler — a file this short cannot start with one
         }
         if (header.hasRemaining()
-                || header.get(LogEnvelopeHeader.ENVELOPE_TYPE_OFFSET) != EnvelopeType.START_OFFSET.typeValue) {
+                || header.get(LogEnvelopeHeader.OFFSET_ENVELOPE_TYPE) != EnvelopeType.START_OFFSET.typeValue) {
             channel.position(position);
             return;
         }
         channel.position(
-                position + LogEnvelopeHeader.HEADER_SIZE + header.getInt(LogEnvelopeHeader.PAYLOAD_LENGTH_OFFSET));
+                position + LogEnvelopeHeader.HEADER_SIZE + header.getInt(LogEnvelopeHeader.OFFSET_PAYLOAD_LENGTH));
     }
 
     private static class EnvelopedLogRotation implements LogRotation {
@@ -826,6 +826,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 long lastAppendIndex,
                 KernelVersion kernelVersion,
                 int checksum,
+                long lastTerm,
                 LogFormat logFormat) {
             throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
         }
@@ -871,6 +872,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 KernelVersion kernelVersion,
                 long lastAppendIndex,
                 int previousChecksum,
+                long lastTerm,
                 LogFormat logFormat) {
             throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
         }

@@ -47,6 +47,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTermProvider;
 import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.kernel.impl.transaction.log.entry.LogSegments;
 import org.neo4j.logging.InternalLogProvider;
@@ -102,6 +103,7 @@ public class LogFilesBuilder {
     private KernelVersionProvider kernelVersionProvider = null;
     private LogFormatVersionProvider emptyLogsLogFormatProvider = LogFormatVersionProvider.THROWING_PROVIDER;
     private LogFormatVersionProvider logFormatVersionProvider = null;
+    private LogTermProvider logTermProvider = LogTermProvider.UNKNOWN_TERM_PROVIDER;
     private LogTailMetadata externalLogTail;
     private int envelopeSegmentBlockSizeBytes = LogSegments.DEFAULT_LOG_SEGMENT_SIZE;
     private int bufferSizeBytes;
@@ -282,6 +284,11 @@ public class LogFilesBuilder {
         return this;
     }
 
+    public LogFilesBuilder withLogTermProvider(LogTermProvider logTermProvider) {
+        this.logTermProvider = logTermProvider;
+        return this;
+    }
+
     public LogFilesBuilder withInitializeProviders() {
         this.noInit = false;
         return this;
@@ -372,6 +379,7 @@ public class LogFilesBuilder {
                 health,
                 emptyLogskernelVersionProvider,
                 emptyLogsLogFormatProvider,
+                logTermProvider,
                 clock,
                 databaseLayout.getDatabaseName(),
                 config,

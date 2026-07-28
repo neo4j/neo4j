@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.KernelVersionProviders.fixed;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
+import static org.neo4j.kernel.impl.transaction.log.LogTermProvider.UNKNOWN_TERM_PROVIDER;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
@@ -379,6 +380,7 @@ class ReversedSingleFileCommandBatchCursorTest {
                 channel,
                 new CorruptedLogEntryWriter<>(channel),
                 fixed(LATEST_KERNEL_VERSION_WITHOUT_ENVELOPES),
+                UNKNOWN_TERM_PROVIDER,
                 LogRotation.NO_ROTATION);
         long txId = ++this.txId;
         writer.append(

@@ -92,6 +92,11 @@ public class InputStreamReadableChannel implements ReadableChannel {
     }
 
     @Override
+    public long getTerm() throws IOException {
+        return BASE_TERM;
+    }
+
+    @Override
     public boolean isOpen() {
         return !isClosed;
     }

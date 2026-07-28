@@ -654,6 +654,7 @@ public final class Recovery {
                 .withExternalLogTailMetadata(logTailMetadata)
                 .withDependencies(dependencies)
                 .withMemoryTracker(memoryTracker)
+                .withLogTermProvider(logTailMetadata)
                 .build();
 
         LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();

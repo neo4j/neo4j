@@ -161,6 +161,11 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
     }
 
     @Override
+    public long getTerm() throws IOException {
+        return BASE_TERM;
+    }
+
+    @Override
     public int read(ByteBuffer dst) throws IOException {
         int length = dst.remaining();
         if (aheadBuffer.remaining() >= length) {

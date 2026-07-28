@@ -65,7 +65,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.StoreChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.storageengine.api.StoreIdentifier;
@@ -312,7 +311,7 @@ class PhysicalFlushableChannelTest {
         final var logHeader = LATEST_LOG_FORMAT.newHeader(
                 1,
                 1,
-                LogHeader.UNKNOWN_TERM,
+                ReadableChannel.BASE_TERM,
                 StoreIdentifier.UNKNOWN,
                 1024,
                 BASE_TX_CHECKSUM,

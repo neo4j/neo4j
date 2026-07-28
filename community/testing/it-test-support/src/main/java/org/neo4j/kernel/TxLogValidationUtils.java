@@ -26,11 +26,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.KernelVersion.GLORIOUS_FUTURE;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadUtils;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -38,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -263,4 +268,39 @@ public class TxLogValidationUtils {
     }
 
     public record LogReadResult(int count, int checksum) {}
+
+    /**
+     * The append index and enveloped term of a single log entry, as read back from an enveloped
+     * ({@link org.neo4j.kernel.impl.transaction.log.entry.LogFormat#usesSegments() segmented}) transaction log file.
+     */
+    public record EntryTerm(long appendIndex, long term) {}
+
+    /**
+     * Reads the per-envelope {@code term} of every entry in a single enveloped transaction log file version, in log
+     * order. Non-enveloped (pre-V10) files carry no envelope terms, so an empty list is returned for those.
+     */
+    public static List<EntryTerm> readEntryTerms(LogFile logFile, long logVersion) throws IOException {
+        List<EntryTerm> entryTerms = new ArrayList<>();
+        try (ReadableLogChannel reader = ReadAheadUtils.newChannel(logFile, logVersion, EmptyMemoryTracker.INSTANCE)) {
+            if (!reader.supportsEntrySkipping()) {
+                // Only enveloped/segmented formats carry a per-entry term.
+                return entryTerms;
+            }
+            try {
+                reader.alignWithStartEntry();
+                if (reader.getAppendIndex() == LogEnvelopeHeader.UNSPECIFIED_INDEX) {
+                    // File only holds a header, no entries.
+                    return entryTerms;
+                }
+                entryTerms.add(new EntryTerm(reader.getAppendIndex(), reader.getTerm()));
+                while (true) {
+                    reader.goToNextEntry();
+                    entryTerms.add(new EntryTerm(reader.getAppendIndex(), reader.getTerm()));
+                }
+            } catch (ReadPastEndException endOfEntries) {
+                // Reached the end of the entries in this file.
+            }
+        }
+        return entryTerms;
+    }
 }

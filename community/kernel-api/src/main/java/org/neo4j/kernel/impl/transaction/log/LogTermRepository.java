@@ -19,24 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.storageengine.api.TransactionId;
-
-public interface LogTailLogVersionsMetadata {
-    LogTailLogVersionsMetadata EMPTY_LOG_TAIL = new EmptyLogTailLogVersionsMetadata();
-
-    boolean isRecoveryRequired();
-
-    long getCheckpointLogVersion();
-
-    long getLogVersion();
-
-    TransactionId getLastCommittedTransaction();
-
-    LogPosition getLastTransactionLogPosition();
-
-    long getLastCheckpointedAppendIndex();
-
-    AppendBatchInfo lastBatch();
-
-    long getCurrentTerm();
+public interface LogTermRepository extends LogTermProvider {
+    void setCurrentTerm(long newTerm);
 }

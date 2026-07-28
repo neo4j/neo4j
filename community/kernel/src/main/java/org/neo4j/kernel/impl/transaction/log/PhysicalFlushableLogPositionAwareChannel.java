@@ -170,6 +170,11 @@ public class PhysicalFlushableLogPositionAwareChannel implements FlushableLogPos
     }
 
     @Override
+    public FlushableChannel putTerm(long term) {
+        return checksumChannel.putTerm(term);
+    }
+
+    @Override
     public boolean isOpen() {
         return checksumChannel.isOpen();
     }
@@ -331,7 +336,7 @@ public class PhysicalFlushableLogPositionAwareChannel implements FlushableLogPos
 
                 previousChecksum = envelopeReadChannel.temporaryFindPreviousChecksumBeforePosition(position);
                 previousAppendIndex = envelopeReadChannel.entryIndex();
-                previousTerm = envelopeReadChannel.currentTerm();
+                previousTerm = envelopeReadChannel.getTerm();
                 logChannel.position(position);
             }
         }

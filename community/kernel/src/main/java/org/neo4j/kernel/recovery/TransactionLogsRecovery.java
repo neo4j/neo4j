@@ -520,6 +520,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 long lastAppendIndex,
                 KernelVersion kernelVersion,
                 int checksum,
+                long lastTerm,
                 LogFormat logFormat) {
             throw new UnsupportedOperationException();
         }
@@ -549,7 +550,12 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             writer.prepareForFlush().flush();
             channel.truncate(channel.position());
             PhysicalLogVersionedStoreChannel newLog = logFile.createLogChannelForVersion(
-                    newLogVersion, () -> lastAppendIndex, versionProvider, previousChecksum, logFormatVersionProvider);
+                    newLogVersion,
+                    () -> lastAppendIndex,
+                    versionProvider,
+                    previousChecksum,
+                    logFormatVersionProvider,
+                    () -> lastTerm);
             channel.close();
             channel = newLog;
             writer.setChannel(channel, logFile.extractHeader(channel.getLogVersion()));
@@ -570,6 +576,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 KernelVersion kernelVersion,
                 long lastAppendIndex,
                 int previousChecksum,
+                long lastTerm,
                 LogFormat logFormat) {
             throw new UnsupportedOperationException();
         }

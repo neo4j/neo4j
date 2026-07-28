@@ -40,6 +40,7 @@ import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -99,7 +100,7 @@ class TransactionLogFileInformationTest {
         LogHeader expectedHeader = LATEST_LOG_FORMAT.newHeader(
                 2,
                 baseId + 1L,
-                LogHeader.UNKNOWN_TERM,
+                ReadableChannel.BASE_TERM,
                 StoreIdentifier.newStoreIdentifier(storeId),
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
@@ -129,7 +130,7 @@ class TransactionLogFileInformationTest {
         var expectedHeader = LATEST_LOG_FORMAT.newHeader(
                 2,
                 4,
-                LogHeader.UNKNOWN_TERM,
+                ReadableChannel.BASE_TERM,
                 StoreIdentifier.newStoreIdentifier(storeId),
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
@@ -158,7 +159,7 @@ class TransactionLogFileInformationTest {
         var expectedHeader = LATEST_LOG_FORMAT.newHeader(
                 2,
                 4,
-                LogHeader.UNKNOWN_TERM,
+                ReadableChannel.BASE_TERM,
                 StoreIdentifier.newStoreIdentifier(storeId),
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,

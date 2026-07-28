@@ -123,7 +123,7 @@ public class EnvelopedLogTailChecker {
                     while (true) {
                         lastGoodPosition = readChannel.goToEndOfEntry();
                         lastValidAppendIndex = readChannel.entryIndex();
-                        lastValidTerm = readChannel.currentTerm();
+                        lastValidTerm = readChannel.getTerm();
                         lastValidChecksum = readChannel.getChecksum();
                     }
                 } catch (ReadPastEndException e) {

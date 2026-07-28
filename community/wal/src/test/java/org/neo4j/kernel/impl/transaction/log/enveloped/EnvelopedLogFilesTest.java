@@ -797,7 +797,7 @@ class EnvelopedLogFilesTest {
                 reader.read(ByteBuffer.wrap(readData));
                 assertThat(new String(readData)).isEqualTo(currentMessage);
                 assertThat(reader.entryIndex()).isEqualTo(i);
-                assertThat(reader.currentTerm()).isEqualTo(i);
+                assertThat(reader.getTerm()).isEqualTo(i);
             }
             for (int i = 0; i < 2; i++) {
                 var currentMessage = messagesAfter[i];
@@ -805,7 +805,7 @@ class EnvelopedLogFilesTest {
                 reader.read(ByteBuffer.wrap(readData));
                 assertThat(new String(readData)).isEqualTo(currentMessage);
                 assertThat(reader.entryIndex()).isEqualTo(i + 2);
-                assertThat(reader.currentTerm()).isEqualTo(i + 2);
+                assertThat(reader.getTerm()).isEqualTo(i + 2);
             }
         }
     }
@@ -2163,16 +2163,16 @@ class EnvelopedLogFilesTest {
             // initial file starts on term -1
             assertThat(reader.logHeader().getLastTerm()).isEqualTo(-1L);
             reader.alignWithStartEntry();
-            assertThat(reader.currentTerm()).isEqualTo(80L);
+            assertThat(reader.getTerm()).isEqualTo(80L);
             reader.goToNextEntry();
-            assertThat(reader.currentTerm()).isEqualTo(81L);
+            assertThat(reader.getTerm()).isEqualTo(81L);
             reader.goToNextEntry();
-            assertThat(reader.currentTerm()).isEqualTo(82L);
+            assertThat(reader.getTerm()).isEqualTo(82L);
             // move onto next file
             reader.goToNextEntry();
             assertThat(reader.logHeader().getLogVersion()).isOne();
             assertThat(reader.logHeader().getLastTerm()).isEqualTo(82L);
-            assertThat(reader.currentTerm()).isEqualTo(83L);
+            assertThat(reader.getTerm()).isEqualTo(83L);
         }
         // truncate away the first entry in second file
         long truncateIndex = writer.currentIndex();
@@ -2215,7 +2215,7 @@ class EnvelopedLogFilesTest {
                             segmentBlockSize,
                             reader.getChecksum(),
                             firstIndex,
-                            reader.currentTerm(),
+                            reader.getTerm(),
                             LogTracers.NULL,
                             LogRotation.NO_ROTATION)) {
                 for (var i = 0; i < randomSupport.nextInt(1, 5); i++) {

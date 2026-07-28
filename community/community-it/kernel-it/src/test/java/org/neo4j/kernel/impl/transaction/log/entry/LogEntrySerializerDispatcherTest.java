@@ -41,6 +41,7 @@ import java.util.HashMap;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
@@ -83,7 +84,7 @@ class LogEntrySerializerDispatcherTest {
         LogHeader logHeader = logFormat.newHeader(
                 1,
                 2,
-                LogHeader.UNKNOWN_TERM,
+                ReadableChannel.BASE_TERM,
                 StoreIdentifier.UNKNOWN,
                 logFormat.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,

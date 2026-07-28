@@ -109,7 +109,7 @@ public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
         try (var readChannel = envelopedLogFiles.openReadChannel(index)) {
             if (readChannel != null) {
                 readChannel.goToEntry(index);
-                return readChannel.currentTerm();
+                return readChannel.getTerm();
             }
         }
         var logFilesMetadata = envelopedLogFiles.logFilesMetadata();

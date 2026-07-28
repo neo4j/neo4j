@@ -125,6 +125,11 @@ public class FormatSwitchingReadAheadLogChannel implements ReadableLogChannel {
     }
 
     @Override
+    public void reloadChannelStateBeforeCurrentPosition() throws IOException {
+        delegate.reloadChannelStateBeforeCurrentPosition();
+    }
+
+    @Override
     public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) throws IOException {
         return delegate.getCurrentLogPosition(positionMarker);
     }
@@ -217,6 +222,11 @@ public class FormatSwitchingReadAheadLogChannel implements ReadableLogChannel {
     @Override
     public byte getContentType() throws IOException {
         return delegate.getContentType();
+    }
+
+    @Override
+    public long getTerm() throws IOException {
+        return delegate.getTerm();
     }
 
     @Override

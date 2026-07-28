@@ -25,6 +25,9 @@ import static org.neo4j.io.fs.ReadableChannel.UNSPECIFIED_CONTENT_TYPE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.IGNORE_CONTENT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.MAX_ZERO_PADDING_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.OFFSET_ENVELOPE_TYPE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.OFFSET_PAYLOAD_LENGTH;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.OFFSET_PREVIOUS_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.UNSPECIFIED_TERM;
 import static org.neo4j.storageengine.api.LogVersionRepository.UNKNOWN_LOG_OFFSET;
 import static org.neo4j.util.Preconditions.checkArgument;
@@ -108,14 +111,6 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
     private static final byte[] PADDING_ZEROES = new byte[MAX_ZERO_PADDING_SIZE];
 
     // Offsets of fields within an envelope frame header (matches completeEnvelope's write order / HEADER_SIZE).
-    private static final int ENVELOPE_TYPE_OFFSET = Integer.BYTES; // type byte follows the 4-byte checksum
-    private static final int ENVELOPE_PAYLOAD_LENGTH_OFFSET = ENVELOPE_TYPE_OFFSET + Byte.BYTES; // length follows type
-    private static final int ENVELOPE_PREVIOUS_CHECKSUM_OFFSET = Integer.BYTES
-            + Byte.BYTES
-            + Integer.BYTES
-            + Long.BYTES
-            + Byte.BYTES; // past checksum,type,length,index,version
-
     private final Checksum checksum = CHECKSUM_FACTORY.get();
     private final ScopedBuffer scopedBuffer;
     private final LogRotation logRotation;
@@ -485,8 +480,8 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
             return; // already on a fresh segment boundary
         }
         boolean fits;
-        if (src.remaining() >= HEADER_SIZE && isRawEntryStart(src.get(frameStart + ENVELOPE_TYPE_OFFSET))) {
-            final int frameLength = HEADER_SIZE + src.getInt(frameStart + ENVELOPE_PAYLOAD_LENGTH_OFFSET);
+        if (src.remaining() >= HEADER_SIZE && isRawEntryStart(src.get(frameStart + OFFSET_ENVELOPE_TYPE))) {
+            final int frameLength = HEADER_SIZE + src.getInt(frameStart + OFFSET_PAYLOAD_LENGTH);
             checkState(
                     frameLength <= tail || tail <= MAX_ZERO_PADDING_SIZE,
                     "Raw append would pad a %d-byte tail before a %d-byte frame, but a tail larger than the max "
@@ -518,7 +513,7 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         if (channel.position() < rotateAtSize) {
             return;
         }
-        previousChecksum = src.getInt(nextHeaderOffset + ENVELOPE_PREVIOUS_CHECKSUM_OFFSET);
+        previousChecksum = src.getInt(nextHeaderOffset + OFFSET_PREVIOUS_CHECKSUM);
         rotateLogFile();
     }
 
@@ -530,7 +525,7 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
      * about to corrupt it.
      */
     private static void checkRawFrameStart(ByteBuffer src, int frameStart) {
-        byte typeValue = src.get(frameStart + ENVELOPE_TYPE_OFFSET);
+        byte typeValue = src.get(frameStart + OFFSET_ENVELOPE_TYPE);
         boolean atFrameStart = typeValue == EnvelopeType.FULL.typeValue
                 || typeValue == EnvelopeType.BEGIN.typeValue
                 || typeValue == EnvelopeType.MIDDLE.typeValue
@@ -555,7 +550,8 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         }
     }
 
-    public void putTerm(long term) {
+    @Override
+    public EnvelopeWriteChannel putTerm(long term) {
         checkState(
                 currentTerm <= term,
                 "Failed to write entry to replication log, the entry's term was less than the "
@@ -563,6 +559,7 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
                 currentTerm,
                 term);
         this.nextTerm = term;
+        return this;
     }
 
     @Override

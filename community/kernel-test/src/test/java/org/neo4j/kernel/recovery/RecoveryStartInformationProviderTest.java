@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.LastAppendBatchInfoProvider.EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER;
+import static org.neo4j.kernel.impl.transaction.log.LogTermProvider.UNKNOWN_TERM_PROVIDER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -40,11 +41,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogRangeInfo;
@@ -66,7 +67,7 @@ class RecoveryStartInformationProviderTest {
         var logHeader = LATEST_LOG_FORMAT.newHeader(
                 0,
                 1,
-                LogHeader.UNKNOWN_TERM,
+                ReadableChannel.BASE_TERM,
                 null,
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
@@ -88,6 +89,7 @@ class RecoveryStartInformationProviderTest {
                         LatestVersions.LATEST_KERNEL_VERSION.version(),
                         kernelProv,
                         LATEST_LOG_FORMAT_PROVIDER,
+                        UNKNOWN_TERM_PROVIDER,
                         EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER,
                         null));
 
@@ -133,6 +135,7 @@ class RecoveryStartInformationProviderTest {
                         null,
                         kernelProv,
                         LATEST_LOG_FORMAT_PROVIDER,
+                        UNKNOWN_TERM_PROVIDER,
                         EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER));
 
         // when
@@ -177,6 +180,7 @@ class RecoveryStartInformationProviderTest {
                         null,
                         kernelProv,
                         LATEST_LOG_FORMAT_PROVIDER,
+                        UNKNOWN_TERM_PROVIDER,
                         EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER));
 
         RecoveryStartInformation recoveryStartInformation =
@@ -204,6 +208,7 @@ class RecoveryStartInformationProviderTest {
                         kernelVersion.version(),
                         kernelProv,
                         LATEST_LOG_FORMAT_PROVIDER,
+                        UNKNOWN_TERM_PROVIDER,
                         EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER,
                         null));
         when(logFiles.getLogFile().getLogRangeInfo()).thenReturn(new LogRangeInfo(0, null, 0, null));
@@ -232,6 +237,7 @@ class RecoveryStartInformationProviderTest {
                         LatestVersions.LATEST_KERNEL_VERSION.version(),
                         kernelProv,
                         LATEST_LOG_FORMAT_PROVIDER,
+                        UNKNOWN_TERM_PROVIDER,
                         EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER,
                         null));
 
@@ -255,6 +261,7 @@ class RecoveryStartInformationProviderTest {
                         LatestVersions.LATEST_KERNEL_VERSION.version(),
                         kernelProv,
                         LATEST_LOG_FORMAT_PROVIDER,
+                        UNKNOWN_TERM_PROVIDER,
                         EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER,
                         null));
 

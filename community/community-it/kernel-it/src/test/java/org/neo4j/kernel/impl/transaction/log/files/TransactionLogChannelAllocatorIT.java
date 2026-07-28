@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.impl.transaction.log.LogTermProvider.UNKNOWN_TERM_PROVIDER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -158,7 +159,12 @@ class TransactionLogChannelAllocatorIT {
     @EnabledOnOs(OS.LINUX)
     void allocateNewTransactionLogFile() throws IOException {
         try (var logChannel = fileAllocator.createLogChannel(
-                10, 1L, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION_PROVIDER, LATEST_LOG_FORMAT_PROVIDER)) {
+                10,
+                1L,
+                BASE_TX_CHECKSUM,
+                LATEST_KERNEL_VERSION_PROVIDER,
+                LATEST_LOG_FORMAT_PROVIDER,
+                UNKNOWN_TERM_PROVIDER)) {
             assertEquals(ROTATION_THRESHOLD, logChannel.size());
         }
     }
@@ -170,7 +176,12 @@ class TransactionLogChannelAllocatorIT {
         var unreasonableAllocator = new TransactionLogChannelAllocator(
                 logFileContext, fileHelper, new LogHeaderCache(10), logFileContext.rotationThreshold());
         try (var channel = assertDoesNotThrow(() -> unreasonableAllocator.createLogChannel(
-                10, 1L, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION_PROVIDER, LATEST_LOG_FORMAT_PROVIDER))) {}
+                10,
+                1L,
+                BASE_TX_CHECKSUM,
+                LATEST_KERNEL_VERSION_PROVIDER,
+                LATEST_LOG_FORMAT_PROVIDER,
+                UNKNOWN_TERM_PROVIDER))) {}
 
         assertThat(logProvider.serialize())
                 .containsSequence(
@@ -187,7 +198,12 @@ class TransactionLogChannelAllocatorIT {
         var unreasonableAllocator = new TransactionLogChannelAllocator(
                 logFileContext, fileHelper, new LogHeaderCache(10), logFileContext.rotationThreshold());
         try (PhysicalLogVersionedStoreChannel channel = unreasonableAllocator.createLogChannel(
-                10, 1L, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION_PROVIDER, LATEST_LOG_FORMAT_PROVIDER)) {
+                10,
+                1L,
+                BASE_TX_CHECKSUM,
+                LATEST_KERNEL_VERSION_PROVIDER,
+                LATEST_LOG_FORMAT_PROVIDER,
+                UNKNOWN_TERM_PROVIDER)) {
             assertEquals(EMPTY_LOG_FILE_SIZE, channel.size());
             assertThat(logProvider.serialize())
                     .containsSequence(
@@ -202,7 +218,12 @@ class TransactionLogChannelAllocatorIT {
     @DisabledOnOs(OS.LINUX)
     void allocateNewTransactionLogFileOnSystemThatDoesNotSupportPreallocations() throws IOException {
         try (PhysicalLogVersionedStoreChannel logChannel = fileAllocator.createLogChannel(
-                10, 1L, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION_PROVIDER, LATEST_LOG_FORMAT_PROVIDER)) {
+                10,
+                1L,
+                BASE_TX_CHECKSUM,
+                LATEST_KERNEL_VERSION_PROVIDER,
+                LATEST_LOG_FORMAT_PROVIDER,
+                UNKNOWN_TERM_PROVIDER)) {
             assertEquals(EMPTY_LOG_FILE_SIZE, logChannel.size());
         }
     }
@@ -214,7 +235,12 @@ class TransactionLogChannelAllocatorIT {
 
         TransactionLogChannelAllocator fileAllocator = createLogFileAllocator();
         try (PhysicalLogVersionedStoreChannel channel = fileAllocator.createLogChannel(
-                11, 1L, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION_PROVIDER, LATEST_LOG_FORMAT_PROVIDER)) {
+                11,
+                1L,
+                BASE_TX_CHECKSUM,
+                LATEST_KERNEL_VERSION_PROVIDER,
+                LATEST_LOG_FORMAT_PROVIDER,
+                UNKNOWN_TERM_PROVIDER)) {
             assertEquals(EMPTY_LOG_FILE_SIZE, channel.size());
         }
     }
@@ -256,6 +282,7 @@ class TransactionLogChannelAllocatorIT {
                 new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance()),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 LATEST_LOG_FORMAT_PROVIDER,
+                UNKNOWN_TERM_PROVIDER,
                 Clock.systemUTC(),
                 DEFAULT_DATABASE_NAME,
                 config,

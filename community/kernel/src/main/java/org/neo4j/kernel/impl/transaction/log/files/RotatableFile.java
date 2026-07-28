@@ -60,7 +60,8 @@ public interface RotatableFile {
      * @return A file object representing the file name and path of the log file rotated to.
      * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
      */
-    RotationInfo rotate(KernelVersion kernelVersion, long lastAppendIndex, int checksum, LogFormat logFormat)
+    RotationInfo rotate(
+            KernelVersion kernelVersion, long lastAppendIndex, int checksum, long lastTerm, LogFormat logFormat)
             throws IOException;
 
     RotationInfo rotate(KernelVersion kernelVersion, long lastAppendIndex, int checksum) throws IOException;

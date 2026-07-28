@@ -36,6 +36,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.REPL
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.kernel.impl.transaction.log.enveloped.EnvelopeWriteChannelTest.buffer;
 import static org.neo4j.kernel.impl.transaction.log.enveloped.EnvelopeWriteChannelTest.writeChannel;
+import static org.neo4j.kernel.impl.transaction.log.enveloped.EnvelopeWriteChannelTestSupport.KERNEL_VERSION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
@@ -47,6 +48,7 @@ import java.util.stream.IntStream;
 import java.util.zip.Checksum;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.assertj.core.data.Offset;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -1380,6 +1382,97 @@ class EnvelopeReadChannelTest {
     }
 
     @Test
+    void reloadChannelStateBeforeCurrentPosition() throws IOException {
+        int segmentSize = 256;
+        final var bytes = bytes(random, TEST_DATA_SIZE);
+
+        var entryChecksums = new IntArrayList();
+        var firstEnvelopeChecksums = new IntArrayList();
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            entryChecksums.add(BASE_TX_CHECKSUM);
+            int checksum = writeHeaderAndPayload(
+                    buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, KERNEL_VERSION, bytes, 2L, CONTENT_TYPE, 100L);
+            firstEnvelopeChecksums.add(checksum);
+            entryChecksums.add(checksum);
+            checksum = writeHeaderAndPayload(
+                    buffer, EnvelopeType.BEGIN, checksum, KERNEL_VERSION, bytes, 3L, CONTENT_TYPE, 101L);
+            firstEnvelopeChecksums.add(checksum);
+            checksum = writeHeaderAndPayload(
+                    buffer, EnvelopeType.END, checksum, KERNEL_VERSION, bytes, 3L, CONTENT_TYPE, 101L);
+            entryChecksums.add(checksum);
+            checksum = writeHeaderAndPayload(
+                    buffer, EnvelopeType.BEGIN, checksum, KERNEL_VERSION, bytes, 4L, CONTENT_TYPE, 102L);
+            firstEnvelopeChecksums.add(checksum);
+
+            buffer.put(new byte[4]); // padding
+            assertThat(buffer.position()).isEqualTo(segmentSize * 2);
+
+            checksum = writeHeaderAndPayload(
+                    buffer, EnvelopeType.MIDDLE, checksum, KERNEL_VERSION, bytes, 4L, CONTENT_TYPE, 102L);
+            checksum = writeHeaderAndPayload(
+                    buffer, EnvelopeType.END, checksum, KERNEL_VERSION, bytes, 4L, CONTENT_TYPE, 102L);
+            entryChecksums.add(checksum);
+            checksum = writeHeaderAndPayload(
+                    buffer, EnvelopeType.FULL, checksum, KERNEL_VERSION, bytes, 5L, CONTENT_TYPE, 103L);
+            firstEnvelopeChecksums.add(checksum);
+            entryChecksums.add(checksum);
+            checksum = writeHeaderAndPayload(
+                    buffer, EnvelopeType.FULL, checksum, KERNEL_VERSION, bytes, 6L, CONTENT_TYPE, 104L);
+            firstEnvelopeChecksums.add(checksum);
+            entryChecksums.add(checksum);
+        });
+
+        int[] positions = new int[] {
+            segmentSize,
+            segmentSize + TEST_ENTRY_SIZE,
+            segmentSize + TEST_ENTRY_SIZE * 3,
+            segmentSize * 2 + TEST_ENTRY_SIZE * 2,
+            segmentSize * 2 + TEST_ENTRY_SIZE * 3,
+            segmentSize * 2 + TEST_ENTRY_SIZE * 4,
+        };
+
+        // verify reloadChannelStateBeforeCurrentPosition reads the prior state when aligned before the header
+        // and also doesn't read off the file end, or move the position
+        for (int index = 0; index < positions.length; index++) {
+            var logChannel = logChannel();
+            logChannel.position(positions[index]);
+            try (var channel = new EnvelopeReadChannel(
+                    logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+                channel.reloadChannelStateBeforeCurrentPosition();
+                assertThat(channel.position()).isEqualTo(positions[index]);
+                assertThat(channel.currentChecksum).isEqualTo(entryChecksums.get(index));
+                assertThat(channel.currentIndex).isEqualTo(index + 1);
+                if (index == 0) {
+                    // The file header doesn't contain a previous content type
+                    assertThat(channel.currentContentType).isEqualTo(UNSPECIFIED_CONTENT_TYPE);
+                    // from the header constant
+                    assertThat(channel.currentTerm).isEqualTo(10L);
+                } else {
+                    assertThat(channel.currentContentType).isEqualTo(CONTENT_TYPE);
+                    assertThat(channel.currentTerm).isEqualTo(100L + index - 1L);
+                }
+            }
+        }
+        // verify reloadChannelStateBeforeCurrentPosition re-reads the state of the current envelope
+        // when positioned inside the payload of the entry
+        for (int index = 0; index < positions.length - 1; index++) {
+            var logChannel = logChannel();
+            logChannel.position(positions[index] + HEADER_SIZE + 10);
+            try (var channel = new EnvelopeReadChannel(
+                    logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+                channel.reloadChannelStateBeforeCurrentPosition();
+                assertThat(channel.position()).isEqualTo(positions[index] + HEADER_SIZE + 10);
+                // checksums from reading first envelope in entry
+                assertThat(channel.currentChecksum).isEqualTo(firstEnvelopeChecksums.get(index));
+                assertThat(channel.currentIndex).isEqualTo(index + 2);
+                assertThat(channel.currentContentType).isEqualTo(CONTENT_TYPE);
+                assertThat(channel.currentTerm).isEqualTo(100L + index);
+            }
+        }
+    }
+
+    @Test
     void allowOpenOfEmptyFile() throws IOException {
         final var file = file(0);
         writeSomeData(file, buffer -> {});
@@ -2276,6 +2369,21 @@ class EnvelopeReadChannelTest {
                 buildChecksum(checksum, type, previousChecksum, kernelVersion, payload, startIndex, contentType, TERM);
         return writeHeaderAndPayload(
                 buffer, type, previousChecksum, payloadChecksum, kernelVersion, payload, startIndex, contentType, TERM);
+    }
+
+    private int writeHeaderAndPayload(
+            ByteBuffer buffer,
+            EnvelopeType type,
+            int previousChecksum,
+            byte kernelVersion,
+            byte[] payload,
+            long startIndex,
+            byte contentType,
+            long term) {
+        final var payloadChecksum =
+                buildChecksum(checksum, type, previousChecksum, kernelVersion, payload, startIndex, contentType, term);
+        return writeHeaderAndPayload(
+                buffer, type, previousChecksum, payloadChecksum, kernelVersion, payload, startIndex, contentType, term);
     }
 
     private int writeHeaderAndPayload(

@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.subtractExact;
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.kernel.KernelVersion.EARLIEST;
 import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -51,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogIndexEncoding;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTermProvider;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
@@ -93,6 +96,7 @@ public class DetachedLogTailScanner {
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private final LogPosition maxPosition;
     private final LogFormatVersionProvider fallbackLogFormatVersionProvider;
+    private final LogTermProvider fallbackLogTermProvider;
 
     private LogTailMetadata logTail;
 
@@ -111,6 +115,7 @@ public class DetachedLogTailScanner {
         this.failOnCorruptedLogFiles = context.failOnCorruptedLogFiles();
         this.fallbackKernelVersionProvider = context.emptyDbKernelVersionProvider();
         this.fallbackLogFormatVersionProvider = context.emptyDbLogFormatVersionProvider();
+        this.fallbackLogTermProvider = context.logTermProvider();
         this.logTail = externalLogTail;
         this.monitor = monitor;
         this.binarySupportedKernelVersions = context.binarySupportedKernelVersions();
@@ -184,6 +189,7 @@ public class DetachedLogTailScanner {
                 StoreIdentifier.newStoreIdentifier(checkpoint.storeId()),
                 fallbackKernelVersionProvider,
                 () -> logFormatVersion,
+                postCheckPointInfo.logTermProvider(),
                 new DetachedLogTailAppendIndexProvider(
                         commandReaderFactory,
                         binarySupportedKernelVersions,
@@ -200,7 +206,7 @@ public class DetachedLogTailScanner {
             throws IOException {
         return kernelVersion.isAtLeast(VERSION_APPEND_INDEX_INTRODUCED)
                 ? getAppendIndexPostCheckPointInfo(logFile, logPosition, maxPosition)
-                : getLegacyPostCheckPointInfo(logFile, logPosition).toPostCheckpointInfo();
+                : getLegacyPostCheckPointInfo(logFile, logPosition).toPostCheckpointInfo(fallbackLogTermProvider);
     }
 
     private LogTailInformation noCheckpointLogTail(
@@ -239,6 +245,7 @@ public class DetachedLogTailScanner {
                 entries.getEntryVersion(),
                 fallbackKernelVersionProvider,
                 logFormat,
+                entries.logTermProvider(),
                 new DetachedLogTailAppendIndexProvider(
                         commandReaderFactory,
                         binarySupportedKernelVersions,
@@ -352,6 +359,7 @@ public class DetachedLogTailScanner {
             LogFile logFile, LogPosition logPosition, LogPosition maxPosition) throws IOException {
         boolean corruptedTransactionLogs = false;
         LogPosition lookupPosition = null;
+        LogTermProvider termProvider = fallbackLogTermProvider;
         if (logPosition != LogPosition.UNSPECIFIED) {
             long logVersion = logPosition.getLogVersion();
             try {
@@ -363,42 +371,55 @@ public class DetachedLogTailScanner {
                     var logEntryReader = new VersionAwareLogEntryReader(
                             commandReaderFactory, binarySupportedKernelVersions, memoryTracker);
                     var logHeader = logFile.extractHeader(logVersion);
+                    final long headerTerm = max(logHeader.getLastTerm(), BASE_TERM);
+                    termProvider = () -> headerTerm;
                     final var readerBridge = logHeader.getLogFormatVersion().usesSegments()
                             ? ReaderLogVersionBridge.forFile(logFile)
                             : NO_MORE_CHANNELS;
                     try (var reader = logFile.getReader(lookupPosition, readerBridge);
                             var cursor = new LogEntryCursor(logEntryReader, reader)) {
+                        // ensure that envelope channels will load the previous envelope state
+                        reader.reloadChannelStateBeforeCurrentPosition();
+                        final long preEntryTerm = max(reader.getTerm(), headerTerm);
+                        termProvider = () -> preEntryTerm;
                         LogPosition position;
                         if ((maxPosition == LogPosition.UNSPECIFIED
                                         || reader.getCurrentLogPosition().isBefore(maxPosition))
                                 && cursor.next()) {
                             var logEntry = (AbstractVersionAwareLogEntry) cursor.get();
+                            final long entryTerm = max(reader.getTerm(), preEntryTerm);
+                            termProvider = () -> entryTerm;
                             return switch (logEntry) {
                                 case LogEntryStart startEntry ->
                                     new PostCheckpointInfo(
                                             startEntry.getAppendIndex(),
                                             startEntry.kernelVersion().version(),
-                                            false);
+                                            false,
+                                            termProvider);
                                 case LogEntryChunkStart chunkStart ->
                                     new PostCheckpointInfo(
                                             chunkStart.getAppendIndex(),
                                             chunkStart.kernelVersion().version(),
-                                            false);
+                                            false,
+                                            termProvider);
                                 case LogEntryRollback rollback ->
                                     new PostCheckpointInfo(
                                             rollback.getAppendIndex(),
                                             rollback.kernelVersion().version(),
-                                            false);
+                                            false,
+                                            termProvider);
                                 case LogEntryEmpty empty ->
                                     new PostCheckpointInfo(
                                             empty.getAppendIndex(),
                                             empty.kernelVersion().version(),
-                                            false);
+                                            false,
+                                            termProvider);
                                 default ->
                                     new PostCheckpointInfo(
                                             UNKNOWN_APPEND_INDEX,
                                             logEntry.kernelVersion().version(),
-                                            true);
+                                            true,
+                                            termProvider);
                             };
                         }
                         position = reader.getCurrentLogPosition();
@@ -425,7 +446,7 @@ public class DetachedLogTailScanner {
                 corruptedTransactionLogs = true;
             }
         }
-        return new PostCheckpointInfo(UNKNOWN_APPEND_INDEX, NO_ENTRY, corruptedTransactionLogs);
+        return new PostCheckpointInfo(UNKNOWN_APPEND_INDEX, NO_ENTRY, corruptedTransactionLogs, termProvider);
     }
 
     private CheckpointInfo loadConsensusIndexIfNeeded(LogFile logFile, CheckpointInfo checkpoint) throws IOException {
@@ -642,7 +663,8 @@ public class DetachedLogTailScanner {
         return Arrays.toString(data);
     }
 
-    private record PostCheckpointInfo(long appendIndex, byte kernelVersion, boolean corruptedLogs) {
+    private record PostCheckpointInfo(
+            long appendIndex, byte kernelVersion, boolean corruptedLogs, LogTermProvider logTermProvider) {
         public boolean isPresent() {
             return (appendIndex >= BASE_APPEND_INDEX) || corruptedLogs;
         }
@@ -670,8 +692,8 @@ public class DetachedLogTailScanner {
             this.corruptedLogs = corruptedLogs;
         }
 
-        PostCheckpointInfo toPostCheckpointInfo() {
-            return new PostCheckpointInfo(getAppendIndex(), getEntryVersion(), corruptedLogs);
+        PostCheckpointInfo toPostCheckpointInfo(LogTermProvider fallbackTermProvider) {
+            return new PostCheckpointInfo(getAppendIndex(), getEntryVersion(), corruptedLogs, fallbackTermProvider);
         }
 
         private long getAppendIndex() {

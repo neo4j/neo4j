@@ -120,6 +120,7 @@ public class FileLogRotation implements LogRotation {
             long lastAppendIndex,
             KernelVersion kernelVersion,
             int checksum,
+            long lastTerm,
             LogFormat logFormat)
             throws IOException {
         if (rotatableFile.rotationNeeded()) {
@@ -129,7 +130,7 @@ public class FileLogRotation implements LogRotation {
                     logRotateEvents,
                     lastAppendIndex,
                     () -> version,
-                    () -> logFile.rotate(kernelVersion, lastAppendIndex, checksum, logFormat));
+                    () -> logFile.rotate(kernelVersion, lastAppendIndex, checksum, lastTerm, logFormat));
             return true;
         }
         return false;
@@ -201,13 +202,14 @@ public class FileLogRotation implements LogRotation {
             KernelVersion kernelVersion,
             long lastAppendIndex,
             int previousChecksum,
+            long lastTerm,
             LogFormat logFormat)
             throws IOException {
         doRotate(
                 logRotateEvents,
                 lastAppendIndex,
                 currentFileVersionSupplier,
-                () -> rotatableFile.rotate(kernelVersion, lastAppendIndex, previousChecksum, logFormat));
+                () -> rotatableFile.rotate(kernelVersion, lastAppendIndex, previousChecksum, lastTerm, logFormat));
     }
 
     @Override

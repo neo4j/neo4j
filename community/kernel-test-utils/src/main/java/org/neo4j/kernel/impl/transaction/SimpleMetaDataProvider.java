@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata.EMPTY_APPEND_BATCH_INFO;
 
 import java.io.IOException;
@@ -340,5 +341,15 @@ public class SimpleMetaDataProvider implements MetadataProvider, LogMetadataProv
     @Override
     public LogFormat getCurrentLogFormat() {
         return logFormat;
+    }
+
+    @Override
+    public long getCurrentTerm() {
+        return BASE_TERM;
+    }
+
+    @Override
+    public void setCurrentTerm(long term) {
+        throw new IllegalStateException("Not supported");
     }
 }

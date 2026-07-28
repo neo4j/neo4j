@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata.EMPTY_APPEND_BATCH_INFO;
 import static org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata.START_POSITION;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
@@ -61,5 +62,10 @@ public class EmptyLogTailLogVersionsMetadata implements LogTailLogVersionsMetada
     @Override
     public AppendBatchInfo lastBatch() {
         return EMPTY_APPEND_BATCH_INFO;
+    }
+
+    @Override
+    public long getCurrentTerm() {
+        return BASE_TERM;
     }
 }

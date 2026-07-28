@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.io.fs.ReadableChannel.UNSPECIFIED_CONTENT_TYPE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.UNSPECIFIED_TERM;
@@ -155,6 +156,7 @@ abstract class EnvelopeWriteChannelTestSupport {
                     KernelVersion kernelVersion,
                     long lastAppendIndex,
                     int previousChecksum,
+                    long lastTerm,
                     LogFormat logFormat) {
                 throw new UnsupportedOperationException();
             }
@@ -175,6 +177,7 @@ abstract class EnvelopeWriteChannelTestSupport {
                     long appendIndex,
                     KernelVersion kernelVersion,
                     int checksum,
+                    long lastTerm,
                     LogFormat logFormat) {
                 throw new UnsupportedOperationException();
             }
@@ -236,14 +239,7 @@ abstract class EnvelopeWriteChannelTestSupport {
             throws IOException {
         channel.position(offset);
         final var writeChannel = new EnvelopeWriteChannel(
-                channel,
-                scopedBuffer,
-                segmentSize,
-                checksum,
-                currentIndex,
-                LogEnvelopeHeader.UNSPECIFIED_TERM,
-                logTracers,
-                logRotation);
+                channel, scopedBuffer, segmentSize, checksum, currentIndex, BASE_TERM, logTracers, logRotation);
         if (logRotation instanceof LogRotationForChannel rotator) {
             rotator.bindWriteChannel(writeChannel);
         }

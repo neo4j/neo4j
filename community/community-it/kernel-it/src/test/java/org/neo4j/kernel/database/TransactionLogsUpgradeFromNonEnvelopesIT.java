@@ -21,10 +21,12 @@ package org.neo4j.kernel.database;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.kernel.KernelVersion.GLORIOUS_FUTURE;
 import static org.neo4j.kernel.TxLogValidationUtils.assertLogHeaderExpectedVersion;
 import static org.neo4j.kernel.TxLogValidationUtils.assertWholeTransactionsIn;
 import static org.neo4j.kernel.TxLogValidationUtils.assertWholeTransactionsWithCorrectVersionInSpecificLogVersion;
+import static org.neo4j.kernel.TxLogValidationUtils.readEntryTerms;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.DEFAULT_LOG_SEGMENT_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.getLatestCheckpoint;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
@@ -34,6 +36,7 @@ import static org.neo4j.test.UpgradeTestUtil.assertKernelVersion;
 import static org.neo4j.test.UpgradeTestUtil.createWriteTransaction;
 import static org.neo4j.test.UpgradeTestUtil.upgradeDatabase;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -42,12 +45,16 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.TxLogValidationUtils;
 import org.neo4j.kernel.impl.api.tracer.DefaultDatabaseTracer;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.recovery.RecoveryHelpers;
+import org.neo4j.storageengine.api.LogMetadataProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.SkipOnSpd;
@@ -179,5 +186,39 @@ class TransactionLogsUpgradeFromNonEnvelopesIT extends TransactionLogsUpgradeIT 
                         commandReaderFactory,
                         ReaderLogVersionBridge.forFile(logFiles.getLogFile())))
                 .isBetween(5, 6); // One extra token tx on record
+    }
+
+    @Test
+    void shouldMaintainValidTermOnFormatSwitch() throws Exception {
+        // Confirm that pre-envelope term information reports consistently as BASE_TERM
+        LogFiles logFilesOld = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
+        LogFile logFileOld = logFilesOld.getLogFile();
+        LogMetadataProvider metadataProviderOld = logFilesOld.logMetadataProvider();
+        long oldTerm = metadataProviderOld.getCurrentTerm();
+        assertThat(oldTerm).isEqualTo(BASE_TERM);
+        LogHeader oldLogHeader = logFileOld.extractHeader(logFileOld.getCurrentLogVersion());
+        assertThat(oldLogHeader.getLogFormatVersion().usesSegments()).isFalse();
+        assertThat(oldLogHeader.getLastTerm()).isEqualTo(oldTerm);
+        shutdownDbms();
+
+        // upgrade onto envelopes
+        startDbms(this::configureGloriousFutureAsLatest);
+
+        upgradeDatabase(managementService, testDb, startingKernelVersion(), GLORIOUS_FUTURE);
+        createWriteTransaction(testDb);
+
+        LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
+        LogFile logFile = logFiles.getLogFile();
+        LogMetadataProvider metadataProvider = logFiles.logMetadataProvider();
+        long term = metadataProvider.getCurrentTerm();
+        assertThat(term).isEqualTo(BASE_TERM);
+        LogHeader logHeader = logFile.extractHeader(logFile.getCurrentLogVersion());
+        assertThat(logHeader.getLogFormatVersion().usesSegments()).isTrue();
+        assertThat(logHeader.getLastTerm()).isEqualTo(term);
+
+        List<TxLogValidationUtils.EntryTerm> entryTerms = readEntryTerms(logFile, logFile.getCurrentLogVersion());
+        assertThat(entryTerms)
+                .isNotEmpty()
+                .allSatisfy(entry -> assertThat(entry.term()).isEqualTo(BASE_TERM));
     }
 }

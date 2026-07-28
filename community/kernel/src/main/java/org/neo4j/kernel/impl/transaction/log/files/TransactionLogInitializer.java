@@ -170,6 +170,7 @@ public class TransactionLogInitializer {
                 .withLogVersionRepository(logMetadataProvider)
                 .withTransactionIdStore(logMetadataProvider)
                 .withAppendIndexProvider(logMetadataProvider)
+                .withLogTermProvider(logMetadataProvider)
                 .withStoreId(metadataProvider.getStoreId())
                 .withLogsDirectory(transactionLogsDirectory)
                 .withStorageEngineFactory(storageEngineFactory)

@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.LastAppendBatchInfoProvider;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTermProvider;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner;
 import org.neo4j.storageengine.api.StoreIdentifier;
@@ -45,6 +46,7 @@ public class LogTailInformation implements LogTailMetadata {
     private final StoreIdentifier storeIdentifier;
     private final KernelVersionProvider fallbackKernelVersionProvider;
     private final LogFormatVersionProvider logFormatProvider;
+    private final LogTermProvider logTermProvider;
     private final LastAppendBatchInfoProvider lastAppendBatchInfoProvider;
     private AppendBatchInfo lastBatchInfo;
 
@@ -56,6 +58,7 @@ public class LogTailInformation implements LogTailMetadata {
             byte firstLogEntryVersionAfterCheckpoint,
             KernelVersionProvider fallbackKernelVersionProvider,
             LogFormatVersionProvider logFormatProvider,
+            LogTermProvider logTermProvider,
             LastAppendBatchInfoProvider lastAppendBatchInfoProvider,
             StoreIdentifier storeIdentifier) {
         this(
@@ -68,6 +71,7 @@ public class LogTailInformation implements LogTailMetadata {
                 storeIdentifier,
                 fallbackKernelVersionProvider,
                 logFormatProvider,
+                logTermProvider,
                 lastAppendBatchInfoProvider);
     }
 
@@ -81,6 +85,7 @@ public class LogTailInformation implements LogTailMetadata {
             StoreIdentifier storeIdentifier,
             KernelVersionProvider fallbackKernelVersionProvider,
             LogFormatVersionProvider logFormatProvider,
+            LogTermProvider logTermProvider,
             LastAppendBatchInfoProvider lastAppendBatchInfoProvider) {
         this.lastCheckPoint = lastCheckPoint;
         this.firstAppendIndexAfterLastCheckPoint = firstAppendIndexAfterLastCheckPoint;
@@ -91,6 +96,7 @@ public class LogTailInformation implements LogTailMetadata {
         this.storeIdentifier = storeIdentifier;
         this.fallbackKernelVersionProvider = fallbackKernelVersionProvider;
         this.logFormatProvider = logFormatProvider;
+        this.logTermProvider = logTermProvider;
         this.lastAppendBatchInfoProvider = lastAppendBatchInfoProvider;
     }
 
@@ -205,5 +211,10 @@ public class LogTailInformation implements LogTailMetadata {
     @Override
     public LogFormat getCurrentLogFormat() {
         return logFormatProvider.getCurrentLogFormat();
+    }
+
+    @Override
+    public long getCurrentTerm() {
+        return logTermProvider.getCurrentTerm();
     }
 }

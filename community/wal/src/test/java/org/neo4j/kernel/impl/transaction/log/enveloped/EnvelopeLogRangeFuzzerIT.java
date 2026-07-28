@@ -126,7 +126,7 @@ class EnvelopeLogRangeFuzzerIT {
             while (!storeChannelsQueue.isEmpty() || readChannel.position() < storeChannels.toPosition()) {
                 assertThat(readChannel.position()).isEqualTo(originalReadChannel.position());
                 assertThat(readChannel.entryIndex()).isEqualTo(originalReadChannel.entryIndex());
-                assertThat(readChannel.currentTerm()).isEqualTo(originalReadChannel.currentTerm());
+                assertThat(readChannel.getTerm()).isEqualTo(originalReadChannel.getTerm());
                 assertThat(readChannel.getChecksum()).isEqualTo(originalReadChannel.getChecksum());
                 try {
                     readChannel.goToNextEntry();

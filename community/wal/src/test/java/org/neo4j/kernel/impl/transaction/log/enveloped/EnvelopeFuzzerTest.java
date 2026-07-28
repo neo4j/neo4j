@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.KERNEL_CONTENT_TYPE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
@@ -45,6 +46,7 @@ import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.fs.ChannelNativeAccessor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.KernelVersion;
@@ -52,7 +54,6 @@ import org.neo4j.kernel.impl.transaction.log.LogTracers;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotateEvents;
@@ -106,7 +107,7 @@ class EnvelopeFuzzerTest {
         LogHeader logHeader = LogFormat.V10.newHeader(
                 INITIAL_LOG_VERSION,
                 BASE_APPEND_INDEX,
-                LogHeader.UNKNOWN_TERM,
+                ReadableChannel.BASE_TERM,
                 StoreIdentifier.UNKNOWN,
                 segmentSize,
                 initialChecksum,
@@ -123,7 +124,7 @@ class EnvelopeFuzzerTest {
                 segmentSize,
                 initialChecksum,
                 PREV_INDEX,
-                LogEnvelopeHeader.UNSPECIFIED_TERM,
+                BASE_TERM,
                 LogTracers.NULL,
                 logRotation)) {
             logRotation.bindWriteChannel(envelopeWriteChannel);
@@ -255,7 +256,7 @@ class EnvelopeFuzzerTest {
                     LogHeader logHeader = LogFormat.V10.newHeader(
                             currentVersion.intValue(),
                             lastAppendIndex,
-                            LogHeader.UNKNOWN_TERM,
+                            ReadableChannel.BASE_TERM,
                             StoreIdentifier.UNKNOWN,
                             segmentSize,
                             previousChecksum,
@@ -284,6 +285,7 @@ class EnvelopeFuzzerTest {
                     KernelVersion kernelVersion,
                     long lastAppendIndex,
                     int previousChecksum,
+                    long lastTerm,
                     LogFormat logFormat) {
                 throw new UnsupportedOperationException();
             }
@@ -304,6 +306,7 @@ class EnvelopeFuzzerTest {
                     long appendIndex,
                     KernelVersion kernelVersion,
                     int checksum,
+                    long lastTerm,
                     LogFormat logFormat) {
                 throw new UnsupportedOperationException();
             }

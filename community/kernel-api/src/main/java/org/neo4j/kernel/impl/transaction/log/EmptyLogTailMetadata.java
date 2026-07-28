@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
@@ -96,6 +97,11 @@ public class EmptyLogTailMetadata implements LogTailMetadata {
     @Override
     public LogFormat getCurrentLogFormat() {
         return LogFormat.fromConfigAndKernelVersion(config, kernelVersion);
+    }
+
+    @Override
+    public long getCurrentTerm() {
+        return BASE_TERM;
     }
 
     @Override

@@ -24,8 +24,10 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED;
 import static org.neo4j.kernel.KernelVersionProviders.fixed;
+import static org.neo4j.kernel.impl.transaction.log.LogTermProvider.UNKNOWN_TERM_PROVIDER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V10;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.DEFAULT_LOG_SEGMENT_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
@@ -236,7 +238,12 @@ class TransactionLogFilesTest {
     void fileWithoutEntriesDoesNotHaveThemIndependentlyOfItsSize() throws Exception {
         final var logFile = (TransactionLogFile) createLogFiles().getLogFile();
         try (PhysicalLogVersionedStoreChannel channel = logFile.createLogChannelForVersion(
-                1, () -> 1L, LATEST_KERNEL_VERSION_PROVIDER, BASE_TX_CHECKSUM, LATEST_LOG_FORMAT_PROVIDER)) {
+                1,
+                () -> 1L,
+                LATEST_KERNEL_VERSION_PROVIDER,
+                BASE_TX_CHECKSUM,
+                LATEST_LOG_FORMAT_PROVIDER,
+                UNKNOWN_TERM_PROVIDER)) {
             assertThat(channel.size()).isGreaterThanOrEqualTo(LATEST_LOG_FORMAT.getHeaderSize());
             assertFalse(logFile.hasAnyEntries(1));
         }
@@ -257,7 +264,7 @@ class TransactionLogFilesTest {
 
     private int writeEntryAndGetChecksum(LogFile logFile, KernelVersion kernelVersion, int payload) throws IOException {
         try (PhysicalLogVersionedStoreChannel channel = logFile.createLogChannelForVersion(
-                        1, () -> 1L, fixed(kernelVersion), BASE_TX_CHECKSUM, () -> V10);
+                        1, () -> 1L, fixed(kernelVersion), BASE_TX_CHECKSUM, () -> V10, UNKNOWN_TERM_PROVIDER);
                 EnvelopeWriteChannel envelopeWriteChannel = getEnvelopeChannel(channel)) {
             envelopeWriteChannel.beginChecksumForWriting();
             envelopeWriteChannel.putVersion(kernelVersion.version());
@@ -276,7 +283,7 @@ class TransactionLogFilesTest {
                 DEFAULT_LOG_SEGMENT_SIZE,
                 BASE_TX_CHECKSUM,
                 1,
-                LogEnvelopeHeader.UNSPECIFIED_TERM,
+                BASE_TERM,
                 LogTracers.NULL,
                 LogRotation.NO_ROTATION);
     }

@@ -137,6 +137,11 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     }
 
     @Override
+    public void reloadChannelStateBeforeCurrentPosition() {
+        // no-op
+    }
+
+    @Override
     public void skip(int length) throws IOException {
         throw new IllegalStateException("Skipping bytes not supported");
     }

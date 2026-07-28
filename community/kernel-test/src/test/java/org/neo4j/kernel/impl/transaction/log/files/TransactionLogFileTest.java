@@ -967,7 +967,7 @@ class TransactionLogFileTest {
             LogHeader logHeader = logFormat.newHeader(
                     version,
                     lastAppendIndex,
-                    LogHeader.UNKNOWN_TERM,
+                    ReadableChannel.BASE_TERM,
                     StoreIdentifier.newStoreIdentifier(STORE_ID),
                     256,
                     BASE_TX_CHECKSUM,

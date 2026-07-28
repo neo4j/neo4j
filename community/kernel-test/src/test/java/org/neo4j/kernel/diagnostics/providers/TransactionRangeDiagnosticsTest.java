@@ -37,6 +37,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.filename.SequentialFileNameHelper;
 import org.neo4j.kernel.database.Database;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -272,7 +272,7 @@ class TransactionRangeDiagnosticsTest {
                         .thenReturn(LATEST_LOG_FORMAT.newHeader(
                                 version,
                                 headerAppendIndex,
-                                LogHeader.UNKNOWN_TERM,
+                                ReadableChannel.BASE_TERM,
                                 StoreIdentifier.newStoreIdentifier(
                                         new StoreId(12345, 56789, "engine-1", "format-1", 1, 1)),
                                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),

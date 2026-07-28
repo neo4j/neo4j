@@ -41,6 +41,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
@@ -94,7 +95,7 @@ class ReaderLogVersionBridgeTest {
                 LogHeader logHeader = LATEST_LOG_FORMAT.newHeader(
                         version + 1,
                         2L,
-                        LogHeader.UNKNOWN_TERM,
+                        ReadableChannel.BASE_TERM,
                         StoreIdentifier.newStoreIdentifier(storeId),
                         LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                         BASE_TX_CHECKSUM,

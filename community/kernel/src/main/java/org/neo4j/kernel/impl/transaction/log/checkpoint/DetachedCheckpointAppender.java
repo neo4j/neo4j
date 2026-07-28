@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED;
 import static org.neo4j.kernel.KernelVersionProviders.fixed;
+import static org.neo4j.kernel.impl.transaction.log.LogTermProvider.UNKNOWN_TERM_PROVIDER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
@@ -115,7 +116,8 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                 AppendIndexProvider.UNKNOWN_APPEND_INDEX,
                 BASE_TX_CHECKSUM,
                 kernelVersionProvider,
-                logFormatVersionProvider);
+                logFormatVersionProvider,
+                UNKNOWN_TERM_PROVIDER);
 
         LogHeader logHeader = logHeader(currentLogVersion);
         context.monitors()
@@ -295,7 +297,8 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                 AppendIndexProvider.UNKNOWN_APPEND_INDEX,
                 checksum,
                 kernelVersionProvider,
-                logFormatVersionProvider);
+                logFormatVersionProvider,
+                UNKNOWN_TERM_PROVIDER);
         channel.close();
         return newChannel;
     }

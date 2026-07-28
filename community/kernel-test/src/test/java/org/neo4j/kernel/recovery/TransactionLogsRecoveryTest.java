@@ -35,6 +35,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.ChannelNativeAccessor.EMPTY_ACCESSOR;
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
@@ -97,7 +98,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -965,7 +965,7 @@ class TransactionLogsRecoveryTest {
         LogHeader logHeader = LATEST_LOG_FORMAT.newHeader(
                 logVersion,
                 3L,
-                LogEnvelopeHeader.UNSPECIFIED_TERM,
+                BASE_TERM,
                 StoreIdentifier.newStoreIdentifier(storeId),
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,

@@ -32,7 +32,6 @@ public class LogHeader {
      */
     static final int LOG_HEADER_VERSION_SIZE = Long.BYTES;
 
-    public static final long UNKNOWN_TERM = -1L;
     public static final long UNSPECIFIED_CREATION_TIME = 0L;
 
     private final LogFormat logFormatVersion;

@@ -42,6 +42,7 @@ public interface LogRotation {
                 long appendIndex,
                 KernelVersion kernelVersion,
                 int checksum,
+                long lastTerm,
                 LogFormat logFormat) {
             return false;
         }
@@ -77,6 +78,7 @@ public interface LogRotation {
                 KernelVersion kernelVersion,
                 long lastAppendIndex,
                 int previousChecksum,
+                long lastTerm,
                 LogFormat logFormat) {}
 
         @Override
@@ -100,6 +102,7 @@ public interface LogRotation {
             long lastAppendIndex,
             KernelVersion kernelVersion,
             int checksum,
+            long lastTerm,
             LogFormat logFormat)
             throws IOException;
 
@@ -150,6 +153,7 @@ public interface LogRotation {
             KernelVersion kernelVersion,
             long lastAppendIndex,
             int previousChecksum,
+            long lastTerm,
             LogFormat logFormat)
             throws IOException;
 

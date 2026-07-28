@@ -19,24 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.storageengine.api.TransactionId;
+import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 
-public interface LogTailLogVersionsMetadata {
-    LogTailLogVersionsMetadata EMPTY_LOG_TAIL = new EmptyLogTailLogVersionsMetadata();
-
-    boolean isRecoveryRequired();
-
-    long getCheckpointLogVersion();
-
-    long getLogVersion();
-
-    TransactionId getLastCommittedTransaction();
-
-    LogPosition getLastTransactionLogPosition();
-
-    long getLastCheckpointedAppendIndex();
-
-    AppendBatchInfo lastBatch();
+@FunctionalInterface
+public interface LogTermProvider {
+    LogTermProvider UNKNOWN_TERM_PROVIDER = () -> BASE_TERM;
 
     long getCurrentTerm();
 }

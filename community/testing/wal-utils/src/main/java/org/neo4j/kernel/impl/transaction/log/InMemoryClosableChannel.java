@@ -220,6 +220,11 @@ public class InMemoryClosableChannel
     }
 
     @Override
+    public long getTerm() throws IOException {
+        return BASE_TERM;
+    }
+
+    @Override
     public byte markAndGetVersion(LogPositionMarker marker) throws IOException {
         return ReadableLogPositionAwareChannel.super.markAndGetVersion(marker);
     }
@@ -405,6 +410,11 @@ public class InMemoryClosableChannel
         throw new IllegalStateException("Skipping bytes not supported");
     }
 
+    @Override
+    public void reloadChannelStateBeforeCurrentPosition() {
+        // no-op
+    }
+
     ByteBufferBase getCurrentBuffer() {
         return isReader ? reader : writer;
     }
@@ -552,6 +562,11 @@ public class InMemoryClosableChannel
         }
 
         @Override
+        public long getTerm() throws IOException {
+            return BASE_TERM;
+        }
+
+        @Override
         public int endChecksumAndValidate() throws IOException {
             if (currentVersion.isAtLeast(VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED)) {
                 int fakeChecksum = (int) this.checksum.getValue();
@@ -639,6 +654,11 @@ public class InMemoryClosableChannel
         @Override
         public void skip(int length) throws IOException {
             throw new IllegalStateException("Skipping bytes not supported");
+        }
+
+        @Override
+        public void reloadChannelStateBeforeCurrentPosition() {
+            // no-op
         }
     }
 

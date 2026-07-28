@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.kernel.KernelVersion;
@@ -57,7 +58,7 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     previousCommittedTx,
-                    LogHeader.UNKNOWN_TERM,
+                    ReadableChannel.BASE_TERM,
                     null,
                     getHeaderSize(),
                     UNKNOWN_LOG_SEGMENT_SIZE,
@@ -111,7 +112,7 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     previousCommittedTx,
-                    LogHeader.UNKNOWN_TERM,
+                    ReadableChannel.BASE_TERM,
                     null,
                     getHeaderSize(),
                     UNKNOWN_LOG_SEGMENT_SIZE,
@@ -162,7 +163,7 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     previousCommittedTx,
-                    LogHeader.UNKNOWN_TERM,
+                    ReadableChannel.BASE_TERM,
                     StoreIdentifier.newStoreIdentifier(storeId),
                     getHeaderSize(),
                     UNKNOWN_LOG_SEGMENT_SIZE,
@@ -207,7 +208,7 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     appendIndex,
-                    LogHeader.UNKNOWN_TERM,
+                    ReadableChannel.BASE_TERM,
                     storeIdentifier,
                     getHeaderSize(),
                     UNKNOWN_LOG_SEGMENT_SIZE,
@@ -234,7 +235,7 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     appendIndex,
-                    LogHeader.UNKNOWN_TERM,
+                    ReadableChannel.BASE_TERM,
                     StoreIdentifier.newStoreIdentifier(storeId),
                     getHeaderSize(),
                     UNKNOWN_LOG_SEGMENT_SIZE,
@@ -280,7 +281,7 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     appendIndex,
-                    LogHeader.UNKNOWN_TERM,
+                    ReadableChannel.BASE_TERM,
                     storeIdentifier,
                     getHeaderSize(),
                     UNKNOWN_LOG_SEGMENT_SIZE,

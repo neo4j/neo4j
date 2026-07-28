@@ -87,6 +87,11 @@ public class BufferBackedChannel implements WritableChannel, ReadableChannel {
     }
 
     @Override
+    public long getTerm() throws IOException {
+        return BASE_TERM;
+    }
+
+    @Override
     public int read(ByteBuffer dst) {
         final var remaining = buffer.remaining();
         if (remaining >= dst.remaining()) {

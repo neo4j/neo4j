@@ -32,6 +32,8 @@ public interface ReadableChannel extends ReadableByteChannel, ChecksumReader, Se
      */
     byte UNSPECIFIED_CONTENT_TYPE = -1;
 
+    long BASE_TERM = 0L;
+
     /**
      * @return the next {@code byte} in this channel.
      * @throws IOException I/O error from channel.
@@ -106,4 +108,12 @@ public interface ReadableChannel extends ReadableByteChannel, ChecksumReader, Se
      * @throws ReadPastEndException if not enough data was available.
      */
     byte getContentType() throws IOException;
+
+    /**
+     * @return the current term from this channel. Channels may not implement
+     * a mechanism for setting/getting this and return BASE_TERM instead.
+     * @throws IOException I/O error from channel.
+     * @throws ReadPastEndException if not enough data was available.
+     */
+    long getTerm() throws IOException;
 }

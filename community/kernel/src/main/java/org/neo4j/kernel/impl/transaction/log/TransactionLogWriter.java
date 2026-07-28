@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.UNSPECIFIED_TERM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_SEQUENCE_NUMBER;
 
 import java.io.IOException;
@@ -39,17 +40,26 @@ public class TransactionLogWriter {
     private final FlushableLogPositionAwareChannel channel;
     private final LogEntryWriter<FlushableLogPositionAwareChannel> writer;
     private final KernelVersionProvider versionProvider;
+    private final LogTermProvider logTermProvider;
 
     private KernelVersion previousKernelVersion;
+    private long currentTerm = UNSPECIFIED_TERM;
+
     private final LogRotation logRotation;
     private final LogPositionMarker logPositionMarker = new LogPositionMarker();
 
     public TransactionLogWriter(
             FlushableLogPositionAwareChannel channel,
             KernelVersionProvider versionProvider,
+            LogTermProvider logTermProvider,
             BinarySupportedKernelVersions binarySupportedKernelVersions,
             LogRotation logRotation) {
-        this(channel, new LogEntryWriter<>(channel, binarySupportedKernelVersions), versionProvider, logRotation);
+        this(
+                channel,
+                new LogEntryWriter<>(channel, binarySupportedKernelVersions),
+                versionProvider,
+                logTermProvider,
+                logRotation);
     }
 
     @VisibleForTesting
@@ -57,10 +67,12 @@ public class TransactionLogWriter {
             FlushableLogPositionAwareChannel channel,
             LogEntryWriter<FlushableLogPositionAwareChannel> writer,
             KernelVersionProvider versionProvider,
+            LogTermProvider logTermProvider,
             LogRotation logRotation) {
         this.channel = channel;
         this.writer = writer;
         this.versionProvider = versionProvider;
+        this.logTermProvider = logTermProvider;
         this.previousKernelVersion = versionProvider.kernelVersion();
         this.logRotation = logRotation;
     }
@@ -105,6 +117,11 @@ public class TransactionLogWriter {
             previousKernelVersion = kernelVersion;
             channel.resetAppendedBytesCounter();
         }
+        long newTerm = logTermProvider.getCurrentTerm();
+        if (currentTerm != newTerm) {
+            currentTerm = newTerm;
+            channel.putTerm(currentTerm);
+        }
         channel.prepareWrite();
         channel.getCurrentLogPosition(logPositionMarker);
 
@@ -135,6 +152,11 @@ public class TransactionLogWriter {
     }
 
     public int append(CommittedCommandBatchRepresentation commandBatch) throws IOException {
+        long newTerm = logTermProvider.getCurrentTerm();
+        if (newTerm > currentTerm) {
+            currentTerm = newTerm;
+            channel.putTerm(currentTerm);
+        }
         return commandBatch.serialize(writer);
     }
 
@@ -175,10 +197,11 @@ public class TransactionLogWriter {
             LogFormat logFormat = logFormatVersion
                     .map(LogFormat::fromByteVersion) // This one throws if non-recognized version
                     .orElse(LogFormat.fromKernelVersion(kernelVersion));
+            long term = logTermProvider.getCurrentTerm();
             // In append we know we are the only ones using the logfile, don't need to lock on rotation here
             if (kernelVersion != previousKernelVersion) {
                 logRotation.locklessRotateLogFile(
-                        logAppendEvent, kernelVersion, appendIndex.getAsLong() - 1, checksum, logFormat);
+                        logAppendEvent, kernelVersion, appendIndex.getAsLong() - 1, checksum, term, logFormat);
                 previousKernelVersion = kernelVersion;
             } else if (logFormat.usesSegments()
                     && logFormat.getDefaultDataStartByteOffset() == offset
@@ -186,10 +209,10 @@ public class TransactionLogWriter {
                 // This rotation is to handle the case where the sender has rotated to a new file in the middle
                 // of a segment, and we must do the same to keep txs aligned on segment boundaries.
                 logRotation.locklessRotateLogFile(
-                        logAppendEvent, kernelVersion, appendIndex.getAsLong() - 1, checksum, logFormat);
+                        logAppendEvent, kernelVersion, appendIndex.getAsLong() - 1, checksum, term, logFormat);
             } else {
                 logRotation.locklessBatchedRotateLogIfNeeded(
-                        logAppendEvent, appendIndex.getAsLong() - 1, kernelVersion, checksum, logFormat);
+                        logAppendEvent, appendIndex.getAsLong() - 1, kernelVersion, checksum, term, logFormat);
             }
         }
 

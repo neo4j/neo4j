@@ -23,6 +23,7 @@ import static java.lang.Math.min;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.CHECKSUM_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.IGNORE_CONTENT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.KERNEL_CONTENT_TYPE;
@@ -92,7 +93,6 @@ import org.neo4j.memory.MemoryTracker;
  */
 public class EnvelopeReadChannel implements ReadableLogChannel {
     private static final long UNSPECIFIED_SEGMENT = -1;
-    private static final byte CHECKSUM_SIZE = Integer.BYTES;
     private static final byte PAYLOAD_CHECKSUM_OFFSET_FROM_START = HEADER_SIZE - CHECKSUM_SIZE;
 
     private final Checksum checksum = CHECKSUM_FACTORY.get();
@@ -198,7 +198,8 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         }
     }
 
-    public long currentTerm() {
+    @Override
+    public long getTerm() {
         return currentTerm;
     }
 
@@ -642,6 +643,29 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
             }
         } catch (ClosedChannelException e) {
             handleClosedChannelException(e);
+        }
+    }
+
+    @Override
+    public void reloadChannelStateBeforeCurrentPosition() throws IOException {
+        int initialPosition = buffer.position();
+        if (initialPosition < HEADER_SIZE) {
+            // if at start of initial segment just read the header
+            if (currentSegment <= 1) {
+                previousChecksum = logHeader.getPreviousLogFileChecksum();
+                currentChecksum = previousChecksum;
+                currentIndex = logHeader.getLastAppendIndex();
+                currentTerm = logHeader.getLastTerm();
+                enforceChecksumChain = true;
+                return;
+            }
+            // read previous segment and set position at the end
+            loadSegmentIntoBuffer(currentSegment - 1);
+            buffer.position(buffer.limit());
+            readAllEnvelopesUpToIncluding(buffer.position(), true);
+        } else {
+            readAllEnvelopesUpToIncluding(buffer.position(), true);
+            buffer.position(initialPosition);
         }
     }
 

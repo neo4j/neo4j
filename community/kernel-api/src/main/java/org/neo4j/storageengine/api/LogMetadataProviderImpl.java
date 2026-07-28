@@ -49,6 +49,7 @@ public class LogMetadataProviderImpl implements LogMetadataProvider {
     private final OutOfOrderSequence lastClosedBatch;
 
     private final AtomicLong appendIndex;
+    private final AtomicLong currentTerm;
     private final HighestAppendBatch lastCommittedBatch;
     private final ChunkedTransactionRegistry chunkedTransactionRegistry = new ChunkedTransactionRegistry();
     private volatile long lowestAvailableCommittedTransactionId = TransactionIdStore.UNKNOWN_TX_ID;
@@ -67,6 +68,7 @@ public class LogMetadataProviderImpl implements LogMetadataProvider {
         AppendBatchInfo lastBatch = logTailMetadata.lastBatch();
         this.lastCommittedBatch = new HighestAppendBatch(lastBatch);
         this.appendIndex = new AtomicLong(lastBatch.appendIndex());
+        this.currentTerm = new AtomicLong(logTailMetadata.getCurrentTerm());
 
         if (recoveryOutcome.isEmpty()) {
             var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
@@ -434,5 +436,15 @@ public class LogMetadataProviderImpl implements LogMetadataProvider {
     @Override
     public LogFormat getCurrentLogFormat() {
         return logFormat;
+    }
+
+    @Override
+    public long getCurrentTerm() {
+        return currentTerm.get();
+    }
+
+    @Override
+    public void setCurrentTerm(long newTerm) {
+        currentTerm.set(newTerm);
     }
 }

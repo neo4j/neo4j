@@ -23,7 +23,8 @@ import java.util.Optional;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.storageengine.api.StoreIdentifier;
 
-public interface LogTailMetadata extends KernelVersionProvider, LogTailLogVersionsMetadata, LogFormatVersionProvider {
+public interface LogTailMetadata
+        extends KernelVersionProvider, LogTailLogVersionsMetadata, LogFormatVersionProvider, LogTermProvider {
 
     Optional<StoreIdentifier> getStoreIdentifier();
 

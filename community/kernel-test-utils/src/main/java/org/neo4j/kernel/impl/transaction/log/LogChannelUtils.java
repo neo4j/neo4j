@@ -31,6 +31,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import org.neo4j.io.fs.ChannelNativeAccessor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
@@ -120,7 +121,7 @@ public final class LogChannelUtils {
         return logFormat.newHeader(
                 0,
                 BASE_APPEND_INDEX,
-                LogHeader.UNKNOWN_TERM,
+                ReadableChannel.BASE_TERM,
                 StoreIdentifier.UNKNOWN,
                 logFormat.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,

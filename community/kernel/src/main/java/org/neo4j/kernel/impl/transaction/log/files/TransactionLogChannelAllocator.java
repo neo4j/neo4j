@@ -41,6 +41,7 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogFileCreateEvent;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.log.LogTermProvider;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.StoreChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
@@ -81,7 +82,8 @@ public class TransactionLogChannelAllocator {
             long lastAppendIndex,
             int previousLogFileChecksum,
             KernelVersionProvider kernelVersionProvider,
-            LogFormatVersionProvider logFormatProvider)
+            LogFormatVersionProvider logFormatProvider,
+            LogTermProvider logTermProvider)
             throws IOException {
         AllocatedFile allocatedFile = allocateFile(version);
         var storeChannel = allocatedFile.storeChannel();
@@ -92,6 +94,7 @@ public class TransactionLogChannelAllocator {
                 previousLogFileChecksum,
                 kernelVersionProvider,
                 logFormatProvider,
+                logTermProvider,
                 storeChannel,
                 logFile);
         assert header.getLogVersion() == version;
@@ -108,7 +111,8 @@ public class TransactionLogChannelAllocator {
             long lastAppendIndex,
             int previousLogFileChecksum,
             KernelVersionProvider kernelVersionProvider,
-            LogFormatVersionProvider logFormatVersionProvider)
+            LogFormatVersionProvider logFormatVersionProvider,
+            LogTermProvider termProvider)
             throws IOException {
         var allocatedFile = allocateFile(version);
         try (StoreChannel storeChannel = allocatedFile.storeChannel()) {
@@ -118,6 +122,7 @@ public class TransactionLogChannelAllocator {
                     previousLogFileChecksum,
                     kernelVersionProvider,
                     logFormatVersionProvider,
+                    termProvider,
                     storeChannel,
                     allocatedFile.path());
         }
@@ -129,6 +134,7 @@ public class TransactionLogChannelAllocator {
             int previousLogFileChecksum,
             KernelVersionProvider kernelVersionProvider,
             LogFormatVersionProvider logFormatProvider,
+            LogTermProvider termProvider,
             StoreChannel storeChannel,
             Path logFile)
             throws IOException {
@@ -143,7 +149,7 @@ public class TransactionLogChannelAllocator {
                         .newHeader(
                                 version,
                                 lastAppendIndex,
-                                LogHeader.UNKNOWN_TERM,
+                                termProvider.getCurrentTerm(),
                                 StoreIdentifier.newStoreIdentifier(
                                         logFilesContext.storeId().get()),
                                 logFilesContext.envelopeSegmentBlockSizeBytes(),

@@ -29,6 +29,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.ignore_corru
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.LogTermProvider.UNKNOWN_TERM_PROVIDER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -1547,6 +1548,7 @@ class RecoveryCorruptedTransactionLogIT {
                     realLogEntryWriter.getChannel(),
                     wrappedLogEntryWriter,
                     this::kernelVersion,
+                    UNKNOWN_TERM_PROVIDER,
                     LogRotation.NO_ROTATION);
             List<StorageCommand> commands = new ArrayList<>();
             commands.add(new Command.PropertyCommand(

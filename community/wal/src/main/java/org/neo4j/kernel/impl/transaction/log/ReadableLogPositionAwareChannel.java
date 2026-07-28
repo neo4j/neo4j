@@ -127,4 +127,14 @@ public interface ReadableLogPositionAwareChannel extends ReadableChannel, LogPos
      * @throws IllegalStateException if called on a channel that returns false from {@link ReadableLogPositionAwareChannel#supportsEntrySkipping()}
      */
     void skip(int length) throws IOException;
+
+    /**
+     * If the channel contains header state this will reload the state up to the current position
+     * using the file header if the file position is at the start. If the channel has no such state it is a no-op.
+     * It must not trigger a {@link ReadPastEndException} if the channel is positioned at the end of the file.
+     * It will not load the state of the entry at the current position, but will rather act as if
+     * it has just written the previous entry/envelope.
+     * @throws IOException I/O error from channel.
+     */
+    void reloadChannelStateBeforeCurrentPosition() throws IOException;
 }
