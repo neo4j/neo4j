@@ -133,10 +133,10 @@ trait FrontEndCompilationPhases {
       LiteralExtraction(config.literalExtractionStrategy) andThen
       SemanticAnalysis(warn = Some(true)) andThen
       ReplacePatternComprehensionWithCollectSubqueryRewriter andThen
-      SemanticAnalysis(warn = Some(true)) andThen
+      SemanticAnalysis(warn = Some(false)) andThen
       ComputeExpressionDependencies andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
-      SemanticAnalysis(warn = Some(true)) andThen
+      SemanticAnalysis(warn = Some(false)) andThen
       ComputeExpressionDependencies andThen
       ObfuscationMetadataCollection andThen
       ExtractLocalDefinitions

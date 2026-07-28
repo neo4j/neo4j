@@ -26,13 +26,11 @@ import org.neo4j.cypher.internal.ast.ProjectingUnion
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryWithLocalDefinitions
 import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.TopLevelBraces
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
@@ -78,16 +76,7 @@ case object AddDependenciesToProjectionsInSubqueryExpressions extends StepSequen
       e.withQuery(newQuery)
   }
 
-  private val scopeClauseSubqueryCallMatcher: PartialFunction[AnyRef, AnyRef] = {
-    case s: ScopeClauseSubqueryCall =>
-      val newQuery = rewriteQuery(s.innerQuery, s.importedVariables.toSet, shouldSplitReturn = false)
-      s.copy(innerQuery = newQuery)(s.position)
-  }
-
   val subqueryExpressionRewriter: Rewriter = bottomUp(Rewriter.lift(subqueryExpressionMatcher))
-
-  val subqueryExpressionAndCallClauseRewriter: Rewriter =
-    bottomUp(Rewriter.lift(subqueryExpressionMatcher orElse scopeClauseSubqueryCallMatcher))
 
   private def rewriteQuery(query: Query, scopeDependencies: Set[LogicalVariable], shouldSplitReturn: Boolean): Query =
     query match {
@@ -169,13 +158,8 @@ case object AddDependenciesToProjectionsInSubqueryExpressions extends StepSequen
     cancellationChecker: CancellationChecker,
     version: CypherVersion
   ): Rewriter = {
-    // For composite dbs, apply rewriter to both expressions and clauses.
     if (version == CypherVersion.Cypher5) {
-      if (semanticState.features.contains(SemanticFeature.UseAsMultipleGraphsSelector)) {
-        subqueryExpressionAndCallClauseRewriter
-      } else {
-        subqueryExpressionRewriter
-      }
+      subqueryExpressionRewriter
     } else {
       Rewriter.noop
     }

@@ -158,6 +158,55 @@ class FabricFragmenterTest
         .shouldEqual(Inherited(Declared(use("x", resolveStrictly)))(pos))
     }
 
+    "scope-clause import is not threaded into an aggregating inner WITH" in {
+      val frag = fragment(
+        """WITH 1 AS big
+          |CALL (big) {
+          |  UNWIND range(1, 1000) AS i
+          |  WITH i % 10 AS k, count(*) AS c
+          |  RETURN k, c
+          |}
+          |RETURN k, c
+          |""".stripMargin
+      )
+
+      val innerWithItems = frag
+        .as[Fragment.Leaf]
+        .input
+        .as[Fragment.Apply]
+        .inner
+        .as[Fragment.Leaf]
+        .clauses
+        .collectFirst { case w: With => w.returnItems.items.map(_.name) }
+
+      innerWithItems.shouldEqual(Some(Seq("k", "c")))
+    }
+
+    "tags Apply.importMode according to the subquery call flavor" in {
+      def importModeOf(query: String): Fragment.SubqueryImport =
+        fragment(query).as[Fragment.Leaf].input.as[Fragment.Apply].importMode
+
+      importModeOf(
+        """WITH 1 AS x
+          |CALL (x) { RETURN x AS y }
+          |RETURN y
+          |""".stripMargin
+      ).shouldEqual(Fragment.SubqueryImport.ScopeClause)
+
+      importModeOf(
+        """WITH 1 AS x
+          |CALL { WITH x RETURN x AS y }
+          |RETURN y
+          |""".stripMargin
+      ).shouldEqual(Fragment.SubqueryImport.ImportingWith)
+
+      importModeOf(
+        """CALL { RETURN 1 AS y }
+          |RETURN y
+          |""".stripMargin
+      ).shouldEqual(Fragment.SubqueryImport.ImportingWith)
+    }
+
     "declared with imported variable with a nested subquery" in {
       val frag = fragment(
         """UNWIND mega.graphIds() as g
@@ -310,7 +359,7 @@ class FabricFragmenterTest
       )
 
       inside(frag) {
-        case Leaf(Apply(_, inner: Leaf, _, _), _, _) =>
+        case Leaf(Apply(_, inner: Leaf, _, _, _), _, _) =>
           inner.use.shouldEqual(Declared(use(
             useClauseFunction(Seq("graph"), "byName", varFor("x")),
             parseStringGraphReferences = resolveStrictly
@@ -331,7 +380,7 @@ class FabricFragmenterTest
       )
 
       inside(frag) {
-        case Leaf(Apply(_, inner: Leaf, _, _), _, _) =>
+        case Leaf(Apply(_, inner: Leaf, _, _, _), _, _) =>
           inner.use.shouldEqual(Declared(use(
             useClauseFunction(Seq("graph"), "byName", varFor("x")),
             parseStringGraphReferences = resolveStrictly

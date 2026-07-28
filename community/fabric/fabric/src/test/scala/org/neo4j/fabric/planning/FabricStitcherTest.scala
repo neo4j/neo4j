@@ -117,10 +117,45 @@ class FabricStitcherTest
           .exec(
             singleQuery(
               with_(literal(1).as("a")),
-              scopeClauseSubqueryCall(false, Seq.empty, return_(literal(2).as("b"))),
+              importingWithSubqueryCall(return_(literal(2).as("b"))),
               return_(literal(3).as("c"))
             ),
             Seq("c")
+          )
+      )
+    }
+
+    "nested scope-clause fragment reconstructs as scope-clause CALL without threading the import" in {
+      stitching(
+        init(defaultUse)
+          .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
+          .apply(
+            u =>
+              init(Inherited(u)(pos), Seq("a"), Seq("a"))
+                .leaf(
+                  Seq(
+                    with_(modulo(varFor("a"), literal(10)).as("k"), countStar().as("c")),
+                    return_(varFor("k").as("k"), varFor("c").as("c"))
+                  ),
+                  Seq("k", "c")
+                ),
+            importMode = Fragment.SubqueryImport.ScopeClause
+          )
+          .leaf(Seq(return_(varFor("k").as("k"), varFor("c").as("c"))), Seq("k", "c"))
+      ).shouldEqual(
+        init(defaultUse)
+          .exec(
+            singleQuery(
+              with_(literal(1).as("a")),
+              scopeClauseSubqueryCall(
+                false,
+                Seq(varFor("a")),
+                with_(modulo(varFor("a"), literal(10)).as("k"), countStar().as("c")),
+                return_(varFor("k").as("k"), varFor("c").as("c"))
+              ),
+              return_(varFor("k").as("k"), varFor("c").as("c"))
+            ),
+            Seq("k", "c")
           )
       )
     }
@@ -141,7 +176,7 @@ class FabricStitcherTest
           .exec(
             singleQuery(
               with_(literal(1).as("a")),
-              optionalScopeClauseSubqueryCall(false, Seq.empty, return_(literal(2).as("b"))),
+              optionalImportingWithSubqueryCall(return_(literal(2).as("b"))),
               return_(literal(3).as("c"))
             ),
             Seq("c")
@@ -168,11 +203,9 @@ class FabricStitcherTest
           .exec(
             singleQuery(
               with_(literal(1).as("a")),
-              scopeClauseSubqueryCall(
-                false,
-                Seq.empty,
+              importingWithSubqueryCall(
                 with_(literal(2).as("b")),
-                scopeClauseSubqueryCall(false, Seq.empty, return_(literal(3).as("c"))),
+                importingWithSubqueryCall(return_(literal(3).as("c"))),
                 return_(literal(4).as("d"))
               ),
               return_(literal(5).as("e"))
@@ -200,8 +233,8 @@ class FabricStitcherTest
           .exec(
             singleQuery(
               with_(literal(1).as("a")),
-              scopeClauseSubqueryCall(false, Seq.empty, return_(literal(2).as("b"))),
-              scopeClauseSubqueryCall(false, Seq.empty, return_(literal(3).as("c"))),
+              importingWithSubqueryCall(return_(literal(2).as("b"))),
+              importingWithSubqueryCall(return_(literal(3).as("c"))),
               return_(literal(4).as("d"))
             ),
             Seq("d")
@@ -222,7 +255,7 @@ class FabricStitcherTest
         init(Declared(use("foo", resolveStrictly = true)))
           .exec(
             singleQuery(
-              scopeClauseSubqueryCall(false, Seq.empty, return_(literal(2).as("b"))),
+              importingWithSubqueryCall(return_(literal(2).as("b"))),
               return_(literal(3).as("c"))
             ),
             Seq("c")
@@ -270,9 +303,7 @@ class FabricStitcherTest
           .exec(
             singleQuery(
               with_(literal(1).as("x"), literal(2).as("y"), literal(3).as("z")),
-              scopeClauseSubqueryCall(
-                isImportingAll = false,
-                Seq(varFor("y"), varFor("z")),
+              importingWithSubqueryCall(
                 union(
                   singleQuery(with_(varFor("y").as("y")), return_(varFor("y").as("a"))),
                   singleQuery(with_(varFor("z").as("z")), return_(varFor("z").as("a")))
@@ -376,6 +407,196 @@ class FabricStitcherTest
       )
     }
 
+    "nested scope-clause fragment, different USE, wraps imports in a scope-clause CALL" in {
+      /*
+      WITH 1 as a
+      CALL (a) {
+        USE foo
+        WITH 2 as b
+        RETURN a as c    // `a` used after an intervening WITH — must stay available, not delisted
+      }
+      RETURN 3 as d
+       */
+      stitching(
+        init(defaultUse)
+          .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
+          .apply(
+            _ =>
+              init(Declared(use("foo", resolveStrictly = true)), Seq("a"), Seq("a"))
+                .leaf(
+                  Seq(use("foo", resolveStrictly = true), with_(literal(2).as("b")), return_(varFor("a").as("c"))),
+                  Seq("c")
+                ),
+            importMode = Fragment.SubqueryImport.ScopeClause
+          )
+          .leaf(Seq(return_(literal(3).as("d"))), Seq("d"))
+      ).shouldEqual(
+        init(defaultUse)
+          .exec(singleQuery(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
+          .apply(
+            _ =>
+              init(Declared(use("foo", resolveStrictly = true)), Seq("a"), Seq("a"))
+                .exec(
+                  singleQuery(
+                    with_(parameter("@@a", ct.any).as("a")),
+                    scopeClauseSubqueryCall(
+                      false,
+                      Seq(varFor("a")),
+                      with_(literal(2).as("b")),
+                      return_(varFor("a").as("c"))
+                    ),
+                    return_(varFor("c").as("c"))
+                  ),
+                  Seq("c")
+                ),
+            importMode = Fragment.SubqueryImport.ScopeClause
+          )
+          .exec(singleQuery(input(varFor("a"), varFor("c")), return_(literal(3).as("d"))), Seq("d"))
+      )
+    }
+
+    "nested scope-clause fragment keeps a body parameter WITH inside the CALL" in {
+      /*
+      WITH 1 as a
+      CALL (a) {
+        USE foo
+        WITH $unrelated AS p     // a parameter WITH that is NOT the import binding — must stay inside the CALL body
+        RETURN a + p AS c
+      }
+      RETURN 3 as d
+       */
+      stitching(
+        init(defaultUse)
+          .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
+          .apply(
+            _ =>
+              init(Declared(use("foo", resolveStrictly = true)), Seq("a"), Seq("a"))
+                .leaf(
+                  Seq(
+                    use("foo", resolveStrictly = true),
+                    with_(parameter("unrelated", ct.any).as("p")),
+                    return_(add(varFor("a"), varFor("p")).as("c"))
+                  ),
+                  Seq("c")
+                ),
+            importMode = Fragment.SubqueryImport.ScopeClause
+          )
+          .leaf(Seq(return_(literal(3).as("d"))), Seq("d"))
+      ).shouldEqual(
+        init(defaultUse)
+          .exec(singleQuery(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
+          .apply(
+            _ =>
+              init(Declared(use("foo", resolveStrictly = true)), Seq("a"), Seq("a"))
+                .exec(
+                  singleQuery(
+                    with_(parameter("@@a", ct.any).as("a")),
+                    scopeClauseSubqueryCall(
+                      false,
+                      Seq(varFor("a")),
+                      with_(parameter("unrelated", ct.any).as("p")),
+                      return_(add(varFor("a"), varFor("p")).as("c"))
+                    ),
+                    return_(varFor("c").as("c"))
+                  ),
+                  Seq("c")
+                ),
+            importMode = Fragment.SubqueryImport.ScopeClause
+          )
+          .exec(singleQuery(input(varFor("a"), varFor("c")), return_(literal(3).as("d"))), Seq("d"))
+      )
+    }
+
+    "nested scope-clause fragment ending in FINISH wraps to a non-returning CALL" in {
+      /*
+      WITH 1 as a
+      CALL (a) {
+        USE foo
+        WITH 2 as b
+        FINISH
+      }
+       */
+      stitching(
+        init(defaultUse)
+          .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
+          .apply(
+            _ =>
+              init(Declared(use("foo", resolveStrictly = true)), Seq("a"), Seq("a"))
+                .leaf(
+                  Seq(use("foo", resolveStrictly = true), with_(literal(2).as("b")), finish()),
+                  Seq("b")
+                ),
+            importMode = Fragment.SubqueryImport.ScopeClause
+          )
+      ).shouldEqual(
+        init(defaultUse)
+          .exec(singleQuery(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
+          .apply(
+            _ =>
+              init(Declared(use("foo", resolveStrictly = true)), Seq("a"), Seq("a"))
+                .exec(
+                  singleQuery(
+                    with_(parameter("@@a", ct.any).as("a")),
+                    scopeClauseSubqueryCall(
+                      false,
+                      Seq(varFor("a")),
+                      with_(literal(2).as("b")),
+                      finish()
+                    ),
+                    finish()
+                  ),
+                  Seq("b")
+                ),
+            importMode = Fragment.SubqueryImport.ScopeClause
+          )
+      )
+    }
+
+    "nested scope-clause fragment ending in an update wraps to a non-returning CALL" in {
+      /*
+      WITH 1 as a
+      CALL (a) {
+        USE foo
+        WITH 2 as b
+        CREATE (n)
+      }
+       */
+      stitching(
+        init(defaultUse)
+          .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
+          .apply(
+            _ =>
+              init(Declared(use("foo", resolveStrictly = true)), Seq("a"), Seq("a"))
+                .leaf(
+                  Seq(use("foo", resolveStrictly = true), with_(literal(2).as("b")), create(nodePat(Some("n")))),
+                  Seq("b")
+                ),
+            importMode = Fragment.SubqueryImport.ScopeClause
+          )
+      ).shouldEqual(
+        init(defaultUse)
+          .exec(singleQuery(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
+          .apply(
+            _ =>
+              init(Declared(use("foo", resolveStrictly = true)), Seq("a"), Seq("a"))
+                .exec(
+                  singleQuery(
+                    with_(parameter("@@a", ct.any).as("a")),
+                    scopeClauseSubqueryCall(
+                      false,
+                      Seq(varFor("a")),
+                      with_(literal(2).as("b")),
+                      create(nodePat(Some("n")))
+                    ),
+                    finish()
+                  ),
+                  Seq("b")
+                ),
+            importMode = Fragment.SubqueryImport.ScopeClause
+          )
+      )
+    }
+
     "call in transactions" - {
       val inTransactionParameters = Some(InTransactionsParameters(None, None, None, None, None)(pos))
 
@@ -423,9 +644,7 @@ class FabricStitcherTest
                       varFor(Apply.CALL_IN_TX_ROW)
                     ),
                     with_(prop(Apply.CALL_IN_TX_ROW, Apply.CALL_IN_TX_ROW_ID).as(Apply.CALL_IN_TX_ROW_ID)),
-                    scopeClauseSubqueryCallInTransactions(
-                      false,
-                      Seq.empty,
+                    importingWithSubqueryCallInTransactions(
                       InTransactionsParameters(None, None, None, None, None)(pos),
                       return_(literal(1).as("a"))
                     ),
@@ -501,9 +720,7 @@ class FabricStitcherTest
                       prop(Apply.CALL_IN_TX_ROW, "b").as("b"),
                       prop(Apply.CALL_IN_TX_ROW, Apply.CALL_IN_TX_ROW_ID).as(Apply.CALL_IN_TX_ROW_ID)
                     ),
-                    scopeClauseSubqueryCallInTransactions(
-                      false,
-                      Seq(varFor("b")),
+                    importingWithSubqueryCallInTransactions(
                       InTransactionsParameters(None, None, None, None, None)(pos),
                       with_(varFor("b").as("b")),
                       return_(varFor("b").as("c"))
@@ -513,6 +730,65 @@ class FabricStitcherTest
                   Seq("c", Apply.CALL_IN_TX_ROW_ID)
                 ),
             inTransactionParameters
+          )
+          .exec(singleQuery(input(varFor("b"), varFor("c")), return_(literal(1).as("d"))), Seq("d"))
+        actual.shouldEqual(
+          expected
+        )
+      }
+
+      "call in transactions with a scope-clause subquery reconstructs as a scope-clause CALL" in {
+        val actual = stitching(
+          init(defaultUse)
+            .leaf(Seq(with_(literal(1).as("b"))), Seq("b"))
+            .apply(
+              _ =>
+                init(Declared(use("foo", resolveStrictly = true)), Seq("b"), Seq("b"))
+                  .leaf(
+                    Seq(
+                      use("foo", resolveStrictly = true),
+                      return_(varFor("b").as("c"))
+                    ),
+                    Seq("c")
+                  ),
+              inTransactionParameters,
+              importMode = Fragment.SubqueryImport.ScopeClause
+            )
+            .leaf(Seq(return_(literal(1).as("d"))), Seq("d"))
+        )
+        val expected = init(defaultUse)
+          .exec(
+            singleQuery(
+              with_(literal(1).as("b")),
+              return_(varFor("b").as("b"))
+            ),
+            Seq("b")
+          )
+          .apply(
+            _ =>
+              init(Declared(use("foo", resolveStrictly = true)), Seq("b"), Seq("b"))
+                .exec(
+                  singleQuery(
+                    unwind(
+                      parameter(Apply.CALL_IN_TX_ROWS, CTAny),
+                      varFor(Apply.CALL_IN_TX_ROW)
+                    ),
+                    with_(
+                      prop(Apply.CALL_IN_TX_ROW, "b").as("b"),
+                      prop(Apply.CALL_IN_TX_ROW, Apply.CALL_IN_TX_ROW_ID).as(Apply.CALL_IN_TX_ROW_ID)
+                    ),
+                    scopeClauseSubqueryCallInTransactions(
+                      false,
+                      Seq(varFor("b")),
+                      InTransactionsParameters(None, None, None, None, None)(pos),
+                      return_(varFor("b").as("c"))
+                    ),
+                    return_(varFor("c").as("c"), varFor(Apply.CALL_IN_TX_ROW_ID).as(Apply.CALL_IN_TX_ROW_ID))
+                  ),
+                  Seq("c", Apply.CALL_IN_TX_ROW_ID)
+                ),
+            inTransactionParameters,
+            importMode = Fragment.SubqueryImport.ScopeClause
           )
           .exec(singleQuery(input(varFor("b"), varFor("c")), return_(literal(1).as("d"))), Seq("d"))
         actual.shouldEqual(

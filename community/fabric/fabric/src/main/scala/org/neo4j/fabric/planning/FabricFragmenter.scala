@@ -24,12 +24,10 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.CommandClause.shouldRouteToSystem
 import org.neo4j.cypher.internal.ast.GraphDirectReference
-import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.semantics.Scope
-import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.AddDependenciesToProjectionsInSubqueryExpressions
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.fabric.planning.Fragment.Apply
 import org.neo4j.fabric.planning.Fragment.Init
@@ -109,27 +107,23 @@ class FabricFragmenter(
               case call: ScopeClauseSubqueryCall => call.importedVariables.map(_.name)
               case _                             => Seq.empty
             }
-
-            val inner = subquery match {
-              case call: ScopeClauseSubqueryCall   => avoidDelisting(call)
-              case call: ImportingWithSubqueryCall => call.innerQuery
+            val importMode = subquery match {
+              case _: ScopeClauseSubqueryCall => Fragment.SubqueryImport.ScopeClause
+              case _                          => Fragment.SubqueryImport.ImportingWith
             }
+
+            val inner = subquery.innerQuery
             // Subquery: Recurse and start the child chain with Init
-            val use = Use.Inherited(input.use)(subquery.innerQuery.position)
+            val use = Use.Inherited(input.use)(inner.position)
             Apply(
               input,
               fragmentQuery(Init(use, input.outputColumns, imports), inner),
               subquery.inTransactionsParameters,
-              subquery.optional
+              subquery.optional,
+              importMode
             )(subquery.position)
         }
     }
-  }
-
-  private def avoidDelisting(call: ast.ScopeClauseSubqueryCall): ast.Query = {
-    call.endoRewrite(
-      AddDependenciesToProjectionsInSubqueryExpressions.subqueryExpressionAndCallClauseRewriter
-    ).innerQuery
   }
 
   private def isDistinct(uq: ast.Union) =

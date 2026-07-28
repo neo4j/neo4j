@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -256,6 +257,61 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
         )
 
       query shouldEqual productQueryWithCustomerSubQuery(resolveStrictly)
+    }
+
+    test(s"Cypher $version: standard query containing a simple composite sub-query – scope-clause import") {
+      val query =
+        buildPlannerQuery(
+          version,
+          """MATCH (product: Product)
+            |WITH product, product.id AS pId
+            |CALL (pId) {
+            |  USE db.customers
+            |  MATCH (customer)-[bought]->(product {id: pId})
+            |  RETURN customer
+            |}
+            |RETURN product, customer""".stripMargin,
+          None,
+          None,
+          compareVersions = false,
+          Map.empty
+        )
+
+      query shouldEqual productQueryWithCustomerSubQuery(resolveStrictly)
+    }
+
+    test(s"Cypher $version: scope-clause import is not a grouping key in a composite-native aggregating sub-query") {
+      val query =
+        buildPlannerQuery(
+          version,
+          """MATCH (n)
+            |WITH n, n.v AS v
+            |CALL (v) {
+            |  UNWIND [1, 2, 3] AS x
+            |  WITH x % 2 AS k, count(*) AS c
+            |  RETURN k, c
+            |}
+            |RETURN n, k, c""".stripMargin,
+          None,
+          None,
+          compareVersions = false,
+          Map.empty
+        )
+
+      def aggregations(pq: PlannerQuery): Seq[AggregatingQueryProjection] = pq match {
+        case spq: SinglePlannerQuery =>
+          val here = spq.horizon match {
+            case a: AggregatingQueryProjection => Seq(a)
+            case c: CallSubqueryHorizon        => aggregations(c.callSubquery)
+            case _                             => Seq.empty
+          }
+          here ++ spq.tail.toSeq.flatMap(aggregations)
+        case _ => Seq.empty
+      }
+
+      val aggs = aggregations(query)
+      aggs should not be empty
+      aggs.foreach(agg => agg.groupingExpressions.keySet shouldEqual Set(varFor("k")))
     }
 
     test(
