@@ -38,6 +38,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.ProviderMismatchException;
@@ -45,6 +46,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.neo4j.batchimport.api.DetailedProgressReport;
@@ -75,12 +77,17 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     public static final String LOG_FILE_NAME = "import.log";
     public static final String PROGRESS_REPORTING_FILE_NAME = "progress.json.log";
     public static final String DEFAULT_REPORT_FILE_NAME = "report.json.log";
+    public static final String CLI_ARGS_FILE_NAME = "cli-args";
 
     private final String dbName;
 
     private final String collectorPath;
 
     private final Config databaseConfig;
+
+    private final FileSystemAbstraction fs;
+
+    private final List<String> originalArgs;
 
     private final LazyIO<InternalLogProvider> logProvider;
 
@@ -97,19 +104,23 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     private ImportContext(
             String dbName,
             Config databaseConfig,
-            Function<Path, InternalLogProvider> logProviderFactory,
-            Function<Path, PrintStream> progressStreamFactory,
+            FileSystemAbstraction fs,
+            List<String> originalArgs,
             String collectorPath,
-            Supplier<OutputStream> collectorStreamFactory,
+            Path collectorOutputPath,
             Function<RetainCheck, Boolean> retainContextDir,
-            boolean includeUpdatesInProgress) {
+            boolean includeUpdatesInProgress,
+            boolean verbose) {
         super(Monitor.NO_MONITOR);
         this.dbName = dbName;
         this.databaseConfig = databaseConfig;
+        this.fs = fs;
+        this.originalArgs = originalArgs;
         this.collectorPath = collectorPath;
-        this.logProvider = new LazyIO<>(() -> logProviderFactory.apply(logPath()));
-        this.progressStream = new LazyIO<>(() -> progressStreamFactory.apply(progressReportingPath()));
-        this.collectorStream = new LazyIO<>(collectorStreamFactory);
+        this.logProvider = new LazyIO<>(
+                () -> new Log4jLogProvider(new BufferedOutputStream(output(logPath())), verbose ? DEBUG : INFO));
+        this.progressStream = new LazyIO<>(() -> new PrintStream(output(progressReportingPath()), true));
+        this.collectorStream = new LazyIO<>(() -> output(collectorOutputPath));
         this.retainContextDir = retainContextDir;
         this.objectMapper = new ObjectMapper()
                 .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
@@ -123,6 +134,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
             NormalizedDatabaseName database,
             Config databaseConfig,
             Path collectorReporting,
+            List<String> originalArgs,
             boolean includeUpdatesInProgress,
             boolean retainForInstrumentation,
             boolean verbose) {
@@ -137,11 +149,10 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
                         .fromConfig(databaseConfig)
                         .set(import_context_directory, baseDir)
                         .build(),
-                loggingPath ->
-                        new Log4jLogProvider(new BufferedOutputStream(output(fs, loggingPath)), verbose ? DEBUG : INFO),
-                progressPath -> new PrintStream(output(fs, progressPath), true),
+                fs,
+                originalArgs,
                 collectorReporting == null ? DEFAULT_REPORT_FILE_NAME : collectorReporting.toString(),
-                () -> output(fs, resolvedCollectorPath),
+                resolvedCollectorPath,
                 check -> {
                     if (check == RetainCheck.PREAMBLE) {
                         return retaining;
@@ -155,7 +166,8 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
                         throw new UncheckedIOException(ex);
                     }
                 },
-                includeUpdatesInProgress);
+                includeUpdatesInProgress,
+                verbose);
     }
 
     public void preamble(PrintStream out) {
@@ -292,13 +304,25 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
         return contextDir;
     }
 
-    private static OutputStream output(FileSystemAbstraction fs, Path path) throws UncheckedIOException {
+    private OutputStream output(Path path) throws UncheckedIOException {
         try {
             fs.mkdirs(path.getParent());
             // NOTE collector needs to be appending when we switch to resumable imports
             return fs.openAsOutputStream(path, false);
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
+        }
+    }
+
+    /**
+     * Persists the CLI arguments the import was invoked with into the context directory.
+     */
+    public void persistCliArgs() {
+        try {
+            fs.mkdirs(baseDir());
+            Files.writeString(baseDir().resolve(CLI_ARGS_FILE_NAME), String.join(" ", originalArgs));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

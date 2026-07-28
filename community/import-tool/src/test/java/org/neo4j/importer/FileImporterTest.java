@@ -87,6 +87,7 @@ class FileImporterTest {
                 new NormalizedDatabaseName(databaseName),
                 config,
                 reportLocation,
+                List.of(),
                 false,
                 false,
                 true)) {

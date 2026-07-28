@@ -201,8 +201,8 @@ class ImportCommandTest {
         // when/then - using a 3-byte UTF-8 character (€ = U+20AC)
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--relationships=" + rels, "--delimiter=U+20AC");
 
-        assertThatThrownBy(() ->
-                        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
+        assertThatThrownBy(() -> command.importConfigurationValidation(
+                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
                 .isInstanceOf(CommandLine.ParameterException.class)
                 .hasMessageContaining("Delimiter must be a single byte character (In UTF-8)");
     }
@@ -218,7 +218,7 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--relationships=" + rels, "--delimiter=U+007C");
 
         // then - should not throw
-        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
     }
 
     @Test
@@ -237,7 +237,7 @@ class ImportCommandTest {
                 "--accept-multibyte-delimiter");
 
         // then - should not throw
-        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
     }
 
     @Test
@@ -248,7 +248,7 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
 
         // then - should not throw
-        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
         // and multiline-fields should be true
         assertThat(command.multilineFieldOptions().multilineFields()).isEqualToIgnoringCase(Boolean.TRUE.toString());
     }
@@ -260,8 +260,8 @@ class ImportCommandTest {
 
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir", "--multiline-fields=false");
 
-        assertThatThrownBy(() ->
-                        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
+        assertThatThrownBy(() -> command.importConfigurationValidation(
+                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
                 .isInstanceOf(CommandFailedException.class)
                 .hasMessageContaining("--multiline-fields=true");
     }
@@ -278,8 +278,8 @@ class ImportCommandTest {
                 "--multiline-fields=" + nodes,
                 "--multiline-fields-format=v2");
 
-        assertThatThrownBy(() ->
-                        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
+        assertThatThrownBy(() -> command.importConfigurationValidation(
+                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
                 .isInstanceOf(CommandFailedException.class)
                 .hasMessageContaining("--multiline-fields-format=v1");
     }
@@ -292,7 +292,7 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir", "--multiline-fields=true");
 
         // then - should not throw
-        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
     }
 
     @Test
@@ -303,7 +303,7 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
 
         // when
-        command.preImportValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
         // then
         assertThat(command.bufferSize())
                 .isEqualTo(org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR);

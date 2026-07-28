@@ -664,13 +664,14 @@ public class ImportCommand {
                     database,
                     loadNeo4jConfig(format),
                     reportFile,
+                    spec.commandLine().getParseResult().originalArgs(),
                     includeUpdatesInProgress(),
                     !disableInstrumentation && captureProfile && captureProfileResultPath == null,
                     verbose)) {
                 var databaseConfig = importContext.config();
                 var databaseLayout = Neo4jLayout.of(databaseConfig).databaseLayout(database.name());
                 try (var fileSystem = new SchemeFileSystemAbstraction(ctx.fs(), databaseConfig, importContext)) {
-                    preImportValidation(fileSystem, databaseConfig.get(GraphDatabaseSettings.db_format));
+                    importConfigurationValidation(fileSystem, databaseConfig.get(GraphDatabaseSettings.db_format));
 
                     final var importerBuilder = configureFileImporterBuilder(FileImporter.builder()
                             .withCsvConfig(csvConfiguration(fileSystem))
@@ -710,7 +711,7 @@ public class ImportCommand {
                         importer.dryRun(this);
                     } else {
                         try (var ignore = maybeLockChecker().maybeCheckLock(databaseLayout)) {
-                            importContext.preamble(ctx.out());
+                            preImport(importContext);
                             importer.doImport(this, skidbladnir);
                             postImport(fileSystem, databaseConfig, importContext, databaseLayout);
                         }
@@ -719,6 +720,11 @@ public class ImportCommand {
                     throw importContext.captureError(e);
                 }
             }
+        }
+
+        private void preImport(ImportContext importContext) {
+            importContext.preamble(ctx.out());
+            importContext.persistCliArgs();
         }
 
         protected boolean isDryRun() {
@@ -740,7 +746,7 @@ public class ImportCommand {
         /**
          * @param resolvedDbFormat the format that is either specified in the command line or resolved from the database config
          */
-        protected void preImportValidation(SchemeFileSystemAbstraction fs, String resolvedDbFormat)
+        protected void importConfigurationValidation(SchemeFileSystemAbstraction fs, String resolvedDbFormat)
                 throws CommandFailedException {
             if (requiresNodeParameter()) {
                 if (nodes == null) {
