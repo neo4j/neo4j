@@ -126,7 +126,10 @@
       --enable-native-access=ALL-UNNAMED
       --add-modules=jdk.incubator.vector
       ${jdk25.custom.options}</jdk.custom.options>
+    <!-- Empty by default so non-JDK-25 modules add nothing. JDK 25 modules opt in with
+         <jdk25.custom.options>${jdk25.vm.options}</jdk25.custom.options> in their own POM. -->
     <jdk25.custom.options />
+    <jdk25.vm.options>-XX:+UseCompactObjectHeaders --sun-misc-unsafe-memory-access=allow</jdk25.vm.options>
     <jersey.version>2.46</jersey.version>
     <jetty.toolchain.version>4.0.9</jetty.toolchain.version>
     <jetty.version>12.1.11</jetty.version>
@@ -1380,6 +1383,11 @@
               <s3mock.version>${s3mock.version}</s3mock.version>
             </systemPropertyVariables>
             <jvm>${test.runner.jvm}</jvm>
+            <!-- Test JVM: under -DenforceToolchains the enforce-toolchains profile sets a
+                 build-context JDK toolchain per module, which surefire runs the tests on;
+                 otherwise the JDK running Maven is used. Deliberately NO per-plugin <jdkToolchain>
+                 here: surefire fails the build when one is set but no matching toolchain exists,
+                 which would break every build without a toolchains.xml. -->
             <excludes>
               <exclude>**/*$*.class</exclude>
               <exclude>**/*IntegrationTest.class</exclude>
@@ -1426,6 +1434,9 @@
               <s3mock.version>${s3mock.version}</s3mock.version>
             </systemPropertyVariables>
             <jvm>${test.runner.jvm}</jvm>
+            <!-- See maven-surefire-plugin above: the test JVM comes from the build-context
+                 toolchain under -DenforceToolchains, not a per-plugin <jdkToolchain> (which would
+                 fail the build when no toolchains.xml is present). -->
           </configuration>
           <dependencies>
             <dependency>
@@ -1851,6 +1862,17 @@
             <compilerArgs>
               <arg>-proc:full</arg>
             </compilerArgs>
+            <!--
+              Compile each module with a JDK matching its bytecode target. vm.target.version is
+              21 by default and 25 for the modules that require it (e.g. import-vector-util,
+              neo4j-uring), so a build environment providing both JDK toolchains (via
+              toolchains.xml) builds every module with the correct JDK in a single reactor. When
+              no matching toolchain is registered, the compiler falls back to the JDK running
+              Maven, so a single-JDK environment behaves exactly as before.
+            -->
+            <jdkToolchain>
+              <version>${vm.target.version}</version>
+            </jdkToolchain>
           </configuration>
         </plugin>
         <plugin>
@@ -2101,14 +2123,43 @@
   </build>
 
   <profiles>
+    <!--
+      Enforce that each module is built with a JDK matching its bytecode target. Selects the JDK
+      toolchain by ${vm.target.version} and fails fast (with a per-module log line) if the build
+      environment has no matching toolchain registered, instead of silently falling back to the
+      JDK running Maven. Opt-in via -DenforceToolchains so it only runs where a toolchains.xml is
+      guaranteed (e.g. CI); local single-JDK builds are unaffected.
+    -->
     <profile>
-      <id>jdk-25</id>
+      <id>enforce-toolchains</id>
       <activation>
-        <jdk>25</jdk>
+        <property>
+          <name>enforceToolchains</name>
+        </property>
       </activation>
-      <properties>
-        <jdk25.custom.options>-XX:+UseCompactObjectHeaders --sun-misc-unsafe-memory-access=allow</jdk25.custom.options>
-      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-toolchains-plugin</artifactId>
+            <version>3.2.0</version>
+            <configuration>
+              <toolchains>
+                <jdk>
+                  <version>${vm.target.version}</version>
+                </jdk>
+              </toolchains>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>toolchain</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <id>errorprone</id>

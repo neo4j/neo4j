@@ -95,7 +95,7 @@
 
   <profiles>
     <profile>
-      <id>jdk-25</id>
+      <id>jdk25-modules</id>
       <activation>
         <jdk>25</jdk>
       </activation>
