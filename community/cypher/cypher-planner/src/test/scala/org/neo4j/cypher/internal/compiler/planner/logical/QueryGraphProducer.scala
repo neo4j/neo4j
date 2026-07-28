@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
+import org.neo4j.cypher.internal.compiler.TestSignatureResolver
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.ResolveCallablesFromPlanContext
@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.Scop
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.spi.NotImplementedPlanContext
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.NormalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -101,7 +102,7 @@ trait QueryGraphProducer {
       ProcedureSignature(name, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
     val procLookup: ProcedureName => ProcedureSignature = _ => signature
     val fcnLookup: FunctionName => Option[UserFunctionSignature] = _ => None
-    val resolver = new TestSignatureResolvingPlanContext(procLookup, fcnLookup)
+    val resolver = new NotImplementedPlanContext with TestSignatureResolver(procLookup, fcnLookup)
 
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
     // if you ever want to have parameters in here, fix the map

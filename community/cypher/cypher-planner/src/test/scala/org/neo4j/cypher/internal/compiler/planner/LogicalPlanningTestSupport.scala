@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.ExecutionModel
-import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
+import org.neo4j.cypher.internal.compiler.TestSignatureResolver
 import org.neo4j.cypher.internal.compiler.helpers.FakeLeafPlan
 import org.neo4j.cypher.internal.compiler.helpers.TestExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQueryTransformer
@@ -636,7 +636,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
     }
     val procs: ProcedureName => ProcedureSignature = procedureLookup.getOrElse(_ => signature)
     val funcs: FunctionName => Option[UserFunctionSignature] = functionLookup.getOrElse(_ => None)
-    val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
+    val planContext = new NotImplementedPlanContext with TestSignatureResolver(procs, funcs)
     val state = LogicalPlanState(
       query,
       CostBasedPlannerName.default,
