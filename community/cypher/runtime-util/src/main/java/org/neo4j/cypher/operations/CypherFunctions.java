@@ -1166,6 +1166,9 @@ public final class CypherFunctions {
         } else if (in instanceof TextValue text) {
             final int len =
                     asIntExact(endPos, () -> "Invalid input for length value in function 'left()'", "left", true, 0);
+            if (len < 0) {
+                throw InvalidArgumentException.argumentOutOfRange("left", "length", 0, Integer.MAX_VALUE, len);
+            }
             return text.substring(0, len);
         } else {
             throw notAString("left", in);
@@ -1634,9 +1637,10 @@ public final class CypherFunctions {
         if (original == NO_VALUE || length == NO_VALUE) {
             return NO_VALUE;
         } else if (original instanceof TextValue asText) {
-            final long len = asLong(length, () -> "Invalid input for length value in function 'right()'", "right");
+            final int len =
+                    asIntExact(length, () -> "Invalid input for length value in function 'right()'", "right", true, 0);
             if (len < 0) {
-                throw new IndexOutOfBoundsException("negative length");
+                throw InvalidArgumentException.argumentOutOfRange("right", "length", 0, Integer.MAX_VALUE, len);
             }
             final long startVal = asText.length() - len;
             return asText.substring((int) Math.max(0, startVal));
@@ -1738,9 +1742,13 @@ public final class CypherFunctions {
         if (original == NO_VALUE || start == NO_VALUE) {
             return NO_VALUE;
         } else if (original instanceof TextValue asText) {
-
-            return asText.substring(asIntExact(
-                    start, () -> "Invalid input for start value in function 'substring()'", "substring", true, 0));
+            final int startAsInt = asIntExact(
+                    start, () -> "Invalid input for start value in function 'substring()'", "substring", true, 0);
+            if (startAsInt < 0) {
+                throw InvalidArgumentException.argumentOutOfRange(
+                        "substring", "start", 0, Integer.MAX_VALUE, startAsInt);
+            }
+            return asText.substring(startAsInt);
         } else {
             throw notAString("substring", original);
         }
@@ -1750,20 +1758,19 @@ public final class CypherFunctions {
         if (original == NO_VALUE || start == NO_VALUE || length == NO_VALUE) {
             return NO_VALUE;
         } else if (original instanceof TextValue asText) {
-
-            return asText.substring(
-                    asIntExact(
-                            start,
-                            () -> "Invalid input for start value in function 'substring()'",
-                            "substring",
-                            true,
-                            0),
-                    asIntExact(
-                            length,
-                            () -> "Invalid input for length value in function 'substring()'",
-                            "substring",
-                            true,
-                            0));
+            final int startAsInt = asIntExact(
+                    start, () -> "Invalid input for start value in function 'substring()'", "substring", true, 0);
+            final int lengthAsInt = asIntExact(
+                    length, () -> "Invalid input for length value in function 'substring()'", "substring", true, 0);
+            if (startAsInt < 0) {
+                throw InvalidArgumentException.argumentOutOfRange(
+                        "substring", "start", 0, Integer.MAX_VALUE, startAsInt);
+            }
+            if (lengthAsInt < 0) {
+                throw InvalidArgumentException.argumentOutOfRange(
+                        "substring", "length", 0, Integer.MAX_VALUE, lengthAsInt);
+            }
+            return asText.substring(startAsInt, lengthAsInt);
         } else {
             throw notAString("substring", original);
         }
