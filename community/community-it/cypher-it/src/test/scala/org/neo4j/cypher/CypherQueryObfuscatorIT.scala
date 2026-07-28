@@ -158,4 +158,12 @@ class CypherQueryObfuscatorIT extends CypherITTestSuite {
     fullyObfuscatedText should not include "Password1"
     fullyObfuscatedText should not include "'visible'" // ordinary literal redacted in the all-literals view
   }
+
+  test("structural literals stay visible while a credential URL is redacted in every view") {
+    val query = "LOAD CSV FROM 'ftp://user:password@host/file.csv' AS line FIELDTERMINATOR ';' RETURN line LIMIT 5"
+    val expected = "LOAD CSV FROM ****** AS line FIELDTERMINATOR ';' RETURN line LIMIT 5"
+    val ob = obfuscatorFactory.obfuscatorForQuery(query, CypherVersion.Legacy.legacyVersion())
+    ob.fullyObfuscatedQuery(query, org.neo4j.values.virtual.MapValue.EMPTY, 0).text() should equal(expected)
+    ob.sensitiveObfuscatedQuery(query, org.neo4j.values.virtual.MapValue.EMPTY, 0).text() should equal(expected)
+  }
 }

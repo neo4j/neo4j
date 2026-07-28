@@ -16,6 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.ast.Limit
+import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.BooleanLiteral
@@ -98,7 +101,7 @@ case object ObfuscationMetadataCollection
     statement: Statement,
     extractedParameters: Map[AutoExtractedParameter, Expression]
   ): Offsets = {
-    val partial: PartialFunction[Any, Offsets => FoldingBehavior[Offsets]] = {
+    val sensitiveOnly: PartialFunction[Any, Offsets => FoldingBehavior[Offsets]] = {
       case literal: SensitiveLiteral if literal.literalLength > 0 => { case Offsets(sensitive, all) =>
         val offset = LiteralOffset(
           literal.position.offset,
@@ -107,20 +110,6 @@ case object ObfuscationMetadataCollection
           literalTypeOf(literal)
         )
         SkipChildren(Offsets(sensitive :+ offset, all :+ offset))
-      }
-      case literal: Literal => { case acc @ Offsets(sensitive, all) =>
-        val sensitiveLiteral = literal.asSensitiveLiteral
-        if (sensitiveLiteral.literalLength > 0) {
-          val offset = LiteralOffset(
-            sensitiveLiteral.position.offset,
-            sensitiveLiteral.position.line,
-            Some(sensitiveLiteral.literalLength),
-            literalTypeOf(literal)
-          )
-          SkipChildren(Offsets(sensitive, all :+ offset))
-        } else {
-          TraverseChildren(acc)
-        }
       }
       case p: AutoExtractedParameter with SensitiveAutoParameter => { case Offsets(sensitive, all) =>
         extractedParameters.get(p) match {
@@ -143,6 +132,27 @@ case object ObfuscationMetadataCollection
             // Original literal not recovered: mark the position with unknown length so it is still redacted.
             val offset = LiteralOffset(p.position.offset, p.position.line, None)
             SkipChildren(Offsets(sensitive :+ offset, all :+ offset))
+        }
+      }
+    }
+
+    lazy val partial: PartialFunction[Any, Offsets => FoldingBehavior[Offsets]] = sensitiveOnly.orElse {
+      case slicing @ (_: Skip | _: Limit) => acc =>
+          SkipChildren(slicing.folder.treeFold(acc)(sensitiveOnly))
+      case loadCsv: LoadCSV => acc =>
+          SkipChildren(loadCsv.urlString.folder.treeFold(acc)(partial))
+      case literal: Literal => { case acc @ Offsets(sensitive, all) =>
+        val sensitiveLiteral = literal.asSensitiveLiteral
+        if (sensitiveLiteral.literalLength > 0) {
+          val offset = LiteralOffset(
+            sensitiveLiteral.position.offset,
+            sensitiveLiteral.position.line,
+            Some(sensitiveLiteral.literalLength),
+            literalTypeOf(literal)
+          )
+          SkipChildren(Offsets(sensitive, all :+ offset))
+        } else {
+          TraverseChildren(acc)
         }
       }
     }
