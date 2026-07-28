@@ -81,6 +81,21 @@ class ToIntegerListFunctionTest extends InterpretedRuntimeTestSuite with CypherS
     assert(toIntegerList(Seq("0000123", "-456", "-1.789")) === Values.intArray(Array(123, -456, -1)))
   }
 
+  test("should convert a list of strings with underscores to a list of integers") {
+    assert(toIntegerList(Seq("2_000_123", "-45_6", "-1_789")) === Values.intArray(Array(2000123, -456, -1789)))
+  }
+
+  test("should should trim the string before parsing to an integer") {
+    assert(toIntegerList(Seq(" 42", " +42", " -42")) === Values.intArray(Array(42, 42, -42)))
+    assert(toIntegerList(Seq("42 ", "+42 ", "-42 ")) === Values.intArray(Array(42, 42, -42)))
+    assert(toIntegerList(Seq("  42  ", "  +42  ", "  -42  ")) === Values.intArray(Array(42, 42, -42)))
+    assert(toIntegerList(Seq("42\n\t\r", "+42\n\t\r", "-42\n\t\r")) === Values.intArray(Array(42, 42, -42)))
+    assert(toIntegerList(Seq("\n\t\r42", "\n\t\r+42", "\n\t\r-42")) === Values.intArray(Array(42, 42, -42)))
+    assert(
+      toIntegerList(Seq("\n\r\t42\r\n\t", "\n\t\r+42\r\t\n", "\t\n\r-42\t\r\n")) === Values.intArray(Array(42, 42, -42))
+    )
+  }
+
   test("should convert a list of booleans to a list of integers") {
     assert(toIntegerList(Seq(true, false)) === Values.intArray(Array(1, 0)))
   }

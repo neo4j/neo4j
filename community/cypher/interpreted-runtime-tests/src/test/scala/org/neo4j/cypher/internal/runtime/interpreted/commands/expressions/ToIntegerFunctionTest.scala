@@ -96,6 +96,27 @@ class ToIntegerFunctionTest extends InterpretedRuntimeTestSuite with CypherScala
       toIntegerFn(50) should equal(longValue(50))
     }
 
+    test(s"$name should trim the string before parsing to an integer") {
+      toIntegerFn(" 10") should equal(longValue(10))
+      toIntegerFn(" +10") should equal(longValue(10))
+      toIntegerFn(" -10") should equal(longValue(-10))
+      toIntegerFn("\t\n\r10") should equal(longValue(10))
+      toIntegerFn("\t\n\r+10") should equal(longValue(10))
+      toIntegerFn("\t\n\r-10") should equal(longValue(-10))
+      toIntegerFn("10 ") should equal(longValue(10))
+      toIntegerFn("+10 ") should equal(longValue(10))
+      toIntegerFn("-10 ") should equal(longValue(-10))
+      toIntegerFn("10\t\n\r") should equal(longValue(10))
+      toIntegerFn("+10\t\n\r") should equal(longValue(10))
+      toIntegerFn("-10\t\n\r") should equal(longValue(-10))
+      toIntegerFn("  10  ") should equal(longValue(10))
+      toIntegerFn("  +10  ") should equal(longValue(10))
+      toIntegerFn("  -10  ") should equal(longValue(-10))
+      toIntegerFn("\t\n\r10\t\n\r") should equal(longValue(10))
+      toIntegerFn("\t\n\r+10\t\n\r") should equal(longValue(10))
+      toIntegerFn("\t\n\r-10\t\n\r") should equal(longValue(-10))
+    }
+
     test(s"$name should truncate floats if given a float") {
       toIntegerFn(20.6f) should equal(longValue(20))
     }

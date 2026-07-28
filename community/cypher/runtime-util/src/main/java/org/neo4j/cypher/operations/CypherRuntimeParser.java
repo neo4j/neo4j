@@ -162,29 +162,32 @@ abstract class CypherRuntimeParser {
      * Returns the parsed value converted to LongValue, or NoValue if parsing fails.
      */
     public static Value parseAsLongOrElseNoValue(String expression) {
+        String expressionTrimmed = expression.trim();
         // This route is significantly faster than parsing cypher, so try this first.
         // Note, parseLong also supports some values that are not valid cypher, like 0001.
-        var res = parseLongWithoutThrowing(expression);
+        var res = parseLongWithoutThrowing(expressionTrimmed);
         if (res != NO_VALUE) {
             return res;
         }
 
         try {
             // Note, BigDecimal supports expressions with exponent, like -1.23E-12.
-            BigDecimal bigDecimal = new BigDecimal(expression);
+            BigDecimal bigDecimal = new BigDecimal(expressionTrimmed);
             if (bigDecimal.compareTo(MAX_LONG) <= 0 && bigDecimal.compareTo(MIN_LONG) >= 0) {
                 return longValue(bigDecimal.longValue());
             } else {
                 // This can happen for the functions toInteger(input), toIntegerOrNull(input) and
                 // toIntegerList(input),
                 // but will only surface for toInteger() as the others convert errors to null values
-                throw CypherTypeException.integerOutOfBounds("input", Long.MIN_VALUE, Long.MAX_VALUE, expression);
+                throw CypherTypeException.integerOutOfBounds(
+                        "input", Long.MIN_VALUE, Long.MAX_VALUE, expressionTrimmed);
             }
         } catch (NumberFormatException ignore2) {
             // Fallback to parsing the expression in Cypher.
             // Note, adds support to more literal number expressions, like 0xf (hex), 0o11 (octal), 1_000.
             try {
-                return longValue(parser(expression).numberLiteral().value().longValue());
+                return longValue(
+                        parser(expressionTrimmed).numberLiteral().value().longValue());
             } catch (NumberFormatException | SyntaxException ignore3) {
                 return NO_VALUE;
             }
