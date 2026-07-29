@@ -936,6 +936,9 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
               .filterNot(i =>
                 returnItems.items.exists(_.name == i.name) || !layout.referencedByQuery.exists(_.name == i.name)
               )
+          case w: With if layout.importingWith.contains(PositionedNode(w)) =>
+            scopeState.getOutgoingVariablesAndConstantsReturnItemSeq(clause)
+              .filterNot(i => returnItems.items.exists(_.name == i.name))
           case _ =>
             scopeState.getOutgoingVariableReturnItemSeq(clause)
               .filterNot(i => returnItems.items.exists(_.name == i.name))

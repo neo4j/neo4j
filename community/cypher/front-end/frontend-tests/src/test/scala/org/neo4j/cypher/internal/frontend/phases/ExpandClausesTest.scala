@@ -1347,6 +1347,39 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
     )
   }
 
+  test("importing WITH in a subquery should expand constants in Cypher 5 when unused") {
+    assertRewritten(
+      """WITH 5 AS lower
+        |CALL (`lower`) {
+        |  UNWIND [1,2,3] AS x
+        |  CALL {
+        |    WITH *
+        |    MATCH(label)
+        |    WITH * WHERE size(label.prop) > lower
+        |    RETURN label.prop AS out
+        |  }
+        |  RETURN out
+        |}
+        |RETURN `out`""".stripMargin,
+      """WITH 5 AS lower
+        |CALL (lower) {
+        |  UNWIND [1, 2, 3] AS x
+        |  CALL {
+        |    WITH lower AS lower, x AS x
+        |    MATCH (label)
+        |    WITH label AS label, lower AS lower, x AS x
+        |      WHERE size(label.prop) > lower
+        |    RETURN label.prop AS out
+        |  }
+        |  RETURN out AS out
+        |}
+        |RETURN out AS out""".stripMargin,
+      excludedVersions = Set(CypherVersion.Cypher25),
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
   test("NEXT expansion preserves the final projection's column order") {
     assertRewritten(
       """FINISH
