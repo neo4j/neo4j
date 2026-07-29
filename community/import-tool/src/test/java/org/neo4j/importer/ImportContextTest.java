@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.factory.primitive.IntSets;
@@ -326,7 +327,8 @@ class ImportContextTest {
 
     @Test
     void detailedProgressReportStandardIncludesAllFieldsInJson() {
-        try (var importContext = ImportContext.create(fs, DB, config, null, false, false, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, config, null, Collections.emptyList(), false, false, false)) {
             importContext.detailedProgressReport(progressReport());
 
             assertThat(importsDir)
@@ -379,7 +381,8 @@ class ImportContextTest {
 
     @Test
     void detailedProgressReportSkidbladnirIncludesAllFieldsInJson() {
-        try (var importContext = ImportContext.create(fs, DB, config, null, false, false, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, config, null, Collections.emptyList(), false, false, false)) {
             var reportBase = new DetailedProgressReportBase(42, 69, true);
             reportBase.registerNodeStats(ApplicationMode.CREATE, IntSets.immutable.of(1, 2));
             reportBase.registerRelationshipStats(ApplicationMode.CREATE, 5);
