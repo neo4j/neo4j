@@ -1342,7 +1342,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   dbName,
                   DropDatabaseAction
                 ))
-                  .map(plans.AssertNotShardedDatabase(_, dbName, "DROP DATABASE", "delete"))
+                  .map(plans.AssertNotShardedDatabase(_, dbName, "CREATE OR REPLACE DATABASE", "delete"))
                   .map(plans.EnsureDatabaseSafeToDelete(_, dbName, Restrict))
                   .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false, Restrict))
               case IfExistsDoNothing =>
@@ -1373,7 +1373,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   dbName,
                   DropDatabaseAction
                 ))
-                  .map(plans.AssertNotShardedDatabase(_, dbName, "DROP DATABASE", "delete"))
+                  .map(plans.AssertNotShardedDatabase(_, dbName, "CREATE OR REPLACE DATABASE", "delete"))
                   .map(plans.EnsureDatabaseSafeToDelete(_, dbName, Restrict))
                   .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false, Restrict))
               case IfExistsDoNothing =>
@@ -1412,7 +1412,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   dbName,
                   DropDatabaseAction
                 ))
-                  .map(plans.AssertNotShardedDatabase(_, dbName, "DROP DATABASE", "delete"))
+                  .map(plans.AssertNotShardedDatabase(_, dbName, "CREATE OR REPLACE REPLICA DATABASE", "delete"))
                   .map(plans.EnsureDatabaseSafeToDelete(_, dbName, Restrict))
                   .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false, Restrict))
               case IfExistsDoNothing =>
@@ -1450,11 +1450,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   dbName,
                   DropCompositeDatabaseAction
                 ))
-                  .map(plans.AssertNotInvalidActionOnShard(
+                  .map(plans.AssertNotShardedDatabase(
                     _,
                     dbName,
                     "CREATE OR REPLACE COMPOSITE DATABASE",
-                    "replace"
+                    "delete"
                   ))
                   .map(plans.EnsureDatabaseSafeToDelete(_, dbName, Restrict))
                   .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false, Restrict))
