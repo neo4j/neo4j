@@ -2012,6 +2012,18 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("")
+    public static final Setting<Duration> spd_import_rpc_connect_timeout = newBuilder(
+                    "internal.db.spd_import.rpc.connect_timeout", DURATION, ofSeconds(30))
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Duration> spd_import_rpc_request_timeout = newBuilder(
+                    "internal.db.spd_import.rpc.request_timeout", DURATION, ofMinutes(5))
+            .build();
+
+    @Internal
     @Description("Select how eagerly procedure loader will class load procedures")
     public static final Setting<ProcedureClassPreloading> preload = newBuilder(
                     "internal.dbms.procedures.preload",
