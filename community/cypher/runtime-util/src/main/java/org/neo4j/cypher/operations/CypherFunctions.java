@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.util.symbols.UUIDType;
 import org.neo4j.cypher.internal.util.symbols.VectorType;
 import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType;
 import org.neo4j.cypher.internal.util.symbols.ZonedTimeType;
+import org.neo4j.exceptions.ArithmeticException;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.InternalException;
 import org.neo4j.exceptions.InvalidArgumentException;
@@ -447,7 +448,12 @@ public final class CypherFunctions {
             return NO_VALUE;
         } else if (in instanceof NumberValue number) {
             if (in instanceof IntegralValue) {
-                return longValue(Math.abs(number.longValue()));
+                try {
+                    return longValue(Math.absExact(number.longValue()));
+                } catch (java.lang.ArithmeticException e) {
+                    throw ArithmeticException.numericValueOutOfRangeWithCause(
+                            String.valueOf(number.longValue()), "abs()", e);
+                }
             } else {
                 return doubleValue(Math.abs(number.doubleValue()));
             }

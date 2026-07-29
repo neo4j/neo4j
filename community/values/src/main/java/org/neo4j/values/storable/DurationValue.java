@@ -1311,7 +1311,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         try {
             return Math.addExact(y, x);
         } catch (ArithmeticException e) {
-            var gql = GqlHelper.get22015_22N28("duration()");
+            var gql = GqlHelper.getGql22015_22N28("duration()");
             throw new InvalidArgumentException(
                     gql, "Invalid value for duration, will cause overflow. Value was " + String.format(msg, args), e);
         }
@@ -1321,7 +1321,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         try {
             return Math.multiplyExact(x, y);
         } catch (ArithmeticException e) {
-            var gql = GqlHelper.get22015_22N28("duration()");
+            var gql = GqlHelper.getGql22015_22N28("duration()");
             throw new InvalidArgumentException(
                     gql, "Invalid value for duration, will cause overflow. Value was " + String.format(msg, args), e);
         }
@@ -1359,7 +1359,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private static InvalidArgumentException invalidDuration(
             long months, long days, long seconds, long nanos, Exception e) {
-        var gql = GqlHelper.get22015_22N28("duration()");
+        var gql = GqlHelper.getGql22015_22N28("duration()");
         return new InvalidArgumentException(
                 gql,
                 String.format(
@@ -1370,7 +1370,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private static InvalidArgumentException invalidDuration(
             long months, long days, long hours, long minutes, long seconds, long nanos, Exception e) {
-        var gql = GqlHelper.get22015_22N28("duration()");
+        var gql = GqlHelper.getGql22015_22N28("duration()");
         return new InvalidArgumentException(
                 gql,
                 String.format(
@@ -1380,20 +1380,20 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     private static InvalidArgumentException invalidDurationAdd(DurationValue o1, DurationValue o2, Exception e) {
-        var gql = GqlHelper.get22015_22N28("+");
+        var gql = GqlHelper.getGql22015_22N28("+");
         return new InvalidArgumentException(
                 gql, String.format("Can not add duration %s and %s without causing overflow.", o1, o2), e);
     }
 
     private static InvalidArgumentException invalidDurationSubtract(DurationValue o1, DurationValue o2, Exception e) {
-        var gql = GqlHelper.get22015_22N28("-");
+        var gql = GqlHelper.getGql22015_22N28("-");
         return new InvalidArgumentException(
                 gql, String.format("Can not subtract duration %s and %s without causing overflow.", o1, o2), e);
     }
 
     private static InvalidArgumentException invalidDurationMultiply(
             DurationValue o1, NumberValue numberValue, Exception e) {
-        var gql = GqlHelper.get22015_22N28("*");
+        var gql = GqlHelper.getGql22015_22N28("*");
         return new InvalidArgumentException(
                 gql,
                 String.format("Can not multiply duration %s with %s without causing overflow.", o1, numberValue),
@@ -1402,7 +1402,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private static InvalidArgumentException invalidDurationDivision(
             DurationValue o1, NumberValue numberValue, Exception e) {
-        var gql = GqlHelper.get22015_22N28("/");
+        var gql = GqlHelper.getGql22015_22N28("/");
         return new InvalidArgumentException(
                 gql, String.format("Can not divide duration %s with %s without causing overflow.", o1, numberValue), e);
     }

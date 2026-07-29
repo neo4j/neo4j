@@ -261,7 +261,7 @@ public class GqlHelper {
                 .build();
     }
 
-    public static ErrorGqlStatusObject get22015_22N28(String operation) {
+    public static ErrorGqlStatusObject getGql22015_22N28(String operation) {
         return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22015)
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N28)
                         .withParam(GqlParams.StringParam.operation, operation)

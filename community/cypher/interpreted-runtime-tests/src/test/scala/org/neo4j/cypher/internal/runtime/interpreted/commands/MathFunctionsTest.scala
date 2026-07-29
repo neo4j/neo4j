@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SinhFu
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SqrtFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TanFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TanhFunction
+import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.LongValue
@@ -76,6 +77,14 @@ class MathFunctionsTest extends InterpretedRuntimeTestSuite {
   test("abs should give only doubles back on integral input") {
     calc(AbsFunction(literal(Float.box(-1.5f)))) should equal(doubleValue(1.5))
     calc(AbsFunction(literal(Double.box(-1.5)))) should equal(doubleValue(1.5))
+  }
+
+  test("abs should throw an arithmetic exception on Long.MinValue overflow") {
+    intercept[ArithmeticException](calc(AbsFunction(literal(Long.MinValue))))
+    // one above Long.MinValue is representable and must not throw
+    calc(AbsFunction(literal(Long.MinValue + 1))) should equal(longValue(Long.MaxValue))
+    // the double branch has no equivalent overflow and must remain unaffected
+    calc(AbsFunction(literal(Long.MinValue.toDouble))) should equal(doubleValue(-Long.MinValue.toDouble))
   }
 
   test("acosTests") {
