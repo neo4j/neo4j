@@ -131,11 +131,14 @@ trait FrontEndCompilationPhases {
     ScopeSurveyor andThen
       StrictResolveCallables(resolver) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
+      ScopeSurveyor andThen
       SemanticAnalysis(warn = Some(true)) andThen
       ReplacePatternComprehensionWithCollectSubqueryRewriter andThen
+      ScopeSurveyor andThen
       SemanticAnalysis(warn = Some(false)) andThen
       ComputeExpressionDependencies andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
+      ScopeSurveyor andThen
       SemanticAnalysis(warn = Some(false)) andThen
       ComputeExpressionDependencies andThen
       ObfuscationMetadataCollection andThen

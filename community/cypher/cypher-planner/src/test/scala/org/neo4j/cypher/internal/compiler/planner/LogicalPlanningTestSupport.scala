@@ -600,6 +600,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
       cnfNormalizerTransformer andThen
       collapseMultipleInPredicates andThen
       MoveBoundaryNodePredicates andThen
+      ScopeSurveyor andThen
       ComputeExpressionDependencies andThen
       CreatePlannerQueryTransformer andThen
       NameDeduplication
