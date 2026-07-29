@@ -50,9 +50,16 @@ public class DetailedProgressReportBase {
     private final MutableStats relationshipConstraintStats = new MutableStats();
     private final PerTokenMutableStats relationshipIndexPerTypeStats = new PerTokenMutableStats();
     private final PerTokenMutableStats relationshipConstraintPerTypeStats = new PerTokenMutableStats();
+    // Shared timers
     private final Timer schemaTimer = new Timer();
+    // Standard timers
     private final Timer nodeTimer = new Timer();
     private final Timer relationshipTimer = new Timer();
+    // Skidbladnir timers
+    private final Timer nodeIdMappingTimer = new Timer();
+    private final Timer relationshipRangeDivisionTimer = new Timer();
+    private final Timer storeApplyingTimer = new Timer();
+
     private final long estimatedTotalNumberOfNodes;
     private final long estimatedTotalNumberOfRelationships;
     private final boolean trackPerEntityTokenStats;
@@ -111,6 +118,18 @@ public class DetailedProgressReportBase {
         return relationshipTimer;
     }
 
+    public Timer nodeIdMappingTimer() {
+        return nodeIdMappingTimer;
+    }
+
+    public Timer relationshipRangeDivisionTimer() {
+        return relationshipRangeDivisionTimer;
+    }
+
+    public Timer storeApplyingTimer() {
+        return storeApplyingTimer;
+    }
+
     public void registerNodeStats(ApplicationMode applicationMode, IntSet... entityTokens) {
         nodeStats.register(applicationMode);
         if (trackPerEntityTokenStats) {
@@ -155,7 +174,7 @@ public class DetailedProgressReportBase {
     }
 
     public DetailedProgressReport snapshot() {
-        return new DetailedProgressReport(
+        return new DetailedProgressReport.Standard(
                 estimatedTotalNumberOfNodes,
                 estimatedTotalNumberOfRelationships,
                 nodeStats.snapshot(),
@@ -172,6 +191,28 @@ public class DetailedProgressReportBase {
                 relationshipConstraintPerTypeStats.snapshot(tokenNameLookup::relationshipTypeGetName),
                 nodeTimer.snapshot(),
                 relationshipTimer.snapshot(),
+                schemaTimer.snapshot());
+    }
+
+    public DetailedProgressReport skidbladnirSnapshot() {
+        return new DetailedProgressReport.Skidbladnir(
+                estimatedTotalNumberOfNodes,
+                estimatedTotalNumberOfRelationships,
+                nodeStats.snapshot(),
+                relationshipStats.snapshot(),
+                nodePerLabelStats.snapshot(tokenNameLookup::labelGetName),
+                relationshipPerTypeStats.snapshot(tokenNameLookup::relationshipTypeGetName),
+                nodeIndexStats.snapshot(),
+                nodeConstraintStats.snapshot(),
+                nodeIndexPerLabelStats.snapshot(tokenNameLookup::labelGetName),
+                nodeConstraintPerLabelStats.snapshot(tokenNameLookup::labelGetName),
+                relationshipIndexStats.snapshot(),
+                relationshipConstraintStats.snapshot(),
+                relationshipIndexPerTypeStats.snapshot(tokenNameLookup::relationshipTypeGetName),
+                relationshipConstraintPerTypeStats.snapshot(tokenNameLookup::relationshipTypeGetName),
+                nodeIdMappingTimer.snapshot(),
+                relationshipRangeDivisionTimer.snapshot(),
+                storeApplyingTimer.snapshot(),
                 schemaTimer.snapshot());
     }
 

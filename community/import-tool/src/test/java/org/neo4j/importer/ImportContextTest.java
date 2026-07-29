@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -321,6 +322,125 @@ class ImportContextTest {
                                         }
                                     });
                         }));
+    }
+
+    @Test
+    void detailedProgressReportStandardIncludesAllFieldsInJson() {
+        try (var importContext = ImportContext.create(fs, DB, config, null, false, false, false)) {
+            importContext.detailedProgressReport(progressReport());
+
+            assertThat(importsDir)
+                    .exists()
+                    .isNotEmptyDirectory()
+                    .satisfies(logsDir -> assertThat(fs.listFiles(logsDir))
+                            .hasSize(1)
+                            .singleElement()
+                            .satisfies(thisRunDir -> assertThat(fs.listFiles(thisRunDir))
+                                    .hasSize(1)
+                                    .singleElement()
+                                    .satisfies(report -> {
+                                        ObjectMapper objectMapper = new ObjectMapper();
+                                        var json = objectMapper.readTree(report.toFile());
+                                        assertThat(json.get("estimatedTotalNumberOfNodes"))
+                                                .isNotNull();
+                                        assertThat(json.get("estimatedTotalNumberOfRelationships"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodeStats")).isNotNull();
+                                        assertThat(json.get("relationshipStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodePerLabelStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipPerTypeStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodeIndexStats")).isNotNull();
+                                        assertThat(json.get("nodeConstraintStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodeIndexPerLabelStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodeConstraintPerLabelStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipIndexStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipConstraintStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipIndexPerTypeStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipConstraintPerTypeStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodeImportDuration"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipImportDuration"))
+                                                .isNotNull();
+                                        assertThat(json.get("schemaImportDuration"))
+                                                .isNotNull();
+                                    })));
+        }
+    }
+
+    @Test
+    void detailedProgressReportSkidbladnirIncludesAllFieldsInJson() {
+        try (var importContext = ImportContext.create(fs, DB, config, null, false, false, false)) {
+            var reportBase = new DetailedProgressReportBase(42, 69, true);
+            reportBase.registerNodeStats(ApplicationMode.CREATE, IntSets.immutable.of(1, 2));
+            reportBase.registerRelationshipStats(ApplicationMode.CREATE, 5);
+            reportBase.nodeIdMappingTimer().start();
+            reportBase.nodeIdMappingTimer().end();
+            reportBase.relationshipRangeDivisionTimer().start();
+            reportBase.relationshipRangeDivisionTimer().end();
+            reportBase.storeApplyingTimer().start();
+            reportBase.storeApplyingTimer().end();
+            reportBase.schemaTimer().start();
+            reportBase.schemaTimer().end();
+            importContext.detailedProgressReport(reportBase.skidbladnirSnapshot());
+
+            assertThat(importsDir)
+                    .exists()
+                    .isNotEmptyDirectory()
+                    .satisfies(logsDir -> assertThat(fs.listFiles(logsDir))
+                            .hasSize(1)
+                            .singleElement()
+                            .satisfies(thisRunDir -> assertThat(fs.listFiles(thisRunDir))
+                                    .hasSize(1)
+                                    .singleElement()
+                                    .satisfies(report -> {
+                                        ObjectMapper objectMapper = new ObjectMapper();
+                                        var json = objectMapper.readTree(report.toFile());
+                                        assertThat(json.get("estimatedTotalNumberOfNodes"))
+                                                .isNotNull();
+                                        assertThat(json.get("estimatedTotalNumberOfRelationships"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodeStats")).isNotNull();
+                                        assertThat(json.get("relationshipStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodePerLabelStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipPerTypeStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodeIndexStats")).isNotNull();
+                                        assertThat(json.get("nodeConstraintStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodeIndexPerLabelStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodeConstraintPerLabelStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipIndexStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipConstraintStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipIndexPerTypeStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipConstraintPerTypeStats"))
+                                                .isNotNull();
+                                        assertThat(json.get("nodeIdMappingDuration"))
+                                                .isNotNull();
+                                        assertThat(json.get("relationshipRangeDivisionDuration"))
+                                                .isNotNull();
+                                        assertThat(json.get("storeApplyingDuration"))
+                                                .isNotNull();
+                                        assertThat(json.get("schemaImportDuration"))
+                                                .isNotNull();
+                                    })));
+        }
     }
 
     private static void assertIsImportContextDir(Path importDir) {

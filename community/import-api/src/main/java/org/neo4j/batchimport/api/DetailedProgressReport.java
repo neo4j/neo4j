@@ -25,23 +25,75 @@ import java.util.Map;
 /**
  * Detailed, (ideally) immutable progress report from an import. A new will be generated with a certain frequency.
  */
-public record DetailedProgressReport(
-        long estimatedTotalNumberOfNodes,
-        long estimatedTotalNumberOfRelationships,
-        Stats nodeStats,
-        Stats relationshipStats,
-        Map<String, Stats> nodePerLabelStats,
-        Map<String, Stats> relationshipPerTypeStats,
-        Stats nodeIndexStats,
-        Stats nodeConstraintStats,
-        Map<String, Stats> nodeIndexPerLabelStats,
-        Map<String, Stats> nodeConstraintPerLabelStats,
-        Stats relationshipIndexStats,
-        Stats relationshipConstraintStats,
-        Map<String, Stats> relationshipIndexPerTypeStats,
-        Map<String, Stats> relationshipConstraintPerTypeStats,
-        Duration nodeImportDuration,
-        Duration relationshipImportDuration,
-        Duration schemaImportDuration) {
-    public record Stats(long processed, long created, long updated, long deleted) {}
+public interface DetailedProgressReport {
+    long estimatedTotalNumberOfNodes();
+
+    long estimatedTotalNumberOfRelationships();
+
+    Stats nodeStats();
+
+    Stats relationshipStats();
+
+    Map<String, Stats> nodePerLabelStats();
+
+    Map<String, Stats> relationshipPerTypeStats();
+
+    Stats nodeIndexStats();
+
+    Stats nodeConstraintStats();
+
+    Map<String, Stats> nodeIndexPerLabelStats();
+
+    Map<String, Stats> nodeConstraintPerLabelStats();
+
+    Stats relationshipIndexStats();
+
+    Stats relationshipConstraintStats();
+
+    Map<String, Stats> relationshipIndexPerTypeStats();
+
+    Map<String, Stats> relationshipConstraintPerTypeStats();
+
+    record Stats(long processed, long created, long updated, long deleted) {}
+
+    record Standard(
+            long estimatedTotalNumberOfNodes,
+            long estimatedTotalNumberOfRelationships,
+            Stats nodeStats,
+            Stats relationshipStats,
+            Map<String, Stats> nodePerLabelStats,
+            Map<String, Stats> relationshipPerTypeStats,
+            Stats nodeIndexStats,
+            Stats nodeConstraintStats,
+            Map<String, Stats> nodeIndexPerLabelStats,
+            Map<String, Stats> nodeConstraintPerLabelStats,
+            Stats relationshipIndexStats,
+            Stats relationshipConstraintStats,
+            Map<String, Stats> relationshipIndexPerTypeStats,
+            Map<String, Stats> relationshipConstraintPerTypeStats,
+            Duration nodeImportDuration,
+            Duration relationshipImportDuration,
+            Duration schemaImportDuration)
+            implements DetailedProgressReport {}
+
+    record Skidbladnir(
+            long estimatedTotalNumberOfNodes,
+            long estimatedTotalNumberOfRelationships,
+            Stats nodeStats,
+            Stats relationshipStats,
+            Map<String, Stats> nodePerLabelStats,
+            Map<String, Stats> relationshipPerTypeStats,
+            Stats nodeIndexStats,
+            Stats nodeConstraintStats,
+            Map<String, Stats> nodeIndexPerLabelStats,
+            Map<String, Stats> nodeConstraintPerLabelStats,
+            Stats relationshipIndexStats,
+            Stats relationshipConstraintStats,
+            Map<String, Stats> relationshipIndexPerTypeStats,
+            Map<String, Stats> relationshipConstraintPerTypeStats,
+            Duration nodeIdMappingDuration,
+            Duration relationshipRangeDivisionDuration,
+            Duration storeApplyingDuration,
+            Duration schemaImportDuration)
+            implements DetailedProgressReport {}
 }
