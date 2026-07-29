@@ -70,6 +70,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     @Inject
     private RandomSupport random;
 
+    PageAwareByteArrayCursor navigationCursor;
     PageAwareByteArrayCursor cursor;
     PageAwareByteArrayCursor readCursor;
     SimpleIdProvider id;
@@ -99,11 +100,13 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     void setUp() throws IOException {
         cursor = new PageAwareByteArrayCursor(PAGE_SIZE);
         readCursor = cursor.duplicate();
+        navigationCursor = cursor.duplicate();
         id = new SimpleIdProvider(cursor::duplicate);
 
         id.reset();
         long newId = id.acquireNewId(stableGeneration, CursorCreator.bind(cursor), NULL_CONTEXT);
         goTo(cursor, newId);
+        goTo(navigationCursor, newId);
         readCursor.next(newId);
 
         layout = getLayout();
@@ -1522,7 +1525,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         generationManager.recovery();
         // start up on stable root
         goTo(cursor, originalNodeId);
-        treeLogic.initialize(cursor, InternalTreeLogic.DEFAULT_SPLIT_RATIO, StructureWriteLog.EMPTY);
+        treeLogic.initialize(navigationCursor, cursor, InternalTreeLogic.DEFAULT_SPLIT_RATIO, StructureWriteLog.EMPTY);
         // replay transaction TX1 will create a new successor
         insert(key(1L), value(10L));
         assertEquals(2, numberOfRootSuccessors);
@@ -1655,7 +1658,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                 .contains(
                         "Index update aborted due to ending up on a tree node which isn't a leaf after moving cursor towards "
                                 + key
-                                + ", cursor is at pageId " + cursor.getCurrentPageId()
+                                + ", cursor is at pageId " + navigationCursor.getCurrentPageId()
                                 + ". This is most likely caused by an inconsistency " + "in the index.");
     }
 
@@ -1811,14 +1814,15 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         return TreeNodeUtil.keyCount(readCursor);
     }
 
-    void initialize() {
+    void initialize() throws IOException {
         leaf.initialize(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         updateRoot();
     }
 
-    private void updateRoot() {
+    private void updateRoot() throws IOException {
         root = new Root(cursor.getCurrentPageId(), unstableGeneration);
-        treeLogic.initialize(cursor, ratioToKeepInLeftOnSplit, StructureWriteLog.EMPTY);
+        goTo(navigationCursor, cursor.getCurrentPageId());
+        treeLogic.initialize(navigationCursor, cursor, ratioToKeepInLeftOnSplit, StructureWriteLog.EMPTY);
     }
 
     private void assertSuccessorPointerNotCrashOrBroken() throws IOException {
@@ -1897,6 +1901,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         assertThat(split.hasRightKeyInsert).isTrue();
         long rootId = id.acquireNewId(stableGeneration, CursorCreator.bind(cursor), NULL_CONTEXT);
         goTo(cursor, rootId);
+        goTo(navigationCursor, rootId);
         internal.initialize(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         internal.setChildAt(cursor, split.midChild, 0, stableGeneration, unstableGeneration);
         internal.insertKeyAndRightChildAt(
@@ -1975,7 +1980,6 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         structurePropagation.hasRightKeyInsert = false;
         structurePropagation.hasMidChildUpdate = false;
         treeLogic.insert(
-                cursor,
                 structurePropagation,
                 key,
                 value,
@@ -2001,13 +2005,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
 
     private void remove(KEY key, VALUE into) throws IOException {
         treeLogic.remove(
-                cursor,
-                structurePropagation,
-                key,
-                new ValueHolder<>(into),
-                stableGeneration,
-                unstableGeneration,
-                NULL_CONTEXT);
+                structurePropagation, key, new ValueHolder<>(into), stableGeneration, unstableGeneration, NULL_CONTEXT);
         handleAfterChange();
     }
 

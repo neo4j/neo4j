@@ -66,7 +66,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     }
 
     @Test
-    void shouldFailToInsertTooLargeKeys() {
+    void shouldFailToInsertTooLargeKeys() throws IOException {
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
         key.bytes = new byte[leaf.keyValueSizeCap() + 1];
@@ -76,7 +76,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     }
 
     @Test
-    void shouldFailToInsertTooLargeKeyAndValueLargeKey() {
+    void shouldFailToInsertTooLargeKeyAndValueLargeKey() throws IOException {
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
         key.bytes = new byte[leaf.keyValueSizeCap()];
@@ -86,7 +86,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     }
 
     @Test
-    void shouldFailToInsertTooLargeKeyAndValueLargeValue() {
+    void shouldFailToInsertTooLargeKeyAndValueLargeValue() throws IOException {
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
         key.bytes = new byte[1];
@@ -95,7 +95,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
         shouldFailToInsertTooLargeKeyAndValue(key, value);
     }
 
-    private void shouldFailToInsertTooLargeKeyAndValue(RawBytes key, RawBytes value) {
+    private void shouldFailToInsertTooLargeKeyAndValue(RawBytes key, RawBytes value) throws IOException {
         initialize();
         var e = assertThrows(IllegalArgumentException.class, () -> insert(key, value));
         assertThat(e.getMessage())

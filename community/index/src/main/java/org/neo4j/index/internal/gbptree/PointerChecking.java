@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -104,6 +105,19 @@ class PointerChecking {
     static boolean assertNoSuccessor(PageCursor cursor, long stableGeneration, long unstableGeneration) {
         long successor = TreeNodeUtil.successor(cursor, stableGeneration, unstableGeneration)
                 .pointer();
+        if (TreeNodeUtil.isNode(successor)) {
+            throw new TreeInconsistencyException(WRITER_TRAVERSE_OLD_STATE_MESSAGE);
+        }
+        return true;
+    }
+
+    static boolean assertNoSuccessorReadCursor(PageCursor cursor, long stableGeneration, long unstableGeneration)
+            throws IOException {
+        long successor;
+        do {
+            successor = TreeNodeUtil.successor(cursor, stableGeneration, unstableGeneration)
+                    .pointer();
+        } while (cursor.shouldRetry());
         if (TreeNodeUtil.isNode(successor)) {
             throw new TreeInconsistencyException(WRITER_TRAVERSE_OLD_STATE_MESSAGE);
         }

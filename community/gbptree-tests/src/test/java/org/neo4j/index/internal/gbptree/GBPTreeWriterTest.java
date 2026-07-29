@@ -166,9 +166,9 @@ class GBPTreeWriterTest {
         }
 
         var cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.pins()).isEqualTo(2);
-        assertThat(cursorTracer.unpins()).isEqualTo(2);
-        assertThat(cursorTracer.hits()).isEqualTo(2);
+        assertThat(cursorTracer.pins()).isEqualTo(3);
+        assertThat(cursorTracer.unpins()).isEqualTo(3);
+        assertThat(cursorTracer.hits()).isEqualTo(3);
         assertThat(cursorTracer.faults()).isZero();
     }
 
@@ -185,9 +185,9 @@ class GBPTreeWriterTest {
         }
 
         var cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.pins()).isEqualTo(1);
-        assertThat(cursorTracer.hits()).isEqualTo(1);
-        assertThat(cursorTracer.unpins()).isEqualTo(1);
+        assertThat(cursorTracer.pins()).isEqualTo(2);
+        assertThat(cursorTracer.hits()).isEqualTo(2);
+        assertThat(cursorTracer.unpins()).isEqualTo(2);
         assertThat(cursorTracer.faults()).isEqualTo(0);
     }
 

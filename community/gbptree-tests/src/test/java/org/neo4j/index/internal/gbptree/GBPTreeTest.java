@@ -116,6 +116,7 @@ import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.swapper.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.swapper.SwapperIdProvider;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
@@ -2541,6 +2542,67 @@ class GBPTreeTest {
         }
     }
 
+    @Test
+    void shouldAvoidLotsOfEagerFlushingInternalNodesForWriteOperationsDuringCheckpoint() throws Exception {
+        // given
+        var barrier = new Barrier.Control();
+        var barrierEnabled = new AtomicBoolean(false);
+        var monitor = new Monitor.Adaptor() {
+            @Override
+            public void checkpointStarted() {
+                if (barrierEnabled.get()) {
+                    barrier.reached();
+                }
+            }
+        };
+        var tracer = new DefaultPageCacheTracer();
+        try (var pageCache =
+                        createPageCache(config().withPageSize(defaultPageSize).withTracer(tracer));
+                var index = index(pageCache).with(monitor).with(tracer).build()) {
+            // Produces a tree of depth:2
+            int numInitialKeys = 100_001;
+            for (int i = 0; i < numInitialKeys; i++) {
+                insert(index, i, i);
+            }
+            index.checkpoint(FileFlushEvent.NULL, asyncBlockAccessor, NULL_CONTEXT);
+            // cheat a little and flush the "accidental" pages from creating a successor and updating the surroundings
+            long firstKey = 0;
+            long lastKey = numInitialKeys - 1;
+            insert(index, 0, 1);
+            insert(index, lastKey, lastKey + 1);
+            pageCache.flush(DatabaseFlushEvent.NULL);
+
+            long flushesBeforeBarrier = tracer.flushes();
+
+            // when letting another thread do a checkpoint of this tree, and make it take a long time
+            try (var t2 = new OtherThreadExecutor("slow checkpoint thread")) {
+                // a fake write just so that checkpoint won't be skipped
+                barrierEnabled.set(true);
+                var checkpointFuture = t2.executeDontWait(() -> {
+                    index.checkpoint(FileFlushEvent.NULL, asyncBlockAccessor, NULL_CONTEXT);
+                    return null;
+                });
+
+                // now during the checkpoint, go and change lots of values
+                barrier.await();
+                int numAdditionalWrites = 100;
+                try (var writer = index.writer(NULL_CONTEXT)) {
+                    for (int i = 0; i < numAdditionalWrites; i++) {
+                        // alternate updating the first and the last key, to maximize internal cursor movement
+                        long key = i % 2 == 0 ? firstKey : lastKey;
+                        insert(writer, key, numInitialKeys + i);
+                    }
+                }
+                barrier.release();
+
+                // then
+                checkpointFuture.get();
+                long flushesAfterBarrier = tracer.flushes();
+                assertThat(flushesAfterBarrier - flushesBeforeBarrier).isEqualTo(numAdditionalWrites);
+            }
+        }
+    }
+
     private Pair<TreeState, TreeState> captureTreeState(PageCache pageCache) throws IOException {
         MutableObject<Pair<TreeState, TreeState>> state = new MutableObject<>();
         visitState(
@@ -2696,8 +2758,12 @@ class GBPTreeTest {
 
     private static void insert(GBPTree<MutableLong, MutableLong> index, long key, long value) throws IOException {
         try (Writer<MutableLong, MutableLong> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
-            writer.put(new MutableLong(key), new MutableLong(value));
+            insert(writer, key, value);
         }
+    }
+
+    private static void insert(Writer<MutableLong, MutableLong> writer, long key, long value) {
+        writer.put(new MutableLong(key), new MutableLong(value));
     }
 
     private static void shouldWait(Future<?> future) {
@@ -2706,7 +2772,11 @@ class GBPTreeTest {
     }
 
     protected PageCache createPageCache(int pageSize) {
-        return PageCacheSupportExtension.getPageCache(fileSystem, config().withPageSize(pageSize));
+        return createPageCache(config().withPageSize(pageSize));
+    }
+
+    protected PageCache createPageCache(PageCacheConfig config) {
+        return PageCacheSupportExtension.getPageCache(fileSystem, config);
     }
 
     private static class CleanJobControlledMonitor extends Monitor.Adaptor {

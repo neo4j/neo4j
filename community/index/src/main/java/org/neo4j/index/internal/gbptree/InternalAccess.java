@@ -62,8 +62,7 @@ public interface InternalAccess<KEY, VALUE> {
             CursorContext cursorContext)
             throws IOException;
 
-    boolean moveToCorrectLeaf(
-            PageCursor cursor, KEY key, long stableGeneration, long unstableGeneration, CursorContext cursorContext)
+    boolean moveToCorrectLeaf(KEY key, long stableGeneration, long unstableGeneration, CursorContext cursorContext)
             throws IOException;
 
     boolean cursorIsAtExpectedLocation(PageCursor cursor);
