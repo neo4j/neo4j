@@ -27,6 +27,8 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_SEQUENCE
 import java.util.function.LongConsumer;
 import org.neo4j.common.Subject;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.availability.MvccIncompleteTransactionAvailabilityService;
+import org.neo4j.kernel.impl.api.ChunkedTransactionTracker;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -44,10 +46,12 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     private final StoreCursors storeCursors;
     private final Commitment commitment;
     private final TransactionIdGenerator transactionIdGenerator;
+    private final ChunkedTransactionTracker chunkedTransactionTracker;
+    private final MvccIncompleteTransactionAvailabilityService incompleteTransactionAvailability;
     private boolean idGenerated;
     private long lastBatchAppendIndex = UNKNOWN_APPEND_INDEX;
     private long transactionId = UNKNOWN_TX_ID;
-    private LogPositionMetadata logPositionMetadata;
+    private final LogPositionMetadata logPositionMetadata;
     private StorageEngineTransaction next;
     private long firstAppendIndex;
     private LongConsumer closedCallback;
@@ -69,12 +73,34 @@ public class ChunkedTransaction implements StorageEngineTransaction {
             StoreCursors storeCursors,
             Commitment commitment,
             TransactionIdGenerator transactionIdGenerator) {
+        this(
+                cursorContext,
+                transactionSequenceNumber,
+                logPositionMetadata,
+                storeCursors,
+                commitment,
+                transactionIdGenerator,
+                null,
+                null);
+    }
+
+    public ChunkedTransaction(
+            CursorContext cursorContext,
+            long transactionSequenceNumber,
+            LogPositionMetadata logPositionMetadata,
+            StoreCursors storeCursors,
+            Commitment commitment,
+            TransactionIdGenerator transactionIdGenerator,
+            ChunkedTransactionTracker chunkedTransactionTracker,
+            MvccIncompleteTransactionAvailabilityService incompleteTransactionAvailability) {
         this.cursorContext = cursorContext;
         this.transactionSequenceNumber = transactionSequenceNumber;
         this.logPositionMetadata = logPositionMetadata;
         this.storeCursors = storeCursors;
         this.commitment = commitment;
         this.transactionIdGenerator = transactionIdGenerator;
+        this.chunkedTransactionTracker = chunkedTransactionTracker;
+        this.incompleteTransactionAvailability = incompleteTransactionAvailability;
     }
 
     public ChunkedTransaction(
@@ -121,18 +147,25 @@ public class ChunkedTransaction implements StorageEngineTransaction {
 
     public ChunkedTransaction(
             long transactionId,
-            long firstBatchAppendIndex,
             long lastBatchAppendIndex,
             long transactionSequenceNumber,
             LogPositionMetadata logPositionMetadata,
             CursorContext cursorContext,
             StoreCursors storeCursors,
-            Commitment commitment) {
-        this(cursorContext, transactionSequenceNumber, storeCursors, commitment, TransactionIdGenerator.EXTERNAL_ID);
+            Commitment commitment,
+            ChunkedTransactionTracker chunkedTransactionTracker,
+            MvccIncompleteTransactionAvailabilityService incompleteTransactionAvailability) {
+        this(
+                cursorContext,
+                transactionSequenceNumber,
+                logPositionMetadata,
+                storeCursors,
+                commitment,
+                TransactionIdGenerator.EXTERNAL_ID,
+                chunkedTransactionTracker,
+                incompleteTransactionAvailability);
         this.transactionId = transactionId;
-        this.firstAppendIndex = firstBatchAppendIndex;
         this.lastBatchAppendIndex = lastBatchAppendIndex;
-        this.logPositionMetadata = logPositionMetadata;
         this.idGenerated = true;
     }
 
@@ -216,12 +249,22 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     public void commit() {
         commitment.publishAsCommitedLastBatch();
 
+        if (chunkedTransactionTracker != null) {
+            chunkedTransactionTracker.registerChunkedTransaction(
+                    transactionId,
+                    firstAppendIndex(),
+                    lastBatchAppendIndex,
+                    chunkId(),
+                    chunk.kernelVersion(),
+                    chunk.getLeaseId());
+        }
+
         if (!chunk.isFirst() && fillGapsOnClose) {
             commitment.publishEmptyAsCommitted(chunk.chunkMetadata().chunkCommitTime());
         }
 
         if (chunk.isLast()) {
-            commitment.publishAsCommitted(chunk.chunkMetadata().chunkCommitTime(), firstAppendIndex);
+            commitment.publishAsCommitted(chunk.chunkMetadata().chunkCommitTime(), firstAppendIndex());
         }
     }
 
@@ -230,10 +273,6 @@ public class ChunkedTransaction implements StorageEngineTransaction {
      */
     public long lastBatchAppendIndex() {
         return lastBatchAppendIndex;
-    }
-
-    public long firstBatchAppendIndex() {
-        return firstAppendIndex;
     }
 
     @Override
@@ -253,6 +292,7 @@ public class ChunkedTransaction implements StorageEngineTransaction {
             versionContext.initWrite(transactionId);
             this.firstAppendIndex = appendIndex;
         }
+
         this.commitment.commit(
                 transactionId,
                 appendIndex,
@@ -276,8 +316,16 @@ public class ChunkedTransaction implements StorageEngineTransaction {
             commitment.publishEmptyAsClosed();
         }
 
-        if (chunk.isLast() && closedCallback != null) {
-            closedCallback.accept(transactionId);
+        if (chunk.isLast()) {
+            if (closedCallback != null) {
+                closedCallback.accept(transactionId);
+            }
+            if (chunkedTransactionTracker != null) {
+                chunkedTransactionTracker.cleanupChunkedTransaction(transactionId);
+            }
+            if (incompleteTransactionAvailability != null) {
+                incompleteTransactionAvailability.completeTransaction(transactionId);
+            }
         }
     }
 
@@ -305,5 +353,14 @@ public class ChunkedTransaction implements StorageEngineTransaction {
         }
         cursorContext.getVersionContext().initChunkId(chunkId);
         lastBatchAppendIndex = appendIndex;
+    }
+
+    private long firstAppendIndex() {
+        if (chunk.isFirst()) {
+            return firstAppendIndex;
+        }
+        return chunkedTransactionTracker != null
+                ? chunkedTransactionTracker.firstBatchAppendIndex(transactionId)
+                : firstAppendIndex;
     }
 }

@@ -31,7 +31,11 @@ public class ChunkedTransactionTracker {
     }
 
     public long firstBatchAppendIndex(long transactionId) {
-        return registry.get(transactionId).firstBatchAppendIndex;
+        TransactionInfo txInfo = registry.get(transactionId);
+        if (txInfo == null) {
+            throw new IllegalStateException("Transaction " + transactionId + " not found in registry.");
+        }
+        return txInfo.firstBatchAppendIndex();
     }
 
     public void registerChunkedTransaction(
