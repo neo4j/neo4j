@@ -19,38 +19,48 @@
  */
 package org.neo4j.server.queryapi.request;
 
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 import java.util.Optional;
 
-public record QueryRequest(
-        String statement,
-        QueryRequestCypherValues parameters,
-        boolean includeCounters,
-        AccessMode accessMode,
-        int maxExecutionTime,
-        List<String> bookmarks,
-        String impersonatedUser,
-        String txType,
-        QueryRequestCypherValues txMetadata) {
+public class QueryRequest {
+    private final String statement;
+    private final QueryRequestCypherValues parameters;
+    private final boolean includeCounters;
 
-    public QueryRequest(String statement, List<String> bookmarks) {
-        this(statement, null, false, AccessMode.WRITE, 0, bookmarks, null, null, null);
+    @JsonCreator
+    public QueryRequest(
+            @JsonProperty("statement") String statement,
+            @JsonProperty("parameters") QueryRequestCypherValues parameters,
+            @JsonProperty("includeCounters") boolean includeCounters) {
+        this.statement = statement;
+        this.parameters = parameters;
+        this.includeCounters = includeCounters;
+        ;
     }
 
     public QueryRequest(String statement) {
-        this(statement, null, false, AccessMode.WRITE, 0, List.of(), null, null, null);
+        this(statement, null, false);
     }
 
     public QueryRequest() {
-        this(null, null, false, AccessMode.WRITE, 0, List.of(), null, null, null);
+        this(null, null, false);
+    }
+
+    public String statement() {
+        return statement;
+    }
+
+    public QueryRequestCypherValues parameters() {
+        return parameters;
+    }
+
+    public boolean includeCounters() {
+        return includeCounters;
     }
 
     public Optional<Map<String, Object>> maybeParameters() {
         return Optional.ofNullable(parameters).map(QueryRequestCypherValues::values);
-    }
-
-    public Optional<Map<String, Object>> maybeTxMetadata() {
-        return Optional.ofNullable(txMetadata).map(QueryRequestCypherValues::values);
     }
 }

@@ -1,5 +1,7 @@
 package org.neo4j.queryapi.testclient;
 
+import java.util.stream.Stream;
+
 /*
  * Copyright (c) "Neo4j"
  * Neo4j Sweden AB [https://neo4j.com]
@@ -50,5 +52,9 @@ public enum QueryContentType {
 
     public boolean events() {
         return events;
+    }
+
+    public static Stream<QueryContentType> inputContentTypes() {
+        return Stream.of(QueryContentType.values()).filter(contentType -> !contentType.events());
     }
 }

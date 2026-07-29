@@ -17,40 +17,47 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request.typed.common;
+package org.neo4j.server.queryapi.request.common;
 
-import static org.neo4j.server.queryapi.request.plainjson.PlainJsonMessageBodyReader.readQueryRequestFromStream;
-
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
+import org.neo4j.server.queryapi.exception.QueryApiException;
 import org.neo4j.server.queryapi.request.QueryRequest;
 
-public abstract class AbstractTypedJsonMessageBodyReader implements MessageBodyReader<QueryRequest> {
+/**
+ * A generic message body reader for query request.
+ * @param <Q> The query request type.
+ */
+abstract class AbstractQueryRequestGenericMessageBodyReader<Q extends QueryRequest> implements MessageBodyReader<Q> {
+    private final Class<Q> type;
     private final JsonMapper jsonMapper;
 
-    protected AbstractTypedJsonMessageBodyReader(TypedJsonRequestModule typedJsonRequestModule) {
+    protected AbstractQueryRequestGenericMessageBodyReader(Class<Q> type, QueryRequestModule queryRequestModule) {
+        this.type = type;
         this.jsonMapper = JsonMapper.builder()
-                .addModule(typedJsonRequestModule)
+                .addModule(queryRequestModule)
                 .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
                 .build();
     }
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return type.isAssignableFrom(QueryRequest.class);
+        return type.isAssignableFrom(this.type);
     }
 
     @Override
-    public QueryRequest readFrom(
-            Class<QueryRequest> type,
+    public Q readFrom(
+            Class<Q> type,
             Type genericType,
             Annotation[] annotations,
             MediaType mediaType,
@@ -60,4 +67,29 @@ public abstract class AbstractTypedJsonMessageBodyReader implements MessageBodyR
 
         return readQueryRequestFromStream(jsonMapper, entityStream);
     }
+
+    public Q readQueryRequestFromStream(JsonMapper jsonMapper, InputStream entityStream) throws IOException {
+        var buffStream = new PeekedFirstByteInputStream(entityStream);
+
+        var hasBytes = buffStream.peek() != -1;
+
+        if (hasBytes) {
+            try {
+                return jsonMapper.readValue(buffStream, type);
+            } catch (JacksonException e) {
+                var cause = e.getCause();
+                while (cause != null) {
+                    if (cause instanceof QueryApiException queryApiException) {
+                        throw queryApiException;
+                    }
+                    cause = cause.getCause();
+                }
+                throw new BadRequestException(e);
+            }
+        } else {
+            return defaultQueryRequest();
+        }
+    }
+
+    protected abstract Q defaultQueryRequest();
 }

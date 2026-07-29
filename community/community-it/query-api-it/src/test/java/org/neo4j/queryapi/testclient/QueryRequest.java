@@ -27,24 +27,26 @@ import org.neo4j.server.queryapi.request.AccessMode;
 public record QueryRequest(
         String statement,
         Map<String, Object> parameters,
-        boolean includeCounters,
+        Boolean includeCounters,
         AccessMode accessMode,
-        int maxExecutionTime,
+        Integer maxExecutionTime,
         List<String> bookmarks,
         String impersonatedUser,
         String txType,
-        Map<String, Object> txMetadata) {
+        Map<String, Object> txMetadata,
+        NotificationsFilter notificationsFilter) {
 
     public static class Builder {
         private String statement;
         private Map<String, Object> parameters = new HashMap<>();
-        private boolean includeCounters;
-        private AccessMode accessMode = AccessMode.WRITE;
-        private int maxExecutionTime;
-        private List<String> bookmarks = List.of();
+        private Boolean includeCounters;
+        private AccessMode accessMode;
+        private Integer maxExecutionTime;
+        private List<String> bookmarks;
         private String impersonatedUser;
         String txType;
         private Map<String, Object> txMetadata;
+        private NotificationsFilter notificationsFilter;
 
         public Builder statement(String statement) {
             this.statement = statement;
@@ -96,6 +98,11 @@ public record QueryRequest(
             return this;
         }
 
+        public Builder notificationsFilter(NotificationsFilter notificationsFilter) {
+            this.notificationsFilter = notificationsFilter;
+            return this;
+        }
+
         public QueryRequest build() {
             return new QueryRequest(
                     statement,
@@ -106,7 +113,8 @@ public record QueryRequest(
                     bookmarks,
                     impersonatedUser,
                     txType,
-                    txMetadata);
+                    txMetadata,
+                    notificationsFilter);
         }
     }
 
@@ -116,5 +124,38 @@ public record QueryRequest(
 
     public static QueryRequest returnOne() {
         return newBuilder().statement("RETURN 1").build();
+    }
+
+    public record NotificationsFilter(String minimumSeverityLevel, String[] disabledCategories) {}
+
+    public static class NotificationsFilterBuilder {
+        private String minimumSeverityLevel;
+        private String[] disabledCategories;
+
+        public NotificationsFilterBuilder minimumSeverityLevel(String minimumSeverityLevel) {
+            this.minimumSeverityLevel = minimumSeverityLevel;
+            return this;
+        }
+
+        public NotificationsFilterBuilder disabledCategories(String[] disabledCategories) {
+            this.disabledCategories = disabledCategories;
+            return this;
+        }
+
+        public static NotificationsFilterBuilder newBuilder() {
+            return new NotificationsFilterBuilder();
+        }
+
+        public static NotificationsFilterBuilder newBuilderWithMinimumSeverityLevel(String minimumSeverityLevel) {
+            return newBuilder().minimumSeverityLevel(minimumSeverityLevel);
+        }
+
+        public static NotificationsFilterBuilder newBuilderWithDisabledCategories(String... disabledCategories) {
+            return newBuilder().disabledCategories(disabledCategories);
+        }
+
+        public NotificationsFilter build() {
+            return new NotificationsFilter(minimumSeverityLevel, disabledCategories);
+        }
     }
 }

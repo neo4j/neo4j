@@ -17,18 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request.plainjson;
+package org.neo4j.server.queryapi.request.common;
 
-import org.neo4j.server.queryapi.request.QueryRequestCypherValues;
-import org.neo4j.server.queryapi.request.common.QueryRequestModule;
+import org.neo4j.server.queryapi.request.QueryRequest;
 
 /**
- * The JSON module implementation for {@link org.neo4j.server.queryapi.QueryMimeTypes#PLAIN_JSON}
+ * A generic message body reader for {@link QueryRequest}
+ * <p/>
+ * This is specific for requests that don't expect the body has transaction information such
+ * as bookmarks, max execution time, etc.
  */
-public class PlainJsonRequestModule extends QueryRequestModule {
-    public PlainJsonRequestModule() {
-        this.addDeserializer(QueryRequestCypherValues.class, new PlainJsonQueryRequestCypherValuesDeserializer());
-        this.addDeserializer(
-                PlainJsonQueryRequestCypherValue.class, new PlainJsonQueryRequestCypherValueDeserializer());
+public abstract class AbstractQueryRequestMessageBodyReader
+        extends AbstractQueryRequestGenericMessageBodyReader<QueryRequest> {
+
+    protected AbstractQueryRequestMessageBodyReader(QueryRequestModule queryRequestModule) {
+        super(QueryRequest.class, queryRequestModule);
+    }
+
+    protected QueryRequest defaultQueryRequest() {
+        return new QueryRequest();
     }
 }

@@ -17,18 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request.plainjson;
+package org.neo4j.server.queryapi.request;
 
-import org.neo4j.server.queryapi.request.QueryRequestCypherValues;
-import org.neo4j.server.queryapi.request.common.QueryRequestModule;
+import java.util.Optional;
+import java.util.Set;
+import org.neo4j.driver.NotificationClassification;
+import org.neo4j.driver.NotificationSeverity;
 
 /**
- * The JSON module implementation for {@link org.neo4j.server.queryapi.QueryMimeTypes#PLAIN_JSON}
+ * Interface for notifications filter in Query Request.
+ * <p/>
+ * This object is used to filter notifications returned by the query.
  */
-public class PlainJsonRequestModule extends QueryRequestModule {
-    public PlainJsonRequestModule() {
-        this.addDeserializer(QueryRequestCypherValues.class, new PlainJsonQueryRequestCypherValuesDeserializer());
-        this.addDeserializer(
-                PlainJsonQueryRequestCypherValue.class, new PlainJsonQueryRequestCypherValueDeserializer());
-    }
+public interface QueryRequestNotificationsFilter {
+
+    /**
+     * The minimal severity level for notifications.
+     */
+    Optional<NotificationSeverity> minimumSeverityLevel();
+
+    /**
+     * The set of notification categories that should be disabled.
+     */
+    Optional<Set<NotificationClassification>> disabledCategories();
 }

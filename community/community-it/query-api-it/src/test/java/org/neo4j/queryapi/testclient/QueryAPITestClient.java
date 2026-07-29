@@ -21,6 +21,7 @@ package org.neo4j.queryapi.testclient;
 
 import static org.neo4j.queryapi.QueryApiTestUtil.encodedCredentials;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -40,7 +41,7 @@ public class QueryAPITestClient {
     private final HttpClient client;
     private final String endpoint;
     private final String credentials;
-    private final ObjectMapper MAPPER = new ObjectMapper();
+    private final ObjectMapper objectMapper;
     private final QueryContentType contentType;
     private final List<QueryContentType> acceptedContentTypes;
 
@@ -80,6 +81,9 @@ public class QueryAPITestClient {
         this.client = HttpClient.newHttpClient();
         this.contentType = contentType;
         this.acceptedContentTypes = acceptedContentTypes;
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.setDefaultPropertyInclusion(
+                JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
     }
 
     public String getEndpoint() {
@@ -320,15 +324,15 @@ public class QueryAPITestClient {
     private HttpResponse.BodyHandler<QueryResponse> responseHandler() {
         return responseInfo -> subscriberFrom((bytes) -> {
             if (bytes.length == 0) {
-                return MAPPER.readValue("{}", QueryResponse.class);
+                return objectMapper.readValue("{}", QueryResponse.class);
             } else {
-                return MAPPER.readValue(bytes, QueryResponse.class);
+                return objectMapper.readValue(bytes, QueryResponse.class);
             }
         });
     }
 
     private HttpRequest.BodyPublisher requestPublisher(QueryRequest request) throws JsonProcessingException {
-        return HttpRequest.BodyPublishers.ofString(MAPPER.writeValueAsString(request));
+        return HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(request));
     }
 
     private <T> HttpResponse.BodySubscriber<T> subscriberFrom(IOFunction<byte[], T> ioFunction) {

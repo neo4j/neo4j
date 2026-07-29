@@ -17,20 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request.typed.v11;
+package org.neo4j.server.queryapi.request.common;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.ext.Provider;
-import org.neo4j.server.queryapi.QueryMimeTypes;
-import org.neo4j.server.queryapi.request.typed.common.AbstractTypedJsonMessageBodyReader;
-import org.neo4j.server.queryapi.request.typed.common.TypedJsonRequestModule;
-import org.neo4j.server.queryapi.types.View;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.neo4j.server.queryapi.request.QueryRequestNotificationsFilter;
 
-@Provider
-@Consumes({QueryMimeTypes.TYPED_JSON_V1x1})
-public class TypedJsonMessageBodyReaderV11 extends AbstractTypedJsonMessageBodyReader {
+/**
+ * Base implementation of {@link SimpleModule} for Query API.
+ * <p/>
+ * This registers deserializers common to type and untyped requests.
+ */
+public abstract class QueryRequestModule extends SimpleModule {
 
-    public TypedJsonMessageBodyReaderV11() {
-        super(new TypedJsonRequestModule(View.TYPED_JSON_V11));
+    protected QueryRequestModule() {
+        addDeserializer(QueryRequestNotificationsFilter.class, new QueryRequestNotificationsFilterSerializer());
     }
 }

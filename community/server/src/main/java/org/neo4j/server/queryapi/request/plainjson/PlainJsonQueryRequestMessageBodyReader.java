@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.queryapi.request.plainjson;
 
-import org.neo4j.server.queryapi.request.QueryRequestCypherValues;
-import org.neo4j.server.queryapi.request.common.QueryRequestModule;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.ext.Provider;
+import org.neo4j.server.queryapi.request.common.AbstractQueryRequestMessageBodyReader;
 
-/**
- * The JSON module implementation for {@link org.neo4j.server.queryapi.QueryMimeTypes#PLAIN_JSON}
- */
-public class PlainJsonRequestModule extends QueryRequestModule {
-    public PlainJsonRequestModule() {
-        this.addDeserializer(QueryRequestCypherValues.class, new PlainJsonQueryRequestCypherValuesDeserializer());
-        this.addDeserializer(
-                PlainJsonQueryRequestCypherValue.class, new PlainJsonQueryRequestCypherValueDeserializer());
+@Provider
+@Consumes(MediaType.APPLICATION_JSON)
+public class PlainJsonQueryRequestMessageBodyReader extends AbstractQueryRequestMessageBodyReader {
+
+    public PlainJsonQueryRequestMessageBodyReader() {
+        super(new PlainJsonRequestModule());
     }
 }

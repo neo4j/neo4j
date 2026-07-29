@@ -38,6 +38,8 @@ public class BoltFields {
     static final String ACCESS_MODE_KEY = "mode";
     static final String TX_METADATA_KEY = "tx_metadata";
     static final String IMPERSONATED_USER_KEY = "imp_user";
+    static final String NOTIFICATIONS_MINIMUM_SEVERITY = "notifications_minimum_severity";
+    static final String NOTIFICATIONS_DISABLED_CLASSIFICATIONS = "notifications_disabled_classifications";
     static final String DATABASE_NAME_KEY = "db";
     static final String BEARER_VALUE = "bearer";
     static final String BASIC_VALUE = "basic";

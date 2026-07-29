@@ -37,6 +37,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
 import org.neo4j.server.queryapi.request.AccessMode;
 import org.neo4j.server.queryapi.request.QueryRequest;
+import org.neo4j.server.queryapi.request.QueryTxRequest;
 
 @Path(QueryResource.ROOT_PATH)
 @Produces({
@@ -74,7 +75,7 @@ public class QueryResource {
     @POST
     public Response execute(
             @PathParam(DB_PATH_PARAM_NAME) String databaseName,
-            QueryRequest request,
+            QueryTxRequest request,
             @Context HttpServletRequest rawRequest,
             @Context HttpHeaders headers) {
         meterRequest(request);
@@ -91,7 +92,7 @@ public class QueryResource {
     @Path("/tx")
     public Response beginTransaction(
             @PathParam(DB_PATH_PARAM_NAME) String databaseName,
-            QueryRequest request,
+            QueryTxRequest request,
             @Context HttpServletRequest rawRequest,
             @Context HttpHeaders headers) {
         meterRequest(request);
@@ -138,9 +139,12 @@ public class QueryResource {
     }
 
     private void meterRequest(QueryRequest request) {
-        if (request.accessMode() != null && request.accessMode().equals(AccessMode.READ)) {
-            monitor.readRequest();
+        if (request instanceof QueryTxRequest txRequest) {
+            if (txRequest.accessMode() != null && txRequest.accessMode().equals(AccessMode.READ)) {
+                monitor.readRequest();
+            }
         }
+
         if (request.maybeParameters().isPresent()
                 && !request.maybeParameters().get().isEmpty()) {
             monitor.parameter();

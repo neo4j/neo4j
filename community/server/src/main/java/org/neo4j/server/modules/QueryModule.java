@@ -25,10 +25,14 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.queryapi.QueryResource;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsFilter;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
-import org.neo4j.server.queryapi.request.plainjson.PlainJsonMessageBodyReader;
-import org.neo4j.server.queryapi.request.typed.v10.TypedJsonMessageBodyReaderV10;
-import org.neo4j.server.queryapi.request.typed.v11.TypedJsonMessageBodyReaderV11;
-import org.neo4j.server.queryapi.request.typed.v12.TypedJsonMessageBodyReaderV12;
+import org.neo4j.server.queryapi.request.plainjson.PlainJsonQueryRequestMessageBodyReader;
+import org.neo4j.server.queryapi.request.plainjson.PlainJsonQueryTxRequestMessageBodyReader;
+import org.neo4j.server.queryapi.request.typed.v10.TypedJsonQueryRequestMessageBodyReaderV10;
+import org.neo4j.server.queryapi.request.typed.v10.TypedJsonQueryTxRequestMessageBodyReaderV10;
+import org.neo4j.server.queryapi.request.typed.v11.TypedJsonQueryRequestMessageBodyReaderV11;
+import org.neo4j.server.queryapi.request.typed.v11.TypedJsonQueryTxRequestMessageBodyReaderV11;
+import org.neo4j.server.queryapi.request.typed.v12.TypedJsonQueryRequestMessageBodyReaderV12;
+import org.neo4j.server.queryapi.request.typed.v12.TypedJsonQueryTxRequestMessageBodyReaderV12;
 import org.neo4j.server.queryapi.response.error.ErrorResponseWriter;
 import org.neo4j.server.queryapi.response.error.InternalServerExceptionMapper;
 import org.neo4j.server.queryapi.response.error.JsonlErrorResponseWriter;
@@ -112,10 +116,14 @@ public class QueryModule implements ServerModule {
                 TypedJsonTxInfoWriter.class,
                 TypedJsonBookmarkWriter.class,
                 PlainJsonBookmarkWriter.class,
-                PlainJsonMessageBodyReader.class,
-                TypedJsonMessageBodyReaderV10.class,
-                TypedJsonMessageBodyReaderV11.class,
-                TypedJsonMessageBodyReaderV12.class,
+                PlainJsonQueryRequestMessageBodyReader.class,
+                PlainJsonQueryTxRequestMessageBodyReader.class,
+                TypedJsonQueryRequestMessageBodyReaderV10.class,
+                TypedJsonQueryTxRequestMessageBodyReaderV10.class,
+                TypedJsonQueryRequestMessageBodyReaderV11.class,
+                TypedJsonQueryTxRequestMessageBodyReaderV11.class,
+                TypedJsonQueryRequestMessageBodyReaderV12.class,
+                TypedJsonQueryTxRequestMessageBodyReaderV12.class,
                 Neo4jExceptionMapper.class,
                 QueryApiExceptionMapper.class,
                 WebApplicationExceptionMapper.class,

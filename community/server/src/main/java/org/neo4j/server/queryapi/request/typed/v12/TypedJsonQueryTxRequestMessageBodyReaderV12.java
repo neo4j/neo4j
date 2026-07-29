@@ -17,18 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request.plainjson;
+package org.neo4j.server.queryapi.request.typed.v12;
 
-import org.neo4j.server.queryapi.request.QueryRequestCypherValues;
-import org.neo4j.server.queryapi.request.common.QueryRequestModule;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.ext.Provider;
+import org.neo4j.server.queryapi.QueryMimeTypes;
+import org.neo4j.server.queryapi.request.common.AbstractQueryTxRequestMessageBodyReader;
+import org.neo4j.server.queryapi.request.typed.common.TypedJsonRequestModule;
+import org.neo4j.server.queryapi.types.View;
 
-/**
- * The JSON module implementation for {@link org.neo4j.server.queryapi.QueryMimeTypes#PLAIN_JSON}
- */
-public class PlainJsonRequestModule extends QueryRequestModule {
-    public PlainJsonRequestModule() {
-        this.addDeserializer(QueryRequestCypherValues.class, new PlainJsonQueryRequestCypherValuesDeserializer());
-        this.addDeserializer(
-                PlainJsonQueryRequestCypherValue.class, new PlainJsonQueryRequestCypherValueDeserializer());
+@Provider
+@Consumes({QueryMimeTypes.TYPED_JSON_V1x2})
+public class TypedJsonQueryTxRequestMessageBodyReaderV12 extends AbstractQueryTxRequestMessageBodyReader {
+
+    public TypedJsonQueryTxRequestMessageBodyReaderV12() {
+        super(new TypedJsonRequestModule(View.TYPED_JSON_V12));
     }
 }

@@ -35,7 +35,9 @@ import org.neo4j.bolt.connection.AccessMode;
 import org.neo4j.bolt.connection.BoltAgent;
 import org.neo4j.bolt.connection.DatabaseName;
 import org.neo4j.bolt.connection.LoggingProvider;
+import org.neo4j.bolt.connection.NotificationClassification;
 import org.neo4j.bolt.connection.NotificationConfig;
+import org.neo4j.bolt.connection.NotificationSeverity;
 import org.neo4j.bolt.connection.netty.impl.messaging.request.BeginMessage;
 import org.neo4j.bolt.connection.netty.impl.messaging.request.CommitMessage;
 import org.neo4j.bolt.connection.netty.impl.messaging.request.DiscardMessage;
@@ -49,12 +51,16 @@ import org.neo4j.bolt.connection.netty.impl.messaging.request.ResetMessage;
 import org.neo4j.bolt.connection.netty.impl.messaging.request.RollbackMessage;
 import org.neo4j.bolt.connection.netty.impl.messaging.request.RunWithMetadataMessage;
 import org.neo4j.boltmessages.notifications.DefaultNotificationsConfig;
+import org.neo4j.boltmessages.notifications.DisabledNotificationsConfig;
+import org.neo4j.boltmessages.notifications.SelectiveNotificationsConfig;
 import org.neo4j.boltmessages.request.connection.RoutingContext;
 import org.neo4j.boltmessages.request.transaction.RunMessage;
 import org.neo4j.driver.internal.value.BoltValueFactory;
 import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.server.queryapi.driver.boltmessage.pipeline.OutboundMessageEncoder;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
 
 class OutboundMessageEncoderTest {
 
@@ -103,7 +109,17 @@ class OutboundMessageEncoderTest {
                         LogoffMessage.INSTANCE,
                         org.neo4j.boltmessages.request.authentication.LogoffMessage.getInstance()),
                 Arguments.of(
-                        RunWithMetadataMessage.unmanagedTxRunMessage("RETURN 1", Map.of()), new RunMessage("RETURN 1")),
+                        RunWithMetadataMessage.unmanagedTxRunMessage("RETURN 1", Map.of()),
+                        new RunMessage(
+                                "RETURN 1",
+                                MapValue.EMPTY,
+                                List.of(),
+                                null,
+                                org.neo4j.boltmessages.AccessMode.WRITE,
+                                Map.of(),
+                                null,
+                                null,
+                                DefaultNotificationsConfig.getInstance())),
                 Arguments.of(
                         RunWithMetadataMessage.autoCommitTxRunMessage(
                                 "RETURN 1",
@@ -114,11 +130,73 @@ class OutboundMessageEncoderTest {
                                 AccessMode.WRITE,
                                 Set.of(),
                                 null,
-                                mock(NotificationConfig.class),
+                                null,
                                 false,
                                 mock(LoggingProvider.class),
                                 BoltValueFactory.getInstance()),
-                        new RunMessage("RETURN 1")),
+                        new RunMessage(
+                                "RETURN 1",
+                                MapValue.EMPTY,
+                                List.of(),
+                                null,
+                                org.neo4j.boltmessages.AccessMode.WRITE,
+                                Map.of(),
+                                null,
+                                null,
+                                DefaultNotificationsConfig.getInstance())),
+                Arguments.of(
+                        RunWithMetadataMessage.autoCommitTxRunMessage(
+                                "RETURN 1",
+                                Map.of(),
+                                null,
+                                Map.of(),
+                                DatabaseName.defaultDatabase(),
+                                AccessMode.WRITE,
+                                Set.of(),
+                                null,
+                                new NotificationConfig(NotificationSeverity.OFF, Set.of()),
+                                false,
+                                mock(LoggingProvider.class),
+                                BoltValueFactory.getInstance()),
+                        new RunMessage(
+                                "RETURN 1",
+                                MapValue.EMPTY,
+                                List.of(),
+                                null,
+                                org.neo4j.boltmessages.AccessMode.WRITE,
+                                Map.of(),
+                                null,
+                                null,
+                                DisabledNotificationsConfig.getInstance())),
+                Arguments.of(
+                        RunWithMetadataMessage.autoCommitTxRunMessage(
+                                "RETURN 1",
+                                Map.of(),
+                                null,
+                                Map.of(),
+                                DatabaseName.defaultDatabase(),
+                                AccessMode.WRITE,
+                                Set.of(),
+                                null,
+                                new NotificationConfig(
+                                        NotificationSeverity.WARNING,
+                                        Set.of(new NotificationClassification(
+                                                NotificationClassification.Type.PERFORMANCE))),
+                                false,
+                                mock(LoggingProvider.class),
+                                BoltValueFactory.getInstance()),
+                        new RunMessage(
+                                "RETURN 1",
+                                MapValue.EMPTY,
+                                List.of(),
+                                null,
+                                org.neo4j.boltmessages.AccessMode.WRITE,
+                                Map.of(),
+                                null,
+                                null,
+                                new SelectiveNotificationsConfig(
+                                        NotificationConfiguration.Severity.WARNING,
+                                        Set.of(NotificationConfiguration.Category.PERFORMANCE)))),
                 Arguments.of(
                         new BeginMessage(
                                 Set.of(),
@@ -128,7 +206,7 @@ class OutboundMessageEncoderTest {
                                 DatabaseName.defaultDatabase(),
                                 null,
                                 "hi",
-                                mock(NotificationConfig.class),
+                                NotificationConfig.defaultConfig(),
                                 false,
                                 mock(LoggingProvider.class),
                                 BoltValueFactory.getInstance()),
@@ -137,7 +215,59 @@ class OutboundMessageEncoderTest {
                                 Duration.ofSeconds(10),
                                 org.neo4j.boltmessages.AccessMode.READ,
                                 Map.of("meta", Values.stringValue("data")),
-                                null)),
+                                null,
+                                null,
+                                null,
+                                DefaultNotificationsConfig.getInstance())),
+                Arguments.of(
+                        new BeginMessage(
+                                Set.of(),
+                                Duration.ofSeconds(10),
+                                Map.of("meta", new StringValue("data")),
+                                AccessMode.READ,
+                                DatabaseName.defaultDatabase(),
+                                null,
+                                "hi",
+                                new NotificationConfig(NotificationSeverity.OFF, Set.of()),
+                                false,
+                                mock(LoggingProvider.class),
+                                BoltValueFactory.getInstance()),
+                        new org.neo4j.boltmessages.request.transaction.BeginMessage(
+                                List.of(),
+                                Duration.ofSeconds(10),
+                                org.neo4j.boltmessages.AccessMode.READ,
+                                Map.of("meta", Values.stringValue("data")),
+                                null,
+                                null,
+                                null,
+                                DisabledNotificationsConfig.getInstance())),
+                Arguments.of(
+                        new BeginMessage(
+                                Set.of(),
+                                Duration.ofSeconds(10),
+                                Map.of("meta", new StringValue("data")),
+                                AccessMode.READ,
+                                DatabaseName.defaultDatabase(),
+                                null,
+                                "hi",
+                                new NotificationConfig(
+                                        NotificationSeverity.WARNING,
+                                        Set.of(new NotificationClassification(
+                                                NotificationClassification.Type.PERFORMANCE))),
+                                false,
+                                mock(LoggingProvider.class),
+                                BoltValueFactory.getInstance()),
+                        new org.neo4j.boltmessages.request.transaction.BeginMessage(
+                                List.of(),
+                                Duration.ofSeconds(10),
+                                org.neo4j.boltmessages.AccessMode.READ,
+                                Map.of("meta", Values.stringValue("data")),
+                                null,
+                                null,
+                                null,
+                                new SelectiveNotificationsConfig(
+                                        NotificationConfiguration.Severity.WARNING,
+                                        Set.of(NotificationConfiguration.Category.PERFORMANCE)))),
                 Arguments.of(
                         new PullMessage(10, 1, BoltValueFactory.getInstance()),
                         new org.neo4j.boltmessages.request.streaming.PullMessage(10, 1)),

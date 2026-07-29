@@ -29,6 +29,8 @@ import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.D
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.EXPLICIT_TX_VALUE;
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.IMPERSONATED_USER_KEY;
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.IMPLICIT_TX_VALUE;
+import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.NOTIFICATIONS_DISABLED_CLASSIFICATIONS;
+import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.NOTIFICATIONS_MINIMUM_SEVERITY;
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.NUMBER_OF_RECORDS_KEY;
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.PATCH_BOLT_KEY;
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.PRINCIPAL_KEY;
@@ -49,6 +51,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.neo4j.bolt.connection.netty.impl.messaging.request.CommitMessage;
 import org.neo4j.bolt.connection.netty.impl.messaging.request.GoodbyeMessage;
 import org.neo4j.bolt.connection.netty.impl.messaging.request.LogoffMessage;
@@ -62,6 +66,9 @@ import org.neo4j.bolt.connection.values.Value;
 import org.neo4j.boltmessages.AccessMode;
 import org.neo4j.boltmessages.TransactionType;
 import org.neo4j.boltmessages.notifications.DefaultNotificationsConfig;
+import org.neo4j.boltmessages.notifications.DisabledNotificationsConfig;
+import org.neo4j.boltmessages.notifications.NotificationsConfig;
+import org.neo4j.boltmessages.notifications.SelectiveNotificationsConfig;
 import org.neo4j.boltmessages.request.authentication.HelloMessage;
 import org.neo4j.boltmessages.request.connection.RoutingContext;
 import org.neo4j.boltmessages.request.streaming.DiscardMessage;
@@ -70,6 +77,7 @@ import org.neo4j.boltmessages.request.transaction.BeginMessage;
 import org.neo4j.boltmessages.request.transaction.RunMessage;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.server.queryapi.driver.boltmessage.codec.BoltMessageValueEncoder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
@@ -112,7 +120,7 @@ public class OutboundMessageEncoder extends MessageToMessageEncoder<RequestMessa
                         txMetadata(runMessage.metadata()),
                         databaseName(runMessage.metadata()),
                         impersonatedUser(runMessage.metadata()),
-                        null);
+                        notificationsFilter(runMessage.metadata()));
             case org.neo4j.bolt.connection.netty.impl.messaging.request.BeginMessage beginMessage ->
                 new BeginMessage(
                         stringList(beginMessage.metadata(), BOOKMARKS_KEY),
@@ -128,7 +136,7 @@ public class OutboundMessageEncoder extends MessageToMessageEncoder<RequestMessa
                                         .equals(IMPLICIT_TX_VALUE)
                                 ? TransactionType.IMPLICIT
                                 : TransactionType.EXPLICIT,
-                        null);
+                        notificationsFilter(beginMessage.metadata()));
             case CommitMessage commitMessage -> org.neo4j.boltmessages.request.transaction.CommitMessage.getInstance();
             case RollbackMessage rollbackMessage ->
                 org.neo4j.boltmessages.request.transaction.RollbackMessage.getInstance();
@@ -196,9 +204,14 @@ public class OutboundMessageEncoder extends MessageToMessageEncoder<RequestMessa
 
     @SuppressWarnings("unchecked")
     private static List<String> stringList(Map<String, ?> metadata, String key) {
+        var list = optionalStringList(metadata, key);
+        return list == null ? List.of() : list;
+    }
+
+    private static List<String> optionalStringList(Map<String, ?> metadata, String key) {
         var value = metadata.get(key);
         if (value == null) {
-            return List.of();
+            return null;
         }
         if (value instanceof Value driverValue) {
             var patchBoltList = new ArrayList<String>();
@@ -270,6 +283,36 @@ public class OutboundMessageEncoder extends MessageToMessageEncoder<RequestMessa
 
     private static String impersonatedUser(Map<String, ?> metadata) {
         return optionalString(metadata, IMPERSONATED_USER_KEY);
+    }
+
+    private static NotificationsConfig notificationsFilter(Map<String, ?> metadata) {
+        NotificationConfiguration.Severity minimumSeverity = null;
+        Set<NotificationConfiguration.Category> disabledCategories = null;
+
+        var minimumSeverityStr = optionalString(metadata, NOTIFICATIONS_MINIMUM_SEVERITY);
+        if (minimumSeverityStr != null) {
+            minimumSeverity = switch (minimumSeverityStr) {
+                case "WARNING" -> NotificationConfiguration.Severity.WARNING;
+                case "INFORMATION" -> NotificationConfiguration.Severity.INFORMATION;
+                case "OFF" -> NotificationConfiguration.Severity.NONE;
+                default -> null;
+            };
+
+            if (minimumSeverity == NotificationConfiguration.Severity.NONE) {
+                return DisabledNotificationsConfig.getInstance();
+            }
+        }
+
+        var disabledCategoriesStr = optionalStringList(metadata, NOTIFICATIONS_DISABLED_CLASSIFICATIONS);
+        if (disabledCategoriesStr != null) {
+            disabledCategories = disabledCategoriesStr.stream()
+                    .map(NotificationConfiguration.Category::valueOf)
+                    .collect(Collectors.toSet());
+        }
+
+        return minimumSeverity == null && disabledCategories == null
+                ? DefaultNotificationsConfig.getInstance()
+                : new SelectiveNotificationsConfig(minimumSeverity, disabledCategories);
     }
 
     private static String optionalString(Map<String, ?> metadata, String key) {

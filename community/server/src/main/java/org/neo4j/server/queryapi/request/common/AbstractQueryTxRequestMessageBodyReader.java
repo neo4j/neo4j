@@ -17,20 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.request.typed.v12;
+package org.neo4j.server.queryapi.request.common;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.ext.Provider;
-import org.neo4j.server.queryapi.QueryMimeTypes;
-import org.neo4j.server.queryapi.request.typed.common.AbstractTypedJsonMessageBodyReader;
-import org.neo4j.server.queryapi.request.typed.common.TypedJsonRequestModule;
-import org.neo4j.server.queryapi.types.View;
+import org.neo4j.server.queryapi.request.QueryTxRequest;
 
-@Provider
-@Consumes({QueryMimeTypes.TYPED_JSON_V1x2})
-public class TypedJsonMessageBodyReaderV12 extends AbstractTypedJsonMessageBodyReader {
+/**
+ * A generic message body reader for {@link QueryTxRequest}
+ * <p/>
+ * This is specific for requests that expect the body has transaction information such
+ * as bookmarks, max execution time, etc.
+ */
+public abstract class AbstractQueryTxRequestMessageBodyReader
+        extends AbstractQueryRequestGenericMessageBodyReader<QueryTxRequest> {
 
-    public TypedJsonMessageBodyReaderV12() {
-        super(new TypedJsonRequestModule(View.TYPED_JSON_V12));
+    protected AbstractQueryTxRequestMessageBodyReader(QueryRequestModule queryRequestModule) {
+        super(QueryTxRequest.class, queryRequestModule);
+    }
+
+    protected QueryTxRequest defaultQueryRequest() {
+        return new QueryTxRequest();
     }
 }

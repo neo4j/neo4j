@@ -19,26 +19,44 @@
  */
 package org.neo4j.queryapi;
 
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.util.function.Function;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
+import org.neo4j.queryapi.testclient.QueryRequest;
+import org.neo4j.queryapi.testclient.QueryResponse;
 
 public enum TransactionType {
-    IMPLICIT("Implicit Transaction", Function.identity()),
-    EXPLICIT("Explicit Transaction", (queryEndpoint) -> queryEndpoint + "/tx");
+    IMPLICIT("Implicit Transaction", Function.identity(), QueryAPITestClient::autoCommit),
+    EXPLICIT("Explicit Transaction", (queryEndpoint) -> queryEndpoint + "/tx", QueryAPITestClient::beginTx);
 
     private final String name;
     private final Function<String, String> transformer;
+    private final TransactionBeginMethodInterface beginMethod;
 
-    TransactionType(String name, Function<String, String> transform) {
+    TransactionType(
+            String name, Function<String, String> transform, TransactionBeginMethodInterface beginMethodInterface) {
         this.name = name;
         this.transformer = transform;
+        this.beginMethod = beginMethodInterface;
     }
 
     public String endpoint(String queryEndpoint) {
         return transformer.apply(queryEndpoint);
     }
 
+    public HttpResponse<QueryResponse> begin(QueryAPITestClient queryAPITestClient, QueryRequest queryRequest)
+            throws IOException, InterruptedException {
+        return beginMethod.begin(queryAPITestClient, queryRequest);
+    }
+
     @Override
     public String toString() {
         return name;
+    }
+
+    interface TransactionBeginMethodInterface {
+        HttpResponse<QueryResponse> begin(QueryAPITestClient client, QueryRequest request)
+                throws IOException, InterruptedException;
     }
 }

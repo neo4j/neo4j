@@ -24,8 +24,6 @@ import static org.neo4j.server.queryapi.response.QueryResponseBookmarks.fromBook
 import static org.neo4j.server.queryapi.response.QueryResponseTxInfo.fromQueryAPITransaction;
 
 import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.Set;
@@ -48,6 +46,7 @@ import org.neo4j.server.queryapi.exception.QueryApiException;
 import org.neo4j.server.queryapi.exception.TransactionConcurrentAccessException;
 import org.neo4j.server.queryapi.exception.TransactionNotFoundException;
 import org.neo4j.server.queryapi.request.QueryRequest;
+import org.neo4j.server.queryapi.request.QueryTxRequest;
 import org.neo4j.server.queryapi.response.QueryResponseAutoCommit;
 import org.neo4j.server.queryapi.response.QueryResponseTimers;
 import org.neo4j.server.queryapi.response.QueryResponseTxManaged;
@@ -77,7 +76,7 @@ public class QueryController {
         this.log = logProvider.getLog(QueryController.class);
     }
 
-    public Response executeQuery(QueryRequest request, HttpServletRequest rawRequest, String databaseName) {
+    public Response executeQuery(QueryTxRequest request, HttpServletRequest rawRequest, String databaseName) {
         var sessionConfig = buildSessionConfig(request, databaseName);
         // The session will be closed after the result set has been serialized, it must not be closed in a
         // try-with-resources block here. It must be closed only in an exceptional state
@@ -103,7 +102,7 @@ public class QueryController {
         }
     }
 
-    public Response beginTransaction(QueryRequest request, HttpServletRequest rawRequest, String databaseName) {
+    public Response beginTransaction(QueryTxRequest request, HttpServletRequest rawRequest, String databaseName) {
         var sessionConfig = buildSessionConfig(request, databaseName);
         var txId = randomTxId(txIdLength);
         var sessionAuthToken = extractAuthToken(rawRequest);
@@ -219,7 +218,7 @@ public class QueryController {
         this.driver.close();
     }
 
-    private SessionConfig buildSessionConfig(QueryRequest request, String databaseName) {
+    private SessionConfig buildSessionConfig(QueryTxRequest request, String databaseName) {
         var sessionConfigBuilder = SessionConfig.builder().withDatabase(databaseName);
 
         if (!(request.bookmarks() == null || request.bookmarks().isEmpty())) {
@@ -235,10 +234,15 @@ public class QueryController {
             sessionConfigBuilder.withDefaultAccessMode(toDriverAccessMode(request.accessMode()));
         }
 
+        request.maybeNotificationsFilter().ifPresent(filter -> {
+            filter.minimumSeverityLevel().ifPresent(sessionConfigBuilder::withMinimumNotificationSeverity);
+            filter.disabledCategories().ifPresent(sessionConfigBuilder::withDisabledNotificationClassifications);
+        });
+
         return sessionConfigBuilder.build();
     }
 
-    private TransactionConfig buildTxConfig(QueryRequest request) {
+    private TransactionConfig buildTxConfig(QueryTxRequest request) {
         var txConfigBuilder = TransactionConfig.builder();
         if (request.maxExecutionTime() > 0) {
             txConfigBuilder.withTimeout(Duration.ofSeconds(request.maxExecutionTime()));
@@ -289,10 +293,6 @@ public class QueryController {
 
     private static Response transactionInfoOnlyResponse(Transaction transaction) {
         return Response.accepted().entity(fromQueryAPITransaction(transaction)).build();
-    }
-
-    private Instant generateTimeout() {
-        return Instant.now().truncatedTo(ChronoUnit.SECONDS).plus(defaultTimeout);
     }
 
     private enum TxHandling {

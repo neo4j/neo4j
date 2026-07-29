@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.queryapi.request.typed.common;
 
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.server.queryapi.request.QueryRequestCypherValues;
+import org.neo4j.server.queryapi.request.common.QueryRequestModule;
 import org.neo4j.server.queryapi.request.typed.common.value.TypedJsonBase64QueryRequestCypherValue;
 import org.neo4j.server.queryapi.request.typed.common.value.TypedJsonBooleanQueryRequestCypherValue;
 import org.neo4j.server.queryapi.request.typed.common.value.TypedJsonDateQueryRequestCypherValue;
@@ -48,9 +48,9 @@ import org.neo4j.server.queryapi.types.View;
 /**
  * The JSON module implementation for Typed JSON.
  * <p/>
- * This uses the {@link View} for defining which type are accepted or not by the module instantiation.
+ * This uses the {@link View} for defining which type is accepted or not by the module instantiation.
  */
-public final class TypedJsonRequestModule extends SimpleModule {
+public final class TypedJsonRequestModule extends QueryRequestModule {
     public TypedJsonRequestModule(View view) {
         this.addDeserializer(QueryRequestCypherValues.class, new TypedJsonQueryRequestCypherValuesDeserializer());
 
