@@ -19,6 +19,13 @@
  */
 package org.neo4j.bolt.protocol.error;
 
+/**
+ * Base class for all network exceptions.
+ * <p/>
+ * Those exceptions are not part of the Bolt protocol and are used to signal errors that occur during the network communication.
+ * This information is used for logging and debugging purposes.
+ * Therefore, those exceptions don't implement {@link org.neo4j.kernel.api.exceptions.Status.HasStatus} and {@link org.neo4j.gqlstatus.GqlException}
+ */
 public abstract class BoltNetworkException extends RuntimeException {
 
     public BoltNetworkException(String message) {
