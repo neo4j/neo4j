@@ -103,6 +103,33 @@ class GQL_42I18_ReferenceToNonGroupingSubExpressionTest extends VariableChecking
       Seq("`COUNT { (a)--(b) } + count(a)`")
     ),
     TestQuery(
+      """MATCH (m) RETURN count(m) + COUNT { (m)--(b) } AS metric""".stripMargin,
+      E42I18("m"),
+      Seq("metric")
+    ),
+    TestQuery(
+      """MATCH (m) RETURN count(m) + count { MATCH (m)-->() RETURN m } AS metric""".stripMargin,
+      E42I18("m"),
+      Seq("metric")
+    ),
+    TestQuery(
+      """MATCH (m) RETURN count(m) > 0 AND EXISTS { MATCH (m)-->() RETURN m } AS metric""".stripMargin,
+      E42I18("m"),
+      Seq("metric")
+    ),
+    TestQuery(
+      """MATCH (m)
+        |RETURN count(m) AS value, count(m) + count { MATCH (m)-->() RETURN m } AS metric""".stripMargin,
+      E42I18("m"),
+      Seq("value", "metric")
+    ),
+    TestQuery(
+      """MATCH (m)
+        |RETURN count(m) AS value, count(m) > 0 AND EXISTS { MATCH (m)-->() RETURN m } AS metric""".stripMargin,
+      E42I18("m"),
+      Seq("value", "metric")
+    ),
+    TestQuery(
       """WITH {a:1, b:{c:2}} AS map
         |RETURN map.b.c, map.b.c + count(*)""".stripMargin,
       E42I18("map"),
@@ -261,6 +288,12 @@ class GQL_42I18_ReferenceToNonGroupingSubExpressionTest extends VariableChecking
       """UNWIND [1, 2, 3] AS nums RETURN min(nums)""".stripMargin,
       Passes,
       Seq("`min(nums)`")
+    ),
+    TestQuery(
+      """MATCH (m)
+        |RETURN m, count { MATCH (m)-->(x) RETURN count(x) } AS c""".stripMargin,
+      Passes,
+      Seq("m", "c")
     )
   )
 }

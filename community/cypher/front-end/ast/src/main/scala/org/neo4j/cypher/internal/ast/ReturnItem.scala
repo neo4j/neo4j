@@ -117,8 +117,8 @@ sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def directlyContainsAggregate: Boolean = {
     expression.folder.treeFold(false) {
       case IsAggregate(_)            => _ => SkipChildren(true)
-      case _: FullSubqueryExpression => _ => SkipChildren(false)
-      case _                         => x => TraverseChildren(x)
+      case _: FullSubqueryExpression => acc => SkipChildren(acc)
+      case _                         => acc => TraverseChildren(acc)
     }
   }
 
