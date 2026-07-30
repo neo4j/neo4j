@@ -23,14 +23,15 @@ import javax.ws.rs.core.Response;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.server.configuration.ServerSettings;
 
 public class TransactionIdCollisionException extends QueryApiException {
     public TransactionIdCollisionException() {
         super(
                 "A transaction identifier collision has been detected whilst creating your"
                         + " transaction. Please retry. If this occurs frequently consider increasing"
-                        + "the length of transaction identifier.",
-                // todo: create a card for add the correct gql code here
+                        + " the length of transaction identifier (%s)."
+                                .formatted(ServerSettings.transaction_id_length.name()),
                 ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_50N42)
                         .build(),
                 Status.Request.ResourceExhaustion,
