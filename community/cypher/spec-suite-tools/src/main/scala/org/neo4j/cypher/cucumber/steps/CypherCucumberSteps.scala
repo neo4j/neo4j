@@ -151,6 +151,10 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
     resultShouldBe(DataTable.emptyDataTable(), Result.InOrder)
   }
 
+  Then("the query should not fail") {
+    queryShouldNotFail()
+  }
+
   Then("no side effects") {
     sideEffectsShouldBe(DataTable.emptyDataTable())
   }
@@ -206,6 +210,7 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
   def executingControlQuery(cypher: String): Unit
   private def resultShouldBe(expected: DataTable, a: Result.Assertion): Unit = resultShouldBe(expected, Single(a))
   def resultShouldBe(expected: DataTable, assert: Result.Assertions): Unit
+  def queryShouldNotFail(): Unit
   def approximateResultShouldBe(expected: DataTable, rowCount: Int): Unit
   def sideEffectsShouldBe(expected: DataTable): Unit
   def errorShouldBeRaised(hierarchy: ExpectedGqlError): Unit

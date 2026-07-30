@@ -109,6 +109,16 @@ class ResolveCallablesTest extends ResolveCallablesTestSuite {
     rewrittenTry should equal(original)
   }
 
+  test("TryResolveCallables should return original when function lookup throws") {
+    val headClause = Unwind(function("missing", v"x"), v"y")(pos)
+    val original = SingleQuery(Seq(headClause))(pos)
+
+    val rewrittenTry =
+      Try(tryResolveCallables(makeResolver(funcSignatureLookup = _ => throw new Exception("not found")), original))
+
+    rewrittenTry should matchPattern { case Success(`original`) => }
+  }
+
   test(
     "should not generate a Return clause when resolving a standalone procedure call with no output signature (aka unit procedure)"
   ) {

@@ -244,6 +244,18 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-front-end</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-front-end-test-util</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-gql-status</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -251,6 +263,12 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphdb-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-internal-notifications</artifactId>
       <version>${project.version}</version>
     </dependency>
 

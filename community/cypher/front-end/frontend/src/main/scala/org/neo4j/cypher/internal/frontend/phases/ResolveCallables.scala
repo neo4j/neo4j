@@ -269,11 +269,17 @@ case class TryResolveCallables(resolver: ScopedProcedureSignatureResolver) exten
     resolver: ScopedProcedureSignatureResolver,
     unresolved: FunctionInvocation
   ): Expression = {
-    super.resolveFunction(resolver, unresolved) match {
-      case resolved @ ResolvedFunctionInvocation(_, Some(_), _, _) => resolved
-      case _                                                       => unresolved
+    Try(super.resolveFunction(resolver, unresolved)) match {
+      case Success(resolved @ ResolvedFunctionInvocation(_, Some(_), _, _)) => resolved
+      case _                                                                => unresolved
     }
   }
+}
+
+object TryResolveCallables {
+
+  /** No procedure registry available; every procedure and function stays unresolved. Intended for tests. */
+  val NoResolver: TryResolveCallables = TryResolveCallables(ScopedProcedureSignatureResolver.NoResolver)
 }
 
 class InstrumentedProcedureSignatureResolver(resolver: ScopedProcedureSignatureResolver)

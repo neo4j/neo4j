@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.NaN
-import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
@@ -52,7 +51,6 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
-import org.neo4j.cypher.internal.util.symbols.CTNull
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 case object ObfuscationMetadataCollected extends Condition
@@ -168,13 +166,15 @@ case object ObfuscationMetadataCollection
   ): Set[String] =
     queryParams.folder.findAllByClass[SensitiveParameter].map(_.name).toSet -- extractedParamNames
 
-  // Only primitive leaf literals carry a type; lists and maps are not Literals, so the fold tags their inner leaves.
+  /**
+   * Only primitive leaf literals carry a type; lists and maps are not Literals, so the fold tags their leaves.
+   * `null` falls through to ANY on purpose: a NULL hint would reveal the literal in full, null having one value.
+   */
   private def literalTypeOf(node: Any): String = node match {
     case _: IntegerLiteral                            => CTInteger.toCypherTypeString
     case _: DoubleLiteral | _: Infinity | _: NaN      => CTFloat.toCypherTypeString
     case _: StringLiteral | _: SensitiveStringLiteral => CTString.toCypherTypeString
     case _: BooleanLiteral                            => CTBoolean.toCypherTypeString
-    case _: Null                                      => CTNull.toCypherTypeString
     case _                                            => CTAny.toCypherTypeString
   }
 

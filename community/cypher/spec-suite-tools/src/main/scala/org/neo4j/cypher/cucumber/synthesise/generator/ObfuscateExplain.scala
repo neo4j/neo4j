@@ -1,0 +1,138 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [https://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.cucumber.synthesise.generator
+
+import org.neo4j.cypher.cucumber.synthesise.CucumberSalad
+import org.neo4j.cypher.cucumber.synthesise.glue.scenario.AssertGqlWarning
+import org.neo4j.cypher.cucumber.synthesise.glue.scenario.AssertSucceeds
+import org.neo4j.cypher.cucumber.synthesise.glue.scenario.Execute
+import org.neo4j.cypher.cucumber.synthesise.glue.scenario.ExecuteControl
+import org.neo4j.cypher.cucumber.synthesise.glue.scenario.ExpectError
+import org.neo4j.cypher.cucumber.synthesise.glue.scenario.ExpectResults
+import org.neo4j.cypher.cucumber.synthesise.glue.scenario.RecordedScenario
+import org.neo4j.cypher.cucumber.synthesise.glue.scenario.SideEffects
+import org.neo4j.cypher.cucumber.synthesise.glue.scenario.TransactionHandling
+import org.neo4j.cypher.internal.CypherQueryObfuscator
+import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.Search
+import org.neo4j.cypher.internal.frontend.helpers.TestContext
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases
+import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
+import org.neo4j.cypher.internal.frontend.phases.TryResolveCallables
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
+import org.neo4j.cypher.internal.notification.devNullLogger
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.ObfuscationMetadata
+import org.neo4j.kernel.api.query.QueryObfuscator
+import org.neo4j.values.virtual.MapValue
+
+import java.nio.file.Paths
+import java.util.concurrent.atomic.AtomicLong
+
+import scala.collection.View
+
+/**
+ * Rewrites every test query to `EXPLAIN` over its typed-obfuscated text and asserts it does not fail,
+ * pinning that obfuscated query-log output (parameter-shaped tokens) stays valid, plannable Cypher.
+ *
+ * Unlike other generators this deliberately KEEPS scenarios that are muted only for OTHER
+ * configurations (e.g. `@fails:parallel-runtime`): those muting reasons are runtime- or results-level,
+ * and the queries must still round-trip under EXPLAIN.
+ *
+ * Scenarios incompatible with the target configuration itself (version tags, bare `@fails`/`@ignore`) are excluded
+ * via the framework's compatibility predicate.
+ * Mute individual incompatible scenarios with `@ignore:generator:obfuscate`.
+ * `SEARCH` queries are filtered out (until the index name can be parameterized).
+ */
+class ObfuscateExplain(
+  val args: CucumberSalad.Ingredients,
+  newRenderer: () => QueryObfuscator.ObfuscatedLiteralRenderer
+) extends ScenarioGenerator {
+
+  override val name: String = "obfuscate"
+
+  private val counter = new AtomicLong(0)
+  private val metadataPipeline = new ObfuscateExplain.MetadataPipeline(args.cypherVersion)
+
+  override def filter: Filter =
+    Filter(args.parser, Seq.empty)
+      .scenario(Filter.isCompatible(args.targetConf))
+      .scenario(Filter.excludeTags("@ignore:generator", s"@ignore:generator:$name"))
+      .scenario(s => !s.tags.exists(_.startsWith("@conf:")))
+      .allQueriesParse
+      .steps[ExpectError](_.isEmpty)
+      .steps[TransactionHandling](_.isEmpty)
+      .testQueries(queries => queries.nonEmpty && queries.forall(Filter.doNotContainAst[Search]))
+
+  override def generateScenarios(filteredScenarios: View[RecordedScenario]): IterableOnce[GeneratedScenario] =
+    filteredScenarios.map(generateScenario)
+
+  private def generateScenario(scenario: RecordedScenario): GeneratedScenario = {
+    val steps = scenario.steps.flatMap {
+      case Execute(c)        => Seq(Execute(explainObfuscated(c)), AssertSucceeds)
+      case ExecuteControl(c) => Seq(ExecuteControl(explainObfuscated(c)), AssertSucceeds)
+      case _: ExpectResults | _: AssertGqlWarning | _: SideEffects => Seq.empty
+      case step                                                    => Seq(step)
+    }
+    GeneratedScenario(
+      name = s"Obfuscated ${counter.incrementAndGet()}: ${scenario.name}",
+      steps = steps,
+      featurePath = Paths.get(scenario.uri.getSchemeSpecificPart),
+      comment = s"Generated by $name (EXPLAIN over typed-obfuscated query), based on ${scenario.source}",
+      tags = scenario.tags
+    )
+  }
+
+  private[generator] def explainObfuscated(cypher: String): String = {
+    val parsed = args.parser.parse(cypher)
+    val metadata = metadataPipeline.obfuscationMetadata(parsed.statement)
+    val obfuscator = CypherQueryObfuscator(metadata, obfuscateLiterals = true, exposeFullView = true)
+    "EXPLAIN\n" + obfuscator.typedObfuscatedQuery(parsed.statement, MapValue.EMPTY, 0, newRenderer()).text()
+  }
+}
+
+object ObfuscateExplain {
+
+  /**
+   * Collects obfuscation metadata like the query log does: the pass inside [[FrontEndCompilationPhases.parsingPre]]
+   * merged with one after the rewrites that can move literals. Semantic analysis is skipped, since the corpus also
+   * contains queries a database rejects, and it resolves nothing that literal offsets depend on.
+   */
+  private class MetadataPipeline(version: CypherVersion) {
+
+    private val config = ParsingConfig(resolveCallables = TryResolveCallables.NoResolver)
+
+    private val pipeline = FrontEndCompilationPhases.parsingPre(config) andThen ObfuscationMetadataCollection
+
+    private val context = TestContext(
+      cypherVersion = version,
+      notificationLogger = devNullLogger,
+      semanticFeatures =
+        FrontEndCompilationPhases.enabledSemanticFeatures(FrontEndCompilationPhases.defaultSemanticFeatures.toSet)
+    )
+
+    /** `statement` must be the pre-parsed statement text, so the offsets are statement-relative. */
+    def obfuscationMetadata(statement: String): ObfuscationMetadata = {
+      val state = InitialState(statement, null, new AnonymousVariableNameGenerator())
+      pipeline.transform(state, context).maybeObfuscationMetadata.get
+    }
+  }
+}

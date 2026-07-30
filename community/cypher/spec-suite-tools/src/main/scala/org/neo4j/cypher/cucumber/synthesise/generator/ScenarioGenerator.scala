@@ -41,6 +41,7 @@ import org.neo4j.cypher.cucumber.synthesise.glue.scenario.AssertApproxResults
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.AssertGqlError
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.AssertGqlWarning
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.AssertResults
+import org.neo4j.cypher.cucumber.synthesise.glue.scenario.AssertSucceeds
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.Comment
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.CommitTransaction
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.CreateCsvFile
@@ -83,6 +84,7 @@ import java.nio.file.StandardOpenOption.WRITE
 import scala.collection.View
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.reflect.ClassTag
+import scala.util.Try
 
 trait ScenarioGenerator extends ScenarioRenderer {
 
@@ -158,6 +160,10 @@ case class Filter(parser: CachingParser, predicates: Seq[RecordedScenario => Boo
 
   def testsReadQueries: Filter = steps[SideEffects](_.forall(_.expected.isEmpty))
     .testQueries(queries => queries.nonEmpty && queries.forall(isReadQuery))
+
+  /** Keeps scenarios whose every query parses, so later predicates and generation can parse freely. */
+  def allQueriesParse: Filter =
+    and(s => Try(Filter.steps[QueryExecution](s).foreach(e => parser.parse(e.cypher))).isSuccess)
   def build: RecordedScenario => Boolean = scenario => predicates.forall(_.apply(scenario))
 }
 
@@ -249,6 +255,7 @@ trait ScenarioRenderer {
     case SetParams(params) =>
       render("And parameters are:", DataTable.create(params.toSeq.map(t => java.util.List.of(t._1, t._2)).asJava))
     case AssertResults(expected, _) if expected.isEmpty => "Then the result should be empty"
+    case AssertSucceeds                                 => "Then the query should not fail"
     case AssertResults(expected, Result.Single(a)) =>
       val orderString = (a.rowOrder, a.listOrder) match {
         case (Ordered, Ordered)     => ", in order"

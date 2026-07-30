@@ -41,8 +41,7 @@ object ScopedProcedureSignatureResolver {
     override def functionSignature(name: FunctionName): Option[UserFunctionSignature] =
       throw new UnsupportedOperationException("No function resolver available")
     override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] = None
-    override def procedureSignatureVersion: Long =
-      throw new UnsupportedOperationException("No signature version available")
+    override def procedureSignatureVersion: Long = -1
     override def queryLanguage: QueryLanguage = QueryLanguage.Cypher25
   }
 

@@ -102,7 +102,13 @@ class CypherQueryObfuscator(
   ): ObfuscatedQuery = {
     val offsets = if (policy.fullLiteralsByDefault) state.allLiteralOffsets else state.sensitiveLiteralOffsets
     // Tokens are rendered once and shared by the text and the position map, so their lengths always agree.
-    val replacements = offsets.map(o => renderer.render(o.literalTypeName))
+    val tokensBySourceText = mutable.Map.empty[(String, String), String]
+    val replacements = offsets.map { o =>
+      val start = o.start(preparserOffset)
+      val length = o.length.getOrElse(literalStringLength(rawQueryText, start))
+      val sourceKey = (o.literalTypeName, rawQueryText.substring(start, start + length))
+      tokensBySourceText.getOrElseUpdate(sourceKey, renderer.render(o.literalTypeName))
+    }
     new ObfuscatedQuery(
       obfuscateTextWith(offsets, rawQueryText, preparserOffset, replacements.apply),
       obfuscateParameters(rawQueryParameters),

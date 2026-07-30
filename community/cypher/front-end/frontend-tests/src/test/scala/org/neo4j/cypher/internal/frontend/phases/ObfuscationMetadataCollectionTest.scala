@@ -141,7 +141,7 @@ class ObfuscationMetadataCollectionTest extends CypherFunSuite with AstConstruct
     metadata.allLiteralOffsets should contain(metadata.sensitiveLiteralOffsets.head)
   }
 
-  test("collects the literal type of each primitive kind") {
+  test("collects the literal type of each primitive kind, tagging null as ANY") {
     val metadata = collect(parse("RETURN 'str', 42, 4.5, true, null"), extractWith = None)
     // Offsets are normalized into ascending start order, so they match the textual order above.
     metadata.allLiteralOffsets.map(_.literalTypeName) shouldBe Vector(
@@ -149,7 +149,7 @@ class ObfuscationMetadataCollectionTest extends CypherFunSuite with AstConstruct
       "INTEGER",
       "FLOAT",
       "BOOLEAN",
-      "NULL"
+      "ANY"
     )
   }
 

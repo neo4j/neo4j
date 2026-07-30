@@ -384,6 +384,42 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     ob.typedObfuscatedQuery(text, MapValue.EMPTY, 0, testRenderer()).text should equal(expected)
   }
 
+  test("typed view reuses the same token for a literal repeated verbatim in one query") {
+    val text = "RETURN 1 + 1"
+    val firstStart = text.indexOf("1")
+    val secondStart = text.indexOf("1", firstStart + 1)
+    val offsets = Vector(
+      LiteralOffset(firstStart, 0, Some(1), "INTEGER"),
+      LiteralOffset(secondStart, 0, Some(1), "INTEGER")
+    )
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata(Vector.empty, offsets, Set.empty),
+      obfuscateLiterals = true,
+      exposeFullView = true
+    )
+
+    ob.typedObfuscatedQuery(text, MapValue.EMPTY, 0, testRenderer()).text should equal(
+      "RETURN <1:INTEGER> + <1:INTEGER>"
+    )
+  }
+
+  test("typed view still renders distinct tokens for distinct literals of the same type") {
+    val text = "RETURN 1 + 2"
+    val offsets = Vector(
+      typedOffset(text, "1", "INTEGER"),
+      LiteralOffset(text.indexOf("2"), 0, Some(1), "INTEGER")
+    )
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata(Vector.empty, offsets, Set.empty),
+      obfuscateLiterals = true,
+      exposeFullView = true
+    )
+
+    ob.typedObfuscatedQuery(text, MapValue.EMPTY, 0, testRenderer()).text should equal(
+      "RETURN <1:INTEGER> + <2:INTEGER>"
+    )
+  }
+
   test("typed view renders an unspecified literal type as 'ANY'") {
     val text = "RETURN 42"
     val offset = LiteralOffset(text.indexOf("42"), 0, Some(2))

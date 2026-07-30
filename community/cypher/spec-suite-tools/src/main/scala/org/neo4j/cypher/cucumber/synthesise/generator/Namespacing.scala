@@ -31,7 +31,6 @@ import org.neo4j.cypher.cucumber.synthesise.glue.scenario.Execute
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.ExecuteControl
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.ExecuteControlInOpenTx
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.ExecuteInOpenTx
-import org.neo4j.cypher.cucumber.synthesise.glue.scenario.QueryExecution
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.RecordedScenario
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.TestExecution
 import org.neo4j.cypher.internal.CypherVersion
@@ -86,7 +85,7 @@ class Namespacing(val args: CucumberSalad.Ingredients) extends ScenarioGenerator
   }
 
   override def filter: Filter = super.filter
-    .scenario(s => Try(Filter.steps[QueryExecution](s).foreach(e => args.parser.parse(e.cypher))).isSuccess)
+    .allQueriesParse
     .steps[AssertGqlError](_.isEmpty)
     .steps[AssertApproxResults](_.isEmpty)
     .steps[AssertResults](_.forall(r => !r.assertion.isInstanceOf[Result.ParallelOverride]))

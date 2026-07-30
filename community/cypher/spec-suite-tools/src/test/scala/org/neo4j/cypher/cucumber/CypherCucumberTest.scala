@@ -83,10 +83,10 @@ class CypherCucumberTest extends CypherFunSuite with LoneElement {
 
     // Test counts should be correct
     withClue(summaryOutputStream.toString) {
-      summary.getTestsSucceededCount shouldBe 30
+      summary.getTestsSucceededCount shouldBe 31
       summary.getContainersFailedCount shouldBe 0
-      summary.getTestsFoundCount shouldBe 164
-      summary.getTestsFailedCount shouldBe 134
+      summary.getTestsFoundCount shouldBe 166
+      summary.getTestsFailedCount shouldBe 135
       summary.getTestsAbortedCount shouldBe 0
       summary.getTestsSkippedCount shouldBe 0
     }
@@ -124,7 +124,8 @@ class CypherCucumberTest extends CypherFunSuite with LoneElement {
         "TestFrameworkTests - [042] Floating point precision can be specified - Examples - Example #1.4",
         "TestFrameworkTests - [044] Syntax error is correct",
         "TestFrameworkTests - [053] Approximate result - exact match",
-        "TestFrameworkTests - [054] Approximate result - without optional row"
+        "TestFrameworkTests - [054] Approximate result - without optional row",
+        "TestFrameworkTests - [063] Query should not fail - success ignores rows and headers"
       )
 
     // Failing tests should fail in the correct way
@@ -292,13 +293,14 @@ class CypherCucumberTest extends CypherFunSuite with LoneElement {
         wrongApproximateMandatoryColumn("[059] Approximate result - without mandatory column"),
         wrongApproximateMandatoryColumn("[060] Approximate result - with wrongly named mandatory column"),
         wrongApproximateMandatoryType("[061] Approximate result - with wrong type in mandatory column"),
-        wrongWarningGqlCode("[062] Query has warnings but asserts on no warnings")
+        wrongWarningGqlCode("[062] Query has warnings but asserts on no warnings"),
+        queryFailedRuntime("[064] Query should not fail - failure")
       )
   }
 
   test("scenario reader works") {
     val allScenarios = new ScenarioReader().readAllScenarios("test.features")
-    allScenarios.size shouldBe 164
+    allScenarios.size shouldBe 166
     // TODO assert read/write round trip.
   }
 
@@ -437,6 +439,7 @@ class CypherCucumberTest extends CypherFunSuite with LoneElement {
       "public abstract void org.neo4j.cypher.cucumber.steps.CypherCucumberSteps.executingControlQuery(java.lang.String)",
       "public abstract void org.neo4j.cypher.cucumber.steps.CypherCucumberSteps.approximateResultShouldBe(io.cucumber.datatable.DataTable,int)",
       "public abstract void org.neo4j.cypher.cucumber.steps.CypherCucumberSteps.resultShouldBe(io.cucumber.datatable.DataTable,org.neo4j.cypher.cucumber.steps.Result$Assertions)",
+      "public abstract void org.neo4j.cypher.cucumber.steps.CypherCucumberSteps.queryShouldNotFail()",
       "public abstract void org.neo4j.cypher.cucumber.steps.CypherCucumberSteps.sideEffectsShouldBe(io.cucumber.datatable.DataTable)",
       "public abstract void org.neo4j.cypher.cucumber.steps.CypherCucumberSteps.errorShouldBeRaised(org.neo4j.cypher.cucumber.steps.CypherCucumberSteps$ExpectedGqlError)",
       "public abstract void org.neo4j.cypher.cucumber.steps.CypherCucumberSteps.notificationsShouldBeRaised(org.neo4j.cypher.cucumber.steps.CypherCucumberSteps$ExpectedGqlNotification)",

@@ -881,3 +881,20 @@ Feature: TestFrameworkTests
       | id   |
       | null |
     And no notifications should be raised
+
+  Scenario: [063] Query should not fail - success ignores rows and headers
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [1, 2] AS x
+      RETURN x
+      """
+    Then the query should not fail
+
+  Scenario: [064] Query should not fail - failure
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [1,2] AS x RETURN 1/(x-2)
+      """
+    Then the query should not fail

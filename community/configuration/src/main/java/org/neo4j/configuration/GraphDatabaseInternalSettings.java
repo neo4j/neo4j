@@ -1439,6 +1439,16 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.dbms.expose_fully_obfuscated_query_view", BOOL, true)
             .build();
 
+    @Internal
+    @Description("Set this to render each obfuscated literal in the query log as a parameter-style token "
+            + "carrying its type, e.g. $`OBFUSCATED STRING 1`, instead of a bare \\*\\*\\*\\*\\*\\*. Tokens are "
+            + "numbered per type in query-text order. This is a breaking change to the query-log format and is "
+            + "gated off by default.")
+    public static final Setting<Boolean> obfuscated_query_log_literal_type_hints = newBuilder(
+                    "internal.dbms.cypher.obfuscated_query_log_literal_type_hints", BOOL, false)
+            .dynamic()
+            .build();
+
     public static SettingValueParser<Set<Map<String, String>>> HistogramsOfStandardBucketTypeParser =
             setOf(new SettingValueParsers.MapPattern(
                     Set.of("entityType", "labelOrType", "property", "min", "max", "selectivity"),

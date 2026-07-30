@@ -249,6 +249,11 @@ final class RegularCypherSteps @Inject() (
     case actual: QueryResults  => assertResult(actual, expected, assertions.configure(conf.runtime))
   }
 
+  override def queryShouldNotFail(): Unit = lastResult match {
+    case failure: QueryFailure => unexpectedFailure(failure, conf, describePlan(failure))
+    case _: QueryResults       => ()
+  }
+
   override def approximateResultShouldBe(expected: DataTable, rowCount: Int): Unit = lastResult match {
     case failure: QueryFailure => unexpectedFailure(failure, conf, describePlan(failure))
     case actual: QueryResults  => assertApproxResult(actual, expected, rowCount)

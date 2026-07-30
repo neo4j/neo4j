@@ -75,6 +75,8 @@ final class ScenarioRecordingSteps @Inject() (
   override def resultShouldBe(expected: DataTable, assert: Result.Assertions): Unit =
     add(AssertResults(expected, assert))
 
+  override def queryShouldNotFail(): Unit = add(AssertSucceeds)
+
   override def approximateResultShouldBe(expected: DataTable, rowCount: Int): Unit =
     add(AssertApproxResults(expected, rowCount))
   override def sideEffectsShouldBe(expected: DataTable): Unit = add(SideEffects(expected))
@@ -160,6 +162,7 @@ case class AssertResults(expected: DataTable, assertion: Result.Assertions) exte
   def rowCount: Int = expected.height() - 1
 }
 case class AssertApproxResults(expected: DataTable, rowCount: Int) extends ExpectResults
+case object AssertSucceeds extends RecordedStep
 sealed trait ExpectError extends RecordedStep
 case class AssertGqlError(expected: ExpectedGqlError) extends ExpectError
 
