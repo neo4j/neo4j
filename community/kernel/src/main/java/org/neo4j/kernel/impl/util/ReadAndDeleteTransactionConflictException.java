@@ -23,9 +23,11 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.GqlRuntimeException;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.gqlstatus.NonSensitiveException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class ReadAndDeleteTransactionConflictException extends GqlRuntimeException implements Status.HasStatus {
+public class ReadAndDeleteTransactionConflictException extends GqlRuntimeException
+        implements Status.HasStatus, NonSensitiveException {
     private static final String CONCURRENT_DELETE_MESSAGE =
             "Database elements (nodes, relationships, properties) were observed during query execution, "
                     + "but got deleted by an overlapping committed transaction before the query results could be serialised. "

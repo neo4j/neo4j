@@ -31,9 +31,11 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.GqlParams;
 import org.neo4j.gqlstatus.GqlRuntimeException;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.gqlstatus.NonSensitiveException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class MemoryLimitExceededException extends GqlRuntimeException implements Status.HasStatus {
+public class MemoryLimitExceededException extends GqlRuntimeException
+        implements Status.HasStatus, NonSensitiveException {
     private final Status status;
     private final String settingName;
 

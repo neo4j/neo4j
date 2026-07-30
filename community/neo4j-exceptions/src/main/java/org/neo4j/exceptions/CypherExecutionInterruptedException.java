@@ -23,9 +23,10 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.GqlParams;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.gqlstatus.NonSensitiveException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class CypherExecutionInterruptedException extends Neo4jException {
+public class CypherExecutionInterruptedException extends Neo4jException implements NonSensitiveException {
     private final Status status;
 
     private CypherExecutionInterruptedException(ErrorGqlStatusObject gqlStatusObject, String message, Status status) {

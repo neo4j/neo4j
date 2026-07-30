@@ -25,10 +25,12 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.GqlParams;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.gqlstatus.NonSensitiveException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class MaximumTransactionLimitExceededException extends TransactionFailureException implements Status.HasStatus {
+public class MaximumTransactionLimitExceededException extends TransactionFailureException
+        implements Status.HasStatus, NonSensitiveException {
     private static final String MAXIMUM_TRANSACTIONS_LIMIT_MESSAGE =
             "Unable to start new transaction since limit of concurrently executed transactions is reached. See setting "
                     + max_concurrent_transactions.name();

@@ -24,12 +24,13 @@ import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_25N11;
 import java.util.Arrays;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.NonSensitiveException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class TransactionConflictException extends TransientFailureException {
+public class TransactionConflictException extends TransientFailureException implements NonSensitiveException {
 
     private static final String GENERIC_MESSAGE = "Transaction conflict validation failed.";
     private static final ErrorGqlStatusObject GQL_STATUS =

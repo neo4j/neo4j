@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.gqlstatus.NonSensitiveException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.util.VisibleForTesting;
@@ -29,7 +30,7 @@ import org.neo4j.util.VisibleForTesting;
 /**
  * Signals that a deadlock between two or more transactions has been detected.
  */
-public class DeadlockDetectedException extends TransientTransactionFailureException {
+public class DeadlockDetectedException extends TransientTransactionFailureException implements NonSensitiveException {
     @VisibleForTesting
     public DeadlockDetectedException(ErrorGqlStatusObject gqlStatusObject, String message) {
         super(gqlStatusObject, Status.Transaction.DeadlockDetected, message);

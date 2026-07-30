@@ -28,6 +28,7 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.GqlParams;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.gqlstatus.NonSensitiveException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.lock.ResourceType;
@@ -39,7 +40,7 @@ import org.neo4j.lock.ResourceType;
  * @see LockManager.Client
  * @see GraphDatabaseSettings#lock_acquisition_timeout
  */
-public class LockAcquisitionTimeoutException extends TransactionTerminatedException {
+public class LockAcquisitionTimeoutException extends TransactionTerminatedException implements NonSensitiveException {
 
     private LockAcquisitionTimeoutException(
             ErrorGqlStatusObject gqlStatusObject, ResourceType resourceType, long resourceId, long timeoutNano) {

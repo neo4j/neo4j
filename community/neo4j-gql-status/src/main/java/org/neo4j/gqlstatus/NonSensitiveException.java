@@ -17,21 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.planning
+package org.neo4j.gqlstatus;
 
-import org.neo4j.gqlstatus.ErrorGqlStatusObject
-import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
-import org.neo4j.gqlstatus.GqlException
-import org.neo4j.gqlstatus.GqlStatusInfoCodes
-import org.neo4j.gqlstatus.NonSensitiveException
-
-case class CompilationException(gql: ErrorGqlStatusObject, legacyMsg: String) extends GqlException(gql, legacyMsg)
-    with NonSensitiveException {}
-
-object CompilationException {
-
-  def tooFrequentSchemaChanges(): CompilationException = {
-    val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N25).build()
-    CompilationException(gql, "Could not compile query due to insanely frequent schema changes")
-  }
-}
+/**
+ * Marks an exception whose message is known to never carry user data (query text, parameter or property
+ * values, etc.), so it can be logged in full even when error obfuscation is enabled.
+ */
+public interface NonSensitiveException {}
