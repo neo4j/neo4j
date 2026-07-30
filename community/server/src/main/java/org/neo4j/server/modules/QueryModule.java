@@ -61,7 +61,8 @@ public class QueryModule implements ServerModule {
         webServer.addJAXRSClasses(
                 jaxRsClasses(), config.get(ServerSettings.db_api_path).toString(), null);
 
-        webServer.addFilter(new QueryAPIMetricsFilter(metricsMonitor), "/*");
+        webServer.addFilter(
+                new QueryAPIMetricsFilter(metricsMonitor, config.get(ServerSettings.transaction_id_length)), "/*");
     }
 
     @Override

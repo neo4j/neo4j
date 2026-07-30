@@ -375,7 +375,7 @@ public class QueryResourceTxIT {
     void shouldHaveExpectedTransactionIdLength() throws IOException, InterruptedException, QueryApiTestClientException {
         var res = testClient.beginTx();
         assertThat(res).hasTransaction();
-        Assertions.assertThat(res.body().txId().length()).isEqualTo(4);
+        Assertions.assertThat(res.body().txId()).hasSize(ServerSettings.transaction_id_length.defaultValue());
         testClient.commitTx(res.body().txId());
     }
 

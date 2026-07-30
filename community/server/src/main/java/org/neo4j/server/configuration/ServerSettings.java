@@ -190,7 +190,7 @@ public class ServerSettings implements SettingsDeclaration {
     @Internal
     @Description("The length of the transaction identifier to use in the Query API")
     public static final Setting<Integer> transaction_id_length =
-            newBuilder("internal.server.queryapi.transactionid_length", INT, 4).build();
+            newBuilder("internal.server.queryapi.transactionid_length", INT, 6).build();
 
     @Internal
     @Description("Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this "

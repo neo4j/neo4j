@@ -37,11 +37,11 @@ public class QueryAPIMetricsFilter implements Filter {
     private final Pattern continuePattern;
     private final Pattern commitPattern;
 
-    public QueryAPIMetricsFilter(QueryAPIMetricsMonitor monitor) {
+    public QueryAPIMetricsFilter(QueryAPIMetricsMonitor monitor, long transactionIdLength) {
         this.monitor = monitor;
         this.rootPattern = Pattern.compile(".*/query/v2.*");
-        this.continuePattern = Pattern.compile(".*/query/v2/tx/.{4}");
-        this.commitPattern = Pattern.compile(".*/query/v2/tx/.{4}/commit");
+        this.continuePattern = Pattern.compile(".*/query/v2/tx/.{%d}".formatted(transactionIdLength));
+        this.commitPattern = Pattern.compile(".*/query/v2/tx/.{%d}/commit".formatted(transactionIdLength));
     }
 
     @Override
