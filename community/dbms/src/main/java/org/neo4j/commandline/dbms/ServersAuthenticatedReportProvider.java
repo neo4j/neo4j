@@ -19,9 +19,10 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static org.neo4j.commandline.dbms.DiagnosticsJson.toJson;
 import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsString;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,7 @@ public class ServersAuthenticatedReportProvider extends DiagnosticsAuthenticated
     static final String CLASSIFIER = "servers";
     private static final String QUERY = "SHOW SERVERS YIELD *";
     private static final String SYSTEM_DATABASE = "system";
+    private static final ObjectWriter JSON = new ObjectMapper().writerWithDefaultPrettyPrinter();
 
     public ServersAuthenticatedReportProvider() {
         super(CLASSIFIER);
@@ -66,8 +68,9 @@ public class ServersAuthenticatedReportProvider extends DiagnosticsAuthenticated
         // Run eagerly while the connection is open and capture the result, so the source can be written later.
         final String content;
         try {
-            content = toJson(connection.execute(SYSTEM_DATABASE, QUERY));
-        } catch (RuntimeException e) {
+            content = JSON.writeValueAsString(
+                    connection.execute(SYSTEM_DATABASE, QUERY).rows());
+        } catch (Exception e) {
             String message = "Failed to run '" + QUERY + "': " + e.getMessage();
             return Map.of(CLASSIFIER, List.of(newDiagnosticsString(destination, () -> message)));
         }

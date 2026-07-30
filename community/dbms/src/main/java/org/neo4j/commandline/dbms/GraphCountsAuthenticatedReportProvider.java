@@ -19,9 +19,10 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static org.neo4j.commandline.dbms.DiagnosticsJson.toJson;
 import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsString;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 public class GraphCountsAuthenticatedReportProvider extends DiagnosticsAuthenticatedReportProvider {
     static final String CLASSIFIER = "graphcounts";
     private static final String QUERY = "CALL db.stats.retrieve('GRAPH COUNTS')";
+    private static final ObjectWriter JSON = new ObjectMapper().writerWithDefaultPrettyPrinter();
 
     private Set<String> databaseNames;
 
@@ -75,8 +77,9 @@ public class GraphCountsAuthenticatedReportProvider extends DiagnosticsAuthentic
             // Run eagerly while the connection is open and capture the result, so the source can be written later.
             final String content;
             try {
-                content = toJson(connection.execute(databaseName, QUERY));
-            } catch (RuntimeException e) {
+                content = JSON.writeValueAsString(
+                        connection.execute(databaseName, QUERY).rows());
+            } catch (Exception e) {
                 String message = "ERROR: Failed to run '" + QUERY + "' against database '" + databaseName + "': "
                         + e.getMessage();
                 sources.add(newDiagnosticsString(destination, () -> message));

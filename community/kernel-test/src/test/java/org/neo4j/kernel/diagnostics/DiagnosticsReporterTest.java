@@ -25,6 +25,8 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsFile;
 import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsString;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,12 +36,15 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -50,6 +55,8 @@ import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class DiagnosticsReporterTest {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     @Inject
     private TestDirectory testDirectory;
 
@@ -143,6 +150,116 @@ class DiagnosticsReporterTest {
             assertEquals(1, lines.size());
             assertEquals("hello", lines.get(0));
         }
+    }
+
+    @Test
+    void writesManifestReflectingSuccessAndFailure() throws Exception {
+        DiagnosticsReporter reporter = new DiagnosticsReporter();
+        MyProvider myProvider = new MyProvider(fileSystem);
+        reporter.registerOfflineProvider(myProvider);
+        myProvider.addFile("logs/a.txt", createNewFileWithContent("a.txt", "file a"));
+
+        Path destination = testDirectory.file("report.zip");
+        Set<String> classifiers = new HashSet<>();
+        classifiers.add("logs");
+        classifiers.add("fail");
+        DiagnosticsReportInfo info =
+                new DiagnosticsReportInfo("my-host", OffsetDateTime.of(2026, 7, 23, 14, 15, 30, 0, ZoneOffset.UTC));
+        reporter.dump(classifiers, destination, mock(DiagnosticsReporterProgress.class), true, info);
+
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath());
+        try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
+            Path manifest = fs.getPath(DiagnosticsReportManifest.FILE_NAME);
+            assertThat(manifest).exists();
+            JsonNode root = MAPPER.readTree(Files.readString(manifest));
+
+            assertThat(root.get("schemaVersion").asText()).isEqualTo("1.0");
+            assertThat(root.get("neo4jVersion").isTextual()).isTrue();
+            // host and time passed in, matching what the file name would be built from
+            assertThat(root.get("hostname").asText()).isEqualTo("my-host");
+            assertThat(root.get("timestamp").asText()).isEqualTo("2026-07-23T14:15:30Z");
+
+            JsonNode classifierNodes = root.get("classifiers");
+            // the failing classifier only had a failing source
+            JsonNode fail = classifier(classifierNodes, "fail");
+            assertThat(fail.get("status").asText()).isEqualTo("FAILED");
+            assertThat(fail.get("sources").get(0).get("path").asText()).isEqualTo("fail.txt");
+            // the logs classifier had a single source that was written successfully
+            JsonNode logs = classifier(classifierNodes, "logs");
+            assertThat(logs.get("status").asText()).isEqualTo("SUCCESS");
+            assertThat(logs.get("sources").get(0).get("path").asText()).isEqualTo("logs/a.txt");
+        }
+    }
+
+    @Test
+    void manifestReflectsAggregateStatusFromCollectionFailures() throws Exception {
+        DiagnosticsReporter reporter = new DiagnosticsReporter();
+        // A string source whose supplier throws fails while being written into the archive - the same path a real
+        // collection failure takes - so it is recorded as FAILED in the manifest.
+        Supplier<String> boom = () -> {
+            throw new RuntimeException("boom");
+        };
+        reporter.registerSource("ok", newDiagnosticsString("ok/one.txt", () -> "1")); // all succeed -> SUCCESS
+        reporter.registerSource("partial", newDiagnosticsString("partial/good.txt", () -> "ok")); // mixed -> PARTIAL
+        reporter.registerSource("partial", newDiagnosticsString("partial/bad.txt", boom));
+        reporter.registerSource("broken", newDiagnosticsString("broken/a.txt", boom)); // all fail -> FAILED
+        reporter.registerSource("broken", newDiagnosticsString("broken/b.txt", boom));
+
+        Path destination = testDirectory.file("report.zip");
+        reporter.dump(Set.of("ok", "partial", "broken"), destination, mock(DiagnosticsReporterProgress.class), true);
+
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath());
+        try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
+            JsonNode classifiers = MAPPER.readTree(Files.readString(fs.getPath(DiagnosticsReportManifest.FILE_NAME)))
+                    .get("classifiers");
+
+            // Each classifier's aggregate status reflects the outcomes of its sources.
+            assertThat(classifier(classifiers, "ok").get("status").asText()).isEqualTo("SUCCESS");
+            assertThat(classifier(classifiers, "partial").get("status").asText())
+                    .isEqualTo("PARTIAL");
+            assertThat(classifier(classifiers, "broken").get("status").asText()).isEqualTo("FAILED");
+
+            // Per-source outcomes, including the captured error message for a failure.
+            JsonNode partialSources = classifier(classifiers, "partial").get("sources");
+            assertThat(partialSources.get(0).get("path").asText()).isEqualTo("partial/good.txt");
+            assertThat(partialSources.get(0).get("status").asText()).isEqualTo("SUCCESS");
+            assertThat(partialSources.get(1).get("path").asText()).isEqualTo("partial/bad.txt");
+            assertThat(partialSources.get(1).get("status").asText()).isEqualTo("FAILED");
+            assertThat(partialSources.get(1).get("error").asText()).isEqualTo("boom");
+        }
+    }
+
+    @Test
+    void groupsSourcesOfTheSameClassifierFromDifferentProviders() throws Exception {
+        DiagnosticsReporter reporter = new DiagnosticsReporter();
+        MyProvider first = new MyProvider(fileSystem);
+        first.addFile("logs/a.txt", createNewFileWithContent("a.txt", "file a"));
+        MyProvider second = new MyProvider(fileSystem);
+        second.addFile("logs/b.txt", createNewFileWithContent("b.txt", "file b"));
+        reporter.registerOfflineProvider(first);
+        reporter.registerOfflineProvider(second);
+        reporter.registerSource("logs", newDiagnosticsString("logs/c.txt", () -> "c"));
+
+        Path destination = testDirectory.file("report.zip");
+        reporter.dump(Collections.singleton("logs"), destination, mock(DiagnosticsReporterProgress.class), true);
+
+        // All three sources belong to 'logs', so the manifest lists that classifier once with all of them under it.
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath());
+        try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
+            JsonNode classifiers = MAPPER.readTree(Files.readString(fs.getPath(DiagnosticsReportManifest.FILE_NAME)))
+                    .get("classifiers");
+            assertThat(classifiers).hasSize(1);
+            assertThat(classifier(classifiers, "logs").get("sources")).hasSize(3);
+        }
+    }
+
+    private static JsonNode classifier(JsonNode classifiers, String name) {
+        for (JsonNode classifier : classifiers) {
+            if (name.equals(classifier.get("name").asText())) {
+                return classifier;
+            }
+        }
+        throw new AssertionError("No classifier named '" + name + "' in " + classifiers);
     }
 
     private Path createNewFileWithContent(String name, String content) throws IOException {

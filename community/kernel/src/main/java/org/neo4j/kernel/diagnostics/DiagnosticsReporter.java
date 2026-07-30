@@ -35,6 +35,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,9 +44,13 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.diagnostics.DiagnosticsReportManifest.ClassifierResult;
+import org.neo4j.kernel.diagnostics.DiagnosticsReportManifest.SourceResult;
 import org.neo4j.service.Services;
 
 public class DiagnosticsReporter {
+    private record ClassifierSource(String classifier, DiagnosticsReportSource source) {}
+
     private final List<DiagnosticsOfflineReportProvider> providers = new ArrayList<>();
     private final List<DiagnosticsAuthenticatedReportProvider> authenticatedProviders = new ArrayList<>();
     private final Set<String> availableClassifiers = new TreeSet<>();
@@ -72,7 +77,17 @@ public class DiagnosticsReporter {
             DiagnosticsReporterProgress progress,
             boolean ignoreDiskSpaceCheck)
             throws IOException {
-        final List<DiagnosticsReportSource> sources = getAllSources(classifiers);
+        dump(classifiers, destination, progress, ignoreDiskSpaceCheck, DiagnosticsReportInfo.local());
+    }
+
+    public void dump(
+            Set<String> classifiers,
+            Path destination,
+            DiagnosticsReporterProgress progress,
+            boolean ignoreDiskSpaceCheck,
+            DiagnosticsReportInfo info)
+            throws IOException {
+        final List<ClassifierSource> sources = getAllSources(classifiers);
         final Path destinationDir = createDirectories(destination.getParent());
 
         if (!ignoreDiskSpaceCheck) {
@@ -86,15 +101,21 @@ public class DiagnosticsReporter {
         progress.setTotalSteps(sources.size());
         try (ZipOutputStream zip =
                 new ZipOutputStream(new BufferedOutputStream(newOutputStream(destination, CREATE_NEW, WRITE)), UTF_8)) {
-            writeDiagnostics(zip, sources, progress);
+            List<ClassifierResult> results = writeDiagnostics(zip, sources, progress);
+            writeManifest(zip, new DiagnosticsReportManifest(info.hostName(), info.timestamp(), results));
         }
     }
 
-    private static void writeDiagnostics(
-            ZipOutputStream zip, List<DiagnosticsReportSource> sources, DiagnosticsReporterProgress progress) {
+    private static List<ClassifierResult> writeDiagnostics(
+            ZipOutputStream zip, List<ClassifierSource> sources, DiagnosticsReporterProgress progress) {
+        final Map<String, ClassifierResult> resultsByClassifier = new LinkedHashMap<>();
         int step = 0;
         final byte[] buf = new byte[(int) kibiBytes(8)]; // same as default buf size in buffered streams
-        for (DiagnosticsReportSource source : sources) {
+        for (ClassifierSource classifierSource : sources) {
+            final DiagnosticsReportSource source = classifierSource.source();
+            final List<SourceResult> sourceResults = resultsByClassifier
+                    .computeIfAbsent(classifierSource.classifier(), c -> new ClassifierResult(c, new ArrayList<>()))
+                    .sources();
             ++step;
             progress.started(step, source.destinationPath());
             try (InputStream rawInput = source.newInputStream();
@@ -113,27 +134,52 @@ public class DiagnosticsReporter {
                 zip.closeEntry();
             } catch (Exception e) {
                 progress.error("Failed to write " + source.destinationPath(), e);
+                sourceResults.add(
+                        new SourceResult(source.destinationPath(), CollectionStatus.FAILED, describeError(e)));
                 continue;
             }
             progress.finished();
+            sourceResults.add(new SourceResult(source.destinationPath(), CollectionStatus.SUCCESS, null));
         }
+        return List.copyOf(resultsByClassifier.values());
     }
 
-    private List<DiagnosticsReportSource> getAllSources(Set<String> classifiers) {
-        final List<DiagnosticsReportSource> allSources = new ArrayList<>();
-        providers.forEach(provider -> allSources.addAll(provider.getDiagnosticsSources(classifiers)));
+    private static void writeManifest(ZipOutputStream zip, DiagnosticsReportManifest manifest) throws IOException {
+        final ZipEntry entry = new ZipEntry(DiagnosticsReportManifest.FILE_NAME);
+        zip.putNextEntry(entry);
+        zip.write(manifest.toJson().getBytes(UTF_8));
+        zip.closeEntry();
+    }
+
+    private static String describeError(Exception e) {
+        return e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+    }
+
+    private List<ClassifierSource> getAllSources(Set<String> classifiers) {
+        final boolean all = classifiers.contains("all");
+
+        // Providers are queried one classifier at a time so that every source can be attributed to one in the
+        // manifest; a provider only produces sources for the classifiers it is asked for, so the union is the same
+        // as querying it with the full set at once.
+        final List<ClassifierSource> allSources = new ArrayList<>();
+        providers.forEach(provider -> {
+            for (String classifier : all ? provider.getFilterClassifiers() : classifiers) {
+                provider.getDiagnosticsSources(Set.of(classifier))
+                        .forEach(source -> allSources.add(new ClassifierSource(classifier, source)));
+            }
+        });
         additionalSources.forEach((classifier, sources) -> {
-            if (classifiers.contains("all") || classifiers.contains(classifier)) {
-                allSources.addAll(sources);
+            if (all || classifiers.contains(classifier)) {
+                sources.forEach(source -> allSources.add(new ClassifierSource(classifier, source)));
             }
         });
         return allSources;
     }
 
     private static void estimateSizeAndCheckAvailableDiskSpace(
-            Path destination, List<DiagnosticsReportSource> sources, Path destinationDir) {
+            Path destination, List<ClassifierSource> sources, Path destinationDir) {
         final long estimatedFinalSize = sources.stream()
-                .mapToLong(DiagnosticsReportSource::estimatedSize)
+                .mapToLong(classifierSource -> classifierSource.source().estimatedSize())
                 .sum();
         final long freeSpace = destinationDir.toFile().getFreeSpace();
         if (estimatedFinalSize > freeSpace) {

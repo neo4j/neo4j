@@ -25,10 +25,7 @@ import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosti
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +41,7 @@ import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.diagnostics.DiagnosticsLiveConnection;
+import org.neo4j.kernel.diagnostics.DiagnosticsReportInfo;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
 import org.neo4j.kernel.diagnostics.DiagnosticsReporter;
@@ -192,9 +190,11 @@ public class DiagnosticsReportGenerator {
                     .resolve("reports")
                     .toAbsolutePath();
         }
-        Path reportFile = reportDir.resolve(getDefaultFilename());
+        // Resolve host and time once so the archive file name and the manifest inside it always correspond.
+        DiagnosticsReportInfo info = DiagnosticsReportInfo.local();
+        Path reportFile = reportDir.resolve(getFilename(info));
         out.println("Writing report to " + reportFile.toAbsolutePath());
-        reporter.dump(classifiers, reportFile, progress, ignoreDiskSpaceCheck);
+        reporter.dump(classifiers, reportFile, progress, ignoreDiskSpaceCheck, info);
         out.println("Report generated at " + reportFile.toAbsolutePath());
         return reportFile.toAbsolutePath().toString();
     }
@@ -218,10 +218,9 @@ public class DiagnosticsReportGenerator {
         }
     }
 
-    public static String getDefaultFilename() throws UnknownHostException {
-        String hostName = InetAddress.getLocalHost().getHostName();
-        String safeFilename = hostName.replaceAll("[^a-zA-Z0-9._]+", "_");
-        return safeFilename + "-" + LocalDateTime.now().format(filenameDateTimeFormatter) + ".zip";
+    public static String getFilename(DiagnosticsReportInfo info) {
+        String safeFilename = info.hostName().replaceAll("[^a-zA-Z0-9._]+", "_");
+        return safeFilename + "-" + info.timestamp().toLocalDateTime().format(filenameDateTimeFormatter) + ".zip";
     }
 
     public static String describeClassifier(String classifier) {

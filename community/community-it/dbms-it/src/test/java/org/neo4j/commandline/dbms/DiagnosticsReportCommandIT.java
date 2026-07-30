@@ -538,8 +538,8 @@ class DiagnosticsReportCommandIT {
                     String.format("databases/%s/%s.json", "neo4j", IndexesAuthenticatedReportProvider.CLASSIFIER));
             assertTrue(Files.exists(report));
             assertThat(Files.readString(report))
-                    .contains("\"name\": \"neo4j\"")
-                    .contains("\"address\": \"localhost:7687\"");
+                    .contains("\"name\" : \"neo4j\"")
+                    .contains("\"address\" : \"localhost:7687\"");
         }
     }
 
