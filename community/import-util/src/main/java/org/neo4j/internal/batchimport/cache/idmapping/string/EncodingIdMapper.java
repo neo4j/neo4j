@@ -1058,7 +1058,11 @@ public class EncodingIdMapper implements IdMapper {
 
     @Override
     public LongPredicate leftOverDuplicateNodesIdsPredicate() {
-        return numberOfDuplicates == 0 ? null : value -> trackerCache.isMarkedAsDuplicate(value);
+        // Ids above the highest set index were never put into this mapper and so cannot be duplicates. The tracker
+        // cache is only sized to cover the ids that were.
+        return numberOfDuplicates == 0
+                ? null
+                : value -> value <= highestSetIndex && trackerCache.isMarkedAsDuplicate(value);
     }
 
     public static int defaultNumberOfSortWorkers() {

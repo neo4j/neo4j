@@ -53,6 +53,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.LongPredicate;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.factory.primitive.LongSets;
@@ -659,6 +660,29 @@ class EncodingIdMapperTest {
                 }
             }
             assertThat(mapper.getHighId()).isEqualTo(highestId + 1);
+        }
+    }
+
+    @ParameterizedTest(name = "processors:{0}")
+    @MethodSource("data")
+    void leftOverDuplicateNodesIdsPredicateShouldRejectIdsThatWereNeverPut(int processors)
+            throws KeyCollisionException {
+        // GIVEN a mapper holding a duplicate, so that the predicate is backed by the tracker cache
+        try (IdMapper mapper = mapper(new LongEncoder(), Radix.LONG, EncodingIdMapper.NO_MONITOR, processors)) {
+            IdMapper.Setter setter = mapper.newSetter(0);
+            List<Object> ids = List.of(0L, 0L, 1L);
+            long nodeId = 0;
+            for (Object inputId : ids) {
+                setter.put(inputId, nodeId++, globalGroup);
+            }
+            mapper.prepare(values(ids.toArray()), mock(Collector.class), NONE, LongSets.immutable.empty());
+
+            LongPredicate isDuplicate = mapper.leftOverDuplicateNodesIdsPredicate();
+            assertThat(isDuplicate).isNotNull();
+
+            // THEN ids beyond the ones that were put are not duplicates
+            assertThat(isDuplicate.test(ids.size())).isFalse();
+            assertThat(isDuplicate.test(ids.size() + 100L)).isFalse();
         }
     }
 
