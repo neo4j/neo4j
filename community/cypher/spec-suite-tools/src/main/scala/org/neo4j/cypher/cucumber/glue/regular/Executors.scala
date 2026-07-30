@@ -192,7 +192,14 @@ trait ExecutorPool extends Executors {
   }
 
   protected def createExecutor(extraSettings: Settings): DbAccessor = {
-    accessorFrom(startDbms(extraSettings), extraSettings, None, None)
+    val dbms = startDbms(extraSettings)
+    try {
+      accessorFrom(dbms, extraSettings, None, None)
+    } catch {
+      case t: Throwable =>
+        Try(dbms.shutdown())
+        throw t
+    }
   }
 
   override def start(): Unit = {
@@ -318,25 +325,31 @@ final class SpdExecutorPool @Inject() (override val conf: TestConf) extends Exec
 
   override protected def startDbms(extraSettings: Settings): DatabaseManagementService = {
     val dbms = super.startDbms(extraSettings)
-    val systemDb = dbms.database(SYSTEM_DATABASE_NAME)
-    systemDb.executeTransactionally(
-      s"CYPHER 25 CREATE DATABASE neo4j GRAPH SHARD { TOPOLOGY 1 PRIMARY 0 SECONDARIES } PROPERTY SHARDS { COUNT 3 TOPOLOGY 1 REPLICA}"
-    )
+    try {
+      val systemDb = dbms.database(SYSTEM_DATABASE_NAME)
+      systemDb.executeTransactionally(
+        s"CYPHER 25 CREATE DATABASE neo4j GRAPH SHARD { TOPOLOGY 1 PRIMARY 0 SECONDARIES } PROPERTY SHARDS { COUNT 3 TOPOLOGY 1 REPLICA}"
+      )
 
-    val spdAvailabilityQuery = "CALL internal.dbms.spd.available()"
-    val emptyMap = java.util.Map.of[String, AnyRef]()
+      val spdAvailabilityQuery = "CALL internal.dbms.spd.available()"
+      val emptyMap = java.util.Map.of[String, AnyRef]()
 
-    // Wait until the SPD is available
-    await()
-      .atMost(120, TimeUnit.SECONDS)
-      .pollDelay(1, TimeUnit.SECONDS)
-      .pollInSameThread
-      .untilAsserted { () =>
-        assertThat(systemDb.executeTransactionally(spdAvailabilityQuery, emptyMap, (r: Result) => r.stream().toList))
-          .containsExactly(java.util.Map.of("available", java.lang.Boolean.TRUE, "detail", "All started"))
-      }
+      // Wait until the SPD is available
+      await()
+        .atMost(120, TimeUnit.SECONDS)
+        .pollDelay(1, TimeUnit.SECONDS)
+        .pollInSameThread
+        .untilAsserted { () =>
+          assertThat(systemDb.executeTransactionally(spdAvailabilityQuery, emptyMap, (r: Result) => r.stream().toList))
+            .containsExactly(java.util.Map.of("available", java.lang.Boolean.TRUE, "detail", "All started"))
+        }
 
-    dbms
+      dbms
+    } catch {
+      case t: Throwable =>
+        Try(dbms.shutdown())
+        throw t
+    }
   }
 }
 
@@ -348,7 +361,7 @@ final class SpdExecutorPool @Inject() (override val conf: TestConf) extends Exec
  */
 @com.google.inject.Singleton
 final class CompositeExecutorPool @Inject() (override val conf: TestConf) extends ExecutorPool {
-  import CompositeExecutorPool._
+  import org.neo4j.cypher.cucumber.glue.regular.CompositeExecutorPool.*
 
   // A single keystore (required to store the remote alias' encrypted password) reused for every DBMS.
   // The setting keys mirror enterprise SecuritySettings.keystore_path/keystore_password/key_name, inlined as raw

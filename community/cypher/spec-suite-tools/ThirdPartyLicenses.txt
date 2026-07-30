@@ -34,7 +34,6 @@ Apache Software License, Version 2.0
   AssertJ Core
   Awaitility
   Byte Buddy (without dependencies)
-  Byte Buddy agent
   Caffeine cache
   Commons Pool
   Compiler Interface
@@ -1683,7 +1682,6 @@ MIT License
   jersey-inject-hk2
   JUnit XML Formatter
   Messages NDJSON
-  mockito-core
   pprint_3
   Pretty Formatter
   SLF4J API Module
