@@ -33,9 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
-import org.neo4j.bolt.negotiation.message.ProtocolCapability;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.boltmessages.response.FailureMessage;
 import org.neo4j.boltmessages.response.FailureMetadata;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -75,59 +72,13 @@ class FailureMessageEncoderTest {
     void write(FailureMessage message, Map<String, Object> expectedMetadata) {
         var buf = PackstreamBuf.allocUnpooled();
         var encoder = FailureMessageEncoder.getInstance();
-        var connection = Mockito.mock(Connection.class);
-        Mockito.doReturn(false).when(connection).hasSelectedProtocolCapability(Mockito.any(ProtocolCapability.class));
 
-        encoder.write(connection, buf, message);
+        encoder.write(null, buf, message);
 
         PackstreamBufAssertions.assertThat(buf)
                 .containsMap(meta -> assertThat(meta).isNotNull().isEqualTo(expectedMetadata));
 
         assertThat(buf.raw().isReadable()).isFalse();
-        Mockito.verify(connection).hasSelectedProtocolCapability(ProtocolCapability.FABRIC);
-    }
-
-    @ParameterizedTest
-    @MethodSource("failureMessageInFabricAndExpectedMetadata")
-    void writeWhenFabric(FailureMessage message, Map<String, Object> expectedMetadata) {
-        var buf = PackstreamBuf.allocUnpooled();
-        var encoder = FailureMessageEncoder.getInstance();
-        var connection = Mockito.mock(Connection.class);
-        Mockito.doReturn(true).when(connection).hasSelectedProtocolCapability(Mockito.any(ProtocolCapability.class));
-
-        encoder.write(connection, buf, message);
-
-        PackstreamBufAssertions.assertThat(buf)
-                .containsMap(meta -> assertThat(meta).isNotNull().isEqualTo(expectedMetadata));
-
-        assertThat(buf.raw().isReadable()).isFalse();
-        Mockito.verify(connection).hasSelectedProtocolCapability(ProtocolCapability.FABRIC);
-    }
-
-    public static List<Arguments> failureMessageInFabricAndExpectedMetadata() {
-        var sourceFailures = List.of(
-                failureWithNoCauseAndDefaultDiagnosticRecord(),
-                failureWithNoCauseAndDefaultDiagnosticRecordButStatusParams(),
-                failureWithNoCauseAndDefaultDiagnosticRecordButClassification(),
-                failureWithNoCauseAndDefaultDiagnosticRecordButPosition(),
-                failureWithNoCauseAndDefaultDiagnosticRecordButDefaultPosition(),
-                failureWithNoCauseAndDefaultDiagnosticRecordButMadeUpRecord(),
-                failureWithNoCauseAndNonDefaultDiagnosticRecord());
-
-        var argumentsList = new ArrayList<Arguments>();
-
-        for (var failure : sourceFailures) {
-            argumentsList.add(
-                    Arguments.of(failure.getLeft(), asExpectedInFabric(failure.getLeft(), failure.getRight())));
-            for (var cause : sourceFailures) {
-                var failureWithCause = copyWithCause(failure, cause);
-                argumentsList.add(Arguments.of(
-                        failureWithCause.getLeft(),
-                        asExpectedInFabric(failureWithCause.getLeft(), failureWithCause.getRight())));
-            }
-        }
-
-        return argumentsList;
     }
 
     private static List<Arguments> failureMessageAndExpectedMetadata() {
@@ -178,7 +129,7 @@ class FailureMessageEncoderTest {
                         false),
                 Map.of(
                         "neo4j_code", Status.General.UnknownError.code().serialize(),
-                        "message", "50N42: something, unknown error but in gql",
+                        "message", "Unknown error, mate",
                         "description", "error: something, unknown error but in gql",
                         "gql_status", "50N42"));
     }
@@ -216,7 +167,7 @@ class FailureMessageEncoderTest {
                         "neo4j_code",
                         Status.General.UnknownError.code().serialize(),
                         "message",
-                        "50N42: something, unknown error but in gql",
+                        "Unknown error, mate",
                         "description",
                         "error: something, unknown error but in gql",
                         "gql_status",
@@ -260,7 +211,7 @@ class FailureMessageEncoderTest {
                         "neo4j_code",
                         Status.General.UnknownError.code().serialize(),
                         "message",
-                        "50N42: something, unknown error but in gql",
+                        "Unknown error, mate",
                         "description",
                         "error: something, unknown error but in gql",
                         "gql_status",
@@ -296,7 +247,7 @@ class FailureMessageEncoderTest {
                         "neo4j_code",
                         Status.General.UnknownError.code().serialize(),
                         "message",
-                        "50N42: something, unknown error but in gql",
+                        "Unknown error, mate",
                         "description",
                         "error: something, unknown error but in gql",
                         "gql_status",
@@ -338,7 +289,7 @@ class FailureMessageEncoderTest {
                         "neo4j_code",
                         Status.General.UnknownError.code().serialize(),
                         "message",
-                        "50N42: something, unknown error but in gql",
+                        "Unknown error, mate",
                         "description",
                         "error: something, unknown error but in gql",
                         "gql_status",
@@ -362,7 +313,7 @@ class FailureMessageEncoderTest {
                         "neo4j_code",
                         Status.General.UnknownError.code().serialize(),
                         "message",
-                        "50N42: something, unknown error but in gql",
+                        "Unknown error, mate",
                         "description",
                         "error: something, unknown error but in gql",
                         "gql_status",
@@ -387,7 +338,7 @@ class FailureMessageEncoderTest {
                         "neo4j_code",
                         Status.General.UnknownError.code().serialize(),
                         "message",
-                        "50N42: something, unknown error but in gql",
+                        "Unknown error, mate",
                         "description",
                         "error: something, unknown error but in gql",
                         "gql_status",
@@ -417,6 +368,8 @@ class FailureMessageEncoderTest {
                 // Causes doesn't have neo4j_code
                 .filter(e -> !e.getKey().equals("neo4j_code"))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        causeMap.put("message", causeFailure.metadata().message());
         failureMap.put("cause", causeMap);
         return Pair.of(failure, failureMap);
     }
@@ -439,17 +392,5 @@ class FailureMessageEncoderTest {
                                 Map.of("OPERATION", "", "OPERATION_CODE", "0", "CURRENT_SCHEMA", "/"),
                                 null)),
                 false);
-    }
-
-    @SuppressWarnings({"unchecked", "MismatchedQueryAndUpdateOfCollection"})
-    private static Map<String, Object> asExpectedInFabric(FailureMessage message, Map<String, Object> expected) {
-        var expectedInFabric = new HashMap<>(expected);
-        var diagnosticRecord = new HashMap<String, Object>();
-        if (expectedInFabric.containsKey("diagnostic_record")) {
-            diagnosticRecord.putAll((Map<String, ?>) expectedInFabric.get("diagnostic_record"));
-        }
-        diagnosticRecord.put("__legacy_message", message.metadata().legacyMessage());
-        expectedInFabric.put("diagnostic_record", diagnosticRecord);
-        return expectedInFabric;
     }
 }

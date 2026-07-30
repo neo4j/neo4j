@@ -19,13 +19,12 @@
  */
 package org.neo4j.bolt.protocol.common.message.encoder;
 
-import java.util.HashMap;
 import java.util.Map;
-import org.neo4j.bolt.negotiation.message.ProtocolCapability;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.boltmessages.response.FailureMessage;
 import org.neo4j.boltmessages.response.FailureMetadata;
-import org.neo4j.gqlstatus.DiagnosticRecord;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructWriter;
 
@@ -72,7 +71,9 @@ public final class FailureMessageEncoder implements StructWriter<Connection, Fai
     }
 
     private void writeMetadata(Connection ctx, PackstreamBuf buffer, FailureMetadata payload, boolean isCause) {
-        var diagnosticRecord = getDiagnosticRecord(ctx, payload, isCause);
+        var diagnosticRecord = payload.diagnosticRecord().entrySet().stream()
+                .filter(Predicate.not(FailureMessageEncoder::isDefaultDiagnosticRecordEntry))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         var size = payload.cause() != null ? 6 : 5;
         if (diagnosticRecord.isEmpty()) {
@@ -91,7 +92,7 @@ public final class FailureMessageEncoder implements StructWriter<Connection, Fai
         }
 
         buffer.writeString("message");
-        buffer.writeString(payload.message());
+        buffer.writeString(isCause ? payload.message() : payload.legacyMessage());
 
         buffer.writeString("gql_status");
         buffer.writeString(payload.gqlStatus());
@@ -108,22 +109,6 @@ public final class FailureMessageEncoder implements StructWriter<Connection, Fai
             buffer.writeString("cause");
             this.writeMetadata(ctx, buffer, payload.cause(), true);
         }
-    }
-
-    private static Map<String, Object> getDiagnosticRecord(Connection ctx, FailureMetadata payload, boolean isCause) {
-        var diagnosticRecord = new HashMap<String, Object>();
-
-        for (Map.Entry<String, Object> entry : payload.diagnosticRecord().entrySet()) {
-            if (!isDefaultDiagnosticRecordEntry(entry)) {
-                diagnosticRecord.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        if (!isCause && ctx.hasSelectedProtocolCapability(ProtocolCapability.FABRIC)) {
-            diagnosticRecord.put(DiagnosticRecord.LEGACY_MESSAGE_KEY, payload.legacyMessage());
-        }
-
-        return diagnosticRecord;
     }
 
     private static boolean isDefaultDiagnosticRecordEntry(Map.Entry<String, Object> entry) {

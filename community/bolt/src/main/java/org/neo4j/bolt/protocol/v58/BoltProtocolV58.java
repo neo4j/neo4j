@@ -22,7 +22,6 @@ package org.neo4j.bolt.protocol.v58;
 import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.message.encoder.FailureMessageEncoder;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.bolt.protocol.io.reader.struct.DateReader;
 import org.neo4j.bolt.protocol.io.reader.struct.DateTimeReader;
@@ -35,8 +34,6 @@ import org.neo4j.bolt.protocol.io.reader.struct.Point3dReader;
 import org.neo4j.bolt.protocol.io.reader.struct.TimeReader;
 import org.neo4j.bolt.protocol.io.writer.UUIDUnknownTypeVersionedValueWriter;
 import org.neo4j.bolt.protocol.io.writer.VectorUnknownTypeVersionedValueWriter;
-import org.neo4j.bolt.protocol.v57.message.encoder.FailureMessageEncoderV57;
-import org.neo4j.boltmessages.response.ResponseMessage;
 import org.neo4j.packstream.io.Type;
 import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.values.storable.Value;
@@ -55,13 +52,6 @@ public final class BoltProtocolV58 extends AbstractBoltProtocol {
     @Override
     public ProtocolVersion version() {
         return VERSION;
-    }
-
-    @Override
-    protected StructRegistry.Builder<Connection, ResponseMessage> createResponseMessageRegistry() {
-        return super.createResponseMessageRegistry()
-                .unregister(FailureMessageEncoder.getInstance())
-                .register(FailureMessageEncoderV57.getInstance());
     }
 
     @Override
