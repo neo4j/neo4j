@@ -75,7 +75,7 @@ object leafPlanOptions extends LeafPlanFinder {
     val leafPlanCandidatesWithSelections = queryPlannerKit.select(leafPlanCandidates, queryGraph)
 
     leafPlanCandidatesWithSelections
-      .pipe(addCandidatesWithVectorSearch(_, queryPlannerKit, queryGraph, context))
+      .pipe(addCandidatesWithSearch(_, queryPlannerKit, queryGraph, context))
       .toSeq
       .sequentiallyGroupBy(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
       .map { case (availableSymbols, bucket) =>
@@ -116,7 +116,7 @@ object leafPlanOptions extends LeafPlanFinder {
 
   def leafPlanHeuristic(context: LogicalPlanningContext): SelectorHeuristic = new LeafPlanSelectorHeuristic(context)
 
-  private def addCandidatesWithVectorSearch(
+  private def addCandidatesWithSearch(
     leafPlanCandidatesWithSelections: Set[LogicalPlan],
     kit: QueryPlannerKit,
     queryGraph: QueryGraph,
@@ -125,7 +125,7 @@ object leafPlanOptions extends LeafPlanFinder {
     if (queryGraph.searchClause.isEmpty) {
       leafPlanCandidatesWithSelections
     } else {
-      val kitWithSearch = QueryPlannerKit.withVectorSearchSupportIfNeeded(kit, queryGraph, context)
+      val kitWithSearch = QueryPlannerKit.withSearchSupportIfNeeded(kit, queryGraph, context)
       val candidatesWithSelectionsAndSearch = kitWithSearch.select(leafPlanCandidatesWithSelections, queryGraph)
       // candidates with SEARCH introduce new symbols (binding variable), so we don't want to just map
       // over the original candidates, but have them added to the set

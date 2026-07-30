@@ -2242,25 +2242,7 @@ case class LogicalPlanProducer(
     argumentIds: Set[LogicalVariable],
     implicitlySolvedPredicates: Set[Expression] = Set.empty
   ): LogicalPlan = {
-    val selectionsFromUnsolvedTypes: Seq[Expression] = {
-      // The relationship vector index determines the relationship type that is actually solved.
-      // The index could cover multiple relationship types, so we need to check which types are actually solved by the index.
-      // If the pattern relationship has a type that is either not included in the index or is a specific subset of it, then we should identify that and solve it separately as a hidden selection.
-      val solvedTypes = indexedTypes.map(_.name).toSet
-      val typesToSolve = patternRelationship.types.map(_.name).toSet
-      if (typesToSolve.nonEmpty && !solvedTypes.subsetOf(typesToSolve)) {
-        // Assume the types supported by the index are ACTS_IN and KNOWS, but the pattern relationship only allows ACTS_IN
-        // Then we need to solve the ACTS_IN type separately as a hidden selection.
-        // Furthermore, if the index only supports KNOWS, but the pattern relationship allows only ACTS_IN, we need a hidden selection that filters out all relationships (since a relationship only has one type).
-        // However, if it was the converse, i.e., the pattern relationship allows both ACTS_IN and KNOWS, but the index only supports ACTS_IN,
-        // then all relationships returned by the index would be valid since ACTS_IN is a valid subset of (ACTS_IN, KNOWS)
-        // Also, if the pattern relationship does not have any types specified, then we assume all types returned by the index are valid
-        val relTypeQueries = patternRelationship.types.map(relType =>
-          HasTypes(patternRelationship.variable, Seq(relType))(InputPosition.NONE)
-        )
-        Seq(Ors.create(ListSet.from(relTypeQueries)))
-      } else Seq.empty
-    }
+    val selectionsFromUnsolvedTypes = selectionsFromTypesUnsolvedByIndex(patternRelationship, indexedTypes)
 
     val solvedQueryGraphWithPredicate =
       QueryGraph.empty
@@ -2379,6 +2361,29 @@ case class LogicalPlanProducer(
     } else {
       createLeaf(variable)
     }
+
+  private def selectionsFromTypesUnsolvedByIndex(
+    patternRelationship: PatternRelationship,
+    indexedTypes: Seq[RelationshipTypeToken]
+  ): Seq[Expression] = {
+    // The relationship index determines the relationship type that is actually solved.
+    // The index could cover multiple relationship types, so we need to check which types are actually solved by the index.
+    // If the pattern relationship has a type that is either not included in the index or is a specific subset of it, then we should identify that and solve it separately as a hidden selection.
+    val solvedTypes = indexedTypes.map(_.name).toSet
+    val typesToSolve = patternRelationship.types.map(_.name).toSet
+    if (typesToSolve.nonEmpty && !solvedTypes.subsetOf(typesToSolve)) {
+      // Assume the types supported by the index are ACTS_IN and KNOWS, but the pattern relationship only allows ACTS_IN
+      // Then we need to solve the ACTS_IN type separately as a hidden selection.
+      // Furthermore, if the index only supports KNOWS, but the pattern relationship allows only ACTS_IN, we need a hidden selection that filters out all relationships (since a relationship only has one type).
+      // However, if it was the converse, i.e., the pattern relationship allows both ACTS_IN and KNOWS, but the index only supports ACTS_IN,
+      // then all relationships returned by the index would be valid since ACTS_IN is a valid subset of (ACTS_IN, KNOWS)
+      // Also, if the pattern relationship does not have any types specified, then we assume all types returned by the index are valid
+      val relTypeQueries = patternRelationship.types.map(relType =>
+        HasTypes(patternRelationship.variable, Seq(relType))(InputPosition.NONE)
+      )
+      Seq(Ors.create(ListSet.from(relTypeQueries)))
+    } else Seq.empty
+  }
 
   private def cachedPropertiesForIndexedProperties(
     context: LogicalPlanningContext,

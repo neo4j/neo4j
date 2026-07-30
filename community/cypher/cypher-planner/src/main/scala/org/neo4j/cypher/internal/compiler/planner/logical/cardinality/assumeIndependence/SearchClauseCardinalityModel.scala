@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
-import org.neo4j.cypher.internal.compiler.planner.logical.VectorSearchExceptionHandler
+import org.neo4j.cypher.internal.compiler.planner.logical.SearchExceptionHandler
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.ir.VectorSearchClause
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 
@@ -56,15 +57,15 @@ object SearchClauseCardinalityModel {
    * @return The selectivity of the SEARCH clause
    */
   private def getSearchSelectivity(indexLabelsCardinality: Double, searchLimit: Expression): Selectivity = {
-    val vectorSearchLimit = searchLimit match {
+    val searchLimitRows = searchLimit match {
       case SignedDecimalIntegerLiteral(v: String) => Math.max(0.0, v.toDouble)
       case _                                      => PlannerDefaults.DEFAULT_LIMIT_ROW_COUNT.toDouble
     }
 
-    if (vectorSearchLimit >= indexLabelsCardinality)
+    if (searchLimitRows >= indexLabelsCardinality)
       Selectivity.ONE
     else
-      Selectivity(vectorSearchLimit / indexLabelsCardinality)
+      Selectivity(searchLimitRows / indexLabelsCardinality)
   }
 
   /**
@@ -104,7 +105,7 @@ object SearchClauseCardinalityModel {
     val disjunctiveIndexLabelIds = planContext.nodeVectorIndexByName(vectorSearch.indexName) match {
       case Right(descriptor) => descriptor.labelIds
       case Left(vectorIndexError) =>
-        VectorSearchExceptionHandler.handleErrors(
+        SearchExceptionHandler.handleErrors(
           vectorIndexError,
           vectorSearch.indexName,
           vectorSearch.resultVariable.name
@@ -114,6 +115,24 @@ object SearchClauseCardinalityModel {
       disjunctiveIndexLabelIds.nonEmpty,
       "Vector Index must have at least one label"
     )
+    nodeSearchClauseSelectivity(
+      queryGraph,
+      context,
+      planContext,
+      vectorSearch.resultVariable,
+      vectorSearch.limit,
+      disjunctiveIndexLabelIds
+    )
+  }
+
+  private def nodeSearchClauseSelectivity(
+    queryGraph: QueryGraph,
+    context: QueryGraphCardinalityContext,
+    planContext: PlanContext,
+    resultVariable: LogicalVariable,
+    searchLimit: Expression,
+    disjunctiveIndexLabelIds: Seq[LabelId]
+  ): (Selectivity, QueryGraph, QueryGraphCardinalityContext) = {
     val indexLabelIdToNameMap = disjunctiveIndexLabelIds
       .map(labelId => (labelId, planContext.getLabelName(labelId)))
       .toMap
@@ -121,13 +140,13 @@ object SearchClauseCardinalityModel {
     // Predicate for a disjunction of labels on the bound node of the search clause
     val searchIndexLabelPredicate =
       Predicate(
-        Set(vectorSearch.resultVariable),
+        Set(resultVariable),
         Ors.create(
           indexLabelIdToNameMap
             .map {
               case (_, labelName) =>
                 HasLabels(
-                  vectorSearch.resultVariable,
+                  resultVariable,
                   Seq(LabelName(labelName)(InputPosition.NONE))
                 )(InputPosition.NONE)
             }
@@ -142,21 +161,21 @@ object SearchClauseCardinalityModel {
     )
 
     val searchIndexLabelsCardinality =
-      indexDisjunctiveLabelsCardinality(vectorSearch.resultVariable, searchIndexLabelPredicate, updatedContext)
+      indexDisjunctiveLabelsCardinality(resultVariable, searchIndexLabelPredicate, updatedContext)
 
-    (getSearchSelectivity(searchIndexLabelsCardinality.amount, vectorSearch.limit), updatedQueryGraph, updatedContext)
+    (getSearchSelectivity(searchIndexLabelsCardinality.amount, searchLimit), updatedQueryGraph, updatedContext)
   }
 
   private def addTypesToQueryGraphAndSemanticTable(
     indexTypeIdToNameMap: Map[RelTypeId, String],
     queryGraph: QueryGraph,
     context: QueryGraphCardinalityContext,
-    vectorSearch: VectorSearchClause
+    resultVariable: LogicalVariable
   ): (QueryGraph, QueryGraphCardinalityContext) = {
     val typeNames =
       indexTypeIdToNameMap.map(indexTypeIdToName => RelTypeName(indexTypeIdToName._2)(InputPosition.NONE)).toSeq
 
-    val maybePatternRelationship = queryGraph.patternRelationships.find(_.variable == vectorSearch.resultVariable)
+    val maybePatternRelationship = queryGraph.patternRelationships.find(_.variable == resultVariable)
     val updatedQueryGraph =
       maybePatternRelationship match {
         case Some(patternRelationship) =>
@@ -172,7 +191,7 @@ object SearchClauseCardinalityModel {
           // Add the type to the pattern relationship
           queryGraph.withPatternRelationships(
             queryGraph.patternRelationships
-              .filterNot(_.variable == vectorSearch.resultVariable)
+              .filterNot(_.variable == resultVariable)
               + patternRelationshipWithIndexTypes
           )
         case _ =>
@@ -238,7 +257,7 @@ object SearchClauseCardinalityModel {
     val indexTypeIds = planContext.relationshipVectorIndexByName(vectorSearch.indexName) match {
       case Right(descriptor) => descriptor.relTypeIds
       case Left(vectorIndexError) =>
-        VectorSearchExceptionHandler.handleErrors(
+        SearchExceptionHandler.handleErrors(
           vectorIndexError,
           vectorSearch.indexName,
           vectorSearch.resultVariable.name
@@ -249,9 +268,27 @@ object SearchClauseCardinalityModel {
       "Vector Index must have at least one type"
     )
 
+    relationshipSearchClauseSelectivity(
+      queryGraph,
+      context,
+      planContext,
+      vectorSearch.resultVariable,
+      vectorSearch.limit,
+      indexTypeIds
+    )
+  }
+
+  private def relationshipSearchClauseSelectivity(
+    queryGraph: QueryGraph,
+    context: QueryGraphCardinalityContext,
+    planContext: PlanContext,
+    resultVariable: LogicalVariable,
+    searchLimit: Expression,
+    indexTypeIds: Seq[RelTypeId]
+  ): (Selectivity, QueryGraph, QueryGraphCardinalityContext) = {
     val indexTypeIdToNameMap = indexTypeIds.map(typeId => (typeId, planContext.getRelTypeName(typeId))).toMap
 
-    val maybePatternRelationship = queryGraph.patternRelationships.find(_.variable == vectorSearch.resultVariable)
+    val maybePatternRelationship = queryGraph.patternRelationships.find(_.variable == resultVariable)
 
     maybePatternRelationship match {
       case Some(pr) if pr.types.nonEmpty && pr.types.map(_.name).intersect(indexTypeIdToNameMap.values.toSeq).isEmpty =>
@@ -261,17 +298,17 @@ object SearchClauseCardinalityModel {
       case _ =>
         // Add the index' types to the semantic table and to the queryGraph's patternRelationship
         val (updatedQueryGraph, updatedContext) =
-          addTypesToQueryGraphAndSemanticTable(indexTypeIdToNameMap, queryGraph, context, vectorSearch)
+          addTypesToQueryGraphAndSemanticTable(indexTypeIdToNameMap, queryGraph, context, resultVariable)
 
         val searchIndexTypesCardinality = indexDisjunctiveTypesCardinality(
-          vectorSearch.resultVariable,
+          resultVariable,
           indexTypeIdToNameMap,
           updatedQueryGraph,
           updatedContext
         )
 
         (
-          getSearchSelectivity(searchIndexTypesCardinality.amount, vectorSearch.limit),
+          getSearchSelectivity(searchIndexTypesCardinality.amount, searchLimit),
           updatedQueryGraph,
           updatedContext
         )

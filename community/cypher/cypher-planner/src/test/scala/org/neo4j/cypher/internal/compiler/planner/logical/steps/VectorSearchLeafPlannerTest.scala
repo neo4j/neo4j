@@ -37,8 +37,8 @@ import org.neo4j.cypher.internal.logical.plans.NodeVectorIndexSearch
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
+import org.neo4j.exceptions.IndexSearchException
 import org.neo4j.exceptions.InternalException
-import org.neo4j.exceptions.VectorIndexSearchException
 
 class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport2
     with AstConstructionTestSupport with QueryExpressionConstructionTestSupport {
@@ -211,7 +211,7 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
 
       val planner = VectorSearchLeafPlanner
 
-      an[VectorIndexSearchException] should be thrownBy {
+      an[IndexSearchException] should be thrownBy {
         planner(qg, InterestingOrderConfig.empty, context)
       }
     }
@@ -240,7 +240,7 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
 
       val planner = VectorSearchLeafPlanner
 
-      an[VectorIndexSearchException] should be thrownBy {
+      an[IndexSearchException] should be thrownBy {
         planner(qg, InterestingOrderConfig.empty, context)
       }
     }
@@ -363,7 +363,7 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
   test("queryExpressionFromFilterExpressions should handle predicate without property") {
     val expr1 = literalInt(42)
     val expr2 = literalInt(43)
-    the[VectorIndexSearchException] thrownBy
+    the[IndexSearchException] thrownBy
       VectorSearchLeafPlanner.queryExpressionFromWhereClause(
         maybeWhere =
           Some(where(ands(equals(prop(varFor("m"), property1), expr1), equals(prop(varFor("m"), property2), expr2)))),

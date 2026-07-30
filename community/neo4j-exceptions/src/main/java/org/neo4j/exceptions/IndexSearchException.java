@@ -27,29 +27,29 @@ import org.neo4j.gqlstatus.GqlParams;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class VectorIndexSearchException extends Neo4jException {
+public class IndexSearchException extends Neo4jException {
     private final Status statusCode;
 
-    private VectorIndexSearchException(ErrorGqlStatusObject gqlStatusObject, Status status, String message) {
+    private IndexSearchException(ErrorGqlStatusObject gqlStatusObject, Status status, String message) {
         super(gqlStatusObject, message);
         this.statusCode = status;
     }
 
-    public static VectorIndexSearchException indexNotFound(String indexName) {
+    public static IndexSearchException indexNotFound(String indexName) {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N69)
                 .withParam(GqlParams.StringParam.idxDescrOrName, indexName)
                 .build();
-        return new VectorIndexSearchException(gql, Status.Schema.IndexNotFound, gql.getMessage());
+        return new IndexSearchException(gql, Status.Schema.IndexNotFound, gql.getMessage());
     }
 
-    public static VectorIndexSearchException indexInPopulatingState(String indexName) {
+    public static IndexSearchException indexInPopulatingState(String indexName) {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N63)
                 .withParam(GqlParams.StringParam.idx, indexName)
                 .build();
-        return new VectorIndexSearchException(gql, Status.Schema.IndexNotFound, gql.getMessage());
+        return new IndexSearchException(gql, Status.Schema.IndexNotFound, gql.getMessage());
     }
 
-    public static VectorIndexSearchException wrongBindingVariableType(
+    public static IndexSearchException wrongBindingVariableType(
             String variableName, String expectedType, String actualTypeOfVariable) {
         var gqlCause = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N01)
                 .withParam(GqlParams.StringParam.value, new GqlParams.IDENT().process(variableName))
@@ -59,12 +59,12 @@ public class VectorIndexSearchException extends Neo4jException {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22G03)
                 .withCause(gqlCause)
                 .build();
-        return new VectorIndexSearchException(gql, Status.Statement.TypeError, gqlCause.getMessage());
+        return new IndexSearchException(gql, Status.Statement.TypeError, gqlCause.getMessage());
     }
 
-    public static VectorIndexSearchException propertyNotFound(String propertyName, String indexName) {
+    public static IndexSearchException vectorIndexPropertyNotFound(String propertyName, String indexName) {
         var gql = GqlHelper.getGql22ND3(propertyName, indexName);
-        return new VectorIndexSearchException(gql, Status.Statement.PropertyNotFound, gql.getMessage());
+        return new IndexSearchException(gql, Status.Statement.PropertyNotFound, gql.getMessage());
     }
 
     @Override

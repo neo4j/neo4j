@@ -35,6 +35,8 @@ sealed trait SearchClause {
   def dependencies: Set[LogicalVariable]
   def inlinedPredicatesSet: ListSet[Expression]
   def availableSymbols: Set[LogicalVariable]
+
+  def isSolvableGivenSymbols(symbols: Set[LogicalVariable]): Boolean = dependencies.subsetOf(symbols)
 }
 
 case class VectorSearchClause(

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.VectorSearchExceptionHandler
+import org.neo4j.cypher.internal.compiler.planner.logical.SearchExceptionHandler
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.EntityType
@@ -67,8 +67,8 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.VectorIndexDescriptor
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.exceptions.IndexSearchException
 import org.neo4j.exceptions.InternalException
-import org.neo4j.exceptions.VectorIndexSearchException
 
 /**
  * Plans ANN vector search leaf plans for nodes or relationships in SEARCH sub-clauses.
@@ -82,7 +82,7 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
   ): Set[LogicalPlan] = {
     queryGraph.searchClause match {
       case Some(search @ VectorSearchClause(resultVariable, indexName, embedding, where, limit, scoreVariable))
-        if solvableGivenSymbols(search, queryGraph.argumentIds) =>
+        if search.isSolvableGivenSymbols(queryGraph.argumentIds) =>
 
         if (queryGraph.patternNodes.contains(resultVariable)) {
           context.staticComponents.planContext.nodeVectorIndexByName(indexName) match {
@@ -138,7 +138,7 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
                 )
               Set(nodeVectorIndexSearch)
 
-            case Left(vectorIndexError) => VectorSearchExceptionHandler.handleErrors(
+            case Left(vectorIndexError) => SearchExceptionHandler.handleErrors(
                 vectorIndexError,
                 indexName,
                 resultVariable.name
@@ -205,7 +205,7 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
                 )
               Set(relationshipVectorIndexSearch)
 
-            case Left(vectorIndexError) => VectorSearchExceptionHandler.handleErrors(
+            case Left(vectorIndexError) => SearchExceptionHandler.handleErrors(
                 vectorIndexError,
                 indexName,
                 resultVariable.name
@@ -319,10 +319,6 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
       case _ => false
     }
 
-  def solvableGivenSymbols(search: VectorSearchClause, availableSymbols: Set[LogicalVariable]): Boolean = {
-    search.dependencies.subsetOf(availableSymbols)
-  }
-
   def queryExpressionFromWhereClause(
     maybeWhere: Option[Where],
     additionalProperties: Seq[String],
@@ -361,7 +357,7 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
   ): Unit = {
     val unknownProperties = usedProperties.filterNot(additionalProperties.contains)
     if (unknownProperties.nonEmpty) {
-      throw VectorIndexSearchException.propertyNotFound(unknownProperties.mkString(", "), indexName)
+      throw IndexSearchException.vectorIndexPropertyNotFound(unknownProperties.mkString(", "), indexName)
     }
   }
 

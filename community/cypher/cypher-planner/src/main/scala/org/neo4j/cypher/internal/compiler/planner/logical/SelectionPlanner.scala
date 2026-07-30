@@ -60,7 +60,7 @@ object SelectionPlanner {
     }
   }
 
-  case class VectorSearchDecorator(wrappedSelectionPlanner: SelectionPlanner, context: LogicalPlanningContext)
+  case class SearchDecorator(wrappedSelectionPlanner: SelectionPlanner, context: LogicalPlanningContext)
       extends SelectionPlanner {
 
     override def apply(initialPlan: LogicalPlan, qg: QueryGraph): LogicalPlan = {
@@ -70,7 +70,7 @@ object SelectionPlanner {
 
       qg.searchClause.foldLeft(wrappedSelectionPlanner(initialPlan, qg)) {
         case (plan, search: VectorSearchClause)
-          if !alreadySolved && VectorSearchLeafPlanner.solvableGivenSymbols(search, symbols) =>
+          if !alreadySolved && search.isSolvableGivenSymbols(symbols) =>
 
           val vectorLeaves = VectorSearchLeafPlanner.apply(
             qg.withArgumentIds(symbols.intersect(search.dependencies + search.resultVariable)),

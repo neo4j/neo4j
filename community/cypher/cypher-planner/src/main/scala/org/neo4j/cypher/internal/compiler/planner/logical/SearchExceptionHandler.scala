@@ -20,19 +20,23 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.planner.spi.IndexLookupError
+import org.neo4j.exceptions.IndexSearchException
 import org.neo4j.exceptions.InvalidArgumentException
-import org.neo4j.exceptions.VectorIndexSearchException
 
 import java.util.Locale
 
-case object VectorSearchExceptionHandler {
+case object SearchExceptionHandler {
 
-  def handleErrors(indexDescriptorError: IndexLookupError, indexName: String, bindingVariableName: String) = {
+  def handleErrors(
+    indexDescriptorError: IndexLookupError,
+    indexName: String,
+    bindingVariableName: String
+  ): Nothing = {
     indexDescriptorError match {
       case IndexLookupError.NotFound =>
-        throw VectorIndexSearchException.indexNotFound(indexName)
+        throw IndexSearchException.indexNotFound(indexName)
       case IndexLookupError.Populating =>
-        throw VectorIndexSearchException.indexInPopulatingState(indexName)
+        throw IndexSearchException.indexInPopulatingState(indexName)
       case IndexLookupError.WrongIndexType(expectedIndexType, givenIndexType) =>
         throw InvalidArgumentException.wrongIndexType(
           indexName,
@@ -40,7 +44,7 @@ case object VectorSearchExceptionHandler {
           givenIndexType.name().toLowerCase(Locale.ROOT)
         )
       case IndexLookupError.WrongEntityType(variableType, indexType) =>
-        throw VectorIndexSearchException.wrongBindingVariableType(
+        throw IndexSearchException.wrongBindingVariableType(
           bindingVariableName,
           // the required type (for the binding variable) for the index name that was provided
           indexType.name(),

@@ -37,9 +37,9 @@ package object logical {
   def impliedLabelPredicate(v: LogicalVariable, label: LabelName): ImpliedLabel =
     ImpliedLabel(HasLabels(v, Seq(label))(InputPosition.NONE))(InputPosition.NONE)
 
-  // Marker for code blocks that rely on priority planning of vector search leaf plans
-  // and should be updated or removed together.
-  case object PrioritizeVectorSearchLeafPlannerFeature {
+  // Marker for code blocks that rely on priority planning of SEARCH leaf plans
+  // (vector or fulltext) and should be updated or removed together.
+  case object PrioritizeSearchLeafPlannerFeature {
     def apply[T](a: T): T = a
   }
 }

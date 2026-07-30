@@ -45,7 +45,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.exceptions.VectorIndexSearchException
+import org.neo4j.exceptions.IndexSearchException
 
 class VectorSearchPlanningIntegrationTest
     extends VectorSearchPlanningIntegrationTestBase
@@ -534,7 +534,7 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
         |  )
         |RETURN r""".stripMargin
 
-    val caughtException = intercept[VectorIndexSearchException] {
+    val caughtException = intercept[IndexSearchException] {
       planner.plan(CypherVersion.Cypher25, query)
     }
     caughtException.gqlStatus() should be("22G03")
@@ -566,7 +566,7 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
         |  )
         |RETURN r""".stripMargin
 
-    val caughtException = intercept[VectorIndexSearchException] {
+    val caughtException = intercept[IndexSearchException] {
       planner.plan(CypherVersion.Cypher25, query)
     }
     caughtException.gqlStatus() should be("22G03")
@@ -600,7 +600,7 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
         |  )
         |RETURN x.prop""".stripMargin
 
-    val caughtException = intercept[VectorIndexSearchException] {
+    val caughtException = intercept[IndexSearchException] {
       planner.plan(CypherVersion.Cypher25, query)
     }
     caughtException.gqlStatus() should be("22G03")
@@ -1582,7 +1582,7 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
              |RETURN movie""".stripMargin
 
         val exception =
-          the[VectorIndexSearchException] thrownBy {
+          the[IndexSearchException] thrownBy {
             planner.plan(CypherVersion.Cypher25, query)
           }
 

@@ -156,7 +156,7 @@ case class IDPQueryGraphSolver(
     val kit =
       context.plannerState.config.toKit(interestingOrderConfig, context)
         .pipe(QueryPlannerKit.withShortestPathSupportIfNeeded(_, queryGraph, context))
-        .pipe(QueryPlannerKit.withVectorSearchSupportIfNeeded(_, queryGraph, context))
+        .pipe(QueryPlannerKit.withSearchSupportIfNeeded(_, queryGraph, context))
 
     val components = queryGraph.connectedComponents
     val plannedComponents =

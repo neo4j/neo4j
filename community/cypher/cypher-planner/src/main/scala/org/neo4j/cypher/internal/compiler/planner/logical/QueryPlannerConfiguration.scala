@@ -144,7 +144,7 @@ object QueryPlannerConfiguration {
         ApplyOptionalSolverFactory,
         OuterHashJoinSolverFactory
       ),
-      leafPlanners = PrioritizeVectorSearchLeafPlannerFeature {
+      leafPlanners = PrioritizeSearchLeafPlannerFeature {
         PriorityLeafPlannerList(
           // TODO We may want to permit other leaf plans.
           //  See PLAN-3087
@@ -193,7 +193,7 @@ object QueryPlannerKit {
     }
   }
 
-  def withVectorSearchSupportIfNeeded(
+  def withSearchSupportIfNeeded(
     kit: QueryPlannerKit,
     queryGraph: QueryGraph,
     context: LogicalPlanningContext
@@ -201,7 +201,7 @@ object QueryPlannerKit {
     if (queryGraph.searchClause.isEmpty) {
       kit
     } else {
-      kit.copy(select = SelectionPlanner.VectorSearchDecorator(kit.select, context))
+      kit.copy(select = SelectionPlanner.SearchDecorator(kit.select, context))
     }
   }
 }
