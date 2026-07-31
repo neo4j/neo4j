@@ -41,7 +41,7 @@ class LatchCrabbingCoordinationTest {
 
     @BeforeEach
     void setUp() {
-        when(latchService.latch(anyLong())).thenAnswer(invocationOnMock -> mock(LongSpinLatch.class));
+        when(latchService.latch(anyLong())).thenAnswer(invocationOnMock -> mock(TreeNodeLatch.class));
         coordination.initialize(mock(PageCursor.class));
         coordination.beginOperation();
     }
@@ -62,7 +62,7 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldOptimisticallyUpgradeToWriteWhenArrivingAtLeaf() {
         // given
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch leafLatch = mock(TreeNodeLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(2L)).thenReturn(leafLatch);
 
@@ -81,10 +81,10 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldOptimisticallyUpgradeParentOnLeafSplit() {
         // given
-        LongSpinLatch parentLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch parentLatch = mock(TreeNodeLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(1L)).thenReturn(parentLatch);
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch leafLatch = mock(TreeNodeLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(2L)).thenReturn(leafLatch);
 
@@ -105,10 +105,10 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldOptimisticallyUpgradeParentOnLeafNeedsSuccessor() {
         // given
-        LongSpinLatch parentLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch parentLatch = mock(TreeNodeLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(1L)).thenReturn(parentLatch);
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch leafLatch = mock(TreeNodeLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(2L)).thenReturn(leafLatch);
 
@@ -128,7 +128,7 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldOptimisticallyFailLeafSplitResultingInParentSplit() {
         // given
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch leafLatch = mock(TreeNodeLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(2L)).thenReturn(leafLatch);
 
@@ -148,10 +148,10 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldOptimisticallyFailArriveAtChildOnLeafNeedsSuccessorAndFailToUpgradeParent() {
         // given
-        LongSpinLatch parentLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch parentLatch = mock(TreeNodeLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(false);
         when(latchService.latch(1L)).thenReturn(parentLatch);
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch leafLatch = mock(TreeNodeLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(2L)).thenReturn(leafLatch);
 
@@ -171,10 +171,10 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldOptimisticallyFailArriveAtChildOnLeafNeedsSuccessorForEdgeChildPosLeft() {
         // given
-        LongSpinLatch parentLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch parentLatch = mock(TreeNodeLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(false);
         when(latchService.latch(1L)).thenReturn(parentLatch);
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch leafLatch = mock(TreeNodeLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(2L)).thenReturn(leafLatch);
 
@@ -194,10 +194,10 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldOptimisticallyFailArriveAtChildOnLeafNeedsSuccessorForEdgeChildPosRight() {
         // given
-        LongSpinLatch parentLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch parentLatch = mock(TreeNodeLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(false);
         when(latchService.latch(1L)).thenReturn(parentLatch);
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch leafLatch = mock(TreeNodeLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(2L)).thenReturn(leafLatch);
 
@@ -216,10 +216,10 @@ class LatchCrabbingCoordinationTest {
 
     @Test
     void shouldOptimisticallyAllowArriveAtChildOnLeafNeedsSuccessorWhenChildPosOnlyMatchesOwnKeyCount() {
-        LongSpinLatch parentLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch parentLatch = mock(TreeNodeLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(1L)).thenReturn(parentLatch);
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch leafLatch = mock(TreeNodeLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(2L)).thenReturn(leafLatch);
 
@@ -237,7 +237,7 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldOptimisticallySucceedRemovalIfLeafWillNotUnderflow() {
         // given
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch leafLatch = mock(TreeNodeLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(2L)).thenReturn(leafLatch);
 
@@ -256,7 +256,7 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldOptimisticallyFailRemovalIfLeafUnderflow() {
         // given
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        TreeNodeLatch leafLatch = mock(TreeNodeLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
         when(latchService.latch(2L)).thenReturn(leafLatch);
 
@@ -339,11 +339,11 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldOptimisticallyReleaseAllLatchesWhenGoingBackUp() {
         // given
-        LongSpinLatch latch1 = mock(LongSpinLatch.class);
+        TreeNodeLatch latch1 = mock(TreeNodeLatch.class);
         when(latchService.latch(1L)).thenReturn(latch1);
-        LongSpinLatch latch2 = mock(LongSpinLatch.class);
+        TreeNodeLatch latch2 = mock(TreeNodeLatch.class);
         when(latchService.latch(2L)).thenReturn(latch2);
-        LongSpinLatch latch3 = mock(LongSpinLatch.class);
+        TreeNodeLatch latch3 = mock(TreeNodeLatch.class);
         when(latchService.latch(3L)).thenReturn(latch3);
         coordination.beforeTraversingToChild(1L, 1);
         coordination.arrivedAtChild(true, MERGE_THRESHOLD / 2, false, 5);
@@ -367,11 +367,11 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldPessimisticallyReleaseAllLatchesWhenGoingBackUp() {
         // given
-        LongSpinLatch latch1 = mock(LongSpinLatch.class);
+        TreeNodeLatch latch1 = mock(TreeNodeLatch.class);
         when(latchService.latch(1L)).thenReturn(latch1);
-        LongSpinLatch latch2 = mock(LongSpinLatch.class);
+        TreeNodeLatch latch2 = mock(TreeNodeLatch.class);
         when(latchService.latch(2L)).thenReturn(latch2);
-        LongSpinLatch latch3 = mock(LongSpinLatch.class);
+        TreeNodeLatch latch3 = mock(TreeNodeLatch.class);
         when(latchService.latch(3L)).thenReturn(latch3);
         coordination.flipToPessimisticMode();
         coordination.beforeTraversingToChild(1L, 1);
@@ -397,11 +397,11 @@ class LatchCrabbingCoordinationTest {
     void shouldHandleFirstGoDownWithOptimisticThenWithPessimisticOnFailure() {
         // given
         var parentLatchId = 1L;
-        var parentLatch = mock(LongSpinLatch.class);
+        var parentLatch = mock(TreeNodeLatch.class);
         when(parentLatch.treeNodeId()).thenReturn(parentLatchId);
         when(latchService.latch(parentLatchId)).thenReturn(parentLatch);
 
-        var leafLatch = mock(LongSpinLatch.class);
+        var leafLatch = mock(TreeNodeLatch.class);
         var leafLatchId = 2L;
         when(leafLatch.treeNodeId()).thenReturn(leafLatchId);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(false);

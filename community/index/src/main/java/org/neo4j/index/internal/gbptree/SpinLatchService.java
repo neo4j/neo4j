@@ -19,14 +19,27 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.util.concurrent.ConcurrentHashMap;
+import org.neo4j.util.VisibleForTesting;
+
 /**
- * Hands out {@link TreeNodeLatch latches} keyed by tree node id. A returned latch comes with one outstanding reference
- * held on behalf of the caller, which must be released with {@link TreeNodeLatch#deref()} when the latch is no longer
- * needed.
+ * Simplistic latch service which uses a {@link ConcurrentHashMap} to keep active latches.
  */
-interface TreeNodeLatchService {
-    /**
-     * Hands out the latch for the given tree node id with one reference held.
-     */
-    TreeNodeLatch latch(long id);
+final class SpinLatchService implements TreeNodeLatchService {
+    private final ConcurrentHashMap<Long, LongSpinLatch> latches = new ConcurrentHashMap<>();
+
+    @Override
+    public LongSpinLatch latch(long id) {
+        while (true) {
+            var latch = latches.computeIfAbsent(id, newId -> new LongSpinLatch(newId, latches::remove));
+            if (latch.ref()) {
+                return latch;
+            }
+        }
+    }
+
+    @VisibleForTesting
+    int size() {
+        return latches.size();
+    }
 }

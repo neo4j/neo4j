@@ -117,7 +117,7 @@ abstract class GBPTreeEscalationCoordinationIT<KEY, VALUE> {
             assertThat(inspection.lastLevel()).isEqualTo(3);
 
             var latchService = contended.rootLayerSupport.latchService();
-            var held = new ArrayList<LongSpinLatch>();
+            var held = new ArrayList<TreeNodeLatch>();
             for (long rootChild : inspection.nodesPerLevel().get(1).toArray()) {
                 var latch = latchService.latch(rootChild);
                 latch.acquireRead();

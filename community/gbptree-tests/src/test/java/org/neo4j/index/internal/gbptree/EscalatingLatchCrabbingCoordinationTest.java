@@ -51,7 +51,7 @@ class EscalatingLatchCrabbingCoordinationTest {
     @BeforeEach
     void setUp() {
         when(latchService.latch(anyLong())).thenAnswer(invocationOnMock -> {
-            LongSpinLatch latch = mock(LongSpinLatch.class);
+            var latch = mock(TreeNodeLatch.class);
             when(latch.treeNodeId()).thenReturn(invocationOnMock.getArgument(0, Long.class));
             return latch;
         });
@@ -410,8 +410,8 @@ class EscalatingLatchCrabbingCoordinationTest {
         assertTrue(coordination.arrivedAtChild(false, leafAvailableSpace, false, 5));
     }
 
-    private LongSpinLatch latch(long treeNodeId, boolean upgradeSucceeds, boolean peekSaysSoleReader) {
-        LongSpinLatch latch = mock(LongSpinLatch.class);
+    private TreeNodeLatch latch(long treeNodeId, boolean upgradeSucceeds, boolean peekSaysSoleReader) {
+        var latch = mock(TreeNodeLatch.class);
         when(latch.treeNodeId()).thenReturn(treeNodeId);
         when(latch.tryUpgradeToWrite()).thenReturn(upgradeSucceeds);
         when(latch.couldUpgradeToWrite()).thenReturn(peekSaysSoleReader);

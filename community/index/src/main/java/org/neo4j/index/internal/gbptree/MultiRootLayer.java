@@ -741,7 +741,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     }
 
     private class RootLatch implements AutoCloseable {
-        private LongSpinLatch rootLatch;
+        private TreeNodeLatch rootLatch;
         private boolean hasWriteLatch;
 
         private boolean tryAcquireWrite(long rootId) {

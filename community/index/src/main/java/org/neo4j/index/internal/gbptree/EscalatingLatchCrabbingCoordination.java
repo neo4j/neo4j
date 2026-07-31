@@ -333,7 +333,7 @@ public class EscalatingLatchCrabbingCoordination implements TreeWriterCoordinati
         StringBuilder builder = new StringBuilder(
                 format("ESCALATING LATCHES %s depth:%d%n", pessimistic ? "PESSIMISTIC" : "OPTIMISTIC", depth));
         for (int i = 0; i <= depth; i++) {
-            LongSpinLatch latch = dataByDepth[i].latch;
+            TreeNodeLatch latch = dataByDepth[i].latch;
             builder.append(dataByDepth[i].latchTypeIsWrite ? "W" : "R")
                     .append(latch.toString())
                     .append(System.lineSeparator());
@@ -342,7 +342,7 @@ public class EscalatingLatchCrabbingCoordination implements TreeWriterCoordinati
     }
 
     private static class DepthData implements AutoCloseable {
-        private LongSpinLatch latch;
+        private TreeNodeLatch latch;
         private boolean latchTypeIsWrite;
         private boolean latchIsAcquired;
         private int availableSpace;

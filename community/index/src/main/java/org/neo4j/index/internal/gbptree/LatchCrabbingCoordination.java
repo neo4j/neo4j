@@ -31,12 +31,12 @@ import org.neo4j.io.pagecache.PageCursor;
  * Locks nodes as traversal goes down the tree. The locking scheme is a variant of what is known as "Better Latch Crabbing" and consists of
  * an optimistic and a pessimistic mode.
  * <p>
- * Optimistic mode uses {@link LongSpinLatch#acquireRead() read latches} all the way down to leaf.
+ * Optimistic mode uses {@link TreeNodeLatch#acquireRead() read latches} all the way down to leaf.
  * Down at the leaf the latch is upgraded to write (if child pointers would have leaf/internal bit this step could be skipped).
  * If operation is unsafe (split/merge) then first an optimistic latch upgrade on parent is attempted - if successful the operation
  * can continue. Otherwise, as well as for failure to upgrade latches will result in releasing of the latches and flip to pessimistic mode.
  * <p>
- * Pessimistic mode uses {@link LongSpinLatch#acquireWrite() write latches} all the way down to leaf and performs the change.
+ * Pessimistic mode uses {@link TreeNodeLatch#acquireWrite() write latches} all the way down to leaf and performs the change.
  * Even split/merge can be done since write latches on parents are also acquired. In typical latch crabbing write latches on parents can be released
  * when traversing down if the operation on the lower level is considered safe, i.e. taking into consideration that a split could occur and
  * that the parent has space enough to hold one more key. In the case of dynamically sized keys, together with "minimal splitter", knowing the
@@ -318,7 +318,7 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         StringBuilder builder =
                 new StringBuilder(format("LATCHES %s depth:%d%n", pessimistic ? "PESSIMISTIC" : "OPTIMISTIC", depth));
         for (int i = 0; i <= depth; i++) {
-            LongSpinLatch latch = dataByDepth[i].latch;
+            TreeNodeLatch latch = dataByDepth[i].latch;
             builder.append(dataByDepth[i].latchTypeIsWrite ? "W" : "R")
                     .append(latch.toString())
                     .append(format("%n"));
@@ -327,7 +327,7 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
     }
 
     private static class DepthData implements AutoCloseable {
-        private LongSpinLatch latch;
+        private TreeNodeLatch latch;
         private boolean latchTypeIsWrite;
         private boolean latchIsAcquired;
         private int availableSpace;

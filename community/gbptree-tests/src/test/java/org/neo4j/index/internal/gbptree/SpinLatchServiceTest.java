@@ -19,14 +19,14 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-/**
- * Hands out {@link TreeNodeLatch latches} keyed by tree node id. A returned latch comes with one outstanding reference
- * held on behalf of the caller, which must be released with {@link TreeNodeLatch#deref()} when the latch is no longer
- * needed.
- */
-interface TreeNodeLatchService {
-    /**
-     * Hands out the latch for the given tree node id with one reference held.
-     */
-    TreeNodeLatch latch(long id);
+class SpinLatchServiceTest extends TreeNodeLatchServiceTestBase<SpinLatchService> {
+    @Override
+    SpinLatchService newService() {
+        return new SpinLatchService();
+    }
+
+    @Override
+    int size(SpinLatchService service) {
+        return service.size();
+    }
 }

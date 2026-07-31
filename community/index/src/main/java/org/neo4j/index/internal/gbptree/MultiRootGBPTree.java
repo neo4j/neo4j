@@ -636,7 +636,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
 
             this.payloadSize = pagedFile.payloadSize();
             this.freeList = new FreelistIdProvider(pagedFile);
-            TreeNodeLatchService latchService = new TreeNodeLatchService();
+            var latchService = selectLatchService(engineOpenOptions);
             var treeNodeSelector = treeNodeLayoutFactory.createSelector(engineOpenOptions);
             this.rootLayerSupport = new RootLayerSupport(
                     pagedFile,
@@ -685,6 +685,13 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         } catch (Throwable e) {
             throw exitConstructor(e);
         }
+    }
+
+    private static TreeNodeLatchService selectLatchService(ImmutableSet<OpenOption> engineOpenOptions) {
+        if (engineOpenOptions.contains(MULTI_VERSIONED)) {
+            return new ParkingLatchService();
+        }
+        return new SpinLatchService();
     }
 
     private RuntimeException exitConstructor(Throwable throwable) {

@@ -74,7 +74,7 @@ abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExch
     protected volatile Root root;
     // Kept and ref:ed for performance. Just keeping it ref:ed doesn't actually latch it, just keeps it
     // in the map of active latches to avoid that overhead.
-    private volatile LongSpinLatch rootLatch;
+    private volatile TreeNodeLatch rootLatch;
 
     RootLayer(RootLayerSupport support, TreeNodeSelector treeNodeSelector) {
         this.support = support;

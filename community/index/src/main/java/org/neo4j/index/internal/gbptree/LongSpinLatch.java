@@ -37,7 +37,7 @@ import java.util.function.LongConsumer;
  * and run a {@code removeAction}. A latch with its tree node id not equal to initial tree node id may not be acquired anymore.
  * This functionality allows these latches to be used in e.g. a {@link ConcurrentHashMap}.
  */
-class LongSpinLatch {
+final class LongSpinLatch implements TreeNodeLatch {
     private static final int SPIN_THRESHOLD = Runtime.getRuntime().availableProcessors() < 2 ? 1 : 1000;
     private static final int SHORT_PARK_THRESHOLD = 100_000;
     private static final int LONG_PARK_COUNTER = SHORT_PARK_THRESHOLD + 1;
@@ -63,7 +63,7 @@ class LongSpinLatch {
      *  └─ dead               └── Write lock bit
      * </pre>
      */
-    @SuppressWarnings("FieldMayBeFinal") // Accessed through VarHandle
+    @SuppressWarnings({"FieldMayBeFinal", "unused"}) // Accessed through VarHandle
     private volatile long lockBits;
 
     private static final VarHandle LOCK_BITS = getVarHandle(lookup(), "lockBits");
@@ -100,7 +100,8 @@ class LongSpinLatch {
     /**
      * Notify that you are done using this latch.
      */
-    void deref() {
+    @Override
+    public void deref() {
         long bits;
         long prevBits;
         while (true) {
@@ -132,7 +133,8 @@ class LongSpinLatch {
      * Blocking call.
      * @return the read lock count this resulted in, > 0 if successful, otherwise 0 meaning that an acquisition on a dead lock was attempted.
      */
-    long acquireRead() {
+    @Override
+    public long acquireRead() {
         long parkTime = 0;
         long prevBits;
         while (true) {
@@ -161,7 +163,8 @@ class LongSpinLatch {
      * Non-blocking call.
      * @return the read lock count this resulted in. 0 means this was the last read lock held.
      */
-    long releaseRead() {
+    @Override
+    public long releaseRead() {
         long prevBits = (long) LOCK_BITS.getAndAdd(this, -1L);
         assertAlive(prevBits);
         if (!hasReaders(prevBits)) {
@@ -175,7 +178,8 @@ class LongSpinLatch {
      * Given that a read lock is already acquired, upgrade it to a write lock.
      * @return whether or not the lock was upgraded. Returns {@code false} for scenarios which would result in deadlock.
      */
-    boolean tryUpgradeToWrite() {
+    @Override
+    public boolean tryUpgradeToWrite() {
         long bits = getAcquireBits();
         assertAlive(bits);
         if ((bits & LOCK_MASK) == 1) {
@@ -189,7 +193,8 @@ class LongSpinLatch {
      * Non-blocking advisory call, to be used by a thread currently holding a read lock on this latch.
      * @return whether at this instant the caller is the sole reader and no writer holds the latch.
      */
-    boolean couldUpgradeToWrite() {
+    @Override
+    public boolean couldUpgradeToWrite() {
         long bits = getAcquireBits();
         assertAlive(bits);
         return (bits & LOCK_MASK) == 1;
@@ -199,7 +204,8 @@ class LongSpinLatch {
      * Blocking call.
      * Acquire a write latch.
      */
-    void acquireWrite() {
+    @Override
+    public void acquireWrite() {
         long parkTime = 0;
         long prevBits;
         while (true) {
@@ -223,7 +229,8 @@ class LongSpinLatch {
     /**
      * Tries to acquire write latch.
      */
-    boolean tryAcquireWrite() {
+    @Override
+    public boolean tryAcquireWrite() {
         long prevBits = getAcquireBits();
         assertAlive(prevBits);
         if (!hasReaders(prevBits) && !hasWriter(prevBits)) {
@@ -235,7 +242,8 @@ class LongSpinLatch {
     /**
      * Non-blocking call. Releases the write lock on this latch.
      */
-    void releaseWrite() {
+    @Override
+    public void releaseWrite() {
         long prevBits = (long) LOCK_BITS.getAndBitwiseAndRelease(this, ~WRITE_LOCK_MASK);
 
         assertAlive(prevBits);
@@ -262,7 +270,8 @@ class LongSpinLatch {
         return (bits & WRITE_LOCK_MASK) != 0;
     }
 
-    long treeNodeId() {
+    @Override
+    public long treeNodeId() {
         return initialTreeNodeId;
     }
 
