@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.lite
 import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.Values.NO_VALUE
 
 class DivideTest extends InterpretedRuntimeTestSuite {
 
@@ -45,5 +46,15 @@ class DivideTest extends InterpretedRuntimeTestSuite {
       Double.NegativeInfinity
     )
     Divide(literal(0), literal(0.0))(ctx, state).asInstanceOf[FloatingPointValue].isNaN shouldBe true
+  }
+
+  test("should_propagate_null_instead_of_throwing_for_divide_by_zero") {
+    val ctx = CypherRow.empty
+    val state = QueryStateHelper.empty
+
+    Divide(Literal(NO_VALUE), literal(0))(ctx, state) should equal(NO_VALUE)
+    Divide(Literal(NO_VALUE), literal(0.0))(ctx, state) should equal(NO_VALUE)
+    Divide(literal(0), Literal(NO_VALUE))(ctx, state) should equal(NO_VALUE)
+    Divide(literal(0.0), Literal(NO_VALUE))(ctx, state) should equal(NO_VALUE)
   }
 }

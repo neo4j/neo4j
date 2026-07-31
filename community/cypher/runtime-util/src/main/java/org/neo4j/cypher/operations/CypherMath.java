@@ -272,11 +272,13 @@ public final class CypherMath {
     }
 
     private static boolean divideCheckForNull(AnyValue lhs, AnyValue rhs) {
+        if (lhs == NO_VALUE || rhs == NO_VALUE) {
+            return true;
+        }
         if (rhs instanceof IntegralValue && rhs.equals(ZERO_INT)) {
             throw ArithmeticException.divisionByZero();
-        } else {
-            return lhs == NO_VALUE || rhs == NO_VALUE;
         }
+        return false;
     }
 
     public static AnyValue divide(AnyValue lhs, AnyValue rhs) {
