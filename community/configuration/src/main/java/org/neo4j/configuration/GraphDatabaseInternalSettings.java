@@ -927,6 +927,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Default for whether the literals of the queries in the (JSON) query log are obfuscated when the "
+            + "log is collected by 'neo4j-admin server report'. The report command's '--obfuscate-query-log' "
+            + "option overrides this default for a single run.")
+    public static final Setting<Boolean> log_queries_obfuscation_in_report_enabled = newBuilder(
+                    "internal.dbms.logs.query.obfuscation_in_report_enabled", BOOL, false)
+            .build();
+
+    @Internal
     @Description("Error codes that are considered unexpected during query execution.")
     public static final Setting<Set<String>> log_queries_unexpected_codes = newBuilder(
                     "internal.dbms.logs.query.unexpected.codes", setOf(STRING), Set.of("50N00"))

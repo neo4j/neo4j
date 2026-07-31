@@ -34,6 +34,7 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.diagnostics.profile.ProfileCommand;
 import org.neo4j.kernel.diagnostics.DiagnosticsConnectionException;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.diagnostics.DiagnosticsReporterProgress;
 import org.neo4j.kernel.diagnostics.InteractiveProgress;
 import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
 import org.neo4j.service.Services;
+import org.neo4j.util.VisibleForTesting;
 
 @Command(
         name = "report",
@@ -57,6 +59,8 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
     static final String[] DEFAULT_CLASSIFIERS = {
         "logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps", "version"
     };
+
+    private static final String OBFUSCATE_QUERY_LOG_OPTION = "--obfuscate-query-log";
 
     @Option(
             names = "--database",
@@ -111,6 +115,16 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
             description = "Address of the DBMS to connect to, including the scheme (e.g. bolt://localhost:7687 or "
                     + "bolt+ssc://localhost:7687). Defaults to an address derived from the Neo4j configuration.")
     private String address;
+
+    @Option(
+            names = OBFUSCATE_QUERY_LOG_OPTION,
+            defaultValue = "false",
+            arity = "0..1",
+            paramLabel = "true|false",
+            fallbackValue = "true",
+            showDefaultValue = ALWAYS,
+            description = "Obfuscate the literals of queries in the collected (JSON) query log.")
+    private boolean obfuscateQueryLog;
 
     @Parameters(arity = "0..*", paramLabel = "<classifier>")
     private Set<String> classifiers = new TreeSet<>(List.of(DEFAULT_CLASSIFIERS));
@@ -219,8 +233,13 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
         }
     }
 
-    private Config getConfig() {
-        return createPrefilledConfigBuilder().build();
+    @VisibleForTesting
+    Config getConfig() {
+        Config.Builder builder = createPrefilledConfigBuilder();
+        if (spec.commandLine().getParseResult().hasMatchedOption(OBFUSCATE_QUERY_LOG_OPTION)) {
+            builder.set(GraphDatabaseInternalSettings.log_queries_obfuscation_in_report_enabled, obfuscateQueryLog);
+        }
+        return builder.build();
     }
 
     private void promptForCredentialsIfNeeded() {
