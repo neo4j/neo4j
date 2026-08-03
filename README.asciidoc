@@ -22,7 +22,7 @@ We encourage experimentation with Neo4j. You can build extensions to Neo4j, deve
 
 == Dependencies ==
 
-Neo4j is built using https://maven.apache.org/[Apache Maven] version 3.8.2 and a recent version of supported VM. Bash and Make are also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx2048m"`.
+Neo4j is built using https://maven.apache.org/[Apache Maven] version 3.9.11 or newer, and a recent version of supported VM. Bash and Make are also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx2048m"`.
 
 macOS users need to have https://brew.sh/[Homebrew] installed.
 
@@ -34,9 +34,9 @@ Please note that we do not support building Debian packages on macOS.
 
 === With apt-get on Ubuntu ===
 
-  sudo apt install maven openjdk-17-jdk
+  sudo apt install maven openjdk-21-jdk
 
-Be sure that the `JAVA_HOME` environment variable points to `/usr/lib/jvm/java-17-openjdk-amd64`
+Be sure that the `JAVA_HOME` environment variable points to `/usr/lib/jvm/java-21-openjdk-amd64`
 (you may have various java versions installed).
 
 == Building Neo4j ==
