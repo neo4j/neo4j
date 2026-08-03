@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.FulltextSearchLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.VectorSearchLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestRelationships
+import org.neo4j.cypher.internal.ir.FulltextSearchClause
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.VectorSearchClause
@@ -69,16 +71,16 @@ object SelectionPlanner {
       val symbols = initialPlan.availableSymbols
 
       qg.searchClause.foldLeft(wrappedSelectionPlanner(initialPlan, qg)) {
-        case (plan, search: VectorSearchClause)
-          if !alreadySolved && search.isSolvableGivenSymbols(symbols) =>
-
-          val vectorLeaves = VectorSearchLeafPlanner.apply(
-            qg.withArgumentIds(symbols.intersect(search.dependencies + search.resultVariable)),
-            InterestingOrderConfig.empty,
-            context
-          )
-          assert(vectorLeaves.size == 1, "Expected exactly one vector search leaf")
-          val planWithSearch = vectorLeaves.headOption.fold(plan) {
+        case (plan, search) if !alreadySolved && search.isSolvableGivenSymbols(symbols) =>
+          val restrictedQueryGraph = qg.withArgumentIds(symbols.intersect(search.dependencies + search.resultVariable))
+          val searchLeaves = search match {
+            case _: VectorSearchClause =>
+              VectorSearchLeafPlanner.apply(restrictedQueryGraph, InterestingOrderConfig.empty, context)
+            case _: FulltextSearchClause =>
+              FulltextSearchLeafPlanner.apply(restrictedQueryGraph, InterestingOrderConfig.empty, context)
+          }
+          assert(searchLeaves.size == 1, "Expected exactly one search leaf")
+          val planWithSearch = searchLeaves.headOption.fold(plan) {
             rhs => context.staticComponents.logicalPlanProducer.planApply(plan, rhs, context)
           }
           wrappedSelectionPlanner(planWithSearch, qg)

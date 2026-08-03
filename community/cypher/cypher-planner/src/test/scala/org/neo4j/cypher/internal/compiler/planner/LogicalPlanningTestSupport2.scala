@@ -106,12 +106,14 @@ import org.neo4j.cypher.internal.planner.spi.IndexLookupError.WrongEntityType
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
+import org.neo4j.cypher.internal.planner.spi.NodeFulltextIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.NodeVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.NotImplementedPlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.RelationshipFulltextIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.RelationshipVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -416,6 +418,32 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
             ))
           case Some(_) =>
             Left(WrongEntityType(EntityType.RELATIONSHIP, EntityType.NODE))
+          case None => Left(IndexLookupError.NotFound)
+        }
+
+      override def nodeFulltextIndexByName(indexName: String)
+        : Either[IndexLookupError, NodeFulltextIndexDescriptor] =
+        config.fulltextIndexes.get(indexName) match {
+          case Some(NodeFulltextIndexDefinition(_, labels, properties)) =>
+            Right(NodeFulltextIndexDescriptor(
+              labels.map(label => semanticTable.resolvedLabelNames(label.label)),
+              properties.map(semanticTable.resolvedPropertyKeyNames(_))
+            ))
+          case Some(_) =>
+            Left(IndexLookupError.WrongEntityType(EntityType.NODE, EntityType.RELATIONSHIP))
+          case None => Left(IndexLookupError.NotFound)
+        }
+
+      override def relationshipFulltextIndexByName(indexName: String)
+        : Either[IndexLookupError, RelationshipFulltextIndexDescriptor] =
+        config.fulltextIndexes.get(indexName) match {
+          case Some(RelationshipFulltextIndexDefinition(_, relTypes, properties)) =>
+            Right(RelationshipFulltextIndexDescriptor(
+              relTypes.map(relType => semanticTable.resolvedRelTypeNames(relType.relType)),
+              properties.map(semanticTable.resolvedPropertyKeyNames(_))
+            ))
+          case Some(_) =>
+            Left(IndexLookupError.WrongEntityType(EntityType.RELATIONSHIP, EntityType.NODE))
           case None => Left(IndexLookupError.NotFound)
         }
 

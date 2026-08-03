@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.ir.FulltextSearchClause
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -121,6 +122,35 @@ object SearchClauseCardinalityModel {
       planContext,
       vectorSearch.resultVariable,
       vectorSearch.limit,
+      disjunctiveIndexLabelIds
+    )
+  }
+
+  private def nodeFulltextSearchClauseSelectivity(
+    queryGraph: QueryGraph,
+    context: QueryGraphCardinalityContext,
+    planContext: PlanContext,
+    fulltextSearch: FulltextSearchClause
+  ): (Selectivity, QueryGraph, QueryGraphCardinalityContext) = {
+    val disjunctiveIndexLabelIds = planContext.nodeFulltextIndexByName(fulltextSearch.indexName) match {
+      case Right(descriptor) => descriptor.labelIds
+      case Left(fulltextIndexError) =>
+        SearchExceptionHandler.handleErrors(
+          fulltextIndexError,
+          fulltextSearch.indexName,
+          fulltextSearch.resultVariable.name
+        )
+    }
+    assert(
+      disjunctiveIndexLabelIds.nonEmpty,
+      "Fulltext Index must have at least one label"
+    )
+    nodeSearchClauseSelectivity(
+      queryGraph,
+      context,
+      planContext,
+      fulltextSearch.resultVariable,
+      fulltextSearch.limit,
       disjunctiveIndexLabelIds
     )
   }
@@ -278,6 +308,36 @@ object SearchClauseCardinalityModel {
     )
   }
 
+  private def relationshipFulltextSearchClauseSelectivity(
+    queryGraph: QueryGraph,
+    context: QueryGraphCardinalityContext,
+    planContext: PlanContext,
+    fulltextSearch: FulltextSearchClause
+  ): (Selectivity, QueryGraph, QueryGraphCardinalityContext) = {
+    val indexTypeIds = planContext.relationshipFulltextIndexByName(fulltextSearch.indexName) match {
+      case Right(descriptor) => descriptor.relTypeIds
+      case Left(fulltextIndexError) =>
+        SearchExceptionHandler.handleErrors(
+          fulltextIndexError,
+          fulltextSearch.indexName,
+          fulltextSearch.resultVariable.name
+        )
+    }
+    assert(
+      indexTypeIds.nonEmpty,
+      "Fulltext Index must have at least one type"
+    )
+
+    relationshipSearchClauseSelectivity(
+      queryGraph,
+      context,
+      planContext,
+      fulltextSearch.resultVariable,
+      fulltextSearch.limit,
+      indexTypeIds
+    )
+  }
+
   private def relationshipSearchClauseSelectivity(
     queryGraph: QueryGraph,
     context: QueryGraphCardinalityContext,
@@ -330,6 +390,11 @@ object SearchClauseCardinalityModel {
           nodeVectorSearchClauseSelectivity(queryGraph, context, planContext, vs)
         else
           relationshipVectorSearchClauseSelectivity(queryGraph, context, planContext, vs)
+      case fs: FulltextSearchClause =>
+        if (queryGraph.patternNodes.contains(fs.resultVariable))
+          nodeFulltextSearchClauseSelectivity(queryGraph, context, planContext, fs)
+        else
+          relationshipFulltextSearchClauseSelectivity(queryGraph, context, planContext, fs)
     }
   }
 }

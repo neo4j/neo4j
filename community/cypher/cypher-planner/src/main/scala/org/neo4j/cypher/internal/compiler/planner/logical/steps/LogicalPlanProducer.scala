@@ -118,6 +118,7 @@ import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.ForeachPattern
+import org.neo4j.cypher.internal.ir.FulltextSearchClause
 import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
@@ -180,6 +181,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
@@ -235,6 +237,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.NodeFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
@@ -311,6 +314,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
@@ -2228,6 +2232,81 @@ case class LogicalPlanProducer(
     )
   }
 
+  def planNodeFulltextIndexSearch(
+    context: LogicalPlanningContext,
+    resultVariable: LogicalVariable,
+    labels: Seq[LabelToken],
+    indexedProperties: Seq[IndexedProperty],
+    indexName: String,
+    queryString: Expression,
+    analyzer: Option[Expression],
+    skip: Option[Expression],
+    limit: Expression,
+    scoreVariable: Option[LogicalVariable],
+    argumentIds: Set[LogicalVariable],
+    implicitlySolvedPredicates: Set[Expression]
+  ): LogicalPlan = {
+
+    val solved = RegularSinglePlannerQuery(
+      queryGraph =
+        QueryGraph.empty
+          .addPatternNodes(resultVariable)
+          .addSearchClause(Some(FulltextSearchClause(
+            resultVariable,
+            indexName,
+            queryString,
+            analyzer,
+            skip,
+            limit,
+            scoreVariable
+          )))
+          .addPredicates(implicitlySolvedPredicates)
+          .addArgumentIds(argumentIds),
+      horizon = RegularQueryProjection(
+        importedExposedSymbols = context.plannerState.importedSubqueryVariables
+      )
+    )
+
+    val solver = SubqueryExpressionSolver.solverForLeafPlan(argumentIds, context)
+
+    val rewrittenQueryString = solver.solve(queryString)
+    val rewrittenAnalyzer = analyzer.map(solver.solve(_))
+    // While we cannot have subqueries in skip and limit expressions today, we apply the solver here as a
+    // precautionary measure, should we change that restriction in the future.
+    val rewrittenSkip = skip.map(solver.solve(_))
+    val rewrittenLimit = solver.solve(limit)
+    val newArguments = solver.newArguments
+    val allArgumentIds = argumentIds.union(newArguments)
+
+    def createNodeFulltextIndexSearchPlan(variable: LogicalVariable) = {
+      val nodeFulltextIndexSearch = NodeFulltextIndexSearch(
+        idName = variable,
+        labels = labels,
+        properties = indexedProperties,
+        score = scoreVariable,
+        indexName = indexName,
+        queryString = rewrittenQueryString,
+        analyzer = rewrittenAnalyzer,
+        skip = rewrittenSkip,
+        limit = rewrittenLimit,
+        argumentIds = allArgumentIds
+      )(idGen)
+
+      val annotatedFulltextSearchPlan =
+        annotate(
+          nodeFulltextIndexSearch,
+          solved,
+          ProvidedOrder.empty,
+          cachedPropertiesForIndexedProperties(context, variable, indexedProperties),
+          context
+        )
+
+      solver.rewriteLeafPlan(annotatedFulltextSearchPlan)
+    }
+
+    createNodeFulltextIndexSearchPlan(resultVariable)
+  }
+
   def planRelationshipVectorIndexSearch(
     context: LogicalPlanningContext,
     patternRelationship: PatternRelationship,
@@ -2361,6 +2440,111 @@ case class LogicalPlanProducer(
     } else {
       createLeaf(variable)
     }
+
+  def planRelationshipFulltextIndexSearch(
+    context: LogicalPlanningContext,
+    patternRelationship: PatternRelationship,
+    indexedTypes: Seq[RelationshipTypeToken],
+    indexedProperties: Seq[IndexedProperty],
+    indexName: String,
+    queryString: Expression,
+    analyzer: Option[Expression],
+    skip: Option[Expression],
+    limit: Expression,
+    scoreVariable: Option[LogicalVariable],
+    argumentIds: Set[LogicalVariable],
+    implicitlySolvedPredicates: Set[Expression] = Set.empty
+  ): LogicalPlan = {
+    val selectionsFromUnsolvedTypes = selectionsFromTypesUnsolvedByIndex(patternRelationship, indexedTypes)
+
+    val solvedQueryGraphWithPredicate =
+      QueryGraph.empty
+        .addSearchClause(Some(FulltextSearchClause(
+          patternRelationship.variable,
+          indexName,
+          queryString,
+          analyzer,
+          skip,
+          limit,
+          scoreVariable
+        )))
+        .addPredicates(implicitlySolvedPredicates)
+        .addArgumentIds(argumentIds)
+        .pipe { qg =>
+          if (selectionsFromUnsolvedTypes.isEmpty) {
+            // We have solved all types, lets add the pattern relationship to the query graph
+            qg.addPatternRelationship(patternRelationship)
+          } else {
+            // Let the hidden selection handle the solved pattern relationship to the query graph
+            qg
+          }
+        }
+
+    val solved = RegularSinglePlannerQuery(
+      queryGraph = solvedQueryGraphWithPredicate,
+      horizon = RegularQueryProjection(
+        importedExposedSymbols = context.plannerState.importedSubqueryVariables
+      )
+    )
+
+    val solver = SubqueryExpressionSolver.solverForLeafPlan(argumentIds, context)
+
+    val rewrittenQueryString = solver.solve(queryString)
+    val rewrittenAnalyzer = analyzer.map(solver.solve(_))
+    val rewrittenSkip = skip.map(solver.solve(_))
+    val rewrittenLimit = solver.solve(limit)
+    val newArguments = solver.newArguments
+    val allArgumentIds = argumentIds.union(newArguments)
+
+    val (startNode, endNode) = patternRelationship.inOrder
+
+    def createRelationshipFulltextIndexSearchPlan(relVariable: LogicalVariable): LogicalPlan = {
+      val relFulltextIndexSearch = patternRelationship.dir match {
+        case SemanticDirection.BOTH => UndirectedRelationshipFulltextIndexSearch(
+            idName = Some(relVariable),
+            startNode = Some(startNode),
+            endNode = Some(endNode),
+            typeTokens = indexedTypes,
+            properties = indexedProperties,
+            score = scoreVariable,
+            indexName = indexName,
+            queryString = rewrittenQueryString,
+            limit = rewrittenLimit,
+            analyzer = rewrittenAnalyzer,
+            skip = rewrittenSkip,
+            argumentIds = allArgumentIds
+          )(idGen)
+        case _ => DirectedRelationshipFulltextIndexSearch(
+            idName = Some(relVariable),
+            startNode = Some(startNode),
+            endNode = Some(endNode),
+            typeTokens = indexedTypes,
+            properties = indexedProperties,
+            score = scoreVariable,
+            indexName = indexName,
+            queryString = rewrittenQueryString,
+            limit = rewrittenLimit,
+            analyzer = rewrittenAnalyzer,
+            skip = rewrittenSkip,
+            argumentIds = allArgumentIds
+          )(idGen)
+      }
+
+      val annotatedPlan =
+        annotate(
+          relFulltextIndexSearch,
+          solved,
+          ProvidedOrder.empty,
+          cachedPropertiesForIndexedProperties(context, relVariable, indexedProperties),
+          context
+        )
+      val rewritten = solver.rewriteLeafPlan(annotatedPlan)
+
+      planHiddenSelectionIfNeeded(rewritten, selectionsFromUnsolvedTypes, context, patternRelationship)
+    }
+
+    createRelationshipFulltextIndexSearchPlan(patternRelationship.variable)
+  }
 
   private def selectionsFromTypesUnsolvedByIndex(
     patternRelationship: PatternRelationship,

@@ -76,6 +76,7 @@ trait LogicalPlanningConfiguration {
   def graphStatistics: GraphStatistics
   def indexes: Map[IndexDef, IndexAttributes]
   def vectorIndexes: Map[String, VectorIndexDefinition]
+  def fulltextIndexes: Map[String, FulltextIndexDefinition]
   def nodeConstraints: Set[(String, Set[String])]
   def relationshipConstraints: Set[(String, Set[String])]
   def procedureSignatures: Set[ProcedureSignature]
@@ -122,6 +123,23 @@ final case class RelationshipVectorIndexDefinition(
   property: String,
   additionalProperties: Seq[String]
 ) extends VectorIndexDefinition
+
+sealed trait FulltextIndexDefinition {
+  def name: String
+  def properties: Seq[String]
+}
+
+final case class NodeFulltextIndexDefinition(
+  name: String,
+  labels: Seq[EntityType.Node],
+  properties: Seq[String]
+) extends FulltextIndexDefinition
+
+final case class RelationshipFulltextIndexDefinition(
+  name: String,
+  relTypes: Seq[EntityType.Relationship],
+  properties: Seq[String]
+) extends FulltextIndexDefinition
 
 class IndexAttributes(
   var isUnique: Boolean = false,
@@ -176,6 +194,15 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
         relTypes.foreach(relType => addRelationshipTypeIfUnknown(relType.relType))
         addPropertyKeyIfUnknown(property)
         additionalProperties.foreach(addPropertyKeyIfUnknown)
+    }
+
+    fulltextIndexes.values.foreach {
+      case NodeFulltextIndexDefinition(_, labels, properties) =>
+        labels.foreach(label => addLabelIfUnknown(label.label))
+        properties.foreach(addPropertyKeyIfUnknown)
+      case RelationshipFulltextIndexDefinition(_, relTypes, properties) =>
+        relTypes.foreach(relType => addRelationshipTypeIfUnknown(relType.relType))
+        properties.foreach(addPropertyKeyIfUnknown)
     }
 
     labelCardinality.keys.foreach(addLabelIfUnknown)

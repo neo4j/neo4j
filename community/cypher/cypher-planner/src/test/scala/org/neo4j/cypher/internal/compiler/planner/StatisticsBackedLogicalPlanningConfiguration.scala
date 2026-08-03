@@ -97,9 +97,11 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
+import org.neo4j.cypher.internal.planner.spi.NodeFulltextIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.NodeVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.NotImplementedPlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.RelationshipFulltextIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.RelationshipVectorIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.histogram.Histogram
@@ -273,7 +275,8 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     relationshipLookupIndex: Option[TokenIndexDescriptor] =
       Some(TokenIndexDescriptor(common.EntityType.RELATIONSHIP, IndexOrderCapability.BOTH)),
     propertyIndexes: Seq[IndexDefinition] = Seq.empty,
-    vectorIndexes: Seq[VectorIndexDefinition] = Seq.empty
+    vectorIndexes: Seq[VectorIndexDefinition] = Seq.empty,
+    fulltextIndexes: Seq[FulltextIndexDefinition] = Seq.empty
   ) {
 
     def addPropertyIndex(indexDefinition: IndexDefinition): Indexes = {
@@ -319,6 +322,24 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
           propertyKey,
           additionalProperties
         )
+      )
+
+    def addNodeFulltextIndex(
+      name: String,
+      labels: Seq[String],
+      properties: Seq[String]
+    ): Indexes =
+      copy(fulltextIndexes =
+        fulltextIndexes :+ NodeFulltextIndexDefinition(name, labels.map(Node.apply), properties)
+      )
+
+    def addRelationshipFulltextIndex(
+      name: String,
+      types: Seq[String],
+      properties: Seq[String]
+    ): Indexes =
+      copy(fulltextIndexes =
+        fulltextIndexes :+ RelationshipFulltextIndexDefinition(name, types.map(Relationship.apply), properties)
       )
   }
 
@@ -583,6 +604,20 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
         additionalProperties
       )
     )
+
+  def addNodeFulltextIndex(
+    indexName: String,
+    labelNames: Seq[String],
+    properties: Seq[String]
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    copy(indexes = indexes.addNodeFulltextIndex(indexName, labelNames, properties))
+
+  def addRelationshipFulltextIndex(
+    indexName: String,
+    relationshipTypeNames: Seq[String],
+    properties: Seq[String]
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    copy(indexes = indexes.addRelationshipFulltextIndex(indexName, relationshipTypeNames, properties))
 
   def addNodeLookupIndex(orderCapability: IndexOrderCapability = IndexOrderCapability.BOTH)
     : StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -1806,6 +1841,39 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
               additionalProperties = additionalProperties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
             ))
         }.getOrElse(Left(NotFound))
+
+      override def nodeFulltextIndexByName(indexName: String)
+        : Either[IndexLookupError, NodeFulltextIndexDescriptor] =
+        indexes.fulltextIndexes.collectFirst {
+          case NodeFulltextIndexDefinition(name, labels, properties) if name == indexName =>
+            Right(NodeFulltextIndexDescriptor(
+              labelIds = labels.map {
+                case EntityType.Node(label) => LabelId(resolver.getLabelId(label))
+              },
+              properties = properties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
+            ))
+          case RelationshipFulltextIndexDefinition(name, _, _) if name == indexName =>
+            Left(IndexLookupError.WrongEntityType(common.EntityType.NODE, common.EntityType.RELATIONSHIP))
+        }.getOrElse(fulltextIndexNotFoundOrWrongType(indexName))
+
+      override def relationshipFulltextIndexByName(indexName: String)
+        : Either[IndexLookupError, RelationshipFulltextIndexDescriptor] =
+        indexes.fulltextIndexes.collectFirst {
+          case NodeFulltextIndexDefinition(name, _, _) if name == indexName =>
+            Left(IndexLookupError.WrongEntityType(common.EntityType.RELATIONSHIP, common.EntityType.NODE))
+          case RelationshipFulltextIndexDefinition(name, relTypes, properties) if name == indexName =>
+            Right(RelationshipFulltextIndexDescriptor(
+              relTypeIds = relTypes.map(relType => RelTypeId(resolver.getRelTypeId(relType.relType))),
+              properties = properties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
+            ))
+        }.getOrElse(fulltextIndexNotFoundOrWrongType(indexName))
+
+      // A name that resolves to a vector index is a genuine "wrong index type" case (as opposed to NotFound),
+      // mirroring the real PlanContext's index-type check against the index's actual on-disk IndexType.
+      private def fulltextIndexNotFoundOrWrongType(indexName: String): Left[IndexLookupError, Nothing] =
+        if (indexes.vectorIndexes.exists(_.name == indexName))
+          Left(IndexLookupError.WrongIndexType(IndexType.FULLTEXT, IndexType.VECTOR))
+        else Left(IndexLookupError.NotFound)
     }
     new StatisticsBackedLogicalPlanningConfiguration(
       resolver,

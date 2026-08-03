@@ -46,7 +46,7 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
   private val embedding = listOfInt(1, 2, 3)
   private val limit = literalInt(10)
 
-  test("plans nodeVectorIndexSearch when skipIds do not contain the binding variable") {
+  test("plans nodeVectorIndexSearch when the binding variable is a pattern node") {
     val bindingVariable = v"movie"
     new givenConfig {
       addTypeToSemanticTable(bindingVariable, CTNode)
@@ -66,7 +66,6 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         argumentIds = Set.empty
       )
 
-      // When skipIds is empty, the planner should plan the vector search
       val planner = VectorSearchLeafPlanner
       val plans = planner(qg, InterestingOrderConfig.empty, context)
 
@@ -78,7 +77,7 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
     }
   }
 
-  test("plans relationshipVectorIndexSearch when skipIds do not contain the binding variable") {
+  test("plans relationshipVectorIndexSearch when the binding variable is a pattern relationship") {
     val bindingVariable = v"knows"
     new givenConfig {
       addTypeToSemanticTable(bindingVariable, CTRelationship)
@@ -111,7 +110,6 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         argumentIds = Set.empty
       )
 
-      // When skipIds is empty, the planner should plan the relationship vector search
       val planner = VectorSearchLeafPlanner
       val plans = planner(qg, InterestingOrderConfig.empty, context)
 

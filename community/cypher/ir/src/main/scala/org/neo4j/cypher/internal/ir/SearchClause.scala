@@ -68,6 +68,37 @@ case class VectorSearchClause(
   }
 }
 
+case class FulltextSearchClause(
+  resultVariable: LogicalVariable,
+  indexName: String,
+  queryString: Expression,
+  analyzer: Option[Expression],
+  skip: Option[Expression],
+  limit: Expression,
+  scoreVariable: Option[LogicalVariable]
+) extends SearchClause {
+
+  override def dependencies: Set[LogicalVariable] =
+    queryString.dependencies ++
+      analyzer.fold(Set.empty[LogicalVariable])(_.dependencies) ++
+      skip.fold(Set.empty[LogicalVariable])(_.dependencies) ++
+      limit.dependencies
+
+  // A WHERE clause is not allowed together with FULLTEXT INDEX, so there are no predicates to inline.
+  override def inlinedPredicatesSet: ListSet[Expression] = ListSet.empty
+
+  override def availableSymbols: Set[LogicalVariable] = Set(resultVariable) ++ scoreVariable
+
+  override def toString: String = {
+    val queryStringStr = SearchClause.stringifier(queryString)
+    val analyzerStr = analyzer.map(a => s"WITH ANALYZER ${SearchClause.stringifier(a)}").getOrElse("")
+    val skipStr = skip.map(s => s"SKIP ${SearchClause.stringifier(s)}").getOrElse("")
+    val limitStr = SearchClause.stringifier(limit)
+    val scoreStr = scoreVariable.map(v => s" SCORE AS ${v.name}").getOrElse("")
+    s"SEARCH ${resultVariable.name} IN (FULLTEXT INDEX $indexName FOR $queryStringStr $analyzerStr $skipStr LIMIT $limitStr)$scoreStr"
+  }
+}
+
 object SearchClause {
 
   val stringifier: ExpressionStringifier = ExpressionStringifier(

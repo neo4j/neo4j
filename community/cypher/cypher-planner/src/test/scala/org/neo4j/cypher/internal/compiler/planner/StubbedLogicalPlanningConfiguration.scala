@@ -73,6 +73,8 @@ trait FakeIndexAndConstraintManagement {
 
   var vectorIndexes: Map[String, VectorIndexDefinition] = Map.empty
 
+  var fulltextIndexes: Map[String, FulltextIndexDefinition] = Map.empty
+
   def indexOn(label: String, properties: String*): IndexModifier = {
     val indexDef =
       indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Range)
@@ -106,6 +108,22 @@ trait FakeIndexAndConstraintManagement {
       relTypes.map(relType => IndexDefinition.EntityType.Relationship(relType)),
       property,
       Seq.empty
+    )
+  }
+
+  def nodeFulltextIndexOn(indexName: String, labels: Seq[String], properties: Seq[String]): Unit = {
+    fulltextIndexes += indexName -> NodeFulltextIndexDefinition(
+      indexName,
+      labels.map(label => IndexDefinition.EntityType.Node(label)),
+      properties
+    )
+  }
+
+  def relationshipFulltextIndexOn(indexName: String, relTypes: Seq[String], properties: Seq[String]): Unit = {
+    fulltextIndexes += indexName -> RelationshipFulltextIndexDefinition(
+      indexName,
+      relTypes.map(relType => IndexDefinition.EntityType.Relationship(relType)),
+      properties
     )
   }
 
@@ -237,6 +255,8 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
       case IndexDef(IndexDefinition.EntityType.Node(label), _, _) => label
     }.toSeq ++ vectorIndexes.values.collect {
       case NodeVectorIndexDefinition(_, nodes, _, _) => nodes.map(_.label)
+    }.flatten ++ fulltextIndexes.values.collect {
+      case NodeFulltextIndexDefinition(_, nodes, _) => nodes.map(_.label)
     }.flatten
     val known = knownLabels.toSeq
     val indexedThenKnown = (indexed ++ known).distinct
@@ -248,6 +268,8 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
       case IndexDef(IndexDefinition.EntityType.Relationship(relationshipType), _, _) => relationshipType
     }.toSeq ++ vectorIndexes.values.collect {
       case RelationshipVectorIndexDefinition(_, relTypes, _, _) => relTypes.map(_.relType)
+    }.flatten ++ fulltextIndexes.values.collect {
+      case RelationshipFulltextIndexDefinition(_, relTypes, _) => relTypes.map(_.relType)
     }.flatten
     val known = knownRelationships.toSeq
     val indexedThenKnown = (indexed ++ known).distinct

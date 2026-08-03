@@ -27,14 +27,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.HasLabel
-import org.neo4j.cypher.internal.expressions.HasTypes
-import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelToken
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
-import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
@@ -98,9 +92,9 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
                   nameId = descriptor.property
                 )
               val implicitlySolvedPredicates =
-                solvedNodePredicates(
+                SearchImplicitPredicates.solvedNodePredicates(
                   resultVariable,
-                  propertyKeyToken,
+                  SearchImplicitPredicates.solvesIsNotNull(resultVariable, propertyKeyToken, _),
                   labelTokens,
                   queryGraph.selections.flatPredicatesSet
                 )
@@ -165,9 +159,9 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
               )
 
               val implicitlySolvedPredicates =
-                solvedRelationshipPredicates(
+                SearchImplicitPredicates.solvedRelationshipPredicates(
                   resultVariable,
-                  propertyKeyToken,
+                  SearchImplicitPredicates.solvesIsNotNull(resultVariable, propertyKeyToken, _),
                   indexedTypes,
                   queryGraph.selections.flatPredicatesSet
                 )
@@ -236,88 +230,6 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
       )
     }
   }
-
-  private def solvedNodePredicates(
-    vectorSearchVariable: LogicalVariable,
-    propertyKeyToken: PropertyKeyToken,
-    labelTokens: Seq[LabelToken],
-    predicates: Set[Expression]
-  ): Set[Expression] = {
-    def isSolved: Expression => Boolean =
-      labelTokens match {
-        case Seq(labelToken) =>
-          expression =>
-            solvesIsNotNull(vectorSearchVariable, propertyKeyToken, expression) ||
-              solvesHasLabel(vectorSearchVariable, labelToken, expression)
-        case _ =>
-          // If the index is defined for more than one label, the logic needs to be more complicated.
-          // For example, if it is defined for (n:Foo|Bar), it implicitly solves x:Foo|Bar or any superset like
-          // x:Foo|Bar|Zor but not x:Foo or x:Bar|Zor.
-          // We decided not to handle it for now.
-          solvesIsNotNull(vectorSearchVariable, propertyKeyToken, _)
-      }
-
-    predicates.filter(expandToOr(isSolved))
-  }
-
-  private def solvedRelationshipPredicates(
-    vectorSearchVariable: LogicalVariable,
-    propertyKeyToken: PropertyKeyToken,
-    relationshipTokens: Seq[RelationshipTypeToken],
-    predicates: Set[Expression]
-  ): Set[Expression] = {
-    def isSolved: Expression => Boolean =
-      if (relationshipTokens.size == 1) {
-        val typeToken = relationshipTokens.head
-        expression =>
-          solvesIsNotNull(vectorSearchVariable, propertyKeyToken, expression) ||
-            solvesHasTypes(vectorSearchVariable, typeToken, expression)
-      } else {
-        // If the index is defined for more than one relationship type, the logic needs to be more complicated.
-        // For example, if it is defined for ()-[r:R|S]-(), it implicitly solves x:R|S or any superset like
-        // x:R|S|T but not x:R or x:S|T.
-        // We decided not to handle it for now.
-        solvesIsNotNull(vectorSearchVariable, propertyKeyToken, _)
-      }
-
-    predicates.filter(expandToOr(isSolved))
-  }
-
-  private def expandToOr(predicate: Expression => Boolean): Expression => Boolean = {
-    case Ors(nestedExpressions) => nestedExpressions.exists(predicate)
-    case otherExpression        => predicate(otherExpression)
-  }
-
-  private def solvesIsNotNull(
-    vectorSearchVariable: LogicalVariable,
-    propertyKeyToken: PropertyKeyToken,
-    expression: Expression
-  ): Boolean =
-    expression match {
-      case IsNotNull(Property(`vectorSearchVariable`, propertyKey)) if propertyKey.name == propertyKeyToken.name => true
-      case _ => false
-    }
-
-  private def solvesHasLabel(
-    vectorSearchVariable: LogicalVariable,
-    labelToken: LabelToken,
-    expression: Expression
-  ): Boolean =
-    expression match {
-      case HasLabel(`vectorSearchVariable`, lbl) if lbl.name == labelToken.name => true
-      case _                                                                    => false
-    }
-
-  private def solvesHasTypes(
-    vectorSearchVariable: LogicalVariable,
-    typeToken: RelationshipTypeToken,
-    expression: Expression
-  ): Boolean =
-    expression match {
-      case HasTypes(`vectorSearchVariable`, relTypes)
-        if relTypes.size == 1 && relTypes.exists(_.name == typeToken.name) => true
-      case _ => false
-    }
 
   def queryExpressionFromWhereClause(
     maybeWhere: Option[Where],
