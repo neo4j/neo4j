@@ -101,7 +101,7 @@ class FileImporterTest {
                     .addNodeFiles(emptySet(), new FileGroup(new FileGroup.NumberedFile(0, inputFile.toAbsolutePath())))
                     .build();
 
-            csvImporter.doImport(fullImport(), false);
+            csvImporter.doImport(fullImport(), false, false);
 
             assertThat(importContext.baseDir()).exists();
             assertThat(importContext.logPath())
@@ -129,11 +129,11 @@ class FileImporterTest {
                 .withDatabaseConfig(dbConfig)
                 .withReportFile(reportLocation.toAbsolutePath());
         // Then
-        assertThatThrownBy(() -> csvImporterBuilder.build().doImport(fullImport(), false))
+        assertThatThrownBy(() -> csvImporterBuilder.build().doImport(fullImport(), false, false))
                 .isInstanceOf(FileImporter.CsvImportException.class)
                 .hasCauseInstanceOf(DirectoryNotEmptyException.class)
                 .hasMessageContaining("Database already exist. Re-run with `--overwrite-destination`");
-        assertThatCode(() -> csvImporterBuilder.withForce(true).build().doImport(fullImport(), false))
+        assertThatCode(() -> csvImporterBuilder.withForce(true).build().doImport(fullImport(), false, false))
                 .doesNotThrowAnyException();
     }
 
@@ -155,7 +155,7 @@ class FileImporterTest {
                 .addNodeFiles(emptySet(), new FileGroup(new FileGroup.NumberedFile(0, inputFile.toAbsolutePath())))
                 .build();
 
-        fileImporter.doImport(fullImport(), false);
+        fileImporter.doImport(fullImport(), false, false);
 
         long pins = cacheTracer.pins();
         assertThat(pins).isPositive();
@@ -179,7 +179,7 @@ class FileImporterTest {
                 .build();
 
         // when
-        assertThatThrownBy(() -> importer.doImport(fullImport(), false))
+        assertThatThrownBy(() -> importer.doImport(fullImport(), false, false))
                 .hasRootCauseInstanceOf(InputException.class)
                 .hasMessageContaining("Too many bad entries");
     }
@@ -201,7 +201,7 @@ class FileImporterTest {
         context.configure(importerBuilder);
         var importer = importerBuilder.build();
 
-        var throwableAssert = assertThatThrownBy(() -> importer.doImport(fullImport(), false));
+        var throwableAssert = assertThatThrownBy(() -> importer.doImport(fullImport(), false, false));
         context.assertException(throwableAssert);
     }
 

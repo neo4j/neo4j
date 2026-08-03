@@ -225,7 +225,7 @@ public class FileImporter {
         }
     }
 
-    public void doImport(ImportCommand.Base type, boolean skidbladnir) throws IOException {
+    public void doImport(ImportCommand.Base type, boolean skidbladnir, boolean resume) throws IOException {
         if (force) {
             fileSystem.deleteRecursively(
                     databaseLayout.databaseDirectory(), path -> !path.equals(databaseLayout.databaseLockFile()));
@@ -234,7 +234,7 @@ public class FileImporter {
 
         try (var badCollector = getBadCollector();
                 var input = importInput()) {
-            doImport(input, badCollector, type, skidbladnir);
+            doImport(input, badCollector, type, skidbladnir, resume);
         }
     }
 
@@ -286,7 +286,8 @@ public class FileImporter {
         };
     }
 
-    private void doImport(Input input, Collector badCollector, ImportCommand.Base type, boolean skidbladnir) {
+    private void doImport(
+            Input input, Collector badCollector, ImportCommand.Base type, boolean skidbladnir, boolean resume) {
         boolean success = false;
 
         printOverview(false);
@@ -329,7 +330,8 @@ public class FileImporter {
                         nodeFiles,
                         indexProviders,
                         shardingArguments,
-                        monitor);
+                        monitor,
+                        resume);
             } else {
                 type.doImport(
                         fileSystem,

@@ -42,11 +42,15 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.ProviderMismatchException;
+import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.neo4j.batchimport.api.DetailedProgressReport;
@@ -59,6 +63,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.importer.FileImporter.CsvImportException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction.PatternStyle;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
@@ -78,6 +83,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     public static final String PROGRESS_REPORTING_FILE_NAME = "progress.json.log";
     public static final String DEFAULT_REPORT_FILE_NAME = "report.json.log";
     public static final String CLI_ARGS_FILE_NAME = "cli-args";
+    public static final String SUCCESS_FILE_NAME = "success";
 
     private final String dbName;
 
@@ -270,12 +276,25 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
         if (!(hasErrors || retainContextDir.apply(RetainCheck.CLEARING))) {
             var baseDir = baseDir();
             try {
+                allowDeletionOfWriteProtectedFiles(baseDir);
                 FileUtils.deleteDirectory(baseDir);
             } catch (IOException e) {
                 var error = new CommandFailedException(e, ExitCode.SOFTWARE);
                 error.addSupplementaryMessage("Unable to fully clear the import context directory: " + baseDir);
                 throw error;
             }
+        }
+    }
+
+    /**
+     * Windows refuses to delete a file carrying the read-only attribute, which is what {@link #writeProtected(Path,
+     * String)} leaves behind. Best effort - the deletion itself reports whatever it could not remove.
+     */
+    private static void allowDeletionOfWriteProtectedFiles(Path baseDir) {
+        try (var entries = Files.list(baseDir)) {
+            entries.forEach(entry -> entry.toFile().setWritable(true));
+        } catch (IOException | UncheckedIOException | UnsupportedOperationException e) {
+            // nothing to do, the files that matter are the ones the deletion below complains about
         }
     }
 
@@ -293,12 +312,17 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
         return error;
     }
 
+    /**
+     * The counter distinguishing attempts started within the same second is zero-padded to a fixed width so that the
+     * directory names of a database's attempts sort lexicographically by recency - unpadded, '.10' would sort before
+     * '.2'. The width leaves room for far more attempts within one second than any real setup produces.
+     */
     private static Path newContextDir(FileSystemAbstraction fs, Path importsDir, String dbName) {
         var ts = SPACELESS_DATE_FORMATTER.format(Instant.now());
         var repeat = 0;
         Path contextDir;
         do {
-            var suffix = ts + (repeat++ == 0 ? "" : "." + repeat);
+            var suffix = ts + (repeat++ == 0 ? "" : format(".%03d", repeat));
             contextDir = importsDir.resolve(format(DEFAULT_LOG_DIR_TEMPLATE, dbName, suffix));
         } while (fs.fileExists(contextDir));
         return contextDir;
@@ -315,15 +339,88 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     }
 
     /**
-     * Persists the CLI arguments the import was invoked with into the context directory.
+     * Persists the CLI arguments the import was invoked with into the context directory, one per line - a single
+     * argument (e.g. a file path) may itself contain whitespace, so joining/splitting on whitespace would corrupt it.
      */
     public void persistCliArgs() {
         try {
             fs.mkdirs(baseDir());
-            Files.writeString(baseDir().resolve(CLI_ARGS_FILE_NAME), String.join(" ", originalArgs));
+            writeProtected(baseDir().resolve(CLI_ARGS_FILE_NAME), String.join("\n", originalArgs));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Records that the import completed, so that a retained context directory can be told apart from one left behind
+     * by an attempt that did not finish. A retained directory outlives a successful import (see
+     * {@link #create(FileSystemAbstraction, NormalizedDatabaseName, Config, Path, List, boolean, boolean, boolean)}),
+     * and without this there is nothing in it that says the import got all the way through.
+     */
+    public void markSuccessful() {
+        try {
+            fs.mkdirs(baseDir());
+            writeProtected(baseDir().resolve(SUCCESS_FILE_NAME), "");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Writes a file that records what an import attempt did, and takes the write permission off it afterwards. What
+     * these files say decides what a later '--resume' reruns and whether it is allowed to run at all, so editing one
+     * by hand quietly changes the import - or, for {@link #SUCCESS_FILE_NAME}, lets a completed import be rerun over
+     * the database it produced. Read-only is a guard against doing that by accident, not protection against someone
+     * who means to: the owner can put the permission back.
+     */
+    private static void writeProtected(Path path, String content) throws IOException {
+        Files.writeString(path, content);
+        try {
+            Files.setPosixFilePermissions(
+                    path,
+                    Set.of(
+                            PosixFilePermission.OWNER_READ,
+                            PosixFilePermission.GROUP_READ,
+                            PosixFilePermission.OTHERS_READ));
+        } catch (UnsupportedOperationException e) {
+            // fallback for windows
+            path.toFile().setReadOnly();
+        }
+    }
+
+    /**
+     * Whether the import that owned the given context directory completed, see {@link #markSuccessful()}.
+     */
+    public static boolean wasSuccessful(Path contextDir) {
+        return Files.exists(contextDir.resolve(SUCCESS_FILE_NAME));
+    }
+
+    /**
+     * Finds the context directory of the most recent import attempt for the given database, if any is still present
+     * (context directories are cleared on successful completion unless retained, so a previous attempt is only found
+     * here if it was retained or did not complete successfully).
+     */
+    public static Optional<Path> mostRecentContextDir(FileSystemAbstraction fs, Path logsDir, String dbName)
+            throws IOException {
+        if (!fs.fileExists(logsDir)) {
+            return Optional.empty();
+        }
+        List<Path> candidates =
+                fs.matchFiles(logsDir, PatternStyle.GLOB, format(DEFAULT_LOG_DIR_TEMPLATE, dbName, "*"));
+        return candidates.stream()
+                .max(Comparator.comparing(path -> path.getFileName().toString()));
+    }
+
+    /**
+     * Reads back the CLI arguments persisted by {@link #persistCliArgs()} for a given context directory.
+     */
+    public static Optional<List<String>> readCliArgs(Path contextDir) throws IOException {
+        Path cliArgsPath = contextDir.resolve(CLI_ARGS_FILE_NAME);
+        if (!Files.exists(cliArgsPath)) {
+            return Optional.empty();
+        }
+        String content = Files.readString(cliArgsPath);
+        return Optional.of(content.isEmpty() ? List.of() : content.lines().toList());
     }
 
     private static class DurationSerializer extends StdSerializer<Duration> {

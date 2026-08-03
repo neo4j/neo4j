@@ -28,7 +28,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -268,6 +270,39 @@ class ImportContextTest {
     }
 
     @Test
+    void recordOfTheAttemptIsWriteProtected() {
+        try (var importContext =
+                ImportContext.create(fs, DB, config, null, List.of("--nodes=foo.csv"), false, true, false)) {
+            importContext.persistCliArgs();
+            importContext.markSuccessful();
+
+            for (var fileName : List.of(ImportContext.CLI_ARGS_FILE_NAME, ImportContext.SUCCESS_FILE_NAME)) {
+                Path recorded = importContext.baseDir().resolve(fileName);
+                assertThat(recorded).isReadable();
+                assertThat(Files.isWritable(recorded))
+                        .as("'%s' must not be editable by accident", fileName)
+                        .isFalse();
+            }
+        }
+    }
+
+    @Test
+    void writeProtectedRecordStillGetsClearedWithTheRestOfTheContext() {
+        Path contextDir;
+        try (var importContext =
+                ImportContext.create(fs, DB, config, null, List.of("--nodes=foo.csv"), false, false, false)) {
+            importContext.persistCliArgs();
+            importContext.markSuccessful();
+            contextDir = importContext.baseDir();
+            assertThat(Files.isWritable(contextDir.resolve(ImportContext.CLI_ARGS_FILE_NAME)))
+                    .isFalse();
+        }
+
+        assertThat(contextDir).doesNotExist();
+        assertThat(importsDir).exists().isEmptyDirectory();
+    }
+
+    @Test
     void eachRunCreatesNewContext() {
         var content1 = "content1";
         var content2 = "content2";
@@ -293,6 +328,108 @@ class ImportContextTest {
                 .satisfies(dir -> assertThat(fs.listFiles(dir))
                         .hasSize(2)
                         .allSatisfy(ImportContextTest::assertIsImportContextDir));
+    }
+
+    @Test
+    void successIsOnlyRecordedWhenMarked() {
+        Path markedContextDir;
+        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, false)) {
+            assertThat(ImportContext.wasSuccessful(importContext.baseDir())).isFalse();
+            importContext.markSuccessful();
+            markedContextDir = importContext.baseDir();
+        }
+
+        assertThat(ImportContext.wasSuccessful(markedContextDir)).isTrue();
+    }
+
+    @Test
+    void successMarkerClearedWithRestOfContextWhenNotRetained() {
+        Path contextDir;
+        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+            importContext.markSuccessful();
+            contextDir = importContext.baseDir();
+        }
+
+        assertThat(contextDir).doesNotExist();
+        assertThat(ImportContext.wasSuccessful(contextDir)).isFalse();
+    }
+
+    @Test
+    void mostRecentContextDirEmptyWhenNothingHasBeenImported() throws IOException {
+        assertThat(importsDir).doesNotExist();
+
+        assertThat(ImportContext.mostRecentContextDir(fs, importsDir, DB.name()))
+                .isEmpty();
+    }
+
+    @Test
+    void mostRecentContextDirEmptyWhenPreviousImportWasNotRetained() throws IOException {
+        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+            importContext.persistCliArgs();
+        }
+
+        assertThat(importsDir).exists().isEmptyDirectory();
+        assertThat(ImportContext.mostRecentContextDir(fs, importsDir, DB.name()))
+                .isEmpty();
+    }
+
+    @Test
+    void mostRecentContextDirIgnoresOtherDatabases() throws IOException {
+        try (var importContext = ImportContext.create(
+                fs, new NormalizedDatabaseName("bar"), config, null, List.of(), false, true, false)) {
+            importContext.persistCliArgs();
+        }
+
+        assertThat(importsDir).isNotEmptyDirectory();
+        assertThat(ImportContext.mostRecentContextDir(fs, importsDir, DB.name()))
+                .isEmpty();
+    }
+
+    @Test
+    void mostRecentContextDirFindsLatestOfSeveralRetainedAttempts() throws IOException {
+        var attemptArgs =
+                List.of(List.of("--nodes=first.csv"), List.of("--nodes=second.csv"), List.of("--nodes=third.csv"));
+        var contextDirs = new ArrayList<Path>();
+        for (var args : attemptArgs) {
+            try (var importContext = ImportContext.create(fs, DB, config, null, args, false, true, false)) {
+                importContext.persistCliArgs();
+                contextDirs.add(importContext.baseDir());
+            }
+        }
+
+        assertThat(fs.listFiles(importsDir)).hasSize(attemptArgs.size());
+
+        var latest = contextDirs.getLast();
+        assertThat(ImportContext.mostRecentContextDir(fs, importsDir, DB.name()))
+                .contains(latest);
+        assertThat(ImportContext.readCliArgs(latest)).contains(attemptArgs.getLast());
+    }
+
+    @Test
+    void mostRecentContextDirOrdersAttemptsFromTheSameSecondByPaddedCounter() throws IOException {
+        var sameSecond = DB.name() + "-admin-import-2026-01-01.12.00.00";
+        fs.mkdirs(importsDir.resolve(sameSecond));
+        for (int counter = 2; counter <= 12; counter++) {
+            fs.mkdirs(importsDir.resolve(sameSecond + ".%03d".formatted(counter)));
+        }
+
+        assertThat(ImportContext.mostRecentContextDir(fs, importsDir, DB.name()))
+                .contains(importsDir.resolve(sameSecond + ".012"));
+    }
+
+    @Test
+    void attemptsFromTheSameSecondGetAZeroPaddedCounter() {
+        var names = new ArrayList<String>();
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, false)) {
+                names.add(importContext.baseDir().getFileName().toString());
+            }
+        }
+
+        assertThat(names)
+                .allMatch(
+                        name -> name.matches(DB.name() + "-admin-import-\\d{4}(-\\d{2}){2}(\\.\\d{2}){3}(\\.\\d{3})?"))
+                .isSorted();
     }
 
     @ParameterizedTest

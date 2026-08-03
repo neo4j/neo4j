@@ -51,10 +51,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.tuple.Pair;
 import org.neo4j.batchimport.api.BatchImporter.HardwareValidation;
@@ -122,6 +124,7 @@ import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.ITypeConverter;
+import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Parameters;
@@ -143,6 +146,17 @@ public class ImportCommand {
 
         public static final org.neo4j.csv.reader.Configuration DEFAULT_CSV_CONFIG = COMMAS;
         private static final Configuration DEFAULT_IMPORTER_CONFIG = DEFAULT;
+
+        private static final String RESUME_OPTION = "--resume";
+        protected static final String SKIP_BAD_RELATIONSHIPS_OPTION = "--skip-bad-relationships";
+        protected static final String SKIP_DUPLICATE_NODES_OPTION = "--skip-duplicate-nodes";
+
+        /**
+         * Options that may be passed alongside {@value #RESUME_OPTION}, overriding what the attempt being resumed
+         * used. Everything else is taken from that attempt, see {@link #rerunFromPreviousAttempt()}.
+         */
+        private static final Set<String> OPTIONS_ALLOWED_WITH_RESUME =
+                Set.of(SKIP_BAD_RELATIONSHIPS_OPTION, SKIP_DUPLICATE_NODES_OPTION);
 
         enum OnOffAuto {
             ON,
@@ -203,6 +217,17 @@ public class ImportCommand {
                 description = "Zzzing",
                 hidden = true)
         private boolean skidbladnir;
+
+        @Option(
+                names = RESUME_OPTION,
+                arity = "0..1",
+                showDefaultValue = ALWAYS,
+                paramLabel = "true|false",
+                fallbackValue = "true",
+                description = "Resume the last import. Reruns it with the arguments it was invoked with, so it can "
+                        + "only be combined with the options that are allowed to override those.",
+                hidden = true)
+        private boolean resume;
 
         @Option(
                 names = "--schema",
@@ -454,7 +479,7 @@ public class ImportCommand {
         private boolean skipBadEntriesLogging;
 
         @Option(
-                names = "--skip-bad-relationships",
+                names = SKIP_BAD_RELATIONSHIPS_OPTION,
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
@@ -466,7 +491,7 @@ public class ImportCommand {
                                 + " entities specified by " + BAD_TOLERANCE_OPTION + " and the "
                                 + SKIP_BAD_ENTRIES_LOGGING
                                 + " option is disabled.")
-        private boolean skipBadRelationships;
+        boolean skipBadRelationships;
 
         @Option(
                 names = "--strict",
@@ -481,7 +506,7 @@ public class ImportCommand {
         private boolean strict = false;
 
         @Option(
-                names = "--skip-duplicate-nodes",
+                names = SKIP_DUPLICATE_NODES_OPTION,
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
@@ -492,7 +517,7 @@ public class ImportCommand {
                                 + " imported, whereas consecutive such nodes will be skipped. Skipped nodes will be logged"
                                 + " if they are within the limit of entities specified by " + BAD_TOLERANCE_OPTION
                                 + " and the " + SKIP_BAD_ENTRIES_LOGGING + " option is disabled.")
-        private boolean skipDuplicateNodes;
+        boolean skipDuplicateNodes;
 
         @Option(
                 names = "--normalize-types",
@@ -654,6 +679,11 @@ public class ImportCommand {
 
         @Override
         public void execute() throws Exception {
+            rerunFromPreviousAttempt();
+            if (resume) {
+                forceOverwriteDestinationForResume();
+            }
+
             var format = importFormat();
             if (format != null && StorageEngineFactory.isFormatDeprecated(format)) {
                 printf("WARNING: %s%n", DeprecatedFormatWarning.getTargetFormatWarning(format));
@@ -664,7 +694,7 @@ public class ImportCommand {
                     database,
                     loadNeo4jConfig(format),
                     reportFile,
-                    spec.commandLine().getParseResult().originalArgs(),
+                    ownCliArgs(),
                     includeUpdatesInProgress(),
                     !disableInstrumentation && captureProfile && captureProfileResultPath == null,
                     verbose)) {
@@ -712,8 +742,9 @@ public class ImportCommand {
                     } else {
                         try (var ignore = maybeLockChecker().maybeCheckLock(databaseLayout)) {
                             preImport(importContext);
-                            importer.doImport(this, skidbladnir);
+                            importer.doImport(this, skidbladnir, resume);
                             postImport(fileSystem, databaseConfig, importContext, databaseLayout);
+                            importContext.markSuccessful();
                         }
                     }
                 } catch (Exception e) {
@@ -726,6 +757,141 @@ public class ImportCommand {
             importContext.preamble(ctx.out());
             importContext.persistCliArgs();
         }
+
+        /**
+         * {@link picocli.CommandLine.Model.ParseResult#originalArgs()} returns the entire top-level command line
+         * (e.g. {@code database import full ...}), the same for every subcommand in the hierarchy, not just the
+         * args matched by this subcommand. Strip the leading command-name tokens ("database", "import", "full"/
+         * "incremental") so what gets persisted is just this command's own args - replayable directly against a
+         * {@link Base} subclass instance, e.g. via {@link CommandLine#populateCommand(Object, String...)}.
+         */
+        private List<String> ownCliArgs() {
+            List<String> originalArgs = spec.commandLine().getParseResult().originalArgs();
+            int prefixLength = 0;
+            for (CommandLine commandLine = spec.commandLine(); commandLine.getParent() != null; ) {
+                commandLine = commandLine.getParent();
+                prefixLength++;
+            }
+            return prefixLength < originalArgs.size()
+                    ? originalArgs.subList(prefixLength, originalArgs.size())
+                    : List.of();
+        }
+
+        /**
+         * A resumed import takes its configuration from the attempt it resumes, so any option passed alongside
+         * '--resume' that is not on {@link #OPTIONS_ALLOWED_WITH_RESUME} would be silently discarded and is
+         * rejected instead. The database to resume may always be given, it identifies the attempt to pick up.
+         */
+        private void rejectOptionsNotAllowedWithResume() {
+            List<String> rejected = matchedOptionNames()
+                    .filter(name -> !name.equals(RESUME_OPTION))
+                    .filter(name -> !OPTIONS_ALLOWED_WITH_RESUME.contains(name))
+                    .toList();
+            if (!rejected.isEmpty()) {
+                throw new ParameterException(
+                        spec.commandLine(),
+                        "ERROR: '%s' reruns the previous import attempt with the arguments that attempt was invoked "
+                                        .formatted(RESUME_OPTION)
+                                + "with, so it can only be combined with %s. Remove: %s"
+                                        .formatted(
+                                                String.join(", ", new TreeSet<>(OPTIONS_ALLOWED_WITH_RESUME)),
+                                                String.join(", ", rejected)));
+            }
+        }
+
+        /**
+         * The options on {@link #OPTIONS_ALLOWED_WITH_RESUME} matched by this invocation, rendered as arguments to
+         * append to the resumed attempt's own arguments - appended last so they win over whatever that attempt used.
+         */
+        private List<String> optionOverridesForResume() {
+            return spec.commandLine().getParseResult().matchedOptions().stream()
+                    .filter(option -> OPTIONS_ALLOWED_WITH_RESUME.contains(option.longestName()))
+                    .distinct()
+                    .flatMap(option -> option.stringValues().stream().map(value -> option.longestName() + "=" + value))
+                    .toList();
+        }
+
+        private Stream<String> matchedOptionNames() {
+            return spec.commandLine().getParseResult().matchedOptions().stream()
+                    .map(OptionSpec::longestName)
+                    .distinct();
+        }
+
+        /**
+         * '--resume' stands in for the whole invocation of the attempt it resumes: this command is populated a
+         * second time, from that attempt's persisted CLI arguments, so that from here on it is indistinguishable
+         * from having been invoked with them directly. That is also what gets persisted for this run, and thus what
+         * a later '--resume' picks up in turn.
+         */
+        void rerunFromPreviousAttempt() throws IOException {
+            if (!resume) {
+                return;
+            }
+            rejectOptionsNotAllowedWithResume();
+            Path previousAttempt = previousAttemptContextDir();
+            adoptInvocationOf(previousAttempt);
+            verifyPreviousAttemptIsResumable(previousAttempt);
+        }
+
+        /**
+         * The context directory of the attempt that '--resume' picks up, the most recent one for this database. An
+         * import clears its context directory on completion unless it was retained, so nothing left behind for this
+         * database means there is nothing to pick up either.
+         */
+        private Path previousAttemptContextDir() throws IOException {
+            Path logsDir = loadNeo4jConfig(importFormat())
+                    .get(GraphDatabaseSettings.logs_directory)
+                    .toAbsolutePath();
+            return ImportContext.mostRecentContextDir(ctx.fs(), logsDir, database.name())
+                    .orElseThrow(
+                            () -> new CommandFailedException("ERROR: nothing to resume found for database '%s' in '%s'."
+                                    .formatted(database.name(), logsDir)));
+        }
+
+        /**
+         * Populates this command from the CLI arguments the given attempt was invoked with, so that every option
+         * holds what that attempt resolved it to rather than what this invocation of '--resume' left it at. The
+         * options allowed alongside '--resume' are appended, overriding the attempt where they overlap.
+         */
+        private void adoptInvocationOf(Path contextDir) throws IOException {
+            // the overrides go last, since where they repeat an option the attempt already used the later occurrence
+            // has to win rather than be rejected as a duplicate
+            String[] replayArgs = Stream.concat(
+                            ImportContext.readCliArgs(contextDir).orElse(List.of()).stream(),
+                            optionOverridesForResume().stream())
+                    .toArray(String[]::new);
+            new CommandLine(this).setOverwrittenOptionsAllowed(true).parseArgs(replayArgs);
+        }
+
+        /**
+         * Refuses an attempt that cannot be continued: '--skidbladnir' is currently the only importer that produces
+         * resumable state, and an attempt that completed has nothing left to resume - rerunning it would overwrite
+         * the database it produced. Reads what the attempt asked for off the fields {@link #adoptInvocationOf(Path)}
+         * resolved its arguments into, rather than interpreting those arguments a second time here.
+         */
+        private void verifyPreviousAttemptIsResumable(Path contextDir) {
+            if (!isSkidbladnir()) {
+                throw new CommandFailedException(
+                        "ERROR: '--resume' is only supported when the import attempt being resumed used "
+                                + "'--skidbladnir'.");
+            }
+            if (ImportContext.wasSuccessful(contextDir)) {
+                throw new CommandFailedException(
+                        ("ERROR: the most recent import for database '%s' completed successfully, so there is nothing "
+                                        + "to resume. Rerun the import itself if you want to import it again, which "
+                                        + "overwrites the database.")
+                                .formatted(database.name()));
+            }
+        }
+
+        /**
+         * WIP: the batch importer does not yet act on '--resume' itself, so a "resumed" import is really just the
+         * previous attempt's import rerun from scratch. That previous attempt already created (or partially wrote)
+         * the destination, so without this a resumed run would immediately fail because the destination already
+         * exists. Force an overwrite so '--resume' has a chance of completing until real resume is
+         * implemented.
+         */
+        protected void forceOverwriteDestinationForResume() {}
 
         protected boolean isDryRun() {
             return dryRun;
@@ -784,7 +950,7 @@ public class ImportCommand {
                         "ERROR: '--high-parallel-io=%s' is not supported for the 'block' format."
                                 .formatted(highIo.name().toLowerCase(Locale.ROOT)));
             }
-
+            CommandLine.ParseResult parseResult = spec.commandLine().getParseResult();
             if (isSkidbladnir()) {
                 if (autoSkipHeaders) {
                     throw new ParameterException(
@@ -807,7 +973,7 @@ public class ImportCommand {
                                     .formatted(resolvedDbFormat));
                 }
                 validateSkidbladnirMultilineFields();
-                if (!spec.commandLine().getParseResult().hasMatchedOption("--read-buffer-size")) {
+                if (!parseResult.hasMatchedOption("--read-buffer-size")) {
                     // Default is different for Skidbladnir
                     bufferSize = org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR;
                 }
@@ -973,7 +1139,8 @@ public class ImportCommand {
                 Map<Set<String>, List<FileGroup>> nodeFileGroupsByAdditionalLabels,
                 Supplier<IndexProvidersAccess> indexProvidersAccess,
                 ShardingArguments shardingArguments,
-                Monitor monitor)
+                Monitor monitor,
+                boolean resume)
                 throws IOException;
 
         protected IndexConfig customiseIndexConfig(Config databaseConfig, IndexConfig indexConfig) {
@@ -1328,6 +1495,11 @@ public class ImportCommand {
         }
 
         @Override
+        protected void forceOverwriteDestinationForResume() {
+            overwriteDestination = true;
+        }
+
+        @Override
         public String importType() {
             return "Full import";
         }
@@ -1434,7 +1606,8 @@ public class ImportCommand {
                 Map<Set<String>, List<FileGroup>> nodeFileGroupsByAdditionalLabels,
                 Supplier<IndexProvidersAccess> indexProvidersAccess,
                 ShardingArguments shardingArguments,
-                Monitor monitor)
+                Monitor monitor,
+                boolean resume)
                 throws IOException {
             storageEngineFactory
                     .batchImporter(
@@ -1461,6 +1634,7 @@ public class ImportCommand {
                             shardingArguments == null ? null : shardingArguments.additionalArguments,
                             DatabaseCreationOptions.EMPTY_CREATION_OPTIONS,
                             HardwareValidation.WARNING)
+                    // resume is not yet supported by the batch importer itself
                     .doSkidbladnirImport(input, encoding, nodeFileGroupsByAdditionalLabels);
         }
 

@@ -27,7 +27,9 @@ import static org.neo4j.io.fs.FileSystemAbstraction.PatternStyle.REGEX;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -51,6 +53,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import picocli.CommandLine;
 import picocli.CommandLine.Help;
+import picocli.CommandLine.ParameterException;
 
 @TestDirectoryExtension
 class ImportCommandTest {
@@ -307,6 +310,162 @@ class ImportCommandTest {
         // then
         assertThat(command.bufferSize())
                 .isEqualTo(org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR);
+    }
+
+    @Test
+    void resumeAbortsWhenNoPreviousImportAttemptExists() {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        CommandLine.populateCommand(command, "--resume");
+
+        assertThatThrownBy(command::rerunFromPreviousAttempt)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("nothing to resume found");
+    }
+
+    @Test
+    void resumeFailsWhenPreviousImportAttemptDidNotUseSkidbladnir() throws IOException {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        writePreviousAttemptCliArgs(command.loadNeo4jConfig("block"), "--nodes=old.csv");
+        CommandLine.populateCommand(command, "--resume");
+
+        assertThatThrownBy(command::rerunFromPreviousAttempt)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("'--resume' is only supported")
+                .hasMessageContaining("--skidbladnir");
+    }
+
+    @Test
+    void resumeRerunsPreviousSkidbladnirAttemptVerbatim() throws IOException {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        writePreviousAttemptCliArgs(
+                command.loadNeo4jConfig("block"), "--nodes=old.csv", "--skidbladnir", "--overwrite-destination");
+        CommandLine.populateCommand(command, "--resume");
+
+        command.rerunFromPreviousAttempt();
+
+        assertThat(command.overwriteDestination).isTrue();
+        assertThat(command.isSkidbladnir()).isTrue();
+    }
+
+    @Test
+    void resumeAbortsWhenThePreviousImportAttemptCompleted() throws IOException {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        Path contextDir = writePreviousAttemptCliArgs(
+                command.loadNeo4jConfig("block"), "--nodes=old.csv", "--skidbladnir", "--overwrite-destination");
+        Files.writeString(contextDir.resolve(ImportContext.SUCCESS_FILE_NAME), "");
+        CommandLine.populateCommand(command, "--resume");
+
+        assertThatThrownBy(command::rerunFromPreviousAttempt)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("completed successfully")
+                .hasMessageContaining("nothing to resume");
+    }
+
+    @Test
+    void resumeAcceptsTheDatabaseToResume() {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        CommandLine.populateCommand(command, "--resume", "otherdb");
+
+        // the database is not an option, so it is not rejected - it says which database's attempt to look for
+        assertThatThrownBy(command::rerunFromPreviousAttempt)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("otherdb");
+    }
+
+    @Test
+    void resumeRejectsOptionsThatAreNotAllowedAlongsideIt() throws IOException {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        Path nodes = testDir.createFile("nodes.csv");
+        writePreviousAttemptCliArgs(command.loadNeo4jConfig("block"), "--nodes=old.csv", "--skidbladnir");
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--verbose", "--resume");
+
+        assertThatThrownBy(command::rerunFromPreviousAttempt)
+                .isInstanceOf(ParameterException.class)
+                .hasMessageContaining("can only be combined with")
+                .hasMessageContaining("--skip-bad-relationships")
+                .hasMessageContaining("--skip-duplicate-nodes")
+                .hasMessageContaining("Remove: --nodes, --verbose");
+    }
+
+    @Test
+    void resumeAcceptsAllowedOptionsAndTheyOverrideThePreviousAttempt() throws IOException {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        writePreviousAttemptCliArgs(
+                command.loadNeo4jConfig("block"),
+                "--nodes=old.csv",
+                "--skidbladnir",
+                "--skip-duplicate-nodes=false",
+                "--skip-bad-relationships");
+        CommandLine.populateCommand(command, "--skip-duplicate-nodes", "--skip-bad-relationships=false", "--resume");
+
+        command.rerunFromPreviousAttempt();
+
+        assertThat(command.skipDuplicateNodes).isTrue();
+        assertThat(command.skipBadRelationships).isFalse();
+    }
+
+    @Test
+    void resumeKeepsThePreviousAttemptsValueForAllowedOptionsItIsNotGiven() throws IOException {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        writePreviousAttemptCliArgs(
+                command.loadNeo4jConfig("block"), "--nodes=old.csv", "--skidbladnir", "--skip-duplicate-nodes");
+        CommandLine.populateCommand(command, "--resume");
+
+        command.rerunFromPreviousAttempt();
+
+        assertThat(command.skipDuplicateNodes).isTrue();
+        assertThat(command.skipBadRelationships).isFalse();
+    }
+
+    @Test
+    void resumeSetToFalseLeavesOtherOptionsAlone() throws IOException {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        Path nodes = testDir.createFile("nodes.csv");
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--resume=false");
+
+        command.rerunFromPreviousAttempt();
+
+        assertThat(command.overwriteDestination).isFalse();
+    }
+
+    @Test
+    void resumeIsNoOpWhenNotRequested() throws IOException {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        Path nodes = testDir.createFile("nodes.csv");
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
+
+        // then - should not throw even though no previous import attempt exists, and not rerun anything
+        command.rerunFromPreviousAttempt();
+
+        assertThat(command.overwriteDestination).isFalse();
+    }
+
+    private Path writePreviousAttemptCliArgs(Config databaseConfig, String... cliArgs) throws IOException {
+        Path logsDir = databaseConfig.get(GraphDatabaseSettings.logs_directory);
+        Path contextDir =
+                logsDir.resolve(GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "-admin-import-20200101.000000");
+        Files.createDirectories(contextDir);
+        Files.writeString(contextDir.resolve(ImportContext.CLI_ARGS_FILE_NAME), String.join("\n", cliArgs));
+        return contextDir;
+    }
+
+    private ExecutionContext homedExecutionContext() {
+        return homedExecutionContext(System.out);
+    }
+
+    private ExecutionContext homedExecutionContext(PrintStream out) {
+        return new ExecutionContext(
+                testDir.homePath(), testDir.directory("conf"), out, System.err, testDir.getFileSystem());
     }
 
     private void assertIdTypeAliases(List<String> requiredArgs, List<String> aliases, IdType idType) {
