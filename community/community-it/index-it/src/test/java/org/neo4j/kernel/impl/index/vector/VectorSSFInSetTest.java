@@ -629,8 +629,8 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         }
 
         for (int i = 0; i < iterations; i++) {
-            int n = random.intBetween(0, size);
-            Value[] searchValues = random.selection(allValues, n, n, false);
+            int maxSelection = Math.ceilDiv(3 * size, 4); // 75% size to lower selection rejection
+            Value[] searchValues = random.selection(allValues, 1, maxSelection, false);
             ResultList result = queryNodeIndex(
                     VECTOR_INDEX_NAME,
                     nearestNeighbors(Integer.MAX_VALUE, randomVector(dimension).asObject()),
@@ -674,8 +674,8 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
             // for "complex types" we only guarantee handling up to 256 items, worst case
             // is when all items are duration which adds depth 4 level nesting, leading to
             // exceeding the total nesting depth of 1024 set by lucene.
-            int n = random.intBetween(0, 256);
-            Value[] searchValues = random.selection(allValues, n, n, false);
+            int maxSelection = 256;
+            Value[] searchValues = random.selection(allValues, 1, maxSelection, false);
             ResultList result = queryNodeIndex(
                     VECTOR_INDEX_NAME,
                     nearestNeighbors(Integer.MAX_VALUE, randomVector(dimension).asObject()),
