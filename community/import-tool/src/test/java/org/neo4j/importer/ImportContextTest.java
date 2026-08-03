@@ -303,6 +303,37 @@ class ImportContextTest {
     }
 
     @Test
+    void nodesPerRangeClearedWithRestOfContextWhenNotRetained() {
+        Path nodesPerRangePath;
+        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+            importContext.persistNodesPerRange(42L);
+            nodesPerRangePath = importContext.baseDir().resolve(ImportContext.NODES_PER_RANGE_FILE_NAME);
+            assertThat(nodesPerRangePath).exists().content().isEqualTo("42");
+        }
+
+        assertThat(nodesPerRangePath).doesNotExist();
+        assertThat(importsDir).exists().isEmptyDirectory();
+    }
+
+    @Test
+    void nodesPerRangeRetainedWhenContextRetained() {
+        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, false)) {
+            importContext.persistNodesPerRange(42L);
+        }
+
+        assertThat(importsDir)
+                .exists()
+                .isNotEmptyDirectory()
+                .satisfies(dir -> assertThat(fs.listFiles(dir))
+                        .hasSize(1)
+                        .singleElement()
+                        .satisfies(contextDir -> assertThat(contextDir.resolve(ImportContext.NODES_PER_RANGE_FILE_NAME))
+                                .exists()
+                                .content()
+                                .isEqualTo("42")));
+    }
+
+    @Test
     void eachRunCreatesNewContext() {
         var content1 = "content1";
         var content2 = "content2";

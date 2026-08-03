@@ -66,6 +66,12 @@ public interface Monitor {
      */
     default void detailedProgressReport(DetailedProgressReport report) {}
 
+    /**
+     * Called once the number of nodes per range has been settled, before ranges are populated. Persists the
+     * calculated nodesPerRange to file for resumeable import.
+     */
+    default void persistNodesPerRange(long nodesPerRange) {}
+
     class Delegate implements Monitor {
         private final Monitor delegate;
 
@@ -127,6 +133,11 @@ public interface Monitor {
         @Override
         public void detailedProgressReport(DetailedProgressReport report) {
             delegate.detailedProgressReport(report);
+        }
+
+        @Override
+        public void persistNodesPerRange(long nodesPerRange) {
+            delegate.persistNodesPerRange(nodesPerRange);
         }
     }
 }

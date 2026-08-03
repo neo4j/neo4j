@@ -83,6 +83,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     public static final String PROGRESS_REPORTING_FILE_NAME = "progress.json.log";
     public static final String DEFAULT_REPORT_FILE_NAME = "report.json.log";
     public static final String CLI_ARGS_FILE_NAME = "cli-args";
+    public static final String NODES_PER_RANGE_FILE_NAME = "nodes-per-range";
     public static final String SUCCESS_FILE_NAME = "success";
 
     private final String dbName;
@@ -346,6 +347,16 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
         try {
             fs.mkdirs(baseDir());
             writeProtected(baseDir().resolve(CLI_ARGS_FILE_NAME), String.join("\n", originalArgs));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @Override
+    public void persistNodesPerRange(long nodesPerRange) {
+        try {
+            fs.mkdirs(baseDir());
+            Files.writeString(baseDir().resolve(NODES_PER_RANGE_FILE_NAME), Long.toString(nodesPerRange));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
