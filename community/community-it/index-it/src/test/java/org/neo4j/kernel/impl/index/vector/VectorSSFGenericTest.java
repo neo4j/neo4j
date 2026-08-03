@@ -87,11 +87,10 @@ class VectorSSFGenericTest extends VectorSSFTestBase {
     void invalidFilterQueryValue() {
         createNodeVectorIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "age");
         createTestNode(Map.of("id", 10, "name", "Alice", "age", 23, EMBEDDING_NAME, EMBEDDINGS.get(1)));
-        // GQL status assertion allows consistent checks of different Java exception types in SPD and non-SPD context
         assertThatThrownBy(() -> queryNodeIndex(
                         exactQuery("age", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, -45, 75))))
-                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22G03)
-                .gqlCause()
+                .rootCauseOrSelfWithGqlStatus()
+                .gqlStatusObject()
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N01)
                 .hasStatusDescriptionContaining("Expected the value")
                 .hasStatusDescriptionContaining(

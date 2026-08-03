@@ -19,11 +19,10 @@
  */
 package org.neo4j.gqlstatus;
 
-import static org.neo4j.gqlstatus.GqlExceptionLikeAssert.asT;
-
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.assertj.core.api.ThrowableAssert;
 import org.assertj.core.internal.Throwables;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -43,39 +42,42 @@ public class ThrowableWithPotentialGqlCauseAssert<SELF extends ThrowableWithPote
     }
 
     /**
-     * Use this instead of {@link ThrowableAssert#cause()} to assert on a cause that is expected to also implement ErrorGqlStatusObject.
+     * Use this instead of {@link ThrowableAssert#cause()} to assert on a cause that is expected to
+     * also implement {@link ErrorGqlStatusObject} or {@link Neo4jException}.
      */
     public GqlExceptionLikeAssert causeWithGqlStatus() {
         throwables.assertHasCause(info, actual);
         var cause = actual.getCause();
-        if (cause instanceof ErrorGqlStatusObject) {
-            return new GqlExceptionLikeAssert(asT(cause));
+        if (cause instanceof ErrorGqlStatusObject || cause instanceof Neo4jException) {
+            return new GqlExceptionLikeAssert(cause);
         }
         throw failure("Expected cause to be a Throwable implementing ErrorGqlStatusObject, but was: %s", cause);
     }
 
     /**
-     * Use this instead of {@link ThrowableAssert#rootCause()} to assert on a root cause that is expected to also implement ErrorGqlStatusObject.
+     * Use this instead of {@link ThrowableAssert#rootCause()} to assert on a root cause that is expected to
+     * also implement {@link ErrorGqlStatusObject} or {@link Neo4jException}.
      */
     public GqlExceptionLikeAssert rootCauseWithGqlStatus() {
         throwables.assertHasRootCause(info, actual);
         var rootCause = org.assertj.core.util.Throwables.getRootCause(actual);
-        if (rootCause instanceof ErrorGqlStatusObject) {
-            return new GqlExceptionLikeAssert(asT(rootCause));
+        if (rootCause instanceof ErrorGqlStatusObject || rootCause instanceof Neo4jException) {
+            return new GqlExceptionLikeAssert(rootCause);
         }
         throw failure(
                 "Expected root cause to be a Throwable implementing ErrorGqlStatusObject, but was: %s", rootCause);
     }
 
     /**
-     * Use this instead of {@link ThrowableAssert#rootCause()} to assert on a root cause (or self if no root cause) that is expected to also implement ErrorGqlStatusObject.
+     * Use this instead of {@link ThrowableAssert#rootCause()} to assert on a root cause (or self if no root cause)
+     * that is expected to also implement {@link ErrorGqlStatusObject} or {@link Neo4jException}.
      * @see #rootCauseWithGqlStatus()
      */
     public GqlExceptionLikeAssert rootCauseOrSelfWithGqlStatus() {
         var rootCause = org.assertj.core.util.Throwables.getRootCause(actual);
         var throwable = rootCause != null ? rootCause : actual;
-        if (throwable instanceof ErrorGqlStatusObject) {
-            return new GqlExceptionLikeAssert(asT(throwable));
+        if (throwable instanceof ErrorGqlStatusObject || throwable instanceof Neo4jException) {
+            return new GqlExceptionLikeAssert(throwable);
         }
         throw failure(
                 "Expected the root cause to be a Throwable implementing ErrorGqlStatusObject, but was: %s", throwable);
