@@ -25,9 +25,11 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation
 import org.neo4j.cypher.internal.runtime.spec.fuzz.FuzzTestGraphCreation.GraphType.GraphType
 import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.RandomValues
+import org.neo4j.values.storable.RandomValuesUtils
 import org.neo4j.values.storable.ValueType
 import org.scalacheck.rng.Seed
 
@@ -35,13 +37,13 @@ import scala.jdk.StreamConverters.StreamHasToScala
 
 object FuzzTestGraphCreation {
 
+  // Types that the running storage engine or kernel version cannot write are
+  // filtered out per database in addRandomProperties.
   private val defaultPropertyConfig: Map[String, Seq[ValueType]] = Map(
     "long" -> Seq(ValueType.LONG),
     "boolean" -> Seq(ValueType.BOOLEAN),
     "string" -> Seq(ValueType.STRING),
-    "rand" -> ValueType.ALL_TYPES.filter(v =>
-      v != ValueType.UUID && v != ValueType.UUID_ARRAY && v != ValueType.VECTOR_ARRAY
-    )
+    "rand" -> ValueType.ALL_TYPES.toSeq
   )
 
   object GraphType extends Enumeration {
@@ -57,10 +59,11 @@ object FuzzTestGraphCreation {
 
   def graphWithRandProps[CONTEXT <: RuntimeContext](
     config: GraphConfig,
-    graphCreation: GraphCreation[CONTEXT]
+    graphCreation: GraphCreation[CONTEXT],
+    db: GraphDatabaseService
   ): (Seq[Node], Seq[Relationship]) = {
     val (nodes, rels) = graph(config, graphCreation)
-    addRandomProperties(config, nodes ++ rels)
+    addRandomProperties(config, nodes ++ rels, db)
     (nodes, rels)
   }
 
@@ -139,8 +142,11 @@ object FuzzTestGraphCreation {
     }
   }
 
-  private def addRandomProperties(config: GraphConfig, entities: Seq[Entity]): Unit = {
-    val rand = RandomValues.create(new java.util.Random(config.seed))
+  private def addRandomProperties(config: GraphConfig, entities: Seq[Entity], db: GraphDatabaseService): Unit = {
+    val rand = RandomValues.create(
+      new java.util.Random(config.seed),
+      RandomValuesUtils.selectStorageEngineDependentConfiguration(db)
+    )
     for {
       entity <- entities
       (propertyKey, types) <- config.propertyConfig
