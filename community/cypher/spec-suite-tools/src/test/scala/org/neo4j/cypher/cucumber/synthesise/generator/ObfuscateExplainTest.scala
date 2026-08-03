@@ -172,6 +172,21 @@ class ObfuscateExplainTest extends CypherFunSuite {
     g.filter.build(setupOnly) shouldBe false
   }
 
+  test("string interpolation literal text segments are wrapped in braces, embedded expressions are not") {
+    explain("""RETURN s"Hello, {1}!" AS x""") shouldBe
+      "EXPLAIN\n" + """RETURN s"{$ANY_1}{$INTEGER_2}{$ANY_3}" AS x"""
+  }
+
+  test("string interpolation with no literal text between adjacent expressions adds no braces-only segments") {
+    explain("""RETURN s"{1}{2}" AS x""") shouldBe
+      "EXPLAIN\n" + """RETURN s"{$INTEGER_1}{$INTEGER_2}" AS x"""
+  }
+
+  test("nested string interpolation wraps literal segments at every nesting level") {
+    explain("""RETURN s"outer {s'inner {1}'}" AS x""") shouldBe
+      "EXPLAIN\n" + """RETURN s"{$ANY_1}{s'{$ANY_2}{$INTEGER_3}'}" AS x"""
+  }
+
   test("write queries and commands are kept") {
     val write = scenario(Seq(Execute("CREATE ({p: 'secret'})")))
     val command = scenario(Seq(Execute("CREATE INDEX FOR (n:L) ON (n.p)")))

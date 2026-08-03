@@ -74,12 +74,15 @@ object ObfuscationMetadata {
  * @line line number of the literal relative to the query string without preparser options
  * @param length length of literal in query string
  * @param literalTypeName Cypher type name of the literal, e.g. "STRING"; "ANY" when unknown
+ * @param wrapInBraces whether the obfuscated marker should be wrapped in `{}` at this offset. Used for the
+ *                      literal text segments of a string interpolation.
  */
 case class LiteralOffset(
   private val start: Int,
   private val line: Int,
   length: Option[Int],
-  literalTypeName: String = CTAny.toCypherTypeString
+  literalTypeName: String = CTAny.toCypherTypeString,
+  wrapInBraces: Boolean = false
 ) {
   def start(preParserOffset: Int): Int = start + preParserOffset
   def line(preParserLineOffset: Int): Int = line + preParserLineOffset

@@ -135,7 +135,11 @@ class CypherQueryObfuscator(
         }
 
         sb.append(rawQueryText.substring(i, start))
-        sb.append(replacementAt(idx))
+        if (literalOffset.wrapInBraces) {
+          sb.append('{').append(replacementAt(idx)).append('}')
+        } else {
+          sb.append(replacementAt(idx))
+        }
         i = start + literalOffset.length.getOrElse(literalStringLength(rawQueryText, start))
         idx += 1
       }
@@ -182,7 +186,10 @@ class CypherQueryObfuscator(
         for (literalOffset <- offsets) {
           val start = literalOffset.start(preparserOffset)
           if (start < in.getOffset) {
-            val obfuscatedLength = replacementAt(idx).length
+            val replacementLength = replacementAt(idx).length
+            val obfuscatedLength =
+              if (literalOffset.wrapInBraces) replacementLength + 2
+              else replacementLength
             val length = literalOffset.length.getOrElse(literalStringLength(rawQueryText, start))
             obfuscatedOffset += obfuscatedLength - length
             if (literalOffset.line(lineOffset) == in.getLine) {

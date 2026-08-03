@@ -136,6 +136,7 @@ import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringDecimalInteger
+import org.neo4j.cypher.internal.expressions.StringInterpolation
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.UnaryAdd
@@ -877,6 +878,9 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           when(x.value.isInfinite) {
             SemanticError.numberTooLarge("floating point number", x.stringVal, x.position)
           } chain specifyType(CTFloat, x)
+
+      case x: StringInterpolation =>
+        check(ctx, x.stringParts) chain check(ctx, x.expressions) chain specifyType(CTString, x)
 
       case x: StringLiteral =>
         specifyType(CTString, x)

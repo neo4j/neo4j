@@ -659,6 +659,7 @@ expression1
    | shortestPathExpression
    | parenthesizedExpression
    | functionInvocation
+   | interpolatedStringLiteral
    | variable
    | obfuscatedLiteral
    ;
@@ -2175,6 +2176,29 @@ stringList
 stringLiteral
    : STRING_LITERAL1
    | STRING_LITERAL2
+   ;
+   
+interpolatedStringLiteral
+   : interpolatedStringLiteralSingle
+   | interpolatedStringLiteralDouble
+   ;
+
+interpolatedStringLiteralSingle
+   : INTERPOLATED_START_SINGLE interpolatedElementSingle* INTERPOLATED_END_SINGLE
+   ;
+
+interpolatedStringLiteralDouble
+   : INTERPOLATED_START_DOUBLE interpolatedElementDouble* INTERPOLATED_END_DOUBLE
+   ;
+
+interpolatedElementSingle
+   : INTERPOLATED_TEXT_SINGLE
+   | INTERPOLATED_EXPR_START_SINGLE expression RCURLY
+   ;
+
+interpolatedElementDouble
+   : INTERPOLATED_TEXT_DOUBLE
+   | INTERPOLATED_EXPR_START_DOUBLE expression RCURLY
    ;
 
 // Should return an Expression

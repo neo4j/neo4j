@@ -651,6 +651,16 @@ public abstract class AbstractCypher25AstBuilder implements Cypher25ParserListen
                 exitStringListLiteral((Cypher25Parser.StringListLiteralContext) ctx);
             case Cypher25Parser.RULE_stringList -> exitStringList((Cypher25Parser.StringListContext) ctx);
             case Cypher25Parser.RULE_stringLiteral -> exitStringLiteral((Cypher25Parser.StringLiteralContext) ctx);
+            case Cypher25Parser.RULE_interpolatedStringLiteral ->
+                exitInterpolatedStringLiteral((Cypher25Parser.InterpolatedStringLiteralContext) ctx);
+            case Cypher25Parser.RULE_interpolatedStringLiteralSingle ->
+                exitInterpolatedStringLiteralSingle((Cypher25Parser.InterpolatedStringLiteralSingleContext) ctx);
+            case Cypher25Parser.RULE_interpolatedStringLiteralDouble ->
+                exitInterpolatedStringLiteralDouble((Cypher25Parser.InterpolatedStringLiteralDoubleContext) ctx);
+            case Cypher25Parser.RULE_interpolatedElementSingle ->
+                exitInterpolatedElementSingle((Cypher25Parser.InterpolatedElementSingleContext) ctx);
+            case Cypher25Parser.RULE_interpolatedElementDouble ->
+                exitInterpolatedElementDouble((Cypher25Parser.InterpolatedElementDoubleContext) ctx);
             case Cypher25Parser.RULE_stringOrParameterExpression ->
                 exitStringOrParameterExpression((Cypher25Parser.StringOrParameterExpressionContext) ctx);
             case Cypher25Parser.RULE_stringOrParameter ->

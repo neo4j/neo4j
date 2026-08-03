@@ -51,6 +51,7 @@ class ObfuscationMetadataCollectionTest extends CypherFunSuite with AstConstruct
     "MATCH (n) WHERE n.x IN [10, 20] RETURN n SKIP 2 LIMIT 3",
     "RETURN n['key'] AS v",
     "CREATE USER user SET PASSWORD 'secret' CHANGE REQUIRED",
+    """RETURN s"hello there {1} what is happening {2}" AS x""",
     "LOAD CSV FROM 'http://host/file.csv' AS line FIELDTERMINATOR ';' RETURN line",
     "SHOW PROCEDURES YIELD name SKIP 1 LIMIT 2"
   )

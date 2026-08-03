@@ -847,6 +847,16 @@ public interface Cypher25ParserListener extends ParseTreeListener {
 
     void exitStringLiteral(Cypher25Parser.StringLiteralContext ctx);
 
+    void exitInterpolatedStringLiteral(Cypher25Parser.InterpolatedStringLiteralContext ctx);
+
+    void exitInterpolatedStringLiteralSingle(Cypher25Parser.InterpolatedStringLiteralSingleContext ctx);
+
+    void exitInterpolatedStringLiteralDouble(Cypher25Parser.InterpolatedStringLiteralDoubleContext ctx);
+
+    void exitInterpolatedElementSingle(Cypher25Parser.InterpolatedElementSingleContext ctx);
+
+    void exitInterpolatedElementDouble(Cypher25Parser.InterpolatedElementDoubleContext ctx);
+
     void exitStringOrParameterExpression(Cypher25Parser.StringOrParameterExpressionContext ctx);
 
     void exitStringOrParameter(Cypher25Parser.StringOrParameterContext ctx);

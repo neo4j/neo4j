@@ -80,9 +80,9 @@ class ToStringFunctionTest extends InterpretedRuntimeTestSuite with CypherScalaC
   test("should throw an exception if the argument is an object which cannot be converted to a string") {
     val caughtException = the[CypherTypeException] thrownBy toString(List(1, 24))
     caughtException should be(functionArgumentGqlException(
-      "Invalid input for function 'toString()': Expected a String, UUID, Float, Integer, Boolean, Temporal or Duration, got: List{Int(1), Int(24)}",
+      "Invalid input for function 'toString()': Expected a String, UUID, Vector, Float, Integer, Boolean, Temporal or Duration, got: List{Int(1), Int(24)}",
       "toString()",
-      "Expected the value [1, 24] to be of type STRING, UUID, FLOAT, INTEGER, BOOLEAN, TEMPORAL or DURATION, but was of type LIST<INTEGER NOT NULL> NOT NULL."
+      "Expected the value [1, 24] to be of type STRING, UUID, VECTOR, FLOAT, INTEGER, BOOLEAN, TEMPORAL or DURATION, but was of type LIST<INTEGER NOT NULL> NOT NULL."
     ))
   }
 

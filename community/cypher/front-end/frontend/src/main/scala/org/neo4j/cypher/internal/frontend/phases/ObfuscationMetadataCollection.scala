@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
+import org.neo4j.cypher.internal.expressions.StringInterpolation
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.METADATA_COLLECTION
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
@@ -95,11 +96,35 @@ case object ObfuscationMetadataCollection
 
   private case class Offsets(sensitive: Vector[LiteralOffset], all: Vector[LiteralOffset])
 
+  private def segmentOffsetOf(literal: Literal): Option[LiteralOffset] = {
+    val sensitiveLiteral = literal.asSensitiveLiteral
+    Option.when(sensitiveLiteral.literalLength > 0)(
+      LiteralOffset(
+        sensitiveLiteral.position.offset,
+        sensitiveLiteral.position.line,
+        Some(sensitiveLiteral.literalLength),
+        wrapInBraces = true
+      )
+    )
+  }
+
   private def collectLiteralOffsets(
     statement: Statement,
     extractedParameters: Map[AutoExtractedParameter, Expression]
   ): Offsets = {
-    val sensitiveOnly: PartialFunction[Any, Offsets => FoldingBehavior[Offsets]] = {
+    lazy val sensitiveOnly: PartialFunction[Any, Offsets => FoldingBehavior[Offsets]] = {
+      // Allows wrapping the string literals inside a StringInterpolation with braces
+      case interp: StringInterpolation => { case acc @ Offsets(_, all) =>
+        val segmentOffsets = interp.stringParts.flatMap {
+          case literal: Literal => segmentOffsetOf(literal)
+          case p: AutoExtractedParameter => extractedParameters.get(p).collect { case literal: Literal =>
+              segmentOffsetOf(literal)
+            }.flatten
+          case _ => None
+        }
+        val withSegments = acc.copy(all = all ++ segmentOffsets)
+        SkipChildren(interp.expressions.folder.treeFold(withSegments)(partial))
+      }
       case literal: SensitiveLiteral if literal.literalLength > 0 => { case Offsets(sensitive, all) =>
         val offset = LiteralOffset(
           literal.position.offset,

@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
+import org.neo4j.cypher.internal.expressions.StringInterpolation
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.FunctionName
@@ -578,6 +579,35 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           result.errors.size shouldBe 1
           val e = result.errors.head
           e.msg shouldBe s"Failed to administer property rule. The expression: `n.prop1 $operator 1 + 2` is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
+          e.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+          e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = s"hello {n.prop2}"
+        testVersions(
+          s"property rules using WHERE syntax with a string interpolation predicate should fail semantic checking ($qualifierDescription)($operator)"
+        ) { version =>
+          val privilege = GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(varFor("n", p)),
+              op(
+                Property(varFor("n", p), PropertyKeyName("prop1")(p))(p),
+                StringInterpolation(
+                  Seq(literalString("hello "), literalString("")),
+                  Seq(Property(varFor("n", p), PropertyKeyName("prop2")(p))(p))
+                )(p)
+              )
+            ),
+            Seq(literalString("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+          result.errors.size shouldBe 1
+          val e = result.errors.head
+          e.msg shouldBe s"""Failed to administer property rule. The expression: `n.prop1 $operator s"hello {n.prop2}"` is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."""
           e.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
           e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
         }

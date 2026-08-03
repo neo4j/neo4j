@@ -117,7 +117,12 @@ object LiteralBuilder {
    *
    * https://github.com/antlr/antlr4/blob/dev/doc/faq/lexical.md#how-do-i-replace-escape-characters-in-string-tokens
    */
-  final def cypherStringToString(input: String, p: InputPosition, exceptionFactory: CypherExceptionFactory): String = {
+  final def cypherStringToString(
+    input: String,
+    p: InputPosition,
+    exceptionFactory: CypherExceptionFactory,
+    passthroughEscapes: Set[Char] = Set.empty
+  ): String = {
     var pos = input.indexOf('\\')
     if (pos == -1) {
       input
@@ -128,16 +133,18 @@ object LiteralBuilder {
       while (pos != -1) {
         if (pos == length - 1)
           throw exceptionFactory.stringLiteralWithInvalidQuotes(p)
-        val replacement: Char = input.charAt(pos + 1) match {
-          case 't'  => '\t'
-          case 'b'  => '\b'
-          case 'n'  => '\n'
-          case 'r'  => '\r'
-          case 'f'  => '\f'
-          case '\'' => '\''
-          case '"'  => '"'
-          case '\\' => '\\'
-          case _    => Char.MinValue
+        val next = input.charAt(pos + 1)
+        val replacement: Char = next match {
+          case 't'                                 => '\t'
+          case 'b'                                 => '\b'
+          case 'n'                                 => '\n'
+          case 'r'                                 => '\r'
+          case 'f'                                 => '\f'
+          case '\''                                => '\''
+          case '"'                                 => '"'
+          case '\\'                                => '\\'
+          case c if passthroughEscapes.contains(c) => c
+          case _                                   => Char.MinValue
         }
         if (replacement != Char.MinValue) {
           if (builder == null) builder = new java.lang.StringBuilder(input.length)

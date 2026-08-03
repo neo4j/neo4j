@@ -5184,7 +5184,22 @@ class PrettifierIT extends AbstractPrettifierTest {
     "ALTER SERVER $`` SET OPTIONS {``: $``}" -> "ALTER SERVER $`` SET OPTIONS {``: $``}",
     "RENAME SERVER $`` TO $``" -> "RENAME SERVER $`` TO $``",
     "DEALLOCATE DATABASES FROM SERVER $``" -> "DEALLOCATE DATABASES FROM SERVER $``",
-    "DROP SERVER $``" -> "DROP SERVER $``"
+    "DROP SERVER $``" -> "DROP SERVER $``",
+
+    // string interpolation
+    FailsInCypher5("""RETURN s"hello" AS x""", """RETURN "hello" AS x"""),
+    FailsInCypher5("""RETURN s'hello' AS x""", """RETURN "hello" AS x"""),
+    FailsInCypher5("""RETURN s"hello {n.name}" AS x""", """RETURN s"hello {n.name}" AS x"""),
+    FailsInCypher5("""RETURN s'hello {n.name}' AS x""", """RETURN s"hello {n.name}" AS x"""),
+    FailsInCypher5("""RETURN s"{n.name} and {m.age}" AS x""", """RETURN s"{n.name} and {m.age}" AS x"""),
+    FailsInCypher5(
+      """RETURN s'say "hello" { x }' AS x""",
+      """RETURN s'say "hello" {x}' AS x"""
+    ),
+    FailsInCypher5(
+      """RETURN s"it's fine {n.name}" AS x""",
+      """RETURN s"it's fine {n.name}" AS x"""
+    )
   )
 
   tests.foreach(test => testPrettifier(test)(test.testPosition))

@@ -18,8 +18,10 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
+import org.neo4j.cypher.internal.expressions.StringInterpolation
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
@@ -74,6 +76,60 @@ class LiteralReplacementTest extends CypherFunSuite with AstRewritingTestSupport
       "RETURN [1, 2, 3] as result",
       "RETURN $`  AUTOLIST0` as result",
       Map(autoParameter("  AUTOLIST0", CTList(CTAny), Some(3)) -> Seq(1, 2, 3))
+    )
+  }
+
+  test("should extract literal string parts of a string interpolation, leaving embedded expressions untouched") {
+    val query = """RETURN s"hello {x}" as result"""
+    val exceptionFactory = Neo4jCypherExceptionFactory(query, None)
+    val original = parse(CypherVersion.Cypher25, query, exceptionFactory)
+
+    val (rewriter, extractedParams) = literalReplacement(original, Forced)
+    val rewritten = original.endoRewrite(rewriter)
+
+    val interpolation = rewritten.folder.findAllByClass[StringInterpolation].head
+    interpolation.stringParts.foreach(_ shouldBe an[AutoExtractedParameter])
+    interpolation.expressions should equal(Seq(varFor("x")))
+
+    extractedParams.values.toSet should equal(Set(literal("hello "), literal("")))
+  }
+
+  test("stringifying a rewritten interpolation renders parameterized literal parts as their own expression") {
+    val query = """RETURN s"hello {x}" as result"""
+    val exceptionFactory = Neo4jCypherExceptionFactory(query, None)
+    val original = parse(CypherVersion.Cypher25, query, exceptionFactory)
+
+    val (rewriter, _) = literalReplacement(original, Forced)
+    val rewritten = original.endoRewrite(rewriter)
+    val interpolation = rewritten.folder.findAllByClass[StringInterpolation].head
+
+    // The literal parts print as their own {$paramName} expression rather than literal-text
+    ExpressionStringifier.apply().apply(interpolation) should equal(
+      "s\"{$`  AUTOSTRING0`}{x}{$`  AUTOSTRING1`}\""
+    )
+  }
+
+  test("two string interpolations differing only in literal text produce the same parameterized shape") {
+    def rewrite(query: String): Statement = {
+      val original = parse(CypherVersion.Cypher25, query, Neo4jCypherExceptionFactory(query, None))
+      val (rewriter, _) = literalReplacement(original, Forced)
+      original.endoRewrite(rewriter).endoRewrite(removeAutoExtracted())
+    }
+
+    rewrite("""RETURN s"hello {x}" as result""") should equal(
+      rewrite("""RETURN s"goodbye, dear friend {x}" as result""")
+    )
+  }
+
+  test("nested string interpolations differing only in literals produce the same parameterized shape") {
+    def rewrite(query: String): Statement = {
+      val original = parse(CypherVersion.Cypher25, query, Neo4jCypherExceptionFactory(query, None))
+      val (rewriter, _) = literalReplacement(original, Forced)
+      original.endoRewrite(rewriter).endoRewrite(removeAutoExtracted())
+    }
+
+    rewrite("""RETURN s"hello { s"hello { 1 + 4 } !" }?" as result""") should equal(
+      rewrite("""RETURN s"goodbye good friend! { s"hej då { 7 + 3 } ?" }!" as result""")
     )
   }
 

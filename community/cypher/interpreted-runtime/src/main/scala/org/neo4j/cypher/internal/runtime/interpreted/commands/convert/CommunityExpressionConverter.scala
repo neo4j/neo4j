@@ -303,6 +303,11 @@ case class CommunityExpressionConverter(
         commands.expressions.Add(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
       case e: internal.expressions.Concatenate =>
         commands.expressions.Concatenate(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
+      case e: internal.expressions.StringInterpolation =>
+        commands.expressions.StringInterpolation(
+          e.stringParts.map(expr => self.toCommandExpression(id, expr)),
+          e.expressions.map(expr => self.toCommandExpression(id, expr))
+        )
       case e: internal.expressions.UnaryAdd => self.toCommandExpression(id, e.rhs)
       case e: internal.expressions.Subtract => commands.expressions
           .Subtract(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))

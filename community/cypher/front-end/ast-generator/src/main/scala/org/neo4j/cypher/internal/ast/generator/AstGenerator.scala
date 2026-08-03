@@ -591,6 +591,7 @@ import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StarQuantifier
 import org.neo4j.cypher.internal.expressions.StartsWith
+import org.neo4j.cypher.internal.expressions.StringInterpolation
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.True
@@ -810,6 +811,12 @@ class AstGenerator(
 
   def _stringLit: Gen[StringLiteral] =
     string.flatMap(StringLiteral(_)(pos.withInputLength(0)))
+
+  def _stringInterpolation: Gen[StringInterpolation] = for {
+    nExpressions <- Gen.choose(1, 3)
+    parts <- Gen.listOfN(nExpressions + 1, _stringLit)
+    exprs <- Gen.listOfN(nExpressions, Gen.resize(1, _expression))
+  } yield StringInterpolation(parts, exprs)(pos)
 
   def _sensitiveStringLiteral: Gen[SensitiveStringLiteral] =
     // Needs to be '******' since all sensitive strings get rendered as such
@@ -1265,7 +1272,8 @@ class AstGenerator(
     lzy(_collectExpression),
     lzy(_patternComprehension),
     lzy(_vectorValueConstructor),
-    lzy(_allReducePredicate)
+    lzy(_allReducePredicate),
+    lzy(_stringInterpolation)
   )
 
   def _expression: Gen[Expression] = Gen.sized { size =>

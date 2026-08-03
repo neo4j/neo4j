@@ -148,6 +148,24 @@ class CypherQueryObfuscatorIT extends CypherITTestSuite {
     obfuscated should not include "alice"
   }
 
+  test("string interpolation literal segments are redacted while the embedded expressions stay visible") {
+    val rawText = """WITH 1 AS n RETURN s"hello there {n} what is happening {n}" AS x"""
+    val ob = obfuscatorFactory.obfuscatorForQuery("CYPHER 25 " + rawText, CypherVersion.Legacy.legacyVersion())
+    val obfuscated = ob.fullyObfuscatedQuery(rawText, org.neo4j.values.virtual.MapValue.EMPTY, 0).text()
+    obfuscated should equal(
+      """WITH ****** AS n RETURN s"{******}{n}{******}{n}" AS x"""
+    )
+  }
+
+  test("string interpolation literal segments are redacted and all literals within nested expressions as well") {
+    val rawText = """WITH 1 AS n RETURN s"hello there {s'a string inside {1 + 7}'} what is happening {n}" AS x"""
+    val ob = obfuscatorFactory.obfuscatorForQuery("CYPHER 25 " + rawText, CypherVersion.Legacy.legacyVersion())
+    val obfuscated = ob.fullyObfuscatedQuery(rawText, org.neo4j.values.virtual.MapValue.EMPTY, 0).text()
+    obfuscated should equal(
+      """WITH ****** AS n RETURN s"{******}{s'{******}{****** + ******}'}{******}{n}" AS x"""
+    )
+  }
+
   test("LOAD CSV credential URL is redacted in sensitive mode while ordinary literals stay visible") {
     val query = "LOAD CSV FROM 'ftp://mark:Password1@localhost/images.txt' AS line RETURN 'visible' AS keep"
     val ob = obfuscatorFactory.obfuscatorForQuery(query, CypherVersion.Legacy.legacyVersion())

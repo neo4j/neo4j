@@ -126,6 +126,7 @@ import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StartsWith
+import org.neo4j.cypher.internal.expressions.StringInterpolation
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.UnaryAdd
@@ -327,6 +328,27 @@ private class DefaultExpressionStringifier(
     isCaseExpression: Boolean = false
   ): (String, EagerConsumption) = {
     ast match {
+
+      case x: StringInterpolation =>
+        val literalValues = x.stringParts.collect { case StringLiteral(value) => value }
+        val hasDouble = literalValues.exists(_.contains('"'))
+        val hasSingle = literalValues.exists(_.contains('\''))
+        val (q, escapeQuoteInParts) = chooseQuoteChar(hasSingle, hasDouble)
+        def escapePart(s: String): String = {
+          val r = s.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}")
+          if (escapeQuoteInParts) r.replace("\"", "\\\"") else r
+        }
+        // A string part that isn't a plain StringLiteral (e.g. a parameter left behind by
+        // auto-parameterization) can't be spliced into the literal text, so print it as its own expression.
+        def printPart(part: Expression): String = part match {
+          case StringLiteral(value) => escapePart(value)
+          case other                => s"{${apply(other)}}"
+        }
+        val body = x.stringParts.zipWithIndex.map { case (part, i) =>
+          if (i < x.expressions.size) s"${printPart(part)}{${apply(x.expressions(i))}}"
+          else printPart(part)
+        }.mkString
+        noEagerConsumption(s"s$q$body$q")
 
       case StringLiteral(txt) =>
         noEagerConsumption(quote(txt))
@@ -948,16 +970,19 @@ private class DefaultExpressionStringifier(
     Stringifier.backtick(txt, alwaysBacktick, false, shouldBacktickEmpty)
   }
 
+  private def chooseQuoteChar(containsSingle: Boolean, containsDouble: Boolean): (Char, Boolean) = {
+    if (containsDouble && containsSingle) ('"', true)
+    else if (containsDouble || preferSingleQuotes) ('\'', false)
+    else ('"', false)
+  }
+
   override def quote(txt: String): String = {
     val str = txt.replaceAll("\\\\", "\\\\\\\\")
     val containsSingle = str.contains('\'')
     val containsDouble = str.contains('"')
-    if (containsDouble && containsSingle)
-      "\"" + str.replaceAll("\"", "\\\\\"") + "\""
-    else if (containsDouble || preferSingleQuotes)
-      "'" + str + "'"
-    else
-      "\"" + str + "\""
+    val (q, escapeQuoteInContent) = chooseQuoteChar(containsSingle, containsDouble)
+    val content = if (escapeQuoteInContent) str.replaceAll("\"", "\\\\\"") else str
+    s"$q$content$q"
   }
 
   override def escapePassword(password: Expression): String = password match {

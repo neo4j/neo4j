@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.parser.CypherErrorStrategy.DatabaseNameRule
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy.ExpressionRule
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy.GraphPatternRule
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy.IdentifierRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.InterpolatedStringLiteralRule
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy.LabelExpression1Rule
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy.LabelExpressionRule
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy.NodePatternRule
@@ -217,6 +218,7 @@ object CypherErrorStrategy {
       val preferredGroups = Set[CypherRuleGroup](
         ExpressionRule,
         StringLiteralRule,
+        InterpolatedStringLiteralRule,
         NumberLiteralRule,
         ParameterRule,
         VariableRule,
@@ -238,6 +240,7 @@ object CypherErrorStrategy {
   sealed trait CypherRuleGroup
   case object ExpressionRule extends CypherRuleGroup
   case object StringLiteralRule extends CypherRuleGroup
+  case object InterpolatedStringLiteralRule extends CypherRuleGroup
   case object NumberLiteralRule extends CypherRuleGroup
   case object ParameterRule extends CypherRuleGroup
   case object VariableRule extends CypherRuleGroup
@@ -298,11 +301,12 @@ final class CypherErrorVocabulary(conf: CypherErrorStrategy.Conf) extends Vocabu
       gs.forall(g => ruleCallStack.exists(r => conf.ruleGroups.get(r).contains(g)))
 
     conf.ruleGroups.get(ruleIndex).collect {
-      case ExpressionRule    => "an expression"
-      case StringLiteralRule => "a string"
-      case NumberLiteralRule => "a number"
-      case ParameterRule     => "a parameter"
-      case VariableRule      => "a variable name"
+      case ExpressionRule                => "an expression"
+      case StringLiteralRule             => "a string"
+      case InterpolatedStringLiteralRule => "an interpolated string"
+      case NumberLiteralRule             => "a number"
+      case ParameterRule                 => "a parameter"
+      case VariableRule                  => "a variable name"
       case IdentifierRule =>
         if (inStack(LabelExpressionRule, RelationshipPatternRule)) "a relationship type name"
         else if (inStack(LabelExpressionRule, NodePatternRule)) "a node label name"

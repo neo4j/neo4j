@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.HasALabel
 import org.neo4j.cypher.internal.expressions.HasALabelOrType
+import org.neo4j.cypher.internal.expressions.StringInterpolation
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.notification.RuntimeUnsatisfiableRelationshipTypeExpression
@@ -1860,5 +1861,42 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
 
     // then
     result should beColumns("last").withSingleRow(Values.longValue(Long.MaxValue))
+  }
+
+  test("should evaluate string interpolation") {
+    // given, an empty db
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("result")
+      .projection(Map("result" -> StringInterpolation(Seq(literal("a-"), literal("-b")), Seq(varFor("x")))(pos)))
+      .unwind("[5] AS x")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("result").withSingleRow("a-5-b")
+  }
+
+  test("should evaluate string interpolation with a null embedded expression to null") {
+    // given, an empty db
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("result")
+      .projection(Map(
+        "result" -> StringInterpolation(
+          Seq(literal("a-"), literal("-b-"), literal("-c")),
+          Seq(varFor("x"), literal(null))
+        )(pos)
+      ))
+      .unwind("[5] AS x")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("result").withSingleRow(null)
   }
 }

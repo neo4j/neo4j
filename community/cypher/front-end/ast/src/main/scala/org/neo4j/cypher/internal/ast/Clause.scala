@@ -105,6 +105,7 @@ import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MatchMode
@@ -135,6 +136,7 @@ import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StartsWith
+import org.neo4j.cypher.internal.expressions.StringInterpolation
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.Variable
@@ -160,6 +162,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Namespace
 import org.neo4j.cypher.internal.util.ProcedureName
 import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.helpers.LazyVal
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
@@ -476,6 +480,13 @@ object LoadCSV {
     FtpUserPassConnectionStringRegex.matches(url)
   }
 
+  // A string-interpolated URL is only partially known at parse time, so it can't be matched
+  // against FtpUserPassConnectionStringRegex. Mark every literal in it sensitive rather than
+  // risk leaking a credential that happens to be spliced into the URL unredacted.
+  private val markLiteralsSensitive: Rewriter = bottomUp(Rewriter.lift {
+    case l: Literal => l.asSensitiveLiteral
+  })
+
   def fromUrl(
     withHeaders: Boolean,
     source: Expression,
@@ -484,6 +495,7 @@ object LoadCSV {
   )(position: InputPosition): LoadCSV = {
     val sensitiveSource = source match {
       case x: StringLiteral if isSensitiveUrl(x.value) => x.asSensitiveLiteral
+      case x: StringInterpolation                      => x.endoRewrite(markLiteralsSensitive)
       case x                                           => x
     }
     LoadCSV(withHeaders, sensitiveSource, variable, fieldTerminator)(position)

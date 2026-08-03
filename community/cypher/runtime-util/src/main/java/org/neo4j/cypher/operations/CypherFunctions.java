@@ -2968,6 +2968,8 @@ public final class CypherFunctions {
             return text;
         } else if (in instanceof UUIDValue uuidValue) {
             return stringValue(uuidValue.prettyPrint());
+        } else if (in instanceof VectorValue vectorValue) {
+            return stringValue(vectorValue.prettyPrint());
         } else if (in instanceof NumberValue number) {
             return stringValue(number.prettyPrint());
         } else if (in instanceof BooleanValue b) {
@@ -2976,11 +2978,11 @@ public final class CypherFunctions {
             return stringValue(in.toString());
         } else {
             throw CypherTypeException.functionArgumentWrongType(
-                    "Invalid input for function 'toString()': Expected a String, UUID, Float, Integer, Boolean, Temporal or Duration, got: "
+                    "Invalid input for function 'toString()': Expected a String, UUID, Vector, Float, Integer, Boolean, Temporal or Duration, got: "
                             + in,
                     "toString",
                     in.prettify(),
-                    List.of("STRING", "UUID", "FLOAT", "INTEGER", "BOOLEAN", "TEMPORAL", "DURATION"),
+                    List.of("STRING", "UUID", "VECTOR", "FLOAT", "INTEGER", "BOOLEAN", "TEMPORAL", "DURATION"),
                     CypherTypeValueMapper.valueType(in));
         }
     }
@@ -2992,6 +2994,7 @@ public final class CypherFunctions {
                 || in instanceof TemporalValue
                 || in instanceof DurationValue
                 || in instanceof PointValue
+                || in instanceof VectorValue
                 || in instanceof UUIDValue) {
             return toString(in);
         } else {
@@ -3014,6 +3017,52 @@ public final class CypherFunctions {
                     List.of("LIST<ANY>"),
                     CypherTypeValueMapper.valueType(in));
         }
+    }
+
+    public static AnyValue stringInterpolate(AnyValue[] literalPartValues, AnyValue[] expressionValues) {
+        for (AnyValue expressionValue : expressionValues) {
+            if (expressionValue == NO_VALUE) {
+                return NO_VALUE;
+            }
+        }
+        for (AnyValue literalPartValue : literalPartValues) {
+            // literalPartValues should always be non-null TextValue - but just in case something goes wrong
+            // this will catch it
+            if (literalPartValue == NO_VALUE) {
+                return NO_VALUE;
+            } else if (!(literalPartValue instanceof TextValue)) {
+                throw CypherTypeException.invalidType(
+                        literalPartValue.prettify(),
+                        List.of("STRING"),
+                        CypherTypeValueMapper.valueType(literalPartValue),
+                        "STRING");
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < expressionValues.length; i++) {
+            var in = expressionValues[i];
+            if (in instanceof TextValue
+                    || in instanceof NumberValue
+                    || in instanceof BooleanValue
+                    || in instanceof TemporalValue
+                    || in instanceof DurationValue
+                    || in instanceof PointValue
+                    || in instanceof VectorValue
+                    || in instanceof UUIDValue) {
+                // Every branch of toString() for these types returns a TextValue
+                TextValue expressionAsAString = (TextValue) toString(in);
+                sb.append(((TextValue) literalPartValues[i]).stringValue()).append(expressionAsAString.stringValue());
+            } else {
+                throw CypherTypeException.invalidType(
+                        in.prettify(),
+                        List.of("BOOLEAN", "STRING", "UUID", "INTEGER", "FLOAT", "TEMPORAL", "DURATION", "VECTOR"),
+                        CypherTypeValueMapper.valueType(in),
+                        "BOOLEAN, STRING, UUID, INTEGER, FLOAT, TEMPORAL, DURATION or VECTOR");
+            }
+        }
+        sb.append(((TextValue) literalPartValues[expressionValues.length]).stringValue());
+        return stringValue(sb.toString());
     }
 
     public static AnyValue fromSlice(AnyValue collection, AnyValue fromValue) {

@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.parser.ast.util.Util._
 import org.neo4j.cypher.internal.parser.common.ast.factory.ParserTrimSpecification
 import org.neo4j.cypher.internal.parser.v25.Cypher25Parser
 import org.neo4j.cypher.internal.parser.v25.Cypher25ParserListener
+import org.neo4j.cypher.internal.parser.v25.ast.factory.LiteralBuilder.cypherStringToString
 import org.neo4j.cypher.internal.util._
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.BooleanType
@@ -1201,5 +1202,85 @@ trait ExpressionBuilder extends Cypher25ParserListener {
         pos(ctx)
       )
     }
+  }
+
+  override def exitInterpolatedStringLiteral(ctx: Cypher25Parser.InterpolatedStringLiteralContext): Unit = {
+    val collectedInterpolations =
+      if (ctx.interpolatedStringLiteralSingle() != null)
+        ctx.interpolatedStringLiteralSingle().ast[StringInterpolation]()
+      else ctx.interpolatedStringLiteralDouble().ast[StringInterpolation]()
+
+    ctx.ast = collectedInterpolations.getResultingExpression
+  }
+
+  override def exitInterpolatedStringLiteralSingle(ctx: Cypher25Parser.InterpolatedStringLiteralSingleContext): Unit = {
+    ctx.ast = buildInterpolatedString(astSeq[StringInterpolation](ctx.interpolatedElementSingle()), pos(ctx))
+  }
+
+  override def exitInterpolatedElementSingle(ctx: Cypher25Parser.InterpolatedElementSingleContext): Unit = {
+    ctx.ast = if (ctx.INTERPOLATED_TEXT_SINGLE() != null)
+      StringInterpolation(
+        Seq(buildStringPart(ctx.getText, pos(ctx.start), prefixLength = 0, suffixLength = 0)),
+        Seq.empty
+      )(pos(ctx))
+    else
+      StringInterpolation(
+        Seq.empty,
+        Seq(ctx.expression().ast[Expression]())
+      )(pos(ctx))
+  }
+
+  override def exitInterpolatedStringLiteralDouble(ctx: Cypher25Parser.InterpolatedStringLiteralDoubleContext): Unit = {
+    ctx.ast = buildInterpolatedString(astSeq[StringInterpolation](ctx.interpolatedElementDouble()), pos(ctx))
+  }
+
+  override def exitInterpolatedElementDouble(ctx: Cypher25Parser.InterpolatedElementDoubleContext): Unit = {
+    ctx.ast = if (ctx.INTERPOLATED_TEXT_DOUBLE() != null)
+      StringInterpolation(
+        Seq(buildStringPart(ctx.getText, pos(ctx.start), prefixLength = 0, suffixLength = 0)),
+        Seq.empty
+      )(pos(ctx))
+    else
+      StringInterpolation(
+        Seq.empty,
+        Seq(ctx.expression().ast[Expression]())
+      )(pos(ctx))
+  }
+
+  private def buildInterpolatedString(
+    elements: Seq[StringInterpolation],
+    position: InputPosition
+  ): StringInterpolation = {
+    val stringParts = ArrayBuffer.empty[Expression]
+    val expressions = ArrayBuffer.empty[Expression]
+    val emptyStringPart = StringLiteral("")(position.withInputLength(0))
+    var lastWasExpression = false
+
+    elements.foreach { element =>
+      if (element.expressions.isEmpty) {
+        stringParts += element.stringParts.head
+        lastWasExpression = false
+      } else {
+        if (lastWasExpression || stringParts.isEmpty) stringParts += emptyStringPart
+        expressions += element.expressions.head
+        lastWasExpression = true
+      }
+    }
+    if (lastWasExpression || stringParts.isEmpty) stringParts += emptyStringPart
+
+    StringInterpolation(stringParts.toSeq, expressions.toSeq)(position)
+  }
+
+  private def buildStringPart(
+    tokenText: String,
+    tokenPos: InputPosition,
+    prefixLength: Int,
+    suffixLength: Int
+  ): StringLiteral = {
+    val content = tokenText.substring(prefixLength, tokenText.length - suffixLength)
+    val contentStart = InputPosition(tokenPos.offset + prefixLength, tokenPos.line, tokenPos.column + prefixLength)
+    StringLiteral(cypherStringToString(content, tokenPos, exceptionFactory, Set('{', '}')))(
+      contentStart.withInputLength(content.length)
+    )
   }
 }
