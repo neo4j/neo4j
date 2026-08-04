@@ -35,6 +35,9 @@ public final class LazyValueIndexEntryUpdate extends IndexEntryUpdate implements
     /**
      * A {@link Supplier} that caches the value returned from the delegate supplier
      * upon the first call to {@link #get()}.
+     * <p/>
+     * Mutates on the first call to {@link #get()} and is therefore not thread-safe,
+     * see the class javadoc of {@link LazyValueIndexEntryUpdate}.
      * @param <T>
      */
     private static final class CachingSupplier<T> implements Supplier<T> {
@@ -64,16 +67,28 @@ public final class LazyValueIndexEntryUpdate extends IndexEntryUpdate implements
      * Moreover, caches the value returned from the delegate supplier upon the first call to {@link #get()}.
      */
     public static final class ValueSupplier implements Supplier<Value> {
+        /**
+         * Shared instance, and therefore only safe because {@link #constant(Value)} suppliers are immutable.
+         */
         public static final ValueSupplier NULL_SUPPLIER = constant(null);
 
+        /**
+         * @return an immutable supplier of an already-materialized value. In contrast to
+         * {@link #ValueSupplier(Supplier) lazy suppliers}, the returned instance is thread-safe
+         * and can be shared freely.
+         */
         public static ValueSupplier constant(Value value) {
-            return new ValueSupplier(() -> value);
+            return new ValueSupplier(value);
         }
 
         private final Supplier<Value> supplier;
 
         public ValueSupplier(Supplier<Value> supplier) {
             this.supplier = new CachingSupplier<>(supplier);
+        }
+
+        private ValueSupplier(Value value) {
+            this.supplier = () -> value;
         }
 
         @Override

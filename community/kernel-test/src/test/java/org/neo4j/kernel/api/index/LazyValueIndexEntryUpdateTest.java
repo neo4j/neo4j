@@ -19,9 +19,16 @@
  */
 package org.neo4j.kernel.api.index;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.neo4j.storageengine.api.LazyValueIndexEntryUpdate.ValueSupplier.NULL_SUPPLIER;
 import static org.neo4j.storageengine.api.LazyValueIndexEntryUpdate.ValueSupplier.constant;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -78,6 +85,30 @@ class LazyValueIndexEntryUpdateTest extends AbstractValueIndexEntryUpdateTest {
 
         a.beforeValues();
         assertThatCode(a::beforeValues).doesNotThrowAnyException();
+    }
+
+    @Test
+    void constantSuppliersMustBeSafeToShareBetweenThreads() throws Exception {
+        int threads = 4;
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        try {
+            ValueSupplier shared = constant(singleValue);
+            List<Future<Void>> results = new ArrayList<>(threads);
+            for (int thread = 0; thread < threads; thread++) {
+                long staggerMillis = thread * 50L;
+                results.add(executor.submit(() -> {
+                    Thread.sleep(staggerMillis);
+                    assertThat(shared.get()).isEqualTo(singleValue);
+                    assertThat(NULL_SUPPLIER.get()).isNull();
+                    return null;
+                }));
+            }
+            for (Future<Void> result : results) {
+                result.get();
+            }
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     private Supplier<Value> throwingOn2ndCallSupplier() {
