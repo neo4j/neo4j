@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -35,9 +35,9 @@ abstract class AbstractTransactionApplyPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   retryPolicy: TransactionRetryPolicy
-) extends AbstractSerialTransactionsPipe(source, inner, batchSize, onErrorBehaviour, retryPolicy) {
+) extends AbstractSerialTransactionsPipe(source, inner, batchSize, recoveryMode, retryPolicy) {
 
   protected def withStatus(output: ClosingIterator[CypherRow], status: TransactionStatus): ClosingIterator[CypherRow]
   protected def nullRows(value: EagerBuffer[CypherRow], state: QueryState): ClosingIterator[CypherRow]
@@ -71,12 +71,12 @@ case class TransactionApplyPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   nullableVariables: Set[String],
   statusVariableOpt: Option[String],
   retryPolicy: TransactionRetryPolicy
 )(val id: Id = Id.INVALID_ID)
-    extends AbstractTransactionApplyPipe(source, inner, batchSize, onErrorBehaviour, retryPolicy) {
+    extends AbstractTransactionApplyPipe(source, inner, batchSize, recoveryMode, retryPolicy) {
 
   private lazy val nullEntries: Seq[(String, AnyValue)] = {
     nullableVariables.toIndexedSeq.map(name => name -> Values.NO_VALUE)

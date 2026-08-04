@@ -377,7 +377,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionRetryPolicy.computeTransactionRetryPolicy
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionRetryPolicy
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedAllRelationshipsScanPipe
@@ -2365,21 +2365,18 @@ case class InterpretedPipeMapper(
           TransactionConcurrency.Serial,
           onErrorBehaviour,
           maybeReportAs,
-          maybeRetryParameters,
           _,
           _
         ) =>
+        val retryPolicy =
+          TransactionRetryPolicy.forRuntime(onErrorBehaviour, expressionConverters.toCommandExpression(id, _))
         TransactionForeachPipe(
           lhs,
           rhs,
           buildExpression(batchSize),
-          onErrorBehaviour,
+          onErrorBehaviour.recovery,
           maybeReportAs.map(_.name),
-          computeTransactionRetryPolicy(
-            onErrorBehaviour,
-            maybeRetryParameters,
-            expressionConverters.toCommandExpression(id, _)
-          )
+          retryPolicy
         )(id = id)
 
       case TransactionApply(
@@ -2389,22 +2386,19 @@ case class InterpretedPipeMapper(
           TransactionConcurrency.Serial,
           onErrorBehaviour,
           maybeReportAs,
-          maybeRetryParameters,
           _,
           _
         ) =>
+        val retryPolicy =
+          TransactionRetryPolicy.forRuntime(onErrorBehaviour, expressionConverters.toCommandExpression(id, _))
         TransactionApplyPipe(
           lhs,
           rhs,
           buildExpression(batchSize),
-          onErrorBehaviour,
+          onErrorBehaviour.recovery,
           rhsPlan.availableSymbols.map(_.name) -- lhsPlan.availableSymbols.map(_.name),
           maybeReportAs.map(_.name),
-          computeTransactionRetryPolicy(
-            onErrorBehaviour,
-            maybeRetryParameters,
-            expressionConverters.toCommandExpression(id, _)
-          )
+          retryPolicy
         )(id = id)
 
       case TransactionForeach(
@@ -2414,22 +2408,19 @@ case class InterpretedPipeMapper(
           TransactionConcurrency.Concurrent(maybeConcurrency),
           onErrorBehaviour,
           maybeReportAs,
-          maybeRetryParameters,
           _,
           effectiveDisjointBy
         ) =>
+        val retryPolicy =
+          TransactionRetryPolicy.forRuntime(onErrorBehaviour, expressionConverters.toCommandExpression(id, _))
         ConcurrentTransactionForeachLegacyPipe(
           lhs,
           rhs,
           buildExpression(batchSize),
           maybeConcurrency.map(expressionConverters.toCommandExpression(id, _)),
-          onErrorBehaviour,
+          onErrorBehaviour.recovery,
           maybeReportAs.map(_.name),
-          computeTransactionRetryPolicy(
-            onErrorBehaviour,
-            maybeRetryParameters,
-            expressionConverters.toCommandExpression(id, _)
-          ),
+          retryPolicy,
           effectiveDisjointBy.map(expressionConverters.toCommandExpression(id, _))
         )(id = id)
 
@@ -2440,23 +2431,20 @@ case class InterpretedPipeMapper(
           TransactionConcurrency.Concurrent(maybeConcurrency),
           onErrorBehaviour,
           maybeReportAs,
-          maybeRetryParameters,
           _,
           effectiveDisjointBy
         ) =>
+        val retryPolicy =
+          TransactionRetryPolicy.forRuntime(onErrorBehaviour, expressionConverters.toCommandExpression(id, _))
         ConcurrentTransactionApplyLegacyPipe(
           lhs,
           rhs,
           buildExpression(batchSize),
           maybeConcurrency.map(expressionConverters.toCommandExpression(id, _)),
-          onErrorBehaviour,
+          onErrorBehaviour.recovery,
           rhsPlan.availableSymbols.map(_.name) -- lhsPlan.availableSymbols.map(_.name),
           maybeReportAs.map(_.name),
-          computeTransactionRetryPolicy(
-            onErrorBehaviour,
-            maybeRetryParameters,
-            expressionConverters.toCommandExpression(id, _)
-          ),
+          retryPolicy,
           effectiveDisjointBy.map(expressionConverters.toCommandExpression(id, _))
         )(id = id)
 

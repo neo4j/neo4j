@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -39,9 +39,9 @@ abstract class AbstractTransactionForeachPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   retryPolicy: TransactionRetryPolicy
-) extends AbstractSerialTransactionsPipe(source, inner, batchSize, onErrorBehaviour, retryPolicy) {
+) extends AbstractSerialTransactionsPipe(source, inner, batchSize, recoveryMode, retryPolicy) {
 
   override protected def produceOutput(
     eagerBuffer: EagerBuffer[CypherRow],
@@ -66,12 +66,12 @@ case class TransactionForeachPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   statusVariableOpt: Option[String],
   retryPolicy: TransactionRetryPolicy
 )(
   val id: Id = Id.INVALID_ID
-) extends AbstractTransactionForeachPipe(source, inner, batchSize, onErrorBehaviour, retryPolicy) {
+) extends AbstractTransactionForeachPipe(source, inner, batchSize, recoveryMode, retryPolicy) {
 
   override protected def withStatus(
     output: ClosingIterator[CypherRow],

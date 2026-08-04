@@ -22,9 +22,6 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.GraphReference
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsRetryParameters
 import org.neo4j.cypher.internal.expressions.ASTCachedPropertyWithValue
 import org.neo4j.cypher.internal.expressions.AllReduceAccumulator
 import org.neo4j.cypher.internal.expressions.Ands
@@ -5542,20 +5539,18 @@ case class RepeatAcyclic(
  * }
  * }}}
  */
-
 case class TransactionApply(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
   batchSize: Expression,
   concurrency: TransactionConcurrency,
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  onErrorBehaviour: TransactionalPlan.ErrorHandling,
   maybeReportAs: Option[LogicalVariable],
-  maybeRetryParameters: Option[InTransactionsRetryParameters],
   maybeDisjointByParameters: Option[InTransactionsDisjointByParameters],
   effectiveDisjointBy: Seq[Expression] = Seq.empty
 )(
   implicit idGen: IdGen
-) extends LogicalBinaryPlan(idGen) with ApplyPlan {
+) extends LogicalBinaryPlan(idGen) with ApplyPlan with TransactionalPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(right = newRHS)(idGen)
@@ -5612,14 +5607,13 @@ case class TransactionForeach(
   override val right: LogicalPlan,
   batchSize: Expression,
   concurrency: TransactionConcurrency,
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  onErrorBehaviour: TransactionalPlan.ErrorHandling,
   maybeReportAs: Option[LogicalVariable],
-  maybeRetryParameters: Option[InTransactionsRetryParameters],
   maybeDisjointByParameters: Option[InTransactionsDisjointByParameters],
   effectiveDisjointBy: Seq[Expression] = Seq.empty
 )(
   implicit idGen: IdGen
-) extends LogicalBinaryPlan(idGen) with ApplyPlan {
+) extends LogicalBinaryPlan(idGen) with ApplyPlan with TransactionalPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): TransactionForeach = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): TransactionForeach = copy(right = newRHS)(idGen)
@@ -5631,7 +5625,6 @@ case class TransactionForeach(
 
 object TransactionForeach {
   val defaultBatchSize: Long = 1000L
-  val defaultOnErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorFail
 }
 
 /**

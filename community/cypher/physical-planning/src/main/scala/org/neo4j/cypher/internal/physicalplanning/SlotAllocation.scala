@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.hasRetry
 import org.neo4j.cypher.internal.ast.semantics.CachableSemanticTable
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -155,6 +153,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -332,10 +331,10 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           true
         // TransactionApply with retry need an explicit argument slot for batch id
         case p: TransactionApply =>
-          hasRetry(p.onErrorBehaviour)
+          p.onErrorBehaviour.shouldRetry
         // TransactionForeach with retry need an explicit argument slot for batch id
         case p: TransactionForeach =>
-          hasRetry(p.onErrorBehaviour)
+          p.onErrorBehaviour.shouldRetry
         case _ =>
           false
       }
@@ -1422,7 +1421,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           rhs.newReference(statusVar, nullable, CTMap)
         }
 
-        if (t.onErrorBehaviour != OnErrorFail) {
+        if (t.onErrorBehaviour.recovery != RecoveryMode.Fail) {
           // We need to make slots for variables inside the CALL {...} nullable,
           // e.g. in CALL () { CREATE p: Person(age : ...) RETURN p }, that's p,
           // because we want to see a NULL if one of the transactions failed

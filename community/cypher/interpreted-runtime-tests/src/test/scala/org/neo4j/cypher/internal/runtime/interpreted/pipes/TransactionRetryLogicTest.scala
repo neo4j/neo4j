@@ -40,4 +40,37 @@ class TransactionRetryLogicTest extends InterpretedRuntimeTestSuite {
       i += 1
     }
   }
+
+  test("max attempts retry logic should allow exactly maxAttempts retries") {
+    val maxAttempts = 5
+    val retryLogic = MaxAttemptsRetryLogic(maxAttempts)
+
+    // Mirrors how the retry loops drive the state via TransactionBatch
+    var batch: TransactionBatch = TransactionBatch(null)
+    var retries = 0
+    while (batch.shouldRetryAgain()) {
+      batch = batch.computeNextRetryState(retryLogic)
+      retries += 1
+    }
+
+    retries shouldBe maxAttempts
+    batch.retriedCount shouldBe maxAttempts
+  }
+
+  test("max attempts retry logic should back off with growing delays between attempts") {
+    val backoff = ExponentialBackoffRetryLogic()
+    val retryLogic = MaxAttemptsRetryLogic(3, backoff)
+
+    var state = retryLogic.newRetryState()
+    var previousDelay = 0L
+    while (state.shouldRetryAgain()) {
+      val next =
+        state.computeNextRetryState().asInstanceOf[MaxAttemptsRetryLogic.MaxAttemptsRetryState]
+      next.retryDelayNanos should be > previousDelay
+      next.retryTimestamp should be > 0L
+      previousDelay = next.retryDelayNanos
+      state = next
+    }
+    state.retryCount shouldBe 3
+  }
 }

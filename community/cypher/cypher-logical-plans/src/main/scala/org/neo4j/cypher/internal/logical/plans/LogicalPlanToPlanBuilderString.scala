@@ -1984,12 +1984,12 @@ object LogicalPlanToPlanBuilderString {
           _,
           batchSize,
           concurrency,
-          onErrorBehaviour,
+          errorHandling,
           maybeReportAs,
-          maybeRetryParameters,
           maybeDisjointByParameters,
           effectiveDisjointBy
         ) =>
+        val (onErrorBehaviour, maybeRetryParameters) = TransactionalPlan.ErrorHandling.toAst(errorHandling)
         callInTxParams(
           batchSize,
           concurrency,
@@ -2004,12 +2004,12 @@ object LogicalPlanToPlanBuilderString {
           _,
           batchSize,
           concurrency,
-          onErrorBehaviour,
+          errorHandling,
           maybeReportAs,
-          maybeRetryParameters,
           maybeDisjointByParameters,
           effectiveDisjointBy
         ) =>
+        val (onErrorBehaviour, maybeRetryParameters) = TransactionalPlan.ErrorHandling.toAst(errorHandling)
         callInTxParams(
           batchSize,
           concurrency,

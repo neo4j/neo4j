@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode
 import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.macros.ControlFlowMacros3.doWhile
 import org.neo4j.cypher.internal.runtime.ClosingIterator
@@ -51,7 +51,7 @@ abstract class AbstractConcurrentTransactionsPipe(
   inner: Pipe,
   batchSize: Expression,
   concurrency: Option[Expression],
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   retryPolicy: TransactionRetryPolicy,
   disjointBy: Seq[Expression]
 ) extends PipeWithSource(source) {
@@ -78,8 +78,8 @@ abstract class AbstractConcurrentTransactionsPipe(
     // in ExecutingQuery becomes thread-safe
     state.query.transactionalContext.kernelExecutingQuery.upgradeToConcurrentAccess()
 
-    val retryLogic = createRetryLogic(onErrorBehaviour, retryPolicy, state)
-    val innerPipeInTx = TransactionPipeWrapper(onErrorBehaviour, id, inner, concurrentAccess = true, retryLogic)
+    val retryLogic = createRetryLogic(retryPolicy, state)
+    val innerPipeInTx = TransactionPipeWrapper(recoveryMode, id, inner, concurrentAccess = true, retryLogic)
     val batchSizeLong = evaluateBatchSize(batchSize, state)
     val concurrencyLong = evaluateConcurrency(concurrency, state)
 
@@ -524,7 +524,7 @@ abstract class AbstractConcurrentTransactionsPipe(
       val retryDecision = innerResult.retryDecision
       val shouldRetry = RetryDecision.shouldRetry(retryDecision)
       val (transactionStatus, nonRecoverableErrorOrNull) =
-        handleRetry(retryDecision, innerResult.status, onErrorBehaviour, batch)
+        handleRetry(retryDecision, innerResult.status, recoveryMode, retryPolicy, batch)
 
       val resultsWithStatusIteratorOrNull = innerResult.committedResults match {
         case Some(result) =>
@@ -582,7 +582,7 @@ abstract class AbstractConcurrentTransactionsPipe(
       val retryDecision = result.retryDecision
       val shouldRetry = RetryDecision.shouldRetry(retryDecision)
       val (transactionStatus, nonRecoverableErrorOrNull) =
-        handleRetry(retryDecision, result.status, onErrorBehaviour, batch)
+        handleRetry(retryDecision, result.status, recoveryMode, retryPolicy, batch)
 
       val resultsWithStatusIteratorOrNull =
         if (nonRecoverableErrorOrNull != null) {

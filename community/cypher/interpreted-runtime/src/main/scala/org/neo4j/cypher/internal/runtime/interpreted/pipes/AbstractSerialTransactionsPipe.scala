@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -37,7 +37,7 @@ abstract class AbstractSerialTransactionsPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   retryPolicy: TransactionRetryPolicy
 ) extends PipeWithSource(source) {
 
@@ -62,8 +62,8 @@ abstract class AbstractSerialTransactionsPipe(
     state: QueryState
   ): ClosingIterator[CypherRow] = {
 
-    val retryLogic = createRetryLogic(onErrorBehaviour, retryPolicy, state)
-    val innerPipeInTx = TransactionPipeWrapper(onErrorBehaviour, id, inner, concurrentAccess = false, retryLogic)
+    val retryLogic = createRetryLogic(retryPolicy, state)
+    val innerPipeInTx = TransactionPipeWrapper(recoveryMode, id, inner, concurrentAccess = false, retryLogic)
     val batchSizeLong = evaluateBatchSize(batchSize, state)
     val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
@@ -79,7 +79,7 @@ abstract class AbstractSerialTransactionsPipe(
     @tailrec
     def executeWithRetry(batch: TransactionBatch, retryLogic: TransactionRetryLogic): TransactionResult = {
       val result = runBatch(batch)
-      val (status, throwable) = handleRetry(result.retryDecision, result.status, onErrorBehaviour, batch)
+      val (status, throwable) = handleRetry(result.retryDecision, result.status, recoveryMode, retryPolicy, batch)
 
       if (throwable != null) {
         throw throwable

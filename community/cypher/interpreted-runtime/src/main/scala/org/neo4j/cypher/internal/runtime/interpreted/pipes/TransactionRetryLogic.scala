@@ -88,6 +88,55 @@ case class ExponentialBackoffRetryLogic(
   }
 }
 
+/**
+ * A retry logic that retries a fixed maximum number of times, with exponentially growing, jittered
+ * delays between attempts. Used for implicit retries of inner transactions on multi-versioned stores:
+ * the attempt budget mirrors the query retries of MultiVersionExecutionEngine, while the backoff
+ * decorrelates concurrent inner transactions that would otherwise repeatedly collide at commit
+ * and exhaust the budget.
+ */
+case class MaxAttemptsRetryLogic(
+  maxAttempts: Int,
+  backoff: ExponentialBackoffRetryLogic = ExponentialBackoffRetryLogic()
+) extends TransactionRetryLogic {
+
+  require(maxAttempts >= 0, s"maxAttempts should be >= 0: $maxAttempts")
+
+  override def newRetryState(): RetryState = {
+    val initialDelay = (backoff.initialRetryDelayNanos.toDouble / backoff.multiplier).toLong
+    MaxAttemptsRetryLogic.MaxAttemptsRetryState(this, 0, retryTimestamp = 0L, retryDelayNanos = initialDelay)
+  }
+}
+
+object MaxAttemptsRetryLogic {
+
+  final case class MaxAttemptsRetryState(
+    config: MaxAttemptsRetryLogic,
+    retryCount: Int,
+    retryTimestamp: Long,
+    retryDelayNanos: Long
+  ) extends RetryState {
+
+    override def computeNextRetryState(): RetryState = {
+      val newRetryDelayNanos = config.backoff.multiply(retryDelayNanos)
+      copy(
+        retryCount = retryCount + 1,
+        retryDelayNanos = newRetryDelayNanos,
+        retryTimestamp = System.nanoTime() + config.backoff.jitter(newRetryDelayNanos)
+      )
+    }
+
+    override def shouldRetryAgain(): Boolean = retryCount < config.maxAttempts
+
+    override def nanosUntilRetry(): Long = {
+      val nanosUntilRetry = retryTimestamp - System.nanoTime()
+      if (nanosUntilRetry >= 0) nanosUntilRetry else 0L
+    }
+
+    override def retryTimeout: Duration = Duration.Zero
+  }
+}
+
 object ExponentialBackoffRetryLogic {
   final val DEFAULT_MAX_RETRY_TIME_NANOS: Long = SECONDS.toNanos(30)
   final val INITIAL_RETRY_DELAY_NANOS = MILLISECONDS.toNanos(10)

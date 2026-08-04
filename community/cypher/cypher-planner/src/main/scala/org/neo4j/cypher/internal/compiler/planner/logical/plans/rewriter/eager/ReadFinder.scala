@@ -1051,10 +1051,10 @@ object ReadFinder {
           _.withAddedRelationshipFilterExpression(idName, HasTypes(idName, Seq(relType))(InputPosition.NONE))
         ))(PlanReads())
 
-      case TransactionApply(_, _, _, _, _, _, _, _, _) =>
+      case TransactionApply(_, _, _, _, _, _, _, _) =>
         PlanReads().withCallInTx
 
-      case TransactionForeach(_, _, _, _, _, _, _, _, _) =>
+      case TransactionForeach(_, _, _, _, _, _, _, _) =>
         PlanReads().withCallInTx
 
       case r: Repeat =>

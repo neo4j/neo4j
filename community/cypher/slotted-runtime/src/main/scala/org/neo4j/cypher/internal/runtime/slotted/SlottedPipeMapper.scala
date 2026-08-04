@@ -241,7 +241,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionRetryPolicy.computeTransactionRetryPolicy
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionRetryPolicy
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.DistinctAllPrimitive
@@ -2158,21 +2158,18 @@ class SlottedPipeMapper(
           TransactionConcurrency.Serial,
           onErrorBehaviour,
           maybeReportAs,
-          maybeRetryParameters,
           _,
           _
         ) =>
+        val retryPolicy =
+          TransactionRetryPolicy.forRuntime(onErrorBehaviour, expressionConverters.toCommandExpression(id, _))
         TransactionForeachSlottedPipe(
           lhs,
           rhs,
           expressionConverters.toCommandExpression(id, batchSize),
-          onErrorBehaviour,
+          onErrorBehaviour.recovery,
           maybeReportAs.map(v => slots(v).slot),
-          computeTransactionRetryPolicy(
-            onErrorBehaviour,
-            maybeRetryParameters,
-            expressionConverters.toCommandExpression(id, _)
-          )
+          retryPolicy
         )(id = id)
 
       case TransactionApply(
@@ -2182,23 +2179,20 @@ class SlottedPipeMapper(
           TransactionConcurrency.Serial,
           onErrorBehaviour,
           maybeReportAs,
-          maybeRetryParameters,
           _,
           _
         ) =>
+        val retryPolicy =
+          TransactionRetryPolicy.forRuntime(onErrorBehaviour, expressionConverters.toCommandExpression(id, _))
         TransactionApplySlottedPipe(
           lhs,
           rhs,
           expressionConverters.toCommandExpression(id, batchSize),
-          onErrorBehaviour,
+          onErrorBehaviour.recovery,
           (rhsPlan.availableSymbols.map(_.name) -- lhsPlan.availableSymbols.map(_.name)).map(n => slots(n).slot),
           maybeReportAs.map(n => slots(n).slot),
           argumentSize,
-          computeTransactionRetryPolicy(
-            onErrorBehaviour,
-            maybeRetryParameters,
-            expressionConverters.toCommandExpression(id, _)
-          )
+          retryPolicy
         )(id = id)
 
       case TransactionForeach(
@@ -2208,22 +2202,19 @@ class SlottedPipeMapper(
           TransactionConcurrency.Concurrent(maybeConcurrency),
           onErrorBehaviour,
           maybeReportAs,
-          maybeRetryParameters,
           _,
           effectiveDisjointBy
         ) =>
+        val retryPolicy =
+          TransactionRetryPolicy.forRuntime(onErrorBehaviour, expressionConverters.toCommandExpression(id, _))
         ConcurrentTransactionForeachSlottedPipe(
           lhs,
           rhs,
           expressionConverters.toCommandExpression(id, batchSize),
           maybeConcurrency.map(expressionConverters.toCommandExpression(id, _)),
-          onErrorBehaviour,
+          onErrorBehaviour.recovery,
           maybeReportAs.map(n => slots(n).slot),
-          computeTransactionRetryPolicy(
-            onErrorBehaviour,
-            maybeRetryParameters,
-            expressionConverters.toCommandExpression(id, _)
-          ),
+          retryPolicy,
           effectiveDisjointBy.map(expressionConverters.toCommandExpression(id, _))
         )(id = id)
 
@@ -2234,24 +2225,21 @@ class SlottedPipeMapper(
           TransactionConcurrency.Concurrent(maybeConcurrency),
           onErrorBehaviour,
           maybeReportAs,
-          maybeRetryParameters,
           _,
           effectiveDisjointBy
         ) =>
+        val retryPolicy =
+          TransactionRetryPolicy.forRuntime(onErrorBehaviour, expressionConverters.toCommandExpression(id, _))
         ConcurrentTransactionApplySlottedPipe(
           lhs,
           rhs,
           expressionConverters.toCommandExpression(id, batchSize),
           maybeConcurrency.map(expressionConverters.toCommandExpression(id, _)),
-          onErrorBehaviour,
+          onErrorBehaviour.recovery,
           (rhsPlan.availableSymbols.map(_.name) -- lhsPlan.availableSymbols.map(_.name)).map(n => slots(n).slot),
           maybeReportAs.map(n => slots(n).slot),
           argumentSize,
-          computeTransactionRetryPolicy(
-            onErrorBehaviour,
-            maybeRetryParameters,
-            expressionConverters.toCommandExpression(id, _)
-          ),
+          retryPolicy,
           effectiveDisjointBy.map(expressionConverters.toCommandExpression(id, _))
         )(id = id)
 

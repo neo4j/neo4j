@@ -286,6 +286,7 @@ import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.ErrorHandling
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode.Trail
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
@@ -3559,9 +3560,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         rhs,
         literalInt(batchSize),
         concurrency,
-        onErrorBehaviour,
+        ErrorHandling.fromAst(onErrorBehaviour, maybeRetryParameters),
         maybeReportAs.map(varFor),
-        maybeRetryParameters,
         maybeDisjointByParameters.map(parseDisjointByParameters),
         effectiveDisjointBy.map(parseExpression)
       )(_)
@@ -3608,9 +3608,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         rhs,
         literalInt(batchSize),
         concurrency,
-        onErrorBehaviour,
+        ErrorHandling.fromAst(onErrorBehaviour, maybeRetryParameters),
         maybeReportAs.map(varFor),
-        maybeRetryParameters,
         maybeDisjointByParameters.map(parseDisjointByParameters),
         effectiveDisjointBy.map(parseExpression)
       )(_)

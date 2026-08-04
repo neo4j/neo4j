@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationBuilder
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -54,7 +52,7 @@ class TransactionApplySlottedPipeTest extends GraphDatabaseFunSuite with QuerySt
       lhs,
       rhs,
       literal(1),
-      OnErrorFail,
+      RecoveryMode.Fail,
       Set.empty,
       slots.getSlot("status"),
       SlotConfiguration.Size.zero,
@@ -93,7 +91,7 @@ class TransactionApplySlottedPipeTest extends GraphDatabaseFunSuite with QuerySt
       lhs,
       rhs,
       literal(1),
-      OnErrorBreak,
+      RecoveryMode.Break,
       Set.empty,
       slots.getSlot("status"),
       SlotConfiguration.Size.zero,
@@ -140,7 +138,7 @@ class TransactionApplySlottedPipeTest extends GraphDatabaseFunSuite with QuerySt
       lhs,
       rhs,
       literal(1),
-      OnErrorContinue,
+      RecoveryMode.Continue,
       Set.empty,
       slots.getSlot("status"),
       SlotConfiguration.Size.zero,

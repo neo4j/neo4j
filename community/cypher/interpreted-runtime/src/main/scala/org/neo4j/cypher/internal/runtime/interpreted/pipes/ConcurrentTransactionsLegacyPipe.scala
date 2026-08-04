@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -39,7 +39,7 @@ abstract class AbstractConcurrentTransactionsLegacyPipe(
   inner: Pipe,
   batchSize: Expression,
   concurrency: Option[Expression],
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   statusVariableOpt: Option[String],
   retryPolicy: TransactionRetryPolicy,
   disjointBy: Seq[Expression]
@@ -48,7 +48,7 @@ abstract class AbstractConcurrentTransactionsLegacyPipe(
       inner,
       batchSize,
       concurrency,
-      onErrorBehaviour,
+      recoveryMode,
       retryPolicy,
       disjointBy
     ) {
@@ -67,7 +67,7 @@ case class ConcurrentTransactionApplyLegacyPipe(
   inner: Pipe,
   batchSize: Expression,
   concurrency: Option[Expression],
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   nullableVariables: Set[String],
   statusVariableOpt: Option[String],
   retryPolicy: TransactionRetryPolicy,
@@ -78,7 +78,7 @@ case class ConcurrentTransactionApplyLegacyPipe(
       inner,
       batchSize,
       concurrency,
-      onErrorBehaviour,
+      recoveryMode,
       statusVariableOpt,
       retryPolicy,
       disjointBy
@@ -121,7 +121,7 @@ case class ConcurrentTransactionForeachLegacyPipe(
   inner: Pipe,
   batchSize: Expression,
   concurrency: Option[Expression],
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   statusVariableOpt: Option[String],
   retryPolicy: TransactionRetryPolicy,
   disjointBy: Seq[Expression]
@@ -131,7 +131,7 @@ case class ConcurrentTransactionForeachLegacyPipe(
       inner,
       batchSize,
       concurrency,
-      onErrorBehaviour,
+      recoveryMode,
       statusVariableOpt,
       retryPolicy,
       disjointBy

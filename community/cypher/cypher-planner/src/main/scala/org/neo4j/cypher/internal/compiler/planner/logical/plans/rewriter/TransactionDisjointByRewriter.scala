@@ -75,7 +75,7 @@ case class TransactionDisjointByRewriter(globalStrategyIsAuto: Boolean) extends 
   }
 
   override val innerRewriter: Rewriter = Rewriter.lift {
-    case t @ TransactionApply(lhs, rhs, _, Concurrent(_), _, _, _, maybeDisjointByParameters, _)
+    case t @ TransactionApply(lhs, rhs, _, Concurrent(_), _, _, maybeDisjointByParameters, _)
       if shouldInfer(maybeDisjointByParameters) =>
       val inputVars = lhs.availableSymbols
       val acc = findRaids(rhs, inputVars)
@@ -86,7 +86,7 @@ case class TransactionDisjointByRewriter(globalStrategyIsAuto: Boolean) extends 
           t
       }
 
-    case t @ TransactionForeach(lhs, rhs, _, Concurrent(_), _, _, _, maybeDisjointByParameters, _)
+    case t @ TransactionForeach(lhs, rhs, _, Concurrent(_), _, _, maybeDisjointByParameters, _)
       if shouldInfer(maybeDisjointByParameters) =>
       val inputVars = lhs.availableSymbols
       val acc = findRaids(rhs, inputVars)

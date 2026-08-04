@@ -38,13 +38,11 @@ import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenFail
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsRetryParameters
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingExpandStepHint
@@ -308,6 +306,9 @@ import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.ErrorHandling
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RetryMode
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode.Trail
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -337,6 +338,7 @@ import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -1151,18 +1153,20 @@ case class LogicalPlanProducer(
     }
   }
 
-  private def computeErrorBehaviour(maybeErrorParams: Option[InTransactionsErrorParameters])
-    : (InTransactionsOnErrorBehaviour, Option[InTransactionsRetryParameters]) = {
+  private def computeErrorBehaviour(context: PlanContext, maybeErrorParams: Option[InTransactionsErrorParameters])
+    : ErrorHandling = {
+    val defaultRetryMode = if (context.storageIsMvcc) RetryMode.ImplicitOnMvcc else RetryMode.NoRetry
+
     maybeErrorParams match {
       case Some(InTransactionsErrorParameters(
           behaviour @ (OnErrorRetryThenContinue | OnErrorRetryThenBreak | OnErrorRetryThenFail),
           retryParams
         )) =>
-        (behaviour, retryParams)
+        ErrorHandling.fromAst(behaviour, retryParams)
       case Some(InTransactionsErrorParameters(behaviour, None)) =>
-        (behaviour, None)
+        ErrorHandling.fromAst(behaviour, None, defaultRetryMode)
       case None =>
-        (TransactionForeach.defaultOnErrorBehaviour, None)
+        ErrorHandling(RecoveryMode.Fail, defaultRetryMode)
       case _ =>
         throw new IllegalArgumentException("Invalid combination of error parameters and retry parameters")
     }
@@ -1279,7 +1283,7 @@ case class LogicalPlanProducer(
               reportParams,
               disjointByParams
             )) =>
-            val (errorBehaviour, retryParams) = computeErrorBehaviour(errorParams)
+            val errorBehaviour = computeErrorBehaviour(context.staticComponents.planContext, errorParams)
             TransactionApply(
               left,
               right,
@@ -1287,7 +1291,6 @@ case class LogicalPlanProducer(
               computeConcurrency(concurrencyParams.map(_.concurrency)),
               errorBehaviour,
               computeMaybeReportAs(reportParams),
-              retryParams,
               disjointByParams,
               computeEffectiveDisjointBy(disjointByParams)
             )
@@ -1307,7 +1310,7 @@ case class LogicalPlanProducer(
               reportParams,
               disjointByParams
             )) =>
-            val (errorBehaviour, retryParams) = computeErrorBehaviour(errorParams)
+            val errorBehaviour = computeErrorBehaviour(context.staticComponents.planContext, errorParams)
             TransactionForeach(
               left,
               right,
@@ -1315,7 +1318,6 @@ case class LogicalPlanProducer(
               computeConcurrency(concurrencyParams.map(_.concurrency)),
               errorBehaviour,
               computeMaybeReportAs(reportParams),
-              retryParams,
               disjointByParams,
               computeEffectiveDisjointBy(disjointByParams)
             )

@@ -20,41 +20,43 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenBreak
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenContinue
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenFail
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsRetryParameters
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.ErrorHandling
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RetryMode
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.values.storable.Values
 
-sealed trait TransactionRetryPolicy
+enum TransactionRetryPolicy {
+  case DoNotRetry
+  case ImplicitMultiVersionRetry
+  case RetryFor(maybeDurationInSeconds: Option[Expression])
+
+  /** Whether the failing batch is retried at all before the [[org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode]] is applied. */
+  def retryable: Boolean = this match {
+    case DoNotRetry                              => false
+    case RetryFor(_) | ImplicitMultiVersionRetry => true
+  }
+
+  /** Whether retries were requested explicitly (`ON ERROR RETRY`), as opposed to injected implicitly on MVCC. */
+  def isExplicit: Boolean = this match {
+    case RetryFor(_)                            => true
+    case DoNotRetry | ImplicitMultiVersionRetry => false
+  }
+}
 
 object TransactionRetryPolicy {
-  case object DoNotRetry extends TransactionRetryPolicy
 
-  case class RetryFor(maybeDurationInSeconds: Option[Expression]) extends TransactionRetryPolicy
-
-  object RetryFor {
-
-    def apply(durationInSeconds: Double): RetryFor = {
-      RetryFor(Some(commands.expressions.Literal(Values.doubleValue(durationInSeconds))))
-    }
-  }
-
-  def computeTransactionRetryPolicy(
-    errorBehaviour: InTransactionsOnErrorBehaviour,
-    maybeRetryParameters: Option[InTransactionsRetryParameters],
+  /**
+   * Bridge the normalized logical-plan [[ErrorHandling]] to the interpreted/slotted runtime's
+   * ([[ErrorMode]], retry policy) pair. The mode drives which `TransactionPipeWrapper` is used; the policy
+   * drives the retry logic. [[RetryMode.ImplicitOnMvcc]] maps to [[ImplicitMultiVersionRetry]].
+   */
+  def forRuntime(
+    behaviour: ErrorHandling,
     expressionConverter: internal.expressions.Expression => commands.expressions.Expression
-  ): TransactionRetryPolicy = {
-    errorBehaviour match {
-      case OnErrorRetryThenContinue | OnErrorRetryThenBreak | OnErrorRetryThenFail =>
-        val maybeDuration = maybeRetryParameters.flatMap(_.timeout)
-        TransactionRetryPolicy.RetryFor(maybeDuration.map(expressionConverter))
-      case _ =>
-        require(maybeRetryParameters.isEmpty, "Unexpected retry parameters for error behaviour: " + errorBehaviour)
-        TransactionRetryPolicy.DoNotRetry
+  ): TransactionRetryPolicy =
+    behaviour.retry match {
+      case RetryMode.NoRetry           => DoNotRetry
+      case RetryMode.Explicit(timeout) => RetryFor(timeout.map(expressionConverter))
+      case RetryMode.ImplicitOnMvcc    => ImplicitMultiVersionRetry
     }
-  }
 }

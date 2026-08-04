@@ -19,16 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.RecoverableCypherError
 import org.neo4j.cypher.internal.RetryableCypherError
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenBreak
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenContinue
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenFail
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.EntityTransformer
@@ -324,14 +319,12 @@ trait OnErrorRetryTxPipe {
   }
 }
 
-sealed trait RetryDecision
+enum RetryDecision {
+  case ShouldRetry, RetryTimeout, NotRetryable, NotApplicable
+}
 
 object RetryDecision {
   def shouldRetry(decision: RetryDecision): Boolean = decision eq ShouldRetry
-  case object ShouldRetry extends RetryDecision
-  case object RetryTimeout extends RetryDecision
-  case object NotRetryable extends RetryDecision
-  case object NotApplicable extends RetryDecision
 
   def decide(error: Throwable): RetryDecision = {
     if (RetryableCypherError.isRetryable(error)) {
@@ -342,14 +335,12 @@ object RetryDecision {
   }
 
   def decide(error: Throwable, state: RetryState): RetryDecision = {
-    if (RetryableCypherError.isRetryable(error)) {
-      if (state.shouldRetryAgain()) {
-        ShouldRetry
-      } else {
-        RetryTimeout
-      }
-    } else {
+    if (!RetryableCypherError.isRetryable(error)) {
       NotRetryable
+    } else if (state.shouldRetryAgain()) {
+      ShouldRetry
+    } else {
+      RetryTimeout
     }
   }
 }
@@ -371,6 +362,14 @@ case class Rollback(
   queryStatistics: QueryStatistics,
   profileInformation: InterpretedProfileInformation
 ) extends TransactionStatus
+
+object RollbackFailure {
+
+  def unapply(t: TransactionStatus): Option[Throwable] = t match {
+    case Rollback(_, failure, _, _) => Some(failure)
+    case _                          => None
+  }
+}
 
 case object NotRun extends TransactionStatus {
   override def queryStatistics: QueryStatistics = null
@@ -475,29 +474,26 @@ object TransactionPipeWrapper {
    * NOTE! Implementations might keep state that is not safe to re-use between queries. Create a new instance for each query.
    */
   def apply(
-    error: InTransactionsOnErrorBehaviour,
+    recoveryMode: RecoveryMode,
     outerId: Id,
     inner: Pipe,
     concurrentAccess: Boolean,
     retryLogic: Option[TransactionRetryLogic]
   ): TransactionPipeWrapper = {
-    (error, retryLogic) match {
-      case (OnErrorContinue, _)                 => new OnErrorContinueTxPipe(outerId, inner, concurrentAccess)
-      case (OnErrorBreak, _)                    => new OnErrorBreakTxPipe(outerId, inner, concurrentAccess)
-      case (OnErrorFail, _) if concurrentAccess =>
+    (recoveryMode, retryLogic) match {
+      case (RecoveryMode.Continue, None) => new OnErrorContinueTxPipe(outerId, inner, concurrentAccess)
+      case (RecoveryMode.Continue, Some(retryLogic)) =>
+        new OnErrorRetryThenContinueTxPipe(outerId, inner, concurrentAccess, retryLogic)
+      case (RecoveryMode.Break, None) => new OnErrorBreakTxPipe(outerId, inner, concurrentAccess)
+      case (RecoveryMode.Break, Some(retryLogic)) =>
+        new OnErrorRetryThenBreakTxPipe(outerId, inner, concurrentAccess, retryLogic)
+      case (RecoveryMode.Fail, None) if concurrentAccess =>
         // NOTE: We intentionally use OnErrorBreakTxPipe for OnErrorFail in concurrent execution,
         //       since we need to send the error back to the main thread anyway.
         new OnErrorBreakTxPipe(outerId, inner, concurrentAccess)
-      case (OnErrorFail, _) => new OnErrorFailTxPipe(outerId, inner, concurrentAccess)
-      case (OnErrorRetryThenContinue, Some(retryLogic)) =>
-        new OnErrorRetryThenContinueTxPipe(outerId, inner, concurrentAccess, retryLogic)
-      case (OnErrorRetryThenBreak, Some(retryLogic)) =>
-        new OnErrorRetryThenBreakTxPipe(outerId, inner, concurrentAccess, retryLogic)
-      case (OnErrorRetryThenFail, Some(retryLogic)) =>
+      case (RecoveryMode.Fail, None) => new OnErrorFailTxPipe(outerId, inner, concurrentAccess)
+      case (RecoveryMode.Fail, Some(retryLogic)) =>
         new OnErrorRetryThenFailTxPipe(outerId, inner, concurrentAccess, retryLogic)
-
-      case _ =>
-        throw new UnsupportedOperationException(s"Unsupported error behaviour $error with retry logic $retryLogic")
     }
   }
 
@@ -557,27 +553,26 @@ object TransactionPipeWrapper {
   }
 
   def createRetryLogic(
-    onErrorBehaviour: InTransactionsOnErrorBehaviour,
     retryPolicy: TransactionRetryPolicy,
     state: QueryState
-  ): Option[TransactionRetryLogic] = onErrorBehaviour match {
-    case OnErrorRetryThenContinue | OnErrorRetryThenBreak | OnErrorRetryThenFail =>
-      retryPolicy match {
-        case TransactionRetryPolicy.RetryFor(maybeDurationInSeconds) =>
-          val maxRetryTimeNanos = evaluateRetryTimeoutNanos(maybeDurationInSeconds, state)
-          Some(new ExponentialBackoffRetryLogic(maxRetryTimeNanos))
+  ): Option[TransactionRetryLogic] =
+    retryPolicy match {
+      case TransactionRetryPolicy.RetryFor(maybeDurationInSeconds) =>
+        Some(new ExponentialBackoffRetryLogic(evaluateRetryTimeoutNanos(maybeDurationInSeconds, state)))
 
-        case _ =>
-          throw new IllegalArgumentException(s"Unsupported retry policy $retryPolicy")
-      }
+      case TransactionRetryPolicy.ImplicitMultiVersionRetry =>
+        Some(maxAttemptsRetryLogic(state))
 
-    case _ => None
+      case TransactionRetryPolicy.DoNotRetry =>
+        None
+    }
+
+  private def maxAttemptsRetryLogic(state: QueryState): MaxAttemptsRetryLogic = {
+    val maxAttempts = state.query.getConfig.get(GraphDatabaseInternalSettings.snapshot_query_retries)
+    MaxAttemptsRetryLogic(maxAttempts)
   }
 
-  def evaluateRetryTimeoutNanos(
-    retryTimeout: Option[Expression],
-    state: QueryState
-  ): Long = {
+  def evaluateRetryTimeoutNanos(retryTimeout: Option[Expression], state: QueryState): Long = {
     retryTimeout match {
       case Some(t) =>
         PipeHelper.evaluateStaticSecondsToNanosOrThrow(
@@ -607,12 +602,16 @@ object TransactionPipeWrapper {
   def handleRetry(
     retryDecision: RetryDecision,
     resultStatus: TransactionStatus,
-    onErrorBehaviour: InTransactionsOnErrorBehaviour,
+    recoveryMode: RecoveryMode,
+    retryPolicy: TransactionRetryPolicy,
     batch: TransactionBatch
   ): (TransactionStatus, Throwable) = {
-    // NOTE: It is very important that these match cases correctly propagate non-recoverable errors
-    (resultStatus, onErrorBehaviour, retryDecision) match {
-      case (Rollback(_, failure, _, _), OnErrorRetryThenFail, RetryTimeout) =>
+    // NOTE: It is very important that these match cases correctly propagate non-recoverable errors.
+    //       ShouldRetry is intentionally not matched here: it falls through to the default case so the
+    //       batch is retried by the caller.
+    val explicitRetry = retryPolicy.isExplicit
+    (resultStatus, retryDecision, recoveryMode) match {
+      case (RollbackFailure(failure), RetryTimeout, RecoveryMode.Fail) if explicitRetry =>
         // Non-recoverable failure
         (
           resultStatus,
@@ -623,21 +622,22 @@ object TransactionPipeWrapper {
           )
         )
 
-      case (Rollback(_, ex: CypherExecutionInterruptedException, _, _), OnErrorRetryThenFail, _)
-        if ex.status() == Status.Transaction.QueryExecutionFailedOnTransaction =>
+      case (RollbackFailure(ex: CypherExecutionInterruptedException), _, RecoveryMode.Fail)
+        if explicitRetry && ex.status() == Status.Transaction.QueryExecutionFailedOnTransaction =>
         // CypherExecutionInterruptedException means this batch was cancelled due to another batch failing,
         // so we wait for the actual failed batch to be retried in order to throw the failure
         (resultStatus, null)
 
-      case (Rollback(_, failure, _, _), OnErrorRetryThenFail, NotRetryable | NotApplicable) =>
+      case (RollbackFailure(failure), NotRetryable | NotApplicable, RecoveryMode.Fail) if explicitRetry =>
         // Non-recoverable failure
         (resultStatus, failure)
 
-      case (Rollback(_, failure, _, _), OnErrorFail, _) =>
-        // Non-recoverable failure
+      case (RollbackFailure(failure), NotRetryable | NotApplicable | RetryTimeout, RecoveryMode.Fail) =>
+        // Non-recoverable failure. Plain or implicit-MVCC ON ERROR FAIL.
         (resultStatus, failure)
 
-      case (r @ Rollback(_, failure, _, _), OnErrorRetryThenBreak | OnErrorRetryThenContinue, RetryTimeout) =>
+      case (r @ Rollback(_, failure, _, _), RetryTimeout, RecoveryMode.Break | RecoveryMode.Continue)
+        if explicitRetry =>
         // Recoverable failure
         (
           r.copy(failure =

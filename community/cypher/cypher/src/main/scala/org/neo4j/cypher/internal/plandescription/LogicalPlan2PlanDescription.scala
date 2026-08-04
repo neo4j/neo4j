@@ -316,6 +316,7 @@ import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.ErrorHandling
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -3642,12 +3643,12 @@ case class LogicalPlan2PlanDescription(
           _,
           batchSize,
           concurrency,
-          onErrorBehaviour,
+          errorBehaviour,
           maybeReportAs,
-          maybeRetryParameters,
           _,
           effectiveDisjointBy
         ) =>
+        val (onErrorBehaviour, maybeRetryParameters) = ErrorHandling.toAst(errorBehaviour)
         val details =
           callInTxsDetails(
             batchSize,
@@ -3672,12 +3673,12 @@ case class LogicalPlan2PlanDescription(
           _,
           batchSize,
           concurrency,
-          onErrorBehaviour,
+          errorBehaviour,
           maybeReportAs,
-          maybeRetryParameters,
           _,
           effectiveDisjointBy
         ) =>
+        val (onErrorBehaviour, maybeRetryParameters) = ErrorHandling.toAst(errorBehaviour)
         val details =
           callInTxsDetails(
             batchSize,

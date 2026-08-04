@@ -245,6 +245,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.ErrorHandling
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
@@ -5950,9 +5951,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Serial,
-          onErrorBehaviour = OnErrorContinue,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorContinue, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -5975,9 +5975,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Serial,
-          onErrorBehaviour = OnErrorBreak,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorBreak, None),
           maybeReportAs = Some(varFor("status")),
-          maybeRetryParameters = None,
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6000,9 +5999,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(Some(number("5"))),
-          onErrorBehaviour = OnErrorContinue,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorContinue, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6025,9 +6023,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(None),
-          onErrorBehaviour = OnErrorContinue,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorContinue, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6050,9 +6047,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Serial,
-          onErrorBehaviour = OnErrorFail,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorFail, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6075,9 +6071,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(Some(number("5"))),
-          onErrorBehaviour = OnErrorFail,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorFail, None),
           maybeReportAs = Some(varFor("status")),
-          maybeRetryParameters = None,
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6100,9 +6095,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(None),
-          onErrorBehaviour = OnErrorFail,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorFail, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6125,9 +6119,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(Some(number("5"))),
-          onErrorBehaviour = OnErrorFail,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorFail, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6150,9 +6143,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Serial,
-          onErrorBehaviour = OnErrorRetryThenFail,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorRetryThenFail, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6175,9 +6167,11 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Serial,
-          onErrorBehaviour = OnErrorRetryThenBreak,
+          onErrorBehaviour = ErrorHandling.fromAst(
+            OnErrorRetryThenBreak,
+            Some(InTransactionsRetryParameters(Some(float("1.5")))(pos))
+          ),
           maybeReportAs = None,
-          maybeRetryParameters = Some(InTransactionsRetryParameters(Some(float("1.5")))(pos)),
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6200,9 +6194,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Serial,
-          onErrorBehaviour = OnErrorRetryThenFail,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorRetryThenFail, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6225,9 +6218,11 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Serial,
-          onErrorBehaviour = OnErrorRetryThenContinue,
+          onErrorBehaviour = ErrorHandling.fromAst(
+            OnErrorRetryThenContinue,
+            Some(InTransactionsRetryParameters(Some(float("1.5")))(pos))
+          ),
           maybeReportAs = Some(varFor("status")),
-          maybeRetryParameters = Some(InTransactionsRetryParameters(Some(float("1.5")))(pos)),
           maybeDisjointByParameters = None
         ),
         2345.0
@@ -6252,9 +6247,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(None),
-          onErrorBehaviour = OnErrorFail,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorFail, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters =
             Some(InTransactionsDisjointByParameters(DisjointByExpressions(Seq(prop("a", "id"), prop("b", "id"))))(pos)),
           effectiveDisjointBy = Seq(prop("a", "id"), prop("b", "id"))
@@ -6279,9 +6273,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(None),
-          onErrorBehaviour = OnErrorFail,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorFail, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = Some(InTransactionsDisjointByParameters(DisjointByAuto)(pos)),
           effectiveDisjointBy = Seq(prop("a", "id"), prop("b", "id"))
         ),
@@ -6305,9 +6298,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(None),
-          onErrorBehaviour = OnErrorFail,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorFail, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = Some(InTransactionsDisjointByParameters(DisjointByNone)(pos)),
           effectiveDisjointBy = Seq.empty
         ),
@@ -6331,9 +6323,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(None),
-          onErrorBehaviour = OnErrorContinue,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorContinue, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters =
             Some(InTransactionsDisjointByParameters(DisjointByExpressions(Seq(prop("a", "id"))))(pos)),
           effectiveDisjointBy = Seq(prop("a", "id"))
@@ -6358,9 +6349,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(None),
-          onErrorBehaviour = OnErrorContinue,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorContinue, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = Some(InTransactionsDisjointByParameters(DisjointByAuto)(pos)),
           effectiveDisjointBy = Seq(prop("a", "id"))
         ),
@@ -6384,9 +6374,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           rhsLP,
           batchSize = number("100"),
           concurrency = TransactionConcurrency.Concurrent(None),
-          onErrorBehaviour = OnErrorFail,
+          onErrorBehaviour = ErrorHandling.fromAst(OnErrorFail, None),
           maybeReportAs = None,
-          maybeRetryParameters = None,
           maybeDisjointByParameters = Some(InTransactionsDisjointByParameters(DisjointByNone)(pos)),
           effectiveDisjointBy = Seq.empty
         ),

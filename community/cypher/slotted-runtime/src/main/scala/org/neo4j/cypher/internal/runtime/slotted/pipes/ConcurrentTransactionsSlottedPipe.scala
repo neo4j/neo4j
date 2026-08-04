@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.logical.plans.TransactionalPlan.RecoveryMode
 import org.neo4j.cypher.internal.physicalplanning.LongSlot
 import org.neo4j.cypher.internal.physicalplanning.RefSlot
 import org.neo4j.cypher.internal.physicalplanning.Slot
@@ -50,7 +50,7 @@ abstract class AbstractConcurrentTransactionsSlottedPipe(
   inner: Pipe,
   batchSize: Expression,
   concurrency: Option[Expression],
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   statusSlot: Option[Slot],
   retryPolicy: TransactionRetryPolicy,
   disjointBy: Seq[Expression]
@@ -59,7 +59,7 @@ abstract class AbstractConcurrentTransactionsSlottedPipe(
       inner,
       batchSize,
       concurrency,
-      onErrorBehaviour,
+      recoveryMode,
       retryPolicy,
       disjointBy
     ) {
@@ -84,7 +84,7 @@ case class ConcurrentTransactionApplySlottedPipe(
   inner: Pipe,
   batchSize: Expression,
   concurrency: Option[Expression],
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   nullableSlots: Set[Slot],
   statusSlot: Option[Slot],
   argumentSize: SlotConfiguration.Size,
@@ -96,7 +96,7 @@ case class ConcurrentTransactionApplySlottedPipe(
       inner,
       batchSize,
       concurrency,
-      onErrorBehaviour,
+      recoveryMode,
       statusSlot,
       retryPolicy,
       disjointBy
@@ -142,7 +142,7 @@ case class ConcurrentTransactionForeachSlottedPipe(
   inner: Pipe,
   batchSize: Expression,
   concurrency: Option[Expression],
-  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  recoveryMode: RecoveryMode,
   statusSlot: Option[Slot],
   retryPolicy: TransactionRetryPolicy,
   disjointBy: Seq[Expression]
@@ -152,7 +152,7 @@ case class ConcurrentTransactionForeachSlottedPipe(
       inner,
       batchSize,
       concurrency,
-      onErrorBehaviour,
+      recoveryMode,
       statusSlot,
       retryPolicy,
       disjointBy
