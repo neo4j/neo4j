@@ -1999,6 +1999,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("")
+    public static final Setting<Long> spd_import_entity_encoding_buffer_initial_capacity = newBuilder(
+                    "internal.db.spd_import.entity_encoding_buffer_initial_capacity", BYTES, 10 * 1024L)
+            .build();
+
+    @Internal
     @Description("A setting used only in tests to override the memery limit for batches used during store creation. "
             + "Its purpose is being able to test the code path dealing with oversized nodes "
             + "without creating an IT with huge number of relationships and consuming too much memory.")
