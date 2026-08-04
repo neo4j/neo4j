@@ -2100,9 +2100,9 @@ public class RandomValues {
 
         private ConfigurationRecord {
             // configuration invariants
-            assert stringMinLength <= stringMaxLength;
-            assert arrayMinLength <= arrayMaxLength;
-            assert minCodePoint <= maxCodePoint;
+            assert stringMinLength <= stringMaxLength : stringMinLength + "must be <= " + stringMaxLength;
+            assert arrayMinLength <= arrayMaxLength : arrayMinLength + "must be <= " + arrayMaxLength;
+            assert minCodePoint <= maxCodePoint : minCodePoint + "must be <= " + maxCodePoint;
             if (vectorDimensionChoices != null) {
                 assert vectorDimensionChoices.notEmpty();
                 assert vectorDimensionChoices.getFirst() == minVectorDimensions;

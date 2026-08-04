@@ -60,10 +60,7 @@ class IndexUpdateStorageTest {
     @Test
     void shouldAddZeroEntries() throws IOException {
         int blockSize = 1000;
-        random.withConfiguration(RandomValues.newConfigurationBuilder()
-                        .maxVectorNumBytes(blockSize)
-                        .build())
-                .reset();
+        random.withConfiguration(boundedValueConfiguration(blockSize)).reset();
         // given
         try (IndexUpdateStorage<RangeKey> storage = new IndexUpdateStorage<>(
                 directory.getFileSystem(),
@@ -85,9 +82,7 @@ class IndexUpdateStorageTest {
     void shouldAddFewEntries() throws IOException {
         int blockSize = 1000;
         int numEntries = 5;
-        random.withConfiguration(RandomValues.newConfigurationBuilder()
-                        .maxVectorNumBytes(blockSize / numEntries)
-                        .build())
+        random.withConfiguration(boundedValueConfiguration(blockSize / numEntries))
                 .reset();
         // given
         try (IndexUpdateStorage<RangeKey> storage = new IndexUpdateStorage<>(
@@ -108,11 +103,9 @@ class IndexUpdateStorageTest {
 
     @Test
     void shouldAddManyEntries() throws IOException {
-        int blockSize = 10_000;
+        int blockSize = 50_000;
         int numEntries = 1_000;
-        random.withConfiguration(RandomValues.newConfigurationBuilder()
-                        .maxVectorNumBytes(blockSize / numEntries)
-                        .build())
+        random.withConfiguration(boundedValueConfiguration(blockSize / numEntries))
                 .reset();
         // given
         try (IndexUpdateStorage<RangeKey> storage = new IndexUpdateStorage<>(
@@ -149,6 +142,28 @@ class IndexUpdateStorageTest {
             }
             assertFalse(reader.next());
         }
+    }
+
+    /**
+     * Build a value-generation configuration whose worst-case single value stays within {@code maxValueBytes}.
+     * {@code maxVectorNumBytes} only bounds vector dimensions; string and array lengths must be bounded too,
+     * otherwise a rare seed can generate a string/array value whose encoded index-key entry exceeds the block
+     * buffer and trips the capacity assertion in {@link IndexUpdateStorage}.
+     */
+    private static RandomValues.Configuration boundedValueConfiguration(int maxValueBytes) {
+        // A UTF-8 code point encodes to at most this many bytes, so it is the worst-case cost per string element.
+        int maxBytesPerCodePoint = 4;
+        // Leave headroom for per-entry header bytes and index-key encoding overhead on top of the raw value bytes,
+        // so that the worst-case encoded entry stays within the block buffer, not merely within the raw budget.
+        int rawValueBudget = Math.max(1, maxValueBytes / 2);
+        int stringMaxLength = Math.max(1, rawValueBudget / maxBytesPerCodePoint);
+        // Keep the worst-case array (arrayMaxLength elements each up to stringMaxLength code points) within budget.
+        int arrayMaxLength = Math.max(1, rawValueBudget / (stringMaxLength * maxBytesPerCodePoint));
+        return RandomValues.newConfigurationBuilder()
+                .maxVectorNumBytes(maxValueBytes)
+                .stringLength(0, stringMaxLength)
+                .arrayLength(0, arrayMaxLength)
+                .build();
     }
 
     private List<UpdateInstruction> generateSomeUpdates(int count) {
