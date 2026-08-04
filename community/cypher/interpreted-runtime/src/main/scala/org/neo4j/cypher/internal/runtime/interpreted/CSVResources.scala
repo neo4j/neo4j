@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.common.EntityType
 import org.neo4j.csv.reader.BufferOverflowException
 import org.neo4j.csv.reader.CharSeekers
 import org.neo4j.csv.reader.Configuration
@@ -60,7 +61,8 @@ object CSVResources {
       .newBuilder()
       .withQuotationCharacter(DEFAULT_QUOTE_CHAR)
       .withBufferSize(csvBufferSize)
-      .withLegacyMultilineBehaviour()
+      .withLegacyMultilineBehaviour(EntityType.NODE)
+      .withLegacyMultilineBehaviour(EntityType.RELATIONSHIP)
       .withTrimStrings(false)
       .withEmptyQuotedStringsAsNull(true)
       .withLegacyStyleQuoting(legacyCsvQuoteEscaping)
@@ -123,7 +125,9 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
         throw LoadExternalResourceException.cannotLoadFromUrl(urlString, error)
     }
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
-    val seeker = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping, bufferSize), false)
+    // We always use legacy multiline behavior, so the provided EntityType.NODE will be ignored.
+    val seeker =
+      CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping, bufferSize), false, EntityType.NODE)
     val extractor = new Extractors().textValue()
     val intDelimiter = delimiter.toInt
     val mark = new Mark

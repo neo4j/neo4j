@@ -26,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowableOfType;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.wrap;
-import static org.neo4j.function.Predicates.alwaysFalse;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
 import java.io.IOException;
@@ -39,6 +38,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.common.EntityType;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
@@ -551,10 +551,7 @@ class BufferedCharSeekerTest {
     void shouldFailOnIllegalMultilineException(boolean threadAhead) throws Exception {
         String data = "\"abc\",\"j\nkl\"";
         // We need to disable multiline rows to trigger this exception
-        seeker = seeker(
-                data,
-                Configuration.newBuilder().withMultilineDocuments(alwaysFalse()).build(),
-                threadAhead);
+        seeker = seeker(data, Configuration.newBuilder().build(), threadAhead);
 
         assertNextValue(seeker, mark, COMMA, "abc");
         assertThat(catchThrowableOfType(IllegalMultilineFieldException.class, () -> seeker.seek(mark, COMMA)))
@@ -875,7 +872,7 @@ class BufferedCharSeekerTest {
     }
 
     private static CharSeeker seeker(CharReadable readable, Configuration config, boolean threadAhead) {
-        return charSeeker(readable, config, threadAhead);
+        return charSeeker(readable, config, threadAhead, EntityType.NODE);
     }
 
     private static CharSeeker seeker(String data, boolean threadAhead) {
@@ -904,7 +901,10 @@ class BufferedCharSeekerTest {
     }
 
     private static Configuration withMultilineFields(Configuration config) {
-        return config.toBuilder().withLegacyMultilineBehaviour().build();
+        return config.toBuilder()
+                .withLegacyMultilineBehaviour(EntityType.NODE)
+                .withLegacyMultilineBehaviour(EntityType.RELATIONSHIP)
+                .build();
     }
 
     private static Configuration withLegacyStyleQuoting(Configuration config, boolean legacyStyleQuoting) {

@@ -58,6 +58,7 @@ import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.batchimport.api.input.InputChunk;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
@@ -359,7 +360,8 @@ class CsvInputEstimateCalculationIT {
             Groups groups)
             throws IOException {
         Path file = testDirectory.file(fileName);
-        Header header = factory.create(charSeeker(wrap(headerString), COMMAS, false), COMMAS, IdType.INTEGER, groups);
+        Header header = factory.create(
+                charSeeker(wrap(headerString), COMMAS, false, EntityType.NODE), COMMAS, IdType.INTEGER, groups);
         Deserialization<String> deserialization = new StringDeserialization(COMMAS);
         DataGeneratorInput.DataDistribution dataDistribution = DataGeneratorInput.data(nodeCount, count)
                 .withStartNodeId(start.longValue())

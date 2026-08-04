@@ -97,6 +97,7 @@ import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.batchimport.api.input.PropertySizeCalculator;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
@@ -3614,7 +3615,9 @@ class CsvInputTest {
     private static Configuration config(MultilineSetting setting) {
         var builder = COMMAS.toBuilder();
         builder = switch (setting) {
-            case LEGACY -> builder.withLegacyMultilineBehaviour();
+            case LEGACY ->
+                builder.withLegacyMultilineBehaviour(EntityType.NODE)
+                        .withLegacyMultilineBehaviour(EntityType.RELATIONSHIP);
             case ALLOW -> builder.withMultilineDocuments(Predicates.alwaysTrue());
             case DISALLOW -> builder.withMultilineDocuments(Predicates.alwaysFalse());
         };

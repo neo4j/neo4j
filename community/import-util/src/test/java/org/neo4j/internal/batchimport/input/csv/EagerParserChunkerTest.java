@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.InputEntity;
@@ -64,7 +65,8 @@ class EagerParserChunkerTest {
                 COMMAS,
                 NO_DECORATOR,
                 true,
-                false)) {
+                false,
+                EntityType.NODE)) {
             // when
             var chunk = new EagerCsvInputChunk();
             chunker.nextChunk(chunk);

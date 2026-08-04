@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
@@ -98,7 +99,8 @@ class CsvInputIteratorTest {
                 0,
                 true,
                 false,
-                NO_MONITOR);
+                NO_MONITOR,
+                EntityType.NODE);
     }
 
     private CharReadable readableOverFiles(List<List<String>> data) {

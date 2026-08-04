@@ -58,6 +58,7 @@ import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.batchimport.api.input.PropertySizeCalculator;
 import org.neo4j.batchimport.api.input.ReadableGroups;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Configuration;
@@ -276,13 +277,13 @@ public class CsvInput implements Input {
     @Override
     public InputIterable nodes(Collector badCollector) {
         Preconditions.checkState(hasBeenValidated, "must call validateAndEstimate before calling nodes");
-        return () -> stream(nodeDataFactory, nodeHeaderFactory, badCollector);
+        return () -> stream(nodeDataFactory, nodeHeaderFactory, badCollector, EntityType.NODE);
     }
 
     @Override
     public InputIterable relationships(Collector badCollector) {
         Preconditions.checkState(hasBeenValidated, "must call validateAndEstimate before calling relationships");
-        return () -> stream(relationshipDataFactory, relationshipHeaderFactory, badCollector);
+        return () -> stream(relationshipDataFactory, relationshipHeaderFactory, badCollector, EntityType.RELATIONSHIP);
     }
 
     public Map<Path, Header> headersByPath() {
@@ -297,7 +298,8 @@ public class CsvInput implements Input {
         return config;
     }
 
-    private InputIterator stream(Iterable<DataFactory> data, Header.Factory headerFactory, Collector badCollector) {
+    private InputIterator stream(
+            Iterable<DataFactory> data, Header.Factory headerFactory, Collector badCollector, EntityType entityType) {
         return new CsvGroupInputIterator(
                 data.iterator(),
                 headerFactory,
@@ -307,7 +309,8 @@ public class CsvInput implements Input {
                 groups,
                 autoSkipHeaders,
                 delimitIds,
-                NO_MONITOR);
+                NO_MONITOR,
+                entityType);
     }
 
     @Override
@@ -376,7 +379,8 @@ public class CsvInput implements Input {
                 valueSizeCalculator,
                 node -> node.labels().length,
                 seenSourceFiles,
-                numberOfThreads);
+                numberOfThreads,
+                EntityType.NODE);
 
         final MutableBoolean singleStartEndIdColumnRefersToCompositeId = new MutableBoolean(false);
         final MutableBoolean multipleStartEndIdColumnsRefersToCompositeId = new MutableBoolean(false);
@@ -439,7 +443,8 @@ public class CsvInput implements Input {
                 valueSizeCalculator,
                 entity -> 0,
                 seenSourceFiles,
-                numberOfThreads);
+                numberOfThreads,
+                EntityType.RELATIONSHIP);
 
         this.delimitIds = hasCompositeIdColumns.isTrue() && singleStartEndIdColumnRefersToCompositeId.isFalse();
         this.idType = autoDetectIdType(defaultIdType, cachedNodeHeaders);
@@ -499,7 +504,8 @@ public class CsvInput implements Input {
             PropertySizeCalculator valueSizeCalculator,
             ToIntFunction<InputEntity> additionalCalculator,
             Set<String> seenSourceFiles,
-            int numberOfThreads)
+            int numberOfThreads,
+            EntityType entityType)
             throws IOException {
         Sample sample = new Sample();
         try (ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads)) {
@@ -532,7 +538,13 @@ public class CsvInput implements Input {
                                 // This is the only place we monitor type normalization because it's before import and
                                 // it touches all headers
                                 header = extractHeader(
-                                        source, headerFactory, defaultIdType, sampleConfig, groups, monitor);
+                                        source,
+                                        headerFactory,
+                                        defaultIdType,
+                                        sampleConfig,
+                                        groups,
+                                        monitor,
+                                        entityType);
                                 headerChecker.accept(header, sourceDescription, decorator == NO_DECORATOR);
                             }
                             headersByPath.put(originalFile, header);
@@ -552,7 +564,8 @@ public class CsvInput implements Input {
                                     decorator,
                                     valueSizeCalculator,
                                     additionalCalculator,
-                                    sample);
+                                    sample,
+                                    entityType);
                             return null;
                         }));
                     }
@@ -591,7 +604,8 @@ public class CsvInput implements Input {
             Decorator decorator,
             PropertySizeCalculator valueSizeCalculator,
             ToIntFunction<InputEntity> additionalCalculator,
-            Sample sample)
+            Sample sample,
+            EntityType entityType)
             throws IOException {
         if (!shouldSampleData()) {
             source.close();
@@ -610,7 +624,8 @@ public class CsvInput implements Input {
                         CsvGroupInputIterator.extractors(sampleConfig),
                         groupId,
                         autoSkipHeaders,
-                        false);
+                        false,
+                        entityType);
                 var entity = new InputEntity();
                 var chunk = new CsvInputChunkProxy()) {
             var entities = 0;
@@ -645,7 +660,8 @@ public class CsvInput implements Input {
                 // parse all node headers and remember all ID spaces
                 for (DataFactory dataFactory : nodeDataFactory) {
                     Data data = dataFactory.create(config);
-                    try (CharSeeker dataStream = charSeeker(new MultiReadable(data.stream()), config, false)) {
+                    try (CharSeeker dataStream =
+                            charSeeker(new MultiReadable(data.stream()), config, false, EntityType.NODE)) {
                         // Parsing and constructing this header will create this group,
                         // so no need to do something with the result of it right now
                         cachedNodeHeaders.add(DataFactories.defaultFormatNodeFileHeader()

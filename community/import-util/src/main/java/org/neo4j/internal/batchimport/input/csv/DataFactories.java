@@ -49,6 +49,7 @@ import org.eclipse.collections.api.map.primitive.MutableIntIntMap;
 import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
 import org.neo4j.csv.reader.CharSeeker;
@@ -178,12 +179,16 @@ public class DataFactories {
     }
 
     public static List<String> parseRawHeaderEntries(
-            String sourceDescription, Configuration config, Supplier<ZoneId> defaultTimeZone, char... data)
+            String sourceDescription,
+            Configuration config,
+            Supplier<ZoneId> defaultTimeZone,
+            EntityType entityType,
+            char... data)
             throws IOException {
         var chunk = new ChunkImpl(copyOf(data, data.length + 1));
         chunk.initialize(0, data.length, sourceDescription, 0);
 
-        try (var dataSeeker = CsvInputIterator.seeker(chunk, config)) {
+        try (var dataSeeker = CsvInputIterator.seeker(chunk, config, entityType)) {
             var mark = new Mark();
             var extractors = new Extractors(
                     config.arrayDelimiter(),

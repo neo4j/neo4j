@@ -327,7 +327,8 @@ public class ParquetInput implements Input {
                 boolean fileGroupHasHeader = false;
 
                 for (Path nodeFile : fileGroupPaths) {
-                    if (processPotentialHeaderFile(nodeFile, fileGroupPaths, headerContext)) {
+                    if (processPotentialHeaderFile(
+                            nodeFile, fileGroupPaths, headerContext, org.neo4j.common.EntityType.NODE)) {
                         fileGroupHasHeader = true;
                         continue;
                     }
@@ -479,7 +480,11 @@ public class ParquetInput implements Input {
                 Set<String> mapColumns = new HashSet<>();
                 Set<String> structColumns = new HashSet<>();
                 for (Path relationshipFile : relationshipFileList) {
-                    if (processPotentialHeaderFile(relationshipFile, relationshipFileList, headerContext)) {
+                    if (processPotentialHeaderFile(
+                            relationshipFile,
+                            relationshipFileList,
+                            headerContext,
+                            org.neo4j.common.EntityType.RELATIONSHIP)) {
                         fileGroupHasHeader = true;
                         continue;
                     }
@@ -637,7 +642,11 @@ public class ParquetInput implements Input {
 
     record ParquetColumnMetadataKey(Path path, Collection<String> labelsOrType) {}
 
-    private boolean processPotentialHeaderFile(Path path, List<Path> paths, ParquetInput.HeaderContext headerContext)
+    private boolean processPotentialHeaderFile(
+            Path path,
+            List<Path> paths,
+            ParquetInput.HeaderContext headerContext,
+            org.neo4j.common.EntityType entityType)
             throws IOException {
         if (!isHeaderFile(path)) {
             return false;
@@ -655,6 +664,7 @@ public class ParquetInput implements Input {
                         path.toString(),
                         csvConfig,
                         defaultTimezoneSupplier,
+                        entityType,
                         lines.getFirst().toCharArray());
                 for (int i = 0; i < targetColumnNames.size(); i++) {
                     headerContext.addHeaderDefinition(
@@ -665,11 +675,13 @@ public class ParquetInput implements Input {
                         path.toString(),
                         csvConfig,
                         defaultTimezoneSupplier,
+                        entityType,
                         lines.get(0).toCharArray());
                 var existingParquetColumns = DataFactories.parseRawHeaderEntries(
                         path.toString(),
                         csvConfig,
                         defaultTimezoneSupplier,
+                        entityType,
                         lines.get(1).toCharArray());
                 for (int i = 0; i < targetColumnNames.size(); i++) {
                     if (existingParquetColumns.size() > i) {

@@ -36,6 +36,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.common.EntityType;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -69,7 +70,8 @@ class SourceTraceabilityIT {
                     Race.throwing(() -> {
                         var chunk = chunker.newChunk();
                         while (chunker.nextChunk(chunk)) {
-                            try (var seeker = new BufferedCharSeeker(Source.singleChunk(chunk), configuration)) {
+                            try (var seeker =
+                                    new BufferedCharSeeker(Source.singleChunk(chunk), configuration, EntityType.NODE)) {
                                 var mark = new Mark();
                                 while (true) {
                                     // Here we know that the data format is <lineNumber>,<i>,<some text>

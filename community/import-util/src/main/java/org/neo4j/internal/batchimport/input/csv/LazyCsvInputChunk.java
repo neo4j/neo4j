@@ -26,6 +26,7 @@ import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.batchimport.api.input.InputEntityVisitor;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.Chunker;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
@@ -43,6 +44,7 @@ public class LazyCsvInputChunk implements CsvInputChunk {
     private final Decorator decorator;
     private final Header header;
     private final boolean delimitIds;
+    private final EntityType entityType;
     private final Extractors extractors;
 
     // Set in #fillFrom
@@ -61,7 +63,8 @@ public class LazyCsvInputChunk implements CsvInputChunk {
             Configuration config,
             Decorator decorator,
             Header header,
-            boolean delimitIds) {
+            boolean delimitIds,
+            EntityType entityType) {
         this.idType = idType;
         this.badCollector = badCollector;
         this.extractors = extractors;
@@ -71,6 +74,7 @@ public class LazyCsvInputChunk implements CsvInputChunk {
         this.decorator = decorator;
         this.header = header;
         this.delimitIds = delimitIds;
+        this.entityType = entityType;
     }
 
     @Override
@@ -79,7 +83,13 @@ public class LazyCsvInputChunk implements CsvInputChunk {
             closeCurrentParser();
             this.visitor = null;
             this.parser = new CsvInputParser(
-                    seeker(processingChunk, config), delimiter, idType, header, badCollector, extractors, delimitIds);
+                    seeker(processingChunk, config, entityType),
+                    delimiter,
+                    idType,
+                    header,
+                    badCollector,
+                    extractors,
+                    delimitIds);
             return header.entries().length != 0;
         }
         return false;

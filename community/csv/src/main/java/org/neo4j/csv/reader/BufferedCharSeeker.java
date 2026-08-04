@@ -27,6 +27,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.function.Predicate;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.values.storable.CSVHeaderInformation;
 
@@ -69,10 +70,10 @@ public class BufferedCharSeeker implements CharSeeker {
     private final boolean trim;
     private long lineNumberOffset;
 
-    public BufferedCharSeeker(Source source, Configuration config) {
+    public BufferedCharSeeker(Source source, Configuration config, EntityType entityType) {
         this.source = source;
         this.quoteChar = config.quotationCharacter();
-        this.legacyMultilineFields = config.legacyMultilineFields();
+        this.legacyMultilineFields = config.legacyMultilineFields(entityType);
         this.multilineDocuments = config.multilineDocuments();
         this.legacyStyleQuoting = config.legacyStyleQuoting();
         this.trim = getTrimStringIgnoreErrors(config);

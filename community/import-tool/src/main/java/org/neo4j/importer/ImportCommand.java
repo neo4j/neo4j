@@ -80,6 +80,7 @@ import org.neo4j.cloud.storage.StorageUtils;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Magic;
@@ -972,34 +973,11 @@ public class ImportCommand {
                             "ERROR: Skidbladnir import is only supported for the 'block' format, but '%s' was specified."
                                     .formatted(resolvedDbFormat));
                 }
-                validateSkidbladnirMultilineFields();
                 if (!parseResult.hasMatchedOption("--read-buffer-size")) {
                     // Default is different for Skidbladnir
                     bufferSize = org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR;
                 }
                 rejectCompressedInput(fs);
-            }
-        }
-
-        private void validateSkidbladnirMultilineFields() {
-            if (multilineFieldOptions != null && multilineFieldOptions.multilineFormat == MultilineFormat.V2) {
-                throw new CommandFailedException(
-                        "ERROR: Skidbladnir import is only supported with '%s=v1'.".formatted(MULTILINE_FIELDS_FORMAT));
-            }
-
-            if (!spec.commandLine().getParseResult().hasMatchedOption(MULTILINE_FIELDS)) {
-                // default is true for Skidbladnir
-                if (multilineFieldOptions == null) {
-                    multilineFieldOptions = new MultilineFieldOptions();
-                }
-                multilineFieldOptions.multilineFields = "true";
-            }
-
-            boolean multilineEnabled = multilineFieldOptions != null
-                    && Boolean.TRUE.toString().equalsIgnoreCase(multilineFieldOptions.multilineFields);
-            if (!multilineEnabled) {
-                throw new CommandFailedException(
-                        "ERROR: Skidbladnir import is only supported with '%s=true'.".formatted(MULTILINE_FIELDS));
             }
         }
 
@@ -1269,7 +1247,8 @@ public class ImportCommand {
             return builder.build();
         }
 
-        private org.neo4j.csv.reader.Configuration csvConfiguration(SchemeFileSystemAbstraction fs) {
+        @VisibleForTesting
+        org.neo4j.csv.reader.Configuration csvConfiguration(SchemeFileSystemAbstraction fs) {
             final var builder = DEFAULT_CSV_CONFIG.toBuilder()
                     .withDelimiter(delimiter)
                     .withArrayDelimiter(arrayDelimiter)
@@ -1280,12 +1259,19 @@ public class ImportCommand {
                     .withLegacyStyleQuoting(legacyStyleQuoting)
                     .withBufferSize(toIntExact(bufferSize));
 
+            if (isSkidbladnir()) {
+                // We use the legacy multiline behaviour only for the nodes (and there the old parser is only used
+                // for validateAndEstimate). The relationships use the old parser, and use the user provided values for
+                // --multiline-fields and --multiline-fields-format.
+                builder.withLegacyMultilineBehaviour(EntityType.NODE);
+            }
             if (multilineFieldOptions != null) {
                 final var multilineFields = multilineFieldOptions.multilineFields;
                 switch (multilineFieldOptions.multilineFormat) {
                     case V1 -> {
                         if (Boolean.TRUE.toString().equalsIgnoreCase(multilineFields)) {
-                            builder.withLegacyMultilineBehaviour();
+                            builder.withLegacyMultilineBehaviour(EntityType.NODE)
+                                    .withLegacyMultilineBehaviour(EntityType.RELATIONSHIP);
                         } else if (!Boolean.FALSE.toString().equalsIgnoreCase(multilineFields)) {
                             throw new IllegalArgumentException(
                                     "Illegal format for %s when using the v1 format - must be either true or false"

@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.InputEntityVisitor;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.AutoReadingSource;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
@@ -57,7 +58,8 @@ public class EagerParserChunker implements Chunker {
             Configuration config,
             Decorator decorator,
             boolean autoSkipHeaders,
-            boolean delimitIds) {
+            boolean delimitIds,
+            EntityType entityType) {
         this.chunkSize = chunkSize;
         this.decorator = decorator;
         this.seeker = charSeeker(
@@ -65,8 +67,9 @@ public class EagerParserChunker implements Chunker {
                 config,
                 true,
                 (r, c) -> autoSkipHeaders
-                        ? new AutoSkipHeaderSource(r, c, idType, header)
-                        : new AutoReadingSource(r, c.bufferSize()));
+                        ? new AutoSkipHeaderSource(r, c, idType, header, entityType)
+                        : new AutoReadingSource(r, c.bufferSize()),
+                entityType);
         this.parser =
                 new CsvInputParser(seeker, config.delimiter(), idType, header, badCollector, extractors, delimitIds);
     }
@@ -108,10 +111,11 @@ public class EagerParserChunker implements Chunker {
         private String sourceDescription;
         private long lineNumberOffset;
 
-        public AutoSkipHeaderSource(CharReadable reader, Configuration configuration, IdType idType, Header header) {
+        public AutoSkipHeaderSource(
+                CharReadable reader, Configuration configuration, IdType idType, Header header, EntityType entityType) {
             this.reader = reader;
             this.charBuffer = new SectionedCharBuffer(configuration.bufferSize());
-            this.headerSkipper = CsvInputIterator.headerSkip(header, true, configuration, idType);
+            this.headerSkipper = CsvInputIterator.headerSkip(header, true, configuration, idType, entityType);
         }
 
         @Override

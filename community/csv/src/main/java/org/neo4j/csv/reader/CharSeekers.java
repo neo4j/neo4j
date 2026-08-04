@@ -23,6 +23,7 @@ import static org.neo4j.csv.reader.ThreadAheadReadable.threadAhead;
 
 import java.io.FileReader;
 import java.util.function.BiFunction;
+import org.neo4j.common.EntityType;
 
 /**
  * Factory for common {@link CharSeeker} implementations.
@@ -31,11 +32,12 @@ public final class CharSeekers {
     private CharSeekers() {}
 
     /**
-     * @see #charSeeker(CharReadable, Configuration, boolean, BiFunction) where the {@link Source}
+     * @see #charSeeker(CharReadable, Configuration, boolean, BiFunction, EntityType) where the {@link Source}
      * is {@link AutoReadingSource}.
      */
-    public static CharSeeker charSeeker(CharReadable reader, Configuration config, boolean readAhead) {
-        return charSeeker(reader, config, readAhead, (r, c) -> new AutoReadingSource(r, c.bufferSize()));
+    public static CharSeeker charSeeker(
+            CharReadable reader, Configuration config, boolean readAhead, EntityType entityType) {
+        return charSeeker(reader, config, readAhead, (r, c) -> new AutoReadingSource(r, c.bufferSize()), entityType);
     }
 
     /**
@@ -53,13 +55,14 @@ public final class CharSeekers {
             CharReadable reader,
             Configuration config,
             boolean readAhead,
-            BiFunction<CharReadable, Configuration, Source> sourceFactory) {
+            BiFunction<CharReadable, Configuration, Source> sourceFactory,
+            EntityType entityType) {
         if (readAhead) { // Thread that always has one buffer read ahead
             reader = threadAhead(reader, config.bufferSize());
         }
 
         // Give the reader to the char seeker
-        return new BufferedCharSeeker(sourceFactory.apply(reader, config), config);
+        return new BufferedCharSeeker(sourceFactory.apply(reader, config), config, entityType);
     }
 
     /**
@@ -74,11 +77,15 @@ public final class CharSeekers {
      * @return a {@link CharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
      */
     public static CharSeeker charSeeker(
-            CharReadable reader, final int bufferSize, boolean readAhead, final char quotationCharacter) {
+            CharReadable reader,
+            final int bufferSize,
+            boolean readAhead,
+            final char quotationCharacter,
+            EntityType entityType) {
         final var config = Configuration.newBuilder()
                 .withQuotationCharacter(quotationCharacter)
                 .withBufferSize(bufferSize)
                 .build();
-        return charSeeker(reader, config, readAhead);
+        return charSeeker(reader, config, readAhead, entityType);
     }
 }

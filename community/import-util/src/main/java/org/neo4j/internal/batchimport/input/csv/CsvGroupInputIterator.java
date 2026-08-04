@@ -26,6 +26,7 @@ import org.neo4j.batchimport.api.InputIterator;
 import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.InputChunk;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.MultiReadable;
@@ -45,6 +46,7 @@ public class CsvGroupInputIterator implements InputIterator {
     private final boolean autoSkipHeaders;
     private final boolean delimitIds;
     private final Monitor monitor;
+    private final EntityType entityType;
     private CsvInputIterator current;
     private int groupId;
 
@@ -57,7 +59,8 @@ public class CsvGroupInputIterator implements InputIterator {
             Groups groups,
             boolean autoSkipHeaders,
             boolean delimitIds,
-            Monitor monitor) {
+            Monitor monitor,
+            EntityType entityType) {
         this.source = source;
         this.headerFactory = headerFactory;
         this.idType = idType;
@@ -67,6 +70,7 @@ public class CsvGroupInputIterator implements InputIterator {
         this.autoSkipHeaders = autoSkipHeaders;
         this.delimitIds = delimitIds;
         this.monitor = monitor;
+        this.entityType = entityType;
     }
 
     @Override
@@ -98,7 +102,8 @@ public class CsvGroupInputIterator implements InputIterator {
                         groupId++,
                         autoSkipHeaders,
                         delimitIds,
-                        monitor);
+                        monitor,
+                        entityType);
             }
 
             if (current.next((CsvInputChunkProxy) chunk)) {

@@ -39,6 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Configuration;
@@ -80,6 +81,7 @@ class DataFactoriesTest {
                 "",
                 config,
                 () -> ZoneOffset.UTC,
+                EntityType.NODE,
                 String.join(commasOrTabs ? "," : "\t", headers).toCharArray());
         assertThat(rawHeaders).containsExactlyElementsOf(headers);
     }
@@ -294,7 +296,8 @@ class DataFactoriesTest {
         Extractors extractors = new Extractors();
 
         // WHEN
-        CharSeeker seeker = CharSeekers.charSeeker(new MultiReadable(dataFactory.create(TABS).stream()), TABS, false);
+        CharSeeker seeker = CharSeekers.charSeeker(
+                new MultiReadable(dataFactory.create(TABS).stream()), TABS, false, EntityType.NODE);
         Header header = headerFactory.create(seeker, TABS, IdType.ACTUAL, groups);
 
         // THEN
@@ -646,7 +649,7 @@ class DataFactoriesTest {
             Configuration.TABS.toBuilder().withBufferSize(1000).build();
 
     private static CharSeeker seeker(String data) {
-        return CharSeekers.charSeeker(wrap(data), SEEKER_CONFIG, false);
+        return CharSeekers.charSeeker(wrap(data), SEEKER_CONFIG, false, EntityType.NODE);
     }
 
     private Path writeFile(String name, String content) throws IOException {

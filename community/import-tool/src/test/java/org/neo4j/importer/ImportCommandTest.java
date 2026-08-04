@@ -45,6 +45,7 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ContextInjectingFactory;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.importer.ImportCommand.InputFilesGroup;
@@ -244,58 +245,66 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldAcceptSkidbladnirWithoutMultilineFieldsAndDefaultToTrue() {
+    void shouldAcceptSkidbladnirWithoutMultilineFieldsAndUseLegacyForNodesButNotForRelationships() {
         var nodes = testDir.createFile("nodes.csv");
         var command = new ImportCommand.Full(getExecutionContext());
 
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
 
-        // then - should not throw
-        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
-        // and multiline-fields should be true
-        assertThat(command.multilineFieldOptions().multilineFields()).isEqualToIgnoringCase(Boolean.TRUE.toString());
+        var csvConfig = command.csvConfiguration(new SchemeFileSystemAbstraction(testDir.getFileSystem()));
+        // and multiline-fields should be true for nodes, but not for relationships
+        assertThat(csvConfig.legacyMultilineFields(EntityType.NODE)).isTrue();
+        assertThat(csvConfig.legacyMultilineFields(EntityType.RELATIONSHIP)).isFalse();
     }
 
     @Test
-    void shouldRejectSkidbladnirWithMultilineFieldsFalse() {
+    void shouldAcceptSkidbladnirWithMultilineFieldsFalseAndUseLegacyForNodesButNotForRelationships() {
         var nodes = testDir.createFile("nodes.csv");
         var command = new ImportCommand.Full(getExecutionContext());
 
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir", "--multiline-fields=false");
 
-        assertThatThrownBy(() -> command.importConfigurationValidation(
-                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
-                .isInstanceOf(CommandFailedException.class)
-                .hasMessageContaining("--multiline-fields=true");
+        var csvConfig = command.csvConfiguration(new SchemeFileSystemAbstraction(testDir.getFileSystem()));
+        // and multiline-fields should be true for nodes, but not for relationships
+        assertThat(csvConfig.legacyMultilineFields(EntityType.NODE)).isTrue();
+        assertThat(csvConfig.legacyMultilineFields(EntityType.RELATIONSHIP)).isFalse();
     }
 
     @Test
-    void shouldRejectSkidbladnirWithMultilineFieldsFormatV2() {
-        var nodes = testDir.createFile("nodes.csv");
-        var command = new ImportCommand.Full(getExecutionContext());
-
-        CommandLine.populateCommand(
-                command,
-                "--nodes=" + nodes,
-                "--skidbladnir",
-                "--multiline-fields=" + nodes,
-                "--multiline-fields-format=v2");
-
-        assertThatThrownBy(() -> command.importConfigurationValidation(
-                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
-                .isInstanceOf(CommandFailedException.class)
-                .hasMessageContaining("--multiline-fields-format=v1");
-    }
-
-    @Test
-    void shouldAcceptSkidbladnirWithMultilineFieldsTrue() {
+    void shouldAcceptSkidbladnirWithMultilineFieldsTrueAndUseLegacyForNodesAndForRelationships() {
         var nodes = testDir.createFile("nodes.csv");
         var command = new ImportCommand.Full(getExecutionContext());
 
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir", "--multiline-fields=true");
 
-        // then - should not throw
-        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        var csvConfig = command.csvConfiguration(new SchemeFileSystemAbstraction(testDir.getFileSystem()));
+        // and multiline-fields should be true for nodes and relationships
+        assertThat(csvConfig.legacyMultilineFields(EntityType.NODE)).isTrue();
+        assertThat(csvConfig.legacyMultilineFields(EntityType.RELATIONSHIP)).isTrue();
+    }
+
+    @Test
+    void shouldAcceptSkidbladnirWithMultilineFieldsFormatV2AndUseLegacyForNodesAndV2ForRelationships() {
+        var nodes = testDir.createFile("nodes.csv");
+        var rels1 = testDir.createFile("rels1.csv");
+        var rels2 = testDir.createFile("rels2.csv");
+        var command = new ImportCommand.Full(getExecutionContext());
+
+        CommandLine.populateCommand(
+                command,
+                "--nodes=" + nodes,
+                "--relationships=" + rels1,
+                "--relationships=" + rels2,
+                "--skidbladnir",
+                "--multiline-fields-format=v2",
+                "--multiline-fields=" + rels1);
+
+        var csvConfig = command.csvConfiguration(new SchemeFileSystemAbstraction(testDir.getFileSystem()));
+        assertThat(csvConfig.legacyMultilineFields(EntityType.NODE)).isTrue();
+        assertThat(csvConfig.legacyMultilineFields(EntityType.RELATIONSHIP)).isFalse();
+        assertThat(csvConfig.multilineDocuments().test(nodes.toString())).isFalse();
+        assertThat(csvConfig.multilineDocuments().test(rels1.toString())).isTrue();
+        assertThat(csvConfig.multilineDocuments().test(rels2.toString())).isFalse();
     }
 
     @Test

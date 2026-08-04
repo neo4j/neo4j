@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.common.EntityType;
 
 class MultiReadableTest {
     private static final Configuration CONFIG =
@@ -42,7 +43,7 @@ class MultiReadableTest {
             {"and here comes", "the third line"}
         };
         RawIterator<CharReadable, IOException> readers = readerIteratorFromStrings(data, null);
-        CharSeeker seeker = CharSeekers.charSeeker(new MultiReadable(readers), CONFIG, true);
+        CharSeeker seeker = CharSeekers.charSeeker(new MultiReadable(readers), CONFIG, true, EntityType.NODE);
 
         // WHEN/THEN
         for (String[] line : data) {
@@ -62,7 +63,7 @@ class MultiReadableTest {
 
         // WHEN
         RawIterator<CharReadable, IOException> readers = readerIteratorFromStrings(data, '\n');
-        CharSeeker seeker = CharSeekers.charSeeker(new MultiReadable(readers), CONFIG, true);
+        CharSeeker seeker = CharSeekers.charSeeker(new MultiReadable(readers), CONFIG, true, EntityType.NODE);
 
         // WHEN/THEN
         for (String[] line : data) {

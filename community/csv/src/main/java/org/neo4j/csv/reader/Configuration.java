@@ -23,6 +23,7 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
 import java.util.function.Predicate;
+import org.neo4j.common.EntityType;
 import org.neo4j.function.Predicates;
 
 /**
@@ -51,7 +52,8 @@ public class Configuration {
     private final char vectorDelimiter;
     private final int bufferSize;
     private final Predicate<String> multilineDocuments;
-    private final boolean legacyMultilineFields;
+    private final boolean legacyMultilineFieldsForNodes;
+    private final boolean legacyMultilineFieldsForRelationships;
     private final boolean trimStrings;
     private final boolean emptyQuotedStringsAsNull;
     private final boolean legacyStyleQuoting;
@@ -64,7 +66,8 @@ public class Configuration {
         this.vectorDelimiter = b.vectorDelimiter;
         this.bufferSize = b.bufferSize;
         this.multilineDocuments = b.multilineDocuments;
-        this.legacyMultilineFields = b.legacyMultilineFields;
+        this.legacyMultilineFieldsForNodes = b.legacyMultilineFieldsForNodes;
+        this.legacyMultilineFieldsForRelationships = b.legacyMultilineFieldsForRelationships;
         this.trimStrings = b.trimStrings;
         this.emptyQuotedStringsAsNull = b.emptyQuotedStringsAsNull;
         this.legacyStyleQuoting = b.legacyStyleQuoting;
@@ -132,8 +135,11 @@ public class Configuration {
      * Whether or not fields are allowed to have newline characters in them, i.e. span multiple lines. This is applied to
      * all source documents, irrespective of whether the source in question has any multiline fields ot not.
      */
-    public boolean legacyMultilineFields() {
-        return legacyMultilineFields;
+    public boolean legacyMultilineFields(EntityType entityType) {
+        return switch (entityType) {
+            case NODE -> legacyMultilineFieldsForNodes;
+            case RELATIONSHIP -> legacyMultilineFieldsForRelationships;
+        };
     }
 
     /**
@@ -155,8 +161,10 @@ public class Configuration {
                 + quotationCharacter
                 + " bufferSize="
                 + bufferSize
-                + " legacyMultilineFields="
-                + legacyMultilineFields
+                + " legacyMultilineFieldsForNodes="
+                + legacyMultilineFieldsForNodes
+                + " legacyMultilineFieldsForRelationships="
+                + legacyMultilineFieldsForRelationships
                 + " trimStrings="
                 + trimStrings
                 + " emptyQuotedStringsAsNull="
@@ -178,12 +186,17 @@ public class Configuration {
                 .withTrimStrings(trimStrings)
                 .withEmptyQuotedStringsAsNull(emptyQuotedStringsAsNull)
                 .withLegacyStyleQuoting(legacyStyleQuoting)
-                .withReadIsForSampling(readIsForSampling);
-        if (legacyMultilineFields) {
-            return builder.withLegacyMultilineBehaviour();
-        } else {
-            return builder.withMultilineDocuments(multilineDocuments);
+                .withReadIsForSampling(readIsForSampling)
+                .withMultilineDocuments(multilineDocuments);
+
+        if (legacyMultilineFieldsForNodes) {
+            builder.withLegacyMultilineBehaviour(EntityType.NODE);
         }
+        if (legacyMultilineFieldsForRelationships) {
+            builder.withLegacyMultilineBehaviour(EntityType.RELATIONSHIP);
+        }
+
+        return builder;
     }
 
     public static Builder newBuilder() {
@@ -198,7 +211,8 @@ public class Configuration {
         private char arrayDelimiter = ';';
         private char vectorDelimiter = ';';
         private int bufferSize = (int) mebiBytes(4);
-        private boolean legacyMultilineFields;
+        private boolean legacyMultilineFieldsForNodes;
+        private boolean legacyMultilineFieldsForRelationships;
         private Predicate<String> multilineDocuments = Predicates.alwaysFalse();
         private boolean trimStrings;
         private boolean emptyQuotedStringsAsNull;
@@ -230,14 +244,15 @@ public class Configuration {
             return this;
         }
 
-        public Builder withLegacyMultilineBehaviour() {
-            this.legacyMultilineFields = true;
-            this.multilineDocuments = Predicates.alwaysFalse();
+        public Builder withLegacyMultilineBehaviour(EntityType entityType) {
+            switch (entityType) {
+                case NODE -> this.legacyMultilineFieldsForNodes = true;
+                case RELATIONSHIP -> this.legacyMultilineFieldsForRelationships = true;
+            }
             return this;
         }
 
         public Builder withMultilineDocuments(Predicate<String> multilineDocuments) {
-            this.legacyMultilineFields = false;
             this.multilineDocuments = multilineDocuments;
             return this;
         }
