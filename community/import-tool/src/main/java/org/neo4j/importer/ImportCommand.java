@@ -152,6 +152,8 @@ public class ImportCommand {
         protected static final String SKIP_BAD_RELATIONSHIPS_OPTION = "--skip-bad-relationships";
         protected static final String SKIP_DUPLICATE_NODES_OPTION = "--skip-duplicate-nodes";
 
+        private static final Set<String> BLOCK_FORMATS = Set.of("block", "multiversion_block");
+
         /**
          * Options that may be passed alongside {@value #RESUME_OPTION}, overriding what the attempt being resumed
          * used. Everything else is taken from that attempt, see {@link #rerunFromPreviousAttempt()}.
@@ -946,10 +948,9 @@ public class ImportCommand {
                         spec.commandLine(), "Delimiter must be a single byte character (In UTF-8)");
             }
 
-            if ("block".equals(resolvedDbFormat) && highIo != OnOffAuto.AUTO) {
-                throw new CommandFailedException(
-                        "ERROR: '--high-parallel-io=%s' is not supported for the 'block' format."
-                                .formatted(highIo.name().toLowerCase(Locale.ROOT)));
+            if (BLOCK_FORMATS.contains(resolvedDbFormat) && highIo != OnOffAuto.AUTO) {
+                throw new CommandFailedException("ERROR: '--high-parallel-io=%s' is not supported for the '%s' format."
+                        .formatted(highIo.name().toLowerCase(Locale.ROOT), resolvedDbFormat));
             }
             CommandLine.ParseResult parseResult = spec.commandLine().getParseResult();
             if (isSkidbladnir()) {
@@ -968,7 +969,7 @@ public class ImportCommand {
                     throw new CommandFailedException(
                             "ERROR: Skidbladnir import is not supported with '--id-type=actual'.");
                 }
-                if (!"block".equals(resolvedDbFormat)) {
+                if (!BLOCK_FORMATS.contains(resolvedDbFormat)) {
                     throw new CommandFailedException(
                             "ERROR: Skidbladnir import is only supported for the 'block' format, but '%s' was specified."
                                     .formatted(resolvedDbFormat));

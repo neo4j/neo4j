@@ -95,7 +95,7 @@ final class StorageFormatTestCondition implements ExecutionCondition {
     static String getRegex(StorageFormat storageFormat) {
         return switch (storageFormat) {
             case ALIGNED -> "aligned";
-            case BLOCK -> "(:?multiversion_)?block";
+            case BLOCK -> "(?:multiversion_)?block";
             case SPD -> "spd";
         };
     }

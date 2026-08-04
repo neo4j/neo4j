@@ -307,6 +307,48 @@ class ImportCommandTest {
         assertThat(csvConfig.multilineDocuments().test(rels2.toString())).isFalse();
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"block", "multiversion_block"})
+    void shouldAcceptSkidbladnirForBlockFormats(String dbFormat) {
+        var nodes = testDir.createFile("nodes.csv");
+        var command = new ImportCommand.Full(getExecutionContext());
+
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
+
+        // then - should not throw
+        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), dbFormat);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"aligned", "standard", "high_limit"})
+    void shouldRejectSkidbladnirForNonBlockFormats(String dbFormat) {
+        var nodes = testDir.createFile("nodes.csv");
+        var command = new ImportCommand.Full(getExecutionContext());
+
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
+
+        assertThatThrownBy(() -> command.importConfigurationValidation(
+                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), dbFormat))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Skidbladnir import is only supported for the 'block' format, "
+                        + "but '%s' was specified.".formatted(dbFormat));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"block", "multiversion_block"})
+    void shouldRejectHighParallelIoForBlockFormats(String dbFormat) {
+        var nodes = testDir.createFile("nodes.csv");
+        var command = new ImportCommand.Full(getExecutionContext());
+
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--high-parallel-io=on");
+
+        assertThatThrownBy(() -> command.importConfigurationValidation(
+                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), dbFormat))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining(
+                        "'--high-parallel-io=on' is not supported for the '%s' format.".formatted(dbFormat));
+    }
+
     @Test
     void bufferSizeDefaultIsOverwrittenForSkidbladnir() {
         var nodes = testDir.createFile("nodes.csv");
