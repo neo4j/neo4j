@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.filename.SequentialFileNameHelper;
+import org.neo4j.kernel.impl.transaction.log.LogTracers;
 import org.neo4j.kernel.impl.transaction.log.StoreChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneThreshold;
 import org.neo4j.logging.InternalLogProvider;
@@ -53,6 +54,22 @@ public class EnvelopeLogFilesFactory {
         this.pruneThreshold = pruneThreshold;
         this.storeChannelNativeAccessor = storeChannelNativeAccessor;
         this.logProvider = logProvider;
+    }
+
+    public EnvelopedLogFiles createWithoutCache(
+            SequentialFileNameHelper fileNameHelper, LogHeaderFactory logHeaderFactory) {
+        return new EnvelopedLogFiles(
+                new LogsRepository(fileSystem, fileNameHelper),
+                logHeaderFactory,
+                defaultLogSegmentSize,
+                writeBufferBlocks,
+                segments,
+                memoryTracker,
+                pruneThreshold,
+                storeChannelNativeAccessor,
+                logProvider,
+                LogTracers.NULL,
+                EnvelopedLogHeaderCache.NULL);
     }
 
     public EnvelopedLogFiles create(SequentialFileNameHelper fileNameHelper, LogHeaderFactory logHeaderFactory) {

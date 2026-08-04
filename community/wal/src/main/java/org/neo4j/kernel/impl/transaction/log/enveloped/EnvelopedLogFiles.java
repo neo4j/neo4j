@@ -79,6 +79,32 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             ChannelNativeAccessor channelNativeAccessor,
             InternalLogProvider logProvider,
             LogTracers logTracers) {
+        this(
+                logsRepository,
+                logHeaderFactory,
+                segmentBlockSize,
+                writerBufferedBlocks,
+                totalSegments,
+                memoryTracker,
+                pruneThreshold,
+                channelNativeAccessor,
+                logProvider,
+                logTracers,
+                new EnvelopedLogHeaderCacheImpl());
+    }
+
+    public EnvelopedLogFiles(
+            LogsRepository logsRepository,
+            LogHeaderFactory logHeaderFactory,
+            int segmentBlockSize,
+            int writerBufferedBlocks,
+            int totalSegments,
+            MemoryTracker memoryTracker,
+            LogPruneThreshold pruneThreshold,
+            ChannelNativeAccessor channelNativeAccessor,
+            InternalLogProvider logProvider,
+            LogTracers logTracers,
+            EnvelopedLogHeaderCache logHeaderCache) {
         if (totalSegments < MINIMUM_SEGMENTS) {
             throw new IllegalArgumentException(
                     String.format("Must have at least %d segments. Got %d", MINIMUM_SEGMENTS, totalSegments));
@@ -86,7 +112,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         this.channelNativeAccessor = channelNativeAccessor;
         this.logHeaderFactory = logHeaderFactory;
         this.logsRepository = logsRepository;
-        this.logHeaderCache = new EnvelopedLogHeaderCache();
+        this.logHeaderCache = logHeaderCache;
         this.segmentBlockSize = segmentBlockSize;
         this.writerBufferedBlocks = writerBufferedBlocks;
         this.memoryTracker = memoryTracker;
@@ -118,7 +144,8 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 pruneThreshold,
                 channelNativeAccessor,
                 logProvider,
-                LogTracers.NULL); // TODO MERGELOGS LogTracers currently only used in tests
+                LogTracers.NULL, // TODO MERGELOGS LogTracers currently only used in tests
+                new EnvelopedLogHeaderCacheImpl());
     }
 
     public EnvelopeWriteChannel currentWriteChannel() {

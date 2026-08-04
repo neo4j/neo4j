@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.storageengine.api.StoreIdentifier;
 
-class EnvelopedLogHeaderCacheTest {
+class EnvelopedLogHeaderCacheImplTest {
 
     private static final int SEGMENT_BLOCK_SIZE = 512;
 
@@ -51,13 +51,13 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void newCacheShouldBeEmpty() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         assertThat(cache.isEmpty()).isTrue();
     }
 
     @Test
     void shouldCacheFirstHeader() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h = header(7, 100);
 
         cache.cache(h);
@@ -68,7 +68,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void shouldAppendContiguousHeaders() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h0 = header(0, 10);
         var h1 = header(1, 20);
         var h2 = header(2, 30);
@@ -84,7 +84,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void shouldPrependContiguousHeader() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h5 = header(5, 50);
         var h4 = header(4, 40);
         var h3 = header(3, 30);
@@ -100,7 +100,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void shouldReplaceExistingHeaderInsideRange() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h0 = header(0, 10);
         var h1 = header(1, 20);
         var h2 = header(2, 30);
@@ -118,7 +118,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void shouldThrowForVersionBelowRange() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(5, 50));
         cache.cache(header(6, 60));
 
@@ -129,7 +129,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void shouldThrowForVersionAboveRange() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(5, 50));
         cache.cache(header(6, 60));
 
@@ -140,13 +140,13 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void cacheShouldRejectNull() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         assertThatThrownBy(() -> cache.cache(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void shouldThrowOnGapAfterEnd() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
 
@@ -157,7 +157,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void shouldThrowOnGapBeforeStartWhenContiguousEnforced() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(5, 50));
         cache.cache(header(6, 60));
 
@@ -168,7 +168,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void clearShouldEmptyTheCache() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
 
@@ -180,21 +180,21 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void clearShouldBeIdempotentOnEmptyCache() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.clear();
         assertThat(cache.isEmpty()).isTrue();
     }
 
     @Test
     void deleteToShouldBeNoOpOnEmptyCache() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.deleteTo(10);
         assertThat(cache.isEmpty()).isTrue();
     }
 
     @Test
     void deleteToShouldBeNoOpWhenVersionBelowRange() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h3 = header(3, 30);
         var h4 = header(4, 40);
         cache.cache(h3);
@@ -208,7 +208,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void deleteToShouldRemoveUpToAndIncludingGivenVersion() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h0 = header(0, 10);
         var h1 = header(1, 20);
         var h2 = header(2, 30);
@@ -232,7 +232,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void deleteToShouldClearAllWhenVersionAtLastEntry() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
         cache.cache(header(2, 30));
@@ -244,7 +244,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void deleteToShouldClearAllWhenVersionBeyondRange() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
 
@@ -255,14 +255,14 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void deleteFromShouldBeNoOpOnEmptyCache() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.deleteFrom(10);
         assertThat(cache.isEmpty()).isTrue();
     }
 
     @Test
     void deleteFromShouldClearAllWhenVersionAtOrBelowFirst() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(5, 50));
         cache.cache(header(6, 60));
 
@@ -273,7 +273,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void deleteFromShouldRemoveFromGivenVersionOnwards() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h0 = header(0, 10);
         var h1 = header(1, 20);
         var h2 = header(2, 30);
@@ -297,7 +297,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void deleteFromShouldBeNoOpWhenVersionBeyondRange() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h0 = header(0, 10);
         var h1 = header(1, 20);
         cache.cache(h0);
@@ -311,7 +311,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void shouldAllowReuseAfterClearWithDifferentStartingVersion() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
         cache.clear();
@@ -327,7 +327,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void binarySearchReaderShouldExposeSnapshotOfCurrentHeaders() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h0 = header(0, 10);
         var h1 = header(1, 20);
         var h2 = header(2, 30);
@@ -345,7 +345,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void binarySearchReaderShouldBeIsolatedFromLaterCacheMutations() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
         var reader = cache.binarySearchReader();
@@ -360,7 +360,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void binarySearchReaderCompareShouldReturnNegativeWhenLastAppendIndexBelowTarget() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
 
@@ -371,7 +371,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void binarySearchReaderCompareShouldReturnPositiveWhenLastAppendIndexAtOrAboveTarget() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
 
@@ -383,7 +383,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void binarySearchReaderCompareShouldReturnPositiveForUnknownVersion() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
 
@@ -394,13 +394,13 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void getFirstShouldReturnEmptyWhenCacheIsEmpty() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         assertThat(cache.getFirst()).isEqualTo(Optional.empty());
     }
 
     @Test
     void getFirstShouldReturnSingleHeader() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h = header(7, 70);
         cache.cache(h);
 
@@ -409,7 +409,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void getFirstShouldReturnLowestVersionedHeader() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h3 = header(3, 30);
         var h4 = header(4, 40);
         var h5 = header(5, 50);
@@ -422,7 +422,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void getFirstShouldReflectDeleteTo() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
         var h2 = header(2, 30);
@@ -435,7 +435,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void getFirstShouldReturnEmptyAfterClear() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
 
@@ -446,13 +446,13 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void getLastShouldReturnEmptyWhenCacheIsEmpty() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         assertThat(cache.getLast()).isEqualTo(Optional.empty());
     }
 
     @Test
     void getLastShouldReturnSingleHeader() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h = header(7, 70);
         cache.cache(h);
 
@@ -461,7 +461,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void getLastShouldReturnHighestVersionedHeader() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h3 = header(3, 30);
         var h4 = header(4, 40);
         var h5 = header(5, 50);
@@ -474,7 +474,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void getLastShouldReflectDeleteFrom() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h0 = header(0, 10);
         cache.cache(h0);
         cache.cache(header(1, 20));
@@ -487,7 +487,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void getLastShouldReturnEmptyAfterClear() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
 
@@ -498,7 +498,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void getFirstAndLastShouldReturnSameHeaderForSingleEntryCache() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h = header(42, 420);
         cache.cache(h);
 
@@ -508,13 +508,13 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void logVersionsRangeShouldBeEmptyRangeWhenCacheIsEmpty() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         assertThat(cache.logVersionsRange()).isEqualTo(LongRange.EMPTY_RANGE);
     }
 
     @Test
     void logVersionsRangeShouldCoverSingleEntry() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(5, 50));
 
         assertThat(cache.logVersionsRange()).isEqualTo(LongRange.range(5, 5));
@@ -522,7 +522,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void logVersionsRangeShouldSpanFromLowestToHighestVersion() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(3, 30));
         cache.cache(header(4, 40));
         cache.cache(header(5, 50));
@@ -532,7 +532,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void logVersionsRangeShouldUpdateAfterPrepend() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(5, 50));
         cache.cache(header(4, 40));
         cache.cache(header(3, 30));
@@ -542,7 +542,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void logVersionsRangeShouldUpdateAfterDeleteTo() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
         cache.cache(header(2, 30));
@@ -555,7 +555,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void logVersionsRangeShouldUpdateAfterDeleteFrom() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
         cache.cache(header(2, 30));
@@ -568,7 +568,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void logVersionsRangeShouldBeEmptyRangeAfterClear() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
 
@@ -579,7 +579,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void forEachLogHeaderShouldNotInvokeConsumerWhenCacheIsEmpty() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var collected = new ArrayList<LogHeader>();
 
         cache.forEachLogHeader(collected::add);
@@ -589,7 +589,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void forEachLogHeaderShouldVisitHeadersInVersionOrder() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h0 = header(0, 10);
         var h1 = header(1, 20);
         var h2 = header(2, 30);
@@ -605,7 +605,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void forEachLogHeaderShouldVisitReplacedHeader() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h0 = header(0, 10);
         var h1 = header(1, 20);
         var h2 = header(2, 30);
@@ -624,7 +624,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void forEachLogHeaderShouldReflectDeletions() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         var h0 = header(0, 10);
         var h1 = header(1, 20);
         var h2 = header(2, 30);
@@ -645,7 +645,7 @@ class EnvelopedLogHeaderCacheTest {
 
     @Test
     void forEachLogHeaderShouldVisitNothingAfterClear() {
-        var cache = new EnvelopedLogHeaderCache();
+        var cache = new EnvelopedLogHeaderCacheImpl();
         cache.cache(header(0, 10));
         cache.cache(header(1, 20));
         cache.clear();

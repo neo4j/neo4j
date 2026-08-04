@@ -48,13 +48,13 @@ class LogFilesMetadataTest {
     TestDirectory testDirectory;
 
     LogsRepository logsRepository;
-    EnvelopedLogHeaderCache logHeaderCache;
+    EnvelopedLogHeaderCacheImpl logHeaderCache;
 
     @BeforeEach
     void setUp() {
         var baseFile = testDirectory.directory("logsFolder");
         logsRepository = new LogsRepository(fs, new SequentialFileNameHelper(baseFile.getParent(), "raftLog"));
-        logHeaderCache = new EnvelopedLogHeaderCache();
+        logHeaderCache = new EnvelopedLogHeaderCacheImpl();
     }
 
     @ParameterizedTest

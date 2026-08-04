@@ -57,7 +57,7 @@ public class LogFilesMetadata implements RawCursor<LogFileMetadata, IOException>
         this(logsRepository, logHeaderCache.currentLogHeaders(reversed), reversed);
     }
 
-    private LogFilesMetadata(LogsRepository logsRepository, List<LogHeader> cachedLogHeaders, boolean reversed)
+    LogFilesMetadata(LogsRepository logsRepository, List<LogHeader> cachedLogHeaders, boolean reversed)
             throws IOException {
         this.logsRepository = logsRepository;
         this.cachedLogHeaders = cachedLogHeaders;
