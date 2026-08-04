@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.diagnostics;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.TemporalAmount;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +48,14 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  */
 @Service
 public abstract class DiagnosticsAuthenticatedReportProvider {
+    // Results contain java.time values (e.g. the creation time of a database), which Jackson refuses to write
+    // without a handler. Their toString() is already ISO-8601, so write that rather than depend on the JSR-310 module.
+    protected static final ObjectWriter JSON = new ObjectMapper()
+            .registerModule(new SimpleModule()
+                    .addSerializer(TemporalAccessor.class, ToStringSerializer.instance)
+                    .addSerializer(TemporalAmount.class, ToStringSerializer.instance))
+            .writerWithDefaultPrettyPrinter();
+
     private final Set<String> filterClassifiers;
 
     /**

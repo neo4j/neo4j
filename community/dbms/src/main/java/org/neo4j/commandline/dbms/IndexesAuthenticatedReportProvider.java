@@ -20,9 +20,8 @@
 package org.neo4j.commandline.dbms;
 
 import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsString;
+import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newFailedDiagnosticsSource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +41,6 @@ import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 public class IndexesAuthenticatedReportProvider extends DiagnosticsAuthenticatedReportProvider {
     static final String CLASSIFIER = "indexes";
     private static final String QUERY = "SHOW INDEXES YIELD *";
-    private static final ObjectWriter JSON = new ObjectMapper().writerWithDefaultPrettyPrinter();
 
     private Set<String> databaseNames;
 
@@ -81,7 +79,7 @@ public class IndexesAuthenticatedReportProvider extends DiagnosticsAuthenticated
             } catch (Exception e) {
                 String message = "ERROR: Failed to run '" + QUERY + "' against database '" + databaseName + "': "
                         + e.getMessage();
-                sources.add(newDiagnosticsString(destination, () -> message));
+                sources.add(newFailedDiagnosticsSource(destination, message));
                 continue;
             }
             sources.add(newDiagnosticsString(destination, () -> content));

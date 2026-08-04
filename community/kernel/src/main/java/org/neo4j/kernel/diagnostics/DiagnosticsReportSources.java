@@ -145,6 +145,35 @@ public final class DiagnosticsReportSources {
         }
     }
 
+    /**
+     * Create a failed diagnostics source with an error message. Can be used with eagerly collected diagnostics
+     * sources to produce an exception containing the error message when the input stream is requested.
+     *
+     * @param destination final destination in archive.
+     * @param error an error message describing the failure.
+     * @return a diagnostics source representing a failed collection.
+     */
+    public static DiagnosticsReportSource newFailedDiagnosticsSource(String destination, String error) {
+        return new FailedDiagnosticsReportSource(destination, error);
+    }
+
+    private record FailedDiagnosticsReportSource(String destination, String error) implements DiagnosticsReportSource {
+        @Override
+        public String destinationPath() {
+            return destination;
+        }
+
+        @Override
+        public InputStream newInputStream() throws IOException {
+            throw new IOException(error);
+        }
+
+        @Override
+        public long estimatedSize() {
+            return 0; // Nothing will be written
+        }
+    }
+
     private static class DiagnosticsStringReportSource implements DiagnosticsReportSource {
         private final String destination;
         private final Supplier<String> messageSupplier;

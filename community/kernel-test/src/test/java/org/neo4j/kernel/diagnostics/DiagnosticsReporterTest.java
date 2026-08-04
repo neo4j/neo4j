@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsFile;
 import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsString;
+import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newFailedDiagnosticsSource;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -226,6 +227,57 @@ class DiagnosticsReporterTest {
             assertThat(partialSources.get(1).get("path").asText()).isEqualTo("partial/bad.txt");
             assertThat(partialSources.get(1).get("status").asText()).isEqualTo("FAILED");
             assertThat(partialSources.get(1).get("error").asText()).isEqualTo("boom");
+        }
+    }
+
+    @Test
+    void eagerlyFailedSourceIsRecordedInTheManifestAndOmittedFromTheArchive() throws Exception {
+        DiagnosticsReporter reporter = new DiagnosticsReporter();
+        // Sources whose collection already failed before the archive was opened - the shape produced by an
+        // authenticated provider whose query failed while the connection was still open.
+        String error = "Failed to run 'SHOW DATABASES YIELD *': connection refused";
+        reporter.registerSource("mixed", newDiagnosticsString("mixed/good.json", () -> "[]"));
+        reporter.registerSource("mixed", newFailedDiagnosticsSource("mixed/bad.json", error));
+        reporter.registerSource("eager", newFailedDiagnosticsSource("eager/only.json", error));
+
+        Path destination = testDirectory.file("report.zip");
+        reporter.dump(Set.of("mixed", "eager"), destination, mock(DiagnosticsReporterProgress.class), true);
+
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath());
+        try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
+            JsonNode classifiers = MAPPER.readTree(Files.readString(fs.getPath(DiagnosticsReportManifest.FILE_NAME)))
+                    .get("classifiers");
+
+            // The failure is attributed to the classifier and carries the message captured at collection time.
+            JsonNode eager = classifier(classifiers, "eager");
+            assertThat(eager.get("status").asText()).isEqualTo("FAILED");
+            assertThat(eager.get("sources").get(0).get("path").asText()).isEqualTo("eager/only.json");
+            assertThat(eager.get("sources").get(0).get("status").asText()).isEqualTo("FAILED");
+            assertThat(eager.get("sources").get(0).get("error").asText()).isEqualTo(error);
+
+            // A classifier that collected some of its sources is only partially failed.
+            JsonNode mixed = classifier(classifiers, "mixed");
+            assertThat(mixed.get("status").asText()).isEqualTo("PARTIAL");
+
+            // Nothing is written for a failed source, so no empty entry is left behind in the archive.
+            assertThat(Files.exists(fs.getPath("eager/only.json"))).isFalse();
+            assertThat(Files.exists(fs.getPath("mixed/bad.json"))).isFalse();
+            assertThat(Files.readString(fs.getPath("mixed/good.json"))).isEqualTo("[]");
+        }
+    }
+
+    @Test
+    void reportsProgressErrorForAnEagerlyFailedSource() throws Exception {
+        DiagnosticsReporter reporter = new DiagnosticsReporter();
+        reporter.registerSource("eager", newFailedDiagnosticsSource("eager/only.json", "connection refused"));
+
+        Path destination = testDirectory.file("report.zip");
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            NonInteractiveProgress progress = new NonInteractiveProgress(new PrintStream(baos), false);
+
+            reporter.dump(Collections.singleton("eager"), destination, progress, true);
+
+            assertThat(baos.toString()).contains("Error: Failed to write eager/only.json");
         }
     }
 

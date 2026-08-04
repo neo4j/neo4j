@@ -62,6 +62,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.diagnostics.DiagnosticsLiveConnection;
 import org.neo4j.kernel.diagnostics.DiagnosticsLiveConnectionFactory;
 import org.neo4j.kernel.diagnostics.DiagnosticsQueryResult;
+import org.neo4j.kernel.diagnostics.DiagnosticsReportManifest;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SkipOnSpd;
@@ -583,6 +584,38 @@ class DiagnosticsReportCommandIT {
                 DatabasesAuthenticatedReportProvider.CLASSIFIER, "SHOW DATABASES YIELD *", "databases.json");
     }
 
+    @Test
+    void failedAuthenticatedQueryIsReportedAsFailedInTheManifest() throws IOException {
+        String[] args = {
+            DatabasesAuthenticatedReportProvider.CLASSIFIER,
+            "--username=neo4j",
+            "--password=secret",
+            "--to-path=" + testDirectory.absolutePath() + "/reports"
+        };
+        FailingConnection connection = new FailingConnection("no route to host");
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            DiagnosticsReportCommand command = populateCommand(ctx, args);
+            command.setConnectionFactory((config, boltUrl, username, password) -> connection);
+            command.execute();
+        });
+
+        // The query failed while the connection was open, but the report is still produced and the connection closed.
+        assertTrue(connection.closed);
+        Path[] files = FileUtils.listPaths(testDirectory.directory("reports"));
+        assertThat(files.length).isEqualTo(1);
+        try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
+            // Nothing was written for the classifier that could not be collected...
+            assertThat(Files.exists(fileSystem.getPath("databases.json"))).isFalse();
+
+            // ...and the manifest records it as failed, with the error captured at collection time.
+            String manifest = Files.readString(fileSystem.getPath(DiagnosticsReportManifest.FILE_NAME));
+            assertThat(manifest)
+                    .contains("\"name\" : \"databases\"")
+                    .contains("\"status\" : \"FAILED\"")
+                    .contains("Failed to run 'SHOW DATABASES YIELD *': no route to host");
+        }
+    }
+
     private void assertSingleShotClassifier(String classifier, String expectedQuery, String expectedEntry)
             throws IOException {
         String[] args = {
@@ -621,6 +654,25 @@ class DiagnosticsReportCommandIT {
         public DiagnosticsLiveConnection connect(Config config, String boltUrl, String username, String password) {
             this.username = username;
             return connection;
+        }
+    }
+
+    private static final class FailingConnection implements DiagnosticsLiveConnection {
+        private final String message;
+        private boolean closed;
+
+        private FailingConnection(String message) {
+            this.message = message;
+        }
+
+        @Override
+        public DiagnosticsQueryResult execute(String database, String query) {
+            throw new RuntimeException(message);
+        }
+
+        @Override
+        public void close() {
+            closed = true;
         }
     }
 
