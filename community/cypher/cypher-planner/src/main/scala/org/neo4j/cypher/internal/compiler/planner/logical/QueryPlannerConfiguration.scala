@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.ApplyOptionalSol
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CandidateSelectorFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.DynamicLabelLookupLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.DynamicRelationshipTypeLookupLeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.FulltextSearchLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OptionalSolverFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OuterHashJoinSolverFactory
@@ -123,7 +124,8 @@ object QueryPlannerConfiguration {
 
   private def searchClauseLeafPlanner: IndexedSeq[LeafPlanner] = IndexedSeq(
     // MATCH … SEARCH
-    VectorSearchLeafPlanner
+    VectorSearchLeafPlanner,
+    FulltextSearchLeafPlanner
   )
 
   val default: QueryPlannerConfiguration = {

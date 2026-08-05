@@ -618,6 +618,31 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
     caughtExceptionCause.get.cause().isEmpty should be(true)
   }
 
+  test("should fail with an index-in-populating-state error when the vector index is populating") {
+    val planner =
+      plannerBuilder()
+        .addNodeVectorIndex("populatingMovieEmbeddings", Seq("Movie"), "embedding")
+        .addPopulatingIndex("populatingMovieEmbeddings")
+        .build()
+
+    val query =
+      """MATCH (movie:Movie)
+        |  SEARCH movie IN (
+        |    VECTOR INDEX populatingMovieEmbeddings
+        |    FOR $embedding
+        |    LIMIT 10
+        |  )
+        |RETURN movie""".stripMargin
+
+    val caughtException = intercept[IndexSearchException] {
+      planner.plan(CypherVersion.Cypher25, query)
+    }
+    caughtException.gqlStatus() should be("51N63")
+    caughtException.legacyMessage() should be(
+      "51N63: Index `populatingMovieEmbeddings` is not ready yet. Wait until it finishes populating and retry the transaction."
+    )
+  }
+
   test("relationship vector index search must not claim the returned property value from the index") {
     val planner = plannerBuilder().build()
 

@@ -120,14 +120,27 @@ object SearchClause {
           s"Index name as Parameter is not supported in the expression form of SEARCH at position ${ast.position}"
         )
       case indexName: StringLiteral =>
-        VectorSearchClause(
-          resultVariable = ast.bindingVariable,
-          indexName = indexName.value,
-          embedding = ast.embedding,
-          where = ast.where,
-          limit = ast.limit.expression,
-          scoreVariable = ast.score
-        )
+        ast.indexType match {
+          case Search.Vector =>
+            VectorSearchClause(
+              resultVariable = ast.bindingVariable,
+              indexName = indexName.value,
+              embedding = ast.embedding,
+              where = ast.where,
+              limit = ast.limit.expression,
+              scoreVariable = ast.score
+            )
+          case Search.Fulltext =>
+            FulltextSearchClause(
+              resultVariable = ast.bindingVariable,
+              indexName = indexName.value,
+              queryString = ast.embedding,
+              analyzer = ast.analyzer,
+              skip = ast.skip.map(_.expression),
+              limit = ast.limit.expression,
+              scoreVariable = ast.score
+            )
+        }
       case exp =>
         // We only parse the index name as an identifier (saved as StringLiteral) or string Parameter
         // Should have thrown in semantic checking already and not get here

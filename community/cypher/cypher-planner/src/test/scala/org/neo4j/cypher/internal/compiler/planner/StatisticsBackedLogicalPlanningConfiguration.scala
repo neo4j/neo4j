@@ -276,8 +276,12 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
       Some(TokenIndexDescriptor(common.EntityType.RELATIONSHIP, IndexOrderCapability.BOTH)),
     propertyIndexes: Seq[IndexDefinition] = Seq.empty,
     vectorIndexes: Seq[VectorIndexDefinition] = Seq.empty,
-    fulltextIndexes: Seq[FulltextIndexDefinition] = Seq.empty
+    fulltextIndexes: Seq[FulltextIndexDefinition] = Seq.empty,
+    populatingIndexes: Set[String] = Set.empty
   ) {
+
+    def addPopulatingIndex(name: String): Indexes =
+      copy(populatingIndexes = populatingIndexes + name)
 
     def addPropertyIndex(indexDefinition: IndexDefinition): Indexes = {
       this.copy(propertyIndexes = propertyIndexes.filterNot(sameKeys(indexDefinition, _)) :+ indexDefinition)
@@ -618,6 +622,9 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     properties: Seq[String]
   ): StatisticsBackedLogicalPlanningConfigurationBuilder =
     copy(indexes = indexes.addRelationshipFulltextIndex(indexName, relationshipTypeNames, properties))
+
+  def addPopulatingIndex(indexName: String): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    copy(indexes = indexes.addPopulatingIndex(indexName))
 
   def addNodeLookupIndex(orderCapability: IndexOrderCapability = IndexOrderCapability.BOTH)
     : StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -1816,57 +1823,73 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       }
 
       override def nodeVectorIndexByName(indexName: String): Either[IndexLookupError, NodeVectorIndexDescriptor] =
-        indexes.vectorIndexes.collectFirst {
-          case NodeVectorIndexDefinition(name, labels, property, additionalProperties) if name == indexName =>
-            Right(NodeVectorIndexDescriptor(
-              labelIds = labels.map {
-                case EntityType.Node(label) => LabelId(resolver.getLabelId(label))
-              },
-              property = PropertyKeyId(resolver.getPropertyKeyId(property)),
-              additionalProperties = additionalProperties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
-            ))
-          case RelationshipVectorIndexDefinition(name, _, _, _) if name == indexName =>
-            Left(IndexLookupError.WrongEntityType(common.EntityType.NODE, common.EntityType.RELATIONSHIP))
-        }.getOrElse(Left(IndexLookupError.NotFound))
+        if (indexes.populatingIndexes.contains(indexName)) {
+          Left(IndexLookupError.Populating)
+        } else {
+          indexes.vectorIndexes.collectFirst {
+            case NodeVectorIndexDefinition(name, labels, property, additionalProperties) if name == indexName =>
+              Right(NodeVectorIndexDescriptor(
+                labelIds = labels.map {
+                  case EntityType.Node(label) => LabelId(resolver.getLabelId(label))
+                },
+                property = PropertyKeyId(resolver.getPropertyKeyId(property)),
+                additionalProperties = additionalProperties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
+              ))
+            case RelationshipVectorIndexDefinition(name, _, _, _) if name == indexName =>
+              Left(IndexLookupError.WrongEntityType(common.EntityType.NODE, common.EntityType.RELATIONSHIP))
+          }.getOrElse(Left(IndexLookupError.NotFound))
+        }
 
       override def relationshipVectorIndexByName(indexName: String)
         : Either[IndexLookupError, RelationshipVectorIndexDescriptor] =
-        indexes.vectorIndexes.collectFirst {
-          case NodeVectorIndexDefinition(name, _, _, _) if name == indexName =>
-            Left(IndexLookupError.WrongEntityType(common.EntityType.RELATIONSHIP, common.EntityType.NODE))
-          case RelationshipVectorIndexDefinition(name, relTypes, property, additionalProperties) if name == indexName =>
-            Right(RelationshipVectorIndexDescriptor(
-              relTypeIds = relTypes.map(relType => RelTypeId(resolver.getRelTypeId(relType.relType))),
-              property = PropertyKeyId(resolver.getPropertyKeyId(property)),
-              additionalProperties = additionalProperties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
-            ))
-        }.getOrElse(Left(NotFound))
+        if (indexes.populatingIndexes.contains(indexName)) {
+          Left(IndexLookupError.Populating)
+        } else {
+          indexes.vectorIndexes.collectFirst {
+            case NodeVectorIndexDefinition(name, _, _, _) if name == indexName =>
+              Left(IndexLookupError.WrongEntityType(common.EntityType.RELATIONSHIP, common.EntityType.NODE))
+            case RelationshipVectorIndexDefinition(name, relTypes, property, additionalProperties)
+              if name == indexName =>
+              Right(RelationshipVectorIndexDescriptor(
+                relTypeIds = relTypes.map(relType => RelTypeId(resolver.getRelTypeId(relType.relType))),
+                property = PropertyKeyId(resolver.getPropertyKeyId(property)),
+                additionalProperties = additionalProperties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
+              ))
+          }.getOrElse(Left(NotFound))
+        }
 
-      override def nodeFulltextIndexByName(indexName: String)
-        : Either[IndexLookupError, NodeFulltextIndexDescriptor] =
-        indexes.fulltextIndexes.collectFirst {
-          case NodeFulltextIndexDefinition(name, labels, properties) if name == indexName =>
-            Right(NodeFulltextIndexDescriptor(
-              labelIds = labels.map {
-                case EntityType.Node(label) => LabelId(resolver.getLabelId(label))
-              },
-              properties = properties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
-            ))
-          case RelationshipFulltextIndexDefinition(name, _, _) if name == indexName =>
-            Left(IndexLookupError.WrongEntityType(common.EntityType.NODE, common.EntityType.RELATIONSHIP))
-        }.getOrElse(fulltextIndexNotFoundOrWrongType(indexName))
+      override def nodeFulltextIndexByName(indexName: String): Either[IndexLookupError, NodeFulltextIndexDescriptor] =
+        if (indexes.populatingIndexes.contains(indexName)) {
+          Left(IndexLookupError.Populating)
+        } else {
+          indexes.fulltextIndexes.collectFirst {
+            case NodeFulltextIndexDefinition(name, labels, properties) if name == indexName =>
+              Right(NodeFulltextIndexDescriptor(
+                labelIds = labels.map {
+                  case EntityType.Node(label) => LabelId(resolver.getLabelId(label))
+                },
+                properties = properties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
+              ))
+            case RelationshipFulltextIndexDefinition(name, _, _) if name == indexName =>
+              Left(IndexLookupError.WrongEntityType(common.EntityType.NODE, common.EntityType.RELATIONSHIP))
+          }.getOrElse(fulltextIndexNotFoundOrWrongType(indexName))
+        }
 
       override def relationshipFulltextIndexByName(indexName: String)
         : Either[IndexLookupError, RelationshipFulltextIndexDescriptor] =
-        indexes.fulltextIndexes.collectFirst {
-          case NodeFulltextIndexDefinition(name, _, _) if name == indexName =>
-            Left(IndexLookupError.WrongEntityType(common.EntityType.RELATIONSHIP, common.EntityType.NODE))
-          case RelationshipFulltextIndexDefinition(name, relTypes, properties) if name == indexName =>
-            Right(RelationshipFulltextIndexDescriptor(
-              relTypeIds = relTypes.map(relType => RelTypeId(resolver.getRelTypeId(relType.relType))),
-              properties = properties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
-            ))
-        }.getOrElse(fulltextIndexNotFoundOrWrongType(indexName))
+        if (indexes.populatingIndexes.contains(indexName)) {
+          Left(IndexLookupError.Populating)
+        } else {
+          indexes.fulltextIndexes.collectFirst {
+            case NodeFulltextIndexDefinition(name, _, _) if name == indexName =>
+              Left(IndexLookupError.WrongEntityType(common.EntityType.RELATIONSHIP, common.EntityType.NODE))
+            case RelationshipFulltextIndexDefinition(name, relTypes, properties) if name == indexName =>
+              Right(RelationshipFulltextIndexDescriptor(
+                relTypeIds = relTypes.map(relType => RelTypeId(resolver.getRelTypeId(relType.relType))),
+                properties = properties.map(prop => PropertyKeyId(resolver.getPropertyKeyId(prop)))
+              ))
+          }.getOrElse(fulltextIndexNotFoundOrWrongType(indexName))
+        }
 
       // A name that resolves to a vector index is a genuine "wrong index type" case (as opposed to NotFound),
       // mirroring the real PlanContext's index-type check against the index's actual on-disk IndexType.
