@@ -42,11 +42,17 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.ProviderMismatchException;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -277,25 +283,12 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
         if (!(hasErrors || retainContextDir.apply(RetainCheck.CLEARING))) {
             var baseDir = baseDir();
             try {
-                allowDeletionOfWriteProtectedFiles(baseDir);
                 FileUtils.deleteDirectory(baseDir);
             } catch (IOException e) {
                 var error = new CommandFailedException(e, ExitCode.SOFTWARE);
                 error.addSupplementaryMessage("Unable to fully clear the import context directory: " + baseDir);
                 throw error;
             }
-        }
-    }
-
-    /**
-     * Windows refuses to delete a file carrying the read-only attribute, which is what {@link #writeProtected(Path,
-     * String)} leaves behind. Best effort - the deletion itself reports whatever it could not remove.
-     */
-    private static void allowDeletionOfWriteProtectedFiles(Path baseDir) {
-        try (var entries = Files.list(baseDir)) {
-            entries.forEach(entry -> entry.toFile().setWritable(true));
-        } catch (IOException | UncheckedIOException | UnsupportedOperationException e) {
-            // nothing to do, the files that matter are the ones the deletion below complains about
         }
     }
 
@@ -381,22 +374,36 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
      * Writes a file that records what an import attempt did, and takes the write permission off it afterwards. What
      * these files say decides what a later '--resume' reruns and whether it is allowed to run at all, so editing one
      * by hand quietly changes the import - or, for {@link #SUCCESS_FILE_NAME}, lets a completed import be rerun over
-     * the database it produced. Read-only is a guard against doing that by accident, not protection against someone
-     * who means to: the owner can put the permission back.
+     * the database it produced. Losing the write permission is a guard against doing that by accident, not protection
+     * against someone who means to: the owner can put it back.
+     * <p>
+     * The record still has to be removable, since the context directory is cleared once it has served its purpose. On
+     * POSIX that comes for free - what may be removed from a directory is the directory's business, not the file's -
+     * whereas on Windows the read-only attribute the permission maps to also refuses deletion, so write access is
+     * denied through the ACL instead, which leaves deletion alone. A filesystem offering neither leaves the record
+     * writable rather than undeletable.
      */
     private static void writeProtected(Path path, String content) throws IOException {
         Files.writeString(path, content);
-        try {
-            Files.setPosixFilePermissions(
-                    path,
-                    Set.of(
-                            PosixFilePermission.OWNER_READ,
-                            PosixFilePermission.GROUP_READ,
-                            PosixFilePermission.OTHERS_READ));
-        } catch (UnsupportedOperationException e) {
-            // fallback for windows
-            path.toFile().setReadOnly();
+        var posix = Files.getFileAttributeView(path, PosixFileAttributeView.class);
+        if (posix != null) {
+            posix.setPermissions(Set.of(
+                    PosixFilePermission.OWNER_READ, PosixFilePermission.GROUP_READ, PosixFilePermission.OTHERS_READ));
+            return;
         }
+        var acl = Files.getFileAttributeView(path, AclFileAttributeView.class);
+        if (acl == null) {
+            return;
+        }
+        var denyWrite = AclEntry.newBuilder()
+                .setType(AclEntryType.DENY)
+                .setPrincipal(acl.getOwner())
+                .setPermissions(AclEntryPermission.WRITE_DATA, AclEntryPermission.APPEND_DATA)
+                .build();
+        var entries = new ArrayList<>(acl.getAcl());
+        // a DENY entry only takes effect ahead of the entries granting what it takes away
+        entries.addFirst(denyWrite);
+        acl.setAcl(entries);
     }
 
     /**

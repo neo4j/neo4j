@@ -51,6 +51,7 @@ import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.configuration.Config;
 import org.neo4j.importer.FileImporter.CsvImportException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.test.extension.Inject;
@@ -284,6 +285,23 @@ class ImportContextTest {
                         .isFalse();
             }
         }
+    }
+
+    @Test
+    void writeProtectedRecordOfARetainedAttemptCanStillBeDeleted() throws IOException {
+        Path contextDir;
+        try (var importContext =
+                ImportContext.create(fs, DB, config, null, List.of("--nodes=foo.csv"), false, true, false)) {
+            importContext.persistCliArgs();
+            importContext.markSuccessful();
+            contextDir = importContext.baseDir();
+        }
+
+        // a retained attempt outlives the import, so removing it is left to whoever no longer needs it - the write
+        // protection guards the records against being edited, not against being thrown away
+        FileUtils.deleteDirectory(contextDir);
+
+        assertThat(contextDir).doesNotExist();
     }
 
     @Test
