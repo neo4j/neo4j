@@ -58,7 +58,6 @@ class LogFormatTest {
     void mergedLogForcesV11() {
         // Enabling merged_log without merge_log_on_latest requires GLORIOUS_FUTURE Kernel and Runtime versions
         Config config = Config.newBuilder()
-                .set(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create, true)
                 .set(GraphDatabaseInternalSettings.latest_kernel_version, KernelVersion.GLORIOUS_FUTURE.version())
                 .set(GraphDatabaseInternalSettings.latest_runtime_version, Integer.MAX_VALUE)
                 .set(GraphDatabaseInternalSettings.merged_log, true)

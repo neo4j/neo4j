@@ -232,7 +232,6 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport {
         var logProvider = new AssertableLogProvider();
         Config mergedLogConfig = Config.newBuilder()
                 .set(GraphDatabaseInternalSettings.merge_log_on_latest, true)
-                .set(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create, true)
                 .set(GraphDatabaseInternalSettings.merged_log, true)
                 .set(GraphDatabaseSettings.check_point_policy, GraphDatabaseSettings.CheckpointPolicy.VOLUMETRIC)
                 .build();

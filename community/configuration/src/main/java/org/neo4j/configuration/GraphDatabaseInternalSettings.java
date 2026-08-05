@@ -1651,11 +1651,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                                         + "' is set to GLORIOUS_FUTURE (Integer.MAX_VALUE)");
                             }
                         }
-                        if (!config.get(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create)) {
-                            throw new IllegalArgumentException("Merged log can only be enabled when '"
-                                    + GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create.name()
-                                    + "' is set to true");
-                        }
                     }
                 }
 
