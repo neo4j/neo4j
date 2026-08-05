@@ -25,7 +25,6 @@ import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.setCursorException;
 import static org.neo4j.kernel.impl.index.schema.Types.SIZE_STRING_LENGTH;
-import static org.neo4j.values.storable.ValueWriter.UNKNOWN_NUM_CODE_POINTS;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Arrays;
@@ -80,7 +79,7 @@ class TextType extends Type {
             length = minimalLengthFromRightNeededToDifferentiateFromLeft(
                     left.byteArray, (int) left.long0, right.byteArray, (int) right.long0);
         }
-        into.writeUTF8(right.byteArray, 0, length, UNKNOWN_NUM_CODE_POINTS);
+        into.writeUTF8(right.byteArray, 0, length);
     }
 
     @Override
@@ -217,7 +216,7 @@ class TextType extends Type {
     }
 
     static char textAsChar(byte[] byteArray) {
-        long codePoint = new UTF8StringValue.CodePointCursor(byteArray, 0, byteArray.length).nextCodePoint();
+        long codePoint = new UTF8StringValue.CodePointCursor(byteArray, 0).nextCodePoint();
         if ((codePoint & ~0xFFFF) != 0) {
             throw new IllegalStateException("Char value seems to be bigger than what a char can hold " + codePoint);
         }

@@ -34,8 +34,6 @@ import java.time.ZonedDateTime;
  * @param <E> type of {@link Exception} thrown from writer methods.
  */
 public interface ValueWriter<E extends Exception> {
-    int UNKNOWN_NUM_CODE_POINTS = -1;
-
     enum ArrayType {
         BYTE,
         SHORT,
@@ -77,16 +75,7 @@ public interface ValueWriter<E extends Exception> {
 
     void writeString(char value) throws E;
 
-    /**
-     * Writes a utf-8 string.
-     * @param bytes bytes containing the utf-8 string.
-     * @param offset offset into {@code bytes} where the utf-8 string starts.
-     * @param length number of bytes, from {@code offset} and forwards containing the utf-8 string.
-     * @param numCodePoints number of code points in the utf-8 string (i.e. "string length"),
-     * {@link #UNKNOWN_NUM_CODE_POINTS} if not known.
-     * @throws E on exception writing this utf-8 string.
-     */
-    default void writeUTF8(byte[] bytes, int offset, int length, int numCodePoints) throws E {
+    default void writeUTF8(byte[] bytes, int offset, int length) throws E {
         writeString(new String(bytes, offset, length, StandardCharsets.UTF_8));
     }
 

@@ -84,7 +84,7 @@ public abstract class PackstreamValueWriter implements AnyValueWriter<RuntimeExc
     }
 
     @Override
-    public void writeUTF8(byte[] bytes, int offset, int length, int numCodePoints) {
+    public void writeUTF8(byte[] bytes, int offset, int length) throws RuntimeException {
         this.buf.writeString(bytes, offset, length);
     }
 
