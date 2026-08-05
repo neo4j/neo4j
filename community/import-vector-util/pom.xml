@@ -57,6 +57,26 @@
             <arg>--add-modules</arg>
             <arg>jdk.incubator.vector</arg>
           </compilerArgs>
+          <!-- This module targets JDK 25 (vm.target.version). A graceful per-module toolchain lets
+               it be compiled with JDK 25 while the rest of the reactor is built in-process by a
+               Maven running on the baseline JDK - so only this module forks. Falls back to the JDK
+               running Maven when no matching toolchain is registered (then release 25 simply
+               requires Maven itself to run on JDK 25+). -->
+          <jdkToolchain>
+            <version>${vm.target.version}</version>
+          </jdkToolchain>
+        </configuration>
+      </plugin>
+      <!-- Run this module's unit tests on its target JDK too (Maven itself runs on the lower
+           baseline JDK, which cannot load this module's newer bytecode). This module has no
+           integration tests, so only surefire needs it. Merges with the inherited config. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <jdkToolchain>
+            <version>${vm.target.version}</version>
+          </jdkToolchain>
         </configuration>
       </plugin>
     </plugins>

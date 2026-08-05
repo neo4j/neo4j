@@ -250,6 +250,7 @@
     <test.vm.netty.leakDetection.level>PARANOID</test.vm.netty.leakDetection.level>
     <testcontainers.version>2.0.5</testcontainers.version>
     <vm.target.version>21</vm.target.version>
+    <!-- The property vm.target.version is used by CI to set the base JDK in which to run maven -->
   </properties>
 
   <dependencyManagement>
@@ -1383,11 +1384,6 @@
               <s3mock.version>${s3mock.version}</s3mock.version>
             </systemPropertyVariables>
             <jvm>${test.runner.jvm}</jvm>
-            <!-- Test JVM: under -DenforceToolchains the enforce-toolchains profile sets a
-                 build-context JDK toolchain per module, which surefire runs the tests on;
-                 otherwise the JDK running Maven is used. Deliberately NO per-plugin <jdkToolchain>
-                 here: surefire fails the build when one is set but no matching toolchain exists,
-                 which would break every build without a toolchains.xml. -->
             <excludes>
               <exclude>**/*$*.class</exclude>
               <exclude>**/*IntegrationTest.class</exclude>
@@ -1434,9 +1430,6 @@
               <s3mock.version>${s3mock.version}</s3mock.version>
             </systemPropertyVariables>
             <jvm>${test.runner.jvm}</jvm>
-            <!-- See maven-surefire-plugin above: the test JVM comes from the build-context
-                 toolchain under -DenforceToolchains, not a per-plugin <jdkToolchain> (which would
-                 fail the build when no toolchains.xml is present). -->
           </configuration>
           <dependencies>
             <dependency>
@@ -1862,17 +1855,6 @@
             <compilerArgs>
               <arg>-proc:full</arg>
             </compilerArgs>
-            <!--
-              Compile each module with a JDK matching its bytecode target. vm.target.version is
-              21 by default and 25 for the modules that require it (e.g. import-vector-util,
-              neo4j-uring), so a build environment providing both JDK toolchains (via
-              toolchains.xml) builds every module with the correct JDK in a single reactor. When
-              no matching toolchain is registered, the compiler falls back to the JDK running
-              Maven, so a single-JDK environment behaves exactly as before.
-            -->
-            <jdkToolchain>
-              <version>${vm.target.version}</version>
-            </jdkToolchain>
           </configuration>
         </plugin>
         <plugin>
@@ -2123,44 +2105,6 @@
   </build>
 
   <profiles>
-    <!--
-      Enforce that each module is built with a JDK matching its bytecode target. Selects the JDK
-      toolchain by ${vm.target.version} and fails fast (with a per-module log line) if the build
-      environment has no matching toolchain registered, instead of silently falling back to the
-      JDK running Maven. Opt-in via -DenforceToolchains so it only runs where a toolchains.xml is
-      guaranteed (e.g. CI); local single-JDK builds are unaffected.
-    -->
-    <profile>
-      <id>enforce-toolchains</id>
-      <activation>
-        <property>
-          <name>enforceToolchains</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-toolchains-plugin</artifactId>
-            <version>3.2.0</version>
-            <configuration>
-              <toolchains>
-                <jdk>
-                  <version>${vm.target.version}</version>
-                </jdk>
-              </toolchains>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>toolchain</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
     <profile>
       <id>errorprone</id>
       <activation>
