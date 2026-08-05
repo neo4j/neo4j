@@ -29,22 +29,26 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.ColumnReader;
 import org.apache.parquet.column.impl.ColumnReadStoreImpl;
+import org.apache.parquet.column.page.PageReadStore;
+import org.apache.parquet.compression.CompressionCodecFactory;
 import org.apache.parquet.example.DummyRecordConverter;
 import org.apache.parquet.hadoop.ParquetEmptyBlockException;
 import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.hadoop.util.HadoopCodecs;
 import org.apache.parquet.io.api.GroupConverter;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
@@ -119,18 +123,81 @@ class ParquetDataReader implements Closeable {
         }
     }
 
-    public Iterator<List<Object>> next() throws IOException {
+    /**
+     * @param codecs the caller's decompressors, reused across the row groups it reads. Owned by the caller, which
+     * must {@link ReusableCodecs#close()} it once done.
+     */
+    public RowGroupIterator next(ReusableCodecs codecs) throws IOException {
         var nextRowGroupIndex = blockCounter.getAndIncrement();
         if (nextRowGroupIndex >= metadataReader.getRowGroups().size()) {
             return null;
         }
         try {
-            return new ParquetRowGroupReader(nextRowGroupIndex);
+            return new ParquetRowGroupReader(nextRowGroupIndex, codecs);
         } catch (ParquetEmptyBlockException e) {
             // This row group does not contain any records, so let's just return an empty iterator
-            return Collections.emptyIterator();
+            return EMPTY_ROW_GROUP;
         }
     }
+
+    /**
+     * Decompressors that outlive the readers using them.
+     * <p>
+     * Parquet caches one stateful decompressor per codec inside a {@link CompressionCodecFactory}, and
+     * {@link ParquetFileReader#close()} releases the whole factory it was given. A factory per row group therefore
+     * means a decompressor per row group, and for snappy and lz4_raw each one carries a pair of off-heap buffers
+     * sized to the page it decompresses. Reusing one factory across row groups means suppressing that per-reader
+     * release, so {@link #release()} does nothing and {@link #close()} performs the real release once the owner is
+     * finished.
+     * <p>
+     * Not thread safe, by nature of what it wraps: parquet caches the decompressors in a plain map and its
+     * decompressors keep state between pages. One instance belongs to one thread reading one row group at a time.
+     */
+    static final class ReusableCodecs implements CompressionCodecFactory, Closeable {
+        private final CompressionCodecFactory delegate = HadoopCodecs.newFactory(0);
+
+        @Override
+        public BytesInputCompressor getCompressor(CompressionCodecName codecName) {
+            return delegate.getCompressor(codecName);
+        }
+
+        @Override
+        public BytesInputDecompressor getDecompressor(CompressionCodecName codecName) {
+            return delegate.getDecompressor(codecName);
+        }
+
+        @Override
+        public void release() {
+            // deliberately empty: closing a row group's reader must not take the decompressors with it
+        }
+
+        @Override
+        public void close() {
+            delegate.release();
+        }
+    }
+
+    /**
+     * A row group's rows, together with the file handle and the buffers holding the row group. Callers own what
+     * {@link #next()} hands them and must {@link #close()} it, otherwise the row group stays in memory and its
+     * descriptor stays open until the GC gets to it.
+     */
+    interface RowGroupIterator extends Iterator<List<Object>>, Closeable {}
+
+    private static final RowGroupIterator EMPTY_ROW_GROUP = new RowGroupIterator() {
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public List<Object> next() {
+            throw new NoSuchElementException();
+        }
+
+        @Override
+        public void close() {}
+    };
 
     public ParquetData getParquetDataFile() {
         return parquetDataFile;
@@ -156,44 +223,69 @@ class ParquetDataReader implements Closeable {
         return vectorDelimiter;
     }
 
-    private class ParquetRowGroupReader implements Iterator<List<Object>> {
+    private class ParquetRowGroupReader implements RowGroupIterator {
         private final ParquetFileReader reader;
+        private final PageReadStore store;
         private final List<ColumnReader> columnReaders;
         private final long rowCount;
         private long rowIndex;
+        private boolean closed;
 
-        ParquetRowGroupReader(int rowGroupIndex) throws IOException {
+        ParquetRowGroupReader(int rowGroupIndex, ReusableCodecs codecs) throws IOException {
             var file = ParquetInput.ParquetImportInputFile.of(parquetDataFile.file());
-            this.reader = ParquetFileReader.open(
+            var fileReader = ParquetFileReader.open(
                     file,
                     ParquetDataReader.this.footer,
-                    ParquetReadOptions.builder().build(),
+                    ParquetReadOptions.builder().withCodecFactory(codecs).build(),
                     file.newStream());
-            var store = this.reader.readRowGroup(rowGroupIndex);
-            this.rowCount = store.getRowCount();
+            try {
+                // Without a projection readRowGroup buffers every column chunk of the row group, including the
+                // ones that we don't need, so peak heap becomes (worker threads x whole row group) regardless of
+                // how few columns the import actually reads.
+                fileReader.setRequestedSchema(parquetColumns);
+                this.store = fileReader.readRowGroup(rowGroupIndex);
+                this.rowCount = store.getRowCount();
 
-            var columnReadStore = new ColumnReadStoreImpl(
-                    store,
-                    ParquetDataReader.this.recordConverter,
-                    ParquetDataReader.this.schema,
-                    ParquetDataReader.this.createdBy);
-            this.columnReaders = parquetColumns.stream()
-                    .map(columnReadStore::getColumnReader)
-                    .toList();
+                var columnReadStore = new ColumnReadStoreImpl(
+                        store,
+                        ParquetDataReader.this.recordConverter,
+                        ParquetDataReader.this.schema,
+                        ParquetDataReader.this.createdBy);
+                this.columnReaders = parquetColumns.stream()
+                        .map(columnReadStore::getColumnReader)
+                        .toList();
+            } catch (Throwable t) {
+                // the reader is unreachable once construction fails, so it has to be closed here
+                try {
+                    fileReader.close();
+                } catch (Throwable closeFailure) {
+                    t.addSuppressed(closeFailure);
+                }
+                throw t;
+            }
+            this.reader = fileReader;
         }
 
         @Override
         public boolean hasNext() {
             var result = rowIndex < rowCount;
             if (!result) {
-                closeUnderlyingReader();
+                // release eagerly on exhaustion rather than waiting for the owning chunk to close
+                close();
             }
             return result;
         }
 
-        void closeUnderlyingReader() {
+        @Override
+        public void close() {
+            if (closed) {
+                return;
+            }
+            closed = true;
             try {
-                this.reader.close();
+                // releases the row group buffers back to the allocator
+                store.close();
+                reader.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

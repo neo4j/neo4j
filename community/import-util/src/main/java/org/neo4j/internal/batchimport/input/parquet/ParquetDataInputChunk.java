@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
@@ -65,7 +64,7 @@ import org.neo4j.values.storable.VectorValue;
 
 /**
  * The data chunk to be stuck to a Parquet reader.
- * One chunk equals one file.
+ * One chunk equals one row group.
  */
 class ParquetDataInputChunk implements ParquetInputChunk {
 
@@ -75,9 +74,12 @@ class ParquetDataInputChunk implements ParquetInputChunk {
     private String arrayDelimiter;
     private String vectorDelimiter;
     private IdType idType;
-    private Iterator<List<Object>> iterator;
+    private ParquetDataReader.RowGroupIterator iterator;
     private Collection<String> filteredLabelsOrTypes;
     private final Map<Object, Collection<String>> labelCache = new HashMap<>();
+    // a chunk is read by a single thread, one row group at a time, so its decompressors can be reused across
+    // every row group it reads instead of being rebuilt (and their off-heap buffers regrown) for each one
+    private final ParquetDataReader.ReusableCodecs codecs = new ParquetDataReader.ReusableCodecs();
     private Group nodeIdGroup;
     private Group relationshipStartIdGroup;
     private Group relationshipEndIdGroup;
@@ -93,7 +95,9 @@ class ParquetDataInputChunk implements ParquetInputChunk {
     @Override
     public boolean readWith(ParquetDataReader reader) {
         try {
-            iterator = reader.next();
+            // the previous row group is done with; release its buffers and file handle before taking on another
+            closeCurrentRowGroup();
+            iterator = reader.next(codecs);
             if (iterator == null) {
                 return false;
             }
@@ -121,7 +125,24 @@ class ParquetDataInputChunk implements ParquetInputChunk {
     }
 
     @Override
-    public void close() throws IOException {}
+    public void close() throws IOException {
+        // a chunk is abandoned mid-row-group whenever a sibling worker fails or a bad entry aborts the import,
+        // so this is the only thing that releases the row group when the rows are not read to exhaustion
+        try {
+            closeCurrentRowGroup();
+        } finally {
+            codecs.close();
+            labelCache.clear();
+        }
+    }
+
+    private void closeCurrentRowGroup() throws IOException {
+        if (iterator != null) {
+            var current = iterator;
+            iterator = null;
+            current.close();
+        }
+    }
 
     @Override
     public boolean next(InputEntityVisitor entityToHydrate) throws IOException {

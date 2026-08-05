@@ -59,6 +59,7 @@ import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.batchimport.api.input.PropertySizeCalculator;
 import org.neo4j.batchimport.api.input.ReadableGroups;
+import org.neo4j.cloud.storage.StoragePath;
 import org.neo4j.cloud.storage.io.ReadableChannel;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.importer.SchemaCommandSource;
@@ -842,9 +843,17 @@ public class ParquetInput implements Input {
 
         @Override
         public SeekableInputStream newStream() throws IOException {
-            InputStream inputStream = Files.newInputStream(filePath);
-            if (inputStream instanceof ReadableChannel cloudFileChannel) {
-                return new DelegatingSeekableInputStream(inputStream) {
+            // The stream type is decided from the path rather than by opening one and inspecting it: probing
+            // would open a descriptor per call that the local-file branch then has to throw away.
+            if (filePath instanceof StoragePath) {
+                InputStream inputStream = Files.newInputStream(filePath);
+                if (!(inputStream instanceof ReadableChannel cloudFileChannel)) {
+                    inputStream.close();
+                    throw new IOException("Cannot seek within '%s': %s is not a %s"
+                            .formatted(
+                                    filePath, inputStream.getClass().getName(), ReadableChannel.class.getSimpleName()));
+                }
+                return new DelegatingSeekableInputStream(cloudFileChannel) {
                     private long position = 0;
 
                     @Override
@@ -859,8 +868,7 @@ public class ParquetInput implements Input {
                     }
                 };
             } else { // assume we have a local file
-                inputStream = new FileInputStream(filePath.toFile());
-                FileInputStream fis = (FileInputStream) inputStream;
+                FileInputStream fis = new FileInputStream(filePath.toFile());
                 return new DelegatingSeekableInputStream(fis) {
                     private long position = 0;
 
