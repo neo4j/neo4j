@@ -42,6 +42,7 @@ public interface SecurityGraphDbmsModel {
     String AUTH_PROVIDER_PROPERTY = "provider";
     String AUTH_ID_PROPERTY = "id";
 
+    RelationshipType HAS_ROLE_TYPE = RelationshipType.withName("HAS_ROLE");
     Label ROLE_LABEL = Label.label("Role");
     String ROLE = ROLE_LABEL.name();
     String ROLE_NAME_PROPERTY = "name";

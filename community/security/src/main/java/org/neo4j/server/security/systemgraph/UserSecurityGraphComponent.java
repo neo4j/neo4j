@@ -198,4 +198,11 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
                 knownUserSecurityComponentVersions.detectCurrentComponentVersion(tx);
         return component.requiresAuthObject();
     }
+
+    public ShowUsersOutput showUsers(
+            Transaction tx, boolean withAuth, boolean allowedToSeeTags, boolean asCommands, boolean enterprise) {
+        KnownCommunitySecurityComponentVersion version =
+                knownUserSecurityComponentVersions.detectCurrentComponentVersion(tx);
+        return version.showUsers(tx, withAuth, allowedToSeeTags, asCommands, enterprise);
+    }
 }

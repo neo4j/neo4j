@@ -49,6 +49,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.server.security.FormatException;
 import org.neo4j.server.security.SecureHasher;
 import org.neo4j.server.security.SystemGraphCredential;
+import org.neo4j.server.security.systemgraph.ShowUsersOutput;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion;
 import org.neo4j.string.UTF8;
 
@@ -155,4 +156,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     public boolean requiresAuthObject() {
         return true;
     }
+
+    public abstract ShowUsersOutput showUsers(
+            Transaction tx, boolean withAuth, boolean allowedToSeeTags, boolean asCommands, boolean enterprise);
 }

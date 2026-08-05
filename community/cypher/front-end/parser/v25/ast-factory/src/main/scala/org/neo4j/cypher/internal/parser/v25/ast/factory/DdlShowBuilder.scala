@@ -495,7 +495,8 @@ trait DdlShowBuilder extends Cypher25ParserListener {
   ): Unit = {
     ctx.ast = ShowUsers(
       astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield()),
-      withAuth = ctx.AUTH() != null
+      withAuth = ctx.AUTH() != null,
+      asCommands = ctx.commandToken() != null
     )(pos(ctx))
   }
 

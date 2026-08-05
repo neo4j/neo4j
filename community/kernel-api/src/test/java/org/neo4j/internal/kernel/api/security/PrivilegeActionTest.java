@@ -100,6 +100,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_SECRET
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_SERVER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_TRANSACTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER_CREDENTIALS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER_METADATA;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.START_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.STOP_DATABASE;
@@ -132,7 +133,8 @@ class PrivilegeActionTest {
         expected.put(
                 AUTH_RULE_MANAGEMENT,
                 Set.of(SHOW_AUTH_RULE, CREATE_AUTH_RULE, DROP_AUTH_RULE, ALTER_AUTH_RULE, RENAME_AUTH_RULE));
-        expected.put(USER_MANAGEMENT, Set.of(SHOW_USER, CREATE_USER, RENAME_USER, DROP_USER, ALTER_USER));
+        expected.put(USER_MANAGEMENT, Set.of(SHOW_USER_CREDENTIALS, CREATE_USER, RENAME_USER, DROP_USER, ALTER_USER));
+        expected.put(SHOW_USER_CREDENTIALS, Set.of(SHOW_USER));
         expected.put(ALTER_USER, Set.of(SET_USER_STATUS, SET_PASSWORDS, SET_AUTH, SET_USER_HOME_DATABASE));
         expected.put(SET_AUTH, Set.of(SET_PASSWORDS));
         expected.put(USER_METADATA_MANAGEMENT, Set.of(SHOW_USER_METADATA, SET_USER_METADATA));

@@ -27,16 +27,16 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
   //  Show users
 
   test("SHOW USERS") {
-    parsesTo[Statements](ShowUsers(None, withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(None, withAuth = false, asCommands = false)(pos))
   }
 
   test("SHOW USER") {
-    parsesTo[Statements](ShowUsers(None, withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(None, withAuth = false, asCommands = false)(pos))
   }
 
   test("USE system SHOW USERS") {
     def expected(resolveStrictly: Boolean) = {
-      ShowUsers(None, withAuth = false)(pos).withGraph(Some(use(List("system"), resolveStrictly)))
+      ShowUsers(None, withAuth = false, asCommands = false)(pos).withGraph(Some(use(List("system"), resolveStrictly)))
     }
 
     parsesIn[Statement] {
@@ -46,28 +46,44 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
   }
 
   test("SHOW USERS WHERE user = 'GRANTED'") {
-    parsesTo[Statements](ShowUsers(Some(Right(where(equals(varUser, grantedString)))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(
+      Some(Right(where(equals(varUser, grantedString)))),
+      withAuth = false,
+      asCommands = false
+    )(pos))
   }
 
   test("SHOW USER WHERE user = 'GRANTED'") {
-    parsesTo[Statements](ShowUsers(Some(Right(where(equals(varUser, grantedString)))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(
+      Some(Right(where(equals(varUser, grantedString)))),
+      withAuth = false,
+      asCommands = false
+    )(pos))
   }
 
   test("SHOW USERS WHERE user = 'GRANTED' AND action = 'match'") {
     val accessPredicate = equals(varUser, grantedString)
     val matchPredicate = equals(varFor(actionString), literalString("match"))
-    parsesTo[Statements](ShowUsers(Some(Right(where(and(accessPredicate, matchPredicate)))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(
+      Some(Right(where(and(accessPredicate, matchPredicate)))),
+      withAuth = false,
+      asCommands = false
+    )(pos))
   }
 
   test("SHOW USERS WHERE user = 'GRANTED' OR action = 'match'") {
     val accessPredicate = equals(varUser, grantedString)
     val matchPredicate = equals(varFor(actionString), literalString("match"))
-    parsesTo[Statements](ShowUsers(Some(Right(where(or(accessPredicate, matchPredicate)))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(
+      Some(Right(where(or(accessPredicate, matchPredicate)))),
+      withAuth = false,
+      asCommands = false
+    )(pos))
   }
 
   test("SHOW USERS YIELD user ORDER BY user") {
     val columns = yieldClause(returnItems(variableReturnItem(userString)), Some(orderBy(sortItem(varUser))))
-    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false, asCommands = false)(pos))
   }
 
   test("SHOW USERS YIELD user ORDER BY user WHERE user ='none'") {
@@ -75,7 +91,7 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
     val whereClause = where(equals(varUser, noneString))
     val columns =
       yieldClause(returnItems(variableReturnItem(userString)), Some(orderByClause), where = Some(whereClause))
-    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false, asCommands = false)(pos))
   }
 
   test("SHOW USERS YIELD user ORDER BY user SKIP 1 LIMIT 10 WHERE user ='none'") {
@@ -88,7 +104,7 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
       Some(limit(10)),
       Some(whereClause)
     )
-    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false, asCommands = false)(pos))
   }
 
   test("SHOW USERS YIELD user ORDER BY user OFFSET 1 LIMIT 10 WHERE user ='none'") {
@@ -101,12 +117,12 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
       Some(limit(10)),
       Some(whereClause)
     )
-    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false, asCommands = false)(pos))
   }
 
   test("SHOW USERS YIELD user SKIP -1") {
     val columns = yieldClause(returnItems(variableReturnItem(userString)), skip = Some(skip(-1)))
-    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false, asCommands = false)(pos))
   }
 
   test("SHOW USERS YIELD user RETURN user ORDER BY user") {
@@ -115,7 +131,8 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
         yieldClause(returnItems(variableReturnItem(userString))),
         Some(returnClause(returnItems(variableReturnItem(userString)), Some(orderBy(sortItem(varUser)))))
       ))),
-      withAuth = false
+      withAuth = false,
+      asCommands = false
     )(pos))
   }
 
@@ -129,36 +146,79 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
         ),
         Some(returnClause(returnItems(variableReturnItem(userString)), distinct = true))
       ))),
-      withAuth = false
+      withAuth = false,
+      asCommands = false
     )(pos))
   }
 
   test("SHOW USERS YIELD * RETURN *") {
     parsesTo[Statements](ShowUsers(
       Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems))))),
-      withAuth = false
+      withAuth = false,
+      asCommands = false
     )(pos))
   }
 
   test("SHOW USERS YIELD *") {
-    parsesTo[Statements](ShowUsers(Some(Left((yieldClause(returnAllItems), None))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(
+      Some(Left((yieldClause(returnAllItems), None))),
+      withAuth = false,
+      asCommands = false
+    )(pos))
   }
 
   test("SHOW USER YIELD *") {
-    parsesTo[Statements](ShowUsers(Some(Left((yieldClause(returnAllItems), None))), withAuth = false)(pos))
+    parsesTo[Statements](ShowUsers(
+      Some(Left((yieldClause(returnAllItems), None))),
+      withAuth = false,
+      asCommands = false
+    )(pos))
   }
 
   test("SHOW USERS WITH AUTH") {
-    parsesTo[Statements](ShowUsers(None, withAuth = true)(pos))
+    parsesTo[Statements](ShowUsers(None, withAuth = true, asCommands = false)(pos))
   }
 
   test("SHOW USER WITH AUTH WHERE user = 'GRANTED'") {
-    parsesTo[Statements](ShowUsers(Some(Right(where(equals(varUser, grantedString)))), withAuth = true)(pos))
+    parsesTo[Statements](ShowUsers(
+      Some(Right(where(equals(varUser, grantedString)))),
+      withAuth = true,
+      asCommands = false
+    )(pos))
   }
 
   test("SHOW USERS WITH AUTH YIELD user ORDER BY user") {
     val columns = yieldClause(returnItems(variableReturnItem(userString)), Some(orderBy(sortItem(varUser))))
-    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = true)(pos))
+    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = true, asCommands = false)(pos))
+  }
+
+  test("SHOW USERS AS COMMANDS") {
+    parsesIn[Statement] {
+      case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'COMMANDS': expected 'PRIVILEGE' or 'PRIVILEGES'")
+      case _       => _.toAst(ShowUsers(None, withAuth = false, asCommands = true)(pos))
+    }
+  }
+
+  test("SHOW USER AS COMMAND YIELD user, command ORDER BY user") {
+    val columns = yieldClause(
+      returnItems(variableReturnItem(userString), variableReturnItem("command")),
+      Some(orderBy(sortItem(varUser)))
+    )
+    parsesIn[Statement] {
+      case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'COMMAND': expected 'PRIVILEGE' or 'PRIVILEGES'")
+      case _       => _.toAst(ShowUsers(Some(Left((columns, None))), withAuth = false, asCommands = true)(pos))
+    }
+  }
+
+  test("SHOW USER WITH AUTH AS COMMAND WHERE provider = 'native'") {
+    parsesIn[Statement] {
+      case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AS': expected 'WHERE', 'YIELD' or <EOF>")
+      case _ => _.toAst(ShowUsers(
+          Some(Right(where(equals(varFor("provider"), literalString("native"))))),
+          withAuth = true,
+          asCommands = true
+        )(pos))
+    }
   }
 
   // fails parsing
@@ -189,6 +249,17 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
         |"SHOW USERS YIELD * WITH AUTH"
         |                    ^""".stripMargin
     )
+  }
+
+  test("SHOW USERS AS COMMANDS WITH AUTH") {
+    failsParsing[Statement].in {
+      case Cypher5 => _.withAnyFailure
+      case _ => _.withSyntaxError(
+          """Invalid input 'WITH': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 24 (offset: 23))
+            |"SHOW USERS AS COMMANDS WITH AUTH"
+            |                        ^""".stripMargin
+        )
+    }
   }
 
   // Show current user

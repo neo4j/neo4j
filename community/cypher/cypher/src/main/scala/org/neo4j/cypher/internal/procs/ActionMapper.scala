@@ -107,6 +107,7 @@ import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowSettingAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.ShowUserCredentialsAction
 import org.neo4j.cypher.internal.ast.ShowUserMetadataAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
@@ -165,6 +166,7 @@ object ActionMapper {
     case ShowSecretsAction          => security.PrivilegeAction.SHOW_SECRETS
 
     case AllUserActions            => security.PrivilegeAction.USER_MANAGEMENT
+    case ShowUserCredentialsAction => security.PrivilegeAction.SHOW_USER_CREDENTIALS
     case ShowUserAction            => security.PrivilegeAction.SHOW_USER
     case CreateUserAction          => security.PrivilegeAction.CREATE_USER
     case RenameUserAction          => security.PrivilegeAction.RENAME_USER

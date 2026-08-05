@@ -161,6 +161,7 @@ import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowSettingAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.ShowUserCredentialsAction
 import org.neo4j.cypher.internal.ast.ShowUserMetadataAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
@@ -567,6 +568,7 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
             case Cypher25Parser.SERVER | Cypher25Parser.SERVERS => withQualifier(ShowServerAction)
             case Cypher25Parser.USER =>
               if (ctx.METADATA() != null) withQualifier(ShowUserMetadataAction)
+              else if (ctx.CREDENTIALS() != null) withQualifier(ShowUserCredentialsAction)
               else withQualifier(ShowUserAction)
             case Cypher25Parser.SECRETS => withQualifier(ShowSecretsAction)
             case _                      => throw new IllegalStateException()

@@ -427,6 +427,7 @@ sealed trait TopologyCheck extends SemanticAnalysisTooling {
 final case class ShowUsers(
   override val yieldOrWhere: YieldOrWhere,
   withAuth: Boolean,
+  asCommands: Boolean,
   override val defaultColumnSet: List[ShowColumn]
 )(val position: InputPosition) extends ReadAdministrationCommand {
 
@@ -442,27 +443,32 @@ final case class ShowUsers(
 
 object ShowUsers {
 
-  def apply(yieldOrWhere: YieldOrWhere, withAuth: Boolean)(position: InputPosition): ShowUsers = {
+  def apply(yieldOrWhere: YieldOrWhere, withAuth: Boolean, asCommands: Boolean)(position: InputPosition): ShowUsers = {
     val baseColumns: List[(ShowColumn, DefaultOrAllShowColumns.ShowByDefault)] = List(
-      (ShowColumn("user")(position), true),
-      (ShowColumn("roles", CTList(CTString))(position), true),
+      (ShowColumn("user")(position), !asCommands),
+      (ShowColumn("roles", CTList(CTString))(position), !asCommands)
+    )
+    val withCommandOrExtra = if (asCommands)
+      List((ShowColumn("command")(position), true)) ++ baseColumns
+    else baseColumns ++ List(
       (ShowColumn("passwordChangeRequired", CTBoolean)(position), true),
       (ShowColumn("suspended", CTBoolean)(position), true),
       (ShowColumn("home")(position), true)
     )
     val withAuthColumns =
       if (withAuth)
-        baseColumns ++ List(
+        withCommandOrExtra ++ List(
           (ShowColumn("provider")(position), true),
           (ShowColumn("auth", CTMap)(position), true)
         )
-      else baseColumns
+      else withCommandOrExtra
     // The `tags` column is exposed regardless of the `SemanticFeature.UserTags` flag.
     val allColumns = withAuthColumns :+ (ShowColumn("tags", CTList(CTString))(position), false)
     val columns = DefaultOrAllShowColumns(allColumns, yieldOrWhere).columns
     ShowUsers(
       yieldOrWhere,
       withAuth,
+      asCommands,
       columns
     )(position)
   }

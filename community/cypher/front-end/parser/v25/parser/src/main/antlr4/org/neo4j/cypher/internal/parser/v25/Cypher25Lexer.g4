@@ -316,6 +316,10 @@ CREDENTIAL
    : C R E D E N T I A L
    ;
 
+CREDENTIALS
+   : C R E D E N T I A L S
+   ;
+
 CSV
    : C S V
    ;

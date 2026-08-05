@@ -90,6 +90,7 @@ case class AllowedNonAdministrationCommands(
 case class ShowUsers(
   source: PrivilegePlan,
   withAuth: Boolean,
+  asCommands: Boolean,
   override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]

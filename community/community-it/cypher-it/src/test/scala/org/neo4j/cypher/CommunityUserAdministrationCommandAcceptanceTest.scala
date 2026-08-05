@@ -70,6 +70,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   private val newPassword = "newpassword"
   private val wrongPassword = "wrongpassword"
   private val alterDefaultUserQuery = s"ALTER USER $defaultUsername SET PASSWORD '$password' CHANGE NOT REQUIRED"
+  private val commandColumn: String = "command"
 
   override def databaseConfig(): Map[Setting[?], Object] =
     super.databaseConfig() ++ Map(
@@ -86,6 +87,14 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     result.toList should be(List(defaultUser))
+  }
+
+  test("should show default user as command") {
+    // WHEN
+    val result = execute("CYPHER 25 SHOW USERS AS COMMANDS")
+
+    // THEN
+    result.toList should be(List(createUserCommand(defaultUsername, Seq(nativeAuth(defaultUsername, true)))))
   }
 
   test("should show all users") {
@@ -372,51 +381,6 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // but if for some reason there is external auth it might be nice to show regardless
     // and therefore test even if we have to fake the external auth parts
 
-    /** Takes in an existing user and adds external auths
-     *
-     * @param user username to add auths for
-     * @param externalAuths List of maps with provider and id for each wanted external auth: Map("provider" -> "x", "id" ->"y")
-     * @param keepNativeAuth if false, the native auth for the user is removed
-     */
-    def fakeExternalAuthForUser(
-      user: String,
-      externalAuths: List[Map[String, String]],
-      keepNativeAuth: Boolean = true
-    ): Unit = {
-      Using.resource(graphOps.beginTx()) { tx =>
-        val userNode = tx.findNode(USER_LABEL, USER_NAME_PROPERTY, user)
-
-        if (!keepNativeAuth) {
-          // remove native auth
-          userNode.removeProperty(USER_CREDENTIALS_PROPERTY)
-          userNode.removeProperty(USER_CREDENTIALS_EXPIRED_PROPERTY)
-
-          userNode.getRelationships(HAS_AUTH_TYPE)
-            .stream()
-            .filter(rel => rel.getOtherNode(userNode).getProperty(AUTH_PROVIDER_PROPERTY).equals(NATIVE_AUTH))
-            .forEach(rel => {
-              val node = rel.getOtherNode(userNode)
-              rel.delete()
-              node.delete()
-            })
-        }
-
-        externalAuths.foreach(auth => {
-          val authNode = tx.createNode()
-          authNode.setProperty(AUTH_PROVIDER_PROPERTY, auth("provider"))
-          authNode.setProperty(AUTH_ID_PROPERTY, auth("id"))
-          userNode.createRelationshipTo(authNode, HAS_AUTH_TYPE)
-        })
-
-        tx.commit()
-      }
-    }
-
-    def addExternalAuthColumns(userMap: Map[String, Any], provider: String, id: String): Map[String, Any] = {
-      val authMap = if (id == null) null else Map("id" -> id)
-      userMap ++ Map("provider" -> provider, "auth" -> authMap)
-    }
-
     // GIVEN
     execute(s"CREATE USER $username SET PASSWORD '$password'")
     fakeExternalAuthForUser(
@@ -457,6 +421,74 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       withTags(defaultUser),
       withTags(user(username) ++ Map("passwordChangeRequired" -> null)),
       withTags(user(newUsername, passwordChangeRequired = false))
+    ).sortBy(m => m("user").asInstanceOf[String]))
+  }
+
+  test("should show users as commands with auth with multiple users with mixed auth info") {
+    // Community should only have native auth,
+    // but if for some reason there is external auth it might be nice to show regardless
+    // and therefore test even if we have to fake the external auth parts
+
+    // GIVEN
+    execute(s"CREATE USER $username SET PASSWORD '$password'")
+    fakeExternalAuthForUser(
+      username,
+      List(
+        Map("provider" -> "Foo", "id" -> s"$username.foo@example.com"),
+        Map("provider" -> "Bar", "id" -> s"$username.bar@example.com")
+      ),
+      keepNativeAuth = false
+    )
+    execute(s"CREATE USER $newUsername SET PASSWORD '$password' CHANGE NOT REQUIRED")
+    fakeExternalAuthForUser(
+      newUsername,
+      List(
+        Map("provider" -> "Baz", "id" -> s"$newUsername.baz@example.com")
+      )
+    )
+
+    // WHEN
+    val resultWithAuth = execute("CYPHER 25 SHOW USERS WITH AUTH AS COMMANDS YIELD * ORDER BY user, provider")
+
+    // THEN
+    val user1Command = createUserCommand(
+      username,
+      Seq(
+        externalAuth("Bar", s"$username.bar@example.com"),
+        externalAuth("Foo", s"$username.foo@example.com")
+      )
+    )
+    val user2Command = createUserCommand(
+      newUsername,
+      Seq(
+        externalAuth("Baz", s"$newUsername.baz@example.com"),
+        nativeAuth(newUsername, false)
+      )
+    )
+
+    val user1Map = user1Command ++ Map("user" -> username, "roles" -> null)
+    val user2Map = user2Command ++ Map("user" -> newUsername, "roles" -> null)
+    val defaultUserMap = createUserCommand(defaultUsername, Seq(nativeAuth(defaultUsername))) ++ Map(
+      "user" -> defaultUsername,
+      "roles" -> null
+    )
+
+    resultWithAuth.toList should be(List(
+      withTags(addExternalAuthColumns(user1Map, "Bar", s"$username.bar@example.com")),
+      withTags(addExternalAuthColumns(user1Map, "Foo", s"$username.foo@example.com")),
+      withTags(addNativeAuthColumns(defaultUserMap, pwChangeRequired = true)),
+      withTags(addExternalAuthColumns(user2Map, "Baz", s"$newUsername.baz@example.com")),
+      withTags(addNativeAuthColumns(user2Map, pwChangeRequired = false))
+    ).sortBy(m => (m("user").asInstanceOf[String], m("provider").asInstanceOf[String])))
+
+    // WHEN
+    val resultWithoutAuth = execute("CYPHER 25 SHOW USERS AS COMMANDS YIELD * ORDER BY user")
+
+    // THEN
+    resultWithoutAuth.toList should be(List(
+      withTags(defaultUserMap),
+      withTags(user1Map),
+      withTags(user2Map)
     ).sortBy(m => m("user").asInstanceOf[String]))
   }
 
@@ -2160,8 +2192,75 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     userMap ++ Map("provider" -> NATIVE_AUTH, "auth" -> authMap)
   }
 
+  private def addExternalAuthColumns(userMap: Map[String, Any], provider: String, id: String): Map[String, Any] = {
+    val authMap = if (id == null) null else Map("id" -> id)
+    userMap ++ Map("provider" -> provider, "auth" -> authMap)
+  }
+
   private def withTags(userMap: Map[String, Any]): Map[String, Any] =
     userMap + ("tags" -> List.empty[String])
+
+  /** Takes in an existing user and adds external auths
+   *
+   * @param user           username to add auths for
+   * @param externalAuths  List of maps with provider and id for each wanted external auth: Map("provider" -> "x", "id" ->"y")
+   * @param keepNativeAuth if false, the native auth for the user is removed
+   */
+  private def fakeExternalAuthForUser(
+    user: String,
+    externalAuths: List[Map[String, String]],
+    keepNativeAuth: Boolean = true
+  ): Unit = {
+    Using.resource(graphOps.beginTx()) { tx =>
+      val userNode = tx.findNode(USER_LABEL, USER_NAME_PROPERTY, user)
+
+      if (!keepNativeAuth) {
+        // remove native auth
+        userNode.removeProperty(USER_CREDENTIALS_PROPERTY)
+        userNode.removeProperty(USER_CREDENTIALS_EXPIRED_PROPERTY)
+
+        userNode.getRelationships(HAS_AUTH_TYPE)
+          .stream()
+          .filter(rel => rel.getOtherNode(userNode).getProperty(AUTH_PROVIDER_PROPERTY).equals(NATIVE_AUTH))
+          .forEach(rel => {
+            val node = rel.getOtherNode(userNode)
+            rel.delete()
+            node.delete()
+          })
+      }
+
+      externalAuths.foreach(auth => {
+        val authNode = tx.createNode()
+        authNode.setProperty(AUTH_PROVIDER_PROPERTY, auth("provider"))
+        authNode.setProperty(AUTH_ID_PROPERTY, auth("id"))
+        userNode.createRelationshipTo(authNode, HAS_AUTH_TYPE)
+      })
+
+      tx.commit()
+    }
+  }
+
+  private def createUserCommand(
+    username: String,
+    auths: Seq[String]
+  ): Map[String, Any] = {
+    Map(
+      commandColumn -> s"CREATE USER $username ${auths.mkString(" ")}"
+    )
+  }
+
+  private def nativeAuth(username: String, changeRequired: Boolean = true): String = {
+    val hashedCredentials = withTx { tx =>
+      val user = tx.findNode(USER_LABEL, USER_NAME_PROPERTY, username)
+      SystemGraphCredential.maskSerialized(user.getProperty(USER_CREDENTIALS_PROPERTY).asInstanceOf[String])
+    }
+    val changeReq = if (changeRequired) "" else "SET PASSWORD CHANGE NOT REQUIRED "
+
+    s"SET AUTH PROVIDER 'native' { SET ENCRYPTED PASSWORD '$hashedCredentials' $changeReq}"
+  }
+
+  private def externalAuth(provider: String, id: String): String =
+    s"SET AUTH PROVIDER '$provider' { SET ID '$id' }"
 
   private def testUserLogin(username: String, password: String, expected: AuthenticationResult): Unit = {
     val login = authManager.login(SecurityTestUtils.authToken(username, password), EMBEDDED_CONNECTION)

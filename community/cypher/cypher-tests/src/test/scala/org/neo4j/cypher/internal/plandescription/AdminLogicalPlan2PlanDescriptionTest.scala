@@ -391,7 +391,15 @@ class AdminLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
   }
 
   test("User commands") {
-    assertGood(attach(ShowUsers(privLhsLP, withAuth = true, List(), None, None), 1.0), adminPlanDescription)
+    assertGood(
+      attach(ShowUsers(privLhsLP, withAuth = true, asCommands = false, List(), None, None), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(ShowUsers(privLhsLP, withAuth = false, asCommands = true, List(), None, None), 1.0),
+      adminPlanDescription
+    )
 
     assertGood(attach(ShowCurrentUser(List(), None, None), 1.0), adminPlanDescription)
 

@@ -2528,6 +2528,17 @@ class PrettifierIT extends AbstractPrettifierTest {
         |  YIELD *
         |    WHERE user = "neo4j"
         |  RETURN *""".stripMargin,
+    FailsInCypher5(
+      "Show Users as coMMAND",
+      "SHOW USERS AS COMMANDS"
+    ),
+    FailsInCypher5(
+      "Show User with AutH as coMMAND YIELD * where user = 'neo4j' Return *",
+      """SHOW USERS WITH AUTH AS COMMANDS
+        |  YIELD *
+        |    WHERE user = "neo4j"
+        |  RETURN *""".stripMargin
+    ),
     "Show Current User" ->
       "SHOW CURRENT USER",
     "Show Current User where user = 'neo4j'" ->

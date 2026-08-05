@@ -1622,7 +1622,7 @@ userAuthAttribute
    ;
 
 showUsers
-   : (USER | USERS) (WITH AUTH)? showCommandYield?
+   : (USER | USERS) (WITH AUTH)? (AS commandToken)? showCommandYield?
    ;
 
 showCurrentUser
@@ -1738,7 +1738,7 @@ loadPrivilege
 showPrivilege
    : SHOW (
       (indexToken | constraintToken | transactionToken userQualifier?) ON databaseScope
-      | (ALIAS | AUTH RULE | PRIVILEGE | ROLE | SERVER | SERVERS | settingToken settingQualifier | USER METADATA? | SECRETS) ON DBMS
+      | (ALIAS | AUTH RULE | PRIVILEGE | ROLE | SERVER | SERVERS | settingToken settingQualifier | USER (CREDENTIALS | METADATA)? | SECRETS) ON DBMS
    )
    ;
 
@@ -2310,6 +2310,7 @@ unescapedSymbolicNameString_
    | COUNT
    | CREATE
    | CREDENTIAL
+   | CREDENTIALS
    | CSV
    | CURRENT
    | CYPHER

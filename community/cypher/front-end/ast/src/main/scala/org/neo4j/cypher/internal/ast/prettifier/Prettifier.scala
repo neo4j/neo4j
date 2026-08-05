@@ -565,10 +565,11 @@ case class Prettifier(
 
       // User commands
 
-      case x @ ShowUsers(yields, withAuth, _) =>
+      case x @ ShowUsers(yields, withAuth, asCommands, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
         val auth = if (withAuth) " WITH AUTH" else ""
-        s"${x.name}$auth$y$r"
+        val asCmds = if (asCommands) " AS COMMANDS" else ""
+        s"${x.name}$auth$asCmds$y$r"
 
       case x @ ShowCurrentUser(yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)

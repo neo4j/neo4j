@@ -25,6 +25,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.logging.NullLog;
+import org.neo4j.server.security.systemgraph.ShowUsersOutput;
 
 public class NoCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion {
     public NoCommunitySecurityComponentVersion() {
@@ -48,6 +49,12 @@ public class NoCommunitySecurityComponentVersion extends KnownCommunitySecurityC
 
     @Override
     public void upgradeSecurityGraphSchema(Transaction tx, int fromVersion) {
+        throw unsupported();
+    }
+
+    @Override
+    public ShowUsersOutput showUsers(
+            Transaction tx, boolean withAuth, boolean allowedToSeeTags, boolean asCommands, boolean enterprise) {
         throw unsupported();
     }
 }

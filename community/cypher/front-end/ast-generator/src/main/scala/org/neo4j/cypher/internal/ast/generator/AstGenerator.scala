@@ -3392,7 +3392,12 @@ class AstGenerator(
   def _showUsers: Gen[ShowUsers] = for {
     yields <- _eitherYieldOrWhere
     withAuth <- boolean
-  } yield ShowUsers(yields, withAuth)(pos)
+    asCommands <- boolean
+  } yield ShowUsers(
+    yields,
+    withAuth,
+    if (usesCypher5) false else asCommands
+  )(pos)
 
   def _showCurrentUser: Gen[ShowCurrentUser] = for {
     yields <- _eitherYieldOrWhere

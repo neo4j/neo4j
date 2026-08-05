@@ -143,6 +143,7 @@ import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowServers
 import org.neo4j.cypher.internal.ast.ShowSupportedPrivilegeCommand
 import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.ShowUserCredentialsAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
@@ -407,9 +408,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
     val maybeLogicalPlan: Option[plans.LogicalPlan] = from.statement() match {
       // SHOW USERS
-      case su: ShowUsers => Some(plans.ShowUsers(
-          plans.AssertAllowedDbmsActions(ShowUserAction),
+      case su: ShowUsers =>
+        val assertAllowed =
+          if (su.asCommands) plans.AssertAllowedDbmsActions(None, Seq(ShowUserAction, ShowUserCredentialsAction))
+          else plans.AssertAllowedDbmsActions(ShowUserAction)
+        Some(plans.ShowUsers(
+          assertAllowed,
           su.withAuth,
+          su.asCommands,
           su.defaultColumnNames.map(varFor),
           su.yields,
           su.returns

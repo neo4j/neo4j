@@ -75,6 +75,7 @@ import org.neo4j.cypher.internal.procs.ActionMapper
 import org.neo4j.cypher.internal.procs.AuthorizationAndPredicateExecutionPlan
 import org.neo4j.cypher.internal.procs.Continue
 import org.neo4j.cypher.internal.procs.ParameterTransformer
+import org.neo4j.cypher.internal.procs.ParameterTransformer.ParameterGenerationFunction
 import org.neo4j.cypher.internal.procs.PredicateExecutionPlan
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
@@ -110,6 +111,7 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode
 import org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode
+import org.neo4j.server.security.systemgraph.ShowUsersOutput
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.TextValue
@@ -288,17 +290,45 @@ case class CommunityAdministrationCommandRuntime(
         )
 
     // SHOW USERS
-    case ShowUsers(source, withAuth, symbols, yields, returns) => context =>
-        val sourcePlan: Option[ExecutionPlan] =
-          Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-        ShowUsersExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planShowUsers(
-          symbols,
-          withAuth,
-          yields,
-          returns,
-          sourcePlan,
-          context
+    case ShowUsers(source, withAuth, asCommands, symbols, yields, returns) => context => {
+        val rowsKey = internalKey(ShowUsersOutput.USERS)
+
+        val genFunc: ParameterGenerationFunction = (tx, securityContext, params) => {
+          val outputParams = userSecurity.showUsers(tx, withAuth, true, asCommands, false)
+          outputParams.toMapValue
+        }
+
+        val returnClause =
+          AdministrationShowCommandUtils.generateReturnClause(
+            symbols,
+            yields,
+            returns,
+            Seq("user")
+          )
+        SystemCommandExecutionPlan(
+          "ShowUsers",
+          normalExecutionEngine,
+          securityAuthorizationHandler,
+          s"""
+             |UNWIND $$$rowsKey AS row
+             |  WITH
+             |  row.${ShowUsersOutput.COMMAND} AS command,
+             |  row.${ShowUsersOutput.USER} AS user,
+             |  null AS roles,
+             |  row.${ShowUsersOutput.PASSWORD_CHANGE_REQ} AS passwordChangeRequired,
+             |  null AS suspended,
+             |  null AS home,
+             |  row.${ShowUsersOutput.PROVIDER} AS provider,
+             |  row.${ShowUsersOutput.AUTH} AS auth,
+             |  row.${ShowUsersOutput.TAGS} AS tags
+             |$returnClause
+             |""".stripMargin,
+          VirtualValues.EMPTY_MAP,
+          source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)),
+          parameterTransformer = ParameterTransformer(genFunc),
+          cypherVersion = context.runtimeContext.cypherVersion
         )
+      }
 
     // SHOW CURRENT USER
     case ShowCurrentUser(symbols, yields, returns) => context =>

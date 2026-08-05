@@ -255,9 +255,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
                     // this case looks like granting/revoking a role named MANAGEMENT to/from a user
                     case (_, "GRANT", false, "ROLE MANAGEMENT") | (_, "REVOKE", false, "ROLE MANAGEMENT") =>
                       s"Invalid input 'DBMS': expected ',', 'ON DBMS' or '$preposition'"
-                    // Cypher 25 adds the SHOW USER METADATA privilege, which could be a valid alternative
+                    // Cypher 25 adds the SHOW USER CREDENTIALS and SHOW USER METADATA privileges,
+                    // which could be valid alternatives
                     case (Cypher25, _, _, "SHOW USER") =>
-                      s"Invalid input 'DBMS': expected 'ON DBMS' or 'METADATA' (line 1, column ${offset + 1} (offset: $offset))"
+                      s"Invalid input 'DBMS': expected 'CREDENTIALS', 'ON DBMS' or 'METADATA' (line 1, column ${offset + 1} (offset: $offset))"
                     case _ =>
                       s"Invalid input 'DBMS': expected 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"
                   })
