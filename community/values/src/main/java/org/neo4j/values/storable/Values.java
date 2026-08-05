@@ -78,7 +78,6 @@ public final class Values {
     public static final Value MAX_STRING = BooleanValue.FALSE;
     public static final BooleanValue TRUE = BooleanValue.TRUE;
     public static final BooleanValue FALSE = BooleanValue.FALSE;
-    public static final UTF8StringValue EMPTY_UTF8_STRING = new UTF8StringValue(ArrayUtils.EMPTY_BYTE_ARRAY, 0, 0, 0);
     public static final DoubleValue E = Values.doubleValue(Math.E);
     public static final DoubleValue PI = Values.doubleValue(Math.PI);
     public static final DoubleValue NaN = Values.doubleValue(Double.NaN);
@@ -122,25 +121,20 @@ public final class Values {
 
     // DIRECT FACTORY METHODS
 
-    public static UTF8StringValue utf8Value(String value) {
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        return utf8Value(bytes, 0, bytes.length, value.codePointCount(0, value.length()));
+    public static StringValue utf8Value(String value) {
+        return utf8Value(value.getBytes(StandardCharsets.UTF_8));
     }
 
     public static Value ut8fOrNoValue(String value) {
         return value == null ? NO_VALUE : utf8Value(value);
     }
 
-    public static UTF8StringValue utf8Value(byte[] bytes) {
-        return bytes.length == 0 ? EMPTY_UTF8_STRING : utf8Value(bytes, 0, bytes.length);
+    public static StringValue utf8Value(byte[] bytes) {
+        return bytes.length == 0 ? EMPTY_STRING : utf8Value(bytes, 0, bytes.length);
     }
 
-    public static UTF8StringValue utf8Value(byte[] bytes, int offset, int length) {
-        return utf8Value(bytes, offset, length, ValueWriter.UNKNOWN_NUM_CODE_POINTS);
-    }
-
-    public static UTF8StringValue utf8Value(byte[] bytes, int offset, int length, int numCodePoints) {
-        return length == 0 ? EMPTY_UTF8_STRING : new UTF8StringValue(bytes, offset, length, numCodePoints);
+    public static StringValue utf8Value(byte[] bytes, int offset, int length) {
+        return length == 0 ? EMPTY_STRING : new UTF8StringValue(bytes, offset, length);
     }
 
     public static StringValue stringValue(String value) {
@@ -505,7 +499,7 @@ public final class Values {
                 }
                 throw new IllegalArgumentException("[null] is not a supported property value");
             }
-            case String string -> utf8Value(string);
+            case String string -> utf8Value(string.getBytes(StandardCharsets.UTF_8));
             case Object[] array -> arrayValue(array, true);
             case Boolean bool -> booleanValue(bool);
             case Number number -> numberValue(number);
