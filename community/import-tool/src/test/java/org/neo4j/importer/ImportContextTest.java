@@ -19,6 +19,11 @@
  */
 package org.neo4j.importer;
 
+import static java.nio.file.attribute.AclEntryPermission.APPEND_DATA;
+import static java.nio.file.attribute.AclEntryPermission.WRITE_DATA;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -30,9 +35,13 @@ import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.factory.primitive.IntSets;
 import org.junit.jupiter.api.BeforeEach;
@@ -271,7 +280,7 @@ class ImportContextTest {
     }
 
     @Test
-    void recordOfTheAttemptIsWriteProtected() {
+    void recordOfTheAttemptIsWriteProtected() throws IOException {
         try (var importContext =
                 ImportContext.create(fs, DB, config, null, List.of("--nodes=foo.csv"), false, true, false)) {
             importContext.persistCliArgs();
@@ -280,9 +289,7 @@ class ImportContextTest {
             for (var fileName : List.of(ImportContext.CLI_ARGS_FILE_NAME, ImportContext.SUCCESS_FILE_NAME)) {
                 Path recorded = importContext.baseDir().resolve(fileName);
                 assertThat(recorded).isReadable();
-                assertThat(Files.isWritable(recorded))
-                        .as("'%s' must not be editable by accident", fileName)
-                        .isFalse();
+                assertWriteProtected(recorded);
             }
         }
     }
@@ -305,15 +312,14 @@ class ImportContextTest {
     }
 
     @Test
-    void writeProtectedRecordStillGetsClearedWithTheRestOfTheContext() {
+    void writeProtectedRecordStillGetsClearedWithTheRestOfTheContext() throws IOException {
         Path contextDir;
         try (var importContext =
                 ImportContext.create(fs, DB, config, null, List.of("--nodes=foo.csv"), false, false, false)) {
             importContext.persistCliArgs();
             importContext.markSuccessful();
             contextDir = importContext.baseDir();
-            assertThat(Files.isWritable(contextDir.resolve(ImportContext.CLI_ARGS_FILE_NAME)))
-                    .isFalse();
+            assertWriteProtected(contextDir.resolve(ImportContext.CLI_ARGS_FILE_NAME));
         }
 
         assertThat(contextDir).doesNotExist();
@@ -649,6 +655,33 @@ class ImportContextTest {
                 Arguments.of(new UnsupportedFormatException(boom), CommandFailedException.class),
                 Arguments.of(new UncheckedIOException(ioBoom), CommandFailedException.class),
                 Arguments.of(ioBoom, CommandFailedException.class));
+    }
+
+    /**
+     * Asserts on what the permissions say rather than on {@link Files#isWritable(Path)}.
+     * The latter reports whether this process may write. And superuser may, whatever the permissions are,
+     * and CI runs some builds as root. Follows the two ways write protection is expressed, POSIX permissions where
+     * there are any and an ACL entry denying the owner write access otherwise.
+     */
+    private static void assertWriteProtected(Path path) throws IOException {
+        String as = "'%s' must not be editable by accident".formatted(path.getFileName());
+        var posix = Files.getFileAttributeView(path, PosixFileAttributeView.class);
+        if (posix != null) {
+            assertThat(posix.readAttributes().permissions())
+                    .as(as)
+                    .doesNotContain(OWNER_WRITE, GROUP_WRITE, OTHERS_WRITE);
+            return;
+        }
+        var acl = Files.getFileAttributeView(path, AclFileAttributeView.class);
+        assertThat(acl)
+                .as("write protection needs either POSIX permissions or an ACL")
+                .isNotNull();
+        var owner = acl.getOwner();
+        assertThat(acl.getAcl())
+                .as(as)
+                .anyMatch(entry -> entry.type() == AclEntryType.DENY
+                        && entry.principal().equals(owner)
+                        && entry.permissions().containsAll(Set.of(WRITE_DATA, APPEND_DATA)));
     }
 
     private static DetailedProgressReport progressReport() {
