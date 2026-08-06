@@ -28,8 +28,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
-import org.neo4j.configuration.Config;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -143,11 +141,7 @@ abstract class GenericKeyStateFormatTest<KEY extends GenericKey<KEY>> extends In
         values.add(Values.float64Vector(1, 2, 3, 4, 5));
         values.add(Values.float64Vector(1, 2, 4, 5, 6));
         // UUID
-        if (KernelVersion.getLatestVersion(Config.defaults()).isAtLeast(KernelVersion.VERSION_UUID_VALUE_INTRODUCED)) {
-            // Let's deal with this format change (if we even need it) when arriving at a kernel version
-            // with UID support in it
-            values.add(Values.uuidValue(UUID.randomUUID()));
-        }
+        values.add(Values.uuidValue(UUID.fromString("deadc0de-cafe-4b1e-b0ba-feed12345678")));
     }
 
     @Override
