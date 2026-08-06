@@ -23,7 +23,8 @@ public enum BatchType {
     COMPLETE((byte) 0),
     CHUNKED((byte) 1),
     STORAGE_ENGINE_ID_ONLY_HEADER((byte) 2),
-    STORAGE_ENGINE_ID_ONLY_HEADER_CHUNKED((byte) 3);
+    STORAGE_ENGINE_ID_ONLY_HEADER_CHUNKED((byte) 3),
+    STANDALONE_TX_NO_HEADER((byte) 4);
 
     private final byte byteValue;
 
@@ -41,14 +42,32 @@ public enum BatchType {
             case 1 -> CHUNKED;
             case 2 -> STORAGE_ENGINE_ID_ONLY_HEADER;
             case 3 -> STORAGE_ENGINE_ID_ONLY_HEADER_CHUNKED;
+            case 4 -> STANDALONE_TX_NO_HEADER;
             default -> throw new IllegalStateException("Unexpected value: " + value);
         };
     }
 
+    /**
+     * Check if the TransactionHeader is only partial
+     * @return true if the TransactionHeader is minimal (storage id and chunked/complete),
+     * or missing (standalone). Information has to be taken from kernel LogEntries only
+     * If this returns false all header values are present and may be used if for instance the
+     * transaction has not yet had finalized values assigned.
+     */
     public boolean hasMiniHeader() {
-        return this == STORAGE_ENGINE_ID_ONLY_HEADER || this == STORAGE_ENGINE_ID_ONLY_HEADER_CHUNKED;
+        return this == STORAGE_ENGINE_ID_ONLY_HEADER
+                || this == STORAGE_ENGINE_ID_ONLY_HEADER_CHUNKED
+                || this == STANDALONE_TX_NO_HEADER;
     }
 
+    /**
+     * For single chunk MVCC transactions the kernel LogEntries can be ambiguous with non-MVCC transactions,
+     * so the TransactionHeader helps disambiguate them.
+     * For standalone transactions it is still ambiguous, but we only return false as
+     * this should only be encountered on entries before the start of the RaftGroup
+     * and they will not require replicated application
+     * @return true if the header records the transaction as MVCC, else false
+     */
     public boolean isChunked() {
         return this == CHUNKED || this == STORAGE_ENGINE_ID_ONLY_HEADER_CHUNKED;
     }
