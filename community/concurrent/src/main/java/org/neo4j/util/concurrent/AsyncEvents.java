@@ -52,7 +52,6 @@ public class AsyncEvents<T extends AsyncEvent> implements Runnable {
     private static final Sentinel SHUTDOWN_SENTINEL = new Sentinel("SHUTDOWN");
 
     private final Consumer<T> eventConsumer;
-    private final BinaryLatch startupLatch;
     private final BinaryLatch shutdownLatch;
 
     @SuppressWarnings({"unused", "FieldCanBeLocal"})
@@ -68,7 +67,6 @@ public class AsyncEvents<T extends AsyncEvent> implements Runnable {
      */
     public AsyncEvents(Consumer<T> eventConsumer) {
         this.eventConsumer = eventConsumer;
-        this.startupLatch = new BinaryLatch();
         this.shutdownLatch = new BinaryLatch();
         this.stack = END_SENTINEL;
     }
@@ -89,7 +87,6 @@ public class AsyncEvents<T extends AsyncEvent> implements Runnable {
     public void run() {
         assert backgroundThread == null : "A thread is already running " + backgroundThread;
         backgroundThread = Thread.currentThread();
-        startupLatch.release();
 
         try {
             do {
