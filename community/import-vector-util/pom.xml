@@ -67,18 +67,6 @@
           </jdkToolchain>
         </configuration>
       </plugin>
-      <!-- Run this module's unit tests on its target JDK too (Maven itself runs on the lower
-           baseline JDK, which cannot load this module's newer bytecode). This module has no
-           integration tests, so only surefire needs it. Merges with the inherited config. -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <jdkToolchain>
-            <version>${vm.target.version}</version>
-          </jdkToolchain>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 </project>
