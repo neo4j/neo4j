@@ -35,6 +35,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.CompleteBatchRepresentation;
+import org.neo4j.kernel.impl.transaction.EmptyBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -123,10 +124,18 @@ public class UpgradeTestUtil {
         ArrayList<CommittedCommandBatchRepresentation> transactions = new ArrayList<>();
         try (CommandBatchCursor commandBatchCursor = commandBatchCursorSupplier.get()) {
             while (commandBatchCursor.next()) {
-                CompleteBatchRepresentation representation = (CompleteBatchRepresentation) commandBatchCursor.get();
-                if (representation.txId() > fromTxId) {
-                    transactions.add(representation);
-                    transactionVersions.add(representation.startEntry().kernelVersion());
+                CommittedCommandBatchRepresentation committedCommandBatchRepresentation = commandBatchCursor.get();
+                if (committedCommandBatchRepresentation.txId() > fromTxId) {
+                    transactions.add(committedCommandBatchRepresentation);
+                    KernelVersion kernelVersion;
+                    if (committedCommandBatchRepresentation instanceof EmptyBatchRepresentation empty) {
+                        kernelVersion = empty.kernelVersion();
+                    } else {
+                        CompleteBatchRepresentation representation =
+                                (CompleteBatchRepresentation) committedCommandBatchRepresentation;
+                        kernelVersion = representation.startEntry().kernelVersion();
+                    }
+                    transactionVersions.add(kernelVersion);
                 }
             }
         }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.distributed;
 import static org.neo4j.kernel.impl.transaction.log.distributed.BatchType.STORAGE_ENGINE_ID_ONLY_HEADER;
 import static org.neo4j.kernel.impl.transaction.log.distributed.BatchType.STORAGE_ENGINE_ID_ONLY_HEADER_CHUNKED;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.REPLICATED_TX_CONTENT_TYPE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.VERSION_UPGRADE_CONTENT_TYPE;
 
 import java.io.IOException;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
@@ -49,9 +50,10 @@ public class ReplicatedTransactionHelper {
             channel.skip(metadataBytes);
             channel.getCurrentLogPosition(parseProgress);
             byte contentCode = channel.get();
-            if (contentCode != REPLICATED_TX_CONTENT_TYPE) {
-                throw new IllegalStateException("Parsing error on REPLICATED_TX_CONTENT_TYPE at position="
-                        + parseProgress.newPosition() + " unexpected contentCode=" + contentCode);
+            if (contentCode != REPLICATED_TX_CONTENT_TYPE && contentCode != VERSION_UPGRADE_CONTENT_TYPE) {
+                throw new IllegalStateException(
+                        "Parsing error on REPLICATED_TX_CONTENT_TYPE or VERSION_UPGRADE_CONTENT_TYPE at position="
+                                + parseProgress.newPosition() + " unexpected contentCode=" + contentCode);
             }
             channel.getCurrentLogPosition(parseProgress);
             byte headerByte = channel.get();

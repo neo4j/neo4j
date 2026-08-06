@@ -54,6 +54,7 @@ import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -225,6 +226,15 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
             throw new IllegalStateException(
                     "The current log format provider on transaction log start up would downgrade the format. The log format config is incorrectly configured. Current %s, last file %s"
                             .formatted(currentLogFormat, logHeader.getLogFormatVersion()));
+        }
+        if (context.config().get(GraphDatabaseInternalSettings.merged_log)
+                && currentLogFormat.usesSegments()
+                && logHeader.getKernelVersion().isGreaterThan(currentKernelVersion)) {
+            // Mergedlog can have appended a version we have not yet applied and rotated the log. Let that pass without
+            // rotation
+            // TODO MERGELOG have another look at this when further along with unifying
+            //  TransactionLogFile/EnvelopedLogFiles maybe need a better way to say no changes allowed by this class?
+            return false;
         }
         return (currentLogFormat.usesSegments() && logHeader.getKernelVersion() != currentKernelVersion)
                 || currentLogFormat != logHeader.getLogFormatVersion();
