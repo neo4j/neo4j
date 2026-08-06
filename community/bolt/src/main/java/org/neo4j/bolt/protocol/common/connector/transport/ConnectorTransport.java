@@ -39,7 +39,11 @@ import org.neo4j.service.Services;
  */
 @Service
 public sealed interface ConnectorTransport extends PrioritizedService
-        permits EpollConnectorTransport, KqueueConnectorTransport, NioConnectorTransport, LocalConnectorTransport {
+        permits EpollConnectorTransport,
+                IoUringConnectorTransport,
+                KqueueConnectorTransport,
+                NioConnectorTransport,
+                LocalConnectorTransport {
 
     /**
      * Retrieves a stream of available transport implementations within the application Class-Path.
