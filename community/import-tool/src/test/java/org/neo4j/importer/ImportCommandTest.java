@@ -501,6 +501,46 @@ class ImportCommandTest {
         assertThat(command.overwriteDestination).isFalse();
     }
 
+    @Test
+    void resumeAbortsWhenTheStateWasLaidOutUnderDifferentSettings() throws IOException {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        Config databaseConfig = command.loadNeo4jConfig("block");
+        Path contextDir =
+                writePreviousAttemptCliArgs(databaseConfig, "--nodes=old.csv", "--skidbladnir", "--format=block");
+        // the attempt ran with its data somewhere this run no longer looks, so its store and intermediary data are
+        // not where a resume would continue them
+        String dataDirectory = GraphDatabaseSettings.data_directory.name();
+        String asAttemptRan =
+                "%s=%s".formatted(dataDirectory, databaseConfig.get(GraphDatabaseSettings.data_directory));
+        String asRecorded = "%s=%s".formatted(dataDirectory, "/somewhere/else");
+        Files.writeString(
+                contextDir.resolve(ImportContext.CONFIG_FILE_NAME),
+                databaseConfig.toString(false).replace(asAttemptRan, asRecorded));
+        CommandLine.populateCommand(command, "--resume");
+
+        assertThatThrownBy(command::rerunFromPreviousAttempt)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("settings that no longer hold")
+                .hasMessageContaining(GraphDatabaseSettings.data_directory.name())
+                .hasMessageContaining("/somewhere/else");
+    }
+
+    @Test
+    void resumeProceedsWhenTheSettingsTheStateDependsOnAreUnchanged() throws IOException {
+        ExecutionContext ctx = homedExecutionContext();
+        ImportCommand.Full command = new ImportCommand.Full(ctx);
+        Config databaseConfig = command.loadNeo4jConfig("block");
+        Path contextDir =
+                writePreviousAttemptCliArgs(databaseConfig, "--nodes=old.csv", "--skidbladnir", "--format=block");
+        Files.writeString(contextDir.resolve(ImportContext.CONFIG_FILE_NAME), databaseConfig.toString(false));
+        CommandLine.populateCommand(command, "--resume");
+
+        command.rerunFromPreviousAttempt();
+
+        assertThat(command.isSkidbladnir()).isTrue();
+    }
+
     private Path writePreviousAttemptCliArgs(Config databaseConfig, String... cliArgs) throws IOException {
         Path logsDir = databaseConfig.get(GraphDatabaseSettings.logs_directory);
         Path contextDir =

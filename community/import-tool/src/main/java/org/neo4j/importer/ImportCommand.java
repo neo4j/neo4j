@@ -697,7 +697,7 @@ public class ImportCommand {
                     database,
                     loadNeo4jConfig(format),
                     reportFile,
-                    ownCliArgs(),
+                    spec.commandLine().getParseResult().expandedArgs(),
                     includeUpdatesInProgress(),
                     !disableInstrumentation && captureProfile && captureProfileResultPath == null,
                     verbose)) {
@@ -759,25 +759,10 @@ public class ImportCommand {
         private void preImport(ImportContext importContext) {
             importContext.preamble(ctx.out());
             importContext.persistCliArgs();
-        }
-
-        /**
-         * {@link picocli.CommandLine.Model.ParseResult#originalArgs()} returns the entire top-level command line
-         * (e.g. {@code database import full ...}), the same for every subcommand in the hierarchy, not just the
-         * args matched by this subcommand. Strip the leading command-name tokens ("database", "import", "full"/
-         * "incremental") so what gets persisted is just this command's own args - replayable directly against a
-         * {@link Base} subclass instance, e.g. via {@link CommandLine#populateCommand(Object, String...)}.
-         */
-        private List<String> ownCliArgs() {
-            List<String> originalArgs = spec.commandLine().getParseResult().originalArgs();
-            int prefixLength = 0;
-            for (CommandLine commandLine = spec.commandLine(); commandLine.getParent() != null; ) {
-                commandLine = commandLine.getParent();
-                prefixLength++;
+            if (skidbladnir) {
+                // only a skidbladnir import can be resumed, and only a resume has any use for the configuration
+                importContext.persistConfig();
             }
-            return prefixLength < originalArgs.size()
-                    ? originalArgs.subList(prefixLength, originalArgs.size())
-                    : List.of();
         }
 
         /**
@@ -834,6 +819,8 @@ public class ImportCommand {
             Path previousAttempt = previousAttemptContextDir();
             adoptInvocationOf(previousAttempt);
             verifyPreviousAttemptIsResumable(previousAttempt);
+            // only now does this command load its configuration the way the attempt being resumed asked for it
+            verifyConfigStillMatches(previousAttempt);
         }
 
         /**
@@ -884,6 +871,27 @@ public class ImportCommand {
                                         + "to resume. Rerun the import itself if you want to import it again, which "
                                         + "overwrites the database.")
                                 .formatted(database.name()));
+            }
+        }
+
+        /**
+         * Refuses a resume that would continue state laid out under settings this run no longer resolves the same
+         * way. The CLI arguments come from the attempt itself, so what can have moved is everything around them -
+         * 'neo4j.conf', whatever '--additional-config' points at, and the environment those settings derive their
+         * defaults from.
+         */
+        private void verifyConfigStillMatches(Path contextDir) throws IOException {
+            var changed = ImportContext.resumeSensitiveChanges(contextDir, loadNeo4jConfig(importFormat()));
+            if (!changed.isEmpty()) {
+                throw new CommandFailedException(
+                        ("ERROR: the state left behind by the import attempt being resumed was laid out under "
+                                        + "settings that no longer hold:%n%s%nRestore them to resume that attempt, or "
+                                        + "import again from the start under the settings you want.")
+                                .formatted(changed.stream()
+                                        .map(change -> "  '%s' was '%s' and is now '%s'"
+                                                .formatted(
+                                                        change.setting().name(), change.previous(), change.current()))
+                                        .collect(Collectors.joining(System.lineSeparator()))));
             }
         }
 

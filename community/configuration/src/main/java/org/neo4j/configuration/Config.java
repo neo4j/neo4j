@@ -1074,6 +1074,11 @@ public class Config implements Configuration {
         this.log = log;
     }
 
+    /**
+     * The declaration this configuration holds under {@code name} - the setting itself, not its value, which
+     * {@link #get(Setting)} reads. Throws {@link IllegalArgumentException} for a name this configuration declares
+     * nothing under.
+     */
     @SuppressWarnings("unchecked")
     public Setting<Object> getSetting(String name) {
         if (!settings.containsKey(name)) {
@@ -1082,6 +1087,11 @@ public class Config implements Configuration {
         return (Setting<Object>) settings.get(name).setting;
     }
 
+    /**
+     * Every setting this configuration declares, by name: those the {@link SettingsDeclaration} classes it was built
+     * from define, and one per {@link GroupSetting} instance configured for it. Whether a value was given or the
+     * default stands makes no difference to what is declared - {@link #isExplicitlySet(Setting)} tells the two apart.
+     */
     @SuppressWarnings("unchecked")
     public Map<String, Setting<Object>> getDeclaredSettings() {
         return settings.entrySet().stream()

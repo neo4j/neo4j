@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributeView;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,6 +59,8 @@ import org.neo4j.batchimport.api.input.ApplicationMode;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.importer.FileImporter.CsvImportException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -284,9 +287,13 @@ class ImportContextTest {
         try (var importContext =
                 ImportContext.create(fs, DB, config, null, List.of("--nodes=foo.csv"), false, true, false)) {
             importContext.persistCliArgs();
+            importContext.persistConfig();
             importContext.markSuccessful();
 
-            for (var fileName : List.of(ImportContext.CLI_ARGS_FILE_NAME, ImportContext.SUCCESS_FILE_NAME)) {
+            for (var fileName : List.of(
+                    ImportContext.CLI_ARGS_FILE_NAME,
+                    ImportContext.CONFIG_FILE_NAME,
+                    ImportContext.SUCCESS_FILE_NAME)) {
                 Path recorded = importContext.baseDir().resolve(fileName);
                 assertThat(recorded).isReadable();
                 assertWriteProtected(recorded);
@@ -317,12 +324,104 @@ class ImportContextTest {
         try (var importContext =
                 ImportContext.create(fs, DB, config, null, List.of("--nodes=foo.csv"), false, false, false)) {
             importContext.persistCliArgs();
+            importContext.persistConfig();
             importContext.markSuccessful();
             contextDir = importContext.baseDir();
             assertWriteProtected(contextDir.resolve(ImportContext.CLI_ARGS_FILE_NAME));
+            assertWriteProtected(contextDir.resolve(ImportContext.CONFIG_FILE_NAME));
         }
 
         assertThat(contextDir).doesNotExist();
+        assertThat(importsDir).exists().isEmptyDirectory();
+    }
+
+    @Test
+    void configPersistsResolvedValuesAndNotOnlyExplicitlySetOnes() {
+        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, false)) {
+            importContext.persistConfig();
+
+            assertThat(importContext.baseDir().resolve(ImportContext.CONFIG_FILE_NAME))
+                    .exists()
+                    .content()
+                    .contains(
+                            "%s=%s".formatted(neo4j_home.name(), testDir.homePath()),
+                            "%s=%s".formatted(logs_directory.name(), importsDir));
+        }
+    }
+
+    @Test
+    void noSensitiveChangesWhenAttemptRanWithTheSameConfig() throws IOException {
+        assertThat(ImportContext.resumeSensitiveChanges(persistedConfigOf(config), config))
+                .isEmpty();
+    }
+
+    @Test
+    void noSensitiveChangesWhenAttemptRecordedNoConfigAtAll() throws IOException {
+        Path contextDir = testDir.directory("attempt-from-before-config-was-recorded");
+
+        assertThat(ImportContext.resumeSensitiveChanges(contextDir, config)).isEmpty();
+    }
+
+    @Test
+    void aStateShapingSettingThatChangedIsReported() throws IOException {
+        Path contextDir = persistedConfigOf(config);
+        var directIo = Config.newBuilder()
+                .fromConfig(config)
+                .set(GraphDatabaseSettings.pagecache_direct_io, true)
+                .build();
+
+        assertThat(ImportContext.resumeSensitiveChanges(contextDir, directIo))
+                .singleElement()
+                .satisfies(change -> {
+                    assertThat(change.setting()).isEqualTo(GraphDatabaseSettings.pagecache_direct_io);
+                    assertThat(change.previous()).isEqualTo(false);
+                    assertThat(change.current()).isEqualTo(true);
+                });
+    }
+
+    @Test
+    void aSettingOtherSettingsDeriveTheirDefaultFromIsReportedWithEverythingItMoved() throws IOException {
+        Path contextDir = persistedConfigOf(config);
+        var movedData = Config.newBuilder()
+                .fromConfig(config)
+                .set(GraphDatabaseSettings.data_directory, testDir.directory("elsewhere"))
+                .build();
+
+        // every directory that defaults to a location under the data one travels with it, so moving the data
+        // directory is reported as the move of each of them too
+        assertThat(ImportContext.resumeSensitiveChanges(contextDir, movedData))
+                .extracting(change -> change.setting().name())
+                .containsExactly(
+                        GraphDatabaseInternalSettings.auth_store_directory.name(),
+                        GraphDatabaseInternalSettings.databases_root_path.name(),
+                        GraphDatabaseSettings.data_directory.name(),
+                        GraphDatabaseSettings.database_dumps_root_path.name(),
+                        GraphDatabaseSettings.script_root_path.name(),
+                        GraphDatabaseSettings.transaction_logs_root_path.name());
+    }
+
+    @Test
+    void aSettingTheStateOnDiskDoesNotDependOnIsIgnored() throws IOException {
+        Path contextDir = persistedConfigOf(config);
+        var reportingMoreOften = Config.newBuilder()
+                .fromConfig(config)
+                .set(GraphDatabaseInternalSettings.import_detailed_reporting_interval, Duration.ofSeconds(1))
+                .build();
+
+        assertThat(ImportContext.resumeSensitiveChanges(contextDir, reportingMoreOften))
+                .isEmpty();
+    }
+
+    @Test
+    void configClearedWithRestOfContextWhenNotRetained() {
+        Path configPath;
+        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+            importContext.persistConfig();
+            configPath = importContext.baseDir().resolve(ImportContext.CONFIG_FILE_NAME);
+            assertThat(configPath).exists().isNotEmptyFile();
+        }
+
+        assertThat(configPath).doesNotExist();
         assertThat(importsDir).exists().isEmptyDirectory();
     }
 
@@ -635,6 +734,16 @@ class ImportContextTest {
                                         assertThat(json.get("schemaImportDuration"))
                                                 .isNotNull();
                                     })));
+        }
+    }
+
+    /**
+     * The context directory of an attempt that ran with the given configuration, as {@code --resume} would find it.
+     */
+    private Path persistedConfigOf(Config attemptConfig) {
+        try (var importContext = ImportContext.create(fs, DB, attemptConfig, null, List.of(), false, true, false)) {
+            importContext.persistConfig();
+            return importContext.baseDir();
         }
     }
 

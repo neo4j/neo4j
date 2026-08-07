@@ -55,6 +55,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -66,6 +67,7 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExitCode;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.importer.FileImporter.CsvImportException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -90,6 +92,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     public static final String DEFAULT_REPORT_FILE_NAME = "report.json.log";
     public static final String CLI_ARGS_FILE_NAME = "cli-args";
     public static final String NODES_PER_RANGE_FILE_NAME = "nodes-per-range";
+    public static final String CONFIG_FILE_NAME = "config";
     public static final String SUCCESS_FILE_NAME = "success";
 
     private final String dbName;
@@ -335,11 +338,44 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     /**
      * Persists the CLI arguments the import was invoked with into the context directory, one per line - a single
      * argument (e.g. a file path) may itself contain whitespace, so joining/splitting on whitespace would corrupt it.
+     * Written {@link #writeProtected(Path, String) write-protected}, since a hand edit would quietly change what a
+     * later '--resume' replays.
      */
     public void persistCliArgs() {
         try {
             fs.mkdirs(baseDir());
             writeProtected(baseDir().resolve(CLI_ARGS_FILE_NAME), String.join("\n", originalArgs));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Persists the configuration the import actually ran with into the context directory, in {@code neo4j.conf}
+     * format. Every declared setting with a value is written, not just the explicitly set ones, since a setting left
+     * at its default can still resolve differently between attempts - several defaults are derived from the machine
+     * (available memory, processors) or from the environment ({@code NEO4J_HOME} and the paths hanging off it).
+     * <p>
+     * A resumed import picks up state that the attempt it resumes laid out on disk (the partially written store, its
+     * temporary intermediary data, the node id ranges the work was divided into), so it is only safe to continue if
+     * the settings that shaped that state still hold the same values, which this makes it possible to tell. Note that
+     * {@link org.neo4j.configuration.GraphDatabaseInternalSettings#import_context_directory} is scoped to a single
+     * attempt and therefore differs between any two of them by design.
+     * <p>
+     * Written {@link #writeProtected(Path, String) write-protected}, since a hand edit would decide whether a resume
+     * is allowed to run at all.
+     *
+     * TODO The context dir is an internal setting used to keep track of where the context dir is, and it's decided
+     * at runtime, we check the config BEFORE the context dir has been created, and therefore as a duct-tape fix we
+     * allow the context dir setting to change between resumes, because when checked the resuming process will see
+     * it's own context dir as null, and that will always fail the check..
+     *
+     * TODO Real solution: move context dir path to ImportContext field
+     */
+    public void persistConfig() {
+        try {
+            fs.mkdirs(baseDir());
+            writeProtected(baseDir().resolve(CONFIG_FILE_NAME), databaseConfig.toString(false));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -356,10 +392,51 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     }
 
     /**
+     * A setting that holds a different value now than it did for the attempt being resumed. A value is null when the
+     * setting had none at all on that side.
+     */
+    public record SettingChange(Setting<?> setting, Object previous, Object current) {}
+
+    /**
+     * Settings a resume is free to change without endangering the state left behind by the attempt being resumed:
+     * they leave no trace a resume picks up, so rejecting a resume over one of these would refuse it for a change
+     * that cannot break it. Every other declared setting is treated as resume-sensitive by default, so a setting
+     * newly added to Neo4j is guarded automatically rather than only once someone remembers to deny-list it.
+     */
+    private static final List<Setting<?>> RESUME_SAFE_SETTINGS =
+            List.of(import_detailed_reporting_interval, import_context_directory);
+
+    /**
+     * Which declared settings, other than the {@link #RESUME_SAFE_SETTINGS}, the given configuration resolves
+     * differently than the attempt that owns the given context directory did, empty when a resume can safely
+     * continue that attempt's state. Both sides are the values each setting itself resolves to, rather than two
+     * string representations of the same value. Ordered by setting name, since the configuration holds its settings
+     * in no particular one.
+     * <p>
+     * An attempt that recorded no configuration at all cannot be compared against and passes: only skidbladnir
+     * imports record one, and they are the only ones a resume accepts anyway, so this is an attempt from before the
+     * configuration was recorded.
+     */
+    public static List<SettingChange> resumeSensitiveChanges(Path contextDir, Config current) throws IOException {
+        Path configPath = contextDir.resolve(CONFIG_FILE_NAME);
+        if (!Files.exists(configPath)) {
+            return List.of();
+        }
+        Config previous = Config.newBuilder().fromFile(configPath).build();
+        return current.getDeclaredSettings().values().stream()
+                .filter(setting -> !RESUME_SAFE_SETTINGS.contains(setting))
+                .filter(setting -> !Objects.equals(previous.get(setting), current.get(setting)))
+                .sorted(Comparator.comparing(Setting::name))
+                .map(setting -> new SettingChange(setting, previous.get(setting), current.get(setting)))
+                .toList();
+    }
+
+    /**
      * Records that the import completed, so that a retained context directory can be told apart from one left behind
      * by an attempt that did not finish. A retained directory outlives a successful import (see
      * {@link #create(FileSystemAbstraction, NormalizedDatabaseName, Config, Path, List, boolean, boolean, boolean)}),
-     * and without this there is nothing in it that says the import got all the way through.
+     * and without this there is nothing in it that says the import got all the way through. Written
+     * {@link #writeProtected(Path, String) write-protected}, like the other records of an attempt.
      */
     public void markSuccessful() {
         try {
@@ -371,17 +448,11 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     }
 
     /**
-     * Writes a file that records what an import attempt did, and takes the write permission off it afterwards. What
-     * these files say decides what a later '--resume' reruns and whether it is allowed to run at all, so editing one
-     * by hand quietly changes the import - or, for {@link #SUCCESS_FILE_NAME}, lets a completed import be rerun over
-     * the database it produced. Losing the write permission is a guard against doing that by accident, not protection
-     * against someone who means to: the owner can put it back.
-     * <p>
-     * The record still has to be removable, since the context directory is cleared once it has served its purpose. On
-     * POSIX that comes for free - what may be removed from a directory is the directory's business, not the file's -
-     * whereas on Windows the read-only attribute the permission maps to also refuses deletion, so write access is
-     * denied through the ACL instead, which leaves deletion alone. A filesystem offering neither leaves the record
-     * writable rather than undeletable.
+     * Writes a file and takes the write permission off it afterwards, leaving it removable. On POSIX that comes for
+     * free - what may be removed from a directory is the directory's business, not the file's - whereas on Windows the
+     * read-only attribute the permission maps to also refuses deletion, so write access is denied through the ACL
+     * instead, which leaves deletion alone. A filesystem offering neither leaves the file writable rather than
+     * undeletable. The owner can always put the permission back.
      */
     private static void writeProtected(Path path, String content) throws IOException {
         Files.writeString(path, content);
