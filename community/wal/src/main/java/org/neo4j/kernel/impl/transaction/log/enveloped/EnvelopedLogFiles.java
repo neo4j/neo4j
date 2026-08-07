@@ -656,7 +656,9 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         return new EnvelopeReadChannel(
                 logVersionedChannel,
                 logHeader.getSegmentBlockSize(),
-                new EnvelopedLogVersionBridge(this),
+                keepChannelOpenOnClose
+                        ? new KeepChannelOpenEnvelopedLogVersionBridge(this)
+                        : new EnvelopedLogVersionBridge(this),
                 memoryTracker,
                 false);
     }
@@ -725,7 +727,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                     String.format("From index %d is higher than to index %d", fromIndex, toIndex));
         }
 
-        long toFileVersion = getFileVersion(toIndex + 1);
+        long toFileVersion = getFileVersion(toIndex);
         if (toFileVersion == -1) {
             throw new NoSuchFileException(
                     "No log files containing toIndex " + toIndex + " found because they have been pruned.");
@@ -734,28 +736,23 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         var storeChannels = new ArrayList<StoreChannel>();
         try {
             long toPosition;
-            var toChannelCtx = logsRepository.openReadChannel(toFileVersion);
-            storeChannels.add(toChannelCtx.channel());
-
-            try (var envToChannel = envelopedReadChannel(toChannelCtx, true)) {
-                if (envToChannel.logHeader().getLastAppendIndex() == toIndex) {
-                    toPosition = envToChannel.alignWithStartEntry();
-                } else {
-                    envToChannel.goToEntry(toIndex);
-                    toPosition = envToChannel.goToEndOfEntry().getByteOffset();
-                }
+            try (var envToChannel = envelopedReadChannel(logsRepository.openReadChannel(toFileVersion), true)) {
+                envToChannel.goToEntry(toIndex);
+                toPosition = envToChannel.goToEndOfEntry().getByteOffset();
+                toFileVersion = envToChannel.getLogVersion();
+                var channelToAdd = ensureClosable(envToChannel.channel());
+                storeChannels.add(channelToAdd);
+                var logHeader = envToChannel.logHeader();
 
                 // If fromIndex is in the same file, we position the channel and we're done with the logic
-                if (envToChannel.logHeader().getLastAppendIndex() < fromIndex) {
+                if (logHeader.getLastAppendIndex() < fromIndex) {
                     var position = envToChannel.goToEntry(fromIndex);
-                    toChannelCtx.channel().position(position);
+                    channelToAdd.position(position);
                     return new StoreChannelsForTransfer(
                             storeChannels, toPosition, fromIndex, toIndex, segmentBlockSize);
                 }
                 // Otherwise, toChannel starts at its log header's data start
-                toChannelCtx
-                        .channel()
-                        .position(envToChannel.logHeader().getStartPosition().getByteOffset());
+                channelToAdd.position(logHeader.getStartPosition().getByteOffset());
             }
 
             // Find and position the start channel
@@ -770,27 +767,13 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 fromChannelCtx.channel().position(envFromChannel.goToEntry(fromIndex));
             }
 
-            // this means the last file is position to the start point and unnecessary to send
-            if (toPosition == toChannelCtx.channel().position()) {
-                toChannelCtx.close();
-                storeChannels.remove(toChannelCtx.channel());
-                toFileVersion--;
-                if (toFileVersion == fromVersion) {
-                    toPosition = fromChannelCtx.channel().size();
-                } else {
-                    toChannelCtx = logsRepository.openReadChannel(toFileVersion);
-                    storeChannels.add(toChannelCtx.channel());
-                    toPosition = toChannelCtx.channel().size();
-                    toChannelCtx.channel().position(segmentBlockSize);
-                }
-            }
-
             // Fill in the gaps between fromVersion and toVersion
             for (var v = toFileVersion - 1; v > fromVersion; v--) {
                 var midChannel = logsRepository.openReadChannel(v).channel();
                 if (midChannel.size() <= segmentBlockSize) {
                     // less than should not be possible. In any case. Files may be empty due to truncation events.
                     // There is no reason to include these for transfer.
+                    midChannel.close();
                     continue;
                 }
                 storeChannels.add(1, midChannel); // Maintain order: [from, ..., to]
@@ -914,7 +897,6 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         private final EnvelopedLogFiles envelopedLogFiles;
 
         public EnvelopedLogVersionBridge(EnvelopedLogFiles envelopedLogFiles) {
-
             this.envelopedLogFiles = envelopedLogFiles;
         }
 
@@ -927,5 +909,30 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             }
             return channel;
         }
+    }
+
+    private static class KeepChannelOpenEnvelopedLogVersionBridge implements LogVersionBridge {
+        private final EnvelopedLogFiles envelopedLogFiles;
+
+        public KeepChannelOpenEnvelopedLogVersionBridge(EnvelopedLogFiles envelopedLogFiles) {
+            this.envelopedLogFiles = envelopedLogFiles;
+        }
+
+        @Override
+        public LogVersionedStoreChannel next(LogVersionedStoreChannel channel, boolean raw) throws IOException {
+            var nextChannel = envelopedLogFiles.safeOpenChannel(channel.getLogVersion() + 1);
+            if (nextChannel != null) {
+                ((UnclosableChannel) channel).toClosable().close();
+                return new UnclosableChannel(nextChannel);
+            }
+            return channel;
+        }
+    }
+
+    private static LogVersionedStoreChannel ensureClosable(LogVersionedStoreChannel channel) {
+        if (channel instanceof UnclosableChannel unclosableChannel) {
+            return unclosableChannel.toClosable();
+        }
+        return channel;
     }
 }

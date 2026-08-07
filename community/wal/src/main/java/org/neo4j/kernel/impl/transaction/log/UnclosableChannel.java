@@ -43,4 +43,8 @@ public class UnclosableChannel extends DelegatingStoreChannel<LogVersionedStoreC
     public void close() throws IOException {
         // do not close since channel is shared
     }
+
+    public LogVersionedStoreChannel toClosable() {
+        return delegate;
+    }
 }

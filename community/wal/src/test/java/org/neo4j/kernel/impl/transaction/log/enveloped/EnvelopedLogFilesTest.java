@@ -1263,6 +1263,58 @@ class EnvelopedLogFilesTest {
     }
 
     @Test
+    void shouldFindIntermediateRangeForTransferWithToEntrySpanningManyFiles() throws IOException {
+        var smallData = EIGHT_BYTES_MESSAGE.getBytes(StandardCharsets.UTF_8);
+        var veryLargeData = new byte[segmentBlockSize * (totalSegments * 2 + 1)];
+
+        envelopedLogFiles.initialise();
+
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+
+        writeData(writeChannel, smallData); // index 0
+        writeData(writeChannel, smallData); // index 1
+        writeChannel.prepareForFlush().flush();
+        long endOfEntry1 = writeChannel.position();
+        var metadata = envelopedLogFiles.logFilesMetadata();
+        metadata.next();
+        long entry2StartFileVersion = metadata.get().version();
+        writeData(writeChannel, smallData); // index 2
+        writeData(writeChannel, veryLargeData); // index 3
+        writeData(writeChannel, smallData); // index 4
+        writeData(writeChannel, veryLargeData); // index 5
+        writeChannel.prepareForFlush().flush();
+        long endOfEntry5 = writeChannel.position();
+        metadata = envelopedLogFiles.logFilesMetadata(true);
+        metadata.next();
+        long entry5EndFileVersion = metadata.get().version();
+        writeData(writeChannel, smallData); // index 6
+        writeChannel.prepareForFlush().flush();
+
+        // Processing is more complex when the "to" entry spans 3+ files, hence "to" is 5 here
+        var storeChannels = envelopedLogFiles.storeChannels(2, 5);
+        try {
+            assertThat(storeChannels.fromIndex()).isEqualTo(2);
+            assertThat(storeChannels.toIndex()).isEqualTo(5);
+            assertThat(storeChannels.toPosition()).isEqualTo(endOfEntry5);
+            assertThat(storeChannels.storeChannels())
+                    .hasSize((int) (entry5EndFileVersion - entry2StartFileVersion + 1));
+
+            for (var i = 0; i < storeChannels.storeChannels().size(); i++) {
+                var storeChannel = storeChannels.storeChannels().get(i);
+                if (i == 0) {
+                    // First channel should be positioned at index 0
+                    assertThat(storeChannel.position()).isEqualTo(endOfEntry1);
+                } else {
+                    // Subsequent channels should be positioned after the log header
+                    assertThat(storeChannel.position()).isEqualTo(segmentBlockSize);
+                }
+            }
+        } finally {
+            IOUtils.closeAllSilently(storeChannels.storeChannels());
+        }
+    }
+
+    @Test
     void shouldFindRangeForTransferTail() throws IOException {
         var smallData = EIGHT_BYTES_MESSAGE.getBytes(StandardCharsets.UTF_8);
         var largeData = new byte[(int) (segmentBlockSize * ((2 * totalSegments) - 0.5))];
