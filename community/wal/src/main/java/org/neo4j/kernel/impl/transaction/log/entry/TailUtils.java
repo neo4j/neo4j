@@ -70,12 +70,26 @@ public class TailUtils {
                 }
                 buffer.flip();
                 if (Arrays.mismatch(buffer.array(), 0, buffer.limit(), zeroArray, 0, buffer.limit()) != -1) {
+                    var logVersion = (currentLogPosition == LogPosition.UNSPECIFIED)
+                            ? currentLogPosition.toString()
+                            : Long.toString(currentLogPosition.getLogVersion());
                     throw new IllegalStateException(
-                            "Failure to read transaction log file number " + currentLogPosition.getLogVersion()
+                            "Failure to read transaction log file number " + logVersion
                                     + ". Unreadable bytes are encountered after last readable position.",
                             e);
                 }
             } while (!endReached && checkToEnd);
+        } catch (IOException ioe) {
+            if (e != null) {
+                Throwable attachTo = ioe;
+                while (attachTo.getCause() != null) {
+                    attachTo = attachTo.getCause();
+                }
+                if (e != attachTo) {
+                    attachTo.initCause(e);
+                }
+            }
+            throw ioe;
         }
     }
 

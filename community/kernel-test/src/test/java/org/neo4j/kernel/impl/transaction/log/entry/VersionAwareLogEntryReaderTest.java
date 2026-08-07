@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
@@ -46,6 +47,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReader;
@@ -179,6 +181,33 @@ recreatedStart = %s,
 
         // then
         assertNull(logEntry);
+    }
+
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void shouldReportTailExceptionWhenPositionUnspecified(KernelVersion kernelVersion) throws IOException {
+        // given
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel(true) {
+            @Override
+            public LogPosition getCurrentLogPosition() {
+                return LogPosition.UNSPECIFIED;
+            }
+        };
+
+        channel.putVersion(kernelVersion.version());
+        channel.put((byte) 127);
+        channel.putInt(-1);
+
+        // when / then
+        // The key point here is that the UnsupportedOperationException from
+        // LogPosition.UNSPECIFIED.getLogVersion() doesn't mask the real problem.
+        assertThatThrownBy(() -> logEntryReader.readLogEntry(channel))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Failure to read transaction log file number UNSPECIFIED. "
+                        + "Unreadable bytes are encountered after last readable position.")
+                .hasCauseInstanceOf(IOException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Unknown entry type 127 for version " + kernelVersion);
     }
 
     @Test
