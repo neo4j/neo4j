@@ -2043,6 +2043,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Coefficient applied to the number of available processors to determine how many worker threads "
+            + "are used to process input CSV files during SPD import. For example, a value of 1.0 uses one worker "
+            + "thread per available processor. At least one worker thread is always used.")
+    public static final Setting<Double> spd_import_csv_worker_threads_coefficient = newBuilder(
+                    "internal.db.spd_import.csv_worker_threads_coefficient", DOUBLE, 1.0)
+            .build();
+
+    @Internal
     @Description("Select how eagerly procedure loader will class load procedures")
     public static final Setting<ProcedureClassPreloading> preload = newBuilder(
                     "internal.dbms.procedures.preload",
