@@ -527,6 +527,21 @@ public final class DateValue extends TemporalValue<LocalDate, DateValue> {
                 result = DEFAULT_CALENDER_DATE;
             }
             result = assignAllFields(result);
+            // GH #13906: Validate that year override didn't silently change month/day
+            // When a base date is provided and only year is overridden, the
+            // resulting date should preserve the original month and day. If the
+            // year override makes the date invalid (e.g., Feb 29 in a non-leap year),
+            // LocalDate.with() silently adjusts, which is inconsistent with direct
+            // construction. Validate by constructing the expected date directly.
+            if (fields.containsKey(TemporalFields.date)
+                    && !fields.containsKey(TemporalFields.month)
+                    && !fields.containsKey(TemporalFields.day)) {
+                LocalDate baseDate = getDateOf(fields.get(TemporalFields.date));
+                assertValidArgument("year", () -> LocalDate.of(
+                        result.getYear(),
+                        baseDate.getMonthValue(),
+                        baseDate.getDayOfMonth()));
+            }
             return date(result);
         }
 
