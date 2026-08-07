@@ -20,7 +20,10 @@
   </scm>
 
   <properties>
+    <!-- Disable parallel tests, HttpServiceTest asserts on wall-clock timeouts that are missed when forks saturate the machine -->
+    <forkCounts>1</forkCounts>
     <moduleName>org.neo4j.genai</moduleName>
+    <parallel.tests>false</parallel.tests>
   </properties>
 
   <dependencies>
