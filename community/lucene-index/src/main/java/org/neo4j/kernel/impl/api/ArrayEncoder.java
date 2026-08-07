@@ -208,6 +208,7 @@ public final class ArrayEncoder {
         @Override
         public void writeUUID(long msb, long lsb) throws RuntimeException {
             builder.append(Values.uuidValue(msb, lsb).prettyPrint());
+            builder.append('|');
         }
 
         @Override
@@ -237,7 +238,8 @@ public final class ArrayEncoder {
                 case POINT -> 'P';
                 case ZONED_DATE_TIME, LOCAL_DATE_TIME, DATE, ZONED_TIME, LOCAL_TIME -> 'T';
                 case DURATION -> 'A';
-                case UUID, VECTOR -> throw new UnsupportedOperationException("Not supported array type: " + arrayType);
+                case UUID -> 'U';
+                case VECTOR -> throw new UnsupportedOperationException("Not supported array type: " + arrayType);
             };
         }
     }
