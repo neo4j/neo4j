@@ -17,22 +17,31 @@
 package org.neo4j.cypher.internal.ast.prettifier
 
 import org.neo4j.cypher.internal.ast.AllDatabasesQualifier
+import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexActions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DefaultWith
 import org.neo4j.cypher.internal.ast.DenyPrivilege
+import org.neo4j.cypher.internal.ast.GrantPrivilege
+import org.neo4j.cypher.internal.ast.GraphPrivilege
+import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.NamedDatabasesScope
 import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.Node
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ParsedAsFilter
 import org.neo4j.cypher.internal.ast.ParsedAsLimit
 import org.neo4j.cypher.internal.ast.ParsedAsOrderBy
 import org.neo4j.cypher.internal.ast.ParsedAsSkip
+import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.Skip
+import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -61,6 +70,23 @@ class PrettifierTest extends CypherFunSuite with AstConstructionTestSupport {
     commandArraySeq shouldBe commandList
     prettifier.asString(commandArraySeq) shouldBe "DENY INDEX MANAGEMENT ON DATABASE hej TO hej"
     prettifier.asString(commandArraySeq) shouldBe prettifier.asString(commandList)
+  }
+
+  test("stringify grant privilege with property rule rewritten by normalizeNotEquals") {
+    val grant = GrantPrivilege(
+      GraphPrivilege(TraverseAction, AllGraphsScope()(pos))(pos),
+      immutable = false,
+      None,
+      List(PatternQualifier(
+        Seq(LabelAllQualifier()(pos)),
+        Some(varFor("n")),
+        Not(Not(Equals(prop(varFor("n"), "prop1"), literalInt(1))(pos))(pos))(pos),
+        Node
+      )),
+      List(literalString("role1"))
+    )(pos)
+
+    prettifier.asString(grant) shouldBe "GRANT TRAVERSE ON GRAPH * FOR (n) WHERE NOT n.prop1 <> 1 TO role1"
   }
 
   private val orderBys: Seq[Option[(String, OrderBy)]] = Seq(

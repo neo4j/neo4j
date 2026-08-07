@@ -1467,6 +1467,37 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
         }
       }
 
+      // e.g. FOR (n) WHERE NOT NOT n.prop1 IN [1]
+      testVersions(
+        s"using more than one NOT keyword combined with IN should fail semantic checking ($qualifierDescription)"
+      ) { version =>
+        val expressionStringifier = ExpressionStringifier()
+
+        Seq(
+          Not(Not(In(prop(varFor("n"), "prop1"), listOfInt(1))(p))(p))(p), // NOT (NOT n.prop1 IN [1])
+          Not(Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p))(p) // NOT (NOT 1 IN n.prop1)
+        ).foreach { expression =>
+          withClue(expressionStringifier(expression)) {
+            val privilege = GrantPrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              false,
+              None,
+              qualifierFn(Some(varFor("n", p)), expression),
+              Seq(literalString("role1"))
+            )(p)
+
+            val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+            result.errors.size shouldBe 1
+            val e = result.errors.head
+            e.msg shouldBe "Failed to administer property rule. " +
+              s"The expression: `${expressionStringifier(expression)}` is not supported. " +
+              "Only single, literal-based predicate expressions are allowed for property-based access control."
+            e.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+            e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+          }
+        }
+      }
+
       // e.g. FOR (n) WHERE n.prop1 IN [1, 2]
       testVersions(
         s"property rules using WHERE syntax with property IN List of more than one literal should pass semantic checking($qualifierDescription)"
@@ -1629,8 +1660,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
         Seq(
           In(literalInt(1), prop(varFor("n"), "prop1"))(p), // 1 IN n.prop
-          Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p), // NOT 1 IN n.prop
-          Not(Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p))(p) // NOT (NOT 1 IN n.prop)
+          Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p) // NOT 1 IN n.prop
         ).foreach { expression =>
           withClue(expressionStringifier(expression)) {
             val privilege = GrantPrivilege(
@@ -1677,27 +1707,22 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
             GqlStatusInfoCodes.STATUS_22NA7
           ),
           (
-            Not(Not(Not(In(literalInt(1), prop(varFor("n"), "prop1"))(p))(p))(p))(p), // NOT (NOT (NOT 1 IN n.prop))
-            "Only single, literal-based predicate expressions are allowed for property-based access control.",
-            GqlStatusInfoCodes.STATUS_22NA7
-          ),
-          (
-            Not(Not(In(nullLiteral, prop(varFor("n"), "prop1"))(p))(p))(p), // NOT (NOT NULL IN n.prop)
+            Not(In(nullLiteral, prop(varFor("n"), "prop1"))(p))(p), // NOT (NULL IN n.prop)
             "The property value access rule pattern `NULL IN prop1` always evaluates to `NULL`.",
             GqlStatusInfoCodes.STATUS_22NA4
           ),
           (
-            Not(Not(In(NaN()(p), prop(varFor("n"), "prop1"))(p))(p))(p), // NOT (NOT NaN IN n.prop)
+            Not(In(NaN()(p), prop(varFor("n"), "prop1"))(p))(p), // NOT (NaN IN n.prop)
             "`NaN` is not supported for property-based access control.",
             GqlStatusInfoCodes.STATUS_22NA3
           ),
           (
-            Not(Not(Not(In(nullLiteral, prop(varFor("n"), "prop1")))(p))(p))(p), // NOT (NOT (NOT NULL IN n.prop))
+            Not(Not(In(nullLiteral, prop(varFor("n"), "prop1"))(p))(p))(p), // NOT (NOT NULL IN n.prop)
             "Only single, literal-based predicate expressions are allowed for property-based access control.",
             GqlStatusInfoCodes.STATUS_22NA7
           ),
           (
-            Not(Not(Not(In(NaN()(p), prop(varFor("n"), "prop1")))(p))(p))(p), // NOT (NOT (NOT NaN IN n.prop))
+            Not(Not(In(NaN()(p), prop(varFor("n"), "prop1"))(p))(p))(p), // NOT (NOT NaN IN n.prop)
             "Only single, literal-based predicate expressions are allowed for property-based access control.",
             GqlStatusInfoCodes.STATUS_22NA7
           )

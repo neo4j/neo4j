@@ -1552,12 +1552,12 @@ sealed abstract class PrivilegeCommand(
               v.foldSemanticCheck(declareVariable(_, CTRelationship)) chain
               SemanticExpressionCheck.check(SemanticContext.Results, e) chain
               checkActionTypeForPropertyRules(privilege) chain
-              checkExpression(e, context.cypherVersion)
+              whenState(!_.semanticCheckHasRunOnce) { checkExpression(e, context.cypherVersion) }
           case PatternQualifier(_, v, e, Node) =>
             v.foldSemanticCheck(declareVariable(_, CTNode)) chain
               SemanticExpressionCheck.check(SemanticContext.Results, e) chain
               checkActionTypeForPropertyRules(privilege) chain
-              checkExpression(e, context.cypherVersion)
+              whenState(!_.semanticCheckHasRunOnce) { checkExpression(e, context.cypherVersion) }
           case _ => SemanticCheck.success
         })
       })
@@ -1625,7 +1625,6 @@ sealed abstract class PrivilegeCommand(
       } else {
         unwrappedExpression match {
           case In(lhs, _: Property) if !lhs.isInstanceOf[Property]                 => requireValueInListProperty("IN")
-          case Not(In(lhs, _: Property)) if !lhs.isInstanceOf[Property]            => requireValueInListProperty("IN")
           case Equals(lhs, _: Property) if !lhs.isInstanceOf[Property]             => requireValueInListProperty("=")
           case NotEquals(lhs, _: Property) if !lhs.isInstanceOf[Property]          => requireValueInListProperty("<>")
           case GreaterThan(lhs, _: Property) if !lhs.isInstanceOf[Property]        => requireValueInListProperty(">")
@@ -1648,14 +1647,13 @@ sealed abstract class PrivilegeCommand(
       case LessThanOrEqual(_: Property, l: NaN)    => nanError(l)
 
       // RHS property (LHS = NaN)
-      case Equals(l: NaN, _: Property)                                                  => nanError(l)
-      case NotEquals(l: NaN, _: Property)                                               => nanError(l)
-      case GreaterThan(l: NaN, _: Property)                                             => nanError(l)
-      case GreaterThanOrEqual(l: NaN, _: Property)                                      => nanError(l)
-      case LessThan(l: NaN, _: Property)                                                => nanError(l)
-      case LessThanOrEqual(l: NaN, _: Property)                                         => nanError(l)
-      case In(l: NaN, _: Property) if cypherVersion.isAfter(CypherVersion.Cypher5)      => nanError(l)
-      case Not(In(l: NaN, _: Property)) if cypherVersion.isAfter(CypherVersion.Cypher5) => nanError(l)
+      case Equals(l: NaN, _: Property)                                             => nanError(l)
+      case NotEquals(l: NaN, _: Property)                                          => nanError(l)
+      case GreaterThan(l: NaN, _: Property)                                        => nanError(l)
+      case GreaterThanOrEqual(l: NaN, _: Property)                                 => nanError(l)
+      case LessThan(l: NaN, _: Property)                                           => nanError(l)
+      case LessThanOrEqual(l: NaN, _: Property)                                    => nanError(l)
+      case In(l: NaN, _: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) => nanError(l)
 
       // NULL cases
       // LHS property (RHS = NULL)
@@ -1707,8 +1705,6 @@ sealed abstract class PrivilegeCommand(
         propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"NULL <= ${p.propertyKey.name}", l.position)
       case In(l: Null, p: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
         propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"NULL IN ${p.propertyKey.name}", l.position)
-      case Not(In(l: Null, p: Property)) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
-        propertyAlwaysNullError(GqlHelper.getGql22NA0_22NA4, s"NULL IN ${p.propertyKey.name}", l.position)
 
       // Cypher 5: RHS property disallowed
       case Equals(_, p: Property) if cypherVersion.equals(CypherVersion.Cypher5) =>
@@ -1733,8 +1729,6 @@ sealed abstract class PrivilegeCommand(
       case LessThanOrEqual(e: Expression, _: Property)    => checkScalarExpression(e)
       case In(e: Expression, _: Property) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
         checkScalarExpression(e)
-      case Not(In(e: Expression, _: Property)) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
-        checkScalarExpression(e)
 
       // LHS property allowed
       case Equals(_: Property, e: Expression)             => checkScalarExpression(e)
@@ -1744,7 +1738,6 @@ sealed abstract class PrivilegeCommand(
       case LessThan(_: Property, e: Expression)           => checkScalarExpression(e)
       case LessThanOrEqual(_: Property, e: Expression)    => checkScalarExpression(e)
       case In(_: Property, e: Expression)                 => checkListExpression(e)
-      case Not(In(_: Property, e: Expression))            => checkListExpression(e)
 
       case IsNull(_: Property) | IsNotNull(_: Property) => SemanticCheck.success
 

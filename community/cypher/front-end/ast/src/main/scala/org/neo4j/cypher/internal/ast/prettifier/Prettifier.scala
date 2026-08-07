@@ -1888,7 +1888,12 @@ object Prettifier {
         }
       }
 
-      expression match {
+      val denormalizedExpression = expression match {
+        case e @ Not(Not(eq: Equals)) => Not(NotEquals(eq.lhs, eq.rhs)(eq.position))(e.position)
+        case e                        => e
+      }
+
+      denormalizedExpression match {
         case _ @MapExpression(Seq((propertyKeyName, value))) => propertyInElementPrettifier(propertyKeyName, value)
         case e: Equals                                       => propertyAndWherePrettifier(e)
         case e: NotEquals                                    => propertyAndWherePrettifier(e)
