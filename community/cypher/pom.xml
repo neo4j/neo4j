@@ -18,6 +18,7 @@
   <modules>
     <module>ir</module>
     <module>cypher-planner</module>
+    <module>cypher-planner-tests</module>
     <module>planner-spi</module>
     <module>planner-spi-test-util</module>
     <module>cypher</module>
