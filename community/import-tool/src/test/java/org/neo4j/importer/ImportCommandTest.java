@@ -206,7 +206,7 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--relationships=" + rels, "--delimiter=U+20AC");
 
         assertThatThrownBy(() -> command.importConfigurationValidation(
-                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block"))
+                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block", Config.defaults()))
                 .isInstanceOf(CommandLine.ParameterException.class)
                 .hasMessageContaining("Delimiter must be a single byte character (In UTF-8)");
     }
@@ -222,7 +222,8 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--relationships=" + rels, "--delimiter=U+007C");
 
         // then - should not throw
-        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        command.importConfigurationValidation(
+                new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block", Config.defaults());
     }
 
     @Test
@@ -241,7 +242,8 @@ class ImportCommandTest {
                 "--accept-multibyte-delimiter");
 
         // then - should not throw
-        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        command.importConfigurationValidation(
+                new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block", Config.defaults());
     }
 
     @Test
@@ -316,7 +318,8 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
 
         // then - should not throw
-        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), dbFormat);
+        command.importConfigurationValidation(
+                new SchemeFileSystemAbstraction(testDir.getFileSystem()), dbFormat, Config.defaults());
     }
 
     @ParameterizedTest
@@ -328,7 +331,7 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
 
         assertThatThrownBy(() -> command.importConfigurationValidation(
-                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), dbFormat))
+                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), dbFormat, Config.defaults()))
                 .isInstanceOf(CommandFailedException.class)
                 .hasMessageContaining("Skidbladnir import is only supported for the 'block' format, "
                         + "but '%s' was specified.".formatted(dbFormat));
@@ -343,7 +346,7 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--high-parallel-io=on");
 
         assertThatThrownBy(() -> command.importConfigurationValidation(
-                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), dbFormat))
+                        new SchemeFileSystemAbstraction(testDir.getFileSystem()), dbFormat, Config.defaults()))
                 .isInstanceOf(CommandFailedException.class)
                 .hasMessageContaining(
                         "'--high-parallel-io=on' is not supported for the '%s' format.".formatted(dbFormat));
@@ -357,7 +360,8 @@ class ImportCommandTest {
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
 
         // when
-        command.importConfigurationValidation(new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block");
+        command.importConfigurationValidation(
+                new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block", Config.defaults());
         // then
         assertThat(command.bufferSize())
                 .isEqualTo(org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR);

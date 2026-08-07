@@ -704,7 +704,8 @@ public class ImportCommand {
                 var databaseConfig = importContext.config();
                 var databaseLayout = Neo4jLayout.of(databaseConfig).databaseLayout(database.name());
                 try (var fileSystem = new SchemeFileSystemAbstraction(ctx.fs(), databaseConfig, importContext)) {
-                    importConfigurationValidation(fileSystem, databaseConfig.get(GraphDatabaseSettings.db_format));
+                    importConfigurationValidation(
+                            fileSystem, databaseConfig.get(GraphDatabaseSettings.db_format), databaseConfig);
 
                     final var importerBuilder = configureFileImporterBuilder(FileImporter.builder()
                             .withCsvConfig(csvConfiguration(fileSystem))
@@ -923,8 +924,8 @@ public class ImportCommand {
         /**
          * @param resolvedDbFormat the format that is either specified in the command line or resolved from the database config
          */
-        protected void importConfigurationValidation(SchemeFileSystemAbstraction fs, String resolvedDbFormat)
-                throws CommandFailedException {
+        protected void importConfigurationValidation(
+                SchemeFileSystemAbstraction fs, String resolvedDbFormat, Config config) throws CommandFailedException {
             if (requiresNodeParameter()) {
                 if (nodes == null) {
                     throw new ParameterException(spec.commandLine(), "Missing required option: '--nodes'");
