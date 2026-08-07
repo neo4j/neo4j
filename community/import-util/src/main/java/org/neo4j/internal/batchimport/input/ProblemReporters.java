@@ -100,6 +100,7 @@ public class ProblemReporters {
     public static ProblemHandler jsonOutputProblemHandler(OutputStream out) {
         var mapper = new ObjectMapper()
                 .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
+                .disable(JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM)
                 .registerModule(ProblemReporters.SERIALIZERS);
         var output = new PrintStream(out);
         return new ProblemHandler() {
