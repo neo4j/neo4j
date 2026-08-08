@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.ir.AbstractProcedureCallProjection
@@ -246,7 +247,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
     val planSkipAndLimit = step("planSkipAndLimit")(skipAndLimit(_, query, context))
 
     def planWhere(selections: Selections) = step("planWhere")((p: LogicalPlan) =>
-      if (selections.isEmpty) {
+      if (selections.isEmpty || selections.flatPredicatesSet.forall(_.isInstanceOf[True])) {
         p
       } else {
         val remoteBatchingResult =
