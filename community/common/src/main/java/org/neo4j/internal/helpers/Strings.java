@@ -28,12 +28,13 @@ import java.util.Arrays;
 public final class Strings {
     public static final String EMPTY = "";
     public static final String TAB = "\t";
+    private static final String NULL_STRING = "null";
 
     private Strings() {}
 
     public static String prettyPrint(Object o) {
         if (o == null) {
-            return "null";
+            return NULL_STRING;
         }
 
         Class<?> clazz = o.getClass();
@@ -63,6 +64,9 @@ public final class Strings {
     }
 
     public static String escape(String arg) {
+        if (arg == null) {
+            return EMPTY;
+        }
         StringBuilder builder = new StringBuilder(arg.length());
         try {
             escape(builder, arg);

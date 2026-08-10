@@ -51,6 +51,7 @@ class StringsTest {
 
     @Test
     void testEscape() {
+        assertEquals("", Strings.escape(null));
         assertEquals("abc", Strings.escape("abc"));
         assertEquals("Abc", Strings.escape("Abc"));
         assertEquals("a\\\"bc", Strings.escape("a\"bc"));
