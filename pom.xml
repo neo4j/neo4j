@@ -179,6 +179,10 @@
     <scala.target.vm>${vm.target.version}</scala.target.vm>
     <scala.test.version>3.2.13</scala.test.version>
     <scala.version>2.13.17</scala.version>
+    <scala.wunused.conf>${scala.wunused.conf.default}</scala.wunused.conf>
+    <!-- Empty to disable -Wunused checks -->
+    <scala.wunused.conf.default />
+    <scala.wunused.conf.strict>-Wunused:imports,privates,locals</scala.wunused.conf.strict>
     <scala3.version>3.7.4</scala3.version>
     <shiro.version>3.0.0</shiro.version>
     <skip-scalastyle>false</skip-scalastyle>
@@ -1642,7 +1646,7 @@
             <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
             <recompileMode>${scala.plugin.recompileMode}</recompileMode>
             <args>
-              <arg>-Wunused:imports,privates,locals</arg>
+              <arg>${scala.wunused.conf}</arg>
               <!-- Silence Scala 3 syntax deprecation warnings -->
               <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
             </args>
@@ -2298,6 +2302,19 @@
       <properties>
         <excludedTestGroups>exclude-default-query-lang-override</excludedTestGroups>
         <test.runner.jvm.settings.query.language>-DNEO4J_OVERRIDE_QUERY_LANGUAGE=cypher_25</test.runner.jvm.settings.query.language>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>scala-fatal-warnings</id>
+      <activation>
+        <property>
+          <name>scalaFatalWarnings</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <properties>
+        <scala.wunused.conf>${scala.wunused.conf.strict}</scala.wunused.conf>
       </properties>
     </profile>
   </profiles>

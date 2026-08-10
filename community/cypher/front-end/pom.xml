@@ -50,7 +50,6 @@
     <license-text.header>license/neo4j_apache_v2/header.txt</license-text.header>
     <license.id>neo4j_apache_v2</license.id>
     <licensing.prepend.text>license/neo4j_apache_v2/notice.txt</licensing.prepend.text>
-    <scala3.migration.wconf>w</scala3.migration.wconf>
   </properties>
 
   <profiles>
@@ -62,9 +61,6 @@
           <value>true</value>
         </property>
       </activation>
-      <properties>
-        <scala3.migration.wconf>s</scala3.migration.wconf>
-      </properties>
       <build>
         <plugins>
           <plugin>
@@ -79,15 +75,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>strict-scala3-migration</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <properties>
-        <scala3.migration.wconf>e</scala3.migration.wconf>
-      </properties>
     </profile>
   </profiles>
 </project>
