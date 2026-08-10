@@ -39,7 +39,7 @@ public class CheckNativeDatabase implements CheckDatabase {
 
     @Override
     public boolean containsPotentiallyCheckableDatabase(
-            FileSystemAbstraction fs, Source source, NormalizedDatabaseName database) {
+            FileSystemAbstraction fs, Config config, Source source, NormalizedDatabaseName database) {
         return source instanceof final DataTxnSource dataTxnSource
                 && StorageEngineFactory.selectStorageEngine(fs, targetLayoutFrom(fs, dataTxnSource, database, null))
                         .isPresent();

@@ -49,7 +49,7 @@ public class CheckDump implements CheckDatabase {
 
     @Override
     public boolean containsPotentiallyCheckableDatabase(
-            FileSystemAbstraction fs, Source source, NormalizedDatabaseName database) {
+            FileSystemAbstraction fs, Config config, Source source, NormalizedDatabaseName database) {
         if (source instanceof PathSource pathSource) {
             Path dump = dumpFile(fs, pathSource.path, database);
             return Dumper.isDumpFile(dump) && fs.fileExists(dump);

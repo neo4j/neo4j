@@ -61,7 +61,7 @@ public interface CheckDatabase {
             throws IOException {
 
         for (final var checkDatabase : all()) {
-            if (!checkDatabase.containsPotentiallyCheckableDatabase(fs, source, database)) {
+            if (!checkDatabase.containsPotentiallyCheckableDatabase(fs, config, source, database)) {
                 continue;
             }
 
@@ -91,7 +91,7 @@ public interface CheckDatabase {
     String name();
 
     boolean containsPotentiallyCheckableDatabase(
-            FileSystemAbstraction fs, Source source, NormalizedDatabaseName database);
+            FileSystemAbstraction fs, Config config, Source source, NormalizedDatabaseName database);
 
     DatabaseLayout targetLayoutFrom(
             FileSystemAbstraction fs, Source source, NormalizedDatabaseName database, AutoCloseables<?> autoCloseables)
