@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED;
+import static org.neo4j.kernel.KernelVersion.VERSION_CHECKPOINT_POWER_OF_2_IN_ENVELOPES;
 import static org.neo4j.kernel.KernelVersionProviders.fixed;
 import static org.neo4j.kernel.impl.transaction.log.LogTermProvider.UNKNOWN_TERM_PROVIDER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.v202608.LogEntryDetachedCheckpointV2026_08;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryDetachedCheckpointV5_20;
 import org.neo4j.kernel.impl.transaction.log.entry.v522.LogEntryDetachedCheckpointV5_22;
@@ -312,7 +314,17 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             Instant checkpointTime,
             String reason,
             StoreId storeId) {
-        if (kernelVersion.isAtLeast(VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED)) {
+        if (kernelVersion.isAtLeast(VERSION_CHECKPOINT_POWER_OF_2_IN_ENVELOPES)) {
+            return new LogEntryDetachedCheckpointV2026_08(
+                    kernelVersion,
+                    transactionId,
+                    appendIndex,
+                    oldestNotCompletedPosition,
+                    checkpoinedLogPosition,
+                    checkpointTime.toEpochMilli(),
+                    storeId,
+                    reason);
+        } else if (kernelVersion.isAtLeast(VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED)) {
             return new LogEntryDetachedCheckpointV5_22(
                     kernelVersion,
                     transactionId,

@@ -127,18 +127,18 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_PARTITIONED_BLOCK_SCHEMA_RULE_TEXT = V2026_01;
     public static final KernelVersion VERSION_SPD_FILTERED_PROPERTY_SHARD_TX_LOG = V2026_02;
     public static final KernelVersion VERSION_VECTOR_BINARY_QUANTIZATION = V2026_06;
+    public static final KernelVersion VERSION_MERGED_LOG_INFO_IN_START_ENTRIES = V2026_06;
     public static final KernelVersion VERSION_VECTOR_HFQ_GENERAL_AVAILABILITY = V2026_07;
+    public static final KernelVersion VERSION_UUID_VALUE_INTRODUCED = V2026_08;
+    public static final KernelVersion VERSION_CHECKPOINT_POWER_OF_2_IN_ENVELOPES = V2026_08;
+    public static final KernelVersion VERSION_VECTOR_ARRAY_VALUE_INTRODUCED = GLORIOUS_FUTURE;
 
     // Keep updated each time there is an new schema rule added
     // related to IntegrityValidator
     public static final KernelVersion LATEST_SCHEMA_CHANGE = VERSION_VECTOR_BINARY_QUANTIZATION;
-    public static final KernelVersion VERSION_UUID_VALUE_INTRODUCED = V2026_08;
-    public static final KernelVersion VERSION_VECTOR_ARRAY_VALUE_INTRODUCED = GLORIOUS_FUTURE;
 
     // All neo4j 5.0-5.6 members defaulted to this version when bootstrapping a rafted database
     public static final KernelVersion DEFAULT_BOOTSTRAP_VERSION = V5_0;
-
-    public static final KernelVersion VERSION_MERGED_LOG_INFO_IN_START_ENTRIES = V2026_06;
 
     public static final List<KernelVersion> VERSIONS = List.of(values());
     private static final ByteToEnum<KernelVersion> VERSION_MAP =

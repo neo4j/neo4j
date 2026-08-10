@@ -20,12 +20,10 @@
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.kernel.KernelVersion.GLORIOUS_FUTURE;
 import static org.neo4j.kernel.KernelVersionProviders.fixed;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
-import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -45,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogSegments;
+import org.neo4j.kernel.impl.transaction.log.entry.v202608.DetachedCheckpointLogEntrySerializerV2026_08;
 import org.neo4j.kernel.impl.transaction.log.entry.v522.DetachedCheckpointLogEntrySerializerV5_22;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -59,6 +58,8 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 @Neo4jLayoutExtension
 @ExtendWith(LifeExtension.class)
 class EnvelopedCheckpointLogFileTest {
+    // Hardcoding things in the test to the version before KernelVersion.VERSION_CHECKPOINT_POWER_OF_2_IN_ENVELOPES to
+    // be able to come up with a segment size checkpoints will be split on
     private static final int FORCE_SPLIT_CHECKPOINT_SEGMENT_SIZE = 1024;
 
     @Inject
@@ -72,7 +73,7 @@ class EnvelopedCheckpointLogFileTest {
 
     private final long rotationThreshold = ByteUnit.kibiBytes(1);
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore(
-            2L, 3L, LATEST_KERNEL_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
+            2L, 3L, KernelVersion.V2026_07, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
     private CheckpointFile checkpointFile;
 
     @BeforeEach
@@ -93,9 +94,9 @@ class EnvelopedCheckpointLogFileTest {
             ++i;
             checkpointAppender.checkPoint(
                     NULL,
-                    new TransactionId(i, i, KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED, i, 3, 4),
+                    new TransactionId(i, i, KernelVersion.V2026_07, i, 3, 4),
                     i,
-                    KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED,
+                    KernelVersion.V2026_07,
                     new LogPosition(1, i),
                     new LogPosition(1, i),
                     Instant.now(),
@@ -136,19 +137,32 @@ class EnvelopedCheckpointLogFileTest {
                 .isGreaterThanOrEqualTo(LogEnvelopeHeader.HEADER_SIZE);
     }
 
+    @Test
+    void envelopedCheckpointsShouldFitPerfectlyInSegmentFrom2026_08() {
+        int checkpointRecordSize =
+                DetachedCheckpointLogEntrySerializerV2026_08.checkPointRecordSizeDependingOnVersion(true);
+        assertThat(checkpointRecordSize)
+                .withFailMessage(
+                        "Enveloped Checkpoints of size %d bytes cannot be larger than the %d segment size",
+                        checkpointRecordSize, LogSegments.DEFAULT_LOG_SEGMENT_SIZE)
+                .isLessThan(LogSegments.DEFAULT_LOG_SEGMENT_SIZE);
+        int residualBytesAtEndOfSegment = LogSegments.DEFAULT_LOG_SEGMENT_SIZE % checkpointRecordSize;
+        assertThat(residualBytesAtEndOfSegment)
+                .withFailMessage(
+                        "Enveloped Checkpoints of size %d bytes written to segments of size %d will leave padding that we don't want to deal with",
+                        checkpointRecordSize, LogSegments.DEFAULT_LOG_SEGMENT_SIZE)
+                .isZero();
+    }
+
     private LogFiles buildLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         final var futureEnabledConf = Config.newBuilder()
-                .set(
-                        GraphDatabaseInternalSettings.latest_runtime_version,
-                        DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion())
-                .set(GraphDatabaseInternalSettings.latest_kernel_version, GLORIOUS_FUTURE.version())
+                .set(GraphDatabaseInternalSettings.latest_runtime_version, DbmsRuntimeVersion.V2026_07.getVersion())
+                .set(GraphDatabaseInternalSettings.latest_kernel_version, KernelVersion.V2026_07.version())
+                .set(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create, true)
                 .build();
         return LogFilesBuilder.writeableBuilder(
-                        databaseLayout,
-                        fileSystem,
-                        fixed(KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED),
-                        () -> LogFormat.V10)
+                        databaseLayout, fileSystem, fixed(KernelVersion.V2026_07), () -> LogFormat.V10)
                 .withConfig(futureEnabledConf)
                 .withRotationThreshold(rotationThreshold)
                 .withTransactionIdStore(transactionIdStore)

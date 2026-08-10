@@ -115,7 +115,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.v522.DetachedCheckpointLogEntrySerializerV5_22;
+import org.neo4j.kernel.impl.transaction.log.entry.v202608.DetachedCheckpointLogEntrySerializerV2026_08;
 import org.neo4j.kernel.impl.transaction.log.enveloped.InvalidLogEnvelopeReadException;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -193,7 +193,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     protected int checkpointRecordSize() {
-        return DetachedCheckpointLogEntrySerializerV5_22.checkPointRecordSizeDependingOnVersion(false);
+        return DetachedCheckpointLogEntrySerializerV2026_08.checkPointRecordSizeDependingOnVersion(false);
     }
 
     protected KernelVersion kernelVersion() {

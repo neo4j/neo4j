@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.v522.LogEntryDetachedCheckpointV5_22;
+import org.neo4j.kernel.impl.transaction.log.entry.v202608.LogEntryDetachedCheckpointV2026_08;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
@@ -255,8 +255,8 @@ public class TxLogValidationUtils {
                     EmptyMemoryTracker.INSTANCE);
             LogEntry entry;
             while ((entry = entryReader.readLogEntry(reader)) != null) {
-                LogEntryDetachedCheckpointV5_22 logEntry =
-                        assertInstanceOf(LogEntryDetachedCheckpointV5_22.class, entry);
+                LogEntryDetachedCheckpointV2026_08 logEntry =
+                        assertInstanceOf(LogEntryDetachedCheckpointV2026_08.class, entry);
                 if (expectedKernelVersion != null) {
                     assertThat(logEntry.kernelVersion()).isEqualTo(expectedKernelVersion);
                 }

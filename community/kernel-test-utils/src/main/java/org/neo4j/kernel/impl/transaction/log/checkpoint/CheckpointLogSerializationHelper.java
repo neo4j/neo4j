@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.KernelVersion.VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED;
+import static org.neo4j.kernel.KernelVersion.VERSION_CHECKPOINT_POWER_OF_2_IN_ENVELOPES;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
@@ -31,6 +32,7 @@ import java.util.function.IntConsumer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogSegments;
+import org.neo4j.kernel.impl.transaction.log.entry.v202608.DetachedCheckpointLogEntrySerializerV2026_08;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.DetachedCheckpointLogEntrySerializerV5_20;
 import org.neo4j.kernel.impl.transaction.log.entry.v522.DetachedCheckpointLogEntrySerializerV5_22;
 import org.neo4j.storageengine.api.TransactionId;
@@ -47,7 +49,10 @@ public class CheckpointLogSerializationHelper {
     static final TransactionId TRANSACTION_ID = new TransactionId(100, 101, LATEST_KERNEL_VERSION, 101, 102, 103);
 
     public static int getCheckpointRecordLengthBytes() {
-        if (LATEST_KERNEL_VERSION.isAtLeast(VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED)) {
+        if (LATEST_KERNEL_VERSION.isAtLeast(VERSION_CHECKPOINT_POWER_OF_2_IN_ENVELOPES)) {
+            return DetachedCheckpointLogEntrySerializerV2026_08.checkPointRecordSizeDependingOnVersion(
+                    LATEST_LOG_FORMAT.usesSegments());
+        } else if (LATEST_KERNEL_VERSION.isAtLeast(VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED)) {
             return DetachedCheckpointLogEntrySerializerV5_22.checkPointRecordSizeDependingOnVersion(
                     LATEST_LOG_FORMAT.usesSegments());
         }
