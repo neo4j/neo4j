@@ -1280,11 +1280,8 @@ final class MuninnPagedFile implements PagedFile, Flushable {
         try {
             int numberOfPages = grabPageFaultLatches(filePageId, count, latches);
             // Note: It is important that we assign the filePageId after we grabbed it.
-            // If the swapping fails, the page will be considered
-            // loaded for the purpose of eviction, and will eventually return to
-            // the freelist. However, because we don't assign the swapper until the
-            // swapping-in has succeeded, the page will not be considered bound to
-            // the file page, so any subsequent thread that finds the page in their
+            // Because we don't assign the swapper until the swapping-in has succeeded, the page will not be
+            // considered bound to the file page, so any subsequent thread that finds the page in their
             // translation table will re-do the page fault.
             for (int i = 0; i < numberOfPages; i++) {
                 pageRefs[i] = grabFreeAndExclusivelyLockedPage(faultEvent);
@@ -1323,9 +1320,7 @@ final class MuninnPagedFile implements PagedFile, Flushable {
                     int chunkIndex = computeChunkIndex(filePageId + i);
                     translationTableSetVolatile(translationTable[chunkId], chunkIndex, UNMAPPED_TTE);
 
-                    long pageRef = pageRefs[i];
-                    PageMetadata.clearBinding(pageRef);
-                    pageCache.addFreePageToFreelist(pageRef, evictionEvent);
+                    releaseFailedPageFault(pageRefs[i], evictionEvent);
                 }
                 unlockExclusive = false;
             }
@@ -1345,6 +1340,17 @@ final class MuninnPagedFile implements PagedFile, Flushable {
         }
     }
 
+    void releaseFailedPageFault(long pageRef) {
+        try (EvictionRunEvent evictionEvent = pageCacheTracer.beginEviction()) {
+            releaseFailedPageFault(pageRef, evictionEvent);
+        }
+    }
+
+    private void releaseFailedPageFault(long pageRef, EvictionRunEvent evictionEvent) {
+        PageMetadata.clearBinding(pageRef);
+        pageCache.addFreePageToFreelist(pageRef, evictionEvent);
+    }
+
     static void validatePageRefAndSetFilePageId(long pageRef, PageSwapper swapper, int swapperId, long filePageId) {
         assert swapper != null;
         assert filePageId != PageCursor.UNBOUND_PAGE_ID;
@@ -1354,11 +1360,8 @@ final class MuninnPagedFile implements PagedFile, Flushable {
             throw cannotFaultException(pageRef, swapper, swapperId, filePageId, currentSwapper, currentFilePageId);
         }
         // Note: It is important that we assign the filePageId right after it's grabbed and before we swap
-        // the page in. If the swapping fails, the page will be considered
-        // loaded for the purpose of eviction, and will eventually return to
-        // the freelist. However, because we don't assign the swapper until the
-        // swapping-in has succeeded, the page will not be considered bound to
-        // the file page, so any subsequent thread that finds the page in their
+        // the page in. Because we don't assign the swapper until the swapping-in has succeeded, the page will
+        // not be considered bound to the file page, so any subsequent thread that finds the page in their
         // translation table will re-do the page fault.
         PageMetadata.setFilePageId(pageRef, filePageId); // Page now considered isLoaded()
 

@@ -3248,6 +3248,44 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         }
     }
 
+    @Test
+    void cursorPageFaultReleasesResourcesOnReadError() throws Exception {
+        var file = file("a");
+        int pageCount = 8;
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try (var tempPageCache = createPageCache(fs, pageCount, NULL)) {
+            generateFile(tempPageCache, file, pageCount, filePageSize);
+        }
+
+        var swapperFactory = new FailingSingleReadSwapperFactory(pageCacheTracer);
+        try (MuninnPageCache pageCache = createPageCache(fs, pageCount, pageCacheTracer, swapperFactory);
+                var pf = (MuninnPagedFile) map(pageCache, file, filePageSize)) {
+            try (var cursor = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertThatThrownBy(cursor::next).isInstanceOf(IOException.class);
+            }
+
+            assertThat(pf.pageFaultLatches.isEmpty()).isTrue();
+
+            var pageMetadata = pageCache.pageMetadata();
+            for (int id = 0; id < pageMetadata.getPageCount(); id++) {
+                long pageRef = pageMetadata.deref(id);
+                assertFalse(PageMetadata.isLoaded(pageRef), "page " + id + " should not be loaded after failed fault");
+                assertEquals(0, PageMetadata.getSwapperId(pageRef));
+                assertFalse(PageMetadata.isModified(pageRef));
+                assertFalse(PageMetadata.isWriteLocked(pageRef));
+                assertEquals(-1, PageMetadata.getFilePageId(pageRef));
+            }
+
+            swapperFactory.failReads.set(false);
+            // pages were returned to the freelist and now with failReads=false reads should succeed
+            try (var cursor = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                for (int i = 0; i < pageCount; i++) {
+                    assertTrue(cursor.next());
+                }
+            }
+        }
+    }
+
     private CursorContextFactory createErrorThrowingCursorContextFactory() {
         var throwOnPinTracer = new DefaultPageCacheTracer(true) {
             @Override
@@ -3569,6 +3607,46 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 public long read(long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length)
                         throws IOException {
                     throw new IOException("Exception on vector read.");
+                }
+            };
+        }
+    }
+
+    private class FailingSingleReadSwapperFactory extends SingleFilePageSwapperFactory {
+        final AtomicBoolean failReads = new AtomicBoolean(true);
+
+        FailingSingleReadSwapperFactory(PageCacheTracer pageCacheTracer) {
+            super(MuninnPageCacheTest.this.fs, pageCacheTracer, EmptyMemoryTracker.INSTANCE);
+        }
+
+        @Override
+        public PageSwapper createPageSwapper(
+                Path file,
+                int filePageSize,
+                PageEvictionCallback onEviction,
+                boolean createIfNotExist,
+                boolean useDirectIO,
+                long pagesPerSegment,
+                IOController ioController,
+                EvictionBouncer evictionBouncer,
+                SwapperIdProvider swapperIdProvider)
+                throws IOException {
+            return new DelegatingPageSwapper(super.createPageSwapper(
+                    file,
+                    filePageSize,
+                    onEviction,
+                    createIfNotExist,
+                    useDirectIO,
+                    pagesPerSegment,
+                    ioController,
+                    evictionBouncer,
+                    swapperIdProvider)) {
+                @Override
+                public long read(long filePageId, long bufferAddress) throws IOException {
+                    if (failReads.get()) {
+                        throw new IOException("Exception on single page read.");
+                    }
+                    return super.read(filePageId, bufferAddress);
                 }
             };
         }

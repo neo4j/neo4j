@@ -453,10 +453,12 @@ public abstract class MuninnPageCursor extends PageCursor {
             }
         } catch (Throwable throwable) {
             try {
-                // Make sure to unlock the page, so the eviction thread can pick up our trash.
-                PageMetadata.unlockExclusive(pageRef);
-            } finally {
                 abortPageFault(throwable, chunk, chunkIndex, faultEvent);
+            } finally {
+                // The page was grabbed off the freelist and had its file page id assigned, so it counts as loaded.
+                // Returning it here rather than leaving it for the eviction thread keeps the invariant that no page
+                // is loaded once the paged file is closed, since closing does not wait for the eviction thread.
+                pagedFile.releaseFailedPageFault(pageRef);
             }
             throw throwable;
         }
