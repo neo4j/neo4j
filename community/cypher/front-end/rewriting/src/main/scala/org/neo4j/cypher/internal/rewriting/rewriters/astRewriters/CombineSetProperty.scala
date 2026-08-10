@@ -39,7 +39,10 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 case object CombineSetProperty extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
-  override def preConditions: Set[StepSequencer.Condition] = Set()
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    ReplaceLiteralDynamicPropertyLookups.completed // Creates `SetPropertyItem`s that should be combined
+  )
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
   override def getRewriter(
