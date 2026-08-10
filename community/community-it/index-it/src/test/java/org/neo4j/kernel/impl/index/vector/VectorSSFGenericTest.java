@@ -91,6 +91,7 @@ class VectorSSFGenericTest extends VectorSSFTestBase {
                         exactQuery("age", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, -45, 75))))
                 .rootCauseOrSelfWithGqlStatus()
                 .gqlStatusObject()
+                .gqlRootCauseOrSelf()
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N01)
                 .hasStatusDescriptionContaining("Expected the value")
                 .hasStatusDescriptionContaining(

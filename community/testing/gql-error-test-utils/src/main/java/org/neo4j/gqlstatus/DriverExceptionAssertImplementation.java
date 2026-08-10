@@ -21,6 +21,7 @@ package org.neo4j.gqlstatus;
 
 import static java.lang.String.format;
 
+import java.util.Optional;
 import org.assertj.core.api.AbstractAssert;
 import org.neo4j.driver.exceptions.Neo4jException;
 
@@ -35,11 +36,24 @@ public class DriverExceptionAssertImplementation
     @Override
     public DriverExceptionAssertImplementation gqlCause() {
         isNotNull();
-        var optionalGqlCause = actual.gqlCause();
-        objects.assertNotNull(info, optionalGqlCause);
-        if (optionalGqlCause.isPresent()) {
-            return new DriverExceptionAssertImplementation(optionalGqlCause.get());
-        } else throw failure("Expected gql cause to be present, but was not. %s", actual);
+        return new DriverExceptionAssertImplementation(causeOf(actual)
+                .orElseThrow(() -> failure("Expected gql cause to be present, but was not. %s", actual)));
+    }
+
+    @Override
+    public DriverExceptionAssertImplementation gqlRootCauseOrSelf() {
+        isNotNull();
+        var gql = actual;
+        for (var cause = causeOf(gql); cause.isPresent(); cause = causeOf(gql)) {
+            gql = cause.get();
+        }
+        return gql == actual ? this : new DriverExceptionAssertImplementation(gql);
+    }
+
+    private Optional<Neo4jException> causeOf(Neo4jException driverException) {
+        var cause = driverException.gqlCause();
+        objects.assertNotNull(info, cause);
+        return cause;
     }
 
     @Override

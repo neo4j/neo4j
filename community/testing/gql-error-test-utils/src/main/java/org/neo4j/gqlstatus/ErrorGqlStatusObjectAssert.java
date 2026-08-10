@@ -32,6 +32,12 @@ public interface ErrorGqlStatusObjectAssert<SELF extends ErrorGqlStatusObjectAss
     ErrorGqlStatusObjectAssert<?> gqlCause();
 
     /**
+     * Returns a new assertion object that uses the gql root cause of the current ErrorGqlStatusObjectAssert
+     * as the actual object under test, or itself if there is no cause.
+     */
+    ErrorGqlStatusObjectAssert<?> gqlRootCauseOrSelf();
+
+    /**
      * Verifies that the actual GqlStatusObject has the given status.
      */
     @CanIgnoreReturnValue

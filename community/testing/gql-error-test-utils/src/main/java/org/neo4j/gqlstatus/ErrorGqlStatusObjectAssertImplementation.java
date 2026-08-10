@@ -21,6 +21,7 @@ package org.neo4j.gqlstatus;
 
 import static java.lang.String.format;
 
+import java.util.Optional;
 import org.assertj.core.api.AbstractAssert;
 
 public class ErrorGqlStatusObjectAssertImplementation
@@ -34,11 +35,24 @@ public class ErrorGqlStatusObjectAssertImplementation
     @Override
     public ErrorGqlStatusObjectAssertImplementation gqlCause() {
         isNotNull();
-        var optionalGqlCause = actual.cause();
-        objects.assertNotNull(info, optionalGqlCause);
-        if (optionalGqlCause.isPresent()) {
-            return new ErrorGqlStatusObjectAssertImplementation(optionalGqlCause.get());
-        } else throw failure("Expected gql cause to be present, but was not. %s", actual);
+        return new ErrorGqlStatusObjectAssertImplementation(causeOf(actual)
+                .orElseThrow(() -> failure("Expected gql cause to be present, but was not. %s", actual)));
+    }
+
+    @Override
+    public ErrorGqlStatusObjectAssertImplementation gqlRootCauseOrSelf() {
+        isNotNull();
+        var gql = actual;
+        for (var cause = causeOf(gql); cause.isPresent(); cause = causeOf(gql)) {
+            gql = cause.get();
+        }
+        return gql == actual ? this : new ErrorGqlStatusObjectAssertImplementation(gql);
+    }
+
+    private Optional<ErrorGqlStatusObject> causeOf(ErrorGqlStatusObject gqlStatusObject) {
+        var cause = gqlStatusObject.cause();
+        objects.assertNotNull(info, cause);
+        return cause;
     }
 
     @Override

@@ -47,11 +47,7 @@ public class ThrowableWithPotentialGqlCauseAssert<SELF extends ThrowableWithPote
      */
     public GqlExceptionLikeAssert causeWithGqlStatus() {
         throwables.assertHasCause(info, actual);
-        var cause = actual.getCause();
-        if (cause instanceof ErrorGqlStatusObject || cause instanceof Neo4jException) {
-            return new GqlExceptionLikeAssert(cause);
-        }
-        throw failure("Expected cause to be a Throwable implementing ErrorGqlStatusObject, but was: %s", cause);
+        return assertThrowableImplementingErrorGqlStatusObject("the cause", actual.getCause());
     }
 
     /**
@@ -61,11 +57,7 @@ public class ThrowableWithPotentialGqlCauseAssert<SELF extends ThrowableWithPote
     public GqlExceptionLikeAssert rootCauseWithGqlStatus() {
         throwables.assertHasRootCause(info, actual);
         var rootCause = org.assertj.core.util.Throwables.getRootCause(actual);
-        if (rootCause instanceof ErrorGqlStatusObject || rootCause instanceof Neo4jException) {
-            return new GqlExceptionLikeAssert(rootCause);
-        }
-        throw failure(
-                "Expected root cause to be a Throwable implementing ErrorGqlStatusObject, but was: %s", rootCause);
+        return assertThrowableImplementingErrorGqlStatusObject("the root cause", rootCause);
     }
 
     /**
@@ -76,11 +68,16 @@ public class ThrowableWithPotentialGqlCauseAssert<SELF extends ThrowableWithPote
     public GqlExceptionLikeAssert rootCauseOrSelfWithGqlStatus() {
         var rootCause = org.assertj.core.util.Throwables.getRootCause(actual);
         var throwable = rootCause != null ? rootCause : actual;
+        return assertThrowableImplementingErrorGqlStatusObject("the root cause", throwable);
+    }
+
+    private GqlExceptionLikeAssert assertThrowableImplementingErrorGqlStatusObject(
+            String context, Throwable throwable) {
         if (throwable instanceof ErrorGqlStatusObject || throwable instanceof Neo4jException) {
             return new GqlExceptionLikeAssert(throwable);
         }
         throw failure(
-                "Expected the root cause to be a Throwable implementing ErrorGqlStatusObject, but was: %s", throwable);
+                "Expected %s to be a Throwable implementing ErrorGqlStatusObject, but was: %s", context, throwable);
     }
 
     /**
