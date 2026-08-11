@@ -29,7 +29,6 @@ import static org.neo4j.kernel.api.impl.schema.vector.Neo4jVectorSimilarityFunct
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Stream;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -119,7 +118,7 @@ public class Lucene10RescoringQueryTest {
             this.quantizationType = quantizationType;
             this.searchExpansionFactor = searchExpansionFactor;
             this.efSearch = Math.max((int) Math.ceil(effectiveSearchExpansionFactor * TOP_K), TOP_K);
-            this.shouldRescore = !Objects.equals(quantizationType, VectorQuantizationType.NONE) && efSearch > TOP_K;
+            this.shouldRescore = quantizationType == VectorQuantizationType.BINARY && efSearch > TOP_K;
         }
 
         @Override

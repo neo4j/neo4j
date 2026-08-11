@@ -42,7 +42,7 @@ public class VectorQuantizationTest extends VectorSSFTestBase {
             reason = "Quantization depends on the vectors within the segment, "
                     + "SPD distributes the nodes over the shards.")
     @ParameterizedTest
-    @EnumSource(VectorQuantizationType.class)
+    @EnumSource
     void testQuantizationImpact(VectorQuantizationType quantizationType) throws Exception {
         createNodeVectorIndex(
                 VECTOR_INDEX_NAME,
@@ -55,7 +55,7 @@ public class VectorQuantizationTest extends VectorSSFTestBase {
     }
 
     @ParameterizedTest
-    @EnumSource(VectorQuantizationType.class)
+    @EnumSource(names = "BINARY")
     void testQuantizationRescoring(VectorQuantizationType quantizationType) throws Exception {
         createNodeVectorIndex(
                 VECTOR_INDEX_NAME,

@@ -154,7 +154,7 @@ public abstract class LuceneQueryFactory {
                     double searchExpansionFactor =
                             nearestNeighborsPredicate.searchExpansionFactorOrElse(defaultSearchExpansionFactor);
                     int efSearch = Math.clamp((long) Math.ceil(searchExpansionFactor * k), k, maxEfSearch);
-                    boolean rescore = quantizationType != VectorQuantizationType.NONE && efSearch > k;
+                    boolean rescore = quantizationType == VectorQuantizationType.BINARY && efSearch > k;
 
                     if (predicates.length > 1) {
                         yield searcher.newQueryContext()
