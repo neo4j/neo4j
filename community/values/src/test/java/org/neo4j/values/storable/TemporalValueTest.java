@@ -23,6 +23,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.DateTimeValue.builder;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
@@ -103,6 +105,94 @@ class TemporalValueTest {
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N40)
                 .hasStatusDescription(
                         "error: data exception - non-assignable temporal component. Cannot assign 'timezone' of a INTEGER.");
+    }
+
+    @Test
+    void shouldFailToOverrideYearOfLeapDayToNonLeapYear() {
+        MapValue map =
+                VirtualValues.map(new String[] {"date", "year"}, new AnyValue[] {date(1984, 2, 29), longValue(1983)});
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DateValue.build(map, clock))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22007)
+                .hasStatusDescription("error: data exception - invalid date, time, or datetime format")
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N11)
+                .hasStatusDescription(
+                        "error: data exception - invalid argument. Invalid argument: cannot process 'year'.");
+    }
+
+    @Test
+    void shouldFailToOverrideYearOfLeapDayToNonLeapYearForDateTime() {
+        MapValue map = VirtualValues.map(
+                new String[] {"datetime", "year"},
+                new AnyValue[] {datetime(1984, 2, 29, 1, 1, 1, 0, "UTC"), longValue(1983)});
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DateTimeValue.build(map, clock))
+                .isInstanceOf(InvalidArgumentException.class)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N11)
+                .hasStatusDescription(
+                        "error: data exception - invalid argument. Invalid argument: cannot process 'year'.");
+    }
+
+    @Test
+    void shouldFailToOverrideYearOfLeapDayToNonLeapYearForLocalDateTime() {
+        MapValue map = VirtualValues.map(
+                new String[] {"datetime", "year"},
+                new AnyValue[] {localDateTime(1984, 2, 29, 1, 1, 1, 0), longValue(1983)});
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> LocalDateTimeValue.build(map, clock))
+                .isInstanceOf(InvalidArgumentException.class)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N11)
+                .hasStatusDescription(
+                        "error: data exception - invalid argument. Invalid argument: cannot process 'year'.");
+    }
+
+    @Test
+    void shouldFailToOverrideMonthOfDay31ToShorterMonth() {
+        MapValue map =
+                VirtualValues.map(new String[] {"date", "month"}, new AnyValue[] {date(2023, 1, 31), longValue(4)});
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DateValue.build(map, clock))
+                .isInstanceOf(InvalidArgumentException.class)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N11)
+                .hasStatusDescription(
+                        "error: data exception - invalid argument. Invalid argument: cannot process 'month'.");
+    }
+
+    @Test
+    void shouldBlameOutOfRangeMonthRatherThanCoOverriddenYear() {
+        MapValue map = VirtualValues.map(
+                new String[] {"date", "year", "month"},
+                new AnyValue[] {date(1984, 2, 29), longValue(1980), longValue(13)});
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DateValue.build(map, clock))
+                .isInstanceOf(InvalidArgumentException.class)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N11)
+                .hasStatusDescription(
+                        "error: data exception - invalid argument. Invalid argument: cannot process 'month'.");
+    }
+
+    @Test
+    void shouldAllowOverridingYearAndDayOfLeapDayTogether() {
+        MapValue map = VirtualValues.map(
+                new String[] {"date", "year", "day"},
+                new AnyValue[] {date(1984, 2, 29), longValue(1983), longValue(28)});
+        assertEquals(date(1983, 2, 28), DateValue.build(map, clock));
+    }
+
+    @Test
+    void shouldAllowOverridingMonthOfLeapDayToAnotherLongMonth() {
+        MapValue map =
+                VirtualValues.map(new String[] {"date", "month"}, new AnyValue[] {date(1984, 2, 29), longValue(3)});
+        assertEquals(date(1984, 3, 29), DateValue.build(map, clock));
+    }
+
+    @Test
+    void shouldAllowOverridingYearAndMonthOfLeapDayTogetherWhenStillValid() {
+        MapValue map = VirtualValues.map(
+                new String[] {"date", "year", "month"},
+                new AnyValue[] {date(1984, 2, 29), longValue(1983), longValue(3)});
+        assertEquals(date(1983, 3, 29), DateValue.build(map, clock));
     }
 
     @Test

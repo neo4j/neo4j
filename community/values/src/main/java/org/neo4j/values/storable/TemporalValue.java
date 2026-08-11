@@ -436,10 +436,27 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
         <Temp extends Temporal> Temp assignAllFields(Temp temp) {
             Temp result = temp;
+            // year and month are resolved together against the pre-existing day of month (see
+            // assignYearAndMonthPreservingDay) whenever the day itself is not also being (re)assigned, so that
+            // e.g. overriding the year of a 29 Feb date together with its month is validated against the final
+            // combination instead of failing (or silently clamping) on a transient intermediate date.
+            boolean dayIsAlsoAssigned = fields.containsKey(TemporalFields.day)
+                    || fields.containsKey(TemporalFields.week)
+                    || fields.containsKey(TemporalFields.ordinalDay)
+                    || fields.containsKey(TemporalFields.dayOfQuarter)
+                    || fields.containsKey(TemporalFields.dayOfWeek);
+            boolean resolveYearAndMonthTogether = !dayIsAlsoAssigned
+                    && (fields.containsKey(TemporalFields.year) || fields.containsKey(TemporalFields.month))
+                    && result.isSupported(ChronoField.DAY_OF_MONTH);
+            if (resolveYearAndMonthTogether) {
+                result = assignYearAndMonthPreservingDay(result);
+            }
             for (Map.Entry<TemporalFields, AnyValue> entry : fields.entrySet()) {
                 TemporalFields f = entry.getKey();
                 var tmpResult = result;
-                if (f == TemporalFields.year && fields.containsKey(TemporalFields.week)) {
+                if (resolveYearAndMonthTogether && (f == TemporalFields.year || f == TemporalFields.month)) {
+                    // already applied together above
+                } else if (f == TemporalFields.year && fields.containsKey(TemporalFields.week)) {
                     // Year can mean week-based year, if a week is specified.
                     result = assertValidArgument(f.toString(), () -> (Temp) tmpResult.with(
                             IsoFields.WEEK_BASED_YEAR,
@@ -468,6 +485,56 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                                 fields.get(TemporalFields.nanosecond)));
             }
             return result;
+        }
+
+        /**
+         * {@link java.time.LocalDate#with(TemporalField, long)} resolves an out-of-range day-of-month by
+         * clamping it to the last valid day of the month for {@link ChronoField#YEAR} and
+         * {@link ChronoField#MONTH_OF_YEAR} (e.g. 1984-02-29 with year 1983 silently becomes 1983-02-28), instead
+         * of throwing like direct construction via {@link java.time.LocalDate#of(int, int, int)} does. Applying
+         * year and month one at a time, as {@link #assignAllFields} otherwise does, would therefore either throw
+         * on a transient invalid date that the other field goes on to fix (e.g. year 1983 with month 3, which
+         * only clamps because month hasn't been applied yet) or silently accept a date that only looks valid
+         * because of that same clamping. Instead, resolve the final year, month, and pre-existing day together
+         * in one step, exactly like direct construction, and transplant the result via
+         * {@link ChronoField#EPOCH_DAY}, which every date-based {@link Temporal} here supports.
+         */
+        private <Temp extends Temporal> Temp assignYearAndMonthPreservingDay(Temp result) {
+            boolean yearOverridden = fields.containsKey(TemporalFields.year);
+            boolean monthOverridden = fields.containsKey(TemporalFields.month);
+            long year = yearOverridden
+                    ? safeCastAssignableIntegral(
+                            TemporalFields.year.name(),
+                            fields.get(TemporalFields.year),
+                            TemporalFields.year.defaultValue)
+                    : result.getLong(ChronoField.YEAR);
+            long month = monthOverridden
+                    ? safeCastAssignableIntegral(
+                            TemporalFields.month.name(),
+                            fields.get(TemporalFields.month),
+                            TemporalFields.month.defaultValue)
+                    : result.getLong(ChronoField.MONTH_OF_YEAR);
+            long day = result.getLong(ChronoField.DAY_OF_MONTH);
+            // Check year/month individually first, so an out-of-range value assigned to just one of them is
+            // blamed on that field rather than on the combination check below.
+            if (yearOverridden) {
+                checkValidValue(TemporalFields.year.toString(), ChronoField.YEAR, year);
+            }
+            if (monthOverridden) {
+                checkValidValue(TemporalFields.month.toString(), ChronoField.MONTH_OF_YEAR, month);
+            }
+            String combinationArgument = (yearOverridden ? TemporalFields.year : TemporalFields.month).toString();
+            return assertValidArgument(combinationArgument, () -> (Temp) result.with(
+                    ChronoField.EPOCH_DAY,
+                    LocalDate.of((int) year, (int) month, (int) day).toEpochDay()));
+        }
+
+        private static void checkValidValue(String argument, ChronoField field, long value) {
+            try {
+                field.checkValidValue(value);
+            } catch (DateTimeException e) {
+                throw InvalidArgumentException.cannotProcessTemporal(argument, e);
+            }
         }
 
         @Override
