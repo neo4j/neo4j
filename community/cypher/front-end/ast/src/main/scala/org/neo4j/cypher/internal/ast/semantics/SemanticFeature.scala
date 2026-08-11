@@ -73,10 +73,6 @@ object SemanticFeature {
     override def name: String = "fulltext search"
   }
 
-  case object UUIDType extends SemanticFeature with FeatureToString {
-    override def name: String = "UUID type"
-  }
-
   case object GroupByClause extends SemanticFeature with FeatureToString {
     override def name: String = "Group By clause"
   }
@@ -142,7 +138,6 @@ object SemanticFeature {
     RelationshipPropertyValueAccessRules,
     VectorSearchWithComplexPattern,
     FulltextSearch,
-    UUIDType,
     LocalCallables,
     ScopeQueries,
     EnableParsingOfObfuscatedLiterals,

@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.value.NodeValue
 import org.neo4j.driver.internal.value.PathValue
 import org.neo4j.driver.internal.value.PointValue
 import org.neo4j.driver.internal.value.RelationshipValue
+import org.neo4j.driver.internal.value.UUIDValue
 import org.neo4j.driver.internal.value.VectorValue
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
@@ -85,10 +86,10 @@ final object ResultValueMapper extends ValueMapper {
       case durationValue: DurationValue => // Yes, durations are treated as strings here
         val d = durationValue.asIsoDuration()
         duration(d.months(), d.days(), d.seconds(), d.nanoseconds()).toString
+      case uuid: UUIDValue => Values.uuidValue(uuid.asUUID())
       case _ => value.asObject() match {
-          case uuid: java.util.UUID => Values.uuidValue(uuid)
-          case temporal: Temporal   => temporal.toString // Yes, temporals are treated as strings here
-          case other                => other
+          case temporal: Temporal => temporal.toString // Yes, temporals are treated as strings here
+          case other              => other
         }
     }
 

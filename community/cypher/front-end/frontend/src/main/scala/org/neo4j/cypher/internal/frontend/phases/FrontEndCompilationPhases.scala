@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.RelationshipPrope
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ScopeQueries
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.SecretManager
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ShowSetting
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UUIDType
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UserTags
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ValueInListProperty
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
@@ -154,7 +153,6 @@ object FrontEndCompilationPhases extends FrontEndCompilationPhases {
       GraphDatabaseInternalSettings.oidc_credential_forwarding_enabled -> OidcCredentialForwarding.productPrefix,
       GraphDatabaseInternalSettings.enable_experimental_cypher_versions -> ExperimentalCypherVersions.productPrefix,
       GraphDatabaseInternalSettings.relationship_property_value_access_rules -> RelationshipPropertyValueAccessRules.productPrefix,
-      GraphDatabaseInternalSettings.cypher_uuid_type_enabled -> UUIDType.productPrefix,
       GraphDatabaseInternalSettings.cypher_group_by_clause_enabled -> GroupByClause.productPrefix,
       GraphDatabaseInternalSettings.cypher_fulltext_search_enabled -> FulltextSearch.productPrefix,
       GraphDatabaseInternalSettings.cypher_enable_local_callables -> LocalCallables.productPrefix,

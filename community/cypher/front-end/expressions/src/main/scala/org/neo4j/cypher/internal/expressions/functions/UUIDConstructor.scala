@@ -31,9 +31,8 @@ case object UUIDConstructor extends Function {
       names = Vector(),
       argumentTypes = Vector(),
       outputType = CTUUID,
-      description = "Returns a randomly generate `UUID`.",
+      description = "Returns a randomly generated `UUID`.",
       category = Category.UUID,
-      semanticFeature = Set("UUIDType"),
       scopes = Set(CypherVersion.Cypher25)
     ),
     FunctionTypeSignature(
@@ -41,12 +40,11 @@ case object UUIDConstructor extends Function {
       names = Vector("name"),
       argumentTypes = Vector(CTString),
       outputType = CTUUID,
-      description = "Converts the given `STRING` to a `UUID`.",
+      description = "Converts a `STRING` value to a `UUID`.",
       category = Category.UUID,
       argumentDescriptions = Map(
-        "name" -> "The `STRING` to convert to a `UUID`, this should be 32 hexadecimal digits displayed in 5 groups, separated by 4 hyphens."
+        "name" -> "The `STRING` must be 32 hexadecimal digits displayed in 5 groups, separated by 4 hyphens."
       ),
-      semanticFeature = Set("UUIDType"),
       scopes = Set(CypherVersion.Cypher25)
     ),
     FunctionTypeSignature(
@@ -54,13 +52,12 @@ case object UUIDConstructor extends Function {
       names = Vector("mostSigBits", "leastSigBits"),
       argumentTypes = Vector(CTInteger, CTInteger),
       outputType = CTUUID,
-      description = "Converts the given `INTEGER` values to a `UUID`.",
+      description = "Converts two `INTEGER` values to a `UUID`.",
       category = Category.UUID,
       argumentDescriptions = Map(
         "mostSigBits" -> "The most significant bits.",
         "leastSigBits" -> "The least significant bits."
       ),
-      semanticFeature = Set("UUIDType"),
       scopes = Set(CypherVersion.Cypher25)
     )
   )

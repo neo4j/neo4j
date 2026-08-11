@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.QueryCache.CacheKey
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.CacheStrategy
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -514,13 +513,7 @@ abstract class ExecutionEngine(
 
   def getCypherFunctions: java.util.List[FunctionInformation] = {
     val informations: Seq[FunctionInformation] = {
-      if (config.uuidTypeEnabled) {
-        org.neo4j.cypher.internal.expressions.functions.Function.functionInfoWithFeatureFlags(
-          Set(SemanticFeature.UUIDType.productPrefix)
-        ).map(FunctionWithInformation.apply)
-      } else {
-        org.neo4j.cypher.internal.expressions.functions.Function.functionInfo.map(FunctionWithInformation.apply)
-      }
+      org.neo4j.cypher.internal.expressions.functions.Function.functionInfo.map(FunctionWithInformation.apply)
     }
 
     val predicateInformations: Seq[FunctionInformation] =

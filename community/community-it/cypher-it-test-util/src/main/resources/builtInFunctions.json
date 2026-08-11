@@ -6305,6 +6305,160 @@
     "category": "String"
   },
   {
+    "name": "uuid",
+    "aggregating": false,
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "isBuiltIn": true,
+    "rolesBoostedExecution": [],
+    "returnDescription": "UUID",
+    "description": "Returns a randomly generated `UUID`.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "cypherVersionScope": [
+      25
+    ],
+    "signature": "uuid() :: UUID",
+    "argumentDescription": [],
+    "category": "UUID"
+  },
+  {
+    "name": "uuid",
+    "aggregating": false,
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "isBuiltIn": true,
+    "rolesBoostedExecution": [],
+    "returnDescription": "UUID",
+    "description": "Converts a `STRING` value to a `UUID`.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "cypherVersionScope": [
+      25
+    ],
+    "signature": "uuid(name :: STRING) :: UUID",
+    "argumentDescription": [
+      {
+        "name": "name",
+        "description": "The `STRING` must be 32 hexadecimal digits displayed in 5 groups, separated by 4 hyphens.",
+        "isDeprecated": false,
+        "type": "STRING"
+      }
+    ],
+    "category": "UUID"
+  },
+  {
+    "name": "uuid",
+    "aggregating": false,
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "isBuiltIn": true,
+    "rolesBoostedExecution": [],
+    "returnDescription": "UUID",
+    "description": "Converts two `INTEGER` values to a `UUID`.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "cypherVersionScope": [
+      25
+    ],
+    "signature": "uuid(mostSigBits :: INTEGER, leastSigBits :: INTEGER) :: UUID",
+    "argumentDescription": [
+      {
+        "name": "mostSigBits",
+        "description": "The most significant bits.",
+        "isDeprecated": false,
+        "type": "INTEGER"
+      },
+      {
+        "name": "leastSigBits",
+        "description": "The least significant bits.",
+        "isDeprecated": false,
+        "type": "INTEGER"
+      }
+    ],
+    "category": "UUID"
+  },
+  {
+    "name": "uuid.leastSignificantBits",
+    "aggregating": false,
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "isBuiltIn": true,
+    "rolesBoostedExecution": [],
+    "returnDescription": "INTEGER",
+    "description": "Returns the least significant bits from the given `UUID`.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "cypherVersionScope": [
+      25
+    ],
+    "signature": "uuid.leastSignificantBits(uuid :: UUID) :: INTEGER",
+    "argumentDescription": [
+      {
+        "name": "uuid",
+        "description": "The `UUID` to return the least significant bits from.",
+        "isDeprecated": false,
+        "type": "UUID"
+      }
+    ],
+    "category": "UUID"
+  },
+  {
+    "name": "uuid.mostSignificantBits",
+    "aggregating": false,
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "isBuiltIn": true,
+    "rolesBoostedExecution": [],
+    "returnDescription": "INTEGER",
+    "description": "Returns the most significant bits from the given `UUID`.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "cypherVersionScope": [
+      25
+    ],
+    "signature": "uuid.mostSignificantBits(uuid :: UUID) :: INTEGER",
+    "argumentDescription": [
+      {
+        "name": "uuid",
+        "description": "The `UUID` to return the most significant bits from.",
+        "isDeprecated": false,
+        "type": "UUID"
+      }
+    ],
+    "category": "UUID"
+  },
+  {
     "name": "valueType",
     "aggregating": false,
     "isDeprecated": false,

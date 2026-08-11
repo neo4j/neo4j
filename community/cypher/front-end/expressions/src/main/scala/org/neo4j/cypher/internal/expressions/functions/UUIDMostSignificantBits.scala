@@ -35,7 +35,6 @@ case object UUIDMostSignificantBits extends Function {
       argumentDescriptions = Map(
         "uuid" -> "The `UUID` to return the most significant bits from."
       ),
-      semanticFeature = Set("UUIDType"),
       scopes = Set(CypherVersion.Cypher25)
     )
   )

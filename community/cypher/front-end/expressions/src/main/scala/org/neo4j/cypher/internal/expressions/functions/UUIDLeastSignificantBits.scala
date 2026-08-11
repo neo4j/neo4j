@@ -35,7 +35,6 @@ case object UUIDLeastSignificantBits extends Function {
       argumentDescriptions = Map(
         "uuid" -> "The `UUID` to return the least significant bits from."
       ),
-      semanticFeature = Set("UUIDType"),
       scopes = Set(CypherVersion.Cypher25)
     )
   )

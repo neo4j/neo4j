@@ -28,7 +28,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -38,7 +37,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
@@ -101,11 +99,6 @@ public class QueryAPITestSupportExtension
                 builder = builder.setConfig(
                         GraphDatabaseSettings.bookmark_ready_timeout,
                         Duration.ofSeconds(annotation.bookmarkReadyTimeoutInSeconds()));
-            }
-
-            if (annotation.enabledFeatureFlagForUUID()) {
-                builder.setConfig(
-                        GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features, Set.of("UUIDType"));
             }
 
             var dbms = builder.build();
