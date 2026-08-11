@@ -52,8 +52,8 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <configuration combine.self="append">
-          <compilerArgs combine.self="append">
+        <configuration>
+          <compilerArgs combine.children="append">
             <arg>--add-modules</arg>
             <arg>jdk.incubator.vector</arg>
           </compilerArgs>
