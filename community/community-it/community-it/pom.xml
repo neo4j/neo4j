@@ -23,10 +23,7 @@
 
   <properties>
     <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-    <!-- Disable parallel tests, the page cache race tests sample different thread interleavings under load and fail -->
-    <forkCounts>1</forkCounts>
     <moduleName>org.neo4j.community.community.it</moduleName>
-    <parallel.tests>false</parallel.tests>
   </properties>
 
   <dependencies>
