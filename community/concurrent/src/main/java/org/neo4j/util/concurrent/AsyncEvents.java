@@ -99,9 +99,6 @@ public class AsyncEvents<T extends AsyncEvent> implements Runnable {
 
             AsyncEvent events = (AsyncEvent) STACK.getAndSet(this, SHUTDOWN_SENTINEL);
             process(events);
-        } catch (Throwable t) {
-            t.printStackTrace();
-            throw t;
         } finally {
             backgroundThread = null;
             shutdownLatch.release();
