@@ -2185,7 +2185,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldThrowOnReferencedNodeSchemaWithoutExplicitLabelOptionData() throws FileNotFoundException {
+    void shouldThrowOnReferencedNodeSchemaWithoutExplicitLabelOptionData() throws IOException {
         // given
         Path file = writeFile("relationship-header", "myId:ID(Person)\tname:string\t:LABEL");
 
@@ -2211,7 +2211,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldHandleMultipleEqualReferencedSchemaForSameGroup() throws FileNotFoundException {
+    void shouldHandleMultipleEqualReferencedSchemaForSameGroup() throws IOException {
         // given
         var file1 = writeFile("nodes1", "myId:ID(MyGroup){label:Person}");
         var file2 = writeFile("nodes2", "myId:ID(MyGroup){label:Person}");
@@ -2245,7 +2245,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldFailMultipleNonEqualReferencedSchemaForSameGroup() throws FileNotFoundException {
+    void shouldFailMultipleNonEqualReferencedSchemaForSameGroup() throws IOException {
         // given
         var file1 = writeFile("nodes1", "myId:ID(MyGroup){label:Person}");
         var file2 = writeFile("nodes2", "myId:ID(MyGroup){label:Company}");
@@ -2276,7 +2276,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldParseReferencedNodeSchemaWithExplicitLabelOptionData() throws FileNotFoundException {
+    void shouldParseReferencedNodeSchemaWithExplicitLabelOptionData() throws IOException {
         // given
         Path file = writeFile("relationship-header", "myId:ID(My Group){label:Person}\tname:string\t:LABEL");
 
@@ -2505,7 +2505,7 @@ class CsvInputTest {
     }
 
     @Test
-    void multipleNodeIdColumnsRequireSameGroup() {
+    void multipleNodeIdColumnsRequireSameGroup() throws IOException {
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),id2:ID(g2),name"));
         try (var input = new CsvInput(
                 nodeData,
@@ -2687,7 +2687,7 @@ class CsvInputTest {
     }
 
     @Test
-    void multipleStartIdColumnsRequireSameGroup() {
+    void multipleStartIdColumnsRequireSameGroup() throws IOException {
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),id2:ID(g1),name"), data("id1:ID(g2),name"));
         Iterable<DataFactory> relData = datas(data(":START_ID(g1),:START_ID(g2),:END_ID(g1),:END_ID(g1),:TYPE"));
         try (var input = new CsvInput(
@@ -2709,7 +2709,7 @@ class CsvInputTest {
     }
 
     @Test
-    void multipleEndIdColumnsRequireSameGroup() {
+    void multipleEndIdColumnsRequireSameGroup() throws IOException {
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),id2:ID(g1),name"), data("id1:ID(g2),name"));
         Iterable<DataFactory> relData = datas(data(":START_ID(g1),:START_ID(g1),:END_ID(g1),:END_ID(g2),:TYPE"));
         try (var input = new CsvInput(
@@ -2731,7 +2731,7 @@ class CsvInputTest {
     }
 
     @Test
-    void singleNodeIdColumnRequiresSingleStartIdColumn() {
+    void singleNodeIdColumnRequiresSingleStartIdColumn() throws IOException {
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),name"));
         Iterable<DataFactory> relData = datas(data(":START_ID(g1),:START_ID(g1),:END_ID(g1),:TYPE"));
         try (var input = new CsvInput(
@@ -2753,7 +2753,7 @@ class CsvInputTest {
     }
 
     @Test
-    void singleNodeIdColumnRequiresSingleEndIdColumn() {
+    void singleNodeIdColumnRequiresSingleEndIdColumn() throws IOException {
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),name"));
         Iterable<DataFactory> relData = datas(data(":START_ID(g1),:END_ID(g1),:END_ID(g1),:TYPE"));
         try (var input = new CsvInput(
@@ -2825,7 +2825,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldNotBeAbleToReferToMixedSingleIdAndCompositeIdWithMultipleStartIdColumns() {
+    void shouldNotBeAbleToReferToMixedSingleIdAndCompositeIdWithMultipleStartIdColumns() throws IOException {
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),name"), data("id1:ID(g1),id2:ID(g1),name"));
         Iterable<DataFactory> relData = datas(data(":START_ID(g1),:START_ID(g1),:END_ID(g1),:TYPE"));
         try (var input = new CsvInput(
@@ -2847,7 +2847,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldNotBeAbleToReferToMixedSingleIdAndCompositeIdWithMultipleEndIdColumns() {
+    void shouldNotBeAbleToReferToMixedSingleIdAndCompositeIdWithMultipleEndIdColumns() throws IOException {
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),name"), data("id1:ID(g1),id2:ID(g1),name"));
         Iterable<DataFactory> relData = datas(data(":START_ID(g1),:END_ID(g1),:END_ID(g1),:TYPE"));
         try (var input = new CsvInput(
@@ -2869,7 +2869,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldNotBeAbleToReferToCompositeIdWithWrongNumberOfStartIdColumns() {
+    void shouldNotBeAbleToReferToCompositeIdWithWrongNumberOfStartIdColumns() throws IOException {
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),id2:ID(g1),name"));
         Iterable<DataFactory> relData =
                 datas(data(":START_ID(g1),:START_ID(g1),:START_ID(g1),:END_ID(g1),:END_ID(g1),:TYPE"));
@@ -2892,7 +2892,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldNotBeAbleToReferToCompositeIdWithWrongNumberOfEndIdColumns() {
+    void shouldNotBeAbleToReferToCompositeIdWithWrongNumberOfEndIdColumns() throws IOException {
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),id2:ID(g1),name"));
         Iterable<DataFactory> relData =
                 datas(data(":START_ID(g1),:START_ID(g1),:END_ID(g1),:END_ID(g1),:END_ID(g1),:TYPE"));
@@ -2987,7 +2987,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldNotBeAbleToMixHowToReferToCompositeIDs1() {
+    void shouldNotBeAbleToMixHowToReferToCompositeIDs1() throws IOException {
         // First using multiple :START_ID, then single :START_ID
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),id2:ID(g1),name"));
         Iterable<DataFactory> relData = datas(
@@ -3013,7 +3013,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldNotBeAbleToMixHowToReferToCompositeIDs2() {
+    void shouldNotBeAbleToMixHowToReferToCompositeIDs2() throws IOException {
         // First using single :START_ID, then multiple :START_ID
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),id2:ID(g1),name"));
         Iterable<DataFactory> relData = datas(
@@ -3039,7 +3039,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldNotBeAbleToMixHowToReferToCompositeIDs3() {
+    void shouldNotBeAbleToMixHowToReferToCompositeIDs3() throws IOException {
         // First using single :START_ID, then multiple :END_ID
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),id2:ID(g1),name"));
         Iterable<DataFactory> relData = datas(data(":START_ID(g1),:END_ID(g1),:END_ID(g1),:TYPE"));
@@ -3063,7 +3063,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldNotBeAbleToMixHowToReferToCompositeIDs4() {
+    void shouldNotBeAbleToMixHowToReferToCompositeIDs4() throws IOException {
         // First using multiple :START_ID, then single :END_ID
         Iterable<DataFactory> nodeData = datas(data("id1:ID(g1),id2:ID(g1),name"));
         Iterable<DataFactory> relData = datas(data(":START_ID(g1),:START_ID(g1),:END_ID(g1),:TYPE"));

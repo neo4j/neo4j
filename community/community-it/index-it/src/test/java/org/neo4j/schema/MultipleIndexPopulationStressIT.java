@@ -484,7 +484,7 @@ class MultipleIndexPopulationStressIT {
         }
 
         @Override
-        public void close() {
+        public void close() throws IOException {
             badCollector.close();
         }
     }

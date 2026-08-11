@@ -85,6 +85,7 @@ class FileImporterTest {
         try (var importContext = ImportContext.create(
                 testDir.getFileSystem(),
                 new NormalizedDatabaseName(databaseName),
+                null,
                 config,
                 reportLocation,
                 List.of(),

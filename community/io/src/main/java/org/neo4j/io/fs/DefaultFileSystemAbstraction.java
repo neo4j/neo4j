@@ -59,8 +59,8 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to write directory path [%s] for Neo4j store.";
     public static final Set<OpenOption> WRITE_OPTIONS = Set.of(READ, WRITE, CREATE);
     private static final Set<OpenOption> READ_OPTIONS = Set.of(READ);
-    private static final Set<OpenOption> APPEND_OPTIONS = Set.of(CREATE, APPEND);
-    private static final Set<OpenOption> TRUNCATE_OPTIONS = Set.of(WRITE, CREATE, TRUNCATE_EXISTING);
+    public static final Set<OpenOption> APPEND_OPTIONS = Set.of(CREATE, APPEND);
+    public static final Set<OpenOption> TRUNCATE_OPTIONS = Set.of(WRITE, CREATE, TRUNCATE_EXISTING);
 
     @Override
     public FileWatcher fileWatcher() throws IOException {

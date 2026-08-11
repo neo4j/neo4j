@@ -21,6 +21,9 @@ package org.neo4j.batchimport.api.input;
 
 import static java.lang.String.format;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 import org.neo4j.common.EntityType;
@@ -91,10 +94,26 @@ public interface Collector extends AutoCloseable {
     boolean isCollectingBadRelationships();
 
     /**
+     * Checkpoints the collector, writing whatever state it has to the given output stream. On return, everything
+     * collected so far has been reported and made durable in the underlying resource, to the extent that the resource
+     * supports it.
+     * <p>
+     * Must not be called concurrently with any of the collect* methods that collect bad data from the input.
+     */
+    void checkpoint(DataOutputStream outputStream) throws IOException;
+
+    /**
+     * Restores the state previously written by {@link #checkpoint(DataOutputStream)}.
+     * <p>
+     * Must not be called after any collect* method has been called.
+     */
+    void resumeFromCheckpoint(DataInputStream inputStream) throws IOException;
+
+    /**
      * Flushes whatever changes to the underlying resource supplied from the importer.
      */
     @Override
-    void close();
+    void close() throws IOException;
 
     static String standardisedErrorMessage(String problem, String source, long line, String furtherDetails) {
         return source != null
@@ -265,6 +284,12 @@ public interface Collector extends AutoCloseable {
         public boolean isCollectingBadRelationships() {
             return true;
         }
+
+        @Override
+        public void checkpoint(DataOutputStream outputStream) {}
+
+        @Override
+        public void resumeFromCheckpoint(DataInputStream inputStream) {}
     };
 
     Collector STRICT = new Collector() {
@@ -381,6 +406,12 @@ public interface Collector extends AutoCloseable {
         public boolean isCollectingBadRelationships() {
             return false;
         }
+
+        @Override
+        public void checkpoint(DataOutputStream outputStream) {}
+
+        @Override
+        public void resumeFromCheckpoint(DataInputStream inputStream) {}
     };
 
     class Adapter implements Collector {
@@ -456,5 +487,11 @@ public interface Collector extends AutoCloseable {
 
         @Override
         public void close() {}
+
+        @Override
+        public void checkpoint(DataOutputStream outputStream) {}
+
+        @Override
+        public void resumeFromCheckpoint(DataInputStream inputStream) {}
     }
 }

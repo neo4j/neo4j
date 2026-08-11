@@ -33,11 +33,11 @@ import static org.neo4j.internal.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.io.ByteUnit.bytesToString;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.TRUNCATE_OPTIONS;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -78,6 +78,7 @@ import org.neo4j.internal.batchimport.input.parquet.ParquetInput;
 import org.neo4j.internal.batchimport.input.parquet.ParquetMonitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.os.OsBeanUtil;
@@ -99,6 +100,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.util.VisibleForTesting;
 
 public class FileImporter {
 
@@ -112,7 +114,7 @@ public class FileImporter {
     private final StorageEngineFactory storageEngineFactory;
     private final org.neo4j.csv.reader.Configuration csvConfig;
     private final Configuration importConfig;
-    private final ThrowingSupplier<OutputStream, IOException> reportOutputStream;
+    private final ThrowingSupplier<StoreChannel, IOException> reportChannel;
     private final IdType defaultIdType;
     private final Charset inputEncoding;
     private final boolean ignoreExtraColumns;
@@ -144,7 +146,7 @@ public class FileImporter {
         this.storageEngineFactory = requireNonNull(b.storageEngineFactory);
         this.csvConfig = requireNonNull(b.csvConfig);
         this.importConfig = requireNonNull(b.importConfig);
-        this.reportOutputStream = requireNonNull(b.reportOutputStream);
+        this.reportChannel = requireNonNull(b.reportChannel);
         this.defaultIdType = requireNonNull(b.defaultIdType);
         this.inputEncoding = requireNonNull(b.inputEncoding);
         this.ignoreExtraColumns = b.ignoreExtraColumns;
@@ -521,7 +523,7 @@ public class FileImporter {
 
     private Collector getBadCollector() throws IOException {
         return BadCollector.create(
-                ProblemReporters.jsonOutputProblemHandler(reportOutputStream.get()),
+                ProblemReporters.jsonOutputProblemHandler(reportChannel.get()),
                 badTolerance,
                 BadCollector.collectFlag(
                         skipBadRelationships,
@@ -548,7 +550,7 @@ public class FileImporter {
         private StorageEngineFactory storageEngineFactory;
         private org.neo4j.csv.reader.Configuration csvConfig = org.neo4j.csv.reader.Configuration.COMMAS;
         private Configuration importConfig = Configuration.DEFAULT;
-        private ThrowingSupplier<OutputStream, IOException> reportOutputStream;
+        private ThrowingSupplier<StoreChannel, IOException> reportChannel;
         private IdType defaultIdType = IdType.STRING;
         private Charset inputEncoding = StandardCharsets.UTF_8;
         private boolean ignoreExtraColumns;
@@ -620,13 +622,14 @@ public class FileImporter {
             return this;
         }
 
-        public Builder withReportOutputStream(ThrowingSupplier<OutputStream, IOException> reportOutputStream) {
-            this.reportOutputStream = reportOutputStream;
+        public Builder withReportChannel(ThrowingSupplier<StoreChannel, IOException> reportChannel) {
+            this.reportChannel = reportChannel;
             return this;
         }
 
+        @VisibleForTesting
         public Builder withReportFile(Path reportFile) {
-            this.reportOutputStream = () -> fileSystem.openAsOutputStream(reportFile, false);
+            this.reportChannel = () -> fileSystem.open(reportFile, TRUNCATE_OPTIONS);
             return this;
         }
 

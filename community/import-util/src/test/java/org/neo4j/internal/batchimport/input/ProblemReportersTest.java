@@ -20,21 +20,26 @@
 package org.neo4j.internal.batchimport.input;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.TRUNCATE_OPTIONS;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.batchimport.input.BadCollector.ProblemHandler;
 import org.neo4j.internal.batchimport.input.BadCollector.ProblemReporter;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
+@ExtendWith(EphemeralFileSystemExtension.class)
 class ProblemReportersTest {
 
     private static final String DUFF = "duff";
@@ -51,20 +56,35 @@ class ProblemReportersTest {
     private static final Object V1 = "v1";
     private static final Object V2 = 42;
 
+    private static final AtomicInteger REPORT_ID = new AtomicInteger();
+
+    @Inject
+    private FileSystemAbstraction fs;
+
     @ParameterizedTest
     @MethodSource
     void shouldReportProblems(Problem problem) throws IOException {
-        assertProblem(problem.reporter, ProblemReporters::printingProblemHandler, problem.expectedPlain);
-        assertProblem(problem.reporter, ProblemReporters::jsonOutputProblemHandler, problem.expectedJson);
+        assertPrintedProblem(problem.reporter, problem.expectedPlain);
+        assertJsonProblem(problem.reporter, problem.expectedJson);
     }
 
-    private static void assertProblem(
-            ProblemReporter reporter, Function<OutputStream, ProblemHandler> handlerProvider, String expectedContent)
-            throws IOException {
+    private static void assertPrintedProblem(ProblemReporter reporter, String expectedContent) throws IOException {
         try (var output = new ByteArrayOutputStream();
-                var handler = handlerProvider.apply(output)) {
+                var handler = ProblemReporters.printingProblemHandler(output)) {
             handler.handle(reporter);
             assertThat(output.toString(StandardCharsets.UTF_8).trim())
+                    .isEqualToIgnoringNewLines(expectedContent.trim());
+        }
+    }
+
+    private void assertJsonProblem(ProblemReporter reporter, String expectedContent) throws IOException {
+        Path report = Path.of("report-%d.json.log".formatted(REPORT_ID.incrementAndGet()))
+                .toAbsolutePath();
+        try (var handler = ProblemReporters.jsonOutputProblemHandler(fs.open(report, TRUNCATE_OPTIONS))) {
+            handler.handle(reporter);
+        }
+        try (var input = fs.openAsInputStream(report)) {
+            assertThat(new String(input.readAllBytes(), StandardCharsets.UTF_8).trim())
                     .isEqualToIgnoringNewLines(expectedContent.trim());
         }
     }

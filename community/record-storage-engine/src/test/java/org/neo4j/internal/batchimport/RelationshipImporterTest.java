@@ -73,7 +73,7 @@ class RelationshipImporterTest {
     }
 
     @Test
-    void shouldReportMissingNodeForActualIds() {
+    void shouldReportMissingNodeForActualIds() throws IOException {
         // given
         var idMapper = IdMappers.actual();
         var monitor = new DataImporter.Monitor();

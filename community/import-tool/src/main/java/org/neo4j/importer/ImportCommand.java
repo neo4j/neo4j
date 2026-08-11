@@ -682,10 +682,7 @@ public class ImportCommand {
 
         @Override
         public void execute() throws Exception {
-            rerunFromPreviousAttempt();
-            if (resume) {
-                forceOverwriteDestinationForResume();
-            }
+            Path previousContextDir = rerunFromPreviousAttempt();
 
             var format = importFormat();
             if (format != null && StorageEngineFactory.isFormatDeprecated(format)) {
@@ -695,6 +692,7 @@ public class ImportCommand {
             try (var importContext = ImportContext.create(
                     ctx.fs(),
                     database,
+                    previousContextDir,
                     loadNeo4jConfig(format),
                     reportFile,
                     spec.commandLine().getParseResult().expandedArgs(),
@@ -727,7 +725,7 @@ public class ImportCommand {
                             .withVerbose(verbose)
                             .withAutoSkipHeaders(autoSkipHeaders)
                             .withSchemaCommands(parseSchemaCommands(fileSystem, databaseConfig))
-                            .withReportOutputStream(importContext::collectorOutputStream)
+                            .withReportChannel(importContext::collectorChannel)
                             .withLogProvider(importContext)
                             .withMonitor(monitor == null ? decorateImportContext(importContext) : monitor));
 
@@ -811,10 +809,12 @@ public class ImportCommand {
          * second time, from that attempt's persisted CLI arguments, so that from here on it is indistinguishable
          * from having been invoked with them directly. That is also what gets persisted for this run, and thus what
          * a later '--resume' picks up in turn.
+         *
+         * @return the Path to the previous attempt's context directory, or {@code null} if '--resume' was not specified
          */
-        void rerunFromPreviousAttempt() throws IOException {
+        Path rerunFromPreviousAttempt() throws IOException {
             if (!resume) {
-                return;
+                return null;
             }
             rejectOptionsNotAllowedWithResume();
             Path previousAttempt = previousAttemptContextDir();
@@ -822,6 +822,8 @@ public class ImportCommand {
             verifyPreviousAttemptIsResumable(previousAttempt);
             // only now does this command load its configuration the way the attempt being resumed asked for it
             verifyConfigStillMatches(previousAttempt);
+            forceOverwriteDestinationForResume();
+            return previousAttempt;
         }
 
         /**
@@ -848,7 +850,7 @@ public class ImportCommand {
             // the overrides go last, since where they repeat an option the attempt already used the later occurrence
             // has to win rather than be rejected as a duplicate
             String[] replayArgs = Stream.concat(
-                            ImportContext.readCliArgs(contextDir).orElse(List.of()).stream(),
+                            ImportContext.readCliArgs(ctx.fs(), contextDir).orElse(List.of()).stream(),
                             optionOverridesForResume().stream())
                     .toArray(String[]::new);
             new CommandLine(this).setOverwrittenOptionsAllowed(true).parseArgs(replayArgs);
@@ -866,7 +868,7 @@ public class ImportCommand {
                         "ERROR: '--resume' is only supported when the import attempt being resumed used "
                                 + "'--skidbladnir'.");
             }
-            if (ImportContext.wasSuccessful(contextDir)) {
+            if (ImportContext.wasSuccessful(ctx.fs(), contextDir)) {
                 throw new CommandFailedException(
                         ("ERROR: the most recent import for database '%s' completed successfully, so there is nothing "
                                         + "to resume. Rerun the import itself if you want to import it again, which "

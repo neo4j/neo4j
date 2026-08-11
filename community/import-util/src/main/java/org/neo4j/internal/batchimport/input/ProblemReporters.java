@@ -42,8 +42,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -54,6 +54,8 @@ import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdExc
 import org.neo4j.internal.batchimport.input.BadCollector.ProblemHandler;
 import org.neo4j.internal.batchimport.input.BadCollector.ProblemReporter;
 import org.neo4j.internal.batchimport.input.csv.Type;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.StoreChannel;
 
 public class ProblemReporters {
 
@@ -72,19 +74,36 @@ public class ProblemReporters {
 
     /**
      * Prints the {@link ProblemReporter#message()} of any reported errors to the provided {@link OutputStream}
-     * @param out the output to print to
+     * @param output the output to print to
      * @return the handler for a {@link Collector} to use when receiving any errors
      */
-    public static ProblemHandler printingProblemHandler(OutputStream out) {
-        var output = new PrintStream(out);
+    public static ProblemHandler printingProblemHandler(OutputStream output) {
         return new ProblemHandler() {
             @Override
             public void handle(ProblemReporter reporter) {
-                output.println(reporter.message());
+                try {
+                    output.write((reporter.message() + "\n").getBytes(StandardCharsets.UTF_8));
+                } catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
+                }
             }
 
             @Override
-            public void close() {
+            public long checkpoint() throws IOException {
+                // An OutputStream can be flushed but not forced. But this implementation is only used in tests.
+                output.flush();
+                // No meaningful position to report, since this handler cannot be resumed
+                return 0;
+            }
+
+            @Override
+            public void resumeFromCheckpoint(long position) {
+                throw new UnsupportedOperationException(
+                        "A report written to a plain OutputStream cannot be truncated back to position " + position);
+            }
+
+            @Override
+            public void close() throws IOException {
                 try (output) {
                     output.flush();
                 }
@@ -93,29 +112,49 @@ public class ProblemReporters {
     }
 
     /**
-     * Prints the {@link ProblemReporter} to the provided {@link OutputStream} as JSON objects
-     * @param out the output to print to
+     * Prints the {@link ProblemReporter} to the provided {@link StoreChannel} as JSON objects. The handler takes
+     * ownership of the channel, i.e. {@link ProblemHandler#close() closing} the handler closes the channel.
+     * @param channel the channel to print to
      * @return the handler for a {@link Collector} to use when receiving any errors
      */
-    public static ProblemHandler jsonOutputProblemHandler(OutputStream out) {
+    public static ProblemHandler jsonOutputProblemHandler(StoreChannel channel) {
         var mapper = new ObjectMapper()
                 .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
                 .disable(JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM)
                 .registerModule(ProblemReporters.SERIALIZERS);
-        var output = new PrintStream(out);
+        OutputStream output = FileUtils.toBufferedStream(channel);
         return new ProblemHandler() {
             @Override
             public void handle(ProblemReporter reporter) {
                 try {
                     mapper.writeValue(output, reporter);
-                    output.println();
+                    output.write("\n".getBytes(StandardCharsets.UTF_8));
                 } catch (IOException ex) {
                     throw new UncheckedIOException(ex);
                 }
             }
 
             @Override
-            public void close() {
+            public long checkpoint() throws IOException {
+                // Flush first, so that the buffered bytes have reached the channel before it is forced.
+                output.flush();
+                channel.force(false);
+                // Not position(), which is 0 until the first write on a channel opened for appending
+                return channel.size();
+            }
+
+            @Override
+            public void resumeFromCheckpoint(long position) throws IOException {
+                long size = channel.size();
+                if (size < position) {
+                    throw new IOException(format(
+                            "Cannot resume the bad entry report from position %d, it only reaches %d", position, size));
+                }
+                channel.truncate(position);
+            }
+
+            @Override
+            public void close() throws IOException {
                 try (output) {
                     output.flush();
                 }

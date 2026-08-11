@@ -19,21 +19,31 @@
  */
 package org.neo4j.importer;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.attribute.AclEntryPermission.APPEND_DATA;
 import static java.nio.file.attribute.AclEntryPermission.WRITE_DATA;
 import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
 import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
@@ -56,14 +66,22 @@ import org.neo4j.batchimport.api.DetailedProgressReport;
 import org.neo4j.batchimport.api.DetailedProgressReportBase;
 import org.neo4j.batchimport.api.UnsupportedFormatException;
 import org.neo4j.batchimport.api.input.ApplicationMode;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.importer.FileImporter.CsvImportException;
+import org.neo4j.internal.batchimport.input.BadCollector;
+import org.neo4j.internal.batchimport.input.Groups;
+import org.neo4j.internal.batchimport.input.ProblemReporters;
+import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.test.extension.Inject;
@@ -95,7 +113,8 @@ class ImportContextTest {
 
     @Test
     void createContextDoesNotCreateDirectories() throws IOException {
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, true)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, null, config, null, Collections.emptyList(), false, true, true)) {
             assertThat(importContext.baseDir()).doesNotExist();
             assertThat(importContext.logPath()).doesNotExist();
             assertThat(importContext.progressReportingPath()).doesNotExist();
@@ -119,7 +138,7 @@ class ImportContextTest {
 
     @Test
     void contextClearedIfNotVerboseAndNotRetained() {
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+        try (var importContext = getImportContext()) {
             assertThat(importContext.baseDir()).doesNotExist();
             assertThat(importContext.logPath()).doesNotExist();
             assertThat(importContext.progressReportingPath()).doesNotExist();
@@ -150,12 +169,12 @@ class ImportContextTest {
                 "true,true,VIOLATION"
             })
     void contextNotClearedIfVerboseOrRetained(boolean retainForInstrumentation, boolean verbose, ContextAction action) {
-        try (var importContext =
-                ImportContext.create(fs, DB, config, null, List.of(), false, retainForInstrumentation, verbose)) {
+        try (var importContext = ImportContext.create(
+                fs, DB, null, config, null, Collections.emptyList(), false, retainForInstrumentation, verbose)) {
             switch (action) {
                 case LOGGING -> importContext.getLog("testing").info("some content");
                 case REPORTING -> importContext.detailedProgressReport(progressReport());
-                case VIOLATION -> new PrintStream(importContext.collectorOutputStream()).println("bad tings");
+                case VIOLATION -> writeViolation(importContext);
             }
             assertThat(importContext.baseDir()).exists();
         }
@@ -173,7 +192,7 @@ class ImportContextTest {
     @MethodSource
     void contextNotClearedOnLoggedErrors(Exception error, Class<? extends Exception> expectedErrorType)
             throws IOException {
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+        try (var importContext = getImportContext()) {
             try (var output = new ByteArrayOutputStream()) {
                 importContext.preamble(new PrintStream(output));
                 assertThat(output.toString())
@@ -204,9 +223,9 @@ class ImportContextTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void contextNotClearedOnCollectorOutput(boolean addViolation) {
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+        try (var importContext = getImportContext()) {
             if (addViolation) {
-                new PrintStream(importContext.collectorOutputStream()).println("bad tings");
+                writeViolation(importContext);
                 assertThat(importContext.baseDir()).exists();
             }
         }
@@ -227,8 +246,8 @@ class ImportContextTest {
     @Test
     void contextClearedWhenCollectorOutputOutside() {
         var reportFile = testDir.file("some.report");
-        try (var importContext = ImportContext.create(fs, DB, config, reportFile, List.of(), false, false, false)) {
-            new PrintStream(importContext.collectorOutputStream()).println("bad tings");
+        try (var importContext = getImportContext(reportFile)) {
+            writeViolation(importContext);
             assertThat(importContext.baseDir()).doesNotExist();
         }
 
@@ -237,13 +256,46 @@ class ImportContextTest {
     }
 
     @Test
+    void collectorOutputTruncatedWhenReportFileReusedWithoutResume() {
+        var reportFile = testDir.file("some.report");
+        try (var importContext = getImportContext(reportFile)) {
+            writeViolation(importContext, "first");
+        }
+
+        try (var importContext = getImportContext(reportFile)) {
+            writeViolation(importContext, "second");
+        }
+
+        assertThat(reportFile).content().isEqualTo("second");
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void collectorOutputAppendedOnResume(boolean reportFileOutsideContext) {
+        var reportFile = reportFileOutsideContext ? testDir.file("some.report") : null;
+        Path baseDir;
+        try (var importContext = getRetainingImportContext(reportFile)) {
+            writeViolation(importContext, "first");
+            baseDir = importContext.baseDir();
+        }
+
+        try (var importContext = ImportContext.create(
+                fs, DB, baseDir, config, reportFile, Collections.emptyList(), false, true, false)) {
+            writeViolation(importContext, "second");
+        }
+
+        var reportPath = reportFile != null ? reportFile : baseDir.resolve(ImportContext.DEFAULT_REPORT_FILE_NAME);
+        assertThat(reportPath).content().isEqualTo("firstsecond");
+    }
+
+    @Test
     void cliArgsClearedWithRestOfContextWhenNotRetained() {
         var args = List.of("--nodes=foo.csv");
         Path cliArgsPath;
-        try (var importContext = ImportContext.create(fs, DB, config, null, args, false, false, false)) {
+        try (var importContext = getImportContext(args)) {
             importContext.persistCliArgs();
             cliArgsPath = importContext.baseDir().resolve(ImportContext.CLI_ARGS_FILE_NAME);
-            assertThat(cliArgsPath).exists().content().isEqualTo(String.join(" ", args));
+            assertThat(cliArgsPath).exists().content().isEqualTo(String.join("\n", args));
         }
 
         assertThat(cliArgsPath).doesNotExist();
@@ -254,7 +306,7 @@ class ImportContextTest {
     void cliArgsWithSingleArgumentContainNoSeparator() {
         var args = List.of("--nodes=foo.csv");
         Path cliArgsPath;
-        try (var importContext = ImportContext.create(fs, DB, config, null, args, false, false, false)) {
+        try (var importContext = getImportContext(args)) {
             importContext.persistCliArgs();
             cliArgsPath = importContext.baseDir().resolve(ImportContext.CLI_ARGS_FILE_NAME);
             assertThat(cliArgsPath).exists().content().isEqualTo("--nodes=foo.csv");
@@ -264,9 +316,17 @@ class ImportContextTest {
     }
 
     @Test
-    void cliArgsRetainedWhenContextRetained() {
+    void cliArgsIsOverriddenOnResume() {
         var args = List.of("--nodes=foo.csv");
-        try (var importContext = ImportContext.create(fs, DB, config, null, args, false, true, false)) {
+        Path baseDir;
+        try (var importContext = getRetainingImportContext(args)) {
+            importContext.persistCliArgs();
+            baseDir = importContext.baseDir();
+        }
+
+        // resume
+        var newArgs = List.of("--nodes=bar.csv", "--resume");
+        try (var importContext = getResumingRetainingImportContext(baseDir, newArgs)) {
             importContext.persistCliArgs();
         }
 
@@ -279,13 +339,31 @@ class ImportContextTest {
                         .satisfies(contextDir -> assertThat(contextDir.resolve(ImportContext.CLI_ARGS_FILE_NAME))
                                 .exists()
                                 .content()
-                                .isEqualTo(String.join(" ", args))));
+                                .isEqualTo(String.join("\n", newArgs))));
+    }
+
+    @Test
+    void cliArgsRetainedWhenContextRetained() {
+        var args = List.of("--nodes=foo.csv");
+        try (var importContext = getRetainingImportContext(args)) {
+            importContext.persistCliArgs();
+        }
+
+        assertThat(importsDir)
+                .exists()
+                .isNotEmptyDirectory()
+                .satisfies(dir -> assertThat(fs.listFiles(dir))
+                        .hasSize(1)
+                        .singleElement()
+                        .satisfies(contextDir -> assertThat(contextDir.resolve(ImportContext.CLI_ARGS_FILE_NAME))
+                                .exists()
+                                .content()
+                                .isEqualTo(String.join("\n", args))));
     }
 
     @Test
     void recordOfTheAttemptIsWriteProtected() throws IOException {
-        try (var importContext =
-                ImportContext.create(fs, DB, config, null, List.of("--nodes=foo.csv"), false, true, false)) {
+        try (var importContext = getRetainingImportContext(List.of("--nodes=foo.csv"))) {
             importContext.persistCliArgs();
             importContext.persistConfig();
             importContext.markSuccessful();
@@ -304,8 +382,7 @@ class ImportContextTest {
     @Test
     void writeProtectedRecordOfARetainedAttemptCanStillBeDeleted() throws IOException {
         Path contextDir;
-        try (var importContext =
-                ImportContext.create(fs, DB, config, null, List.of("--nodes=foo.csv"), false, true, false)) {
+        try (var importContext = getRetainingImportContext(List.of("--nodes=foo.csv"))) {
             importContext.persistCliArgs();
             importContext.markSuccessful();
             contextDir = importContext.baseDir();
@@ -321,8 +398,7 @@ class ImportContextTest {
     @Test
     void writeProtectedRecordStillGetsClearedWithTheRestOfTheContext() throws IOException {
         Path contextDir;
-        try (var importContext =
-                ImportContext.create(fs, DB, config, null, List.of("--nodes=foo.csv"), false, false, false)) {
+        try (var importContext = getImportContext(List.of("--nodes=foo.csv"))) {
             importContext.persistCliArgs();
             importContext.persistConfig();
             importContext.markSuccessful();
@@ -337,7 +413,7 @@ class ImportContextTest {
 
     @Test
     void configPersistsResolvedValuesAndNotOnlyExplicitlySetOnes() {
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, false)) {
+        try (var importContext = getRetainingImportContext()) {
             importContext.persistConfig();
 
             assertThat(importContext.baseDir().resolve(ImportContext.CONFIG_FILE_NAME))
@@ -351,7 +427,7 @@ class ImportContextTest {
 
     @Test
     void noSensitiveChangesWhenAttemptRanWithTheSameConfig() throws IOException {
-        assertThat(ImportContext.resumeSensitiveChanges(persistedConfigOf(config), config))
+        assertThat(ImportContext.resumeSensitiveChanges(persistedConfig(), config))
                 .isEmpty();
     }
 
@@ -364,7 +440,7 @@ class ImportContextTest {
 
     @Test
     void aStateShapingSettingThatChangedIsReported() throws IOException {
-        Path contextDir = persistedConfigOf(config);
+        Path contextDir = persistedConfig();
         var directIo = Config.newBuilder()
                 .fromConfig(config)
                 .set(GraphDatabaseSettings.pagecache_direct_io, true)
@@ -381,7 +457,7 @@ class ImportContextTest {
 
     @Test
     void aSettingOtherSettingsDeriveTheirDefaultFromIsReportedWithEverythingItMoved() throws IOException {
-        Path contextDir = persistedConfigOf(config);
+        Path contextDir = persistedConfig();
         var movedData = Config.newBuilder()
                 .fromConfig(config)
                 .set(GraphDatabaseSettings.data_directory, testDir.directory("elsewhere"))
@@ -402,7 +478,7 @@ class ImportContextTest {
 
     @Test
     void aSettingTheStateOnDiskDoesNotDependOnIsIgnored() throws IOException {
-        Path contextDir = persistedConfigOf(config);
+        Path contextDir = persistedConfig();
         var reportingMoreOften = Config.newBuilder()
                 .fromConfig(config)
                 .set(GraphDatabaseInternalSettings.import_detailed_reporting_interval, Duration.ofSeconds(1))
@@ -415,7 +491,7 @@ class ImportContextTest {
     @Test
     void configClearedWithRestOfContextWhenNotRetained() {
         Path configPath;
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+        try (var importContext = getImportContext()) {
             importContext.persistConfig();
             configPath = importContext.baseDir().resolve(ImportContext.CONFIG_FILE_NAME);
             assertThat(configPath).exists().isNotEmptyFile();
@@ -428,7 +504,7 @@ class ImportContextTest {
     @Test
     void nodesPerRangeClearedWithRestOfContextWhenNotRetained() {
         Path nodesPerRangePath;
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+        try (var importContext = getImportContext()) {
             importContext.persistNodesPerRange(42L);
             nodesPerRangePath = importContext.baseDir().resolve(ImportContext.NODES_PER_RANGE_FILE_NAME);
             assertThat(nodesPerRangePath).exists().content().isEqualTo("42");
@@ -440,7 +516,7 @@ class ImportContextTest {
 
     @Test
     void nodesPerRangeRetainedWhenContextRetained() {
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, false)) {
+        try (var importContext = getRetainingImportContext()) {
             importContext.persistNodesPerRange(42L);
         }
 
@@ -457,18 +533,43 @@ class ImportContextTest {
     }
 
     @Test
+    void nodesPerRangeIsOverriddenOnResume() {
+        Path baseDir;
+        try (var importContext = getRetainingImportContext()) {
+            importContext.persistNodesPerRange(42L);
+            baseDir = importContext.baseDir();
+        }
+
+        // resume
+        try (var importContext = getResumingRetainingImportContext(baseDir)) {
+            importContext.persistNodesPerRange(43L);
+        }
+
+        assertThat(importsDir)
+                .exists()
+                .isNotEmptyDirectory()
+                .satisfies(dir -> assertThat(fs.listFiles(dir))
+                        .hasSize(1)
+                        .singleElement()
+                        .satisfies(contextDir -> assertThat(contextDir.resolve(ImportContext.NODES_PER_RANGE_FILE_NAME))
+                                .exists()
+                                .content()
+                                .isEqualTo("43")));
+    }
+
+    @Test
     void eachRunCreatesNewContext() {
         var content1 = "content1";
         var content2 = "content2";
 
         Path run1;
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, false)) {
+        try (var importContext = getRetainingImportContext()) {
             importContext.getLog("testing").info(content1);
             run1 = importContext.logPath();
         }
 
         Path run2;
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, false)) {
+        try (var importContext = getRetainingImportContext()) {
             importContext.getLog("testing").info(content2);
             run2 = importContext.logPath();
         }
@@ -487,25 +588,25 @@ class ImportContextTest {
     @Test
     void successIsOnlyRecordedWhenMarked() {
         Path markedContextDir;
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, false)) {
-            assertThat(ImportContext.wasSuccessful(importContext.baseDir())).isFalse();
+        try (var importContext = getRetainingImportContext()) {
+            assertThat(ImportContext.wasSuccessful(fs, importContext.baseDir())).isFalse();
             importContext.markSuccessful();
             markedContextDir = importContext.baseDir();
         }
 
-        assertThat(ImportContext.wasSuccessful(markedContextDir)).isTrue();
+        assertThat(ImportContext.wasSuccessful(fs, markedContextDir)).isTrue();
     }
 
     @Test
     void successMarkerClearedWithRestOfContextWhenNotRetained() {
         Path contextDir;
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+        try (var importContext = getImportContext()) {
             importContext.markSuccessful();
             contextDir = importContext.baseDir();
         }
 
         assertThat(contextDir).doesNotExist();
-        assertThat(ImportContext.wasSuccessful(contextDir)).isFalse();
+        assertThat(ImportContext.wasSuccessful(fs, contextDir)).isFalse();
     }
 
     @Test
@@ -518,7 +619,7 @@ class ImportContextTest {
 
     @Test
     void mostRecentContextDirEmptyWhenPreviousImportWasNotRetained() throws IOException {
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, false, false)) {
+        try (var importContext = getImportContext()) {
             importContext.persistCliArgs();
         }
 
@@ -530,7 +631,15 @@ class ImportContextTest {
     @Test
     void mostRecentContextDirIgnoresOtherDatabases() throws IOException {
         try (var importContext = ImportContext.create(
-                fs, new NormalizedDatabaseName("bar"), config, null, List.of(), false, true, false)) {
+                fs,
+                new NormalizedDatabaseName("bar"),
+                null,
+                config,
+                null,
+                Collections.emptyList(),
+                false,
+                true,
+                false)) {
             importContext.persistCliArgs();
         }
 
@@ -545,7 +654,7 @@ class ImportContextTest {
                 List.of(List.of("--nodes=first.csv"), List.of("--nodes=second.csv"), List.of("--nodes=third.csv"));
         var contextDirs = new ArrayList<Path>();
         for (var args : attemptArgs) {
-            try (var importContext = ImportContext.create(fs, DB, config, null, args, false, true, false)) {
+            try (var importContext = getRetainingImportContext(args)) {
                 importContext.persistCliArgs();
                 contextDirs.add(importContext.baseDir());
             }
@@ -556,7 +665,7 @@ class ImportContextTest {
         var latest = contextDirs.getLast();
         assertThat(ImportContext.mostRecentContextDir(fs, importsDir, DB.name()))
                 .contains(latest);
-        assertThat(ImportContext.readCliArgs(latest)).contains(attemptArgs.getLast());
+        assertThat(ImportContext.readCliArgs(fs, latest)).contains(attemptArgs.getLast());
     }
 
     @Test
@@ -575,7 +684,7 @@ class ImportContextTest {
     void attemptsFromTheSameSecondGetAZeroPaddedCounter() {
         var names = new ArrayList<String>();
         for (int attempt = 0; attempt < 3; attempt++) {
-            try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), false, true, false)) {
+            try (var importContext = getRetainingImportContext()) {
                 names.add(importContext.baseDir().getFileName().toString());
             }
         }
@@ -589,7 +698,8 @@ class ImportContextTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void progressWithAndWithoutUpdates(boolean withUpdates) {
-        try (var importContext = ImportContext.create(fs, DB, config, null, List.of(), withUpdates, false, true)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, null, config, null, Collections.emptyList(), withUpdates, false, true)) {
             importContext.detailedProgressReport(progressReport());
         }
 
@@ -618,8 +728,7 @@ class ImportContextTest {
 
     @Test
     void detailedProgressReportStandardIncludesAllFieldsInJson() {
-        try (var importContext =
-                ImportContext.create(fs, DB, config, null, Collections.emptyList(), false, false, false)) {
+        try (var importContext = getImportContext()) {
             importContext.detailedProgressReport(progressReport());
 
             assertThat(importsDir)
@@ -672,8 +781,7 @@ class ImportContextTest {
 
     @Test
     void detailedProgressReportSkidbladnirIncludesAllFieldsInJson() {
-        try (var importContext =
-                ImportContext.create(fs, DB, config, null, Collections.emptyList(), false, false, false)) {
+        try (var importContext = getImportContext()) {
             var reportBase = new DetailedProgressReportBase(42, 69, true);
             reportBase.registerNodeStats(ApplicationMode.CREATE, IntSets.immutable.of(1, 2));
             reportBase.registerRelationshipStats(ApplicationMode.CREATE, 5);
@@ -737,14 +845,233 @@ class ImportContextTest {
         }
     }
 
+    @Test
+    void detailedProgressReportIsAppendedToOnResume() {
+        var report = new DetailedProgressReportBase(42, 69, true);
+        Path baseDir;
+        try (var importContext = getRetainingImportContext()) {
+            baseDir = importContext.baseDir();
+
+            report.registerNodeStats(ApplicationMode.CREATE, IntSets.immutable.of(1, 2));
+            importContext.detailedProgressReport(report.snapshot());
+        }
+
+        // resume
+        try (var importContext = getResumingRetainingImportContext(baseDir)) {
+            report.registerNodeStats(ApplicationMode.CREATE, IntSets.immutable.of(1, 2));
+            report.registerNodeStats(ApplicationMode.CREATE, IntSets.immutable.of(3, 4));
+            importContext.detailedProgressReport(report.snapshot());
+        }
+
+        assertThat(importsDir)
+                .exists()
+                .isNotEmptyDirectory()
+                .satisfies(logsDir -> assertThat(fs.listFiles(logsDir))
+                        .hasSize(1)
+                        .singleElement()
+                        .satisfies(thisRunDir -> assertThat(fs.listFiles(thisRunDir))
+                                .hasSize(1)
+                                .singleElement()
+                                .satisfies(reportPath -> {
+                                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                                            Files.newInputStream(reportPath), StandardCharsets.UTF_8))) {
+                                        ObjectMapper objectMapper =
+                                                new ObjectMapper().disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+                                        var json1 = objectMapper.readTree(reader.readLine());
+                                        assertThat(json1.get("nodeStats")
+                                                        .get("created")
+                                                        .asText())
+                                                .isEqualTo("1");
+                                        assertThat(json1.get("nodePerLabelStats")
+                                                        .get("Label[3]"))
+                                                .isNull();
+                                        var json2 = objectMapper.readTree(reader.readLine());
+                                        assertThat(json2.get("nodeStats")
+                                                        .get("created")
+                                                        .asText())
+                                                .isEqualTo("3");
+                                        assertThat(json2.get("nodePerLabelStats")
+                                                        .get("Label[3]")
+                                                        .get("created")
+                                                        .asText())
+                                                .isEqualTo("1");
+                                    }
+                                })));
+    }
+
+    @Test
+    void logIsAppendedToOnResume() {
+        Path baseDir;
+        try (var importContext = getRetainingImportContext()) {
+            baseDir = importContext.baseDir();
+
+            importContext.getLog("foo").info("first run");
+        }
+
+        // resume
+        try (var importContext = getResumingRetainingImportContext(baseDir)) {
+            importContext.getLog("foo").info("second run");
+        }
+
+        assertThat(importsDir)
+                .exists()
+                .isNotEmptyDirectory()
+                .satisfies(logsDir -> assertThat(fs.listFiles(logsDir))
+                        .hasSize(1)
+                        .singleElement()
+                        .satisfies(thisRunDir -> assertThat(fs.listFiles(thisRunDir))
+                                .hasSize(1)
+                                .singleElement()
+                                .satisfies(logPath -> {
+                                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                                            Files.newInputStream(logPath), StandardCharsets.UTF_8))) {
+                                        assertThat(reader.readLine()).contains("first run");
+                                        assertThat(reader.readLine()).contains("second run");
+                                    }
+                                })));
+    }
+
+    @Test
+    void collectorReportIsAppendedToOnResume() throws IOException {
+        Groups groups = new Groups();
+        Group group = groups.getOrCreate(null);
+        Path baseDir;
+        try (var importContext = getRetainingImportContext();
+                Collector collector = BadCollector.create(
+                        ProblemReporters.jsonOutputProblemHandler(importContext.collectorChannel()),
+                        BadCollector.UNLIMITED_TOLERANCE,
+                        BadCollector.COLLECT_ALL,
+                        false)) {
+            baseDir = importContext.baseDir();
+
+            collector.collectDuplicateNode(0, 0, group, "source", 1L);
+        }
+
+        // resume
+        try (var importContext = getResumingRetainingImportContext(baseDir);
+                Collector collector = BadCollector.create(
+                        ProblemReporters.jsonOutputProblemHandler(importContext.collectorChannel()),
+                        BadCollector.UNLIMITED_TOLERANCE,
+                        BadCollector.COLLECT_ALL,
+                        false)) {
+            collector.collectDuplicateNode(1, 1, group, "source", 2L);
+        }
+
+        assertThat(importsDir)
+                .exists()
+                .isNotEmptyDirectory()
+                .satisfies(logsDir -> assertThat(fs.listFiles(logsDir))
+                        .hasSize(1)
+                        .singleElement()
+                        .satisfies(thisRunDir -> assertThat(fs.listFiles(thisRunDir))
+                                .hasSize(1)
+                                .singleElement()
+                                .satisfies(logPath -> {
+                                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                                            Files.newInputStream(logPath), StandardCharsets.UTF_8))) {
+                                        ObjectMapper objectMapper =
+                                                new ObjectMapper().disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+                                        var json1 = objectMapper.readTree(reader.readLine());
+                                        assertThat(json1.get("problem").asText())
+                                                .isEqualTo("DuplicateNode");
+                                        assertThat(json1.get("node").get("id").asText())
+                                                .isEqualTo("0");
+                                        var json2 = objectMapper.readTree(reader.readLine());
+                                        assertThat(json2.get("problem").asText())
+                                                .isEqualTo("DuplicateNode");
+                                        assertThat(json2.get("node").get("id").asText())
+                                                .isEqualTo("1");
+                                    }
+                                })));
+    }
+
+    @Test
+    void cliArgsOfThePreviousAttemptSurviveAFailedRewriteOnResume() throws IOException {
+        var args = List.of("--nodes=foo.csv");
+        Path baseDir;
+        try (var importContext = getRetainingImportContext(args)) {
+            importContext.persistCliArgs();
+            baseDir = importContext.baseDir();
+        }
+        // when the resumed attempt opens the record for writing but never gets its own arguments out
+        var failing = new DelegatingFileSystemAbstraction(fs) {
+            @Override
+            public OutputStream openAsOutputStream(Path fileName, boolean append) throws IOException {
+                OutputStream out = super.openAsOutputStream(fileName, append);
+                if (!fileName.getFileName().toString().startsWith(ImportContext.CLI_ARGS_FILE_NAME)) {
+                    return out;
+                }
+                return new FilterOutputStream(out) {
+                    @Override
+                    public void write(byte[] b, int off, int len) throws IOException {
+                        throw new IOException("No space left on device");
+                    }
+                };
+            }
+
+            @Override
+            public StoreChannel open(Path fileName, Set<OpenOption> options) throws IOException {
+                StoreChannel out = super.open(fileName, options);
+                if (!fileName.getFileName().toString().startsWith(ImportContext.CLI_ARGS_FILE_NAME)) {
+                    return out;
+                }
+                return new DelegatingStoreChannel<>(out) {
+                    @Override
+                    public void writeAll(ByteBuffer src) throws IOException {
+                        throw new IOException("No space left on device");
+                    }
+                };
+            }
+        };
+        var resumedArgs = List.of("--nodes=bar.csv", "--resume");
+        try (var importContext =
+                ImportContext.create(failing, DB, baseDir, config, null, resumedArgs, false, true, false)) {
+            assertThatExceptionOfType(UncheckedIOException.class).isThrownBy(importContext::persistCliArgs);
+        }
+        // then what the attempt being resumed was invoked with is still on record
+        assertThat(ImportContext.readCliArgs(fs, baseDir)).contains(args);
+    }
+
     /**
      * The context directory of an attempt that ran with the given configuration, as {@code --resume} would find it.
      */
-    private Path persistedConfigOf(Config attemptConfig) {
-        try (var importContext = ImportContext.create(fs, DB, attemptConfig, null, List.of(), false, true, false)) {
+    private Path persistedConfig() {
+        try (var importContext = getRetainingImportContext()) {
             importContext.persistConfig();
             return importContext.baseDir();
         }
+    }
+
+    private ImportContext getImportContext() {
+        return ImportContext.create(fs, DB, null, config, null, Collections.emptyList(), false, false, false);
+    }
+
+    private ImportContext getImportContext(Path reportFile) {
+        return ImportContext.create(fs, DB, null, config, reportFile, Collections.emptyList(), false, false, false);
+    }
+
+    private ImportContext getImportContext(List<String> args) {
+        return ImportContext.create(fs, DB, null, config, null, args, false, false, false);
+    }
+
+    private ImportContext getRetainingImportContext() {
+        return ImportContext.create(fs, DB, null, config, null, Collections.emptyList(), false, true, false);
+    }
+
+    private ImportContext getRetainingImportContext(Path reportFile) {
+        return ImportContext.create(fs, DB, null, config, reportFile, Collections.emptyList(), false, true, false);
+    }
+
+    private ImportContext getRetainingImportContext(List<String> args) {
+        return ImportContext.create(fs, DB, null, config, null, args, false, true, false);
+    }
+
+    private ImportContext getResumingRetainingImportContext(Path baseDir) {
+        return ImportContext.create(fs, DB, baseDir, config, null, Collections.emptyList(), false, true, false);
+    }
+
+    private ImportContext getResumingRetainingImportContext(Path baseDir, List<String> args) {
+        return ImportContext.create(fs, DB, baseDir, config, null, args, false, true, false);
     }
 
     private static void assertIsImportContextDir(Path importDir) {
@@ -807,5 +1134,17 @@ class ImportContextTest {
         LOGGING,
         REPORTING,
         VIOLATION
+    }
+
+    private static void writeViolation(ImportContext importContext) {
+        writeViolation(importContext, "bad tings%n".formatted());
+    }
+
+    private static void writeViolation(ImportContext importContext, String content) {
+        try {
+            importContext.collectorChannel().writeAll(ByteBuffer.wrap(content.getBytes(UTF_8)));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

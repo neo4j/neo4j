@@ -21,7 +21,11 @@ package org.neo4j.internal.batchimport.input;
 
 import static java.lang.String.format;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -75,8 +79,22 @@ public final class BadCollector implements Collector {
          */
         void handle(ProblemReporter reporter);
 
+        /**
+         * Makes everything {@link #handle(ProblemReporter) handled} so far durable in the underlying resource,
+         * to the extent that the resource supports it.
+         * @return the position in the underlying resource that has been written up to
+         */
+        long checkpoint() throws IOException;
+
+        /**
+         * Discards anything written beyond the given position.
+         * Must be called before anything is {@link #handle(ProblemReporter) handled}.
+         * @param position a position previously returned by {@link #checkpoint()}
+         */
+        void resumeFromCheckpoint(long position) throws IOException;
+
         @Override
-        void close();
+        void close() throws IOException;
     }
 
     interface Monitor {
@@ -121,7 +139,7 @@ public final class BadCollector implements Collector {
             Map.entry(INVALID_RELATIONSHIP_ID, "InvalidRelationshipId"),
             Map.entry(MISSING_ID_COLUMN, "MissingIdColumn"));
 
-    static final int COLLECT_ALL = -1;
+    public static final int COLLECT_ALL = -1;
     public static final long UNLIMITED_TOLERANCE = -1;
     static final int DEFAULT_BACK_PRESSURE_THRESHOLD = 10_000;
 
@@ -132,12 +150,14 @@ public final class BadCollector implements Collector {
     private final boolean logBadEntries;
     private final Monitor monitor;
 
-    // volatile since one importer thread calls collect(), where this value is incremented and later the "main"
+    // AtomicLong since one importer thread calls collect(), where this value is incremented and later the "main"
     // thread calls badEntries() to get a count.
     private final AtomicLong badEntries = new AtomicLong();
     private final AsyncEvents<ProblemReporter> logger;
     private final Thread eventProcessor;
     private final AtomicLong queueSize = new AtomicLong();
+
+    private volatile Throwable eventProcessorFailure;
 
     @VisibleForTesting
     BadCollector(
@@ -171,6 +191,7 @@ public final class BadCollector implements Collector {
         this.monitor = monitor;
         this.logger = new AsyncEvents<>(this::processEvent);
         this.eventProcessor = new Thread(logger);
+        this.eventProcessor.setUncaughtExceptionHandler((thread, failure) -> eventProcessorFailure = failure);
         this.eventProcessor.start();
     }
 
@@ -184,6 +205,7 @@ public final class BadCollector implements Collector {
         return create(out, tolerance, collect, false);
     }
 
+    @VisibleForTesting
     public static Collector create(OutputStream out, long tolerance, int collect, boolean skipBadEntriesLogging) {
         return create(ProblemReporters.printingProblemHandler(out), tolerance, collect, skipBadEntriesLogging);
     }
@@ -322,8 +344,10 @@ public final class BadCollector implements Collector {
                 // We're within the threshold
                 if (logBadEntries) {
                     // Send this to the logger... but first apply some back pressure if queue is growing big
-                    while (queueSize.get() >= backPressureThreshold) {
-                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+                    try {
+                        waitForQueueToShrink(backPressureThreshold - 1);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
                     }
                     logger.send(report);
                     queueSize.addAndGet(1);
@@ -343,7 +367,7 @@ public final class BadCollector implements Collector {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         try (problemHandler) {
             logger.shutdown();
             logger.awaitTermination();
@@ -360,5 +384,42 @@ public final class BadCollector implements Collector {
 
     private boolean collects(int bit) {
         return (collect & bit) != 0;
+    }
+
+    @Override
+    public void checkpoint(DataOutputStream outputStream) throws IOException {
+        waitForQueueToBeDrained();
+        // Make the drained entries durable
+        long position = problemHandler.checkpoint();
+        // Write the number of bad entries to the checkpoint ...
+        outputStream.writeLong(badEntries.get());
+        // ... along with how far the reported entries reach, so a resume can discard whatever comes after
+        outputStream.writeLong(position);
+    }
+
+    private void waitForQueueToBeDrained() throws IOException {
+        waitForQueueToShrink(0);
+    }
+
+    private void waitForQueueToShrink(int targetQueueSize) throws IOException {
+        while (queueSize.get() > targetQueueSize) {
+            if (!eventProcessor.isAlive() && queueSize.get() > targetQueueSize) {
+                throw new IOException(
+                        format(
+                                "Unable to report all bad entries, %d were left unreported when the reporting "
+                                        + "of them stopped",
+                                queueSize.get()),
+                        eventProcessorFailure);
+            }
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+        }
+    }
+
+    @Override
+    public void resumeFromCheckpoint(DataInputStream inputStream) throws IOException {
+        // Read the number of bad entries from the checkpoint
+        badEntries.set(inputStream.readLong());
+        // Drop the entries reported after the checkpoint, they get reported again as the input is revisited
+        problemHandler.resumeFromCheckpoint(inputStream.readLong());
     }
 }

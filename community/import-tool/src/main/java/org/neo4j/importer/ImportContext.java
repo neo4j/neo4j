@@ -20,9 +20,14 @@
 package org.neo4j.importer;
 
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.import_context_directory;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.import_detailed_reporting_interval;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.APPEND_OPTIONS;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.TRUNCATE_OPTIONS;
 import static org.neo4j.logging.Level.DEBUG;
 import static org.neo4j.logging.Level.INFO;
 
@@ -38,6 +43,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -73,6 +79,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction.PatternStyle;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.logging.InternalLog;
@@ -94,6 +101,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     public static final String NODES_PER_RANGE_FILE_NAME = "nodes-per-range";
     public static final String CONFIG_FILE_NAME = "config";
     public static final String SUCCESS_FILE_NAME = "success";
+    public static final String TEMP_FILE_SUFFIX = ".tmp";
 
     private final String dbName;
 
@@ -109,7 +117,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
 
     private final LazyIO<PrintStream> progressStream;
 
-    private final LazyIO<OutputStream> collectorStream;
+    private final LazyIO<StoreChannel> collectorChannel;
 
     private final Function<RetainCheck, Boolean> retainContextDir;
 
@@ -124,6 +132,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
             List<String> originalArgs,
             String collectorPath,
             Path collectorOutputPath,
+            boolean resuming,
             Function<RetainCheck, Boolean> retainContextDir,
             boolean includeUpdatesInProgress,
             boolean verbose) {
@@ -136,7 +145,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
         this.logProvider = new LazyIO<>(
                 () -> new Log4jLogProvider(new BufferedOutputStream(output(logPath())), verbose ? DEBUG : INFO));
         this.progressStream = new LazyIO<>(() -> new PrintStream(output(progressReportingPath()), true));
-        this.collectorStream = new LazyIO<>(() -> output(collectorOutputPath));
+        this.collectorChannel = new LazyIO<>(() -> channel(collectorOutputPath, resuming));
         this.retainContextDir = retainContextDir;
         this.objectMapper = new ObjectMapper()
                 .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
@@ -145,16 +154,22 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
                         .addSerializer(new StatsSerializer(includeUpdatesInProgress)));
     }
 
+    /**
+     * @param previousBaseDir the Path to the previous attempt's context directory, or {@code null} if '--resume' was not specified
+     */
     public static ImportContext create(
             FileSystemAbstraction fs,
             NormalizedDatabaseName database,
+            Path previousBaseDir,
             Config databaseConfig,
             Path collectorReporting,
             List<String> originalArgs,
             boolean includeUpdatesInProgress,
             boolean retainForInstrumentation,
             boolean verbose) {
-        var baseDir = newContextDir(fs, databaseConfig.get(logs_directory).toAbsolutePath(), database.name());
+        Path baseDir = previousBaseDir != null
+                ? previousBaseDir
+                : newContextDir(fs, databaseConfig.get(logs_directory).toAbsolutePath(), database.name());
         var collectorReportingIsInContextDir = collectorReporting == null;
         var resolvedCollectorPath =
                 collectorReportingIsInContextDir ? baseDir.resolve(DEFAULT_REPORT_FILE_NAME) : collectorReporting;
@@ -169,6 +184,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
                 originalArgs,
                 collectorReporting == null ? DEFAULT_REPORT_FILE_NAME : collectorReporting.toString(),
                 resolvedCollectorPath,
+                previousBaseDir != null,
                 check -> {
                     if (check == RetainCheck.PREAMBLE) {
                         return retaining;
@@ -215,8 +231,8 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
         return baseDir().resolve(PROGRESS_REPORTING_FILE_NAME);
     }
 
-    public OutputStream collectorOutputStream() {
-        return collectorStream.get();
+    public StoreChannel collectorChannel() {
+        return collectorChannel.get();
     }
 
     public Exception captureError(Exception error) {
@@ -276,7 +292,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     @Override
     public void close() {
         try {
-            IOUtils.closeAllUnchecked(logProvider, progressStream, collectorStream);
+            IOUtils.closeAllUnchecked(logProvider, progressStream, collectorChannel);
         } finally {
             clearBaseDir();
         }
@@ -328,8 +344,31 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     private OutputStream output(Path path) throws UncheckedIOException {
         try {
             fs.mkdirs(path.getParent());
-            // NOTE collector needs to be appending when we switch to resumable imports
-            return fs.openAsOutputStream(path, false);
+            return fs.openAsOutputStream(path, true);
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
+    private void write(Path path, String content) throws IOException {
+        try (var out = fs.openAsOutputStream(path, false)) {
+            out.write(content.getBytes(UTF_8));
+        }
+    }
+
+    private void writeToTempFileAndReplaceAtomically(Path path, String content) throws IOException {
+        Path tmpPath = path.resolveSibling(path.getFileName().toString() + TEMP_FILE_SUFFIX);
+        try (StoreChannel channel = fs.open(tmpPath, TRUNCATE_OPTIONS)) {
+            channel.writeAll(ByteBuffer.wrap(content.getBytes(UTF_8)));
+            channel.force(false);
+        }
+        fs.renameFile(tmpPath, path, ATOMIC_MOVE, REPLACE_EXISTING);
+    }
+
+    private StoreChannel channel(Path path, boolean append) throws UncheckedIOException {
+        try {
+            fs.mkdirs(path.getParent());
+            return fs.open(path, append ? APPEND_OPTIONS : TRUNCATE_OPTIONS);
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
@@ -385,7 +424,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     public void persistNodesPerRange(long nodesPerRange) {
         try {
             fs.mkdirs(baseDir());
-            Files.writeString(baseDir().resolve(NODES_PER_RANGE_FILE_NAME), Long.toString(nodesPerRange));
+            write(baseDir().resolve(NODES_PER_RANGE_FILE_NAME), Long.toString(nodesPerRange));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -434,7 +473,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     /**
      * Records that the import completed, so that a retained context directory can be told apart from one left behind
      * by an attempt that did not finish. A retained directory outlives a successful import (see
-     * {@link #create(FileSystemAbstraction, NormalizedDatabaseName, Config, Path, List, boolean, boolean, boolean)}),
+     * {@link #create(FileSystemAbstraction, NormalizedDatabaseName, Path, Config, Path, List, boolean, boolean, boolean)}),
      * and without this there is nothing in it that says the import got all the way through. Written
      * {@link #writeProtected(Path, String) write-protected}, like the other records of an attempt.
      */
@@ -454,8 +493,24 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
      * instead, which leaves deletion alone. A filesystem offering neither leaves the file writable rather than
      * undeletable. The owner can always put the permission back.
      */
-    private static void writeProtected(Path path, String content) throws IOException {
-        Files.writeString(path, content);
+    private void writeProtected(Path path, String content) throws IOException {
+        makeSureIsInBaseDir(path);
+        writeUnprotect(path);
+        writeToTempFileAndReplaceAtomically(path, content);
+        writeProtect(path);
+    }
+
+    /**
+     * Permissions are the one thing {@link FileSystemAbstraction} does not cover, so the two steps around the write
+     * reach for {@link Files} instead. That leaves them addressing whatever the default filesystem holds rather than
+     * what {@link #fs} just wrote, hence the {@link Files#exists(Path, java.nio.file.LinkOption...)} guards: on an
+     * abstraction that keeps its files elsewhere there is nothing to protect, and the attribute views would fail on a
+     * path the default filesystem does not have.
+     */
+    private static void writeProtect(Path path) throws IOException {
+        if (!Files.exists(path)) {
+            return;
+        }
         var posix = Files.getFileAttributeView(path, PosixFileAttributeView.class);
         if (posix != null) {
             posix.setPermissions(Set.of(
@@ -477,11 +532,46 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
         acl.setAcl(entries);
     }
 
+    private static void writeUnprotect(Path path) throws IOException {
+        if (!Files.exists(path)) {
+            return;
+        }
+        var posix = Files.getFileAttributeView(path, PosixFileAttributeView.class);
+        if (posix != null) {
+            posix.setPermissions(Set.of(
+                    PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE,
+                    PosixFilePermission.GROUP_READ, PosixFilePermission.OTHERS_READ));
+            return;
+        }
+        var acl = Files.getFileAttributeView(path, AclFileAttributeView.class);
+        if (acl == null) {
+            return;
+        }
+        var entries = new ArrayList<>(acl.getAcl());
+        var iterator = entries.iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            if (entry.type() == AclEntryType.DENY
+                    && entry.principal().equals(acl.getOwner())
+                    && entry.permissions().contains(AclEntryPermission.WRITE_DATA)) {
+                iterator.remove();
+                break;
+            }
+        }
+        acl.setAcl(entries);
+    }
+
+    private void makeSureIsInBaseDir(Path path) {
+        if (!path.startsWith(baseDir())) {
+            throw new IllegalArgumentException("Path " + path + " is not in the import context directory " + baseDir());
+        }
+    }
+
     /**
      * Whether the import that owned the given context directory completed, see {@link #markSuccessful()}.
      */
-    public static boolean wasSuccessful(Path contextDir) {
-        return Files.exists(contextDir.resolve(SUCCESS_FILE_NAME));
+    public static boolean wasSuccessful(FileSystemAbstraction fs, Path contextDir) {
+        return fs.fileExists(contextDir.resolve(SUCCESS_FILE_NAME));
     }
 
     /**
@@ -503,12 +593,15 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     /**
      * Reads back the CLI arguments persisted by {@link #persistCliArgs()} for a given context directory.
      */
-    public static Optional<List<String>> readCliArgs(Path contextDir) throws IOException {
+    public static Optional<List<String>> readCliArgs(FileSystemAbstraction fs, Path contextDir) throws IOException {
         Path cliArgsPath = contextDir.resolve(CLI_ARGS_FILE_NAME);
-        if (!Files.exists(cliArgsPath)) {
+        if (!fs.fileExists(cliArgsPath)) {
             return Optional.empty();
         }
-        String content = Files.readString(cliArgsPath);
+        String content;
+        try (var in = fs.openAsInputStream(cliArgsPath)) {
+            content = new String(in.readAllBytes(), UTF_8);
+        }
         return Optional.of(content.isEmpty() ? List.of() : content.lines().toList());
     }
 

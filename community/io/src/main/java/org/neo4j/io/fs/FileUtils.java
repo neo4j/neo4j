@@ -440,6 +440,16 @@ public final class FileUtils {
     }
 
     /**
+     * Wrap an already opened {@link StoreChannel} as a buffered {@link OutputStream}. The returned stream takes
+     * ownership of the channel, i.e. closing the stream closes the channel.
+     * @param channel the channel to write to
+     * @return the output stream
+     */
+    public static OutputStream toBufferedStream(StoreChannel channel) {
+        return new NativeByteBufferOutputStream(channel, FileSystemAbstraction.DEFAULT_OUTPUT_STREAM_BUFFER_SIZE);
+    }
+
+    /**
      * @see #toBufferedStream(Path, Function, Set, int, boolean) .
      */
     public static OutputStream toBufferedStream(

@@ -131,7 +131,7 @@ public interface Input extends AutoCloseable {
     boolean containsVectorData();
 
     @Override
-    default void close() {}
+    default void close() throws IOException {}
 
     static Input input(
             InputIterable nodes,
@@ -264,7 +264,7 @@ public interface Input extends AutoCloseable {
         }
 
         @Override
-        public void close() {
+        public void close() throws IOException {
             delegate.close();
         }
     }
