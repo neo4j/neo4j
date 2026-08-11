@@ -156,7 +156,7 @@
     -->
     <mixed.language.allowed>false</mixed.language.allowed>
     <mockito.version>5.23.0</mockito.version>
-    <neo4j-java-driver.version>6.2.0</neo4j-java-driver.version>
+    <neo4j-java-driver.version>6.2.1</neo4j-java-driver.version>
     <neo4j.bolt.connection.version>12.0.0</neo4j.bolt.connection.version>
     <!--
      - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
