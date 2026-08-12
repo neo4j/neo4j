@@ -60,7 +60,9 @@ public class AllIndexProviderDescriptors {
             new IndexProviderDescriptor("vector", "2026.06");
     public static final IndexProviderDescriptor VECTOR_V2026_07_DESCRIPTOR =
             new IndexProviderDescriptor("vector", "2026.07");
-    public static final IndexProviderDescriptor DEFAULT_VECTOR_DESCRIPTOR = VECTOR_V2026_07_DESCRIPTOR;
+    public static final IndexProviderDescriptor VECTOR_V2026_08_DESCRIPTOR =
+            new IndexProviderDescriptor("vector", "2026.08");
+    public static final IndexProviderDescriptor DEFAULT_VECTOR_DESCRIPTOR = VECTOR_V2026_08_DESCRIPTOR;
 
     /**
      * Mapping of {@link IndexProviderDescriptor} to the {@link IndexType}s they describe.
@@ -78,7 +80,8 @@ public class AllIndexProviderDescriptors {
             entry(VECTOR_V2_DESCRIPTOR, IndexType.VECTOR),
             entry(VECTOR_V3_DESCRIPTOR, IndexType.VECTOR),
             entry(VECTOR_V2026_06_DESCRIPTOR, IndexType.VECTOR),
-            entry(VECTOR_V2026_07_DESCRIPTOR, IndexType.VECTOR));
+            entry(VECTOR_V2026_07_DESCRIPTOR, IndexType.VECTOR),
+            entry(VECTOR_V2026_08_DESCRIPTOR, IndexType.VECTOR));
 
     /**
      * Mapping of an {@link IndexType} to all the {@link IndexProviderDescriptor}s of that type

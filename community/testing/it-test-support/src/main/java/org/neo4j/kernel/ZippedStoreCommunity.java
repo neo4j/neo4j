@@ -324,6 +324,28 @@ public enum ZippedStoreCommunity implements ZippedStore {
                     0,
                     0,
                     0,
+                    0)),
+
+    REC_AF11_V202607_EMPTY(
+            "record-aligned-1.1_V2026.07_empty_community.zip",
+            new DbStatistics(
+                    "record-aligned-1.1",
+                    KernelVersion.V2026_07,
+                    4,
+                    COMMUNITY,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
                     0));
 
     private final String zipFileName;

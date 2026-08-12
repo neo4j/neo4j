@@ -79,8 +79,8 @@ public abstract class SchemaCommandReaderTest {
             "Invalid option provided, valid options are `indexProvider` and `indexConfig`";
     private static final IndexConfig VECTOR_CONFIG = IndexConfig.with(Map.ofEntries(
             entry("vector.similarity_function", Values.utf8Value("COSINE")),
-            entry("vector.default_search_expansion_factor", Values.doubleValue(1.5)),
-            entry("vector.quantization.type", Values.utf8Value("SCALAR")),
+            entry("vector.default_search_expansion_factor", Values.doubleValue(3.0)),
+            entry("vector.quantization.type", Values.utf8Value("BINARY")),
             entry("vector.hnsw.m", Values.intValue(16)),
             entry("vector.hnsw.ef_construction", Values.intValue(100))));
     private static final IndexConfig VECTOR_CONFIG_WITH_DIMENSIONS =

@@ -783,20 +783,25 @@ public class VectorIndexCreationTest {
         class QuantizationTypes extends TestBase {
             private static final IndexSetting SETTING = IndexSetting.vector_Quantization_Type();
 
-            // Currently the parameter is unused, it has been added in preparation
-            // for when we change the default quantization type
-            @SuppressWarnings("unused")
             private static Value defaultValue(VectorIndexVersion version) {
-                VectorQuantizationType quantizationType = VectorQuantizationType.SCALAR;
+                VectorQuantizationType quantizationType =
+                        switch (version) {
+                            case UNKNOWN ->
+                                throw new IllegalStateException(
+                                        "%s should be known".formatted(VectorQuantizationType.class.getSimpleName()));
+                            case V1_0, V2_0, V3_0 ->
+                                throw new IllegalArgumentException("%s does not support %s"
+                                        .formatted(version, VectorQuantizationType.class.getSimpleName()));
+                            case V2026_06, V2026_07 -> VectorQuantizationType.SCALAR;
+                            case V2026_08 -> VectorQuantizationType.BINARY;
+                        };
                 return Values.utf8Value(quantizationType.name());
             }
 
             private static Value defaultValue(VectorIndexVersion version, boolean quantizationEnabled) {
-                if (quantizationEnabled) {
-                    return defaultValue(version);
-                } else {
-                    return Values.utf8Value(VectorQuantizationType.NONE.name());
-                }
+                return quantizationEnabled
+                        ? defaultValue(version)
+                        : Values.utf8Value(VectorQuantizationType.NONE.name());
             }
 
             QuantizationTypes() {
