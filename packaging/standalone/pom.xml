@@ -31,6 +31,9 @@
   </scm>
 
   <properties>
+    <!-- Never cache/restore this module: CI packaging steps copy the standalone archives
+         from this module's target/. A cache hit would leave empty. -->
+    <maven.build.cache.enabled>false</maven.build.cache.enabled>
     <!-- other filter properties -->
     <neo4j.version>${project.version}</neo4j.version>
   </properties>

@@ -26,6 +26,10 @@
   </scm>
 
   <properties>
+    <!-- Never cache/restore this module: its archives are produced by an attach=false
+         assembly, so the build cache cannot carry them. A cache hit would leave
+         target/ empty and CI packaging steps copy the archives from there. -->
+    <maven.build.cache.enabled>false</maven.build.cache.enabled>
     <neo4j.mainClass>org.neo4j.server.Neo4jCommunity</neo4j.mainClass>
   </properties>
 
