@@ -28,6 +28,7 @@ import static org.neo4j.kernel.KernelVersion.GLORIOUS_FUTURE;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryEmpty;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
@@ -139,9 +141,22 @@ public class TxLogValidationUtils {
             CommandReaderFactory commandReaderFactory)
             throws IOException {
         return assertWholeTransactionsIn(
+                logFile, logVersion, extraStartCheck, (x, y) -> {}, extraCommitCheck, commandReaderFactory);
+    }
+
+    public static int assertWholeTransactionsIn(
+            LogFile logFile,
+            long logVersion,
+            Consumer<LogEntryStart> extraStartCheck,
+            BiConsumer<LogEntryEmpty, Integer> extraNonTxCheck,
+            Consumer<LogEntryCommit> extraCommitCheck,
+            CommandReaderFactory commandReaderFactory)
+            throws IOException {
+        return assertWholeTransactionsIn(
                 logFile,
                 logVersion,
                 extraStartCheck,
+                extraNonTxCheck,
                 extraCommitCheck,
                 commandReaderFactory,
                 LogVersionBridge.NO_MORE_CHANNELS);
@@ -151,6 +166,25 @@ public class TxLogValidationUtils {
             LogFile logFile,
             long logVersion,
             Consumer<LogEntryStart> extraStartCheck,
+            Consumer<LogEntryCommit> extraCommitCheck,
+            CommandReaderFactory commandReaderFactory,
+            LogVersionBridge logVersionBridge)
+            throws IOException {
+        return assertWholeTransactionsIn(
+                logFile,
+                logVersion,
+                extraStartCheck,
+                (x, y) -> {},
+                extraCommitCheck,
+                commandReaderFactory,
+                logVersionBridge);
+    }
+
+    public static int assertWholeTransactionsIn(
+            LogFile logFile,
+            long logVersion,
+            Consumer<LogEntryStart> extraStartCheck,
+            BiConsumer<LogEntryEmpty, Integer> extraNonTxCheck,
             Consumer<LogEntryCommit> extraCommitCheck,
             CommandReaderFactory commandReaderFactory,
             LogVersionBridge logVersionBridge)
@@ -169,6 +203,11 @@ public class TxLogValidationUtils {
             while ((entry = entryReader.readLogEntry(reader)) != null) {
                 if (!inTx) // Expects start entry
                 {
+                    if (entry instanceof LogEntryEmpty empty) {
+                        extraNonTxCheck.accept(empty, reader.getChecksum());
+                        continue;
+                    }
+
                     assertInstanceOf(LogEntryStart.class, entry);
                     extraStartCheck.accept((LogEntryStart) entry);
                     inTx = true;
