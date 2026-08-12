@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.p
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleGraphs
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.gqlstatus.GqlHelper.getGql42001_42I58
 import org.neo4j.gqlstatus.GqlHelper.getGql42001_42N22
@@ -33,6 +35,21 @@ class CollectExpressionSemanticAnalysisTest extends SubqueryExpressionSemanticAn
       SemanticError(
         getGql42001_42N71(17, 1, 18),
         "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
+        p(17, 1, 18)
+      ),
+      SemanticError(
+        getGql42001_42N22(7, 1, 8),
+        "A Collect Expression must end with a single return column.",
+        p(7, 1, 8)
+      )
+    )
+  }
+
+  test("RETURN COLLECT { USE neo4j }") {
+    runWith(MultipleGraphs, UseAsMultipleGraphsSelector).hasErrors(
+      SemanticError(
+        getGql42001_42N71(17, 1, 18),
+        "Query cannot conclude with USE GRAPH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         p(17, 1, 18)
       ),
       SemanticError(

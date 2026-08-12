@@ -21,12 +21,16 @@ import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.IsNormalized
 import org.neo4j.cypher.internal.ast.IsNotNormalized
 import org.neo4j.cypher.internal.ast.IsNotTyped
 import org.neo4j.cypher.internal.ast.IsTyped
+import org.neo4j.cypher.internal.ast.PartQuery
+import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
+import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.VectorValueConstructor
 import org.neo4j.cypher.internal.ast.Where
@@ -905,6 +909,9 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         withScopedState {
           importValuesFromParentInExpressionWithScopeDependencies(x) chain
             fromState(state => x.query.semanticCheckInSubqueryExpressionContext(canOmitReturn = true, state)) chain
+            when(hasEmptyBody(x.query)) {
+              SemanticError.queryMustConcludeWithClause(x.position)
+            } chain
             when(x.query.containsUpdates) {
               SemanticError.anExpressionCannotContainUpdates("Exists", x.position)
             } chain
@@ -931,6 +938,9 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
                 state
               )
             ) chain
+            when(hasEmptyBody(x.query)) {
+              SemanticError.queryMustConcludeWithClause(x.position)
+            } chain
             when(x.query.containsUpdates) {
               SemanticError.aExpressionCannotContainUpdates("Count", x.position)
             } chain
@@ -1331,6 +1341,20 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       SemanticCheckResult(inner, errors)
     }
+  }
+
+  /**
+   * True if this subquery expression's body has no clause that could produce or conclude a result,
+   * i.e. it consists of nothing but a USE clause, a WITH clause is okay.
+   */
+  private def hasEmptyBody(query: Query): Boolean = query match {
+    case p: PartQuery =>
+      p.clauses.forall(_.isInstanceOf[GraphSelection])
+    case u: Union =>
+      hasEmptyBody(u.lhs) || hasEmptyBody(u.rhs)
+    case _ =>
+      // Other Query shapes (e.g. CASE/NEXT-expanded composite constructs) always have a concluding clause.
+      false
   }
 
   private def literalShouldBeNumberInRange(

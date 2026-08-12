@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.p
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleGraphs
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
 import org.neo4j.gqlstatus.GqlHelper.getGql42001_42I58
 import org.neo4j.gqlstatus.GqlHelper.getGql42001_42N39
 import org.neo4j.gqlstatus.GqlHelper.getGql42001_42N71
@@ -28,6 +30,14 @@ class CountExpressionSemanticAnalysisTest extends SubqueryExpressionSemanticAnal
 
   test("RETURN  COUNT { MATCH (a) }") {
     run().hasNoErrors
+  }
+
+  test("RETURN COUNT { USE neo4j } AS c") {
+    runWith(MultipleGraphs, UseAsMultipleGraphsSelector).hasError(
+      getGql42001_42N71(7, 1, 8),
+      "Query must conclude with a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD.",
+      p(7, 1, 8)
+    )
   }
 
   test(
