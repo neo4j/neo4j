@@ -61,10 +61,6 @@
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
-      <artifactId>netty-transport-classes-io_uring</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
       <artifactId>netty-transport-classes-kqueue</artifactId>
     </dependency>
     <dependency>
@@ -75,16 +71,6 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-transport-native-epoll</artifactId>
-      <classifier>linux-aarch_64</classifier>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-transport-native-io_uring</artifactId>
-      <classifier>linux-x86_64</classifier>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-transport-native-io_uring</artifactId>
       <classifier>linux-aarch_64</classifier>
     </dependency>
     <dependency>
@@ -235,7 +221,6 @@
                 <!-- Native Netty transports are loaded reflectively (classifiers vary by OS/arch),
                                      dependency analyzer can't see reflective loading, so ignore by GA only. -->
                 <ignoredUnusedDeclaredDependency>io.netty:netty-transport-native-epoll</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>io.netty:netty-transport-native-io_uring</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>io.netty:netty-transport-native-kqueue</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
             </configuration>

@@ -84,7 +84,6 @@ Apache Software License, Version 2.0
   Netty/Resolver
   Netty/Transport
   Netty/Transport/Classes/Epoll
-  Netty/Transport/Classes/io_uring
   Netty/Transport/Classes/KQueue
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
