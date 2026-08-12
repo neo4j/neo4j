@@ -42,8 +42,8 @@ import org.neo4j.server.queryapi.tx.TransactionManager;
         contentType = QueryContentType.UNTYPED,
         acceptedContentTypes = {QueryContentType.UNTYPED_L},
         sleepProcedureEnabled = true,
-        queryApiTransactionTimeoutInSeconds = 5,
-        transactionTimeoutInSeconds = 10)
+        queryApiTransactionTimeoutInSeconds = 8,
+        transactionTimeoutInSeconds = 15)
 class QueryResourceTxJsonlTimeoutIT {
 
     private final QueryAPITestClient testClient;
@@ -70,7 +70,7 @@ class QueryResourceTxJsonlTimeoutIT {
         var txId = beginTransaction();
 
         // timeout transaction
-        Thread.sleep(ofSeconds(10));
+        Thread.sleep(ofSeconds(13));
 
         var timeout = testClient.commitTxJsonl(txId);
 
@@ -86,7 +86,7 @@ class QueryResourceTxJsonlTimeoutIT {
         var txId = beginTransaction();
 
         // timeout transaction
-        Thread.sleep(ofSeconds(10));
+        Thread.sleep(ofSeconds(13));
 
         var timeout = testClient.runInTxJsonl(
                 QueryRequest.newBuilder().statement("RETURN 1").build(), txId);

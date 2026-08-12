@@ -36,8 +36,8 @@ import org.neo4j.server.queryapi.tx.TransactionManager;
 
 @QueryAPITestExtension(
         sleepProcedureEnabled = true,
-        queryApiTransactionTimeoutInSeconds = 5,
-        transactionTimeoutInSeconds = 10)
+        queryApiTransactionTimeoutInSeconds = 8,
+        transactionTimeoutInSeconds = 15)
 class QueryResourceTxTimeoutIT {
 
     private final QueryAPITestClient testClient;
@@ -66,7 +66,7 @@ class QueryResourceTxTimeoutIT {
         assertThat(res).hasTransaction();
 
         // timeout transaction
-        Thread.sleep(ofSeconds(10));
+        Thread.sleep(ofSeconds(13));
 
         var timeout = testClient.commitTx(res.body().txId());
         assertThat(timeout).wasNotFound();
@@ -81,7 +81,7 @@ class QueryResourceTxTimeoutIT {
         assertThat(res).hasTransaction();
 
         // timeout transaction
-        Thread.sleep(ofSeconds(10));
+        Thread.sleep(ofSeconds(13));
 
         var timeout = testClient.runInTx(
                 QueryRequest.newBuilder().statement("RETURN 1").build(),
