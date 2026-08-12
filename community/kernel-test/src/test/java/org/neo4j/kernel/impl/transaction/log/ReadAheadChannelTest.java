@@ -114,7 +114,7 @@ class ReadAheadChannelTest {
         }
 
         Path file2 = Path.of("foo.2");
-        try (StoreChannel storeChannel2 = fileSystem.read(file2)) {
+        try (StoreChannel storeChannel2 = fileSystem.write(file2)) {
             ByteBuffer buffer = ByteBuffers.allocate(2, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             buffer.put((byte) 0);
             buffer.put((byte) 1);

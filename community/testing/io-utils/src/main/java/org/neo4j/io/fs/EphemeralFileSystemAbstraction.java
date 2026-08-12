@@ -162,7 +162,31 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
 
     @Override
     public synchronized StoreChannel open(Path fileName, Set<OpenOption> options) throws IOException {
-        return getStoreChannel(fileName, options.contains(StandardOpenOption.CREATE_NEW));
+        if (options.contains(StandardOpenOption.APPEND)) {
+            if (options.contains(StandardOpenOption.READ)) {
+                throw new IllegalArgumentException("READ + APPEND not allowed");
+            }
+            if (options.contains(StandardOpenOption.TRUNCATE_EXISTING)) {
+                throw new IllegalArgumentException("APPEND + TRUNCATE_EXISTING not allowed");
+            }
+        }
+
+        // A real file system ignores CREATE, CREATE_NEW and TRUNCATE_EXISTING unless opening for writing
+        boolean forWriting = options.contains(StandardOpenOption.WRITE) || options.contains(StandardOpenOption.APPEND);
+        boolean createNew = forWriting && options.contains(StandardOpenOption.CREATE_NEW);
+        boolean mayCreate = createNew || (forWriting && options.contains(StandardOpenOption.CREATE));
+        if (!mayCreate && !files.containsKey(canonicalFile(fileName))) {
+            throw new NoSuchFileException(fileName.toString());
+        }
+
+        StoreChannel channel = getStoreChannel(fileName, createNew);
+        if (forWriting && options.contains(StandardOpenOption.TRUNCATE_EXISTING)) {
+            channel.truncate(0);
+        }
+        if (options.contains(StandardOpenOption.APPEND)) {
+            channel.position(channel.size());
+        }
+        return channel;
     }
 
     @Override
@@ -176,13 +200,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
 
     @Override
     public OutputStream openAsOutputStream(Path fileName, Set<OpenOption> options, int bufferSize) throws IOException {
-        var channel = open(fileName, options);
-        boolean truncate =
-                options.contains(StandardOpenOption.TRUNCATE_EXISTING) || !options.contains(StandardOpenOption.APPEND);
-        if (truncate) {
-            channel.truncate(0);
-        }
-        return new ChannelOutputStream(channel, !truncate, INSTANCE, bufferSize);
+        return new ChannelOutputStream(open(fileName, options), false, INSTANCE, bufferSize);
     }
 
     @Override
@@ -205,7 +223,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
 
     @Override
     public synchronized StoreChannel read(Path fileName) throws IOException {
-        return getStoreChannel(fileName, false);
+        return open(fileName, Set.of(StandardOpenOption.READ));
     }
 
     @Override
