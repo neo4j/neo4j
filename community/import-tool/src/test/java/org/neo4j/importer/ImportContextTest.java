@@ -416,13 +416,27 @@ class ImportContextTest {
         try (var importContext = getRetainingImportContext()) {
             importContext.persistConfig();
 
-            assertThat(importContext.baseDir().resolve(ImportContext.CONFIG_FILE_NAME))
-                    .exists()
-                    .content()
-                    .contains(
-                            "%s=%s".formatted(neo4j_home.name(), testDir.homePath()),
-                            "%s=%s".formatted(logs_directory.name(), importsDir));
+            var persisted = Config.newBuilder()
+                    .fromFile(importContext.baseDir().resolve(ImportContext.CONFIG_FILE_NAME))
+                    .build();
+
+            assertThat(persisted.isExplicitlySet(logs_directory)).isTrue();
+            assertThat(persisted.get(neo4j_home)).isEqualTo(testDir.homePath());
+            assertThat(persisted.get(logs_directory)).isEqualTo(importsDir);
         }
+    }
+
+    @Test
+    void persistedConfigWithBackslashValuesCanBeReadBack() throws IOException {
+        // A Windows path value (e.g. neo4j.home=Z:\work\...) carries backslashes; unescaped, Properties.load reads
+        // each as an escape and rejects a stray backslash-u with a "Malformed" unicode error when read back.
+        var windowsLikePaths = Config.newBuilder()
+                .fromConfig(config)
+                .set(GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist, "Z:\\work\\cf47\\uABCD\\store")
+                .build();
+
+        assertThat(ImportContext.resumeSensitiveChanges(persistedConfigOf(windowsLikePaths), windowsLikePaths))
+                .isEmpty();
     }
 
     @Test
@@ -1042,6 +1056,16 @@ class ImportContextTest {
         }
     }
 
+    /**
+     * The context directory of an attempt that ran with the given configuration, as {@code --resume} would find it.
+     */
+    private Path persistedConfigOf(Config attemptConfig) {
+        try (var importContext = getRetainingImportContext(attemptConfig)) {
+            importContext.persistConfig();
+            return importContext.baseDir();
+        }
+    }
+
     private ImportContext getImportContext() {
         return ImportContext.create(fs, DB, null, config, null, Collections.emptyList(), false, false, false);
     }
@@ -1056,6 +1080,10 @@ class ImportContextTest {
 
     private ImportContext getRetainingImportContext() {
         return ImportContext.create(fs, DB, null, config, null, Collections.emptyList(), false, true, false);
+    }
+
+    private ImportContext getRetainingImportContext(Config attemptConfig) {
+        return ImportContext.create(fs, DB, null, attemptConfig, null, Collections.emptyList(), false, true, false);
     }
 
     private ImportContext getRetainingImportContext(Path reportFile) {

@@ -41,6 +41,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -60,7 +61,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -73,8 +77,10 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExitCode;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.SettingImpl;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.importer.FileImporter.CsvImportException;
+import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction.PatternStyle;
@@ -343,7 +349,10 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
 
     private OutputStream output(Path path) throws UncheckedIOException {
         try {
-            fs.mkdirs(path.getParent());
+            Path pathParent = path.toAbsolutePath().getParent();
+            if (pathParent != null) {
+                fs.mkdirs(pathParent);
+            }
             return fs.openAsOutputStream(path, true);
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
@@ -414,10 +423,37 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     public void persistConfig() {
         try {
             fs.mkdirs(baseDir());
-            writeProtected(baseDir().resolve(CONFIG_FILE_NAME), databaseConfig.toString(false));
+            writeProtected(
+                    baseDir().resolve(CONFIG_FILE_NAME), asConfigFile(configValuesStringMapping(databaseConfig)));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    static Map<String, String> configValuesStringMapping(Config config) {
+        HashMap<String, String> settingValueAsStringByName = new HashMap<>();
+        for (Entry<String, Setting<Object>> entry : config.getDeclaredSettings().entrySet()) {
+            String name = entry.getKey();
+            Setting<Object> setting = entry.getValue();
+            var value = config.get(setting);
+            if (value != null) {
+                settingValueAsStringByName.put(name, ((SettingImpl<Object>) setting).valueToString(value));
+            }
+        }
+        return settingValueAsStringByName;
+    }
+
+    /**
+     * Renders setting values as the file {@link Config.Builder#fromFile} reads back in
+     * {@link #resumeSensitiveChanges(Path, Config)}. Escaping is left to {@link MapUtil#store}, whose
+     * {@link java.util.Properties} format is what that reader parses: the values are raw strings, so on Windows a path
+     * value carries backslashes (e.g. {@code Z:\work\...}) that the reader would otherwise take for escape sequences,
+     * rejecting a stray backslash-u with a "Malformed" unicode-encoding error.
+     */
+    static String asConfigFile(Map<String, String> configValues) throws IOException {
+        var file = new StringWriter();
+        MapUtil.store(configValues, file);
+        return file.toString();
     }
 
     @Override

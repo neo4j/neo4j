@@ -514,20 +514,20 @@ class ImportCommandTest {
                 writePreviousAttemptCliArgs(databaseConfig, "--nodes=old.csv", "--skidbladnir", "--format=block");
         // the attempt ran with its data somewhere this run no longer looks, so its store and intermediary data are
         // not where a resume would continue them
-        String dataDirectory = GraphDatabaseSettings.data_directory.name();
-        String asAttemptRan =
-                "%s=%s".formatted(dataDirectory, databaseConfig.get(GraphDatabaseSettings.data_directory));
-        String asRecorded = "%s=%s".formatted(dataDirectory, "/somewhere/else");
-        Files.writeString(
-                contextDir.resolve(ImportContext.CONFIG_FILE_NAME),
-                databaseConfig.toString(false).replace(asAttemptRan, asRecorded));
+        var asRecorded = ImportContext.configValuesStringMapping(databaseConfig);
+        asRecorded.put(GraphDatabaseSettings.data_directory.name(), "/somewhere/else");
+        Files.writeString(contextDir.resolve(ImportContext.CONFIG_FILE_NAME), ImportContext.asConfigFile(asRecorded));
         CommandLine.populateCommand(command, "--resume");
+        // the message names the setting's resolved value, which a rooted path is only half of on a platform where a
+        // root is per-drive
+        Path recordedDataDirectory =
+                databaseConfig.get(GraphDatabaseSettings.neo4j_home).resolve("/somewhere/else");
 
         assertThatThrownBy(command::rerunFromPreviousAttempt)
                 .isInstanceOf(CommandFailedException.class)
                 .hasMessageContaining("settings that no longer hold")
                 .hasMessageContaining(GraphDatabaseSettings.data_directory.name())
-                .hasMessageContaining("/somewhere/else");
+                .hasMessageContaining(recordedDataDirectory.toString());
     }
 
     @Test
@@ -537,7 +537,9 @@ class ImportCommandTest {
         Config databaseConfig = command.loadNeo4jConfig("block");
         Path contextDir =
                 writePreviousAttemptCliArgs(databaseConfig, "--nodes=old.csv", "--skidbladnir", "--format=block");
-        Files.writeString(contextDir.resolve(ImportContext.CONFIG_FILE_NAME), databaseConfig.toString(false));
+        Files.writeString(
+                contextDir.resolve(ImportContext.CONFIG_FILE_NAME),
+                ImportContext.asConfigFile(ImportContext.configValuesStringMapping(databaseConfig)));
         CommandLine.populateCommand(command, "--resume");
 
         command.rerunFromPreviousAttempt();
