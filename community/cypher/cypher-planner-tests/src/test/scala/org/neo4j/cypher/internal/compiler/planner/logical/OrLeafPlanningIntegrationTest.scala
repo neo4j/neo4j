@@ -1471,6 +1471,42 @@ class OrLeafPlanningIntegrationTest
     }
   }
 
+  test(
+    "should handle partial predicates from multicomponent predicates with additional duplicated predicate inside and outside of OR"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(20000)
+      .setLabelCardinality("Style", 10000)
+      .setLabelCardinality("ColorProfile", 10000)
+      .addNodeIndex("Style", Seq("styleCode"), 1.0, 0.0001)
+      .build()
+
+    val query =
+      """MATCH (s:Style), (cp:ColorProfile)
+        |WHERE
+        |  // these are needed for the repro
+        |  cp.styleCode = s.styleCode
+        |  AND s.tags IS NOT NULL
+        |  AND (s.name CONTAINS 'lorem' OR s.tags IS NOT NULL)
+        |  // these are added to steer cost-comparison toward plan with a union
+        |  AND (s.a IS NOT NULL OR s.b IS NOT NULL)
+        |  AND (s.c IS NOT NULL OR s.d CONTAINS 'dolor')
+        |RETURN s""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .valueHashJoin("cacheN[s.styleCode] = cp.styleCode")
+      .|.nodeByLabelScan("cp", "ColorProfile", IndexOrderNone)
+      .filter("s.c IS NOT NULL OR s.d CONTAINS 'dolor'", "s.a IS NOT NULL OR s.b IS NOT NULL")
+      .distinct("s AS s")
+      .union()
+      .|.filter("s.tags IS NOT NULL")
+      .|.nodeIndexOperator("s:Style(styleCode)", getValue = _ => GetValue)
+      .filter("s.name CONTAINS 'lorem'", "s.tags IS NOT NULL")
+      .nodeIndexOperator("s:Style(styleCode)", getValue = _ => GetValue)
+      .build()
+  }
+
   private def runWithTimeout[T](timeout: Long)(f: => T): T = {
     Await.result(scala.concurrent.Future(f)(scala.concurrent.ExecutionContext.global), Duration.apply(timeout, "s"))
   }

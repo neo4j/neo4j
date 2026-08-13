@@ -259,6 +259,11 @@ object PartialPredicate {
     override def coveringPredicate: Expression = predicate
     override def position: InputPosition = coveredPredicate.position
   }
+
+  def unwrap(expr: Expression): Expression = expr match {
+    case pp: PartialPredicate[_] => pp.coveringPredicate
+    case e                       => e
+  }
 }
 
 case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BinaryPredicateExpression {

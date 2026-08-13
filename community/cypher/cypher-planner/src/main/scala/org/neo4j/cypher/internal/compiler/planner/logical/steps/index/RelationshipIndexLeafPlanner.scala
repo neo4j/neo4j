@@ -56,7 +56,7 @@ case class RelationshipIndexLeafPlanner(
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     val indexMatches = findIndexMatchesForQueryGraph(
-      qg.addPredicates(context.plannerState.overlappingMulticomponentPredicates),
+      qg,
       context.semanticTable,
       context.staticComponents.planContext,
       context.plannerState.indexCompatiblePredicatesProviderContext,

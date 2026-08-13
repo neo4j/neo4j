@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner.combine
@@ -199,9 +200,8 @@ object OrLeafPlanner {
         .collect {
           // Those predicates which only use the variable that is used in the OR
           // Any Ors will not get added. Those can either be the disjunction itself, or any other OR which we can't solve with the leaf planners anyway.
-          case e
-            if variableUsedInExpression(e, qg.argumentIds).contains(disjunction.variable) &&
-              !e.isInstanceOf[Ors] => WhereClausePredicate(e)
+          case e if e.dependencies.contains(disjunction.variable) && !e.isInstanceOf[Ors] =>
+            WhereClausePredicate(e)
         }
     }
 
@@ -224,7 +224,7 @@ object OrLeafPlanner {
       // Predicates that are not part of the original disjunction but part of the related predicates SHOULD be solved by all plans (since related predicates will add an AND relationship across the disjunction).
       // We will pick these up and add them to the new solved query graph.
       val relatedPredicatesSolvedByAllPlans = solvedQgs.head.selections.flatPredicatesSet.filter { predicate =>
-        predicatesRelatedToTheDisjunction.contains(predicate) &&
+        predicatesRelatedToTheDisjunction.contains(PartialPredicate.unwrap(predicate)) &&
         solvedQgs.tail.forall(_.selections.flatPredicatesSet.contains(predicate))
       }
 

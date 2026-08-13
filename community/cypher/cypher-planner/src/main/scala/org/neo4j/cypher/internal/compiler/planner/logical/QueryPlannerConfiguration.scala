@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexS
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexStringSearchScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.intersectionLabelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafplanner.OverlappingMulticomponentPredicatesLeafPlannerDecorator.withOverlappingMulticomponentPredicatesDecorator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.pickBestPlanUsingHintsAndCost
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.relationshipTypeScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.resolveImplicitlySolvedPredicates
@@ -72,14 +73,14 @@ object QueryPlannerConfiguration {
         // MATCH (n) WHERE has(n.prop) RETURN n
         nodeIndexScanPlanProvider
       )
-    ),
+    ).withOverlappingMulticomponentPredicatesDecorator,
     RelationshipIndexLeafPlanner(
       Seq(
         RelationshipIndexScanPlanProvider,
         RelationshipIndexSeekPlanProvider,
         RelationshipIndexStringSearchScanPlanProvider
       )
-    ),
+    ).withOverlappingMulticomponentPredicatesDecorator,
 
     // MATCH (n:Person) RETURN n
     labelScanLeafPlanner,
@@ -118,7 +119,7 @@ object QueryPlannerConfiguration {
       allNodesLeafPlanner,
 
       // Handles OR between other leaf planners
-      OrLeafPlanner(innerOrLeafPlanners)
+      OrLeafPlanner(innerOrLeafPlanners).withOverlappingMulticomponentPredicatesDecorator
     ) ++ searchClauseLeafPlanner
   }
 

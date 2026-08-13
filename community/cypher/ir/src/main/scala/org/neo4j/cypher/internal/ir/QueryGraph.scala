@@ -757,7 +757,7 @@ final case class QueryGraph private (
     addSetIfNonEmpty(patternRelationships, "Rels", (_: PatternRelationship).toString)
     addSetIfNonEmpty(quantifiedPathPatterns, "Quantified path patterns", (_: QuantifiedPathPattern).toString)
     addSetIfNonEmpty(argumentIds, "Arguments", (_: LogicalVariable).name)
-    addSetIfNonEmpty(selections.flatPredicates, "Predicates", (e: Expression) => QueryGraph.stringifier.apply(e))
+    addSetIfNonEmpty(selections.flatPredicatesSet, "Predicates", (e: Expression) => QueryGraph.stringifier.apply(e))
     addSetIfNonEmpty(shortestRelationshipPatterns, "Shortest relationships", (_: ShortestRelationshipPattern).toString)
     addSetIfNonEmpty(optionalMatches, "Optional Matches: ", (_: QueryGraph).toString)
     addSetIfNonEmpty(hints, "Hints", (_: IrHint).toString)
