@@ -315,6 +315,9 @@ public final class CypherMath {
         if (lhs == NO_VALUE || rhs == NO_VALUE) {
             return NO_VALUE;
         } else if (lhs instanceof NumberValue lhsNumber && rhs instanceof NumberValue rhsNumber) {
+            if (rhsNumber instanceof IntegralValue && rhsNumber.equals(ZERO_INT)) {
+                throw ArithmeticException.divisionByZero();
+            }
             try {
                 if (lhsNumber instanceof FloatingPointValue || rhsNumber instanceof FloatingPointValue) {
                     return doubleValue(lhsNumber.doubleValue() % rhsNumber.doubleValue());
