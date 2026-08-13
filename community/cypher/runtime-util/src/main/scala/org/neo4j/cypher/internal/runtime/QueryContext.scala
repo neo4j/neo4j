@@ -27,6 +27,7 @@ import org.neo4j.configuration.Config
 import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.admin.topology.ShowDatabaseService
@@ -366,6 +367,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with KernelVersion
   def jobScheduler: JobScheduler
 
   def logProvider: InternalLogProvider
+
+  def internalUsageStats: InternalUsageStats
 
   def providedLanguageFunctions: Seq[FunctionInformation]
 

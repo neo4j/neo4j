@@ -24,4 +24,8 @@ case object InternalUsageStatsNoOp extends InternalUsageStats {
   override def incrementSchemaInferenceUsageCount(key: SchemaInferenceUsageMetricKey): Unit = ()
 
   override def getSchemaInferenceUsageCount(key: SchemaInferenceUsageMetricKey): Long = 0
+
+  override def incrementLeafPlanOperatorCount(key: LeafPlanOperatorMetricKey, count: Long): Unit = ()
+
+  override def getLeafPlanOperatorCount(key: LeafPlanOperatorMetricKey): Long = 0
 }

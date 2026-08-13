@@ -24,6 +24,8 @@ public final class InternalUsageStatsImpl implements InternalUsageStats {
     private final ConcurrentHashMap<SyntaxUsageMetricKey, LongAdder> syntaxUsageCounts = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<SchemaInferenceUsageMetricKey, LongAdder> labelInferenceUsageCounts =
             new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<LeafPlanOperatorMetricKey, LongAdder> leafPlanOperatorCounts =
+            new ConcurrentHashMap<>();
 
     @Override
     public void incrementSyntaxUsageCount(SyntaxUsageMetricKey key) {
@@ -44,6 +46,17 @@ public final class InternalUsageStatsImpl implements InternalUsageStats {
     @Override
     public long getSchemaInferenceUsageCount(SchemaInferenceUsageMetricKey key) {
         var count = labelInferenceUsageCounts.get(key);
+        return count == null ? 0L : count.longValue();
+    }
+
+    @Override
+    public void incrementLeafPlanOperatorCount(LeafPlanOperatorMetricKey key, long count) {
+        leafPlanOperatorCounts.computeIfAbsent(key, k -> new LongAdder()).add(count);
+    }
+
+    @Override
+    public long getLeafPlanOperatorCount(LeafPlanOperatorMetricKey key) {
+        var count = leafPlanOperatorCounts.get(key);
         return count == null ? 0L : count.longValue();
     }
 }

@@ -26,6 +26,7 @@ import org.neo4j.configuration.Config
 import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
@@ -719,6 +720,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def jobScheduler: JobScheduler = inner.jobScheduler
 
   override def logProvider: InternalLogProvider = inner.logProvider
+
+  override def internalUsageStats: InternalUsageStats = inner.internalUsageStats
 
   override def providedLanguageFunctions: Seq[FunctionInformation] = inner.providedLanguageFunctions
 

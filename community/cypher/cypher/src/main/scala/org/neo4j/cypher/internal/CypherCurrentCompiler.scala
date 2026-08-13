@@ -569,6 +569,8 @@ object CypherCurrentCompiler {
     private val resourceMonitor =
       if (enableMonitors) kernelMonitors.newMonitor(classOf[ResourceMonitor]) else ResourceMonitor.NOOP
 
+    private lazy val leafPlanOperatorCounts = LeafPlanOperatorCounts(logicalPlan)
+
     private val cypherPlannerVersion: Option[String] = Option.when(displayPlannerVersion)(compilerInfo.plannerVersion())
 
     private val planDescriptionBuilder =
@@ -693,6 +695,12 @@ object CypherCurrentCompiler {
       val innerExecutionMode = runtimeExecutionMode(queryOptions)
       val monitor = if (isOutermostQuery) queryMonitor else QueryExecutionMonitor.NO_OP
       monitor.startExecution(transactionalContext.executingQuery())
+      if (isOutermostQuery && leafPlanOperatorCounts.nonEmpty) {
+        val internalUsageStats = queryContext.internalUsageStats
+        leafPlanOperatorCounts.foreach { case (key, count) =>
+          internalUsageStats.incrementLeafPlanOperatorCount(key, count.toLong)
+        }
+      }
 
       val notificationConfig =
         transactionalContext.queryExecutingConfiguration().notificationFilters()

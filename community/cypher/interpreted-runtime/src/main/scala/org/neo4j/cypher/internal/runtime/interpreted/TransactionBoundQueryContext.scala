@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.runtime
@@ -1890,6 +1891,9 @@ private[internal] class TransactionBoundReadQueryContext(
   override def logProvider: InternalLogProvider = {
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[LogService]).getInternalLogProvider
   }
+
+  override def internalUsageStats: InternalUsageStats =
+    transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[InternalUsageStats])
 
   override def providedLanguageFunctions: Seq[FunctionInformation] = {
     val dependencyResolver = transactionalContext.graph.getDependencyResolver

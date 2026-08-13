@@ -27,6 +27,7 @@ import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.NoPreferenceIndexComparatorFactory
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
@@ -705,6 +706,8 @@ object StaticEvaluation {
     override def jobScheduler: JobScheduler = notAvailable()
 
     override def logProvider: InternalLogProvider = notAvailable()
+
+    override def internalUsageStats: InternalUsageStats = notAvailable()
 
     override def providedLanguageFunctions: Seq[FunctionInformation] = notAvailable()
 

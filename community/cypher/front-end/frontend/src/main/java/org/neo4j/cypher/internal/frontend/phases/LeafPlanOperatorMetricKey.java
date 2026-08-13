@@ -16,20 +16,18 @@
  */
 package org.neo4j.cypher.internal.frontend.phases;
 
-public interface InternalUsageStats {
-    void incrementSyntaxUsageCount(SyntaxUsageMetricKey key);
+public enum LeafPlanOperatorMetricKey {
+    ALL_NODES_SCAN("ALL_NODES_SCAN"),
+    NODE_LABEL_SCAN("NODE_LABEL_SCAN"),
+    NODE_INDEX_SCAN("NODE_INDEX_SCAN"),
+    NODE_INDEX_SEEK("NODE_INDEX_SEEK"),
+    RELATIONSHIP_TYPE_SCAN("RELATIONSHIP_TYPE_SCAN"),
+    RELATIONSHIP_INDEX_SCAN("RELATIONSHIP_INDEX_SCAN"),
+    RELATIONSHIP_INDEX_SEEK("RELATIONSHIP_INDEX_SEEK");
 
-    long getSyntaxUsageCount(SyntaxUsageMetricKey key);
+    public final String key;
 
-    void incrementSchemaInferenceUsageCount(SchemaInferenceUsageMetricKey key);
-
-    long getSchemaInferenceUsageCount(SchemaInferenceUsageMetricKey key);
-
-    void incrementLeafPlanOperatorCount(LeafPlanOperatorMetricKey key, long count);
-
-    long getLeafPlanOperatorCount(LeafPlanOperatorMetricKey key);
-
-    static InternalUsageStats newImpl() {
-        return new InternalUsageStatsImpl();
+    LeafPlanOperatorMetricKey(String key) {
+        this.key = key;
     }
 }

@@ -26,6 +26,7 @@ import org.neo4j.configuration.Config
 import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros3.translateException
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
@@ -575,6 +576,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def jobScheduler: JobScheduler = translateException(tokenNameLookup, inner.jobScheduler)
 
   override def logProvider: InternalLogProvider = translateException(tokenNameLookup, inner.logProvider)
+
+  override def internalUsageStats: InternalUsageStats = translateException(tokenNameLookup, inner.internalUsageStats)
 
   override def providedLanguageFunctions: Seq[FunctionInformation] =
     translateException(tokenNameLookup, inner.providedLanguageFunctions)
