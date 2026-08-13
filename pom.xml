@@ -109,6 +109,8 @@
     <grpc.version>1.82.1</grpc.version>
     <gson.version>2.14.0</gson.version>
     <guava.version>33.6.0-jre</guava.version>
+    <!-- The property vm.target.version is used by CI to set the base JDK in which to run maven -->
+    <hadoop-common.version>3.5.0</hadoop-common.version>
     <!-- no more patch releases for jackson-annotations so different versioning from jackson -->
     <jackson.annotations.version>2.22</jackson.annotations.version>
     <jackson.version>2.22.1</jackson.version>
@@ -162,12 +164,12 @@
      - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
      - needs updating.
      -->
-    <netty.version>4.2.16.Final</netty.version>
+    <netty.version>4.2.17.Final</netty.version>
     <opencypher.version>1.0.0-M23</opencypher.version>
     <oshi-common.version>7.4.0</oshi-common.version>
     <parallel.tests>false</parallel.tests>
     <parquet-floor.version>2.1</parquet-floor.version>
-    <parquet.version>1.17.1</parquet.version>
+    <parquet.version>1.18.0</parquet.version>
     <picocli.version>4.7.7</picocli.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <protobuf.version>4.35.1</protobuf.version>
@@ -254,7 +256,6 @@
     <test.vm.netty.leakDetection.level>PARANOID</test.vm.netty.leakDetection.level>
     <testcontainers.version>2.0.5</testcontainers.version>
     <vm.target.version>21</vm.target.version>
-    <!-- The property vm.target.version is used by CI to set the base JDK in which to run maven -->
   </properties>
 
   <dependencyManagement>
@@ -738,6 +739,17 @@
           <exclusion>
             <groupId>ldapsdk</groupId>
             <artifactId>ldapsdk</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-common</artifactId>
+        <version>${hadoop-common.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>*</groupId>
+            <artifactId>*</artifactId>
           </exclusion>
         </exclusions>
       </dependency>

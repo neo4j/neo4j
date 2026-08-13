@@ -210,8 +210,26 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.fasterxml.woodstox</groupId>
+      <artifactId>woodstox-core</artifactId>
+      <version>7.2.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-collections4</artifactId>
+      <version>4.6.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop.thirdparty</groupId>
+      <artifactId>hadoop-shaded-guava</artifactId>
+      <version>1.5.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -279,6 +297,9 @@
             <configuration>
               <failOnWarning>true</failOnWarning>
               <ignoredUnusedDeclaredDependencies>
+                <ignoredUnusedDeclaredDependency>com.fasterxml.woodstox:woodstox-core</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.apache.commons:commons-collections4</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.apache.hadoop.thirdparty:hadoop-shaded-guava</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-jul</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-record-storage-engine</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
