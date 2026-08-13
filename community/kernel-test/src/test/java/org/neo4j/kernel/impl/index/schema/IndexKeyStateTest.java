@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.index.schema;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -79,10 +81,14 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.graphdb.Vector;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageCursorUtil;
+import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -119,6 +125,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.storable.VectorValue;
 
@@ -130,6 +137,7 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
 
     static final int MIN_NUM_SLOTS = 2;
     static final int MAX_NUM_SLOTS = 5;
+    private static final int INVALID_COORDINATE_TYPE = 0x95;
 
     @BeforeEach
     void setupRandomConfig() {
@@ -192,6 +200,92 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
         assertEquals(0, readState.compareValueTo(writeState), "key states are not equal");
         Value[] readValues = readState.asValues();
         assertThat(readValues).isEqualTo(writtenValues);
+    }
+
+    /**
+     * A read of inconsistent data must be reported through {@link PageCursor#setCursorException(String)} so that the
+     * surrounding {@link PageCursor#shouldRetry()} loop can heal it, see {@link Type#readValue}.
+     */
+    @Test
+    void readMustNotThrowForArbitraryBytes() {
+        KEY into = newKeyState();
+        byte[] bytes = new byte[PageCache.PAGE_SIZE];
+        for (Type type : into.getTypesById()) {
+            for (int attempt = 0; attempt < 100; attempt++) {
+                PageCursor cursor = arbitraryKeyBytes(bytes, type.typeId);
+                assertThatCode(() -> into.get(cursor, bytes.length))
+                        .as("typeId=%d", type.typeId)
+                        .doesNotThrowAnyException();
+            }
+        }
+    }
+
+    /**
+     * Keys are compared inside a {@link PageCursor#shouldRetry()} loop, on state that may stem from an inconsistent
+     * read, so comparing must not throw either.
+     */
+    @Test
+    void compareMustNotThrowAfterReadingArbitraryBytes() {
+        KEY left = newKeyState();
+        KEY right = newKeyState();
+        byte[] bytes = new byte[PageCache.PAGE_SIZE];
+        for (Type type : left.getTypesById()) {
+            for (int attempt = 0; attempt < 100; attempt++) {
+                left.get(arbitraryKeyBytes(bytes, type.typeId), bytes.length);
+                right.get(arbitraryKeyBytes(bytes, type.typeId), bytes.length);
+                assertThatCode(() -> assertSymmetricComparison(left, right))
+                        .as("typeId=%d", type.typeId)
+                        .doesNotThrowAnyException();
+            }
+        }
+    }
+
+    @Test
+    void readVectorArrayWithInvalidCoordinateTypeMustBeReportedAsCursorException() {
+        StubPageCursor cursor = arbitraryKeyBytes(new byte[PageCache.PAGE_SIZE], Types.VECTOR_ARRAY.typeId);
+        cursor.setOffset(NativeIndexKey.ENTITY_ID_SIZE + GenericKey.TYPE_ID_SIZE);
+        cursor.putShort((short) 1); // array length
+        PageCursorUtil.put3BInt(cursor, (INVALID_COORDINATE_TYPE << Short.SIZE) | 3); // coordinate type + dimensions
+        cursor.putBytes(new byte[3]);
+        int size = cursor.getOffset();
+        cursor.setOffset(0);
+
+        RangeKey key = new RangeKey();
+        assertThat(key.get(cursor, size)).isFalse();
+        assertThatThrownBy(cursor::checkAndClearCursorException).isInstanceOf(CursorException.class);
+    }
+
+    @Test
+    void vectorArrayCompareMustNotThrowForInvalidCoordinateType() {
+        for (int dimensions = 1; dimensions <= 4; dimensions++) {
+            int header = (INVALID_COORDINATE_TYPE << Short.SIZE) | dimensions;
+            RangeKey left = vectorArrayKeyWithRawHeader(header, new byte[] {1, 2, 3, 4});
+            RangeKey right = vectorArrayKeyWithRawHeader(header, new byte[] {4, 3, 2, 1});
+
+            assertThatCode(() -> assertSymmetricComparison(left, right))
+                    .as("dimensions=%d", dimensions)
+                    .doesNotThrowAnyException();
+        }
+    }
+
+    private static RangeKey vectorArrayKeyWithRawHeader(int header, byte[] data) {
+        RangeKey key = new RangeKey();
+        key.initialize(1);
+        key.beginArray(1, ValueWriter.ArrayType.VECTOR);
+        VectorArrayType.write(key, 0, Vector.CoordinateType.INTEGER8, data.length, data);
+        key.endArray();
+        key.long0Array[0] = header;
+        return key;
+    }
+
+    private static <K extends GenericKey<K>> void assertSymmetricComparison(K left, K right) {
+        assertThat(Integer.signum(left.compareValueTo(right))).isEqualTo(-Integer.signum(right.compareValueTo(left)));
+    }
+
+    private StubPageCursor arbitraryKeyBytes(byte[] bytes, byte typeId) {
+        random.random().nextBytes(bytes);
+        bytes[NativeIndexKey.ENTITY_ID_SIZE] = typeId;
+        return new StubPageCursor(0, ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN));
     }
 
     @ParameterizedTest
