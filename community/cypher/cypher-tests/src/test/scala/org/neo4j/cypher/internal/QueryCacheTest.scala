@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.options.CypherReplanOption
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.api.query.QueryCacheUsage
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -747,7 +748,12 @@ object QueryCacheTest extends MockitoSugar {
     override def codeGenByteCodeSize: Long = 23
   }
 
-  val TC: TransactionalContext = mock[TransactionalContext]
+  val TC: TransactionalContext = {
+    val tc = mock[TransactionalContext]
+    // waiting threads will call tc.kernelTransaction() periodically in BeingComputed.await
+    Mockito.when(tc.kernelTransaction()).thenReturn(mock[KernelTransaction])
+    tc
+  }
   private val RECOMPILE_LIMIT = 2
   private val cacheFactory = TestExecutorCaffeineCacheFactory
 
