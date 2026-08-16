@@ -7,6 +7,7 @@ Apache Software License, Version 2.0
   Apache Commons Codec
   Apache Commons Lang
   Apache Commons Text
+  Apache Hadoop Common
   Apache Log4j API
   Apache Log4j Core
   Apache Log4j JSON Template Layout

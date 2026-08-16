@@ -187,7 +187,8 @@
     <testcontainers.version>1.20.2</testcontainers.version>
     <build-resources.version>2025.11.1</build-resources.version>
     <s3mock.version>3.12.0</s3mock.version>
-    <parquet.version>1.17.1</parquet.version>
+    <parquet.version>1.18.0</parquet.version>
+    <hadoop-common.version>3.5.0</hadoop-common.version>
   </properties>
 
   <modules>
@@ -1105,6 +1106,17 @@
         <version>1.11.1</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-common</artifactId>
+        <version>${hadoop-common.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>*</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
         <version>${log4j.version}</version>
@@ -1607,7 +1619,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.136.Final</version>
+        <version>4.1.137.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1906,6 +1918,21 @@
         <groupId>io.grpc</groupId>
         <artifactId>grpc-context</artifactId>
         <version>${grpc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.woodstox</groupId>
+        <artifactId>woodstox-core</artifactId>
+        <version>7.2.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-collections4</artifactId>
+        <version>4.6.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop.thirdparty</groupId>
+        <artifactId>hadoop-shaded-guava</artifactId>
+        <version>1.5.0</version>
       </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
