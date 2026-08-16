@@ -411,9 +411,9 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         def sortFirst = combineToStep(
           "sortFirst",
           NonEmptyList(
+            planProjection,
             planSort(),
             planSkipAndLimit,
-            planProjection,
             planWhere(regularProjection.selections)
           )
         )
