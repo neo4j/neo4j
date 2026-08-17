@@ -38,11 +38,11 @@ case class SlottedCachedNodeProperty(
   cachedPropertyOffset: Int
 ) extends AbstractCachedNodeProperty with SlottedExpression {
 
-  override def getId(ctx: ReadableRow): Long =
-    if (offsetIsForLongSlot)
-      ctx.getLongAt(nodeOffset)
-    else
-      ctx.getRefAt(nodeOffset).asInstanceOf[VirtualNodeValue].id()
+  private val getLongId: ToLongFunction[ReadableRow] =
+    if (offsetIsForLongSlot) (ctx: ReadableRow) => ctx.getLongAt(nodeOffset)
+    else SlotConfigurationUtils.makeGetPrimitiveNodeFunctionFor(nodeOffset)
+
+  override def getId(ctx: ReadableRow): Long = getLongId.applyAsLong(ctx)
 
   override def getCachedProperty(ctx: ReadableRow): Value = ctx.getCachedPropertyAt(cachedPropertyOffset)
 
