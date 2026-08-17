@@ -4283,6 +4283,20 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherPlannerTestSuite
       .build())
   }
 
+  test("should not fail with COUNT expression containing UNION when ORDER BY and pipelined runtime (GH-13917)") {
+    val planner = plannerBuilder()
+      .setExecutionModel(BatchedParallel(1, 2))
+      .build()
+    val query =
+      """WITH 'a' AS x
+        |ORDER BY x
+        |WHERE COUNT { RETURN 1 AS z UNION RETURN 2 AS z } >= 0
+        |RETURN collect(x) AS out""".stripMargin
+
+    val plan = planner.plan(query)
+    plan shouldNot equal(null)
+  }
+
   test("should get simple node COUNT {} from count store") {
     val planner = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = planner.plan("RETURN COUNT { (n) } > 10 AS result").stripProduceResults

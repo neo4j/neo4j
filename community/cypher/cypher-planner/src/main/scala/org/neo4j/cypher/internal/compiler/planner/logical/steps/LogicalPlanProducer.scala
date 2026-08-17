@@ -432,10 +432,18 @@ case class LogicalPlanProducer(
     ): LogicalPlan = {
       val solved = solveds.get(lhs.id)
       val plan = Apply(lhs, rhs)
+      // A CountIRExpression is a scalar subquery: for each row of the LHS it produces exactly
+      // one count value and never changes the row order of the LHS. Therefore, unlike other
+      // two-child plans, we can safely propagate the LHS provided order. This is necessary
+      // because the RHS may contain plans that are marked as invalidating provided order in
+      // some execution models (e.g. Union in batched models): such plans do not affect the
+      // LHS row order when they are contained in a scalar subquery, and treating them as
+      // order-invalidating here would produce an empty provided order that breaks
+      // leveraged-order bookkeeping (GH-13917).
       annotate(
         plan,
         solved,
-        providedOrderOfApply(lhs, rhs, plan, context.settings.executionModel, context.providedOrderFactory),
+        ProvidedOrder.Left,
         cachedPropertiesPerPlan.get(rhs.id),
         context
       )
@@ -4955,8 +4963,10 @@ case class LogicalPlanProducer(
   ): Unit = {
     if (AssertionRunner.ASSERTIONS_ENABLED) {
       (plan, providedOrder.orderOrigin) match {
-        case (rollUpApply: RollUpApply, _) if rollUpApply.right.readOnly =>
-          // special case for RollUpApply as it is assumed to not invalidate LHS order regardless of RHS plans
+        case (plan: LogicalBinaryPlan, _) if plan.right.readOnly =>
+          // A read-only RHS (e.g. RollUpApply, Apply for CountIRExpression, SemiApply variants)
+          // is a scalar subquery that never changes the row order of the LHS, regardless of
+          // which plans it contains (e.g. Union in batched execution models).
           ()
         case (plan: LogicalBinaryPlan, Some(ProvidedOrder.Left))
           if invalidatesProvidedOrderRecursive(plan.right, executionModel) =>
