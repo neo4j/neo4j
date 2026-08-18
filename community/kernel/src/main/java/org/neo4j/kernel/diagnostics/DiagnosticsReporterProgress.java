@@ -61,4 +61,28 @@ public interface DiagnosticsReporterProgress {
      * @apiNote Called by dispatching class. Should not be called from diagnostics sources.
      */
     void finished();
+
+    /**
+     * A no-op progress, useful when a report is generated outside of an interactive context (e.g. from within a
+     * running instance) and progress reporting is not wanted.
+     */
+    DiagnosticsReporterProgress EMPTY = new DiagnosticsReporterProgress() {
+        @Override
+        public void percentChanged(int percent) {}
+
+        @Override
+        public void info(String info) {}
+
+        @Override
+        public void error(String msg, Throwable throwable) {}
+
+        @Override
+        public void setTotalSteps(long steps) {}
+
+        @Override
+        public void started(long currentStepIndex, String target) {}
+
+        @Override
+        public void finished() {}
+    };
 }
