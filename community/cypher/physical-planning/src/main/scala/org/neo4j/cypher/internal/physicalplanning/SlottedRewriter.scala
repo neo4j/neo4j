@@ -686,6 +686,13 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
           NullCheckReferenceProperty(offset, propExpression)
         else
           propExpression
+
+      case None =>
+        // The entity is not available in the slot configuration for this plan.
+        // This can happen when a cached property references a correlated variable
+        // that is not part of the current scope, e.g. inside a nested COLLECT.
+        // Return the original expression unchanged to avoid a NoSuchElementException.
+        prop
     }
   }
 
