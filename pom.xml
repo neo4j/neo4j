@@ -83,7 +83,7 @@
     <apache.directory.server.version>2.0.0.AM27</apache.directory.server.version>
     <asm.version>9.10.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
-    <awssdk.version>2.47.3</awssdk.version>
+    <awssdk.version>2.54.0</awssdk.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
     <build-resources.version>2026.07.1</build-resources.version>
