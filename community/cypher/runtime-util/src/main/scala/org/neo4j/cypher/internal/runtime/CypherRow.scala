@@ -36,6 +36,12 @@ import org.neo4j.values.storable.ValueRepresentation
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
+import org.neo4j.values.virtual.VirtualValue
+import org.neo4j.values.virtual.VirtualValueGroup
+import org.neo4j.values.Comparison
+import org.neo4j.values.TernaryComparator
+
+import java.util.Comparator
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -52,17 +58,23 @@ object CypherRow {
   def apply(m: mutable.Map[String, AnyValue] = MutableMaps.empty): MapCypherRow = new MapCypherRow(m, null)
 }
 
-case class RuntimeMetadataValue(value: Measurable) extends AnyValue {
+case class RuntimeMetadataValue(value: Measurable) extends VirtualValue {
   override def writeTo[E <: Exception](writer: AnyValueWriter[E]): Unit = throw new UnsupportedOperationException()
   override def ternaryEquals(other: AnyValue): Equality = throw new UnsupportedOperationException()
   override def map[T](mapper: ValueMapper[T]): T = throw new UnsupportedOperationException()
   override def valueRepresentation(): ValueRepresentation = ValueRepresentation.UNKNOWN
-  override protected def computeHash(): Int = MurmurHash3.productHash(this)
+  override protected def computeHashToMemoize(): Int = MurmurHash3.productHash(this)
 
-  override protected def equalTo(other: Any): Boolean = other match {
+  override def equals(other: VirtualValue): Boolean = other match {
     case RuntimeMetadataValue(otherValue) => value == otherValue
     case _                                => false
   }
+  override def valueGroup(): VirtualValueGroup = VirtualValueGroup.ERROR
+  override def unsafeCompareTo(other: VirtualValue, comparator: Comparator[AnyValue]): Int = 0
+  override def unsafeTernaryCompareTo(
+    other: VirtualValue,
+    comparator: TernaryComparator[AnyValue]
+  ): Comparison = Comparison.UNDEFINED
   override def getTypeName: String = "RuntimeMetadataValue"
   override def estimatedHeapUsage(): Long = RuntimeMetadataValue.SHALLOW_SIZE + value.estimatedHeapUsage()
 }
