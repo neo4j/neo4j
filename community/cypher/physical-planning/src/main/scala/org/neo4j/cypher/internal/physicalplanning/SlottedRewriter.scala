@@ -611,8 +611,8 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
     val PropertyKeyName(propKey) = pkn
     val entityType = prop.entityType
     val originalEntityName = prop.originalEntityName
-    slotConfiguration(prop.entityName) match {
-      case LongSlot(offset, nullable, cypherType)
+    slotConfiguration.get(prop.entityName) match {
+      case Some(LongSlot(offset, nullable, cypherType))
         if (cypherType == CTNode && entityType == NODE_TYPE) || (cypherType == CTRelationship && entityType == RELATIONSHIP_TYPE) =>
         val propExpression = tokenContext.getOptPropertyKeyId(propKey) match {
           case Some(propId) =>
@@ -646,7 +646,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
         // which is why we do not need an explicit null-check here when the slot is nullable
         propExpression
 
-      case slot @ LongSlot(_, _, _) =>
+      case Some(slot @ LongSlot(_, _, _)) =>
         throw InternalException.internalError(
           this.getClass.getSimpleName,
           s"Unexpected type on slot '$slot' for cached property $prop"
@@ -655,7 +655,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
       // We can skip checking the type of the refslot. We will only get cached properties, if semantic analysis determined that an expression is
       // a node or a relationship. We loose this information for RefSlots for some expressions, otherwise we would have allocated long slots
       // in the first place.
-      case RefSlot(offset, nullable, _) =>
+      case Some(RefSlot(offset, nullable, _)) =>
         val propExpression = tokenContext.getOptPropertyKeyId(propKey) match {
           case Some(propId) =>
             ast.SlottedCachedPropertyWithPropertyToken(
