@@ -80,7 +80,9 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
   ): Set[LogicalPlan] = {
     queryGraph.searchClause match {
       case Some(search @ VectorSearchClause(resultVariable, indexName, embedding, where, limit, scoreVariable))
-        if solvableGivenSymbols(search, queryGraph.argumentIds) =>
+        if solvableGivenSymbols(search, queryGraph.argumentIds)
+          && (queryGraph.patternNodes.contains(resultVariable)
+              || queryGraph.patternRelationships.exists(_.variable == resultVariable)) =>
 
         if (queryGraph.patternNodes.contains(resultVariable)) {
           context.staticComponents.planContext.nodeVectorIndexByName(indexName) match {
