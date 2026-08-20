@@ -77,7 +77,6 @@ object SelectionPlanner {
             InterestingOrderConfig.empty,
             context
           )
-          assert(vectorLeaves.size == 1, "Expected exactly one vector search leaf")
           val planWithSearch = vectorLeaves.headOption.fold(plan) {
             rhs => context.staticComponents.logicalPlanProducer.planApply(plan, rhs, context)
           }
