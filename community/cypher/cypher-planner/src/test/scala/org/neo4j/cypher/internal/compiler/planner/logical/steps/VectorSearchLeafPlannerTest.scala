@@ -418,4 +418,27 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         indexName = "indexName"
       )
   }
+
+  test("returns an empty set when the search binding variable is not in the query graph") {
+    val bindingVariable = v"movie"
+    new givenConfig {
+      nodeVectorIndexOn("moviePlots", Seq("Movie"), "plot")
+    } withLogicalPlanningContext { (_, context) =>
+      val vectorSearchClause = VectorSearchClause(
+        resultVariable = bindingVariable,
+        indexName = "moviePlots",
+        embedding = embedding,
+        where = None,
+        limit = limit,
+        scoreVariable = None
+      )
+      val qg = QueryGraph(
+        patternNodes = Set.empty,
+        patternRelationships = Set.empty,
+        argumentIds = Set(bindingVariable),
+        searchClause = Some(vectorSearchClause)
+      )
+      VectorSearchLeafPlanner.apply(qg, InterestingOrderConfig.empty, context) should be(empty)
+    }
+  }
 }
