@@ -54,10 +54,19 @@ object Ands {
       True()(InputPosition.NONE)
     } else {
       val distinct = ListSet.from(exprs)
-      if (distinct.size == 1)
-        distinct.head
-      else
-        Ands(distinct)(distinct.head.position)
+      // Short-circuit: False in any conjunction makes the whole thing False
+      if (distinct.exists(_.isInstanceOf[False])) {
+        False()(distinct.head.position.zeroLength)
+      } else {
+        // Remove any True literals; if none remain, return True
+        val nonTrue = distinct.filterNot(_.isInstanceOf[True])
+        if (nonTrue.isEmpty)
+          True()(distinct.head.position.zeroLength)
+        else if (nonTrue.size == 1)
+          nonTrue.head
+        else
+          Ands(nonTrue)(nonTrue.head.position)
+      }
     }
 
   def apply(exprs: IterableOnce[Expression])(position: InputPosition): Ands = {

@@ -49,9 +49,6 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.topDown
 
 case class simplifyPredicates(semanticState: SemanticState, cancellationChecker: CancellationChecker) extends Rewriter {
-  private val T = True()(null)
-  private val F = False()(null)
-
   private val step: Rewriter = Rewriter.lift { case e: Expression => computeReplacement(e) }
 
   private val instance = fixedPoint(cancellationChecker)(topDown(step))
@@ -76,20 +73,20 @@ case class simplifyPredicates(semanticState: SemanticState, cancellationChecker:
     case Ands(exps) if exps.isEmpty =>
       throw new IllegalStateException("Found an instance of Ands with empty expressions")
     case Ors(exps) if exps.isEmpty => throw new IllegalStateException("Found an instance of Ors with empty expressions")
-    case p @ Ands(exps) if exps.contains(F) => False()(p.position.zeroLength)
-    case p @ Ors(exps) if exps.contains(T)  => True()(p.position.zeroLength)
+    case p @ Ands(exps) if exps.exists(_.isInstanceOf[False]) => False()(p.position.zeroLength)
+    case p @ Ors(exps) if exps.exists(_.isInstanceOf[True])  => True()(p.position.zeroLength)
     case p @ Ands(exps) if exps.size == 1   => simplifyToInnerExpression(p, exps.head)
     case p @ Ors(exps) if exps.size == 1    => simplifyToInnerExpression(p, exps.head)
-    case p @ Ands(exps) if exps.contains(T) =>
-      val nonTrue = exps.filterNot(T == _)
+    case p @ Ands(exps) if exps.exists(_.isInstanceOf[True]) =>
+      val nonTrue = exps.filterNot(_.isInstanceOf[True])
       if (nonTrue.isEmpty)
         True()(p.position.zeroLength)
       else if (nonTrue.size == 1)
         simplifyToInnerExpression(p, nonTrue.head)
       else
         Ands(nonTrue)(p.position)
-    case p @ Ors(exps) if exps.contains(F) =>
-      val nonFalse = exps.filterNot(F == _)
+    case p @ Ors(exps) if exps.exists(_.isInstanceOf[False]) =>
+      val nonFalse = exps.filterNot(_.isInstanceOf[False])
       if (nonFalse.isEmpty)
         False()(p.position.zeroLength)
       else if (nonFalse.size == 1)
