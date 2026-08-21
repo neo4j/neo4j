@@ -1337,6 +1337,30 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
     )
   }
 
+  test("rewrites * in importing with in NEXT query") {
+    assertRewritten(
+      """WITH 1 AS p0
+        |RETURN p0
+        |
+        |NEXT
+        |
+        |CALL {
+        |  WITH *
+        |  MATCH (n)
+        |  RETURN p0 AS p1
+        |}
+        |RETURN p1""".stripMargin,
+      """WITH 1 AS p0
+        |WITH p0 AS p0
+        |CALL {
+        |  WITH p0 AS p0
+        |  MATCH (n)
+        |  RETURN p0 AS p1
+        |}
+        |RETURN p1 AS p1""".stripMargin
+    )
+  }
+
   test("rewrites * in subquery") {
     assertRewritten(
       "match (n) call (*) { return n as res} return res",
