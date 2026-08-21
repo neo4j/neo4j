@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
+import org.neo4j.cypher.internal.expressions.AllReduceSingletonPredicate
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.rendering.QueryRenderer
 
@@ -130,5 +131,52 @@ class AllReduceFallbackTest extends CypherPlannerTestSuite with AstConstructionT
 
     // Test that allReduce gets correctly translated to reduce with CASE and ListLiteral
     AllReduceFallback(new AnonymousVariableNameGenerator()).rewriteAllReduce(allReducePred) shouldBe allReduceFallback
+  }
+
+  test("allReduceSingleton fallback to predicate with reductionStep inlined") {
+    // AllReduceSingletonPredicate(acc, acc + step.x, acc < 11)
+    // This simulates a leftover singleton that wasn't rewritten by AllReduceSingletonRewriter
+    // (e.g. inside an EXISTS subquery in a CASE property value).
+    // Fallback semantics: single-step reduction - predicate evaluated on the next accumulator value.
+    // allReduceSingleton(acc, acc + step.x, acc < 11)  ->  (acc + step.x) < 11
+
+    // Case 1: simple predicate
+    val singleton1 = AllReduceSingletonPredicate(
+      accumulator = v"acc",
+      reductionStep = add(v"acc", prop(v"step", "x")),
+      predicate = lessThan(v"acc", literalInt(11))
+    )(pos)
+
+    val fallback1 = new AllReduceFallback(new AnonymousVariableNameGenerator())
+    fallback1.apply(singleton1) shouldBe lessThan(add(v"acc", prop(v"step", "x")), literalInt(11))
+
+    // Case 2: predicate with multiple accumulator occurrences -> each gets the reductionStep inlined
+    val singleton2 = AllReduceSingletonPredicate(
+      accumulator = v"acc",
+      reductionStep = add(v"acc", literalInt(1)),
+      predicate = ands(lessThan(v"acc", literalInt(10)), greaterThan(v"acc", literalInt(0)))
+    )(pos)
+
+    val fallback2 = new AllReduceFallback(new AnonymousVariableNameGenerator())
+    fallback2.apply(singleton2) shouldBe ands(
+      lessThan(add(v"acc", literalInt(1)), literalInt(10)),
+      greaterThan(add(v"acc", literalInt(1)), literalInt(0))
+    )
+
+    // Case 3: reductionStep that references the accumulator (chained state update)
+    val singleton3 = AllReduceSingletonPredicate(
+      accumulator = v"acc",
+      reductionStep = add(v"acc", multiply(v"acc", literalInt(2))),
+      predicate = notEquals(v"acc", literalInt(0))
+    )(pos)
+
+    val fallback3 = new AllReduceFallback(new AnonymousVariableNameGenerator())
+    fallback3.apply(singleton3) shouldBe notEquals(
+      add(v"acc", multiply(v"acc", literalInt(2))),
+      literalInt(0)
+    )
+
+    // The result must never be an AllReduceSingletonPredicate (would still crash ExpressionConverters)
+    fallback1.apply(singleton1) should not be an[AllReduceSingletonPredicate]
   }
 }
