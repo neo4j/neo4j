@@ -30,6 +30,8 @@ import org.neo4j.cypher.internal.parser.lexer.CypherToken
 import org.neo4j.cypher.internal.parser.lexer.UnicodeEscapeReplacementReader
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
+import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.internal.helpers.Exceptions
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -44,38 +46,47 @@ trait AntlrAstParser[P <: AstBuildingAntlrParser] extends AstParser {
   protected def errorStrategyConf: CypherErrorStrategy.Conf
 
   final def parse[AST <: AnyRef](f: P => AstRuleCtx): AST = {
-    val listener = new SyntaxErrorListener(exceptionFactory)
-    val parser = newParser(preparsedTokens(listener, fullTokens = false))
+    try {
+      val listener = new SyntaxErrorListener(exceptionFactory)
+      val parser = newParser(preparsedTokens(listener, fullTokens = false))
 
-    // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
-    // See https://github.com/antlr/antlr4/blob/dev/doc/faq/general.md#why-is-my-expression-parser-slow
-    parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
+      // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
+      // See https://github.com/antlr/antlr4/blob/dev/doc/faq/general.md#why-is-my-expression-parser-slow
+      parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
 
-    // Use bail error strategy to fail fast and avoid recovery attempts
-    parser.setErrorHandler(new BailErrorStrategy)
+      // Use bail error strategy to fail fast and avoid recovery attempts
+      parser.setErrorHandler(new BailErrorStrategy)
 
-    val cst =
-      try {
-        cstIfNoExceptions(doParse(parser, listener, f))
-      } catch {
-        case NonFatal(_) =>
-          // The fast route failed, now try again with full error handling and prediction mode
-
-          // Reset parser and token stream
-          // We do not reuse the TokenStream because we need `fullTokens = true` for better error handling
-          parser.setInputStream(preparsedTokens(listener, fullTokens = true))
-
-          // Slower but correct prediction.
-          parser.getInterpreter.setPredictionMode(PredictionMode.LL)
-
-          // CypherErrorStrategy allows us to get the correct error messages in case we still fail
-          parser.setErrorHandler(new CypherErrorStrategy(errorStrategyConf))
-          parser.addErrorListener(listener)
-
+      val cst =
+        try {
           cstIfNoExceptions(doParse(parser, listener, f))
-      }
+        } catch {
+          case NonFatal(_) =>
+            // The fast route failed, now try again with full error handling and prediction mode
 
-    cst.ast[AST]
+            // Reset parser and token stream
+            // We do not reuse the TokenStream because we need `fullTokens = true` for better error handling
+            parser.setInputStream(preparsedTokens(listener, fullTokens = true))
+
+            // Slower but correct prediction.
+            parser.getInterpreter.setPredictionMode(PredictionMode.LL)
+
+            // CypherErrorStrategy allows us to get the correct error messages in case we still fail
+            parser.setErrorHandler(new CypherErrorStrategy(errorStrategyConf))
+            parser.addErrorListener(listener)
+
+            cstIfNoExceptions(doParse(parser, listener, f))
+        }
+
+      cst.ast[AST]
+    } catch {
+      case _: StackOverflowError =>
+        throw exceptionFactory.syntaxException(
+          ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001).build(),
+          "The query is too deeply nested. Try simplifying the expression or splitting it into multiple parts.",
+          InputPosition.NONE
+        )
+    }
   }
 
   final def parseCst(f: P => AstRuleCtx): ParsingResult = {
