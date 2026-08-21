@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.expressions.AllReducePredicate
+import org.neo4j.cypher.internal.expressions.AllReduceSingletonPredicate
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -162,6 +163,17 @@ case class AllReduceFallback(
 
   override val innerRewriter: Rewriter = Rewriter.lift {
     case allReduce: AllReducePredicate => rewriteAllReduce(allReduce)
+    case allReduceSingleton: AllReduceSingletonPredicate =>
+      // Fallback for leftover AllReduceSingletonPredicate that wasn't rewritten by AllReduceSingletonRewriter.
+      // This can happen when the predicate ends up in a nested expression (e.g. inside an EXISTS subquery
+      // used as a CASE property value) where the LogicalPlan-only traversal of AllReduceSingletonRewriter
+      // cannot reach it.
+      // Semantics: single-step reduction - compute the next accumulator value from reductionStep
+      // and check the predicate on it.
+      allReduceSingleton.predicate.replaceAllOccurrencesBy(
+        allReduceSingleton.accumulator,
+        allReduceSingleton.reductionStep
+      )
   }
 
   private val instance: Rewriter = bottomUp(innerRewriter)
