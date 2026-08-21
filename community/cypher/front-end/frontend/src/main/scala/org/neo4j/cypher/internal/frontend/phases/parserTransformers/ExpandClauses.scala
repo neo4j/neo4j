@@ -53,11 +53,9 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ast.semantics.scoping.Result
 import org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState
-import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
 import org.neo4j.cypher.internal.expressions.CaseExpression
-import org.neo4j.cypher.internal.expressions.ContainerIndex
-import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.ContainerIndeximport org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -289,15 +287,9 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
         else withIncomingMappingAndContext(anonymizeResultMapping, SemanticContext(LastInNextCtx, layout.resultMapping))
 
       private def importingWithFor(sq: SingleQuery): Option[PositionedNode[With]] =
-        if (
-          scopeState.recordedScopes.get(Ref(sq)).exists {
-            case StatementScope(_, _, _, _, _, _, _, true) => true
-            case _                                         => false
-          }
-        )
+        if (scopeState.scopeOfOpt(sq).exists(_.inImportingWith))
           sq.partitionedClauses.importingWith.map(PositionedNode(_))
         else None
-
       def inUnionDistinctRefByQuery(ast: ASTNode): Layout =
         copy(
           semanticContext = semanticContext.copy(kind = UnionDistinctCtx),
