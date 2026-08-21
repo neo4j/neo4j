@@ -215,10 +215,21 @@ private class DefaultExpressionStringifier(
   }
 
   override def apply(ast: Expression, shouldBacktickEmpty: Boolean): String =
-    withShouldBacktickEmpty(shouldBacktickEmpty)(stringify(ast)._1)
+    withShouldBacktickEmpty(shouldBacktickEmpty)(safeStringify(ast))
 
   override def apply(ast: Expression): String =
-    stringify(ast)._1
+    safeStringify(ast)
+
+  /**
+   * Stringifies the given expression, guarding against StackOverflowError for extremely deeply
+   * nested expressions. Returns a placeholder instead of crashing the error-handling path.
+   */
+  private def safeStringify(ast: Expression): String =
+    try {
+      stringify(ast)._1
+    } catch {
+      case _: StackOverflowError => "<...>"
+    }
 
   override def apply(s: SymbolicName): String = s match {
     case CallableName(namespace, name) =>
