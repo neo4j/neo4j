@@ -308,6 +308,38 @@ class ConditionalQueryWhenSemanticAnalysisTest
     run(query).hasNoErrors
   }
 
+  test("Output type of a column is the union of the types returned by all branches") {
+    val query =
+      """UNWIND [30, 20] AS age
+        |RETURN age
+        |NEXT
+        |WHEN age >= 25 THEN
+        |  RETURN {v: age} AS a
+        |ELSE
+        |  RETURN [age] AS a
+        |NEXT
+        |FILTER a IS :: LIST<INTEGER>
+        |RETURN size(a) AS s
+        |""".stripMargin
+    run(query).hasNoErrors
+  }
+
+  test("Output type of a column is the union of the types returned by all branches, reversed branch order") {
+    val query =
+      """UNWIND [30, 20] AS age
+        |RETURN age
+        |NEXT
+        |WHEN age >= 25 THEN
+        |  RETURN [age] AS a
+        |ELSE
+        |  RETURN {v: age} AS a
+        |NEXT
+        |FILTER a IS :: LIST<INTEGER>
+        |RETURN size(a) AS s
+        |""".stripMargin
+    run(query).hasNoErrors
+  }
+
   test("Should import all variables from outer scope in subquery expression") {
     val query =
       """

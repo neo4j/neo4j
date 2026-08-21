@@ -1607,16 +1607,31 @@ case class ConditionalQueryWhen(
   }
 
   private def defineReturnScope: SemanticCheck = (state: SemanticState) => {
+    val branchScopes = allBranches.map { branch =>
+      branch.query.finalScope(state.scope(branch.query).getOrElse(Scope.empty))
+    }
+    val scope = branchScopes.tail.foldLeft(branchScopes.head) { (acc, branchScope) =>
+      widenTypesOfCommonSymbols(acc, branchScope)
+    }
     val result = SemanticCheckResult.success(state.newChildScope)
-    val headQuery = branches.head.query
-    val headScope = state.scope(headQuery)
-    val scope = headQuery.finalScope(headScope.getOrElse(Scope.empty))
     SemanticCheckResult(result.state.importValuesFromScope(scope).popScope, Seq.empty)
   }
 
+  private def widenTypesOfCommonSymbols(scope: Scope, otherScope: Scope): Scope =
+    scope.symbolTable.foldLeft(scope) { case (acc, (name, symbol)) =>
+      otherScope.symbol(name).fold(acc) { otherSymbol =>
+        acc.updateVariable(
+          name,
+          symbol.types.union(otherSymbol.types),
+          symbol.definition,
+          symbol.uses,
+          symbol.unionSymbol
+        )
+      }
+    }
+
   override def checkImportingWith(optional: Boolean): SemanticCheck =
     allBranches.foldSemanticCheck(_.query.checkImportingWith(optional))
-
   override def invalidImportingWith: Seq[SemanticError] = allBranches.flatMap(_.query.invalidImportingWith)
 
   override def isCorrelated: Boolean =
