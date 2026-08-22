@@ -48,7 +48,11 @@ case class SelectOrSemiApplySlottedPipe(
         (predicate.apply(row, state) eq Values.TRUE) || {
           val rhsState = state.withInitialContext(row)
           val innerResult = rhs.createResults(rhsState)
-          val result = if (negated) !innerResult.hasNext else innerResult.hasNext
+          val hasNext = innerResult.hasNext
+          if (hasNext) {
+            innerResult.next()
+          }
+          val result = if (negated) !hasNext else hasNext
           innerResult.close()
           result
         }
