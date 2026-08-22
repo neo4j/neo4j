@@ -45,7 +45,11 @@ case class LetSelectOrSemiApplyPipe(
         val holds = (predicateResult eq IsTrue) || {
           val innerState = state.withInitialContext(outerContext)
           val innerResults = inner.createResults(innerState)
-          val result = if (negated) !innerResults.hasNext else innerResults.hasNext
+          val hasNext = innerResults.hasNext
+          if (hasNext) {
+            innerResults.next()
+          }
+          val result = if (negated) !hasNext else hasNext
           innerResults.close()
           result
         }
