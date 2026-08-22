@@ -35,7 +35,11 @@ case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negat
       outerContext =>
         val innerState = state.withInitialContext(outerContext)
         val innerResults = inner.createResults(innerState)
-        val holds = if (negated) !innerResults.hasNext else innerResults.hasNext
+        val hasNext = innerResults.hasNext
+        if (hasNext) {
+          innerResults.next()
+        }
+        val holds = if (negated) !hasNext else hasNext
         innerResults.close()
         outerContext.set(letVarName, Values.booleanValue(holds))
         outerContext

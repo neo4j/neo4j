@@ -35,6 +35,12 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_ID)
         val innerState = state.withInitialContext(outerContext)
         val innerResults = inner.createResults(innerState)
         val result = innerResults.hasNext
+        if (result) {
+          // Pull the first row so that projection expressions in the subquery are actually
+          // evaluated. Without this, an EXISTS subquery whose LHS is a projection (WITH/RETURN)
+          // would silently skip evaluating the projection expressions (see GH-13938).
+          innerResults.next()
+        }
         innerResults.close()
         result
     }
@@ -52,7 +58,11 @@ case class AntiSemiApplyPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_
       outerContext =>
         val innerState = state.withInitialContext(outerContext)
         val innerResults = inner.createResults(innerState)
-        val result = !innerResults.hasNext
+        val hasNext = innerResults.hasNext
+        if (hasNext) {
+          innerResults.next()
+        }
+        val result = !hasNext
         innerResults.close()
         result
     }
