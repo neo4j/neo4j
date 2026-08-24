@@ -72,8 +72,8 @@ public class QueryResourceTxTimeoutIT {
                 .setConfig(BoltConnector.enabled, true)
                 .setConfig(BoltConnectorInternalSettings.enable_local_connector, true)
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
-                .setConfig(ServerSettings.queryapi_transaction_timeout, Duration.ofSeconds(5))
-                .setConfig(GraphDatabaseSettings.transaction_timeout, Duration.ofSeconds(10))
+                .setConfig(ServerSettings.queryapi_transaction_timeout, Duration.ofSeconds(8))
+                .setConfig(GraphDatabaseSettings.transaction_timeout, Duration.ofSeconds(15))
                 .impermanent()
                 .build();
         resolveDependency(dbms, GlobalProcedures.class).register(sleepProcedure());
@@ -107,7 +107,7 @@ public class QueryResourceTxTimeoutIT {
         assertThat(res).hasTransaction();
 
         // timeout transaction
-        Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+        Thread.sleep(TimeUnit.SECONDS.toMillis(13));
 
         var timeout = testClient.commitTx(res.body().txId());
         assertThat(timeout).wasNotFound();
@@ -122,7 +122,7 @@ public class QueryResourceTxTimeoutIT {
         assertThat(res).hasTransaction();
 
         // timeout transaction
-        Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+        Thread.sleep(TimeUnit.SECONDS.toMillis(13));
 
         var timeout = testClient.runInTx(
                 QueryRequest.newBuilder().statement("RETURN 1").build(),
