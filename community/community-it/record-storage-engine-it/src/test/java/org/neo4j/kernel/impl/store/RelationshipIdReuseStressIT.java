@@ -43,12 +43,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
-import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -220,8 +220,8 @@ class RelationshipIdReuseStressIT {
                             throw new IllegalStateException("Unsupported direction value:" + direction);
                     }
                     transaction.commit();
-                } catch (DeadlockDetectedException ignored) {
-                    // deadlocks ignored
+                } catch (TransientTransactionFailureException ignored) {
+                    // transient errors ignored
                 }
                 createdRelationships += newRelationships;
                 long millisToWait = ThreadLocalRandom.current().nextLong(10, 30);
@@ -279,6 +279,8 @@ class RelationshipIdReuseStressIT {
                     relationshipSize =
                             Iterables.asList(randomBandNode.getRelationships()).size();
                     transaction.commit();
+                } catch (TransientTransactionFailureException ignored) {
+                    // transient errors ignored
                 }
                 long millisToWait = ThreadLocalRandom.current().nextLong(10, 25);
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(millisToWait));
@@ -304,6 +306,8 @@ class RelationshipIdReuseStressIT {
                     relationshipSize = Iterables.asList(randomBandNode.getRelationshipTypes())
                             .size();
                     transaction.commit();
+                } catch (TransientTransactionFailureException ignored) {
+                    // transient errors ignored
                 }
                 long millisToWait = ThreadLocalRandom.current().nextLong(10, 25);
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(millisToWait));
@@ -336,8 +340,8 @@ class RelationshipIdReuseStressIT {
                     }
                     transaction.commit();
                     removalCount++;
-                } catch (DeadlockDetectedException | NotFoundException ignored) {
-                    // ignore deadlocks
+                } catch (TransientTransactionFailureException | NotFoundException ignored) {
+                    // transient errors ignored
                 }
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(15));
             }
