@@ -45,7 +45,6 @@ import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.StringEscapeUtils;
 import org.neo4j.configuration.helpers.DatabaseNameValidator;
 import org.neo4j.configuration.helpers.DurationRange;
 import org.neo4j.configuration.helpers.GlobbingPattern;
@@ -738,7 +737,7 @@ public final class SettingValueParsers {
     public static final SettingValueParser<Path> PATH = new SettingValueParser<>() {
         @Override
         public Path parse(String value) {
-            return Path.of(fixSeparatorsInPath(StringEscapeUtils.escapeJava(value)))
+            return Path.of(fixSeparatorsInPath(escapePathControlCharacters(value)))
                     .normalize();
         }
 
@@ -956,5 +955,13 @@ public final class SettingValueParsers {
             }
         }
         return firstNonDigitIndex;
+    }
+
+    private static String escapePathControlCharacters(String value) {
+        return value.replace("\b", "\\b")
+                .replace("\t", "\\t")
+                .replace("\n", "\\n")
+                .replace("\f", "\\f")
+                .replace("\r", "\\r");
     }
 }
