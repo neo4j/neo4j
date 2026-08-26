@@ -378,7 +378,7 @@ public final class CommunityTopologyGraphDbmsModelUtil {
         }
     }
 
-    static <T> Optional<T> ignoreConcurrentDeletes(Supplier<Optional<T>> operation) {
+    public static <T> Optional<T> ignoreConcurrentDeletes(Supplier<Optional<T>> operation) {
         try {
             return operation.get();
         } catch (NotFoundException e) {
