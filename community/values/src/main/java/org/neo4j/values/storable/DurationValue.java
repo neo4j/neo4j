@@ -510,7 +510,15 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     private static long optLong(String value) {
-        return value == null ? 0 : parseLong(value);
+        if (value == null) {
+            return 0;
+        }
+        try {
+            return parseLong(value);
+        } catch (NumberFormatException e) {
+            throw InvalidArgumentException.invalidArgument(
+                    String.format("Invalid value for duration, value is out of range: %s", value), e);
+        }
     }
 
     static DurationValue durationBetween(Temporal from, Temporal to) {
