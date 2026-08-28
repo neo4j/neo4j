@@ -907,6 +907,15 @@ class DurationValueTest {
     }
 
     @Test
+    void shouldThrowOnHoursOverflowWithFractionalMinutes() {
+        long hours = 2562047788015216L; // ceil(2^63 / 3600): hours * 3600 overflows long
+        assertThatThrownBy(() -> DurationValue.parse("PT" + hours + "H1.5M"))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessageContaining("Invalid value for duration")
+                .hasMessageContaining("hours=" + hours);
+    }
+
+    @Test
     void shouldParseMaxNumberOfSeconds() {
         DurationValue value = DurationValue.parse("PT" + Long.MAX_VALUE + ".999999999S");
         assertEquals(MAX_VALUE, value);
