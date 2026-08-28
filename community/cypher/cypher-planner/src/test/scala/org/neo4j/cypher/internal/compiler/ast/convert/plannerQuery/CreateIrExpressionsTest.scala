@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -776,6 +777,48 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
         |  RETURN n AS n
         |}""".stripMargin
     )
+  }
+
+  test("should keep projection expressions in simple COUNT subquery so runtime errors propagate") {
+    // GH-13943: `RETURN COUNT { WITH 0 AS z RETURN 1 / z AS boom }` must evaluate `1 / z`.
+    // The simple-case rewrite overrides the final horizon with count(*) which would silently
+    // discard the `1 / z` projection and swallow the division-by-zero runtime error.
+    val z = v"z"
+    val boom = v"boom"
+    val simpleMatchQuery = singleQuery(
+      with_(aliasedReturnItem(literalInt(0), "z")),
+      return_(aliasedReturnItem(divide(literalInt(1), varFor("z")), "boom"))
+    )
+
+    val esc = CountExpression(simpleMatchQuery)(pos, Some(Set(z, boom)), Some(Set.empty))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariable = varFor(nameGenerator.nextName)
+
+    val rewritten = rewrite(esc)
+    val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
+
+    def allHorizons(pq: SinglePlannerQuery): List[QueryHorizon] = pq match {
+      case rq: RegularSinglePlannerQuery => rq.horizon :: rq.tail.toList.flatMap(allHorizons)
+      case uq: UnionQuery                => allHorizons(uq.lhs.asSinglePlannerQuery) ++ allHorizons(uq.rhs)
+    }
+
+    val horizons = allHorizons(countIRExpression.query.asSinglePlannerQuery)
+
+    // The final projection expression (1 / z) must be kept in the rewritten query so that the
+    // division-by-zero runtime error is propagated instead of silently counting the row.
+    val divideProjectionKept = horizons.exists {
+      case rp: RegularQueryProjection => rp.projections.values.exists(_.isInstanceOf[Divide])
+      case _                          => false
+    }
+    divideProjectionKept shouldBe true
+
+    // The count aggregation must still be present (as a tail) so the subquery returns a count.
+    val aggregationPresent = horizons.exists {
+      case ap: AggregatingQueryProjection => ap.aggregationExpressions.contains(countVariable)
+      case _                              => false
+    }
+    aggregationPresent shouldBe true
   }
 
   test("Rewrites CountExpression with ORDER BY") {

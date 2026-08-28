@@ -108,7 +108,12 @@ case class CreateIrExpressions(
           case query: RegularSinglePlannerQuery =>
             query.tailOrSelf.horizon match {
               // Simply some Return items but no SKIP, LIMIT, WHERE, DISTINCT, aggregation, etc.
-              case RegularQueryProjection(_, QueryPagination(None, None), Selections(SetExtractor()), _, _) =>
+              // Only if all returned projections are pure variable references (e.g. RETURN n) can we
+              // simply override the final horizon with our aggregation. If a projection contains an
+              // actual expression (e.g. RETURN 1 / z), it may raise a runtime error that must
+              // propagate (GH-13943), so we keep the projection and add the aggregation in a tail.
+              case RegularQueryProjection(projections, QueryPagination(None, None), Selections(SetExtractor()), _, _)
+                  if projections.values.forall(_.isInstanceOf[LogicalVariable]) =>
                 // We can simply override the final horizon with our aggregation.
                 plannerQuery.asSinglePlannerQuery
                   .updateTailOrSelf(_.withHorizon(
