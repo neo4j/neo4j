@@ -449,7 +449,13 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 }
                 return approximate(months, days, parseFractional(h, pos) * 3600, 0, sign);
             }
-            long secondsFromHours = optLong(h) * 3600;
+            long hoursLong = optLong(h);
+            long secondsFromHours;
+            try {
+                secondsFromHours = Math.multiplyExact(hoursLong, 3600L);
+            } catch (java.lang.ArithmeticException e) {
+                throw invalidDuration(months, days, hoursLong, 0, 0, 0, e);
+            }
             if ((pos = fractionPoint(m)) >= 0) {
                 if (s != null) {
                     return null;
