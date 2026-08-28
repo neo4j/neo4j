@@ -449,7 +449,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 }
                 return approximate(months, days, parseFractional(h, pos) * 3600, 0, sign);
             }
-            long secondsFromHours = optLong(h) * 3600;
+            long secondsFromHours = safeMultiply(optLong(h), 3600, "hours=%d", optLong(h));
             if ((pos = fractionPoint(m)) >= 0) {
                 if (s != null) {
                     return null;

@@ -242,6 +242,16 @@ class DurationValueTest {
     }
 
     @Test
+    void shouldRejectFractionalMinutesWhenHoursOverflow() {
+        // 2562047788015216 hours * 3600 overflows long; the fractional-minutes path used to
+        // silently wrap to a negative duration. It must now fail with the same clean
+        // overflow error as the non-fractional path (GH #13950).
+        assertThrows(InvalidArgumentException.class, () -> parse("PT2562047788015216H1.5M"));
+        // Values just below the threshold still parse without wraparound.
+        parse("PT2562047788015215H1.5M");
+    }
+
+    @Test
     void shouldParseNegativeDuration() {
         assertEquals(duration(-12, 0, 0, 0), parse("-P1Y"));
         assertEquals(duration(12, 0, 0, 0), parse("-P-1Y"));
