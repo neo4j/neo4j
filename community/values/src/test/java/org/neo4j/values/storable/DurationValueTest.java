@@ -907,6 +907,14 @@ class DurationValueTest {
     }
 
     @Test
+    void shouldThrowWhenDurationComponentExceedsLongRange() {
+        assertThatThrownBy(() -> DurationValue.parse("P9223372036854775808M"))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessageContaining("value is out of range")
+                .hasMessageContaining("9223372036854775808");
+    }
+
+    @Test
     void shouldParseMaxNumberOfSeconds() {
         DurationValue value = DurationValue.parse("PT" + Long.MAX_VALUE + ".999999999S");
         assertEquals(MAX_VALUE, value);
