@@ -137,6 +137,21 @@ class InCacheTest {
     }
 
     @Test
+    void shouldPreserveUndefinedEqualityForCachedLists() {
+        InCache cache = new InCache();
+        ListValue list = list(list(intValue(1), NO_VALUE));
+        for (int i = 0; i < 127; i++) {
+            list = list.append(intValue(i));
+        }
+
+        ListValue value = list(intValue(1), NO_VALUE);
+
+        assertEquals(NO_VALUE, cache.check(value, list, EmptyMemoryTracker.INSTANCE));
+        assertEquals(NO_VALUE, cache.check(value, list, EmptyMemoryTracker.INSTANCE));
+        assertEquals(NO_VALUE, cache.check(value, list, EmptyMemoryTracker.INSTANCE));
+    }
+
+    @Test
     void shouldHandleMapsWithNulls() {
         // given
         InCache cache = new InCache();

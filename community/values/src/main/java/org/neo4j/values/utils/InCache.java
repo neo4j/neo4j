@@ -91,7 +91,7 @@ public class InCache implements AutoCloseable {
                 iterator = list.iterator();
                 this.seen = HeapTrackingCollections.newSet(memoryTracker);
             }
-            if (seen.contains(value)) {
+            if (!(value instanceof SequenceValue || value instanceof MapValue) && seen.contains(value)) {
                 return TRUE;
             }
 
