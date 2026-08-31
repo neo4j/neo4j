@@ -1034,8 +1034,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("SemiApplyInHorizon should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+  test("SemiApplyInHorizon should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithUpdate,
@@ -1064,8 +1064,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("AntiSemiApplyInHorizon should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+  test("AntiSemiApplyInHorizon should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planAntiSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithUpdate,

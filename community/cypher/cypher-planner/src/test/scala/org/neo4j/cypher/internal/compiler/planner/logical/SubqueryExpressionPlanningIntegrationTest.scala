@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
@@ -56,6 +57,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipExpression
+import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
@@ -69,10 +71,12 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapExtractor
 import org.neo4j.graphdb.schema.IndexType
 
 class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
@@ -4041,6 +4045,36 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .projection("a.prop AS prop")
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build())
+  }
+
+  test("should restore order invalidated by subquery expression containing UNION before collect()") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setExecutionModel(ExecutionModel.Batched.default)
+      .build()
+
+    val subqueryExpressions = Seq("$param <= COUNT", "EXISTS", "NOT EXISTS")
+
+    for (subqueryExpression <- subqueryExpressions) withClue(subqueryExpression) {
+      val query =
+        s"""
+           |MATCH (n)
+           |WITH n // a single clause with sub-clauses, order must be preserved for collect() in the next clause
+           |  ORDER BY n
+           |  WHERE $subqueryExpression {
+           |    RETURN 1 AS z
+           |    UNION ALL
+           |    RETURN 2 AS z
+           |  }
+           |RETURN collect(n) AS result
+           |""".stripMargin
+
+      val plan = planner.plan(query).stripProduceResults
+      plan.folder.findAllByClass[Sort].size shouldBe 2
+      plan should beLike {
+        case Aggregation(Sort(_, Seq(Ascending(LogicalVariable("n")))), MapExtractor(), _) =>
+      }
+    }
   }
 
   object VariableSet {

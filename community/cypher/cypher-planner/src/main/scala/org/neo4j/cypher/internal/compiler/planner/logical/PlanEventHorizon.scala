@@ -181,10 +181,18 @@ case object PlanEventHorizon extends EventHorizonPlanner {
       (RewrittenExpressions(solvedRewrittenExprs), solver.rewrittenPlan())
     }
 
-    def isPlanBreakingOrder(p: LogicalPlan): Boolean =
-      previousInterestingOrder.exists(_.requiredOrderCandidate.nonEmpty) &&
-        context.staticComponents.planningAttributes.providedOrders(p.id).isEmpty &&
-        !context.settings.executionModel.providedOrderPreserving
+    def isPlanBreakingOrder(p: LogicalPlan): Boolean = {
+      previousInterestingOrder
+        .filter(_.requiredOrderCandidate.nonEmpty)
+        .fold(false) {
+          interestingOrder =>
+            val providedOrder = context.staticComponents.planningAttributes.providedOrders(p.id)
+            providedOrder.satisfies(interestingOrder) match {
+              case InterestingOrder.NoSatisfaction() => true
+              case _                                 => false
+            }
+        }
+    }
 
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
