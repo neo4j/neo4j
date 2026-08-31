@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -89,7 +88,6 @@ case object applyOptional extends OptionalSolver {
         val innerWithFixedArguments = inner.endoRewrite(bottomUp(
           Rewriter.lift {
             case llp: LogicalLeafPlan => llp.addArgumentIds(lhsSymbols)
-            case ap: AggregatingPlan  => ap.addGroupingExpressions(lhsSymbols.map(s => s -> s).toMap)
             case p: LogicalPlan =>
               AssertMacros.checkOnlyWhenAssertionsAreEnabled(
                 lhsSymbols.subsetOf(p.availableSymbols),
@@ -100,7 +98,7 @@ case object applyOptional extends OptionalSolver {
                    |
                    |RHS: (available symbols: ${p.availableSymbols.map(_.name).mkString("`", "`, `", "`")})
                    |$inner
-                   | 
+                   |
                    |fails at: $p
                    |""".stripMargin
               )

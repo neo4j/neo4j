@@ -154,3 +154,26 @@ Feature: OptionalMatchAcceptance
       | 123 | n    | count(*) |
       | 123 | null | 1        |
     And no side effects
+
+  Scenario: optional match with an empty COUNT predicate inside a correlated subquery
+    Given an empty graph
+    And having executed:
+    """
+    CREATE ()
+    """
+    When executing query:
+      """
+      WITH 0 AS x
+      CALL (x) {
+        OPTIONAL MATCH (a)
+        WHERE COUNT { UNWIND [] AS i } >= x
+        RETURN a
+      }
+      RETURN count(*) AS rows, count(a) AS a_not_null_rows
+      """
+    Then the result should be, in any order:
+      | rows | a_not_null_rows |
+      | 1    | 1               |
+    And no side effects
+
+

@@ -1152,7 +1152,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         .aggregation(Seq("key AS key"), Seq("collect([1]) AS cRelated2"))
         .apply()
         .|.optional("key", "resolvedConcept")
-        .|.distinct("cRelatedDimension AS cRelatedDimension", "key AS key", "resolvedConcept AS resolvedConcept")
+        .|.distinct("cRelatedDimension AS cRelatedDimension")
         .|.union()
         .|.|.nodeIndexOperator(
           "cRelatedDimension:kg_Dimension(isPrivate = 4)",
@@ -1256,5 +1256,36 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         .argument()
         .build()
     )
+  }
+
+  test("should preserve non-grouping aggregation on RHS of apply-optional in a correlated subquery") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
+
+    val query =
+      """WITH 0 AS x
+        |CALL (x) {
+        |  OPTIONAL MATCH (a)
+        |  WHERE COUNT { UNWIND [] AS i } >= x
+        |  RETURN a
+        |}
+        |RETURN count(*) AS rows, count(a) AS a_not_null_rows
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("count(*) AS rows", "count(a) AS a_not_null_rows"))
+      .apply()
+      .|.optional("x")
+      .|.filter("anon_0 >= x")
+      .|.apply()
+      .|.|.aggregation(Seq.empty, Seq("count(*) AS anon_0"))
+      .|.|.unwind("[] AS i")
+      .|.|.argument("x")
+      .|.allNodeScan("a", "x")
+      .projection("0 AS x")
+      .argument()
+      .build()
   }
 }
