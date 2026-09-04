@@ -43,7 +43,7 @@
                         <goals>
                             <goal>unpack</goal>
                         </goals>
-                   </execution>
+                    </execution>
                 </executions>
                 <configuration>
                     <artifactItems>
@@ -182,6 +182,26 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative</artifactId>
+            <classifier>linux-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative</artifactId>
+            <classifier>linux-x86_64-fedora</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative</artifactId>
+            <classifier>osx-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative</artifactId>
+            <classifier>osx-aarch_64</classifier>
+        </dependency>
+        <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-bootcheck</artifactId>
             <version>${project.version}</version>
@@ -207,6 +227,7 @@
             <!-- scope from public pom seems to overwrite the scope from cypher-shell -->
             <scope>compile</scope>
         </dependency>
+
 
         <!-- Test dependencies -->
         <dependency>
