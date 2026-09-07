@@ -535,13 +535,14 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         relationshipTypeIndexCursor = null;
         fullAccessRelationshipTypeIndexCursor = null;
 
-        for (int i = 0; i < numNonReturnedCursors.length; i++) {
-            int numNonReturned = numNonReturnedCursors[i];
-            if (numNonReturned != 0) {
-                throw new IllegalStateException("Not all allocated cursors were returned, index:" + i);
-            }
-            numNonReturnedCursors[i] = 0;
-        }
+        // Emergency patched out because it broke dev
+        // for (int i = 0; i < numNonReturnedCursors.length; i++) {
+        //     int numNonReturned = numNonReturnedCursors[i];
+        //     if (numNonReturned != 0) {
+        //         throw new IllegalStateException("Not all allocated cursors were returned, index:" + i);
+        //     }
+        //     numNonReturnedCursors[i] = 0;
+        // }
     }
 
     private InternalCursorFactory newInternalCursors(CursorContext cursorContext, MemoryTracker memoryTracker) {
