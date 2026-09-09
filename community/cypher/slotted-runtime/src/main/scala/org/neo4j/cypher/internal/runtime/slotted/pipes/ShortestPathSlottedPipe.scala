@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ShortestPathNodeGroups
 import org.neo4j.cypher.internal.runtime.TraversalModeConverter.toTraversalMode
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
@@ -62,7 +63,10 @@ case class ShortestPathSlottedPipe(
   maxDepth: Option[Int],
   needOnlyOnePath: Boolean,
   traversalMode: TraversalPathMode,
-  slots: SlotConfiguration
+  slots: SlotConfiguration,
+  // P10: optional deterministic node-group outputs (prefix/suffix slices, O(k)).
+  leftNodeGroupOffset: Int = -1,
+  rightNodeGroupOffset: Int = -1
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
 
@@ -125,6 +129,11 @@ case class ShortestPathSlottedPipe(
                     outputRow.copyAllFrom(row)
                     outputRow.setRefAt(pathOffset, path)
                     outputRow.setRefAt(relsOffset, rels)
+                    // P10: deterministic O(k) node-group reconstruction via shared helper.
+                    if (leftNodeGroupOffset >= 0)
+                      outputRow.setRefAt(leftNodeGroupOffset, ShortestPathNodeGroups.prefixNodes(path))
+                    if (rightNodeGroupOffset >= 0)
+                      outputRow.setRefAt(rightNodeGroupOffset, ShortestPathNodeGroups.suffixNodes(path))
                     outputRow
                   }
                   .filter(pathPredicate.isTrue(_, state))

@@ -526,8 +526,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   ): Unit = plan match {
     case ssp: StatefulShortestPath =>
       allocateExpressionsInternal(ssp.nfa, slots, semanticTable, plan.id, cancellationChecker)
-    case _: OptionalExpand                                                  =>
-    case FindShortestPaths(_, _, nodePredicates, relPredicates, _, _, _, _) =>
+    case _: OptionalExpand                                                        =>
+    case FindShortestPaths(_, _, nodePredicates, relPredicates, _, _, _, _, _, _) =>
       // Node & Relationship predicates may contain NestPlanExpressions.
       // In those cases the nested plan must have the same slot configuration as input rows,
       // otherwise argument copying breaks with index out of bounds.
@@ -547,7 +547,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       allocateExpressionsInternal(ssp.nonInlinedPreFilters, slots, semanticTable, plan.id, cancellationChecker)
     case _: OptionalExpand =>
       allocateExpressionsOneChild(plan, nullable, slots, semanticTable, cancellationChecker)
-    case FindShortestPaths(_, pattern, _, _, pathPredicates, _, _, _) =>
+    case FindShortestPaths(_, pattern, _, _, pathPredicates, _, _, _, _, _) =>
       // Path predicates must be allocated after 'rels' and 'path' slots have been allocated.
       allocateExpressionsInternal(pattern, slots, semanticTable, plan.id, cancellationChecker)
       allocateExpressionsInternal(pathPredicates, slots, semanticTable, plan.id, cancellationChecker)
@@ -1074,6 +1074,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
         slots.newReference(pathName, nullable, CTPath)
         slots.newReference(relsName, nullable, CTList(CTRelationship))
+        // P10: node-group outputs are deterministic prefix/suffix slices of the path.
+        sp.leftNodeGroup.foreach(g => slots.newReference(g.name, nullable, CTList(CTNode)))
+        sp.rightNodeGroup.foreach(g => slots.newReference(g.name, nullable, CTList(CTNode)))
 
       case p: StatefulShortestPath =>
         val nodeStateVars = p.singletonNodeVariables.map(_.rowVar.name)

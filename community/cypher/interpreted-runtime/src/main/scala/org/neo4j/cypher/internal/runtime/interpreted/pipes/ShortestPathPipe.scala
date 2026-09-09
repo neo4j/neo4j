@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.ShortestPathNodeGroups
 import org.neo4j.cypher.internal.runtime.TraversalModeConverter.toTraversalMode
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
@@ -54,7 +55,11 @@ case class ShortestPathPipe(
   allowZeroLength: Boolean,
   maxDepth: Option[Int],
   needOnlyOnePath: Boolean,
-  traversalMode: TraversalPathMode
+  traversalMode: TraversalPathMode,
+  // P10: optional deterministic node-group outputs for single-rel QPPs.
+  // Materialized as O(k) slices of the found path, no traversal-state change.
+  leftNodeGroupName: Option[String] = None,
+  rightNodeGroupName: Option[String] = None
 )(val id: Id = Id.INVALID_ID)
     extends PipeWithSource(source) {
   self =>
@@ -111,7 +116,17 @@ case class ShortestPathPipe(
                     val outputRows = ClosingIterator.asClosingIterator(shortestPaths).map {
                       (path: VirtualPathValue) =>
                         val rels = VirtualValues.list(path.relationshipIds().map(VirtualValues.relationship): _*)
-                        rowFactory.copyWith(row, pathName, path, relsName, rels)
+                        var out = rowFactory.copyWith(row, pathName, path, relsName, rels)
+                        // P10: deterministic O(k) output reconstruction via shared helper, no traversal change.
+                        if (leftNodeGroupName.isDefined || rightNodeGroupName.isDefined) {
+                          leftNodeGroupName.foreach(name =>
+                            out = rowFactory.copyWith(out, name, ShortestPathNodeGroups.prefixNodes(path))
+                          )
+                          rightNodeGroupName.foreach(name =>
+                            out = rowFactory.copyWith(out, name, ShortestPathNodeGroups.suffixNodes(path))
+                          )
+                        }
+                        out
 
                     }.filter {
                       r => pathPredicate.isTrue(r, state)

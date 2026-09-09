@@ -530,7 +530,9 @@ object LogicalPlanToPlanBuilderString {
           pathPredicates,
           withFallBack,
           sameNodeMode,
-          traversalPathMode
+          traversalPathMode,
+          _,
+          _
         ) =>
         val lenStr = length match {
           case VarPatternLength(min, max) => s"*$min..${max.getOrElse("")}"

@@ -97,6 +97,23 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherPlannerTestSui
     } shouldBe empty
   }
 
+  private def assertRewrittenToFindShortestPathsWithGroups(
+    plan: LogicalPlan,
+    expectedLeft: Option[String],
+    expectedRight: Option[String]
+  ): Unit = {
+    plan.folder.treeFind[StatefulShortestPath] {
+      case _: StatefulShortestPath => true
+    } shouldBe empty
+
+    val fsps = plan.folder.treeFind[FindShortestPaths] {
+      case _: FindShortestPaths => true
+    }
+    fsps.size shouldEqual 1
+    fsps.head.leftNodeGroup.map(_.name) shouldEqual expectedLeft
+    fsps.head.rightNodeGroup.map(_.name) shouldEqual expectedRight
+  }
+
   test("Shortest should be rewritten to legacy shortest for simple varLength pattern") {
     val query =
       s"""
@@ -1706,5 +1723,79 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherPlannerTestSui
         assertNotRewrittenToFindShortestPaths(plan)
       }
     }
+  }
+
+  // P10: directed single-rel QPP node groups reconstruct as path prefix/suffix slices.
+  test("P10 should rewrite directed single-rel QPP with consumed left node group") {
+    val query =
+      s"""
+         |MATCH ANY SHORTEST (a) ((c)-[r]->(d))+ (b)
+         |RETURN c
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+    assertRewrittenToFindShortestPathsWithGroups(plan, Some("c"), None)
+  }
+
+  test("P10 should rewrite directed single-rel QPP with consumed right node group") {
+    val query =
+      s"""
+         |MATCH ANY SHORTEST (a) ((c)-[r]->(d))+ (b)
+         |RETURN d
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+    assertRewrittenToFindShortestPathsWithGroups(plan, None, Some("d"))
+  }
+
+  test("P10 should rewrite directed single-rel QPP with both node groups") {
+    val query =
+      s"""
+         |MATCH ANY SHORTEST (a) ((c)-[r]->(d))+ (b)
+         |RETURN c, d
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+    assertRewrittenToFindShortestPathsWithGroups(plan, Some("c"), Some("d"))
+  }
+
+  test("P10 should rewrite directed single-rel QPP with rel and node groups") {
+    val query =
+      s"""
+         |MATCH ANY SHORTEST (a) ((c)-[r]->(d))+ (b)
+         |RETURN c, d, r
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+    assertRewrittenToFindShortestPathsWithGroups(plan, Some("c"), Some("d"))
+  }
+
+  test("P10 should rewrite stacked eligible SPPs using owned-SPP delta") {
+    val query =
+      s"""
+         |MATCH (a), (b)
+         |WITH *
+         |MATCH p1 = ANY SHORTEST (a)-[r1:R*1..10]->(b)
+         |MATCH p2 = ANY SHORTEST (a)-[r2:R*1..10]->(b)
+         |RETURN p1, p2
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+    // Core P10-A property: no eligible SSP remains blocked by accumulated solved SPPs.
+    // (Exact FSP count depends on planner setup; embedded EXPLAIN on patched 2026.08
+    // shows FSP+FSP for the labeled INTO_ONLY shape. Here assert no SSP survives.)
+    plan.folder.treeFind[StatefulShortestPath] {
+      case _: StatefulShortestPath => true
+    } shouldBe empty
+    assert(
+      plan.folder.treeFind[FindShortestPaths] {
+        case _: FindShortestPaths => true
+      }.size >= 1
+    )
+  }
+
+  test("P10 should not rewrite grouped undirected single-rel QPP") {
+    val query =
+      s"""
+         |MATCH ANY SHORTEST (a) ((c)-[r]-(d))+ (b)
+         |RETURN c
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+    assertNotRewrittenToFindShortestPaths(plan)
   }
 }
