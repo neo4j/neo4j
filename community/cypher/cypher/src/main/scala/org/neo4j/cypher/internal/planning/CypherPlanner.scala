@@ -658,9 +658,18 @@ final class TransformingPlanner private[planning] (
         graphStatisticsDecorator
       ))
 
+    // The execution model must be compatible with the runtime that will actually execute the query.
+    // In Community Edition an explicit `runtime=pipelined` (or `runtime=parallel`) has no pipelined
+    // executor: the query falls back to the slotted runtime (see CommunityRuntimeFactory), which executes
+    // row-at-a-time. Planning such a query with batched cost assumptions (e.g. Cartesian-product RHS work
+    // discounted by ceil(lhsCardinality / batchSize)) can select a plan that is catastrophically expensive
+    // under the actual Volcano execution (see #13937). The `default` branch already trusted
+    // `correspondingRuntimeOption` for this; explicit options must do the same. Runtimes that genuinely
+    // provide batched execution (e.g. Enterprise pipelined) report a batched corresponding option, so
+    // their planning is unaffected.
     val inferredRuntime: CypherRuntimeOption = options.queryOptions.runtime match {
       case CypherRuntimeOption.default => runtime.correspondingRuntimeOption.getOrElse(CypherRuntimeOption.default)
-      case x                           => x
+      case explicit                    => runtime.correspondingRuntimeOption.getOrElse(explicit)
     }
     val containsUpdates: Boolean = syntacticQuery.statement().containsUpdates
     val inferredRuntimeConfig = () => options.queryOptions.parallelRuntimeConfigOption
