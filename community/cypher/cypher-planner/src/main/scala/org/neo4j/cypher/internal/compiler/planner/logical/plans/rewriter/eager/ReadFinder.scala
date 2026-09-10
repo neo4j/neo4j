@@ -893,6 +893,8 @@ object ReadFinder {
           _,
           _,
           _,
+          _,
+          _,
           _
         ) =>
         // Note: pathPredicates is on a path - so not on an entity - therefore no need to process it.

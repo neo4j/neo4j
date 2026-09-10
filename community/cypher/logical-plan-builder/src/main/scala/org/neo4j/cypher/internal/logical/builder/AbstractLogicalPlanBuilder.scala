@@ -645,7 +645,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     pathPredicates: Seq[String] = Seq.empty,
     withFallback: Boolean = false,
     sameNodeMode: SameNodeMode = DisallowSameNode,
-    traversalPathMode: TraversalPathMode = Trail
+    traversalPathMode: TraversalPathMode = Trail,
+    leftNodeGroup: Option[String] = None,
+    rightNodeGroup: Option[String] = None
   ): IMPL =
     shortestPathSolver(
       pattern,
@@ -656,7 +658,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       pathPredicates.map(parseExpression),
       withFallback,
       sameNodeMode,
-      traversalPathMode
+      traversalPathMode,
+      leftNodeGroup.map(varFor),
+      rightNodeGroup.map(varFor)
     )
 
   def shortestPathExpr(
@@ -668,7 +672,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     pathPredicates: Seq[Expression] = Seq.empty,
     withFallback: Boolean = false,
     sameNodeMode: SameNodeMode = DisallowSameNode,
-    traversalPathMode: TraversalPathMode = Trail
+    traversalPathMode: TraversalPathMode = Trail,
+    leftNodeGroup: Option[org.neo4j.cypher.internal.expressions.LogicalVariable] = None,
+    rightNodeGroup: Option[org.neo4j.cypher.internal.expressions.LogicalVariable] = None
   ): IMPL =
     shortestPathSolver(
       pattern,
@@ -679,7 +685,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       pathPredicates,
       withFallback,
       sameNodeMode,
-      traversalPathMode
+      traversalPathMode,
+      leftNodeGroup,
+      rightNodeGroup
     )
 
   def statefulShortestPathExpr(
@@ -793,7 +801,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     pathPredicates: Seq[Expression],
     withFallback: Boolean,
     sameNodeMode: SameNodeMode,
-    pathMode: TraversalPathMode
+    pathMode: TraversalPathMode,
+    leftNodeGroup: Option[org.neo4j.cypher.internal.expressions.LogicalVariable] = None,
+    rightNodeGroup: Option[org.neo4j.cypher.internal.expressions.LogicalVariable] = None
   ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
@@ -837,7 +847,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         pathPredicates,
         withFallback,
         sameNodeMode,
-        pathMode
+        pathMode,
+        leftNodeGroup,
+        rightNodeGroup
       )(_)
     ))
   }

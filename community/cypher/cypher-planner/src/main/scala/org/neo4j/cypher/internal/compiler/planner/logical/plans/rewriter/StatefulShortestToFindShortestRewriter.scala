@@ -70,7 +70,8 @@ import scala.collection.Set
  *
  * Rule 2: Target node of the pattern is bound
  *
- * Rule 3: Exactly one selective path pattern
+ * Rule 3: Exactly the one selective path pattern owned by this SSP
+ * (current solved SPPs minus source solved SPPs contains exactly one SPP).
  *
  * Rule 4: Predicates must be inlineable into FindShortestPath
  *
@@ -82,7 +83,8 @@ import scala.collection.Set
  *
  * Rule 8: Exactly one var-length relationship or one QPP
  *
- * Rule 9: No node group variables
+ * Rule 9: No node group variables, except deterministic directed single-rel QPP groups
+ * reconstructible as prefix/suffix slices of the specialized path (undirected excluded).
  */
 case class StatefulShortestToFindShortestRewriter(
   solveds: Solveds,
@@ -106,18 +108,26 @@ case class StatefulShortestToFindShortestRewriter(
     }
   }
 
-  // Rule 3: Exactly one selective path pattern
-  // Rule 6: Exactly one relationship pattern
-  private def singleSelectivePathPatternWithOneRelationship(ssp: StatefulShortestPath): Option[SelectivePathPattern] =
-    solveds.get(ssp.id).asSinglePlannerQuery.last.queryGraph.selectivePathPatterns.toSeq match {
+  // Rule 3: Exactly the one selective path pattern belonging to this SSP.
+  // The SSP's solved QueryGraph is built as sourceSolved.amend(addSelectivePathPattern(solvedSpp)),
+  // so the pattern owned by this SSP is the set difference between current and source solved SPPs.
+  // This is strictly more precise than requiring the cumulative last QueryGraph to contain exactly
+  // one SPP: it allows an FSP-compatible SSP stacked on top of other already-solved SPPs to still
+  // be specialized, while falling back to StatefulShortestPath whenever the delta is empty,
+  // larger than one, or otherwise ambiguous.
+  // Rule 6: Exactly one relationship pattern (checked on the owned SPP).
+  private def singleSelectivePathPatternWithOneRelationship(ssp: StatefulShortestPath): Option[SelectivePathPattern] = {
+    val current = solveds.get(ssp.id).asSinglePlannerQuery.last.queryGraph.selectivePathPatterns
+    val source = solveds.get(ssp.source.id).asSinglePlannerQuery.last.queryGraph.selectivePathPatterns
+    (current -- source).toSeq match {
       case Seq(spp) if spp.relationships.size == 1 => Some(spp)
       case _                                       => None
     }
+  }
 
   private def isRewriteCandidate(ssp: StatefulShortestPath): Boolean =
     hasBoundTargetEndpoint(ssp) &&
-      asksForShortestPathOrAllShortestPaths(ssp) &&
-      hasNoNodeGroupVariables(ssp)
+      asksForShortestPathOrAllShortestPaths(ssp)
 
   // Rule 2: Target node of the pattern is bound
   private def hasBoundTargetEndpoint(ssp: StatefulShortestPath): Boolean =
@@ -127,9 +137,16 @@ case class StatefulShortestToFindShortestRewriter(
   private def asksForShortestPathOrAllShortestPaths(ssp: StatefulShortestPath): Boolean =
     ssp.selector.k == CountInteger(1)
 
-  // Rule 9: No node group variables
-  private def hasNoNodeGroupVariables(ssp: StatefulShortestPath): Boolean =
-    ssp.nodeVariableGroupings.isEmpty
+  // Rule 9 (bounded P10 extension): node group variables are allowed ONLY when every
+  // required grouping can be reconstructed as a deterministic prefix/suffix slice of the
+  // specialized path. For a QPP consisting of one repeated relationship, each traversed
+  // edge contributes exactly one left-node, one relationship and one right-node binding,
+  // so with path p = (v0,e1,v1,...,ek,vk) and nodes(p) = [v0..vk]:
+  //   leftGroup  = nodes(p)[0 .. k-1] = prefix (empty when k=0)
+  //   rightGroup = nodes(p)[1 .. k]   = suffix (empty when k=0)
+  // There is no repetition-boundary ambiguity because every repetition has exactly one rel.
+  // Var-length (non-QPP) patterns have no node groups to reconstruct; they still require
+  // empty node groupings.
 
   private def rewriteVarLengthSpp(
     spp: SelectivePathPattern,
@@ -155,6 +172,9 @@ case class StatefulShortestToFindShortestRewriter(
     spp: SelectivePathPattern,
     pr: PatternRelationship
   ): Option[FindShortestPaths] = {
+    // Var-length patterns have no QPP node-group reconstruction theorem;
+    // preserve the existing Rule 9 restriction exactly for this branch.
+    if (ssp.nodeVariableGroupings.nonEmpty) return None
     val (fromNode, toNode) = pr.inOrder
     val shortestPathsPatternPart =
       createShortestPathsPatternPart(
@@ -232,11 +252,79 @@ case class StatefulShortestToFindShortestRewriter(
   private def hasSingleRelPatternMinLengthOneOrZero(qpp: QuantifiedPathPattern): Boolean =
     qpp.patternRelationships.size == 1 && qpp.repetition.min < 2
 
+  /**
+   * P10 bounded node-group theorem.
+   *
+   * For a QPP with exactly one PatternRelationship, every repetition contributes exactly
+   * one left-node, one relationship and one right-node binding. Therefore with
+   * path p = (v0,e1,v1,...,ek,vk), left groups are prefix nodes(p)[0..k-1] and right
+   * groups are suffix nodes(p)[1..k] (both empty when k=0). No automaton state is needed
+   * for traversal; reconstruction is O(k) output work.
+   *
+   * Returns Some((left, right)) when every required grouping is reconstructible
+   * (including the empty case), None otherwise. The caller must retain SSP on None.
+   * Orientation is always query order (left outer -> right outer); the FSP path is
+   * materialized in that order, so no reverseGroupVariableProjections handling is needed.
+   *
+   * Conservative guard: undirected (BOTH) single-rel QPPs with consumed node groups are
+   * rejected. Patched differential testing on 2026.08 shows directed OUTGOING/INCOMING
+   * reconstruct exactly, while undirected same-node (source==target at runtime) exposes
+   * a pre-existing FSP/SSP traversal discrepancy (FSP misses self-loop or throws
+   * EntityNotFound for node -1) that already affects group-free undirected rewrites.
+   * Since planner cannot prove runtime source!=target for distinct outer variables,
+   * P10 must not enlarge that unsafe region; undirected groups stay on SSP.
+   */
+  private def nodeGroupsForSingleRelQpp(
+    ssp: StatefulShortestPath,
+    qpp: QuantifiedPathPattern
+  ): Option[(Option[LogicalVariable], Option[LogicalVariable])] = {
+    if (ssp.nodeVariableGroupings.isEmpty) {
+      // No node groups to reconstruct: preserve exact existing behavior for the
+      // already-eligible shapes (no additional singleton checks here).
+      Some((None, None))
+    } else {
+      if (qpp.patternRelationships.size != 1) return None
+      if (qpp.patternRelationships.head.dir == SemanticDirection.BOTH) return None
+      // Conservative: FSP cannot project singleton (non-group) variables. For single-rel
+      // QPPs with consumed groups these are empty in practice; reject otherwise rather
+      // than silently dropping a required output.
+      if (ssp.singletonNodeVariables.nonEmpty || ssp.singletonRelationshipVariables.nonEmpty) return None
+      val leftInner = qpp.leftBinding.inner
+      val rightInner = qpp.rightBinding.inner
+      // Ambiguous when the single edge reuses the same inner variable on both sides;
+      // do not guess slice assignment in that degenerate case.
+      if (leftInner == rightInner) return None
+      var left: Option[LogicalVariable] = None
+      var right: Option[LogicalVariable] = None
+      val it = ssp.nodeVariableGroupings.iterator
+      while (it.hasNext) {
+        val g = it.next()
+        if (g.singleton == leftInner) {
+          if (left.isDefined) return None
+          left = Some(g.group)
+        } else if (g.singleton == rightInner) {
+          if (right.isDefined) return None
+          right = Some(g.group)
+        } else {
+          // Grouping for a singleton that is not one of the two inner nodes of the
+          // single-rel pattern (should not happen); retain SSP conservatively.
+          return None
+        }
+      }
+      Some((left, right))
+    }
+  }
+
   private def sppQppToFindShortest(
     ssp: StatefulShortestPath,
     spp: SelectivePathPattern,
     qpp: QuantifiedPathPattern
   ): Option[FindShortestPaths] = {
+    // P10: resolve deterministic node-group outputs before predicate checks so that
+    // unsupported group shapes fail fast without affecting existing eligible queries.
+    val nodeGroupsOpt = nodeGroupsForSingleRelQpp(ssp, qpp)
+    if (nodeGroupsOpt.isEmpty) return None
+    val (leftNodeGroup, rightNodeGroup) = nodeGroupsOpt.get
     val qppPredicates = extractedPredicatesFromQpp(ssp, spp, qpp)
     val inlineablePredicates = qppPredicates.allPredicates
 
@@ -271,7 +359,9 @@ case class StatefulShortestToFindShortestRewriter(
             Seq.empty,
             withFallBack = false,
             AllowSameNode,
-            ssp.pathMode
+            ssp.pathMode,
+            leftNodeGroup,
+            rightNodeGroup
           )(SameId(ssp.id))
         )
     } else {

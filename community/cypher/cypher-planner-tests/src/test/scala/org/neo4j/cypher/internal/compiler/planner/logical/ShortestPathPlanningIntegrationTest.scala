@@ -461,31 +461,17 @@ class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with Lo
     val query =
       "MATCH (d:B), (a:User) WITH * SKIP 0 MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d) RETURN *"
 
-    val nfa =
-      new TestNFABuilder(0, "a")
-        .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (d)")
-        .addTransition(1, 2, "(b)-[r]->(c)")
-        .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (d)")
-        .setFinalState(3)
-        .build()
-
     val plan = planner.plan(query).stripProduceResults
+    // P10: directed single-rel QPP with consumed node groups specializes to FindShortestPaths
+    // (left=[a..], right=[..d] as prefix/suffix slices); traversal unchanged.
     plan should equal(
       planner.subPlanBuilder()
-        .statefulShortestPath(
-          "a",
-          "d",
-          "SHORTEST 1 (a) ((`b`)-[`r`]->(`c`)){0, } (d)",
-          None,
-          Set(("b", "b"), ("c", "c")),
-          Set(("r", "r")),
-          Set(),
-          Set(),
-          StatefulShortestPath.Selector.Shortest(CountInteger(1)),
-          nfa,
-          ExpandInto
+        .shortestPath(
+          "(a)-[r*0..]->(d)",
+          pathName = Some("anon_0"),
+          sameNodeMode = AllowSameNode,
+          leftNodeGroup = Some("b"),
+          rightNodeGroup = Some("c")
         )
         .skip(0)
         .cartesianProduct()
@@ -1224,31 +1210,16 @@ class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with Lo
     val query =
       "MATCH ANY SHORTEST (a:User) ((b)-[r]->(c))* (a) RETURN *"
 
-    val nfa =
-      new TestNFABuilder(0, "a")
-        .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (a)")
-        .addTransition(1, 2, "(b)-[r]->(c)")
-        .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (a)")
-        .setFinalState(3)
-        .build()
-
     val plan = planner.plan(query).stripProduceResults
+    // P10: directed single-rel QPP with consumed node groups specializes to FindShortestPaths.
     plan should equal(
       planner.subPlanBuilder()
-        .statefulShortestPath(
-          "a",
-          "a",
-          "SHORTEST 1 (a) ((`b`)-[`r`]->(`c`)){0, } (a)",
-          None,
-          Set(("b", "b"), ("c", "c")),
-          Set(("r", "r")),
-          Set(),
-          Set.empty,
-          StatefulShortestPath.Selector.Shortest(CountInteger(1)),
-          nfa,
-          ExpandInto
+        .shortestPath(
+          "(a)-[r*0..]->(a)",
+          pathName = Some("anon_0"),
+          sameNodeMode = AllowSameNode,
+          leftNodeGroup = Some("b"),
+          rightNodeGroup = Some("c")
         )
         .nodeByLabelScan("a", "User")
         .build()
@@ -1841,31 +1812,15 @@ class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with Lo
          |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
-    val nfa = new TestNFABuilder(0, "n")
-      .addTransition(0, 1, "(n) (n_inner)")
-      .addTransition(1, 2, "(n_inner)-[r_inner]->(m_inner)")
-      .addTransition(2, 1, "(m_inner) (n_inner)")
-      .addTransition(2, 3, "(m_inner) (m)")
-      .setFinalState(3)
-      .build()
-
+    // P10: directed single-rel QPP with consumed node groups specializes to FindShortestPaths.
     plan should equal(
       planner.subPlanBuilder()
-        .statefulShortestPath(
-          "n",
-          "m",
-          "SHORTEST 1 (n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m)",
-          None,
-          groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
-          groupRelationships = Set(("r_inner", "r_inner")),
-          singletonNodeVariables = Set(),
-          singletonRelationshipVariables = Set.empty,
-          StatefulShortestPath.Selector.Shortest(CountInteger(1)),
-          nfa,
-          ExpandInto,
-          false,
-          1,
-          None
+        .shortestPath(
+          "(n)-[r_inner*1..]->(m)",
+          pathName = Some("anon_0"),
+          sameNodeMode = AllowSameNode,
+          leftNodeGroup = Some("n_inner"),
+          rightNodeGroup = Some("m_inner")
         )
         .skip(1)
         .cartesianProduct()
@@ -3233,32 +3188,16 @@ class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with Lo
 
     val query = "MATCH ANY SHORTEST (u:User)((n)-[r]->(m))+(v) RETURN *"
 
-    val nfa = new TestNFABuilder(0, "u")
-      .addTransition(0, 1, "(u) (n)")
-      .addTransition(1, 2, "(n)-[r]->(m)")
-      .addTransition(2, 1, "(m) (n)")
-      .addTransition(2, 3, "(m) (v)")
-      .setFinalState(3)
-      .build()
-
     val plan = planner.plan(query).stripProduceResults
+    // P10: directed single-rel QPP with consumed node groups specializes to FindShortestPaths.
     plan should equal(
       planner.subPlanBuilder()
-        .statefulShortestPath(
-          "u",
-          "v",
-          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
-          None,
-          groupNodes = Set(("n", "n"), ("m", "m")),
-          groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set(),
-          singletonRelationshipVariables = Set.empty,
-          StatefulShortestPath.Selector.Shortest(CountInteger(1)),
-          nfa,
-          ExpandInto,
-          false,
-          1,
-          None
+        .shortestPath(
+          "(u)-[r*1..]->(v)",
+          pathName = Some("anon_0"),
+          sameNodeMode = AllowSameNode,
+          leftNodeGroup = Some("n"),
+          rightNodeGroup = Some("m")
         )
         .cartesianProduct()
         .|.allNodeScan("v")
@@ -3281,31 +3220,15 @@ class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with Lo
          |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
-    val nfa = new TestNFABuilder(0, "n")
-      .addTransition(0, 1, "(n) (n_inner)")
-      .addTransition(1, 2, "(n_inner)-[r_inner]->(m_inner)")
-      .addTransition(2, 1, "(m_inner) (n_inner)")
-      .addTransition(2, 3, "(m_inner) (m)")
-      .setFinalState(3)
-      .build()
-
+    // P10: directed single-rel QPP with consumed node groups specializes to FindShortestPaths.
     plan should equal(
       planner.subPlanBuilder()
-        .statefulShortestPath(
-          "n",
-          "m",
-          "SHORTEST 1 (n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m)",
-          None,
-          groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
-          groupRelationships = Set(("r_inner", "r_inner")),
-          singletonNodeVariables = Set(),
-          singletonRelationshipVariables = Set.empty,
-          StatefulShortestPath.Selector.Shortest(CountInteger(1)),
-          nfa,
-          ExpandInto,
-          false,
-          1,
-          None
+        .shortestPath(
+          "(n)-[r_inner*1..]->(m)",
+          pathName = Some("anon_0"),
+          sameNodeMode = AllowSameNode,
+          leftNodeGroup = Some("n_inner"),
+          rightNodeGroup = Some("m_inner")
         )
         .skip(1)
         .cartesianProduct()
@@ -3362,31 +3285,15 @@ class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with Lo
          |""".stripMargin
 
     val plan = all_if_possible_planner.plan(query).stripProduceResults
-    val nfa = new TestNFABuilder(0, "n")
-      .addTransition(0, 1, "(n) (n_inner)")
-      .addTransition(1, 2, "(n_inner)-[r_inner]->(m_inner)")
-      .addTransition(2, 1, "(m_inner) (n_inner)")
-      .addTransition(2, 3, "(m_inner) (m)")
-      .setFinalState(3)
-      .build()
-
+    // P10: directed single-rel QPP with consumed node groups specializes to FindShortestPaths.
     plan should equal(
       all_if_possible_planner.subPlanBuilder()
-        .statefulShortestPath(
-          "n",
-          "m",
-          "SHORTEST 1 (n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m)",
-          None,
-          groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
-          groupRelationships = Set(("r_inner", "r_inner")),
-          singletonNodeVariables = Set(),
-          singletonRelationshipVariables = Set.empty,
-          StatefulShortestPath.Selector.Shortest(CountInteger(1)),
-          nfa,
-          ExpandInto,
-          false,
-          1,
-          None
+        .shortestPath(
+          "(n)-[r_inner*1..]->(m)",
+          pathName = Some("anon_0"),
+          sameNodeMode = AllowSameNode,
+          leftNodeGroup = Some("n_inner"),
+          rightNodeGroup = Some("m_inner")
         )
         .skip(1)
         .cartesianProduct()
@@ -3790,28 +3697,15 @@ class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with Lo
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
+      // P10: this Into case has a directed single-rel QPP with consumed node groups,
+      // so it specializes to FindShortestPaths (the All cases above stay SSP).
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
-        .statefulShortestPath(
-          "a",
-          "b",
-          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
-          None,
-          groupNodes = Set(("n", "n"), ("m", "m")),
-          groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set(),
-          singletonRelationshipVariables = Set(),
-          StatefulShortestPath.Selector.Shortest(CountInteger(1)),
-          new TestNFABuilder(0, "a")
-            .addTransition(0, 1, "(a) (n)")
-            .addTransition(1, 2, "(n)-[r]->(m)")
-            .addTransition(2, 1, "(m) (n)")
-            .addTransition(2, 3, "(m) (b)")
-            .setFinalState(3)
-            .build(),
-          ExpandInto,
-          false,
-          1,
-          None
+        .shortestPath(
+          "(a)-[r*1..]->(b)",
+          pathName = Some("anon_0"),
+          sameNodeMode = AllowSameNode,
+          leftNodeGroup = Some("n"),
+          rightNodeGroup = Some("m")
         )
         .cartesianProduct()
         .|.nodeByLabelScan("b", "B")
@@ -3883,27 +3777,14 @@ class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with Lo
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
-        .statefulShortestPath(
-          "a",
-          "b",
-          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
-          None,
-          Set(("n", "n"), ("m", "m")),
-          Set(("r", "r")),
-          Set(),
-          Set(),
-          StatefulShortestPath.Selector.Shortest(CountInteger(1)),
-          new TestNFABuilder(0, "a")
-            .addTransition(0, 1, "(a) (n)")
-            .addTransition(1, 2, "(n)-[r]->(m)")
-            .addTransition(2, 1, "(m) (n)")
-            .addTransition(2, 3, "(m) (b)")
-            .setFinalState(3)
-            .build(),
-          ExpandInto,
-          false,
-          1,
-          None
+        // P10: this Into case has a directed single-rel QPP with consumed node groups,
+        // so it specializes to FindShortestPaths (the All cases above stay SSP).
+        .shortestPath(
+          "(a)-[r*1..]->(b)",
+          pathName = Some("anon_0"),
+          sameNodeMode = AllowSameNode,
+          leftNodeGroup = Some("n"),
+          rightNodeGroup = Some("m")
         )
         .cartesianProduct()
         .|.nodeIndexOperator("b:B(p = 1)", _ => GetValue, unique = true)
@@ -4118,27 +3999,14 @@ class ShortestPathPlanningIntegrationTest extends CypherPlannerTestSuite with Lo
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
-        .statefulShortestPath(
-          "a",
-          "b",
-          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
-          None,
-          groupNodes = Set(("n", "n"), ("m", "m")),
-          groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set(),
-          singletonRelationshipVariables = Set(),
-          StatefulShortestPath.Selector.Shortest(CountInteger(1)),
-          new TestNFABuilder(0, "a")
-            .addTransition(0, 1, "(a) (n)")
-            .addTransition(1, 2, "(n)-[r]->(m)")
-            .addTransition(2, 1, "(m) (n)")
-            .addTransition(2, 3, "(m) (b)")
-            .setFinalState(3)
-            .build(),
-          ExpandInto,
-          false,
-          1,
-          None
+        // P10: this Into case has a directed single-rel QPP with consumed node groups,
+        // so it specializes to FindShortestPaths (the All case above stays SSP).
+        .shortestPath(
+          "(a)-[r*1..]->(b)",
+          pathName = Some("anon_0"),
+          sameNodeMode = AllowSameNode,
+          leftNodeGroup = Some("n"),
+          rightNodeGroup = Some("m")
         )
         .apply()
         .|.cartesianProduct()

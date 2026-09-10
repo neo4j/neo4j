@@ -1517,7 +1517,9 @@ class SlottedPipeMapper(
           pathPredicates,
           withFallBack,
           sameNodeMode,
-          traversalMode
+          traversalMode,
+          leftNodeGroup,
+          rightNodeGroup
         ) =>
         val rel = shortestPathPattern.expr.element match {
           case internal.expressions.RelationshipChain(_, relationshipPattern, _) =>
@@ -1543,6 +1545,9 @@ class SlottedPipeMapper(
         val targetSlot = slots(targetNodeName).slot
         val pathOffset = slots.refOffset(pathName)
         val relsOffset = slots.refOffset(relsName)
+        // P10: -1 means absent (no slot allocated).
+        val leftNodeGroupOffset = leftNodeGroup.map(g => slots.refOffset(g.name)).getOrElse(-1)
+        val rightNodeGroupOffset = rightNodeGroup.map(g => slots.refOffset(g.name)).getOrElse(-1)
 
         val (allowZeroLength, maxDepth) = rel.length match {
           case Some(Some(internal.expressions.Range(lower, max))) =>
@@ -1576,7 +1581,9 @@ class SlottedPipeMapper(
           maxDepth = maxDepth,
           needOnlyOnePath = single && !withFallBack,
           traversalMode = traversalMode,
-          slots = slots
+          slots = slots,
+          leftNodeGroupOffset = leftNodeGroupOffset,
+          rightNodeGroupOffset = rightNodeGroupOffset
         )(id)
 
       case StatefulShortestPath(

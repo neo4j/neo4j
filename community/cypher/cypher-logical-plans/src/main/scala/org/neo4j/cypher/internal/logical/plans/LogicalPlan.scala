@@ -3155,13 +3155,23 @@ case class FindShortestPaths(
   pathPredicates: Seq[Expression] = Seq.empty,
   withFallBack: Boolean = false,
   sameNodeMode: SameNodeMode = FindShortestPaths.DisallowSameNode,
-  pathMode: TraversalPathMode = Trail
+  pathMode: TraversalPathMode = Trail,
+  // P10: deterministic node-group reconstruction for single-relationship QPPs.
+  // When set, the operator materializes the left/right node groups as
+  // prefix/suffix slices of the returned path's node list:
+  //   leftNodeGroup  = nodes(path)[0 .. size-1]  (one binding per traversed edge, left side)
+  //   rightNodeGroup = nodes(path)[1 .. size]    (one binding per traversed edge, right side)
+  // Empty path (zero repetitions) yields empty lists. Traversal itself is unchanged
+  // (ordinary shortest-path BFS on V, no NFA/product state).
+  leftNodeGroup: Option[LogicalVariable] = None,
+  rightNodeGroup: Option[LogicalVariable] = None
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val localAvailableSymbols: Set[LogicalVariable] = source.localAvailableSymbols ++ pattern.availableSymbols
+  override val localAvailableSymbols: Set[LogicalVariable] = source.localAvailableSymbols ++ pattern.availableSymbols ++
+    leftNodeGroup.toSet ++ rightNodeGroup.toSet
 
   override val distinctness: Distinctness = NotDistinct
 }

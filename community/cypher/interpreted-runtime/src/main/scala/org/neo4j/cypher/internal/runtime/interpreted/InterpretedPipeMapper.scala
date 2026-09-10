@@ -1848,7 +1848,9 @@ case class InterpretedPipeMapper(
           pathPredicates,
           withFallBack,
           sameNodeMode,
-          traversalMode
+          traversalMode,
+          leftNodeGroup,
+          rightNodeGroup
         ) =>
         val single = shortestPathPattern.expr.single
 
@@ -1889,7 +1891,9 @@ case class InterpretedPipeMapper(
           allowZeroLength,
           maxDepth,
           single && !withFallBack,
-          traversalMode
+          traversalMode,
+          leftNodeGroup.map(_.name),
+          rightNodeGroup.map(_.name)
         )(id)
 
       case StatefulShortestPath(
