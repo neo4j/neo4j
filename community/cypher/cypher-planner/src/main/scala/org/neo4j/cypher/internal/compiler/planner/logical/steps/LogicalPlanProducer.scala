@@ -1536,6 +1536,41 @@ case class LogicalPlanProducer(
     newPlan
   }
 
+  /**
+   * Restore original outer-only COUNT predicates in the solved query of an OPTIONAL MATCH
+   * plan built with hoisted outer counts (see ApplyOptionalSolver.hoistOuterOnlyCounts, #13924).
+   *
+   * Physical planning filters on the rewritten predicates (against the computed count
+   * variables), but solved-query bookkeeping must record the original predicates — the
+   * same convention as planSelection, which records original expressions while filtering
+   * on rewritten ones. Only the rewritten predicates are swapped back, and the introduced
+   * count variables are removed from the OPTIONAL argument IDs; all other planning
+   * attributes are carried over to a fresh plan ID (attributes are write-once).
+   */
+  def fixupOptionalHoistedSolved(
+    originalPlan: LogicalPlan,
+    originalPredicates: Seq[Expression],
+    rewrittenPredicates: Seq[Expression],
+    introducedVariables: Set[LogicalVariable]
+  ): LogicalPlan = {
+    def fixQueryGraph(queryGraph: QueryGraph): QueryGraph = {
+      val fixedOptionals = queryGraph.optionalMatches.map { optionalMatch =>
+        if (rewrittenPredicates.forall(optionalMatch.selections.contains))
+          optionalMatch
+            .withSelections((optionalMatch.selections -- rewrittenPredicates) ++ originalPredicates)
+            .withArgumentIds(optionalMatch.argumentIds -- introducedVariables)
+        else optionalMatch
+      }
+      queryGraph.withOptionalMatches(fixedOptionals)
+    }
+    def fixPart(part: SinglePlannerQuery): SinglePlannerQuery =
+      part.updateTail(fixPart).amendQueryGraph(fixQueryGraph)
+    val fixedSolved = fixPart(solveds.get(originalPlan.id).asSinglePlannerQuery)
+    val newPlan = originalPlan.copyPlanWithIdGen(attributesWithoutSolveds.copy(originalPlan.id))
+    solveds.set(newPlan.id, fixedSolved)
+    newPlan
+  }
+
   def planRepeat(
     source: LogicalPlan,
     pattern: QuantifiedPathPattern,
