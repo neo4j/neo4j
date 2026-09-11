@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Keys
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.ir.CreatePattern
@@ -1238,7 +1239,7 @@ object ReadFinder {
         acc =>
           TraverseChildren(acc.withUnknownLabelsRead(asMaybeVar(f.args.head)))
 
-      case f: FunctionInvocation if f.function == Properties =>
+      case f: FunctionInvocation if f.function == Properties || f.function == Keys =>
         acc =>
           var result = acc
           val typeGetter = semanticTable.typeFor(f.args(0))

@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.remo
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.DynamicElement
+import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanAstConstructionTestSupport
@@ -3535,6 +3536,46 @@ class EagerPlanningIntegrationTest extends CypherPlannerTestSuite
         .allNodeScan("n")
         .build()
     )
+  }
+
+  test("Eager should be inserted between MERGE ON MATCH SET and keys() read") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 10)
+      .build()
+
+    val query =
+      """FOR j IN [0, 2]
+        |MERGE (n0:N {id: 130, k11: true})
+        |ON MATCH SET n0.k0 = 0
+        |FOR k IN coll.remove(keys(n0), 0)
+        |RETURN j AS row""".stripMargin
+
+    val plan = planner.plan(CypherVersion.Cypher25, query)
+
+    withClue(s"Plan was:\n$plan\n") {
+      val eagers = plan.folder.findAllByClass[Eager]
+      eagers should not be empty
+      val conflictedProperties = eagers.flatMap(_.reasons).collect {
+        case EagernessReason.ReasonWithConflict(PropertyReadSetConflict(prop), _) => prop.name
+      }
+      conflictedProperties should contain("k0")
+    }
+  }
+
+  test("no Eager should be inserted for keys() of a map") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
+
+    val query =
+      """MATCH (n)
+        |SET n.prop = 42
+        |RETURN keys({a: 1}) AS keys""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan.folder.findAllByClass[Eager] shouldBe empty
   }
 
 }

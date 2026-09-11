@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThan
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThanOrEqual
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
@@ -89,6 +90,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.StorableType
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
@@ -481,6 +483,162 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
         .allNodeScan("n")
         .build()
     )
+  }
+
+  test("inserts eager between property set and keys read") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("keys")
+      .projection("keys(n) AS keys")
+      .setNodeProperty("m", "prop", "42")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val rewrittenPlan = eagerizePlan(planBuilder, plan)
+
+    rewrittenPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("keys")
+        .projection("keys(n) AS keys")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(1)))))
+        .setNodeProperty("m", "prop", "42")
+        .expand("(n)-[r]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("inserts eager between relationship property set and keys read") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("keys")
+      .projection("keys(r) AS keys")
+      .setRelationshipProperty("r", "prop", "5")
+      .apply()
+      .|.allRelationshipsScan("(n)-[r]->(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val rewrittenPlan = eagerizePlan(planBuilder, plan)
+
+    rewrittenPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("keys")
+        .projection("keys(r) AS keys")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(1)))))
+        .setRelationshipProperty("r", "prop", "5")
+        .apply()
+        .|.allRelationshipsScan("(n)-[r]->(m)")
+        .unwind("[1, 2, 3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("inserts eager between Merge with ON MATCH and keys read") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("row")
+      .projection("j AS row")
+      .unwind("coll.remove(keys(n0), 0) AS k")
+      .merge(nodes = Seq(createNode("n0", "N")), onMatch = Seq(setNodeProperty("n0", "k0", "0")))
+      .unwind("[0, 2] AS j")
+      .argument()
+    val plan = planBuilder.build()
+    val rewrittenPlan = eagerizePlan(planBuilder, plan)
+
+    rewrittenPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("row")
+        .projection("j AS row")
+        .unwind("coll.remove(keys(n0), 0) AS k")
+        .eager(ListSet(PropertyReadSetConflict(propName("k0")).withConflict(Conflict(Id(3), Id(2)))))
+        .merge(nodes = Seq(createNode("n0", "N")), onMatch = Seq(setNodeProperty("n0", "k0", "0")))
+        .unwind("[0, 2] AS j")
+        .argument()
+        .build()
+    )
+  }
+
+  test("inserts eager between Merge with ON CREATE and keys read") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("row")
+      .projection("j AS row")
+      .unwind("coll.remove(keys(n0), 0) AS k")
+      .merge(nodes = Seq(createNode("n0", "N")), onCreate = Seq(setNodeProperty("n0", "k0", "0")))
+      .unwind("[0, 2] AS j")
+      .argument()
+    val plan = planBuilder.build()
+    val rewrittenPlan = eagerizePlan(planBuilder, plan)
+
+    rewrittenPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("row")
+        .projection("j AS row")
+        .unwind("coll.remove(keys(n0), 0) AS k")
+        .eager(ListSet(PropertyReadSetConflict(propName("k0")).withConflict(Conflict(Id(3), Id(2)))))
+        .merge(nodes = Seq(createNode("n0", "N")), onCreate = Seq(setNodeProperty("n0", "k0", "0")))
+        .unwind("[0, 2] AS j")
+        .argument()
+        .build()
+    )
+  }
+
+  test("inserts eager between Apply with Merge ON MATCH RHS and keys read above Apply") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("row")
+      .projection("j AS row")
+      .unwind("coll.remove(keys(n0), 0) AS k")
+      .apply()
+      .|.merge(nodes = Seq(createNode("n0", "N")), onMatch = Seq(setNodeProperty("n0", "k0", "0")))
+      .|.nodeByLabelScan("n0", "N")
+      .unwind("[0, 2] AS j")
+      .argument()
+    val plan = planBuilder.build()
+    val rewrittenPlan = eagerizePlan(planBuilder, plan)
+
+    withClue(s"Plan was:\n$rewrittenPlan\n") {
+      rewrittenPlan should equal(
+        new LogicalPlanBuilder()
+          .produceResults("row")
+          .projection("j AS row")
+          .unwind("coll.remove(keys(n0), 0) AS k")
+          .eager(ListSet(PropertyReadSetConflict(propName("k0")).withConflict(Conflict(Id(4), Id(2)))))
+          .apply()
+          .|.merge(nodes = Seq(createNode("n0", "N")), onMatch = Seq(setNodeProperty("n0", "k0", "0")))
+          .|.nodeByLabelScan("n0", "N")
+          .unwind("[0, 2] AS j")
+          .argument()
+          .build()
+      )
+    }
+  }
+
+  test("inserts no eager between property set and keys read of a map") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("keys")
+      .projection("keys({a: 1}) AS keys")
+      .setNodeProperty("m", "prop", "42")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    // The plan builder only records types for variables, so give the map literal the precise
+    // static type that full semantic analysis would infer. keys(map) must then stay a plain
+    // value operation without any graph property dependency.
+    val mapExpression = plan.folder.findAllByClass[MapExpression].head
+    val rewrittenPlan =
+      eagerizePlan(planBuilder, plan, extraSemanticInfo = _.addTypeInfo(mapExpression, CTMap.invariant))
+
+    rewrittenPlan should equal(plan)
+  }
+
+  test("inserts no eager for read-only keys") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("keys")
+      .projection("keys(n) AS keys")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val rewrittenPlan = eagerizePlan(planBuilder, plan)
+
+    rewrittenPlan should equal(plan)
   }
 
   test("inserts eager when setting concrete properties from map") {
