@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
+import org.neo4j.storageengine.api.txstate.validation.TransactionConflictException;
 import org.neo4j.values.ElementIdMapper;
 
 public class Neo4jTransactionalContext implements TransactionalContext {
@@ -294,6 +295,10 @@ public class Neo4jTransactionalContext implements TransactionalContext {
             kernelTransaction.cursorContext().getVersionContext().initRead();
             kernelTransaction.reportVisibilityBoundaryRefresh();
             return committedTransactionId;
+        } catch (TransactionConflictException conflict) {
+            kernelTransaction.cursorContext().getVersionContext().initRead();
+            kernelTransaction.reportVisibilityBoundaryRefresh();
+            throw conflict;
         } catch (Throwable t) {
             // Corner case: The old transaction might have been terminated by the user. Now we also need to
             // terminate the new transaction.

@@ -64,6 +64,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
+import org.neo4j.storageengine.api.txstate.validation.TransactionConflictException;
 
 class Neo4jTransactionalContextTest {
     private GraphDatabaseQueryService queryService;
@@ -142,6 +143,52 @@ class Neo4jTransactionalContextTest {
         assertThrows(RuntimeException.class, context::commitAndRestartTx);
 
         Mockito.verify(userTransaction).rollback();
+    }
+
+    @Test
+    void keepsNewlyCreatedTransactionOnCommitConflictDuringRestart() throws TransactionFailureException {
+        InternalTransaction userTransaction = mock(InternalTransaction.class, new ReturnsDeepStubs());
+        KernelTransaction.Type transactionType = KernelTransaction.Type.IMPLICIT;
+        SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
+        ClientConnectionInfo connectionInfo = ClientConnectionInfo.EMBEDDED_CONNECTION;
+        when(userTransaction.transactionType()).thenReturn(transactionType);
+        when(userTransaction.clientInfo()).thenReturn(connectionInfo);
+        when(userTransaction.securityContext()).thenReturn(securityContext);
+        when(userTransaction.terminationReason()).thenReturn(Optional.empty());
+
+        GraphDatabaseQueryService queryService = mock(GraphDatabaseQueryService.class);
+        KernelStatement initialStatement = mock(KernelStatement.class);
+        KernelTransaction initialKTX = mockTransaction(initialStatement);
+        QueryRegistry initialQueryRegistry = mock(QueryRegistry.class);
+        ExecutingQuery executingQuery = mock(ExecutingQuery.class);
+
+        KernelStatement secondStatement = mock(KernelStatement.class);
+        KernelTransaction secondKTX = mockTransaction(secondStatement);
+        QueryRegistry secondQueryRegistry = mock(QueryRegistry.class);
+
+        when(transactionFactory.beginKernelTransaction(transactionType, securityContext, connectionInfo, null))
+                .thenReturn(secondKTX);
+        when(executingQuery.databaseId()).thenReturn(Optional.of(namedDatabaseId));
+        var conflict = TransactionConflictException.transactionConflict(new Exception());
+        Mockito.doThrow(conflict).when(initialKTX).commit(any());
+        when(initialStatement.queryRegistry()).thenReturn(initialQueryRegistry);
+        when(userTransaction.kernelTransaction()).thenReturn(initialKTX, initialKTX, secondKTX);
+        when(secondStatement.queryRegistry()).thenReturn(secondQueryRegistry);
+
+        Neo4jTransactionalContext context = new Neo4jTransactionalContext(
+                queryService,
+                userTransaction,
+                initialStatement,
+                executingQuery,
+                transactionFactory,
+                QueryExecutionConfiguration.DEFAULT_CONFIG);
+
+        var thrown = assertThrows(TransactionConflictException.class, context::commitAndRestartTx);
+
+        assertSame(conflict, thrown);
+        Mockito.verify(userTransaction, never()).rollback();
+        Mockito.verify(secondKTX).reportVisibilityBoundaryRefresh();
+        assertSame(secondKTX, context.kernelTransaction());
     }
 
     @Test
