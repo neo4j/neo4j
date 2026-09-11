@@ -96,17 +96,18 @@ class IntegralRangeListValueTest {
 
     @Test
     void rangeListsShouldFailOnSizeOverflow() {
-        ListValue range = range(0, Long.MAX_VALUE, 1L);
-        ErrorGqlStatusObjectAssertions.assertThatThrownBy(range::actualSize)
+        // Mathematical cardinality is Long.MAX_VALUE + 1 = 9223372036854775808, not representable.
+        // Exact cardinality is computed once at construction (O(1)), so the factory itself fails fast.
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> range(0, Long.MAX_VALUE, 1L))
                 .isInstanceOf(org.neo4j.exceptions.ArithmeticException.class)
                 .hasMessage("numeric value out of range")
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22003)
                 .hasStatusDescription(
-                        "error: data exception - numeric value out of range. The numeric value 9223372036854775807+1 is outside the required range.")
+                        "error: data exception - numeric value out of range. The numeric value 9223372036854775808 is outside the required range.")
                 .gqlCause()
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
                 .hasStatusDescription(
-                        "error: data exception - overflow error. The result of the operation '+' has caused an overflow.");
+                        "error: data exception - overflow error. The result of the operation 'range()' has caused an overflow.");
     }
 
     private void assertSame(ListValue list, ListValue expected) {

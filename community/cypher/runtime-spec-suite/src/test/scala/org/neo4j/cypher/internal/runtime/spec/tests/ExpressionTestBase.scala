@@ -1863,6 +1863,30 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
     result should beColumns("last").withSingleRow(Values.longValue(Long.MaxValue))
   }
 
+  test("should return exact size for int-backed range beyond Int.MaxValue (#13957)") {
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("s")
+      .projection("size(range(0, 2147483647, 1)) AS s")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    result should beColumns("s").withSingleRow(Values.longValue(2147483648L))
+  }
+
+  test("should return exact size for long-backed range beyond Int.MaxValue (#13957)") {
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("s")
+      .projection("size(range(0, 2147483648, 1)) AS s")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    result should beColumns("s").withSingleRow(Values.longValue(2147483649L))
+  }
+
   test("should evaluate string interpolation") {
     // given, an empty db
     // when

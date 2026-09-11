@@ -193,6 +193,31 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     node.getAllProperties.asScala should equal(Map("p1" -> 1))
   }
 
+  test("should reject oversized range as node property before allocation (#13957)") {
+    // CREATE (n {p: range(0, 4294967296, 1)}) historically stored [0]; must fail at
+    // logical-list -> storable-array boundary with no prefix persisted and no node created.
+    // 4294967296 > Integer.MAX_VALUE so the boundary throws Neo4j 22003/22N28, never a JVM error.
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .create(createNodeWithProperties("n", Seq("A"), "{p: range(0, 4294967296, 1)}"))
+      .argument()
+      .build(readOnly = false)
+
+    the[org.neo4j.exceptions.ArithmeticException] thrownBy consume(execute(logicalQuery, runtime))
+    Iterables.count(tx.getAllNodes) shouldBe 0
+  }
+
+  test("should reject 2^32+1 range as node property without prefix (#13957)") {
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .create(createNodeWithProperties("n", Seq("A"), "{p: range(0, 4294967297, 1)}"))
+      .argument()
+      .build(readOnly = false)
+
+    the[org.neo4j.exceptions.ArithmeticException] thrownBy consume(execute(logicalQuery, runtime))
+    Iterables.count(tx.getAllNodes) shouldBe 0
+  }
+
   test("should create two nodes with dependency") {
     // given an empty data base
 
