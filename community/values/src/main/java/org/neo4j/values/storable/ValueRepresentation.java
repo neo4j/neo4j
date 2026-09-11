@@ -68,7 +68,7 @@ public enum ValueRepresentation {
     GEOMETRY(ValueGroup.GEOMETRY, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            PointValue[] points = new PointValue[values.intSize()];
+            PointValue[] points = new PointValue[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             PointValue first = null;
             int i = 0;
             for (AnyValue value : values) {
@@ -90,7 +90,7 @@ public enum ValueRepresentation {
     ZONED_DATE_TIME(ValueGroup.ZONED_DATE_TIME, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            ZonedDateTime[] temporals = new ZonedDateTime[values.intSize()];
+            ZonedDateTime[] temporals = new ZonedDateTime[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = (getOrFail(value, DateTimeValue.class, values, i)).temporal();
@@ -101,7 +101,7 @@ public enum ValueRepresentation {
     LOCAL_DATE_TIME(ValueGroup.LOCAL_DATE_TIME, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            LocalDateTime[] temporals = new LocalDateTime[values.intSize()];
+            LocalDateTime[] temporals = new LocalDateTime[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] =
@@ -113,7 +113,7 @@ public enum ValueRepresentation {
     DATE(ValueGroup.DATE, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            LocalDate[] temporals = new LocalDate[values.intSize()];
+            LocalDate[] temporals = new LocalDate[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = getOrFail(value, DateValue.class, values, i).temporal();
@@ -124,7 +124,7 @@ public enum ValueRepresentation {
     ZONED_TIME(ValueGroup.ZONED_TIME, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            OffsetTime[] temporals = new OffsetTime[values.intSize()];
+            OffsetTime[] temporals = new OffsetTime[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = ((TimeValue) value).temporal();
@@ -135,7 +135,7 @@ public enum ValueRepresentation {
     LOCAL_TIME(ValueGroup.LOCAL_TIME, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            LocalTime[] temporals = new LocalTime[values.intSize()];
+            LocalTime[] temporals = new LocalTime[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = ((LocalTimeValue) value).temporal();
@@ -146,7 +146,7 @@ public enum ValueRepresentation {
     DURATION(ValueGroup.DURATION, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            DurationValue[] temporals = new DurationValue[values.intSize()];
+            DurationValue[] temporals = new DurationValue[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = (DurationValue) value;
@@ -157,7 +157,7 @@ public enum ValueRepresentation {
     UTF16_TEXT(ValueGroup.TEXT, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            StringValue[] strings = new StringValue[values.intSize()];
+            StringValue[] strings = new StringValue[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 strings[i++] = ((TextValue) value).asStringValue();
@@ -176,7 +176,7 @@ public enum ValueRepresentation {
     UTF8_TEXT(ValueGroup.TEXT, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            StringValue[] strings = new StringValue[values.intSize()];
+            StringValue[] strings = new StringValue[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 strings[i++] = ((TextValue) value).asStringValue();
@@ -196,7 +196,7 @@ public enum ValueRepresentation {
     BOOLEAN(ValueGroup.BOOLEAN, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            boolean[] bools = new boolean[values.intSize()];
+            boolean[] bools = new boolean[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 bools[i++] = ((BooleanValue) value).booleanValue();
@@ -207,7 +207,7 @@ public enum ValueRepresentation {
     INT64(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            long[] longs = new long[values.intSize()];
+            long[] longs = new long[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 longs[i++] = getOrFail(value, NumberValue.class, values, i).longValue();
@@ -227,7 +227,7 @@ public enum ValueRepresentation {
     INT32(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            int[] ints = new int[values.intSize()];
+            int[] ints = new int[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 ints[i++] = getOrFail(value, IntegralValue.class, values, i).intValue();
@@ -248,7 +248,7 @@ public enum ValueRepresentation {
     INT16(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            short[] shorts = new short[values.intSize()];
+            short[] shorts = new short[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 shorts[i++] = getOrFail(value, IntegralValue.class, values, i).shortValue();
@@ -272,7 +272,7 @@ public enum ValueRepresentation {
     INT8(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            byte[] bytes = new byte[values.intSize()];
+            byte[] bytes = new byte[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 bytes[i++] = getOrFail(value, ByteValue.class, values, i).value();
@@ -296,7 +296,7 @@ public enum ValueRepresentation {
     FLOAT64(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            double[] doubles = new double[values.intSize()];
+            double[] doubles = new double[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 doubles[i++] = ((NumberValue) value).doubleValue();
@@ -315,7 +315,7 @@ public enum ValueRepresentation {
     FLOAT32(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            float[] floats = new float[values.intSize()];
+            float[] floats = new float[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 NumberValue asNumberValue = getOrFail(value, NumberValue.class, values, i);
@@ -407,7 +407,7 @@ public enum ValueRepresentation {
     UUID(ValueGroup.UUID, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            UUID[] uuids = new UUID[values.intSize()];
+            UUID[] uuids = new UUID[SequenceValue.checkedArrayLength(values, "toStorableArray")];
             int i = 0;
             for (AnyValue value : values) {
                 UUIDValue asUidValue = getOrFail(value, UUIDValue.class, values, i);
@@ -452,11 +452,11 @@ public enum ValueRepresentation {
         // only print the first three items
         if (sequence == null || sequence == Values.NO_VALUE) {
             return "NULL";
-        } else if (sequence.intSize() == 0) {
+        } else if (sequence.actualSize() == 0L) {
             return "[]";
         }
-        int badIdx;
-        int size = sequence.intSize();
+        long badIdx;
+        long size = sequence.actualSize();
         for (badIdx = 0; badIdx < size; badIdx++) {
             if (sequence.value(badIdx).equals(badValue)) {
                 break;

@@ -49,6 +49,24 @@ class RangeFunctionTest extends InterpretedRuntimeTestSuite {
     range(1L, Int.MaxValue + 1000L, 1L) // should not blow up...
   }
 
+  test("should compute exact cardinality beyond Int.MaxValue (#13957)") {
+    range(0L, Int.MaxValue.toLong, 1L).actualSize() should be(2147483648L)
+    range(Int.MinValue.toLong, Int.MaxValue.toLong, 1L).actualSize() should be(4294967296L)
+    range(Int.MinValue.toLong, Int.MaxValue.toLong, 2L).actualSize() should be(2147483648L)
+    range(Int.MaxValue.toLong, Int.MinValue.toLong, -1L).actualSize() should be(4294967296L)
+    // long indexing stays valid without materialization
+    range(0L, 4294967296L, 1L).value(4294967296L) should be(Values.longValue(4294967296L))
+    // intSize is exact-or-fail, never wraps to 0
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy range(0L, Int.MaxValue.toLong, 1L).intSize()
+  }
+
+  test("should fail materialization of huge range before allocation (#13957)") {
+    // 2^32 would historically narrow to 0, 2^32+1 to 1, 2^32+2 to 2
+    an[RuntimeException] should be thrownBy range(0L, 4294967295L, 1L).toStorableArray()
+    an[RuntimeException] should be thrownBy range(0L, 4294967296L, 1L).toStorableArray()
+    an[RuntimeException] should be thrownBy range(0L, 4294967297L, 1L).toStorableArray()
+  }
+
   private def seq(vals: Long*) = list(vals.map(Values.longValue): _*)
 
   private def range(start: Long, end: Long, step: Long): ListValue = {

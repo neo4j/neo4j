@@ -430,7 +430,7 @@ public final class Values {
     }
 
     public static VectorArray vectorArray(SequenceValue sequence) {
-        VectorValue[] vectors = new VectorValue[sequence.intSize()];
+        VectorValue[] vectors = new VectorValue[SequenceValue.checkedArrayLength(sequence, "toStorableArray")];
         int i = 0;
         for (AnyValue value : sequence) {
             vectors[i++] = Values.vectorValue(value);

@@ -25,6 +25,9 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.Iterator;
+import org.neo4j.exceptions.ArithmeticException;
+import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 
@@ -56,6 +59,36 @@ public interface SequenceValue extends Iterable<AnyValue> {
      * @throws ArithmeticException if the size doesn't fit into an int.
      */
     int intSize();
+
+    /**
+     * Checked narrowing of a logical sequence cardinality to a physical Java/storable array length.
+     * <p>
+     * Logical cardinality lives in {@code [0, Long.MAX_VALUE]}. A Java array (and therefore any storable
+     * property array) cannot exceed {@link ArrayUtil#MAX_ARRAY_SIZE}. This helper enforces, in O(1) and
+     * before any allocation or iteration:
+     * <ol>
+     *   <li>exact {@code long -> int} narrowing (no modular wrap, no clamp, no saturation), then</li>
+     *   <li>the Neo4j/Java physical array capacity limit.</li>
+     * </ol>
+     * Success guarantees the returned {@code int} equals the exact logical size. Failure throws a
+     * client-facing error that names the exact logical cardinality, never a wrapped {@code int}.
+     * Once cardinality exceeds a physical maximum it can never become valid again for larger sizes.
+     *
+     * @param value the sequence whose logical size should be materialized
+     * @param operation GQL operation name used for the numeric-overflow error (e.g. {@code "range()"})
+     * @return the exact array length as {@code int}
+     */
+    static int checkedArrayLength(SequenceValue value, String operation) {
+        long logicalSize = value.actualSize();
+        if (logicalSize < 0L || logicalSize > Integer.MAX_VALUE) {
+            throw ArithmeticException.numericValueOutOfRange(String.valueOf(logicalSize), operation);
+        }
+        int size = (int) logicalSize; // now mathematically proven exact
+        if (size > ArrayUtil.MAX_ARRAY_SIZE) {
+            throw InvalidArgumentException.listTooLarge(logicalSize, ArrayUtil.MAX_ARRAY_SIZE);
+        }
+        return size;
+    }
 
     default boolean isEmpty() {
         return actualSize() == 0L;
