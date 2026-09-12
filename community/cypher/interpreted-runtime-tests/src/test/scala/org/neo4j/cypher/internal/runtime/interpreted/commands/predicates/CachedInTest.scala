@@ -122,4 +122,28 @@ class CachedInTest extends InterpretedRuntimeTestSuite {
     predicate.isMatch(vNull, state) should equal(IsUnknown)
     predicate.isMatch(v14, state) should equal(IsFalse)
   }
+
+  test("check with a large collection containing lists with nulls") {
+    // given a 128 element list, large enough for the InCache fast path to kick in:
+    // one list containing null, one list without nulls, and 126 integers
+    val entries: Seq[Expression] = Seq[Expression](
+      ListLiteral(literal(1), Literal(NO_VALUE)),
+      ListLiteral(literal(1), literal(2))
+    ) ++ (3 to 128).map(i => literal(i))
+
+    val predicate = createPredicate(Variable("x"), ListLiteral(entries: _*))
+
+    val state = QueryStateHelper.empty
+
+    // the first evaluation is uncached, the second builds the seen set,
+    // and only the third and later reach the set lookup, so evaluate often enough
+    for (_ <- 1 to 5) {
+      // fresh instances per evaluation, as UNWIND produces per row
+      val vWithNull = CypherRow.empty.copyWith("x", VirtualValues.list(intValue(1), NO_VALUE))
+      val vWithoutNull = CypherRow.empty.copyWith("x", VirtualValues.list(intValue(1), intValue(2)))
+
+      predicate.isMatch(vWithNull, state) should equal(IsUnknown)
+      predicate.isMatch(vWithoutNull, state) should equal(IsTrue)
+    }
+  }
 }

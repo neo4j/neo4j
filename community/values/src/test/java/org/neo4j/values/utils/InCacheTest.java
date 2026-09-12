@@ -152,6 +152,96 @@ class InCacheTest {
     }
 
     @Test
+    void shouldPropagateNullForRepeatedLookupsOfListsContainingNull() {
+        AnyValue[][] nullContainingLists = {
+            new AnyValue[] {NO_VALUE},
+            new AnyValue[] {NO_VALUE, intValue(1)},
+            new AnyValue[] {intValue(1), NO_VALUE},
+            new AnyValue[] {intValue(1), intValue(2), NO_VALUE, intValue(3)}
+        };
+
+        for (AnyValue[] nullContainingList : nullContainingLists) {
+            InCache cache = new InCache();
+            ListValue list = listOf128Elements(list(nullContainingList));
+
+            // the first lookup is uncached, the second builds the seen set,
+            // and only the third and later reach the set lookup, so look up often enough
+            for (int i = 0; i < 5; i++) {
+                // a fresh equal instance per lookup, as UNWIND produces per row
+                assertEquals(NO_VALUE, cache.check(list(nullContainingList), list, EmptyMemoryTracker.INSTANCE));
+            }
+        }
+    }
+
+    @Test
+    void shouldPropagateNullForRepeatedLookupsOfMapsContainingNull() {
+        String[][] keys = {
+            new String[] {"a"}, new String[] {"a", "b"}, new String[] {"a", "b"}, new String[] {"a", "b", "c", "d"}
+        };
+        AnyValue[][] values = {
+            new AnyValue[] {NO_VALUE},
+            new AnyValue[] {intValue(1), NO_VALUE},
+            new AnyValue[] {NO_VALUE, intValue(1)},
+            new AnyValue[] {intValue(1), intValue(2), NO_VALUE, intValue(3)}
+        };
+
+        for (int variant = 0; variant < keys.length; variant++) {
+            InCache cache = new InCache();
+            ListValue list = listOf128Elements(map(keys[variant], values[variant]));
+
+            for (int i = 0; i < 5; i++) {
+                assertEquals(
+                        NO_VALUE, cache.check(map(keys[variant], values[variant]), list, EmptyMemoryTracker.INSTANCE));
+            }
+        }
+    }
+
+    @Test
+    void shouldReturnTrueForRepeatedLookupsOfListsInLargeList() {
+        InCache cache = new InCache();
+        ListValue list = listOf128Elements(list(intValue(1), intValue(2)));
+
+        for (int i = 0; i < 5; i++) {
+            assertEquals(TRUE, cache.check(list(intValue(1), intValue(2)), list, EmptyMemoryTracker.INSTANCE));
+        }
+    }
+
+    @Test
+    void shouldReturnTrueForRepeatedLookupsOfListsInLargeListAlsoContainingNull() {
+        // a TRUE match found before the scan reaches a NO_VALUE element must still win
+        // over the undefined-ness introduced by that null on later lookups
+        InCache cache = new InCache();
+        ListValue list = listWith128Elements(list(intValue(1), intValue(2)), NO_VALUE);
+
+        for (int i = 0; i < 5; i++) {
+            assertEquals(TRUE, cache.check(list(intValue(1), intValue(2)), list, EmptyMemoryTracker.INSTANCE));
+        }
+    }
+
+    @Test
+    void shouldReturnFalseForRepeatedLookupsOfListsNotInLargeList() {
+        InCache cache = new InCache();
+        ListValue list = listOf128Elements(list(intValue(1), intValue(2)));
+
+        for (int i = 0; i < 5; i++) {
+            assertEquals(FALSE, cache.check(list(intValue(9), intValue(9)), list, EmptyMemoryTracker.INSTANCE));
+        }
+    }
+
+    private static ListValue listOf128Elements(AnyValue element) {
+        return listWith128Elements(element, intValue(1));
+    }
+
+    private static ListValue listWith128Elements(AnyValue element, AnyValue otherElement) {
+        AnyValue[] elements = new AnyValue[128];
+        elements[0] = element;
+        for (int i = 1; i < 128; i++) {
+            elements[i] = otherElement;
+        }
+        return list(elements);
+    }
+
+    @Test
     void shouldCloseCacheThatIsNeverUsed() {
         new InCache().close();
     }

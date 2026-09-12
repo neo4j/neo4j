@@ -91,7 +91,11 @@ public class InCache implements AutoCloseable {
                 iterator = list.iterator();
                 this.seen = HeapTrackingCollections.newSet(memoryTracker);
             }
-            if (seen.contains(value)) {
+            // Binary equality of sequences and maps does not imply ternary equality: a composite
+            // containing NO_VALUE is binary-equal to itself while its ternary equality is UNDEFINED.
+            // Such values therefore cannot use the binary set lookup to conclude TRUE.
+            boolean composite = value instanceof SequenceValue || value instanceof MapValue;
+            if (!composite && seen.contains(value)) {
                 return TRUE;
             }
 
@@ -108,12 +112,21 @@ public class InCache implements AutoCloseable {
                 }
             }
 
-            if (seenUndefined) {
+            if (composite) {
+                // Every element the shared iterator has consumed is in seen, so a ternary scan of
+                // seen is equivalent to ternaryContains over the non-null elements of the list.
+                Equality result = Equality.FALSE;
+                for (AnyValue seenValue : seen) {
+                    Equality equality = value.ternaryEquals(seenValue);
+                    if (equality == Equality.TRUE) {
+                        return TRUE;
+                    } else if (equality == Equality.UNDEFINED) {
+                        result = Equality.UNDEFINED;
+                    }
+                }
+                return (seenUndefined || result == Equality.UNDEFINED) ? NO_VALUE : FALSE;
+            } else if (seenUndefined) {
                 return NO_VALUE;
-            } else if (value instanceof SequenceValue || value instanceof MapValue) {
-                var undefinedEquality =
-                        seen.stream().anyMatch(seenValue -> value.ternaryEquals(seenValue) == Equality.UNDEFINED);
-                return undefinedEquality ? NO_VALUE : FALSE;
             } else {
                 return FALSE;
             }
