@@ -1307,7 +1307,8 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             "property value too big",
             ErrorClassification.CLIENT_ERROR),
     STATUS_22NBG(
-            "Invalid vector coordinates. The vector coordinates must be finite.",
+            "Invalid vector coordinates. The vector coordinates must be finite, but are { %s }.",
+            new GqlParams.GqlParam[] {GqlParams.StringParam.value},
             "invalid vector coordinates",
             ErrorClassification.CLIENT_ERROR),
     // Graph Type Errors

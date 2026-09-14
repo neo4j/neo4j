@@ -395,7 +395,7 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
     // then
     the[InvalidArgumentException] thrownBy consume(execute(logicalQuery, runtime)) shouldBe gqlStatus(
       GqlStatusInfoCodes.STATUS_22NBG,
-      "error: data exception - invalid vector coordinates. Invalid vector coordinates. The vector coordinates must be finite."
+      "error: data exception - invalid vector coordinates. Invalid vector coordinates. The vector coordinates must be finite, but are [1, <null>, 3]."
     )
   }
 

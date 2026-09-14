@@ -94,7 +94,7 @@ public interface VectorCandidate {
 
         @Override
         public String prettyPrint() {
-            return sequence.prettyPrint();
+            return sequence.prettify();
         }
 
         @Override

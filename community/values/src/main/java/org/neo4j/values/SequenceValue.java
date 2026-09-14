@@ -90,6 +90,8 @@ public interface SequenceValue extends Iterable<AnyValue> {
 
     String prettyPrint();
 
+    String prettify();
+
     String getTypeName();
 
     default boolean equals(SequenceValue other) {
