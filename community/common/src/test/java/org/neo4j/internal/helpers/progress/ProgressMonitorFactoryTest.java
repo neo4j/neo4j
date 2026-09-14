@@ -132,6 +132,30 @@ class ProgressMonitorFactoryTest {
         assertThat(listener.seenProgress).isEqualTo(total);
     }
 
+    @Test
+    void getProgressShouldNotExceedTotalCount() {
+        try (var listener =
+                new ProgressListener.SinglePartProgressListener(Indicator.NONE, 100, (progress, total) -> {})) {
+
+            listener.add(60);
+            listener.add(60);
+
+            assertThat(listener.getProgress()).isEqualTo(100);
+        }
+    }
+
+    @Test
+    void getProgressShouldReflectTotalCountAfterClose() {
+        try (var listener =
+                new ProgressListener.SinglePartProgressListener(Indicator.NONE, 100, (progress, total) -> {})) {
+
+            listener.add(40);
+            listener.close();
+
+            assertThat(listener.getProgress()).isEqualTo(100);
+        }
+    }
+
     private void progressThrough(ProgressListener listener) {
         try (listener) {
             // just progress some and let it be completed in its close() call, doesn't quite matter

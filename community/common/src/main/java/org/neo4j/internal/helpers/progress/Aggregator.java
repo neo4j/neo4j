@@ -81,7 +81,12 @@ final class Aggregator {
         }
     }
 
+    public long getProgress() {
+        return min(totalCount, PROGRESS_UPDATER.get(this));
+    }
+
     void updateRemaining() {
+        PROGRESS_UPDATER.set(this, totalCount);
         updateTo(indicator.reportResolution(), totalCount);
     }
 

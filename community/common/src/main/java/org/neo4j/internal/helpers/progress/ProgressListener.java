@@ -81,7 +81,14 @@ public interface ProgressListener extends AutoCloseable {
      */
     int reportResolution();
 
-    class Adapter implements ProgressListener {
+    interface WithProgressGetter extends ProgressListener {
+        /**
+         * @return the current progress
+         */
+        long getProgress();
+    }
+
+    class Adapter implements ProgressListener.WithProgressGetter {
         @Override
         public void add(long progress) {}
 
@@ -98,9 +105,14 @@ public interface ProgressListener extends AutoCloseable {
         public int reportResolution() {
             return 0;
         }
+
+        @Override
+        public long getProgress() {
+            return 0;
+        }
     }
 
-    ProgressListener NONE = new Adapter();
+    ProgressListener.WithProgressGetter NONE = new Adapter();
 
     class ThreadLocalReporter implements ProgressListener {
         private final int threshold;
@@ -232,7 +244,7 @@ public interface ProgressListener extends AutoCloseable {
         }
     }
 
-    class SinglePartProgressListener extends AggregatorProgressListener {
+    class SinglePartProgressListener extends AggregatorProgressListener implements WithProgressGetter {
         SinglePartProgressListener(
                 Indicator indicator, long totalCount, ProgressMonitorFactory.IndicatorListener listener) {
             super(new Aggregator(indicator, listener));
@@ -243,6 +255,11 @@ public interface ProgressListener extends AutoCloseable {
         @Override
         public void add(long progress) {
             aggregator.update(progress);
+        }
+
+        @Override
+        public long getProgress() {
+            return aggregator.getProgress();
         }
 
         @Override

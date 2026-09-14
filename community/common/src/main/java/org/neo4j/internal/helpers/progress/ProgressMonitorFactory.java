@@ -253,11 +253,12 @@ public abstract class ProgressMonitorFactory {
      * @param listener "external" listener of this progress, getting updates basically when "dots" gets printed.
      * @return the created progress listener.
      */
-    public final ProgressListener singlePart(String process, long totalCount, IndicatorListener listener) {
+    public final ProgressListener.WithProgressGetter singlePart(
+            String process, long totalCount, IndicatorListener listener) {
         return new ProgressListener.SinglePartProgressListener(newIndicator(process, listener), totalCount, listener);
     }
 
-    public ProgressListener singlePart(String process, long totalCount) {
+    public ProgressListener.WithProgressGetter singlePart(String process, long totalCount) {
         return singlePart(process, totalCount, NO_INDICATOR_LISTENER);
     }
 

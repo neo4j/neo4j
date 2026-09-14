@@ -159,7 +159,8 @@ class EncodingIdMapperTest {
         // GIVEN
         try (IdMapper idMapper = mapper(new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors)) {
             ProgressMonitorFactory progressMonitorFactory = mock(ProgressMonitorFactory.class);
-            when(progressMonitorFactory.singlePart(anyString(), anyLong())).thenReturn(mock(ProgressListener.class));
+            when(progressMonitorFactory.singlePart(anyString(), anyLong()))
+                    .thenReturn(mock(ProgressListener.WithProgressGetter.class));
             idMapper.prepare(values(), mock(Collector.class), progressMonitorFactory, LongSets.immutable.empty());
 
             // WHEN

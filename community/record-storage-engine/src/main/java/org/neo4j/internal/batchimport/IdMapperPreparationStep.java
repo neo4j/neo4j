@@ -80,7 +80,7 @@ public class IdMapperPreparationStep extends LonelyProcessingStep {
                     }
 
                     @Override
-                    public ProgressListener singlePart(String process, long totalCount) {
+                    public ProgressListener.WithProgressGetter singlePart(String process, long totalCount) {
                         this.totalCount = totalCount;
                         return super.singlePart(process, totalCount);
                     }
