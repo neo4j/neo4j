@@ -234,7 +234,7 @@ public class CsvInput implements Input {
         this.groups = groups;
     }
 
-    private static void assertSaneConfiguration(Configuration config) {
+    public static void assertSaneConfiguration(Configuration config) {
         Map<Character, String> delimiters = new HashMap<>();
         delimiters.put(disallowNewline(config.delimiter(), "delimiter"), "delimiter");
         checkUniqueCharacterAndNotNewline(delimiters, config.arrayDelimiter(), "array delimiter");

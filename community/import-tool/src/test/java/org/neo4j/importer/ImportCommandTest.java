@@ -20,23 +20,17 @@
 package org.neo4j.importer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.importer.ImportCommand.Base.DEFAULT_CSV_CONFIG;
-import static org.neo4j.io.fs.FileSystemAbstraction.PatternStyle.REGEX;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -48,7 +42,6 @@ import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.importer.ImportCommand.InputFilesGroup;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -614,144 +607,5 @@ class ImportCommandTest {
             positionals.add(positional.paramLabel());
         }
         return positionals;
-    }
-
-    @Nested
-    class ParseNodeFilesGroup {
-        @Test
-        void illegalEqualsPosition() {
-            assertThatExceptionOfType(IllegalArgumentException.class)
-                    .isThrownBy(() -> ImportCommand.parseNodeFilesGroup("=foo.csv"));
-            assertThatExceptionOfType(IllegalArgumentException.class)
-                    .isThrownBy(() -> ImportCommand.parseNodeFilesGroup("foo="));
-        }
-
-        @Test
-        void validateFileExistence() {
-            assertThatThrownBy(() -> ImportCommand.parseNodeFilesGroup("nonexisting.file")
-                            .toPathArray(testDir.getFileSystem(), REGEX))
-                    .isInstanceOf(UncheckedIOException.class)
-                    .hasCauseInstanceOf(NoSuchFileException.class);
-        }
-
-        @ParameterizedTest
-        @ValueSource(booleans = {true, false})
-        void filesWithoutLabels(boolean useURIs) {
-            final var foo = testDir.createFile("foo.csv");
-            final var bar = testDir.createFile("bar.csv");
-            final var pathStr = useURIs ? foo.toUri() + "," + bar.toUri() : foo + "," + bar;
-            final var g = ImportCommand.parseNodeFilesGroup(pathStr);
-            assertThat(g.key).isEmpty();
-            assertPathsFound(testDir, g, foo, bar);
-        }
-
-        @ParameterizedTest
-        @ValueSource(booleans = {true, false})
-        void singleLabel(boolean useURIs) {
-            final var foo = testDir.createFile("foo.csv");
-            final var bar = testDir.createFile("bar.csv");
-            final var pathStr = useURIs ? "BANANA=" + foo.toUri() + "," + bar.toUri() : "BANANA=" + foo + "," + bar;
-            final var g = ImportCommand.parseNodeFilesGroup(pathStr);
-            assertThat(g.key).containsOnly("BANANA");
-            assertPathsFound(testDir, g, foo, bar);
-        }
-
-        @ParameterizedTest
-        @ValueSource(booleans = {true, false})
-        void multipleLabels(boolean useURIs) {
-            final var foo = testDir.createFile("foo.csv");
-            final var bar = testDir.createFile("bar.csv");
-            final var pathStr = useURIs
-                    ? ":APPLE::KIWI : BANANA=" + foo.toUri() + "," + bar.toUri()
-                    : ":APPLE::KIWI : BANANA=" + foo + "," + bar;
-            final var g = ImportCommand.parseNodeFilesGroup(pathStr);
-            assertThat(g.key).containsOnly("BANANA", "KIWI", "APPLE");
-            assertPathsFound(testDir, g, foo, bar);
-        }
-
-        @Test
-        void labelsKeepTheOrderTheyWereSpecifiedIn() {
-            final var foo = testDir.createFile("foo.csv");
-            final var g = ImportCommand.parseNodeFilesGroup("Middle:Alpha:Zebra=" + foo);
-            assertThat(g.key).containsExactly("Middle", "Alpha", "Zebra");
-        }
-
-        @ParameterizedTest
-        @ValueSource(booleans = {true, false})
-        void filesRegex(boolean useURIs) {
-            final var foo1 = testDir.createFile("foo-1.csv");
-            final var foo2 = testDir.createFile("foo-2.csv");
-            testDir.createFile("foo-X.csv");
-            final var pathStr = useURIs
-                    ? "BANANA=" + testDir.absolutePath().toUri() + "/foo-[0-9].csv"
-                    : "BANANA=" + testDir.absolutePath() + File.separator + "foo-[0-9].csv";
-            final var g = ImportCommand.parseNodeFilesGroup(pathStr);
-            assertThat(g.key).containsOnly("BANANA");
-            assertPathsFound(testDir, g, foo1, foo2);
-        }
-    }
-
-    @Nested
-    class ParseRelationshipFilesGroup {
-        @Test
-        void illegalEqualsPosition() {
-            assertThatExceptionOfType(IllegalArgumentException.class)
-                    .isThrownBy(() -> ImportCommand.parseRelationshipFilesGroup("=foo.csv"));
-            assertThatExceptionOfType(IllegalArgumentException.class)
-                    .isThrownBy(() -> ImportCommand.parseRelationshipFilesGroup("foo="));
-        }
-
-        @Test
-        void validateFileExistence() {
-            assertThatThrownBy(() -> ImportCommand.parseRelationshipFilesGroup("nonexisting.file")
-                            .toPathArray(testDir.getFileSystem(), REGEX))
-                    .isInstanceOf(UncheckedIOException.class)
-                    .hasCauseInstanceOf(NoSuchFileException.class);
-        }
-
-        @ParameterizedTest
-        @ValueSource(booleans = {true, false})
-        void filesWithoutRelType(boolean useURIs) {
-            final var foo = testDir.createFile("foo.csv");
-            final var bar = testDir.createFile("bar.csv");
-            final var pathStr = useURIs ? foo.toUri() + "," + bar.toUri() : foo + "," + bar;
-            final var g = ImportCommand.parseRelationshipFilesGroup(pathStr);
-            assertThat(g.key).isNull();
-            assertPathsFound(testDir, g, foo, bar);
-        }
-
-        @ParameterizedTest
-        @ValueSource(booleans = {true, false})
-        void withDefaultRelType(boolean useURIs) {
-            final var foo = testDir.createFile("foo.csv");
-            final var bar = testDir.createFile("bar.csv");
-            final var pathStr = useURIs ? "BANANA=" + foo.toUri() + "," + bar.toUri() : "BANANA=" + foo + "," + bar;
-            final var g = ImportCommand.parseRelationshipFilesGroup(pathStr);
-            assertThat(g.key).isEqualTo("BANANA");
-            assertPathsFound(testDir, g, foo, bar);
-        }
-
-        @ParameterizedTest
-        @ValueSource(booleans = {true, false})
-        void filesRegex(boolean useURIs) {
-            final var foo1 = testDir.createFile("foo-1.csv");
-            final var foo2 = testDir.createFile("foo-2.csv");
-            testDir.createFile("foo-X.csv");
-            final var pathStr = useURIs
-                    ? "BANANA=" + testDir.absolutePath().toUri() + "/foo-[0-9].csv"
-                    : "BANANA=" + testDir.absolutePath() + File.separator + "foo-[0-9].csv";
-            final var g = ImportCommand.parseRelationshipFilesGroup(pathStr);
-            assertThat(g.key).isEqualTo("BANANA");
-            assertPathsFound(testDir, g, foo1, foo2);
-        }
-    }
-
-    private static void assertPathsFound(TestDirectory dir, InputFilesGroup<?> group, Path... expectedPaths) {
-        // the groups will have either local paths or file URIs so will be handled by the simple scheme system below
-        try (var fs = new SchemeFileSystemAbstraction(dir.getFileSystem())) {
-            assertThat(group.toPathArray(fs, REGEX)).containsOnly(expectedPaths);
-        } catch (IOException ex) {
-            throw new UncheckedIOException(ex);
-        }
     }
 }

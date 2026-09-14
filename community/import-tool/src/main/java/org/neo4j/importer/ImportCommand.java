@@ -20,16 +20,13 @@
 package org.neo4j.importer;
 
 import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toSet;
-import static org.eclipse.collections.impl.tuple.Tuples.pair;
 import static org.neo4j.batchimport.api.Configuration.DEFAULT;
 import static org.neo4j.cloud.storage.StorageSettingsDeclaration.adaptPathForSampling;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.importer.FileImporter.FileInputType.NO_INPUT;
+import static org.neo4j.importer.ImportConverters.parseFilesList;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
@@ -46,22 +43,18 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.SequencedSet;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.collections.api.tuple.Pair;
 import org.neo4j.batchimport.api.BatchImporter.HardwareValidation;
 import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.batchimport.api.IndexConfig;
@@ -92,6 +85,14 @@ import org.neo4j.csv.reader.Magic;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.importer.FileImporter.FileInputType;
+import org.neo4j.importer.ImportConverters.EscapedCharacterConverter;
+import org.neo4j.importer.ImportConverters.FileInputTypeConverter;
+import org.neo4j.importer.ImportConverters.IdTypeConverter;
+import org.neo4j.importer.ImportConverters.InputFilesGroup;
+import org.neo4j.importer.ImportConverters.NodeFilesConverter;
+import org.neo4j.importer.ImportConverters.NodeFilesGroup;
+import org.neo4j.importer.ImportConverters.RelationshipFilesConverter;
+import org.neo4j.importer.ImportConverters.RelationshipFilesGroup;
 import org.neo4j.importer.SchemaCommandReader.ReaderConfig;
 import org.neo4j.importer.SchemaCommandSource.DeferredSchemaCommands;
 import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
@@ -113,7 +114,6 @@ import org.neo4j.kernel.api.exceptions.ConsoleFriendlyException;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
-import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
@@ -146,11 +146,6 @@ public class ImportCommand {
      * Arguments and logic shared between Full and Incremental import commands.
      */
     public abstract static class Base extends AbstractAdminCommand {
-        /**
-         * Delimiter used between files in an input group.
-         */
-        private static final Function<String, Character> CHARACTER_CONVERTER = new CharacterConverter();
-
         public static final org.neo4j.csv.reader.Configuration DEFAULT_CSV_CONFIG = COMMAS;
         private static final Configuration DEFAULT_IMPORTER_CONFIG = DEFAULT;
 
@@ -368,7 +363,7 @@ public class ImportCommand {
                 description = "Whether or not a backslash-escaped quote e.g. \\\" is interpreted as an inner quote.")
         private boolean legacyStyleQuoting = DEFAULT_CSV_CONFIG.legacyStyleQuoting();
 
-        private static final String DELIMITER_WARNING_CSV =
+        public static final String DELIMITER_WARNING_CSV =
                 "For CSV data, this value must be different from the one specified in the `--delimiter` option.";
 
         @Option(
@@ -1453,64 +1448,6 @@ public class ImportCommand {
             // default to CSV otherwise
             return fileGroup.streamPaths().anyMatch(checkForParquet) ? FileInputType.PARQUET : FileInputType.CSV;
         }
-
-        static class EscapedCharacterConverter implements ITypeConverter<Character> {
-            @Override
-            public Character convert(String value) {
-                return CHARACTER_CONVERTER.apply(value);
-            }
-        }
-
-        static class NodeFilesConverter implements ITypeConverter<NodeFilesGroup> {
-            @Override
-            public NodeFilesGroup convert(String value) {
-                try {
-                    return parseNodeFilesGroup(value);
-                } catch (Exception e) {
-                    throw new CommandLine.TypeConversionException(format("Invalid nodes file: %s (%s)", value, e));
-                }
-            }
-        }
-
-        static class RelationshipFilesConverter implements ITypeConverter<RelationshipFilesGroup> {
-            @Override
-            public RelationshipFilesGroup convert(String value) {
-                try {
-                    return parseRelationshipFilesGroup(value);
-                } catch (Exception e) {
-                    throw new CommandLine.TypeConversionException(
-                            format("Invalid relationships file: %s (%s)", value, e));
-                }
-            }
-        }
-
-        static class IdTypeConverter implements CommandLine.ITypeConverter<IdType> {
-            @Override
-            public IdType convert(String in) {
-                try {
-                    return IdType.valueOf(in.toUpperCase(Locale.ROOT));
-                } catch (Exception e) {
-                    throw new CommandLine.TypeConversionException(format("Invalid id type: %s (%s)", in, e));
-                }
-            }
-        }
-
-        static class FileInputTypeConverter implements CommandLine.ITypeConverter<FileImporter.FileInputType> {
-            @Override
-            public FileImporter.FileInputType convert(String in) {
-                try {
-                    return FileImporter.FileInputType.valueOf(in.toUpperCase(Locale.ROOT));
-                } catch (Exception e) {
-                    throw new CommandLine.TypeConversionException(format(
-                            "Invalid file import type: %s. Only %s are supported as values",
-                            in,
-                            Arrays.stream(FileImporter.FileInputType.values())
-                                    .map(value ->
-                                            String.format("'%s'", value.name().toLowerCase(Locale.ROOT)))
-                                    .collect(Collectors.joining(", "))));
-                }
-            }
-        }
     }
 
     @Command(
@@ -1759,78 +1696,11 @@ public class ImportCommand {
         }
     }
 
-    private static final String MULTI_FILE_DELIMITER = ",";
-
-    static class NodeFilesGroup extends InputFilesGroup<SequencedSet<String>> {
-        NodeFilesGroup(SequencedSet<String> key, String files) {
-            super(key, files);
-        }
-    }
-
-    static class RelationshipFilesGroup extends InputFilesGroup<String> {
-        RelationshipFilesGroup(String key, String files) {
-            super(key, files);
-        }
-    }
-
     public record ShardingArguments(int numShards, DependencyResolver additionalArguments) {}
-
-    abstract static class InputFilesGroup<T> {
-        final T key;
-        final String files;
-
-        InputFilesGroup(T key, String files) {
-            this.key = key;
-            this.files = files;
-        }
-
-        Path[] toPathArray(FileSystemAbstraction fs, PatternStyle patternStyle) {
-            return parseFilesList(fs, files, patternStyle);
-        }
-    }
 
     @VisibleForTesting
     public static IndexConfig setupIndexConfigForImport(IndexConfig indexConfig) {
         return indexConfig.withLabelIndex().withRelationshipTypeIndex();
-    }
-
-    @VisibleForTesting
-    static RelationshipFilesGroup parseRelationshipFilesGroup(String str) {
-        final var p = parseInputFilesGroup(str, s -> s == null ? null : s.trim());
-        return new RelationshipFilesGroup(p.getOne(), p.getTwo());
-    }
-
-    @VisibleForTesting
-    static NodeFilesGroup parseNodeFilesGroup(String str) {
-        final var p = parseInputFilesGroup(str, s -> {
-            if (s == null) {
-                return new LinkedHashSet<String>();
-            }
-            // The same import command must always apply the additional labels in the same order, so that their
-            // tokens are created in the same order too, therefore a LinkedHashSet
-            return stream(s.split(":"))
-                    .map(String::trim)
-                    .filter(x -> !x.isEmpty())
-                    .collect(toCollection(LinkedHashSet::new));
-        });
-        return new NodeFilesGroup(p.getOne(), p.getTwo());
-    }
-
-    private static <T> Pair<T, String> parseInputFilesGroup(String str, Function<String, ? extends T> keyParser) {
-        final var i = str.indexOf('=');
-        if (i < 0) {
-            return pair(keyParser.apply(null), str);
-        }
-        if (i == 0 || i == str.length() - 1) {
-            throw new IllegalArgumentException("illegal `=` position: " + str);
-        }
-        final var keyStr = str.substring(0, i);
-        return pair(keyParser.apply(keyStr), str.substring(i + 1));
-    }
-
-    private static Path[] parseFilesList(FileSystemAbstraction fs, String str, PatternStyle patternStyle) {
-        return Converters.toFiles(MULTI_FILE_DELIMITER, Converters.patternMatchFiles(fs, true, patternStyle))
-                .apply(str);
     }
 
     @Option(
