@@ -21,10 +21,43 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.matcher.QueryStatisticsMatcher
+import org.neo4j.cypher.internal.runtime.matcher.QueryStatisticsMatcher.ExpectedRange
+import org.neo4j.cypher.internal.runtime.matcher.QueryStatisticsMatcher.ExpectedRange.Exactly
 import org.scalatest.Assertions
 
 trait QueryStatisticsTestSupport {
   self: Assertions =>
+
+  def assertStatsInRange(
+    result: RewindableExecutionResult,
+    nodesCreated: ExpectedRange = Exactly(0L),
+    relationshipsCreated: ExpectedRange = Exactly(0L),
+    propertiesSet: ExpectedRange = Exactly(0L),
+    nodesDeleted: ExpectedRange = Exactly(0L),
+    relationshipsDeleted: ExpectedRange = Exactly(0L),
+    labelsAdded: ExpectedRange = Exactly(0L),
+    labelsRemoved: ExpectedRange = Exactly(0L),
+    transactionsStarted: ExpectedRange = Exactly(0L),
+    transactionsCommitted: ExpectedRange = Exactly(0L),
+    transactionsRolledBack: ExpectedRange = Exactly(0L),
+    fileLinesRead: ExpectedRange = Exactly(0L)
+  ): Unit = {
+    val matcher = QueryStatisticsMatcher(
+      nodesCreated,
+      nodesDeleted,
+      relationshipsCreated,
+      relationshipsDeleted,
+      labelsAdded,
+      labelsRemoved,
+      propertiesSet,
+      transactionsStarted,
+      transactionsCommitted,
+      transactionsRolledBack,
+      fileLinesRead
+    )
+    matcher.apply(result.queryStatistics())
+  }
 
   def assertStats(
     result: RewindableExecutionResult,
