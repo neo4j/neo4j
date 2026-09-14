@@ -38,7 +38,6 @@ import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.fsm.StateMachineHandle;
 import org.neo4j.bolt.fsm.error.BoltException;
 import org.neo4j.bolt.fsm.error.StateMachineException;
-import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.admissioncontrol.ConnectionAdmissionControlTracker;
@@ -589,11 +588,6 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         } catch (TransactionException ex) {
             log.warn("[" + this.id + "] Failed to terminate transaction", ex);
         }
-
-        BoltProtocol protocol;
-        do {
-            protocol = this.protocol.get();
-        } while (!this.protocol.compareAndSet(protocol, null));
 
         // ensure that the underlying connection is also closed (the peer has likely already been notified of the
         // reason)

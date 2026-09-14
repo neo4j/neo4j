@@ -536,6 +536,9 @@ class AtomicSchedulingConnectionTest {
         // components (such as ConnectionRegistry) can move on
         Assertions.assertThat(this.connection.closeFuture()).isDone();
 
+        // The protocol should still be present
+        Assertions.assertThat(this.connection.protocol()).isNotNull();
+
         // the closure should also be logged correctly with the internal log to simplify debugging
         LogAssertions.assertThat(this.internalLogProvider)
                 .forLevel(AssertableLogProvider.Level.DEBUG)
@@ -706,7 +709,10 @@ class AtomicSchedulingConnectionTest {
 
     @Test
     void shouldIdentifyProtocol() {
-        Assertions.assertThat(this.connection.protocol()).isNull();
+        Assertions.assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> this.connection.protocol())
+                .withMessage("Connection has yet to select a protocol version")
+                .withNoCause();
 
         this.selectProtocol();
 

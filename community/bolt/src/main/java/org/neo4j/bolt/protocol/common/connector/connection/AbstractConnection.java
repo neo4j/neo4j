@@ -84,7 +84,7 @@ public abstract class AbstractConnection implements ConnectionHandle {
     private final Lock listenerLock = new ReentrantLock();
     private final List<ConnectionListener> listeners = new CopyOnWriteArrayList<>();
 
-    protected final AtomicReference<BoltProtocol> protocol = new AtomicReference<>();
+    private final AtomicReference<BoltProtocol> protocol = new AtomicReference<>();
     protected final AtomicReference<Set<ProtocolCapability>> selectedCapabilities =
             new AtomicReference<>(EnumSet.noneOf(ProtocolCapability.class));
     private final AtomicReference<Set<Feature>> features = new AtomicReference<>(null);
@@ -256,7 +256,11 @@ public abstract class AbstractConnection implements ConnectionHandle {
 
     @Override
     public BoltProtocol protocol() {
-        return this.protocol.get();
+        var protocol = this.protocol.get();
+        if (protocol == null) {
+            throw new IllegalStateException("Connection has yet to select a protocol version");
+        }
+        return protocol;
     }
 
     @Override
