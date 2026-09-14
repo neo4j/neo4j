@@ -41,7 +41,9 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
@@ -262,6 +264,13 @@ public class IndexedIdGenerator implements IdGenerator {
     private volatile boolean started;
 
     private final AtomicBoolean disableContextualMarkers = new AtomicBoolean();
+
+    /**
+     * Guards the transition between {@link #stop()} and the final {@link #checkpoint(FileFlushEvent, AsyncBlockAccessor, CursorContext)}
+     * during shutdown, so that no new {@link #contextualMarker(CursorContext)} can be instantiated after
+     * the final checkpoint.
+     */
+    private final ReadWriteLock contextualMarkerDisableLock = new ReentrantReadWriteLock();
 
     private final boolean readOnly;
     private final IdSlotDistribution slotDistribution;
@@ -621,26 +630,31 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public ContextualMarker contextualMarker(CursorContext cursorContext) {
-        if (!allocationEnabled() || disableContextualMarkers.getAcquire()) {
-            throw new IllegalStateException(
-                    "This ID generator has allocation disabled, which means it should not need to do contextual updates");
-        }
-        if (!started && needsRebuild) {
-            // If we're in recovery and know that we're building the id generator from scratch after recovery has
-            // completed then don't make any updates
-            return NOOP_MARKER;
-        }
-
-        var realMarker = instantiateMarker(null, true, false, cursorContext);
-        if (!useDirectToCache) {
-            return realMarker;
-        }
-        return new ContextualMarker.Delegate(realMarker) {
-            @Override
-            public void markFree(long id, int numberOfIds) {
-                feedDirectlyToCache(id, numberOfIds, realMarker);
+        contextualMarkerDisableLock.readLock().lock();
+        try {
+            if (!allocationEnabled() || disableContextualMarkers.getAcquire()) {
+                throw new IllegalStateException(
+                        "This ID generator has allocation disabled, which means it should not need to do contextual updates");
             }
-        };
+            if (!started && needsRebuild) {
+                // If we're in recovery and know that we're building the id generator from scratch after recovery has
+                // completed then don't make any updates
+                return NOOP_MARKER;
+            }
+
+            var realMarker = instantiateMarker(null, true, false, cursorContext);
+            if (!useDirectToCache) {
+                return realMarker;
+            }
+            return new ContextualMarker.Delegate(realMarker) {
+                @Override
+                public void markFree(long id, int numberOfIds) {
+                    feedDirectlyToCache(id, numberOfIds, realMarker);
+                }
+            };
+        } finally {
+            contextualMarkerDisableLock.readLock().unlock();
+        }
     }
 
     private void feedDirectlyToCache(long id, int numberOfIds, IdRangeMarker realMarker) {
@@ -758,7 +772,12 @@ public class IndexedIdGenerator implements IdGenerator {
         // Read transactions are marked for termination but commiting transactions may still need to write.
         // The "shutdown" checkpoint on the tree happens after any committing transactions are completed.
         // This checkpoint will also drain any remaining contextual writers, guaranteeing no more writes.
-        disableContextualMarkers.setRelease(true);
+        contextualMarkerDisableLock.writeLock().lock();
+        try {
+            disableContextualMarkers.setRelease(true);
+        } finally {
+            contextualMarkerDisableLock.writeLock().unlock();
+        }
     }
 
     @Override

@@ -1369,6 +1369,11 @@ class IndexedIdGeneratorTest {
             } catch (IllegalStateException ignored) {
             }
             waitStart.release();
+            try {
+                idGenerator.contextualMarker(NULL_CONTEXT).close();
+            } catch (IllegalStateException ignored) {
+                // This is OK
+            }
         });
 
         Race.Async async = race.goAsync();
