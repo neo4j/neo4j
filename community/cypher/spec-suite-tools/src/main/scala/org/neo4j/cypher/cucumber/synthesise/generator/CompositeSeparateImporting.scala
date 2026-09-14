@@ -141,28 +141,33 @@ object CompositeSeparateImporting {
     val off2 = clauses(1).position.offset
     val firstText = stmt.substring(0, off2).trim
     val restText = stmt.substring(off2).trim
+    // Built with mkString, not stripMargin: restText is raw source and may itself contain a line starting with
+    // `|` (e.g. a map comprehension broken across lines), which stripMargin would mistake for its own delimiter.
     Some(
-      s"""$firstText
-         |CALL (${vpUsed.map(CompositeUse.backtick).mkString(", ")}) {
-         |${usePrefix.trim}
-         |$restText
-         |}
-         |RETURN ${vout.map(CompositeUse.backtick).mkString(", ")}""".stripMargin
+      Seq(
+        firstText,
+        s"CALL (${vpUsed.map(CompositeUse.backtick).mkString(", ")}) {",
+        usePrefix.trim,
+        restText,
+        "}",
+        s"RETURN ${vout.map(CompositeUse.backtick).mkString(", ")}"
+      ).mkString("\n")
     )
   }
 
   /** Generic single-row importing wrap: one driving row, so it never changes grouping/cardinality. */
   private[generator] def modeB(parsed: ParsedQuery, usePrefix: String = CompositeUse.usePrefix): String = {
     val importVar = freshImportName(parsed.ast)
+    // mkString, not stripMargin: parsed.statement is raw source and may contain a line starting with `|`.
     val inner =
-      s"""${usePrefix.trim}
-         |WITH * WHERE ${CompositeUse.backtick(importVar)}
-         |${parsed.statement}""".stripMargin
+      Seq(usePrefix.trim, s"WITH * WHERE ${CompositeUse.backtick(importVar)}", parsed.statement).mkString("\n")
     val call =
-      s"""WITH true AS ${CompositeUse.backtick(importVar)}
-         |CALL (${CompositeUse.backtick(importVar)}) {
-         |$inner
-         |}""".stripMargin
+      Seq(
+        s"WITH true AS ${CompositeUse.backtick(importVar)}",
+        s"CALL (${CompositeUse.backtick(importVar)}) {",
+        inner,
+        "}"
+      ).mkString("\n")
     CompositeUse.outerReturn(parsed.ast, keepStar = false) match {
       case Some(ret) => s"$call\n$ret"
       case None      => call
@@ -183,11 +188,15 @@ object CompositeSeparateImporting {
         s"${usePrefix}WITH * WHERE ${CompositeUse.backtick(importVar)}"
       ).ast.asInstanceOf[SingleQuery].clauses
     val rewritten = q.mapEachSingleQuery(sq => sq.copy(preface ++ sq.clauses)(sq.position))
+    // mkString, not stripMargin: the prettified text may contain a line starting with `|` (e.g. a rendered
+    // comprehension), which stripMargin would mistake for its own delimiter.
     val call =
-      s"""WITH true AS ${CompositeUse.backtick(importVar)}
-         |CALL (${CompositeUse.backtick(importVar)}) {
-         |${prettifier.asString(rewritten)}
-         |}""".stripMargin
+      Seq(
+        s"WITH true AS ${CompositeUse.backtick(importVar)}",
+        s"CALL (${CompositeUse.backtick(importVar)}) {",
+        prettifier.asString(rewritten),
+        "}"
+      ).mkString("\n")
     CompositeUse.outerReturn(q, keepStar = false) match {
       case Some(ret) => s"$call\n$ret"
       case None      => call

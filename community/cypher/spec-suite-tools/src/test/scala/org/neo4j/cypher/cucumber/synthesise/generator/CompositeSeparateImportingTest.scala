@@ -147,6 +147,40 @@ class CompositeSeparateImportingTest extends CypherFunSuite {
     }
   }
 
+  test("Mode A preserves a `|` that is the leading character of a source line (not mistaken for stripMargin)") {
+    val result = wrap(
+      """WITH 1 AS x
+        |RETURN {
+        |  k IN [1, x]
+        |  | k: k
+        |} AS result""".stripMargin
+    )
+    result should include("CALL (`x`)")
+    result should include("| k: k")
+  }
+
+  test("Mode B preserves a `|` that is the leading character of a source line (not mistaken for stripMargin)") {
+    val result = wrap(
+      """MATCH (n)
+        |RETURN {
+        |  k IN [1, 2]
+        |  | k: k
+        |} AS result""".stripMargin
+    )
+    result should include("CALL (`outerImport`) {")
+    result should include("| k: k")
+  }
+
+  test("Mode compound preserves a `|` that is the leading character of a source line (not mistaken for stripMargin)") {
+    val result = wrap(
+      "MATCH (a) RETURN {k IN [1, 2] | k: k} AS result UNION MATCH (b) RETURN {k IN [1, 2] | k: k} AS result"
+    )
+    withClue(result) {
+      result should include("WITH true AS")
+      result.count(_ == '|') shouldBe 2
+    }
+  }
+
   test("isImportWrappable rejects NEXT (needs a dedicated wrap)") {
     assert(!CompositeSeparateImporting.isImportWrappable(
       parser.parse("MATCH (a) RETURN a AS x NEXT MATCH (b) RETURN b AS y")

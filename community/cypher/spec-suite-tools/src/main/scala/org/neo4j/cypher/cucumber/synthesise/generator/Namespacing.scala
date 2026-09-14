@@ -126,23 +126,13 @@ object Namespacing {
     case _                     => cypher25Wrap(q)
   }
 
+  // Both wraps below use mkString, not stripMargin: `q` is raw source interpolated twice, and stripMargin applied
+  // to the whole result would mistake a `|` at the start of one of q's own lines (e.g. a map or list comprehension broken
+  // across lines) for its own margin delimiter, silently deleting it.
   def cypher25Wrap(q: String): String =
-    s"""FILTER false
-       |CALL () {
-       |$q
-       |}
-       |FINISH
-       |NEXT
-       |FINISH
-       |NEXT
-       |$q""".stripMargin
+    Seq("FILTER false", "CALL () {", q, "}", "FINISH", "NEXT", "FINISH", "NEXT", q).mkString("\n")
 
   def cypher5Wrap(q: String, returning: Boolean, connective: String): String =
-    s"""$q
-       |$connective
-       |WITH * WHERE false
-       |CALL () {
-       |$q
-       |}
-       |${if (returning) "RETURN *" else "FINISH"}""".stripMargin
+    Seq(q, connective, "WITH * WHERE false", "CALL () {", q, "}", if (returning) "RETURN *" else "FINISH")
+      .mkString("\n")
 }

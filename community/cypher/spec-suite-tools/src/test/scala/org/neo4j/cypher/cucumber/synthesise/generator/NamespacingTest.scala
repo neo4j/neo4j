@@ -77,6 +77,33 @@ class NamespacingTest extends CypherFunSuite {
     nonReturning should not include "RETURN *"
   }
 
+  test("Cypher 25 wrap preserves a `|` that is the leading character of a source line") {
+    val q =
+      """RETURN {
+        |  k IN [1, 2]
+        |  | k: k
+        |} AS result""".stripMargin
+    val wrapped = Namespacing.cypher25Wrap(q)
+    withClue(s"wrapped query:\n$wrapped\n") {
+      wrapped should include("| k: k")
+      cypher25Parser.parse(wrapped)
+    }
+  }
+
+  test("Cypher 5 wrap preserves a `|` that is the leading character of a source line") {
+    val q =
+      """MATCH (n)
+        |RETURN [
+        |  x IN [1, 2]
+        |  | x
+        |] AS result""".stripMargin
+    val wrapped = Namespacing.cypher5Wrap(q, returning = true, connective = "UNION ALL")
+    withClue(s"wrapped query:\n$wrapped\n") {
+      wrapped should include("| x")
+      cypher5Parser.parse(wrapped)
+    }
+  }
+
   test("connectiveFor matches Q's top-level union kind (so we never mix UNION with UNION ALL)") {
     Namespacing.connectiveFor(cypher5Parser.parse("RETURN 1 AS x UNION RETURN 2 AS x")) shouldBe "UNION"
     Namespacing.connectiveFor(cypher5Parser.parse("RETURN 1 AS x UNION ALL RETURN 2 AS x")) shouldBe "UNION ALL"
