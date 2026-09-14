@@ -120,7 +120,9 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
                     queryCaches,
                     compilerFactory,
                     innerQueryCaches,
-                    innerCompilerFactory);
+                    innerCompilerFactory,
+                    spi.databaseConfig(),
+                    multiVersion);
         }
         if (spi.databaseConfig().get(GraphDatabaseInternalSettings.snapshot_query)) {
             return new SnapshotExecutionEngine(

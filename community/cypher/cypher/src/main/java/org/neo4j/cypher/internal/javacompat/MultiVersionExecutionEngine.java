@@ -19,18 +19,12 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_transaction_visibility_refresh;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_transaction_visibility_refresh_all;
-
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.cypher.internal.preparser.FullyParsedQuery;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
-import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
@@ -40,8 +34,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.virtual.MapValue;
 
 public class MultiVersionExecutionEngine extends ExecutionEngine {
-    private final int maxQueryExecutionAttempts;
-    private final Config config;
+    private final MultiVersionQueryRetry queryRetry;
 
     public MultiVersionExecutionEngine(
             GraphDatabaseQueryService queryService,
@@ -50,8 +43,7 @@ public class MultiVersionExecutionEngine extends ExecutionEngine {
             InternalLogProvider logProvider,
             CompilerFactory compilerFactory) {
         super(queryService, queryCaches, logProvider, compilerFactory);
-        this.maxQueryExecutionAttempts = config.get(GraphDatabaseInternalSettings.snapshot_query_retries);
-        this.config = config;
+        this.queryRetry = new MultiVersionQueryRetry(config, false, false);
     }
 
     @Override
@@ -62,7 +54,8 @@ public class MultiVersionExecutionEngine extends ExecutionEngine {
             boolean prePopulate,
             QuerySubscriber subscriber)
             throws QueryExecutionKernelException {
-        return executeWithRetry(context, () -> super.executeQuery(query, parameters, context, prePopulate, subscriber));
+        return queryRetry.executeWithRetry(
+                context, () -> super.executeQuery(query, parameters, context, prePopulate, subscriber));
     }
 
     @Override
@@ -74,7 +67,7 @@ public class MultiVersionExecutionEngine extends ExecutionEngine {
             QuerySubscriber subscriber,
             QueryExecutionMonitor monitor)
             throws QueryExecutionKernelException {
-        return executeWithRetry(
+        return queryRetry.executeWithRetry(
                 context, () -> super.executeQuery(query, parameters, context, prePopulate, subscriber, monitor));
     }
 
@@ -88,68 +81,8 @@ public class MultiVersionExecutionEngine extends ExecutionEngine {
             QueryExecutionMonitor queryMonitor,
             QuerySubscriber subscriber)
             throws QueryExecutionKernelException {
-        return executeWithRetry(
+        return queryRetry.executeWithRetry(
                 context,
                 () -> super.executeQuery(query, parameters, context, prePopulate, input, queryMonitor, subscriber));
-    }
-
-    private QueryExecution executeWithRetry(TransactionalContext context, QueryExecutor executor)
-            throws QueryExecutionKernelException {
-        //noinspection resource
-        var kernelTransaction = context.kernelTransaction();
-        // this must be the first query in the transaction
-        if (kernelTransaction.aquireStatementCounter() > 1) {
-            return executor.execute();
-        }
-
-        int attempts = 0;
-        boolean allowRefresh = config.get(multi_version_transaction_visibility_refresh);
-        boolean allowRefreshAllTypes = config.get(multi_version_transaction_visibility_refresh_all);
-        QueryExecution result;
-        VersionContext versionContext = getCursorContext(context);
-        do {
-            if (attempts > 0) {
-                context.executingQuery().onRetryAttempted();
-                kernelTransaction.retryQuery();
-                versionContext.initRead();
-                versionContext.resetObsoleteHeadState();
-
-                kernelTransaction.reportVisibilityBoundaryRefresh();
-            }
-
-            result = executor.execute();
-            if (!(kernelTransaction instanceof TxStateHolder txStateHolder) || !txStateHolder.hasTxStateWithChanges()) {
-                // skip query that does not have transaction state changes
-                break;
-            }
-            if (versionContext.initializedForWrite()) {
-                // query appended some chunks, can't retry
-                break;
-            }
-            if (!versionContext.invisibleHeadObserved()) {
-                // haven't seen stale data, no need to retry
-                break;
-            }
-
-            if (!allowRefresh) {
-                break;
-            }
-
-            if (kernelTransaction.clientInfo().isEmbedded() && !allowRefreshAllTypes) {
-                break;
-            }
-
-        } while (attempts++ < maxQueryExecutionAttempts);
-        return result;
-    }
-
-    private static VersionContext getCursorContext(TransactionalContext context) {
-        //noinspection resource
-        return context.kernelTransaction().cursorContext().getVersionContext();
-    }
-
-    @FunctionalInterface
-    private interface QueryExecutor {
-        QueryExecution execute() throws QueryExecutionKernelException;
     }
 }

@@ -19,12 +19,21 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
 import org.neo4j.cypher.internal.InternalCompilerLibrary;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
+import org.neo4j.cypher.internal.preparser.FullyParsedQuery;
+import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * This class is a specialized form of the ExecutionEngine containing two internal Cypher engines.
@@ -34,6 +43,7 @@ import org.neo4j.logging.InternalLogProvider;
  */
 class SystemExecutionEngine extends ExecutionEngine {
     private org.neo4j.cypher.internal.ExecutionEngine innerCypherExecutionEngine; // doesn't understand ddl
+    private final MultiVersionQueryRetry queryRetry;
 
     /**
      * Creates an execution engine around the given graph database wrapping an internal compiler factory for two level Cypher runtime.
@@ -46,7 +56,9 @@ class SystemExecutionEngine extends ExecutionEngine {
             CypherQueryCaches systemQueryCaches,
             CompilerFactory systemCompilerFactory,
             CypherQueryCaches normalQueryCaches,
-            CompilerFactory normalCompilerFactory) {
+            CompilerFactory normalCompilerFactory,
+            Config config,
+            boolean multiVersion) {
         innerCypherExecutionEngine = makeExecutionEngine(
                 queryService,
                 normalQueryCaches,
@@ -59,6 +71,53 @@ class SystemExecutionEngine extends ExecutionEngine {
                         logProvider,
                         new InternalCompilerLibrary(
                                 systemCompilerFactory, this::normalExecutionEngine, this::outerExecutionEngine));
+        queryRetry = multiVersion ? new MultiVersionQueryRetry(config, true, true) : null;
+    }
+
+    @Override
+    public QueryExecution executeQuery(
+            String query,
+            MapValue parameters,
+            TransactionalContext context,
+            boolean prePopulate,
+            QuerySubscriber subscriber)
+            throws QueryExecutionKernelException {
+        return execute(context, () -> super.executeQuery(query, parameters, context, prePopulate, subscriber));
+    }
+
+    @Override
+    public QueryExecution executeQuery(
+            String query,
+            MapValue parameters,
+            TransactionalContext context,
+            boolean prePopulate,
+            QuerySubscriber subscriber,
+            QueryExecutionMonitor monitor)
+            throws QueryExecutionKernelException {
+        return execute(context, () -> super.executeQuery(query, parameters, context, prePopulate, subscriber, monitor));
+    }
+
+    @Override
+    public QueryExecution executeQuery(
+            FullyParsedQuery query,
+            MapValue parameters,
+            TransactionalContext context,
+            boolean prePopulate,
+            InputDataStream input,
+            QueryExecutionMonitor queryMonitor,
+            QuerySubscriber subscriber)
+            throws QueryExecutionKernelException {
+        return execute(
+                context,
+                () -> super.executeQuery(query, parameters, context, prePopulate, input, queryMonitor, subscriber));
+    }
+
+    private QueryExecution execute(TransactionalContext context, MultiVersionQueryRetry.QueryExecutor executor)
+            throws QueryExecutionKernelException {
+        if (queryRetry == null) {
+            return executor.execute();
+        }
+        return queryRetry.executeWithRetry(context, executor);
     }
 
     @Override
