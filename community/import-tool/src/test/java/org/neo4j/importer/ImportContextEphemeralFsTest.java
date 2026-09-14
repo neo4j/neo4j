@@ -26,6 +26,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,7 +66,8 @@ class ImportContextEphemeralFsTest {
     void shouldPersistAndReadBackTheRecordsOfAnAttempt() throws IOException {
         var args = List.of("--nodes=foo.csv");
         Path baseDir;
-        try (var importContext = ImportContext.create(fs, DB, null, config, null, args, false, true, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, null, config, null, args, false, true, false, Duration.ofHours(1))) {
             baseDir = importContext.baseDir();
             importContext.persistCliArgs();
             importContext.persistNodesPerRange(42L);
@@ -79,7 +81,8 @@ class ImportContextEphemeralFsTest {
         assertThat(contents(baseDir.resolve(ImportContext.NODES_PER_RANGE_FILE_NAME)))
                 .isEqualTo("42");
 
-        try (var importContext = ImportContext.create(fs, DB, baseDir, config, null, args, false, true, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, baseDir, config, null, args, false, true, false, Duration.ofHours(1))) {
             assertThat(importContext.lastNodesPerRange()).isEqualTo(42L);
         }
     }
@@ -88,13 +91,15 @@ class ImportContextEphemeralFsTest {
     void shouldOverwriteTheRecordsOfTheAttemptBeingResumed() throws IOException {
         var args = List.of("--nodes=foo.csv");
         Path baseDir;
-        try (var importContext = ImportContext.create(fs, DB, null, config, null, args, false, true, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, null, config, null, args, false, true, false, Duration.ofHours(1))) {
             baseDir = importContext.baseDir();
             importContext.persistCliArgs();
         }
 
         var resumedArgs = List.of("--nodes=bar.csv", "--resume");
-        try (var importContext = ImportContext.create(fs, DB, baseDir, config, null, resumedArgs, false, true, false)) {
+        try (var importContext = ImportContext.create(
+                fs, DB, baseDir, config, null, resumedArgs, false, true, false, Duration.ofHours(1))) {
             importContext.persistCliArgs();
         }
 
@@ -104,7 +109,8 @@ class ImportContextEphemeralFsTest {
     @Test
     void shouldWriteCollectorOutputIntoTheContextDirectory() throws IOException {
         Path baseDir;
-        try (var importContext = ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false, Duration.ofHours(1))) {
             baseDir = importContext.baseDir();
             importContext.collectorChannel().writeAll(ByteBuffer.wrap("bad tings".getBytes(UTF_8)));
         }

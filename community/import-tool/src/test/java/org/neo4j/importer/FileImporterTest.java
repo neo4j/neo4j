@@ -32,6 +32,7 @@ import java.nio.charset.Charset;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -95,7 +96,8 @@ class FileImporterTest {
                 List.of(),
                 false,
                 false,
-                true)) {
+                true,
+                Duration.ofHours(1))) {
             var csvImporter = importerBuilder(databaseLayout.getNeo4jLayout().databaseLayout(databaseName))
                     .withDatabaseConfig(config)
                     .withReportFile(reportLocation.toAbsolutePath())

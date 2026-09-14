@@ -146,6 +146,8 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
 
     private final ObjectMapper objectMapper;
 
+    private final Duration resumableImportCheckpointInterval;
+
     private boolean hasErrors;
 
     private ImportContext(
@@ -159,7 +161,8 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
             boolean resuming,
             Function<RetainCheck, Boolean> retainContextDir,
             boolean includeUpdatesInProgress,
-            boolean verbose) {
+            boolean verbose,
+            Duration resumableImportCheckpointInterval) {
         super(Monitor.NO_MONITOR);
         this.dbName = dbName;
         this.databaseConfig = databaseConfig;
@@ -177,6 +180,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
                 .registerModule(new SimpleModule()
                         .addSerializer(new DurationSerializer())
                         .addSerializer(new StatsSerializer(includeUpdatesInProgress)));
+        this.resumableImportCheckpointInterval = resumableImportCheckpointInterval;
     }
 
     /**
@@ -191,7 +195,8 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
             List<String> originalArgs,
             boolean includeUpdatesInProgress,
             boolean retainForInstrumentation,
-            boolean verbose) {
+            boolean verbose,
+            Duration resumableImportCheckpointInterval) {
         Path baseDir = previousBaseDir != null
                 ? previousBaseDir
                 : newContextDir(fs, databaseConfig.get(logs_directory).toAbsolutePath(), database.name());
@@ -222,7 +227,8 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
                     }
                 },
                 includeUpdatesInProgress,
-                verbose);
+                verbose,
+                resumableImportCheckpointInterval);
     }
 
     public void preamble(PrintStream out) {
@@ -512,6 +518,11 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
         }
     }
 
+    @Override
+    public Duration resumableImportCheckpointInterval() {
+        return resumableImportCheckpointInterval;
+    }
+
     /**
      * Persists a 64-bit hash over the input files the import read - every file's name together with its size, in name
      * order, so that the same sizes shuffled between files hash differently, see {@link #inputFilesHash(ArrayList)}. A
@@ -628,7 +639,7 @@ public class ImportContext extends Monitor.Delegate implements InternalLogProvid
     /**
      * Records that the import completed, so that a retained context directory can be told apart from one left behind
      * by an attempt that did not finish. A retained directory outlives a successful import (see
-     * {@link #create(FileSystemAbstraction, NormalizedDatabaseName, Path, Config, Path, List, boolean, boolean, boolean)}),
+     * {@link #create(FileSystemAbstraction, NormalizedDatabaseName, Path, Config, Path, List, boolean, boolean, boolean, Duration)}),
      * and without this there is nothing in it that says the import got all the way through. Written
      * {@link #writeProtected(Path, String, String) write-protected}, like the other records of an attempt.
      */

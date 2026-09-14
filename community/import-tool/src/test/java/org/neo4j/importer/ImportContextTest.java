@@ -55,6 +55,7 @@ import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFileAttributeView;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -133,8 +134,8 @@ class ImportContextTest {
 
     @Test
     void createContextDoesNotCreateDirectories() throws IOException {
-        try (var importContext =
-                ImportContext.create(fs, DB, null, config, null, Collections.emptyList(), false, true, true)) {
+        try (var importContext = ImportContext.create(
+                fs, DB, null, config, null, Collections.emptyList(), false, true, true, Duration.ofHours(1))) {
             assertThat(importContext.baseDir()).doesNotExist();
             assertThat(importContext.logPath()).doesNotExist();
             assertThat(importContext.progressReportingPath()).doesNotExist();
@@ -190,7 +191,16 @@ class ImportContextTest {
             })
     void contextNotClearedIfVerboseOrRetained(boolean retainForInstrumentation, boolean verbose, ContextAction action) {
         try (var importContext = ImportContext.create(
-                fs, DB, null, config, null, Collections.emptyList(), false, retainForInstrumentation, verbose)) {
+                fs,
+                DB,
+                null,
+                config,
+                null,
+                Collections.emptyList(),
+                false,
+                retainForInstrumentation,
+                verbose,
+                Duration.ofHours(1))) {
             switch (action) {
                 case LOGGING -> importContext.getLog("testing").info("some content");
                 case REPORTING -> importContext.detailedProgressReport(progressReport());
@@ -300,7 +310,16 @@ class ImportContextTest {
         }
 
         try (var importContext = ImportContext.create(
-                fs, DB, baseDir, config, reportFile, Collections.emptyList(), false, true, false)) {
+                fs,
+                DB,
+                baseDir,
+                config,
+                reportFile,
+                Collections.emptyList(),
+                false,
+                true,
+                false,
+                Duration.ofHours(1))) {
             writeViolation(importContext, "second");
         }
 
@@ -937,7 +956,8 @@ class ImportContextTest {
                 Collections.emptyList(),
                 false,
                 true,
-                false)) {
+                false,
+                Duration.ofHours(1))) {
             importContext.persistCliArgs();
         }
 
@@ -996,8 +1016,8 @@ class ImportContextTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void progressWithAndWithoutUpdates(boolean withUpdates) {
-        try (var importContext =
-                ImportContext.create(fs, DB, null, config, null, Collections.emptyList(), withUpdates, false, true)) {
+        try (var importContext = ImportContext.create(
+                fs, DB, null, config, null, Collections.emptyList(), withUpdates, false, true, Duration.ofHours(1))) {
             importContext.detailedProgressReport(progressReport());
         }
 
@@ -1285,7 +1305,8 @@ class ImportContextTest {
 
     @Test
     void noCheckpointToReadBeforeOneWasWritten() {
-        try (var importContext = ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false, Duration.ofHours(1))) {
             assertThat(importContext.lastCheckpoint()).isNull();
         }
     }
@@ -1294,12 +1315,14 @@ class ImportContextTest {
     void checkpointIsReadBackOnResume() throws IOException {
         Path baseDir;
         ResumableStateData resumableStateData = new ResumableStateData((byte) 1, 2, 3, Collections.emptyList());
-        try (var importContext = ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false, Duration.ofHours(1))) {
             baseDir = importContext.baseDir();
             importContext.writeCheckpoint(resumableStateData);
         }
 
-        try (var importContext = ImportContext.create(fs, DB, baseDir, config, null, List.of(), false, true, false);
+        try (var importContext = ImportContext.create(
+                        fs, DB, baseDir, config, null, List.of(), false, true, false, Duration.ofHours(1));
                 var checkpoint = importContext.lastCheckpoint()) {
             assertThat(checkpoint).isNotNull();
             ResumableStateData readBackResumableStateData = ResumableStateData.fromInputStream(checkpoint);
@@ -1311,7 +1334,8 @@ class ImportContextTest {
     void checkpointReplacesThePreviousOne() throws IOException {
         ResumableStateData resumableStateData1 = new ResumableStateData((byte) 1, 2, 3, Collections.emptyList());
         ResumableStateData resumableStateData2 = new ResumableStateData((byte) 4, 5, 6, Collections.emptyList());
-        try (var importContext = ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false, Duration.ofHours(1))) {
             importContext.writeCheckpoint(resumableStateData1);
             importContext.writeCheckpoint(resumableStateData2);
 
@@ -1347,19 +1371,21 @@ class ImportContextTest {
             }
         };
         Path baseDir;
-        try (var importContext = ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false, Duration.ofHours(1))) {
             baseDir = importContext.baseDir();
             importContext.writeCheckpoint(resumableStateData1);
         }
 
-        try (var importContext =
-                ImportContext.create(failing, DB, baseDir, config, null, List.of(), false, true, false)) {
+        try (var importContext = ImportContext.create(
+                failing, DB, baseDir, config, null, List.of(), false, true, false, Duration.ofHours(1))) {
             assertThatExceptionOfType(IOException.class)
                     .isThrownBy(() -> importContext.writeCheckpoint(resumableStateData2));
         }
 
         // then the checkpoint of the attempt being resumed is still the one on record
-        try (var importContext = ImportContext.create(fs, DB, baseDir, config, null, List.of(), false, true, false);
+        try (var importContext = ImportContext.create(
+                        fs, DB, baseDir, config, null, List.of(), false, true, false, Duration.ofHours(1));
                 var checkpoint = importContext.lastCheckpoint()) {
             ResumableStateData readBackResumableStateData = ResumableStateData.fromInputStream(checkpoint);
             assertThat(readBackResumableStateData).isEqualTo(resumableStateData1);
@@ -1405,8 +1431,8 @@ class ImportContextTest {
             }
         };
         var resumedArgs = List.of("--nodes=bar.csv", "--resume");
-        try (var importContext =
-                ImportContext.create(failing, DB, baseDir, config, null, resumedArgs, false, true, false)) {
+        try (var importContext = ImportContext.create(
+                failing, DB, baseDir, config, null, resumedArgs, false, true, false, Duration.ofHours(1))) {
             assertThatExceptionOfType(UncheckedIOException.class).isThrownBy(importContext::persistCliArgs);
         }
         // then what the attempt being resumed was invoked with is still on record
@@ -1479,7 +1505,8 @@ class ImportContextTest {
     }
 
     private ImportContext persistedInputFilesHashOf(ArrayList<Path> inputFiles) {
-        try (var importContext = ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false)) {
+        try (var importContext =
+                ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false, Duration.ofHours(1))) {
             importContext.persistInputFilesHash(inputFiles);
             return importContext;
         }
@@ -1496,39 +1523,45 @@ class ImportContextTest {
     }
 
     private ImportContext getImportContext() {
-        return ImportContext.create(fs, DB, null, config, null, Collections.emptyList(), false, false, false);
+        return ImportContext.create(
+                fs, DB, null, config, null, Collections.emptyList(), false, false, false, Duration.ofHours(1));
     }
 
     private ImportContext getImportContext(Path reportFile) {
-        return ImportContext.create(fs, DB, null, config, reportFile, Collections.emptyList(), false, false, false);
+        return ImportContext.create(
+                fs, DB, null, config, reportFile, Collections.emptyList(), false, false, false, Duration.ofHours(1));
     }
 
     private ImportContext getImportContext(List<String> args) {
-        return ImportContext.create(fs, DB, null, config, null, args, false, false, false);
+        return ImportContext.create(fs, DB, null, config, null, args, false, false, false, Duration.ofHours(1));
     }
 
     private ImportContext getRetainingImportContext() {
-        return ImportContext.create(fs, DB, null, config, null, Collections.emptyList(), false, true, false);
+        return ImportContext.create(
+                fs, DB, null, config, null, Collections.emptyList(), false, true, false, Duration.ofHours(1));
     }
 
     private ImportContext getRetainingImportContext(Config attemptConfig) {
-        return ImportContext.create(fs, DB, null, attemptConfig, null, Collections.emptyList(), false, true, false);
+        return ImportContext.create(
+                fs, DB, null, attemptConfig, null, Collections.emptyList(), false, true, false, Duration.ofHours(1));
     }
 
     private ImportContext getRetainingImportContext(Path reportFile) {
-        return ImportContext.create(fs, DB, null, config, reportFile, Collections.emptyList(), false, true, false);
+        return ImportContext.create(
+                fs, DB, null, config, reportFile, Collections.emptyList(), false, true, false, Duration.ofHours(1));
     }
 
     private ImportContext getRetainingImportContext(List<String> args) {
-        return ImportContext.create(fs, DB, null, config, null, args, false, true, false);
+        return ImportContext.create(fs, DB, null, config, null, args, false, true, false, Duration.ofHours(1));
     }
 
     private ImportContext getResumingRetainingImportContext(Path baseDir) {
-        return ImportContext.create(fs, DB, baseDir, config, null, Collections.emptyList(), false, true, false);
+        return ImportContext.create(
+                fs, DB, baseDir, config, null, Collections.emptyList(), false, true, false, Duration.ofHours(1));
     }
 
     private ImportContext getResumingRetainingImportContext(Path baseDir, List<String> args) {
-        return ImportContext.create(fs, DB, baseDir, config, null, args, false, true, false);
+        return ImportContext.create(fs, DB, baseDir, config, null, args, false, true, false, Duration.ofHours(1));
     }
 
     private static void assertIsImportContextDir(Path importDir) {

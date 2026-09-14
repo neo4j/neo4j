@@ -40,6 +40,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -232,6 +233,14 @@ public class ImportCommand {
                         + "only be combined with the options that are allowed to override those.",
                 hidden = true)
         private boolean resume;
+
+        @Option(
+                names = "--resumable-import-checkpoint-interval",
+                showDefaultValue = ALWAYS,
+                paramLabel = "<duration>",
+                description = "How often to write resumable import checkpoints.",
+                hidden = true)
+        private Duration resumableImportCheckpointInterval = Duration.ofHours(1);
 
         @Option(
                 names = "--schema",
@@ -688,7 +697,8 @@ public class ImportCommand {
                     spec.commandLine().getParseResult().expandedArgs(),
                     includeUpdatesInProgress(),
                     !disableInstrumentation && captureProfile && captureProfileResultPath == null,
-                    verbose)) {
+                    verbose,
+                    resumableImportCheckpointInterval)) {
                 var databaseConfig = importContext.config();
                 var databaseLayout = Neo4jLayout.of(databaseConfig).databaseLayout(database.name());
                 try (var fileSystem = new SchemeFileSystemAbstraction(ctx.fs(), databaseConfig, importContext)) {

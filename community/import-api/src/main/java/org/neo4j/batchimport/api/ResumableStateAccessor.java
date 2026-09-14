@@ -21,6 +21,7 @@ package org.neo4j.batchimport.api;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.time.Duration;
 import org.neo4j.batchimport.api.input.ResumableStateData;
 
 /**
@@ -53,6 +54,11 @@ public interface ResumableStateAccessor {
     DataInputStream lastCheckpoint();
 
     /**
+     * Returns the interval at which to write checkpoints during a resumable import.
+     */
+    Duration resumableImportCheckpointInterval();
+
+    /**
      * A no-op implementation.
      */
     ResumableStateAccessor NOOP = new ResumableStateAccessor() {
@@ -74,6 +80,11 @@ public interface ResumableStateAccessor {
         @Override
         public DataInputStream lastCheckpoint() {
             return null;
+        }
+
+        @Override
+        public Duration resumableImportCheckpointInterval() {
+            return Duration.ofSeconds(0);
         }
     };
 }
