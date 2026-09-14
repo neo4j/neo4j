@@ -144,6 +144,16 @@ public final class ValueMath {
     public static LongValue multiply(long a, long b) {
         return longValue(Math.multiplyExact(a, b));
     }
+    /**
+     * Overflow safe division of two longs
+     *
+     * @param a left-hand operand
+     * @param b right-hand operand
+     * @return a / b
+     */
+    public static LongValue divide(long a, long b) {
+        return longValue(Math.divideExact(a, b));
+    }
 
     /**
      * Overflow safe multiplication of two longs

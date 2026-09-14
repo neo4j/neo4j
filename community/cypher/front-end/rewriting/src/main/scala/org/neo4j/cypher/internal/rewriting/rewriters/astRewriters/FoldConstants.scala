@@ -105,7 +105,7 @@ case object FoldConstants extends StepSequencer.Step with DefaultPostCondition w
           Multiply(Multiply(innerLhs, rhs)(lhs.position), innerRhs)(e.position).rewrite(instance)
 
         case e @ Divide(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
-          SignedDecimalIntegerLiteral((lhs.value / rhs.value).toString)(e.position.zeroLength)
+          SignedDecimalIntegerLiteral(Math.divideExact(lhs.value, rhs.value).toString)(e.position.zeroLength)
         case e @ Divide(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
           DecimalDoubleLiteral((lhs.value / rhs.value).toString)(e.position.zeroLength)
         case e @ Divide(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>

@@ -126,7 +126,7 @@ public abstract sealed class IntegralValue extends NumberValue permits ByteValue
 
     @Override
     public LongValue dividedBy(long b) {
-        return Values.longValue(longValue() / b);
+        return ValueMath.divide(longValue(), b);
     }
 
     @Override

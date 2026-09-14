@@ -287,8 +287,13 @@ public final class CypherMath {
         }
 
         if (lhs instanceof NumberValue lhsNumber && rhs instanceof NumberValue rhsNumber) {
-            return lhsNumber.divideBy(rhsNumber);
+            try {
+                return lhsNumber.divideBy(rhsNumber);
+            } catch (java.lang.ArithmeticException e) {
+                throw ArithmeticException.wrappedArithmeticException(lhs.prettify() + " / " + rhs.prettify(), "/", e);
+            }
         }
+
         // Temporal values
         if (lhs instanceof DurationValue lhsDuration) {
             if (rhs instanceof NumberValue rhsNumber) {
