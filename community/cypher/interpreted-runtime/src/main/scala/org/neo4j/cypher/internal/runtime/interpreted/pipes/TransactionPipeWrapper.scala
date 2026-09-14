@@ -308,13 +308,21 @@ trait OnErrorRetryTxPipe {
   def retryLogic: TransactionRetryLogic
 
   override def decideRetry(throwable: Throwable, batch: TransactionBatch): RetryDecision = {
-    RetryableCypherError.isRetryable(throwable) match {
-      case true if batch.shouldRetryAgain() =>
-        ShouldRetry
-      case true =>
-        RetryTimeout
-      case false =>
+    throwable match {
+      case _: CypherExecutionInterruptedException =>
+        // A batch interrupted because another batch failed must not be retried, even though the
+        // exception's transient status classifies as retryable.
+        // Deciding NotRetryable here makes the batch report its rollback with the interrupted status right away.
         NotRetryable
+      case _ =>
+        RetryableCypherError.isRetryable(throwable) match {
+          case true if batch.shouldRetryAgain() =>
+            ShouldRetry
+          case true =>
+            RetryTimeout
+          case false =>
+            NotRetryable
+        }
     }
   }
 }
@@ -623,9 +631,11 @@ object TransactionPipeWrapper {
         )
 
       case (RollbackFailure(ex: CypherExecutionInterruptedException), _, RecoveryMode.Fail)
-        if explicitRetry && ex.status() == Status.Transaction.QueryExecutionFailedOnTransaction =>
+        if ex.status() == Status.Transaction.QueryExecutionFailedOnTransaction =>
         // CypherExecutionInterruptedException means this batch was cancelled due to another batch failing,
-        // so we wait for the actual failed batch to be retried in order to throw the failure
+        // so we let the actual failed batch supply the query error. This deliberately covers all retry
+        // policies, including no retries at all, so the interrupted victim never races the genuinely
+        // failed batch for which error the query reports.
         (resultStatus, null)
 
       case (RollbackFailure(failure), NotRetryable | NotApplicable, RecoveryMode.Fail) if explicitRetry =>
