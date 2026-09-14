@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -145,5 +146,14 @@ public final class Futures {
                 return result;
             }
         };
+    }
+
+    /**
+     * @return a {@link FutureTask} which is already finished.
+     */
+    public static <T> FutureTask<T> finishedFutureTask() {
+        FutureTask<T> job = new FutureTask<>(() -> {}, null);
+        job.run();
+        return job;
     }
 }
