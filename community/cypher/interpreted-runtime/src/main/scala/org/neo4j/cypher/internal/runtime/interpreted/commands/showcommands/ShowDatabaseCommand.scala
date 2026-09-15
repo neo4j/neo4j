@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.runtime.admin.topology.DatabaseDetailsMapper
 import org.neo4j.cypher.internal.runtime.admin.topology.ShowDatabaseServiceContext
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.exceptions.NotSystemDatabaseException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.StringValue
 
@@ -52,15 +51,15 @@ case class ShowDatabaseCommand(
   ): ClosingIterator[Map[String, AnyValue]] = {
 
     // Must run on system database
-    if (!state.query.transactionalContext.databaseId.isSystemDatabase) {
+    mustRunOnSystemCheck(
+      state.query,
       dbScope match {
-        case _: SingleNamedDatabaseScope => throw NotSystemDatabaseException.notSystemDatabaseException("SHOW DATABASE")
-        case _: DefaultDatabaseScope =>
-          throw NotSystemDatabaseException.notSystemDatabaseException("SHOW DEFAULT DATABASE")
-        case _: HomeDatabaseScope => throw NotSystemDatabaseException.notSystemDatabaseException("SHOW HOME DATABASE")
-        case _                    => throw NotSystemDatabaseException.notSystemDatabaseException("SHOW DATABASES")
+        case _: SingleNamedDatabaseScope => "SHOW DATABASE"
+        case _: DefaultDatabaseScope     => "SHOW DEFAULT DATABASE"
+        case _: HomeDatabaseScope        => "SHOW HOME DATABASE"
+        case _                           => "SHOW DATABASES"
       }
-    }
+    )
 
     val showService = state.query.getShowDatabaseService
     val context = ShowDatabaseServiceContext(

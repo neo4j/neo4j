@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.exceptions.NotSystemDatabaseException
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NoValue
@@ -82,6 +83,12 @@ abstract class Command(
   ): List[CommandYieldColumn] = {
     if (yieldColumns.nonEmpty) yieldColumns
     else defaultColumns.map(c => CommandYieldColumn(c.name, c.name))
+  }
+
+  protected def mustRunOnSystemCheck(ctx: QueryContext, command: String): Unit = {
+    if (!ctx.transactionalContext.databaseId.isSystemDatabase) {
+      throw NotSystemDatabaseException.notSystemDatabaseException(command)
+    }
   }
 }
 

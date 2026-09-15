@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.ASTSlicingPhrase.checkExpressionIsStaticInt
 import org.neo4j.cypher.internal.ast.ASTSlicingPhrase.checkExpressionIsStaticNumber
+import org.neo4j.cypher.internal.ast.CommandClause.checkIdentifierForVariableShadowing
 import org.neo4j.cypher.internal.ast.Match.hintPrettifier
 import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.ShowDatabase.ACCESS_COL
@@ -2831,6 +2832,19 @@ object CommandClause {
       r.returnType.addedInRewrite
     case _ => false
   }
+
+  // Check and give notification for if an identifier shadows an existing variable
+  def checkIdentifierForVariableShadowing(
+    identifier: String,
+    description: String,
+    position: InputPosition
+  ): SemanticState => Either[SemanticError, SemanticState] = (s: SemanticState) => {
+    s.symbol(identifier) match {
+      case None => Right(s)
+      case Some(_) =>
+        Right(s.addNotification(IdentifierShadowsVariableNotification(position, identifier, description)))
+    }
+  }
 }
 
 // Yield columns: keeps track of the original name and the yield variable (either same name or renamed)
@@ -3638,16 +3652,10 @@ case class ShowDatabasesClause(
   // Semantic check needs to be split to handle typing
   override def clauseSpecificSemanticCheck: SemanticCheck = checkDbName() chain super.clauseSpecificSemanticCheck
 
-  private def checkDbName(): SemanticState => Either[SemanticError, SemanticState] = (s: SemanticState) => {
-    dbScope match {
-      case SingleNamedDatabaseScope(dbName: NamespacedName) =>
-        s.symbol(dbName.toString) match {
-          case None => Right(s)
-          case Some(_) =>
-            Right(s.addNotification(IdentifierShadowsVariableNotification(position, dbName.toString, name)))
-        }
-      case _ => Right(s)
-    }
+  private def checkDbName(): SemanticState => Either[SemanticError, SemanticState] = dbScope match {
+    case SingleNamedDatabaseScope(dbName: NamespacedName) =>
+      checkIdentifierForVariableShadowing(dbName.toString, name, position)
+    case _ => (s: SemanticState) => Right(s)
   }
 }
 

@@ -16,12 +16,10 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.CommandClause.checkIdentifierForVariableShadowing
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
-import org.neo4j.cypher.internal.ast.semantics.SemanticError
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics._
-import org.neo4j.cypher.internal.notification.IdentifierShadowsVariableNotification
 import org.neo4j.cypher.internal.util.InputPosition
 
 sealed trait ExecutableBy extends SemanticCheckable {
@@ -41,13 +39,5 @@ case object CurrentUser extends ExecutableBy {
 case class User(name: String)(val position: InputPosition) extends ExecutableBy {
   override def description(forType: String): String = s"${forType}ForUser($name)"
 
-  // Semantic check needs to be split to handle typing
-  override def semanticCheck: SemanticCheck = checkName()
-
-  private def checkName(): SemanticState => Either[SemanticError, SemanticState] = (s: SemanticState) => {
-    s.symbol(name) match {
-      case None    => Right(s)
-      case Some(_) => Right(s.addNotification(IdentifierShadowsVariableNotification(position, name, "EXECUTABLE BY")))
-    }
-  }
+  override def semanticCheck: SemanticCheck = checkIdentifierForVariableShadowing(name, "EXECUTABLE BY", position)
 }
