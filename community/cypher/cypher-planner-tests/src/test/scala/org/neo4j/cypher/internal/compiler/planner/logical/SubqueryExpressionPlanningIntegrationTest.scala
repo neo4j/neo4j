@@ -161,6 +161,286 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherPlannerTestSuite
     .addNodeIndex("ManyProps", Seq("prop"), 1.0, 1.0)
     .build()
 
+  private def orderSensitivityPlanner = plannerBuilder()
+    .setAllNodesCardinality(1000)
+    .setLabelCardinality("N", 100)
+    .addNodeIndex("N", Seq("prop"), 1.0, 0.01)
+    .build()
+
+  test("should not claim to provide order on invalidating RHS of SemiApply") {
+    val planner = orderSensitivityPlanner
+
+    val query =
+      """MATCH (n:N)
+        |WHERE
+        |  n.prop > 0 AND
+        |  EXISTS { RETURN 1 AS z UNION ALL RETURN 2 AS z }
+        |RETURN n ORDER BY n.prop""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("`n.prop` ASC")
+      .projection("cacheN[n.prop] AS `n.prop`")
+      .semiApply()
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("2 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("1 AS z")
+      .|.argument()
+      .nodeIndexOperator("n:N(prop > 0)", _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should not claim to provide order on invalidating RHS of AntiSemiApply") {
+    val planner = orderSensitivityPlanner
+
+    val query =
+      """MATCH (n:N)
+        |WHERE
+        |  n.prop > 0 AND
+        |  NOT EXISTS { RETURN 1 AS z UNION ALL RETURN 2 AS z }
+        |RETURN n ORDER BY n.prop""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("`n.prop` ASC")
+      .projection("cacheN[n.prop] AS `n.prop`")
+      .antiSemiApply()
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("2 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("1 AS z")
+      .|.argument()
+      .nodeIndexOperator("n:N(prop > 0)", _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should not claim to provide order on invalidating RHS of SelectOrSemiApply") {
+    val planner = orderSensitivityPlanner
+
+    val query =
+      """MATCH (n:N)
+        |WHERE
+        |  n.prop > 0 AND
+        |  (EXISTS { RETURN 1 AS z UNION ALL RETURN 2 AS z } OR n.prop < 5)
+        |RETURN n ORDER BY n.prop""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("`n.prop` ASC")
+      .projection("cacheN[n.prop] AS `n.prop`")
+      .selectOrSemiApply("cacheN[n.prop] < 5")
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("2 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("1 AS z")
+      .|.argument()
+      .nodeIndexOperator("n:N(prop > 0)", _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should not claim to provide order on invalidating RHS of SelectOrAntiSemiApply") {
+    val planner = orderSensitivityPlanner
+
+    val query =
+      """MATCH (n:N)
+        |WHERE
+        |  n.prop > 0 AND
+        |  (NOT EXISTS { RETURN 1 AS z UNION ALL RETURN 2 AS z } OR n.prop < 5)
+        |RETURN n ORDER BY n.prop""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("`n.prop` ASC")
+      .projection("cacheN[n.prop] AS `n.prop`")
+      .selectOrAntiSemiApply("cacheN[n.prop] < 5")
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("2 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("1 AS z")
+      .|.argument()
+      .nodeIndexOperator("n:N(prop > 0)", _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should not claim to provide order on invalidating RHS of LetSemiApply") {
+    val planner = orderSensitivityPlanner
+
+    val query =
+      """MATCH (n:N)
+        |WHERE
+        |  n.prop > 0 AND
+        |  (EXISTS { RETURN 1 AS z UNION ALL RETURN 2 AS z } OR
+        |    EXISTS { RETURN 3 AS z UNION ALL RETURN 4 AS z })
+        |RETURN n ORDER BY n.prop""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("`n.prop` ASC")
+      .projection("cacheN[n.prop] AS `n.prop`")
+      .selectOrSemiApply("anon_0")
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("4 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("3 AS z")
+      .|.argument()
+      .letSemiApply("anon_0")
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("2 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("1 AS z")
+      .|.argument()
+      .nodeIndexOperator("n:N(prop > 0)", _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should not claim to provide order on invalidating RHS of LetAntiSemiApply") {
+    val planner = orderSensitivityPlanner
+
+    val query =
+      """MATCH (n:N)
+        |WHERE
+        |  n.prop > 0 AND
+        |  (NOT EXISTS { RETURN 1 AS z UNION ALL RETURN 2 AS z } OR
+        |    NOT EXISTS { RETURN 3 AS z UNION ALL RETURN 4 AS z })
+        |RETURN n ORDER BY n.prop""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("`n.prop` ASC")
+      .projection("cacheN[n.prop] AS `n.prop`")
+      .selectOrAntiSemiApply("anon_0")
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("4 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("3 AS z")
+      .|.argument()
+      .letAntiSemiApply("anon_0")
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("2 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("1 AS z")
+      .|.argument()
+      .nodeIndexOperator("n:N(prop > 0)", _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should not claim to provide order on invalidating RHS of LetSelectOrSemiApply") {
+    val planner = orderSensitivityPlanner
+
+    val query =
+      """MATCH (n:N)
+        |WHERE
+        |  n.prop > 0 AND
+        |  (n.prop < 5 OR
+        |    EXISTS { RETURN 1 AS z UNION ALL RETURN 2 AS z } OR
+        |    EXISTS { RETURN 3 AS z UNION ALL RETURN 4 AS z })
+        |RETURN n ORDER BY n.prop""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("`n.prop` ASC")
+      .projection("cacheN[n.prop] AS `n.prop`")
+      .selectOrSemiApply("anon_0")
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("4 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("3 AS z")
+      .|.argument()
+      .letSelectOrSemiApply("anon_0", "cacheN[n.prop] < 5")
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("2 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("1 AS z")
+      .|.argument()
+      .nodeIndexOperator("n:N(prop > 0)", _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should not claim to provide order on invalidating RHS of LetSelectOrAntiSemiApply") {
+    val planner = orderSensitivityPlanner
+
+    val query =
+      """MATCH (n:N)
+        |WHERE
+        |  n.prop > 0 AND
+        |  (n.prop < 5 OR
+        |    NOT EXISTS { RETURN 1 AS z UNION ALL RETURN 2 AS z } OR
+        |    EXISTS { RETURN 3 AS z UNION ALL RETURN 4 AS z })
+        |RETURN n ORDER BY n.prop""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("`n.prop` ASC")
+      .projection("cacheN[n.prop] AS `n.prop`")
+      .selectOrSemiApply("anon_0")
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("4 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("3 AS z")
+      .|.argument()
+      .letSelectOrAntiSemiApply("anon_0", "cacheN[n.prop] < 5")
+      .|.union()
+      .|.|.projection("z AS z")
+      .|.|.projection("2 AS z")
+      .|.|.argument()
+      .|.projection("z AS z")
+      .|.projection("1 AS z")
+      .|.argument()
+      .nodeIndexOperator("n:N(prop > 0)", _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should claim to provide order on non-invalidating RHS of SemiApply") {
+    val planner = orderSensitivityPlanner
+
+    val query =
+      """MATCH (n:N)
+        |WHERE
+        |  n.prop > 0 AND
+        |  EXISTS { RETURN 1 AS z }
+        |RETURN n ORDER BY n.prop""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .semiApply()
+      .|.projection("1 AS z")
+      .|.argument()
+      .nodeIndexOperator("n:N(prop > 0)", _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
   test("should plan CREATE followed by container access with COUNT expression as an index") {
     val q = "CREATE (a) RETURN [1, 2, 3][COUNT { MATCH (x) }] AS result"
     val plan = planner.plan(q).stripProduceResults
