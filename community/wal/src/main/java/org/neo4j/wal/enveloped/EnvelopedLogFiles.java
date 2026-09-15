@@ -228,7 +228,8 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             //                followup.
             logHeaderFactory.allowStoreIdentifierChange();
         }
-        return recoverLogTail(logsRepository.latestVersion(), false);
+        long latestVersion = logsRepository.latestVersion();
+        return latestVersion >= 0 ? recoverLogTail(latestVersion, false) : -1;
     }
 
     private long recoverLogTail(long fromVersion, boolean populateCache) throws IOException {

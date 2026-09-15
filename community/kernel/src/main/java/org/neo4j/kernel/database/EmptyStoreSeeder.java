@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.GeneratedStore;
+import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreGenerator;
 import org.neo4j.storageengine.api.StoreId;
@@ -242,6 +243,10 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
         }
     }
 
+    protected KernelVersion kernelVersionForSeed() {
+        return kernelVersionForSeed;
+    }
+
     private BatchImporter batchImporter(
             StorageEngineFactory storageEngineFactory,
             Config dbConfig,
@@ -284,7 +289,7 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
                 NO_MONITOR,
                 jobScheduler,
                 STRICT,
-                getLogFilesInitializer(),
+                createForMergedLog ? LogFilesInitializer.NULL : getLogFilesInitializer(),
                 new IndexImporterFactoryImpl(),
                 INSTANCE,
                 NULL_CONTEXT_FACTORY,

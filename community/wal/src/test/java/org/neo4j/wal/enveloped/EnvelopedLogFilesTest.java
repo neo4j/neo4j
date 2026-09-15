@@ -2282,6 +2282,51 @@ class EnvelopedLogFilesTest {
     }
 
     @Test
+    void shouldResetWriteChannelToLatestIndex() throws IOException {
+        envelopedLogFiles.initialise();
+
+        var data = EIGHT_BYTES_MESSAGE.getBytes(StandardCharsets.UTF_8);
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, data); // index 0
+        writeData(writeChannel, data); // index 1
+        writeData(writeChannel, data); // index 2
+        writeChannel.prepareForFlush().flush();
+
+        // when - as after a store copy has replaced the log files
+        var latestLogIndex = envelopedLogFiles.resetWriteChannelToLatestIndex(false);
+
+        // then - the write channel continues from the end of the log
+        assertThat(latestLogIndex).isEqualTo(2);
+        writeData(envelopedLogFiles.currentWriteChannel(), data);
+        assertThat(envelopedLogFiles.currentWriteChannel().currentIndex()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldNotCreateLogFileWhenResettingWithoutAnyLogFiles() throws IOException {
+        envelopedLogFiles.initialise();
+
+        var data = EIGHT_BYTES_MESSAGE.getBytes(StandardCharsets.UTF_8);
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        writeData(writeChannel, data);
+        writeChannel.prepareForFlush().flush();
+        envelopedLogFiles.close();
+
+        // given - a store copy that brought no log files with it
+        for (var version : mirroringRepository.logVersions(false)) {
+            fs.deleteFile(mirroringRepository.pathFor(version));
+        }
+        recreateEnvelopedLogFiles(LatestVersions.LATEST_KERNEL_VERSION);
+        assertThat(mirroringRepository.isEmpty()).isTrue();
+
+        // when
+        var latestLogIndex = envelopedLogFiles.resetWriteChannelToLatestIndex(true);
+
+        // then - creating the first log file is left to whoever seeds the store
+        assertThat(latestLogIndex).isEqualTo(-1);
+        assertThat(mirroringRepository.isEmpty()).isTrue();
+    }
+
+    @Test
     void truncatingFirstItemInFileShouldPreservePrevTerm() throws IOException {
         // Create initial files one with 2 entries one that is empty and third with a single entry
         envelopedLogFiles.initialise();
