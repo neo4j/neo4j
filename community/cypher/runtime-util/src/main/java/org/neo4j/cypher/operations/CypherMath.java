@@ -60,7 +60,15 @@ public final class CypherMath {
     }
 
     // TODO this is horrible spaghetti code, we should push most of this down to AnyValue
+    public static AnyValue addCypher5(AnyValue lhs, AnyValue rhs) {
+        return add(lhs, rhs, false);
+    }
+
     public static AnyValue add(AnyValue lhs, AnyValue rhs) {
+        return add(lhs, rhs, true);
+    }
+
+    private static AnyValue add(AnyValue lhs, AnyValue rhs, boolean allowMapAddition) {
         if (lhs == NO_VALUE || rhs == NO_VALUE) {
             return NO_VALUE;
         }
@@ -87,6 +95,11 @@ public final class CypherMath {
             return lhsList.append(rhs);
         } else if (rhs instanceof ListValue rhsList) {
             return rhsList.prepend(lhs);
+        }
+
+        // Map addition (Cypher 25+ only): shallow merge, right-hand side wins on overlapping keys.
+        if (allowMapAddition && lhs instanceof MapValue lhsMap && rhs instanceof MapValue rhsMap) {
+            return lhsMap.mergeMaps(rhsMap);
         }
 
         // String addition
@@ -142,6 +155,9 @@ public final class CypherMath {
                     DateTimeValue.CYPHER_TYPE_NAME,
                     LocalDateTimeValue.CYPHER_TYPE_NAME,
                     ListValue.CYPHER_TYPE_NAME);
+        } else if (lhs instanceof MapValue && allowMapAddition) {
+            // Positive cases (List addition, Map addition) are covered above.
+            expectedTypes = List.of(MapValue.CYPHER_TYPE_NAME, ListValue.CYPHER_TYPE_NAME);
         } else if (lhs instanceof VirtualNodeValue
                 || lhs instanceof VirtualRelationshipValue
                 || lhs instanceof MapValue) {

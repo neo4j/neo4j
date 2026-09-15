@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Add
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AddCypher25
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AddCypher5
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ParameterFromSlot
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.UTF8StringValue
@@ -32,6 +33,7 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.storable.Values.utf8Value
+import org.neo4j.values.virtual.VirtualValues
 
 import java.nio.charset.StandardCharsets
 
@@ -41,35 +43,35 @@ class AddTest extends InterpretedRuntimeTestSuite {
   val s = QueryStateHelper.empty
 
   test("numbers") {
-    val expr = Add(literal(1), literal(1))
+    val expr = AddCypher5(literal(1), literal(1))
     expr(m, s) should equal(longValue(2))
   }
 
   test("with_null") {
-    val nullPlusOne = Add(literal(NO_VALUE), literal(1))
-    val twoPlusNull = Add(literal(2), literal(NO_VALUE))
+    val nullPlusOne = AddCypher5(literal(NO_VALUE), literal(1))
+    val twoPlusNull = AddCypher5(literal(2), literal(NO_VALUE))
 
     nullPlusOne(m, s) should equal(NO_VALUE)
     twoPlusNull(m, s) should equal(NO_VALUE)
   }
 
   test("strings") {
-    val expr = Add(literal("hello"), literal("world"))
+    val expr = AddCypher5(literal("hello"), literal("world"))
     expr(m, s) should equal(stringValue("helloworld"))
   }
 
   test("stringPlusNumber") {
-    val expr = Add(literal("hello"), literal(1))
+    val expr = AddCypher5(literal("hello"), literal(1))
     expr(m, s) should equal(stringValue("hello1"))
   }
 
   test("numberPlusString") {
-    val expr = Add(literal(1), literal("world"))
+    val expr = AddCypher5(literal(1), literal("world"))
     expr(m, s) should equal(stringValue("1world"))
   }
 
   test("numberPlusBool") {
-    val expr = Add(literal(1), literal(true))
+    val expr = AddCypher5(literal(1), literal(true))
     intercept[CypherTypeException](expr(m, s))
   }
 
@@ -80,11 +82,31 @@ class AddTest extends InterpretedRuntimeTestSuite {
     val state = QueryStateHelper.emptyWith(params = Array(utf8Value(hello), utf8Value(world)))
 
     // When
-    val result = Add(ParameterFromSlot(0, "p1"), ParameterFromSlot(1, "p2"))(m, state)
+    val result = AddCypher5(ParameterFromSlot(0, "p1"), ParameterFromSlot(1, "p2"))(m, state)
 
     // Then
     result shouldBe a[UTF8StringValue]
     result should equal(utf8Value("helloworld".getBytes(StandardCharsets.UTF_8)))
     result should equal(Values.stringValue("helloworld"))
+  }
+
+  test("Cypher 5 rejects map addition") {
+    val expr = AddCypher5(literal(Map("a" -> 1)), literal(Map("b" -> 2)))
+    intercept[CypherTypeException](expr(m, s))
+  }
+
+  test("Cypher 25 merges maps with the right-hand side winning on overlapping keys") {
+    val expr = AddCypher25(literal(Map("a" -> 1, "b" -> 2)), literal(Map("b" -> 99, "c" -> 3)))
+    expr(m, s) should equal(
+      VirtualValues.map(Array("a", "b", "c"), Array(longValue(1), longValue(99), longValue(3)))
+    )
+  }
+
+  test("Cypher 25 still concatenates lists and rejects other Map combinations") {
+    val listExpr = AddCypher25(literal(Seq(1)), literal(Seq(2)))
+    listExpr(m, s) should equal(VirtualValues.list(longValue(1), longValue(2)))
+
+    val mapPlusStringExpr = AddCypher25(literal(Map("a" -> 1)), literal("hello"))
+    intercept[CypherTypeException](mapPlusStringExpr(m, s))
   }
 }

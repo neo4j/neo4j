@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.MutableMaps
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Add
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AddCypher25
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ParameterFromSlot
@@ -157,7 +157,7 @@ class CommandTest extends ShowCommandTestBase {
     val variableExpression = Variable("name2")
     val expressionCypherRow = CypherRow.apply(MutableMaps.create("name2" -> Values.stringValue("Goodbye!")))
 
-    val stringConcatExpression = Add(Literal(Values.stringValue("Hi")), Literal(Values.stringValue("!")))
+    val stringConcatExpression = AddCypher25(Literal(Values.stringValue("Hi")), Literal(Values.stringValue("!")))
     val listExpression = ListLiteral(paramExpression, variableExpression, stringConcatExpression)
 
     // When

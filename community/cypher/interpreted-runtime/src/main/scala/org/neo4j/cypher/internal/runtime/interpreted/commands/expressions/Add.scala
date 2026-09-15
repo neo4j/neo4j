@@ -20,22 +20,26 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-case class Add(a: Expression, b: Expression) extends Expression {
+case class AddCypher5(a: Expression, b: Expression) extends Arithmetics(a, b) {
+
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = (a(row, state), b(row, state)) match {
+    case (x, y) if (x eq Values.NO_VALUE) || (y eq Values.NO_VALUE) => Values.NO_VALUE
+    case (x, y)                                                     => CypherMath.addCypher5(x, y)
+  }
+  override def rewrite(f: Expression => Expression): Expression = f(AddCypher5(a.rewrite(f), b.rewrite(f)))
+}
+
+case class AddCypher25(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = (a(row, state), b(row, state)) match {
     case (x, y) if (x eq Values.NO_VALUE) || (y eq Values.NO_VALUE) => Values.NO_VALUE
     case (x, y)                                                     => CypherMath.add(x, y)
   }
 
-  override def rewrite(f: Expression => Expression): Expression = f(Add(a.rewrite(f), b.rewrite(f)))
-
-  override def arguments: Seq[Expression] = Seq(a, b)
-
-  override def children: Seq[AstNode[_]] = Seq(a, b)
+  override def rewrite(f: Expression => Expression): Expression = f(AddCypher25(a.rewrite(f), b.rewrite(f)))
 }

@@ -403,7 +403,7 @@ class AllReducePredicateSemanticAnalysisTest extends CypherFunSuite with Semanti
         |RETURN a, b
         |""".stripMargin
     ).hasErrorMessages(
-      "Type mismatch: expected List<T> but was Integer",
+      "Type mismatch: expected Map or List<T> but was Integer",
       "Type mismatch: accumulator is Map but reduction has type Any"
     )
   }

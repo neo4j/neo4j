@@ -29,7 +29,7 @@ import org.neo4j.values.storable.LongValue
 class TypeTest extends InterpretedRuntimeTestSuite {
 
   test("plus int int") {
-    val op = Add(literal(1), literal(2))
+    val op = AddCypher25(literal(1), literal(2))
 
     val result = calc(op)
 
@@ -38,7 +38,7 @@ class TypeTest extends InterpretedRuntimeTestSuite {
   }
 
   test("plus double int") {
-    val op = Add(literal(1.2), literal(2))
+    val op = AddCypher25(literal(1.2), literal(2))
 
     val result = calc(op)
 

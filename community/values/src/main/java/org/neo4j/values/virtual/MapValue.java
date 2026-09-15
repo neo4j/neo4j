@@ -49,6 +49,8 @@ import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.Values;
 
 public abstract class MapValue extends VirtualValue {
+    public static final String CYPHER_TYPE_NAME = "MAP";
+
     public static final MapValue EMPTY = new MapValue() {
         @Override
         public Iterable<String> keySet() {
@@ -387,10 +389,16 @@ public abstract class MapValue extends VirtualValue {
     private static final class CombinedMapValue extends MapValue {
         private final MapValue map1;
         private final MapValue map2;
+        private final boolean overwriteWithNullValues;
 
         CombinedMapValue(MapValue map1, MapValue map2) {
+            this(map1, map2, false);
+        }
+
+        CombinedMapValue(MapValue map1, MapValue map2, boolean overwriteWithNullValues) {
             this.map1 = map1;
             this.map2 = map2;
+            this.overwriteWithNullValues = overwriteWithNullValues;
         }
 
         @Override
@@ -442,6 +450,9 @@ public abstract class MapValue extends VirtualValue {
 
         @Override
         public AnyValue get(String key) {
+            if (overwriteWithNullValues) {
+                return map2.containsKey(key) ? map2.get(key) : map1.get(key);
+            }
             AnyValue value2 = map2.get(key);
             if (value2 != NO_VALUE) {
                 return value2;
@@ -673,6 +684,12 @@ public abstract class MapValue extends VirtualValue {
 
     public MapValue updatedWith(MapValue other) {
         return new CombinedMapValue(this, other);
+    }
+
+    // Unlike updatedWith, an explicit null in other overwrites the value in this map
+    // rather than being treated as a missing key.
+    public MapValue mergeMaps(MapValue other) {
+        return new CombinedMapValue(this, other, true);
     }
 
     @Override

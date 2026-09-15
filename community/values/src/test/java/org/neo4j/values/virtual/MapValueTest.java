@@ -202,6 +202,20 @@ class MapValueTest {
     }
 
     @Test
+    void mergeMapsShouldOverwriteEvenWithNullValues() {
+        // Given
+        MapValue a = mapValue("k1", stringValue("v1"), "k2", stringValue("v2"));
+        MapValue b = mapValue("k2", NO_VALUE);
+
+        // When
+        MapValue updated = a.mergeMaps(b);
+
+        // Then
+        assertThat(updated.get("k2")).isEqualTo(NO_VALUE);
+        assertMapValueEquals(updated, mapValue("k1", stringValue("v1"), "k2", NO_VALUE));
+    }
+
+    @Test
     void shouldCompareTwoCombinedMapValues() {
         // Given
         MapValue a = mapValue("note", stringValue("test"), "Id", numberValue(8));

@@ -303,7 +303,12 @@ case class CommunityExpressionConverter(
         )
       case e: internal.expressions.InequalityExpression => inequalityExpression(id, e, self)
       case e: internal.expressions.Add =>
-        commands.expressions.Add(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
+        cypherVersion match {
+          case CypherVersion.Cypher5 =>
+            commands.expressions.AddCypher5(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
+          case _ =>
+            commands.expressions.AddCypher25(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
+        }
       case e: internal.expressions.Concatenate =>
         commands.expressions.Concatenate(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
       case e: internal.expressions.StringInterpolation =>

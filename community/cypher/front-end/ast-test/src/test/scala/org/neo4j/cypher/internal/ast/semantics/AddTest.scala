@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.semantics.InfixExpressionTestBase.ExpectedResult
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -28,9 +30,11 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
 import org.neo4j.cypher.internal.util.symbols.CTLocalTime
+import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.cypher.internal.util.symbols.CTVector
@@ -186,4 +190,50 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
     testValidTypes(CTInteger | CTList(CTInteger), CTString)(CTString | CTList(CTAny))
     testValidTypes(CTInteger | CTList(CTInteger), CTBoolean)(CTList(CTAny))
   }
+
+  test("map addition is Cypher 25+ only") {
+    testTypesIn(CTMap, CTMap) {
+      case CypherVersion.Cypher5 => ExpectedResult.Error("Type mismatch: expected List<T> but was Map")
+      case _ /* ≥ Cypher 25 */   => ExpectedResult.Valid(CTMap)
+    }
+    testTypesIn(CTMap.covariant, CTMap.covariant) {
+      case CypherVersion.Cypher5 =>
+        ExpectedResult.Error("Type mismatch: expected List<T> but was Map, Node or Relationship")
+      case _ /* ≥ Cypher 25 */ => ExpectedResult.Valid(CTMap)
+    }
+  }
+
+  test("nodes and relationships are structurally map-like, but shouldn't be allowed") {
+    testInvalidApplication(CTNode, CTNode)(
+      "Type mismatch: expected List<T> but was Node"
+    )
+    testInvalidApplication(CTNode, CTRelationship)(
+      "Type mismatch: expected List<T> but was Relationship"
+    )
+    testInvalidApplication(CTRelationship, CTNode)(
+      "Type mismatch: expected List<T> but was Node"
+    )
+    testInvalidApplicationIn(CTMap, CTNode) {
+      case CypherVersion.Cypher5 => "Type mismatch: expected List<T> but was Node"
+      case _ /* ≥ Cypher 25 */   => "Type mismatch: expected Map or List<T> but was Node"
+    }
+    testInvalidApplicationIn(CTMap, CTRelationship) {
+      case CypherVersion.Cypher5 => "Type mismatch: expected List<T> but was Relationship"
+      case _ /* ≥ Cypher 25 */   => "Type mismatch: expected Map or List<T> but was Relationship"
+    }
+    testInvalidApplication(CTNode, CTMap)(
+      "Type mismatch: expected List<T> but was Map"
+    )
+    testInvalidApplication(CTRelationship, CTMap)(
+      "Type mismatch: expected List<T> but was Map"
+    )
+  }
+
+  test("should still reject Map + non-Map/non-List in Cypher 25") {
+    testInvalidApplicationIn(CTMap, CTString) {
+      case CypherVersion.Cypher5 => "Type mismatch: expected List<T> but was String"
+      case _ /* ≥ Cypher 25 */   => "Type mismatch: expected Map or List<T> but was String"
+    }
+  }
+
 }

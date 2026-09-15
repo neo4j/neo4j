@@ -238,8 +238,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         check(ctx, x.lhs) chain
           expectType(TypeSpec.all, x.lhs) chain
           check(ctx, x.rhs) chain
-          expectType(infixAddRhsTypes(x.lhs), x.rhs) chain
-          specifyType(infixAddOutputTypes(x.lhs, x.rhs), x)
+          fromContext(semanticCheckContext => {
+            // Map + Map addition is Cypher 25+ only.
+            val allowMapAddition = semanticCheckContext.cypherVersion != CypherVersion.Cypher5
+            expectType(infixAddRhsTypes(x.lhs, allowMapAddition), x.rhs) chain
+              specifyType(infixAddOutputTypes(x.lhs, x.rhs, allowMapAddition), x)
+          })
 
       case x: Concatenate =>
         check(ctx, x.arguments) chain
@@ -1125,7 +1129,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     CTDate.covariant | CTLocalTime.covariant | CTTime.covariant | CTLocalDateTime.covariant | CTDateTime.covariant |
     CTDuration.covariant | CTPoint.covariant | CTVector.covariant
 
-  private def infixAddRhsTypes(lhs: Expression): TypeGenerator = s => {
+  private def infixAddRhsTypes(lhs: Expression, allowMapAddition: Boolean): TypeGenerator = s => {
     val lhsTypes = types(lhs)(s)
 
     // Strings
@@ -1196,10 +1200,22 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     // a + [b] => [a, b]
     val rhsListTypes = CTList(CTAny).covariant
 
-    stringTypes | numberTypes | lhsListTypes | rhsListTypes | temporalTypes | durationTypes | otherTypes
+    // {a: 1} + {b: 2} => {a: 1, b: 2} (Cypher 25+ only).
+    val mapTypes: TypeSpec =
+      if (allowMapAddition && lhsTypes.contains(CTMap)) {
+        CTMap.invariant
+      } else {
+        TypeSpec.none
+      }
+
+    stringTypes | numberTypes | lhsListTypes | rhsListTypes | temporalTypes | durationTypes | otherTypes | mapTypes
   }
 
-  private def infixAddOutputTypes(lhs: Expression, rhs: Expression): TypeGenerator = s => {
+  private def infixAddOutputTypes(
+    lhs: Expression,
+    rhs: Expression,
+    allowMapAddition: Boolean = false
+  ): TypeGenerator = s => {
     val lhsTypes = types(lhs)(s)
     val rhsTypes = types(rhs)(s)
 
@@ -1242,6 +1258,15 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         when(CTDateTime.covariant, CTDuration.covariant)(CTDateTime) |
         when(CTDuration.covariant, CTDateTime.covariant)(CTDateTime)
 
+    // {a: 1} + {b: 2} => {a: 1, b: 2} (Cypher 25+ only)
+    // Node/Relationship are structural subtypes of Map but shouldn't be allowed here.
+    val mapTypes: TypeSpec =
+      if (allowMapAddition && lhsTypes.contains(CTMap) && rhsTypes.contains(CTMap)) {
+        CTMap.invariant
+      } else {
+        TypeSpec.none
+      }
+
     val listTypes = {
       val lhsListTypes = lhsTypes constrain CTList(CTAny)
       val rhsListTypes = rhsTypes constrain CTList(CTAny)
@@ -1259,7 +1284,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       bothListMergedLhTypes | bothListMergedRhTypes | lhListMergedTypes | rhListMergedTypes
     }
 
-    stringTypes | numberTypes | listTypes | temporalTypes
+    stringTypes | numberTypes | listTypes | temporalTypes | mapTypes
   }
 
   private def checkInnerListComprehension(x: ListComprehension): SemanticCheck =
