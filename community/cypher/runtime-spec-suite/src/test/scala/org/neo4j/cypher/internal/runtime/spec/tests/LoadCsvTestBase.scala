@@ -391,6 +391,35 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     val expected = testRange.map { i => Array[Any](s"${testValueOffset + i}", i.toLong + 2, filename) }.toArray
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
   }
+
+  test("should succeed when two loadCSV plans are present with one being on the RHS") {
+    // given a small file
+    val rowCount = 5
+    val url = wrapInQuotations(createCSVTempFileURL({ (writer: PrintWriter) =>
+      (0 until rowCount).foreach(i => writer.println(s"${testValueOffset + i}"))
+    }).cypherEscape)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .cartesianProduct()
+      .|.projection("rhsLine[0] AS y")
+      .|.loadCSV(url, variableName = "rhsLine", NoHeaders)
+      .|.argument()
+      .projection("lhsLine[0] AS x")
+      .loadCSV(url, variableName = "lhsLine", NoHeaders)
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      i <- 0 until rowCount
+      j <- 0 until rowCount
+    } yield Array[Any](s"${testValueOffset + i}", s"${testValueOffset + j}")
+    runtimeResult should beColumns("x", "y").withRows(expected.toArray)
+  }
 }
 
 // Currently not supported in pipelined

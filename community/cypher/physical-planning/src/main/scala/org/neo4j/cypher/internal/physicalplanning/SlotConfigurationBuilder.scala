@@ -355,13 +355,23 @@ final class SlotConfigurationBuilder private (
     this
   }
 
-  def newMetaData(key: String, planId: Id = Id.INVALID_ID): SlotConfigurationBuilder = {
+  def newMetaData(
+    key: String,
+    planId: Id = Id.INVALID_ID,
+    shouldDuplicate: Boolean = false
+  ): SlotConfigurationBuilder = {
     require(!finalized)
     val slotKey = MetaDataSlotKey(key, planId)
     slots.get(slotKey) match {
       case Some(_) =>
-      // For LoadCSV we only support meta data from one clause at a time, so we allow the same key to be
-      // used multiple times mapping to the same slot, and the runtime value to be overwritten by the latest clause.
+        // For LoadCSV we only support meta data from one clause at a time, so we allow the same key to be
+        // used multiple times mapping to the same slot, and the runtime value to be overwritten by the latest clause.
+        if (shouldDuplicate) {
+          // Same reasoning as for duplicated cached properties: the placeholder keeps the slot count in step with
+          // the source configuration so that operators copying whole rows with Arraycopy stay aligned. The value
+          // written here is never read back, the meta data is read from the original slot.
+          newDuplicatedRefSlot(key)
+        }
 
       case None =>
         slots.put(slotKey, RefSlot(numberOfReferences, nullable = false, CTAny))
@@ -392,7 +402,7 @@ final class SlotConfigurationBuilder private (
       case SlotWithKeyAndAliases(DuplicatedSlotKey(key, _), slot, _) =>
         if (slot.isLongSlot) other.newDuplicatedLongSlot(key)
         else other.newDuplicatedRefSlot(key)
-      case SlotWithKeyAndAliases(MetaDataSlotKey(key, id), _, _)      => other.newMetaData(key, id)
+      case SlotWithKeyAndAliases(MetaDataSlotKey(key, id), _, _) => other.newMetaData(key, id, shouldDuplicate = true)
       case SlotWithKeyAndAliases(ApplyPlanSlotKey(applyPlanId), _, _) => other.newArgument(applyPlanId)
       case SlotWithKeyAndAliases(OuterNestedApplyPlanSlotKey(applyPlanId), _, _) =>
         other.newNestedArgument(applyPlanId)
