@@ -103,7 +103,7 @@ class ReadAheadChannelTest {
     void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles(Constructor constructor) throws Exception {
         // Given
 
-        Path file1 = Path.of("foo.1");
+        Path file1 = Path.of("spanningRequest.1");
         try (StoreChannel storeChannel1 = fileSystem.write(file1)) {
             ByteBuffer buffer = ByteBuffers.allocate(2, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             buffer.put((byte) 1);
@@ -113,7 +113,7 @@ class ReadAheadChannelTest {
             storeChannel1.force(false);
         }
 
-        Path file2 = Path.of("foo.2");
+        Path file2 = Path.of("spanningRequest.2");
         try (StoreChannel storeChannel2 = fileSystem.write(file2)) {
             ByteBuffer buffer = ByteBuffers.allocate(2, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             buffer.put((byte) 0);
@@ -161,7 +161,7 @@ class ReadAheadChannelTest {
         // given
         Checksum checksum = CHECKSUM_FACTORY.get();
         int checksumValue;
-        Path file = Path.of("foo.1");
+        Path file = Path.of("checksumOverStream.1");
         try (StoreChannel storeChannel = fileSystem.write(file)) {
             ByteBuffer buffer = ByteBuffers.allocate(6, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             buffer.put((byte) 1);
@@ -189,7 +189,7 @@ class ReadAheadChannelTest {
     void throwOnInvalidChecksum(Constructor constructor) throws Exception {
         // given
         Checksum checksum = CHECKSUM_FACTORY.get();
-        Path file = Path.of("foo.1");
+        Path file = Path.of("invalidChecksum.1");
         try (StoreChannel storeChannel = fileSystem.write(file)) {
             ByteBuffer buffer = ByteBuffers.allocate(6, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             buffer.put((byte) 1);
@@ -217,7 +217,7 @@ class ReadAheadChannelTest {
         // given
         Checksum checksum = CHECKSUM_FACTORY.get();
         int checksumValue;
-        Path file = Path.of("foo.1");
+        Path file = Path.of("largerThanReadAhead.1");
         int testSize = 100;
         try (StoreChannel storeChannel = fileSystem.write(file)) {
             ByteBuffer buffer = ByteBuffers.allocate(testSize + 4, ByteOrder.LITTLE_ENDIAN, INSTANCE);

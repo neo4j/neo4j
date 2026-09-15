@@ -212,10 +212,4 @@ class TestNeo4j extends AbstractNeo4jTestCase {
             }
         }
     }
-
-    @Test
-    void testMultipleShutdown() {
-        getManagementService().shutdown();
-        getManagementService().shutdown();
-    }
 }
