@@ -35,6 +35,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP
 
 class MergeIntoSlottedPipe(
   src: Pipe,
@@ -45,7 +47,10 @@ class MergeIntoSlottedPipe(
   lazyType: LazyType,
   onMatchProperties: MergePropertySets,
   onCreateProperties: MergePropertySets,
-  slots: SlotConfiguration
+  slots: SlotConfiguration,
+  fromName: String,
+  relName: String,
+  toName: String
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(src) {
   private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(fromSlot)
   private val getToNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(toSlot)
@@ -62,7 +67,15 @@ class MergeIntoSlottedPipe(
         val toNode = getToNodeFunction.applyAsLong(inputRow)
 
         if (entityIsNull(fromNode) || entityIsNull(toNode)) {
-          ClosingIterator.empty
+          if (state.lenientCreateRelationship) {
+            val outputRow = SlottedRow(slots)
+            outputRow.copyAllFrom(inputRow)
+            outputRow.setLongAt(relOffset, NO_SUCH_RELATIONSHIP)
+            ClosingIterator.single(outputRow)
+          } else {
+            val missingName = if (entityIsNull(fromNode)) fromName else toName
+            throw InvalidArgumentException.createRelationshipMissingNode(relName, missingName)
+          }
         } else {
           PrimitiveLongHelper.map(
             mergeIntoIterator(

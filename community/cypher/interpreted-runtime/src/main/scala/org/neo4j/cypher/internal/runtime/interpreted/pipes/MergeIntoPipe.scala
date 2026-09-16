@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.runtime.iterators.BaseRelationshipCursorIterato
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.operations.CypherTypeValueMapper
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.internal.kernel.api.MutatingEntityCursor
 import org.neo4j.kernel.api.StatementConstants
@@ -107,8 +108,8 @@ class MergeIntoPipe(
         val relType = lazyType.getOrCreateType(row, state)
 
         (fromNode, toNode) match {
-          case (IsNoValue(), _) => ClosingIterator.empty
-          case (_, IsNoValue()) => ClosingIterator.empty
+          case (IsNoValue(), _) => handleMissingNode(row, state, fromName)
+          case (_, IsNoValue()) => handleMissingNode(row, state, toName)
           case (f: VirtualNodeValue, t: VirtualNodeValue) =>
             PrimitiveLongHelper.map(
               mergeIntoIterator(
@@ -143,6 +144,17 @@ class MergeIntoPipe(
         }
     }
   }
+
+  private def handleMissingNode(
+    row: CypherRow,
+    state: QueryState,
+    nodeName: String
+  ): ClosingIterator[CypherRow] =
+    if (state.lenientCreateRelationship) {
+      ClosingIterator.single(rowFactory.copyWith(row, relName, Values.NO_VALUE))
+    } else {
+      throw InvalidArgumentException.createRelationshipMissingNode(relName, nodeName)
+    }
 }
 
 object MergeIntoPipe {

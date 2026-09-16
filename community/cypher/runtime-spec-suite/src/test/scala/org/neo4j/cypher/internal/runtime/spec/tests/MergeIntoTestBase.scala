@@ -29,8 +29,10 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder.nestedPlanColl
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.ExpandAllTestBase.smallTestGraph
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.kernel.api.exceptions.Status
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -280,6 +282,52 @@ abstract class MergeIntoTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "r").withNoRows().withNoUpdates()
+  }
+
+  test("should fail when start node is missing") {
+    assume(supportFastExpandInto())
+    // given
+    val node = givenGraph { nodeGraph(1).head }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .mergeInto("(x)-[r:R]->(y)")
+      .input(nodes = Seq("x", "y"))
+      .build(readOnly = false)
+
+    val error = the[InvalidArgumentException] thrownBy consume(
+      execute(logicalQuery, runtime, inputValues(Array[Any](null, node)))
+    )
+
+    // then
+    error should have message
+      "Failed to create relationship `r`, node `x` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
+      "set 'dbms.cypher.lenient_create_relationship = true' in neo4j.conf"
+    error.status() shouldBe Status.Statement.ArgumentError
+  }
+
+  test("should fail when end node is missing") {
+    assume(supportFastExpandInto())
+    // given
+    val node = givenGraph { nodeGraph(1).head }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .mergeInto("(x)-[r:R]->(y)")
+      .input(nodes = Seq("x", "y"))
+      .build(readOnly = false)
+
+    val error = the[InvalidArgumentException] thrownBy consume(
+      execute(logicalQuery, runtime, inputValues(Array[Any](node, null)))
+    )
+
+    // then
+    error should have message
+      "Failed to create relationship `r`, node `y` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
+      "set 'dbms.cypher.lenient_create_relationship = true' in neo4j.conf"
+    error.status() shouldBe Status.Statement.ArgumentError
   }
 
   test("should handle mergeInto outgoing") {

@@ -1770,7 +1770,10 @@ class SlottedPipeMapper(
           LazyType(relType)(semanticTable),
           MergePropertySets(compilePropertyExpressions(id, onMatchProperties)),
           MergePropertySets(compilePropertyExpressions(id, onCreateProperties)),
-          slots
+          slots,
+          leftNode.name,
+          idName.name,
+          rightNode.name
         )(id)
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>

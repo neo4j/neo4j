@@ -893,7 +893,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         slots.newLong(to, nullable, CTNode)
 
       case u: MergeInto =>
-        slots.newLong(u.idName, nullable, CTRelationship)
+        slots.newLong(u.idName, nullable || config.lenientCreateRelationship, CTRelationship)
         recordArgument(lp)
 
       case Optional(_, _) =>
