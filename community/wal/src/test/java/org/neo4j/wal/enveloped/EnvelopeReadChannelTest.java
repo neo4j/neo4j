@@ -402,9 +402,44 @@ class EnvelopeReadChannelTest {
 
     @ParameterizedTest
     @ValueSource(ints = {128, 256})
-    void shouldReadEnvelopesWithMaximumZeroPadding(int segmentSize) throws Exception {
+    void shouldReadEnvelopesWithZeroPaddingJustBelowMaximum(int segmentSize) throws Exception {
         // GIVEN
         final var zeros = new byte[MAX_ZERO_PADDING_SIZE - 1];
+        final var bytes1 = bytes(random, segmentSize - HEADER_SIZE - zeros.length);
+        final var l1 = random.nextLong();
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+
+            final var checksum =
+                    writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+            buffer.put(zeros);
+
+            final var fullChecksum =
+                    buildChecksum(EnvelopeType.FULL, Long.BYTES, checksum, (crcBuffer) -> crcBuffer.putLong(l1));
+            writeLogEnvelopeHeader(buffer, fullChecksum, EnvelopeType.FULL, Long.BYTES, checksum, START_INDEX);
+            buffer.putLong(l1);
+        });
+
+        final var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            // THEN
+            var bytesRead = new byte[bytes1.length];
+            channel.get(bytesRead, bytes1.length);
+            assertThat(bytes1).isEqualTo(bytesRead);
+
+            assertThat(channel.getLong()).isEqualTo(l1);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void shouldReadEnvelopesWithExactlyMaximumZeroPadding(int segmentSize) throws Exception {
+        // GIVEN
+        // The writer's bound is inclusive: EnvelopeWriteChannel pads a tail of exactly MAX_ZERO_PADDING_SIZE
+        // rather than opening an envelope in it, so the reader must cross such a pad, not call it end-of-content.
+        final var zeros = new byte[MAX_ZERO_PADDING_SIZE];
         final var bytes1 = bytes(random, segmentSize - HEADER_SIZE - zeros.length);
         final var l1 = random.nextLong();
 
@@ -1553,6 +1588,42 @@ class EnvelopeReadChannelTest {
 
             assertThat(channel.goToNextEntry()).isEqualTo(segmentSize * 2L);
             assertThat(channel.entryIndex()).isEqualTo(5L);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void shouldTreatZeroTailJustAboveMaximumPaddingAsEndOfContent(int segmentSize) throws Exception {
+        // GIVEN
+        // A zero tail one byte wider than the writer ever pads cannot be padding, so the reader must report
+        // end-of-content positioned at the start of the tail rather than cross it into the next segment.
+        final var zeros = new byte[MAX_ZERO_PADDING_SIZE + 1];
+        final var bytes1 = bytes(random, segmentSize - HEADER_SIZE - zeros.length);
+        final var l1 = random.nextLong();
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+
+            final var checksum =
+                    writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+            buffer.put(zeros);
+
+            final var fullChecksum =
+                    buildChecksum(EnvelopeType.FULL, Long.BYTES, checksum, (crcBuffer) -> crcBuffer.putLong(l1));
+            writeLogEnvelopeHeader(buffer, fullChecksum, EnvelopeType.FULL, Long.BYTES, checksum, START_INDEX);
+            buffer.putLong(l1);
+        });
+
+        final var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            var bytesRead = new byte[bytes1.length];
+            channel.get(bytesRead, bytes1.length);
+            assertThat(bytes1).isEqualTo(bytesRead);
+
+            // THEN
+            assertThatThrownBy(channel::getLong).isInstanceOf(ReadPastEndException.class);
+            assertThat(channel.position()).isEqualTo(segmentSize * 2L - zeros.length);
         }
     }
 

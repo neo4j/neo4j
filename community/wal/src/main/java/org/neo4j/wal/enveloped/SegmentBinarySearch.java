@@ -87,11 +87,8 @@ class SegmentBinarySearch implements LogBinarySearch.BinarySearchReader {
         headerBuffer.clear();
         envelopeReadChannel.channel().read(headerBuffer);
         headerBuffer.flip();
-        headerBuffer.getInt(); // ignored checksum
-        var type = LogEnvelopeHeader.EnvelopeType.of(headerBuffer.get());
-        headerBuffer.getInt(); // ignored payload length
-        var entryIndex = headerBuffer.getLong();
-        return new EnvelopedHeader(type, entryIndex);
+        var header = LogEnvelopeHeader.readHeader(headerBuffer);
+        return new EnvelopedHeader(header.type(), header.appendIndex());
     }
 
     private record EnvelopedHeader(LogEnvelopeHeader.EnvelopeType type, long entryIndex) {}

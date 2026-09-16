@@ -19,6 +19,7 @@
  */
 package org.neo4j.wal.entry;
 
+import java.nio.ByteBuffer;
 import org.neo4j.wal.enveloped.InvalidLogEnvelopeReadException;
 
 /**
@@ -33,6 +34,36 @@ import org.neo4j.wal.enveloped.InvalidLogEnvelopeReadException;
  */
 public class LogEnvelopeHeader {
     private LogEnvelopeHeader() {}
+
+    /**
+     * All fields of a single {@link LogEnvelopeHeader} in the order they appear on disk/wire.
+     */
+    public record EnvelopeHeader(
+            int checksum,
+            EnvelopeType type,
+            int payloadLength,
+            long appendIndex,
+            byte kernelVersion,
+            int previousChecksum,
+            long term,
+            byte contentType) {}
+
+    /**
+     * Parses a complete envelope header from the buffer, consuming {@link #HEADER_SIZE} bytes from the current
+     * position. The buffer must be in {@link java.nio.ByteOrder#LITTLE_ENDIAN} order and have at least
+     * {@link #HEADER_SIZE} remaining.
+     */
+    public static EnvelopeHeader readHeader(ByteBuffer buffer) throws InvalidLogEnvelopeReadException {
+        return new EnvelopeHeader(
+                buffer.getInt(),
+                EnvelopeType.of(buffer.get()),
+                buffer.getInt(),
+                buffer.getLong(),
+                buffer.get(),
+                buffer.getInt(),
+                buffer.getLong(),
+                buffer.get());
+    }
 
     public static final int HEADER_SIZE = Integer.BYTES // payload checksum
             + Byte.BYTES // envelope type
