@@ -25,9 +25,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -48,6 +48,8 @@ public class IndexUpdateSink {
     private final int eventuallyConsistentUpdateQueueLimit;
     private final OutOfOrderSequence jobSequence = new ArrayQueueOutOfOrderSequence(-1, 10, EMPTY_META);
     private final AtomicLong nextJobId = new AtomicLong();
+    private final ReentrantLock jobSequenceLock = new ReentrantLock();
+    private final Condition jobApplied = jobSequenceLock.newCondition();
 
     IndexUpdateSink(JobScheduler scheduler, int eventuallyConsistentUpdateQueueLimit) {
         this.scheduler = scheduler;
@@ -79,7 +81,7 @@ public class IndexUpdateSink {
                 try {
                     updateQueueLimit.release(numberOfUpdates);
                 } finally {
-                    jobSequence.offer(jobId, EMPTY_META);
+                    markJobApplied(jobId);
                 }
             }
         };
@@ -103,10 +105,35 @@ public class IndexUpdateSink {
         }
     }
 
+    private void markJobApplied(long jobId) {
+        jobSequenceLock.lock();
+        try {
+            jobSequence.offer(jobId, EMPTY_META);
+            jobApplied.signalAll();
+        } finally {
+            jobSequenceLock.unlock();
+        }
+    }
+
     public void awaitUpdateApplication() {
         long targetJobId = nextJobId.get() - 1;
-        while (jobSequence.getHighestGapFreeNumber() < targetJobId) {
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+        boolean interrupted = false;
+        jobSequenceLock.lock();
+        try {
+            while (jobSequence.getHighestGapFreeNumber() < targetJobId) {
+                try {
+                    jobApplied.await();
+                } catch (InterruptedException e) {
+                    // Callers commit and close indexes through here and cannot handle a partial wait,
+                    // so absorb the interrupt and re-raise it once the updates have landed.
+                    interrupted = true;
+                }
+            }
+        } finally {
+            jobSequenceLock.unlock();
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }
