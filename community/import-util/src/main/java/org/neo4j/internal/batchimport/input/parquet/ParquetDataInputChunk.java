@@ -76,6 +76,8 @@ class ParquetDataInputChunk implements ParquetInputChunk {
     private String arrayDelimiter;
     private String vectorDelimiter;
     private IdType idType;
+    private IdType defaultIdType;
+    private boolean globalIdTypeExplicit;
     private ParquetDataReader.RowGroupIterator iterator;
     private Collection<String> filteredLabelsOrTypes;
     private final Map<Object, Collection<String>> labelCache = new HashMap<>();
@@ -110,6 +112,8 @@ class ParquetDataInputChunk implements ParquetInputChunk {
             arrayDelimiter = Pattern.quote(reader.getArrayDelimiter());
             vectorDelimiter = Pattern.quote(reader.getVectorDelimiter());
             idType = reader.getIdType();
+            defaultIdType = reader.getDefaultIdType();
+            globalIdTypeExplicit = reader.isGlobalIdTypeExplicit();
             filteredLabelsOrTypes = filterEmptyLabelsAndTrim(parquetDataFile.labelsOrType());
             if (parquetDataFile.entityType() == EntityType.NODE) {
                 nodeIdGroup = groups.get(parquetDataFile.groupName());
@@ -159,6 +163,7 @@ class ParquetDataInputChunk implements ParquetInputChunk {
         List<Object> idValues = new ArrayList<>();
         List<Object> startIdValues = new ArrayList<>();
         List<Object> endIdValues = new ArrayList<>();
+        long idColumnCount = columns.stream().filter(ParquetColumn::isIdColumn).count();
 
         int startIdTypeIndex = 0;
         int endIdTypeIndex = 0;
@@ -175,9 +180,15 @@ class ParquetDataInputChunk implements ParquetInputChunk {
             }
             // node
             if (parquetColumn.isIdColumn()) {
-                idValues.add(resolveIdByType(readDatum, parquetColumn.columnIdType(), idType));
+                var idValue =
+                        resolveIdByType(readDatum, parquetColumn.idValueType(defaultIdType, globalIdTypeExplicit));
+                idValues.add(idValue);
                 if (idType != IdType.ACTUAL && parquetColumn.hasPropertyName()) {
-                    entityToHydrate.property(parquetColumn.propertyName(), convertType(readDatum, parquetColumn), true);
+                    // A single named :ID column stores idValue, the same value used for lookup. Multiple :ID
+                    // columns are stringified and delimiter-joined for lookup, while each named :ID column stores
+                    // its own value.
+                    var propertyValue = idColumnCount == 1 ? idValue : convertType(readDatum, parquetColumn);
+                    entityToHydrate.property(parquetColumn.propertyName(), propertyValue, true);
                 }
             }
             if (parquetColumn.isLabelColumn()) {
@@ -208,12 +219,16 @@ class ParquetDataInputChunk implements ParquetInputChunk {
             // relationship
             if (parquetColumn.isStartId()) {
                 startIdValues.add(resolveIdByType(
-                        readDatum, parquetColumn.relationshipColumnIdType(groups, startIdTypeIndex++), idType));
+                        readDatum,
+                        parquetColumn.relationshipColumnIdType(
+                                groups, startIdTypeIndex++, defaultIdType, globalIdTypeExplicit)));
                 isRelationshipEntity = true;
             }
             if (parquetColumn.isEndId()) {
                 endIdValues.add(resolveIdByType(
-                        readDatum, parquetColumn.relationshipColumnIdType(groups, endIdTypeIndex++), idType));
+                        readDatum,
+                        parquetColumn.relationshipColumnIdType(
+                                groups, endIdTypeIndex++, defaultIdType, globalIdTypeExplicit)));
                 isRelationshipEntity = true;
             }
             if (parquetColumn.isType()) {
@@ -250,6 +265,7 @@ class ParquetDataInputChunk implements ParquetInputChunk {
         if (idValues.size() == 1) {
             return idValues.getFirst();
         } else {
+            // Match CSV composite IDs: multiple :ID column values are stringified and delimiter-joined.
             var idValue = new StringBuilder();
             for (var value : idValues) {
                 if (!idValue.isEmpty()) {
@@ -570,9 +586,8 @@ class ParquetDataInputChunk implements ParquetInputChunk {
         return object instanceof String stringValue && stringValue.isEmpty();
     }
 
-    private static Object resolveIdByType(Object id, IdType columnIdType, IdType globalIdType) {
-        boolean targetIsString =
-                columnIdType == IdType.STRING || (columnIdType == null && globalIdType == IdType.STRING);
+    private static Object resolveIdByType(Object id, String idType) {
+        boolean targetIsString = "string".equals(idType);
         if (id instanceof String stringId) {
             return stringId;
         } else if (id instanceof Long longId) {
@@ -584,14 +599,13 @@ class ParquetDataInputChunk implements ParquetInputChunk {
         } else if (id instanceof Integer intId) {
             if (targetIsString) {
                 return String.valueOf(intId);
-            } else if (columnIdType == IdType.INTEGER) {
+            } else if ("int".equals(idType)) {
                 return intId;
             } else {
                 return intId.longValue();
             }
         }
-
-        throw new IllegalArgumentException("Cannot convert id of type " + id.getClass());
+        throw new IllegalArgumentException("Cannot convert id of type " + id.getClass() + " using id type " + idType);
     }
 
     private static Collection<String> filterEmptyLabelsAndTrim(Collection<String> labels) {

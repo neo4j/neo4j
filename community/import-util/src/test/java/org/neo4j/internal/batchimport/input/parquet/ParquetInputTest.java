@@ -739,6 +739,59 @@ class ParquetInputTest {
     }
 
     @Test
+    void shouldApplyExplicitGlobalStringIdTypeToNamedIdColumns() throws Exception {
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named("id:ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named("name")),
+                List.<Object[]>of(new Object[] {6597069807267L, "Mattias Persson"}));
+        Input input = createParquetInput(
+                Map.of(Set.of("Person"), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                STRING,
+                groups,
+                MONITOR);
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(
+                    nodes,
+                    "6597069807267",
+                    properties("id", "6597069807267", "name", "Mattias Persson"),
+                    labels("Person"));
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldKeepNamedIntegerIdColumnsAsIntegerWhenGlobalIdTypeIsImplicit() throws Exception {
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named("id:ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named("name")),
+                List.<Object[]>of(new Object[] {6597069807267L, "Mattias Persson"}));
+        Input input = createParquetInput(
+                Map.of(Set.of("Person"), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                STRING,
+                false,
+                groups,
+                MONITOR);
+
+        assertThat(input.idType()).isEqualTo(INTEGER);
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(
+                    nodes,
+                    6597069807267L,
+                    properties("id", 6597069807267L, "name", "Mattias Persson"),
+                    labels("Person"));
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
     void shouldConvertIntegerRelationshipIdsToStringWhenGlobalIdTypeIsString() throws Exception {
         Path relationshipFile = createParquetFile(
                 List.of(
@@ -760,6 +813,89 @@ class ParquetInputTest {
             assertNextRelationship(
                     relationships, "9345850217180", "6597069807267", "COMMENT_HAS_CREATOR", properties());
             assertNextRelationship(relationships, "1", "2", "KNOWS", properties());
+            assertThat(readNext(relationships)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldInferIntegerIdsFromParquetPhysicalTypeWhenGlobalIdTypeIsImplicit() throws Exception {
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named("name")),
+                List.<Object[]>of(new Object[] {6597069807267L, "Mattias Persson"}));
+        Input input = createParquetInput(
+                Map.of(Set.of("Person"), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                STRING,
+                false,
+                groups,
+                MONITOR);
+
+        assertThat(input.idType()).isEqualTo(INTEGER);
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 6597069807267L, properties("name", "Mattias Persson"), labels("Person"));
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldInferIntegerRelationshipIdsFromParquetPhysicalTypeWhenGlobalIdTypeIsImplicit() throws Exception {
+        Path relationshipFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":START_ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":END_ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named(":TYPE")),
+                List.<Object[]>of(new Object[] {9345850217180L, 6597069807267L, "COMMENT_HAS_CREATOR"}));
+        Input input = createParquetInput(
+                Map.of(),
+                Map.of("", List.of(new FileGroup(new FileGroup.NumberedFile(-1, relationshipFile)))),
+                STRING,
+                false,
+                groups,
+                MONITOR);
+
+        try (InputIterator relationships = input.relationships(EMPTY).iterator()) {
+            assertNextRelationship(relationships, 9345850217180L, 6597069807267L, "COMMENT_HAS_CREATOR", properties());
+            assertThat(readNext(relationships)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldResolveRelationshipIdsUsingReferencedNodeGroupIdTypeWhenParquetIntegerWidthsDiffer() throws Exception {
+        Path personFile = createParquetFile(
+                List.of(longColumn("id:ID(Person){label:Person}")), List.<Object[]>of(new Object[] {176919L}));
+        Path commentFile = createParquetFile(
+                List.of(longColumn("id:ID(Comment){label:Comment}")),
+                List.<Object[]>of(new Object[] {35184388038082L}));
+        Path relationshipFile = createParquetFile(
+                List.of(
+                        longColumn(":START_ID(Comment){label:Comment}"),
+                        intColumn(":END_ID(Person){label:Person}"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named(":TYPE")),
+                List.<Object[]>of(new Object[] {35184388038082L, 176919, "COMMENT_HAS_CREATOR"}));
+
+        var nodeFiles = new LinkedHashMap<Set<String>, List<FileGroup>>();
+        nodeFiles.put(Set.of("Person"), List.of(new FileGroup(new FileGroup.NumberedFile(-1, personFile))));
+        nodeFiles.put(Set.of("Comment"), List.of(new FileGroup(new FileGroup.NumberedFile(-1, commentFile))));
+        Input input = createParquetInput(
+                nodeFiles,
+                Map.of("COMMENT_HAS_CREATOR", List.of(new FileGroup(new FileGroup.NumberedFile(-1, relationshipFile)))),
+                STRING,
+                false,
+                groups,
+                MONITOR);
+
+        assertThat(input.idType()).isEqualTo(INTEGER);
+        try (InputIterator relationships = input.relationships(EMPTY).iterator()) {
+            assertRelationship(
+                    relationships, "Comment", 35184388038082L, "Person", 176919L, "COMMENT_HAS_CREATOR", properties());
             assertThat(readNext(relationships)).isFalse();
         }
     }
@@ -5832,10 +5968,21 @@ class ParquetInputTest {
             IdType idType,
             Groups idGroups,
             ParquetMonitor parquetMonitor) {
+        return createParquetInput(nodeFiles, relationshipFiles, idType, true, idGroups, parquetMonitor);
+    }
+
+    private static ParquetInput createParquetInput(
+            Map<Set<String>, List<FileGroup>> nodeFiles,
+            Map<String, List<FileGroup>> relationshipFiles,
+            IdType idType,
+            boolean idTypeExplicit,
+            Groups idGroups,
+            ParquetMonitor parquetMonitor) {
         return createParquetInput(
                 nodeFiles,
                 relationshipFiles,
                 idType,
+                idTypeExplicit,
                 idGroups,
                 parquetMonitor,
                 Configuration.newBuilder().build());
@@ -5848,8 +5995,26 @@ class ParquetInputTest {
             Groups idGroups,
             ParquetMonitor parquetMonitor,
             Configuration csvConfig) {
+        return createParquetInput(nodeFiles, relationshipFiles, idType, true, idGroups, parquetMonitor, csvConfig);
+    }
+
+    private static ParquetInput createParquetInput(
+            Map<Set<String>, List<FileGroup>> nodeFiles,
+            Map<String, List<FileGroup>> relationshipFiles,
+            IdType idType,
+            boolean idTypeExplicit,
+            Groups idGroups,
+            ParquetMonitor parquetMonitor,
+            Configuration csvConfig) {
         return new ParquetInput(
-                nodeFiles, relationshipFiles, ResolvedSchemaCommands.of(), idType, csvConfig, idGroups, parquetMonitor);
+                nodeFiles,
+                relationshipFiles,
+                ResolvedSchemaCommands.of(),
+                idType,
+                idTypeExplicit,
+                csvConfig,
+                idGroups,
+                parquetMonitor);
     }
 
     private Path createNonParquetFile() throws Exception {

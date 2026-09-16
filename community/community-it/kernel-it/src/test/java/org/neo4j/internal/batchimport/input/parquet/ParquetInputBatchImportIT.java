@@ -386,6 +386,7 @@ class ParquetInputBatchImportIT {
                 Map.of("", List.of(new FileGroup(new FileGroup.NumberedFile(2, relationships)))),
                 ResolvedSchemaCommands.of(),
                 INTEGER,
+                true,
                 Configuration.newBuilder().build(),
                 groups,
                 new ParquetMonitor(System.out));
@@ -399,6 +400,7 @@ class ParquetInputBatchImportIT {
                 Map.of("", Collections.singletonList(relationshipFileGroup)),
                 ResolvedSchemaCommands.of(),
                 idType,
+                true,
                 Configuration.newBuilder().build(),
                 groups,
                 new ParquetMonitor(System.out));

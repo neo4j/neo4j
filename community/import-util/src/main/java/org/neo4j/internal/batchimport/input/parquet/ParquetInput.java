@@ -84,8 +84,10 @@ public class ParquetInput implements Input {
     private final List<ParquetData> relationshipDatas;
     private final SchemaCommandSource schemaCommandSource;
     private final IdType idType;
+    private final IdType defaultIdType;
     private final Groups groups;
     private final ParquetMonitor monitor;
+    private final boolean defaultIdTypeExplicit;
     // this is used for header mapping parsing only
     private final Configuration csvConfig;
     private final Map<Set<String>, List<FileGroup>> nodeFiles;
@@ -98,17 +100,20 @@ public class ParquetInput implements Input {
             Map<String, List<FileGroup>> relationshipFiles,
             SchemaCommandSource schemaCommandSource,
             IdType defaultIdType,
+            boolean defaultIdTypeExplicit,
             Configuration csvConfig,
             Groups groups,
             ParquetMonitor monitor) {
         this.groups = groups;
         this.monitor = monitor;
+        this.defaultIdType = defaultIdType;
+        this.defaultIdTypeExplicit = defaultIdTypeExplicit;
         this.csvConfig = csvConfig;
         this.nodeFiles = nodeFiles;
         this.relationshipFiles = relationshipFiles;
         this.schemaCommandSource = schemaCommandSource;
-        this.verifiedColumns = verifyColumns(nodeFiles, relationshipFiles);
-        this.idType = autoDetectIdType(defaultIdType, verifiedColumns);
+        this.verifiedColumns = verifyColumns(nodeFiles, relationshipFiles, defaultIdType, defaultIdTypeExplicit);
+        this.idType = autoDetectIdType(defaultIdType, defaultIdTypeExplicit, verifiedColumns);
         this.containsVectorData = containsVectorData(verifiedColumns);
         this.nodeDatas = nodeData(verifiedColumns, nodeFiles);
         this.relationshipDatas = relationshipData(verifiedColumns, relationshipFiles);
@@ -120,6 +125,8 @@ public class ParquetInput implements Input {
                 nodeDatas,
                 groups,
                 idType,
+                defaultIdType,
+                defaultIdTypeExplicit,
                 String.valueOf(csvConfig.arrayDelimiter()),
                 String.valueOf(csvConfig.vectorDelimiter()));
     }
@@ -130,6 +137,8 @@ public class ParquetInput implements Input {
                 relationshipDatas,
                 groups,
                 idType,
+                defaultIdType,
+                defaultIdTypeExplicit,
                 String.valueOf(csvConfig.arrayDelimiter()),
                 String.valueOf(csvConfig.vectorDelimiter()));
     }
@@ -151,7 +160,8 @@ public class ParquetInput implements Input {
      * Returns {@link IdType#ACTUAL} when the input is configured with that mode.
      * Falls back to {@code defaultIdType} when no node ID columns are present at all.
      */
-    private static IdType autoDetectIdType(IdType defaultIdType, List<ParquetColumnMetadata> verifiedColumns) {
+    private static IdType autoDetectIdType(
+            IdType defaultIdType, boolean defaultIdTypeExplicit, List<ParquetColumnMetadata> verifiedColumns) {
         if (defaultIdType == IdType.ACTUAL) {
             return IdType.ACTUAL;
         }
@@ -165,9 +175,12 @@ public class ParquetInput implements Input {
                 if (!column.isIdColumn()) {
                     continue;
                 }
+                var idType = column.idValueType(defaultIdType, defaultIdTypeExplicit);
+                if (idType == null) {
+                    continue;
+                }
                 idColumnsInMetadata++;
-                IdType columnIdType = column.columnIdType() != null ? column.columnIdType() : defaultIdType;
-                if (columnIdType != IdType.INTEGER) {
+                if (ParquetColumn.idType(idType) != IdType.INTEGER) {
                     return IdType.STRING;
                 }
             }
@@ -298,13 +311,16 @@ public class ParquetInput implements Input {
 
     private List<ParquetColumnMetadata> verifyColumns(
             Map<Set<String>, List<FileGroup>> labelsAndNodeFiles,
-            Map<String, List<FileGroup>> typeAndRelationshipFiles) {
+            Map<String, List<FileGroup>> typeAndRelationshipFiles,
+            IdType defaultIdType,
+            boolean defaultIdTypeExplicit) {
 
         var headerContext = new HeaderContext();
 
         List<ParquetColumnMetadata> columnInfo = new ArrayList<>();
         try {
-            var numberOfIdsPerGroup = verifyNodes(labelsAndNodeFiles, headerContext, columnInfo);
+            var numberOfIdsPerGroup =
+                    verifyNodes(labelsAndNodeFiles, headerContext, columnInfo, defaultIdType, defaultIdTypeExplicit);
             verifyRelationships(typeAndRelationshipFiles, headerContext, columnInfo, numberOfIdsPerGroup);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -316,7 +332,9 @@ public class ParquetInput implements Input {
     private Map<String, Integer> verifyNodes(
             Map<Set<String>, List<FileGroup>> labelsAndNodeFiles,
             HeaderContext headerContext,
-            List<ParquetColumnMetadata> columnInfo)
+            List<ParquetColumnMetadata> columnInfo,
+            IdType defaultIdType,
+            boolean defaultIdTypeExplicit)
             throws IOException {
         var numberOfIdsPerGroup = new HashMap<String, Integer>();
         for (Map.Entry<Set<String>, List<FileGroup>> labelsAndNodeFilesEntry : labelsAndNodeFiles.entrySet()) {
@@ -354,6 +372,7 @@ public class ParquetInput implements Input {
                     }
                     Set<String> mapColumns = new HashSet<>();
                     Set<String> structColumns = new HashSet<>();
+                    boolean hasRows = hasRows(metadata);
                     // check for possible group / ID space definitions and register them
                     String fileName = nodeFile.getFileName().toString();
                     for (int i = 0; i < columns.size(); i++) {
@@ -410,9 +429,9 @@ public class ParquetInput implements Input {
 
                             if (parquetColumn.logicalColumnType() == ParquetLogicalColumnType.ID) {
                                 var group = groups.getOrCreate(parquetColumn.groupName());
-                                var columnIdType = parquetColumn.columnIdType();
+                                var columnIdType = parquetColumn.idValueType(defaultIdType, defaultIdTypeExplicit);
                                 if (columnIdType != null) {
-                                    groups.bindIdType(group, parquetColumn.propertyName(), columnIdType.name());
+                                    groups.bindIdType(group, parquetColumn.propertyName(), columnIdType);
                                 }
                             }
                             if (parquetColumn.columnType().needsConversion()) {
@@ -458,11 +477,15 @@ public class ParquetInput implements Input {
                                 (existing, newCount) -> existing.equals(newCount) ? existing : -1);
                     }
                     var metadataKey = new ParquetColumnMetadataKey(nodeFile, extractExternalLabels(labels));
-                    columnInfo.add(new ParquetColumnMetadata(metadataKey, EntityType.NODE, currentColumnInfo));
+                    columnInfo.add(new ParquetColumnMetadata(metadataKey, EntityType.NODE, currentColumnInfo, hasRows));
                 }
             }
         }
         return numberOfIdsPerGroup;
+    }
+
+    private static boolean hasRows(ParquetMetadata metadata) {
+        return metadata.getBlocks().stream().anyMatch(block -> block.getRowCount() > 0);
     }
 
     private void verifyRelationships(
@@ -614,7 +637,8 @@ public class ParquetInput implements Input {
                         }
                     }
                     var metadataKey = new ParquetColumnMetadataKey(relationshipFile, extractExternalRelType(relType));
-                    columnInfo.add(new ParquetColumnMetadata(metadataKey, EntityType.RELATIONSHIP, currentColumnInfo));
+                    columnInfo.add(
+                            new ParquetColumnMetadata(metadataKey, EntityType.RELATIONSHIP, currentColumnInfo, true));
 
                     if (!hasTypeColumn) {
                         monitor.noRelationshipTypeSpecified(fileName);
@@ -639,7 +663,8 @@ public class ParquetInput implements Input {
                         && column.columnType() == ParquetColumnType.VECTOR);
     }
 
-    record ParquetColumnMetadata(ParquetColumnMetadataKey key, EntityType entityType, List<ParquetColumn> columns) {}
+    record ParquetColumnMetadata(
+            ParquetColumnMetadataKey key, EntityType entityType, List<ParquetColumn> columns, boolean hasRows) {}
 
     record ParquetColumnMetadataKey(Path path, Collection<String> labelsOrType) {}
 

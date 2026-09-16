@@ -122,6 +122,7 @@ public class FileImporter {
     private final Configuration importConfig;
     private final ThrowingSupplier<StoreChannel, IOException> reportChannel;
     private final IdType defaultIdType;
+    private final boolean defaultIdTypeExplicit;
     private final Charset inputEncoding;
     private final boolean ignoreExtraColumns;
     private final boolean skipBadRelationships;
@@ -159,6 +160,7 @@ public class FileImporter {
         this.importConfig = requireNonNull(b.importConfig);
         this.reportChannel = requireNonNull(b.reportChannel);
         this.defaultIdType = requireNonNull(b.defaultIdType);
+        this.defaultIdTypeExplicit = b.defaultIdTypeExplicit;
         this.inputEncoding = requireNonNull(b.inputEncoding);
         this.ignoreExtraColumns = b.ignoreExtraColumns;
         this.skipBadRelationships = b.skipBadRelationships;
@@ -356,6 +358,7 @@ public class FileImporter {
                         relationshipFiles,
                         schemaCommands,
                         defaultIdType,
+                        defaultIdTypeExplicit,
                         csvConfig,
                         new Groups(),
                         new ParquetMonitor(stdOut));
@@ -632,6 +635,7 @@ public class FileImporter {
         private Configuration importConfig = Configuration.DEFAULT;
         private ThrowingSupplier<StoreChannel, IOException> reportChannel;
         private IdType defaultIdType = IdType.STRING;
+        private boolean defaultIdTypeExplicit;
         private Charset inputEncoding = StandardCharsets.UTF_8;
         private boolean ignoreExtraColumns;
         private boolean skipBadRelationships;
@@ -723,6 +727,11 @@ public class FileImporter {
 
         public Builder withDefaultIdType(IdType idType) {
             this.defaultIdType = idType;
+            return this;
+        }
+
+        public Builder withDefaultIdTypeExplicit(boolean explicit) {
+            this.defaultIdTypeExplicit = explicit;
             return this;
         }
 

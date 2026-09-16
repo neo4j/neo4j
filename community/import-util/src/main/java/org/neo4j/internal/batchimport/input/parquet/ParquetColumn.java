@@ -141,13 +141,61 @@ record ParquetColumn(
         return configuration.get("label");
     }
 
-    IdType relationshipColumnIdType(Groups groups, int idIndex) {
-        IdType columnIdType = columnIdType();
+    /**
+     * Returns the type used to convert node {@code :ID} values while reading rows. Column-local {@code id-type}
+     * wins, an explicit global {@code --id-type} is honored next, and omitted global configuration falls back
+     * to the physical Parquet column type.
+     */
+    String idValueType(IdType globalIdType, boolean globalIdTypeExplicit) {
+        var columnIdType = columnIdTypeName();
+        if (columnIdType != null) {
+            return columnIdType;
+        }
+        if (globalIdTypeExplicit) {
+            return idTypeName(globalIdType);
+        }
+        return physicalIdTypeName();
+    }
+
+    /**
+     * Returns the type used to convert a relationship {@code :START_ID}/{@code :END_ID}. Referenced node group
+     * metadata wins over global and physical defaults so relationship lookups match the node ID index.
+     */
+    String relationshipColumnIdType(Groups groups, int idIndex, IdType globalIdType, boolean globalIdTypeExplicit) {
+        var columnIdType = columnIdTypeName();
         if (columnIdType != null) {
             return columnIdType;
         }
         var groupType = groups.getSpecificIdType(groupName(), idIndex);
-        return groupType != null ? IdType.valueOf(groupType) : null;
+        if (groupType != null) {
+            return groupType;
+        }
+        if (globalIdTypeExplicit) {
+            return idTypeName(globalIdType);
+        }
+        return physicalIdTypeName();
+    }
+
+    /**
+     * Returns the ID type implied by the Parquet physical type when no explicit ID type is available.
+     */
+    private String physicalIdTypeName() {
+        if (primitiveType == null) {
+            return "string";
+        }
+        return switch (primitiveType.getPrimitiveTypeName()) {
+            case INT32 -> "int";
+            case INT64 -> "long";
+            default -> {
+                if (LogicalTypeAnnotation.stringType().equals(logicalTypeAnnotation)) {
+                    yield "string";
+                } else {
+                    throw new IllegalArgumentException(
+                            "physical type %s of column %s is not compatible with ID types (string, int32, int64)"
+                                    .formatted(columnType, columnName));
+                }
+            }
+        };
     }
 
     // todo this and the following method should get merged
@@ -168,9 +216,7 @@ record ParquetColumn(
         if (logicalColumnType == ParquetLogicalColumnType.ID) {
             // if there is an id-type defined in the configuration, use that for column type detection
             String idTypeValue = configuration.get(ID_TYPE_KEY);
-            if (idTypeValue != null
-                    && !idTypeValue.isBlank()
-                    && !columnIdType(idTypeValue).equals(IdType.ACTUAL)) {
+            if (idTypeValue != null && !idTypeValue.isBlank() && idType(idTypeName(idTypeValue)) != IdType.ACTUAL) {
                 return idTypeValue;
             }
         }
@@ -184,20 +230,56 @@ record ParquetColumn(
         return columnNameValue.substring(typeSplitPosition + 1).trim();
     }
 
+    /**
+     * Returns the importer-level ID mapper type requested by this column's local {@code id-type}.
+     */
     IdType columnIdType() {
-        String idTypeValue = configuration.get(ID_TYPE_KEY);
-        if (idTypeValue == null || idTypeValue.isBlank()) {
-            return null;
-        }
-        return columnIdType(idTypeValue);
+        var idTypeValue = columnIdTypeName();
+        return idTypeValue == null ? null : idType(idTypeValue);
     }
 
-    static IdType columnIdType(String rawValue) {
-        return switch (rawValue.toUpperCase(Locale.ROOT)) {
+    /**
+     * Returns this column's local {@code id-type} normalized for Parquet ID conversion, or {@code null}
+     * when the column has no local ID type.
+     */
+    private String columnIdTypeName() {
+        String idTypeValue = configuration.get(ID_TYPE_KEY);
+        return idTypeValue == null || idTypeValue.isBlank() ? null : idTypeName(idTypeValue);
+    }
+
+    /**
+     * Maps an ID type name to the importer-level ID mapper type.
+     */
+    static IdType idType(String idTypeName) {
+        return switch (idTypeName.toUpperCase(Locale.ROOT)) {
             case "INT", "LONG" -> IdType.INTEGER;
             case "STRING" -> IdType.STRING;
             case "ACTUAL" -> IdType.ACTUAL;
             default -> IdType.ACTUAL;
+        };
+    }
+
+    /**
+     * Converts a global importer ID type to the normalized Parquet ID type name used for row conversion.
+     */
+    private static String idTypeName(IdType idType) {
+        return switch (idType) {
+            case STRING -> "string";
+            case INTEGER -> "long";
+            case ACTUAL -> "actual";
+        };
+    }
+
+    /**
+     * Normalizes header {@code id-type} values to the names used by Parquet ID conversion.
+     */
+    private static String idTypeName(String rawValue) {
+        return switch (rawValue.toUpperCase(Locale.ROOT)) {
+            case "INT" -> "int";
+            case "LONG" -> "long";
+            case "STRING" -> "string";
+            case "ACTUAL" -> "actual";
+            default -> "actual";
         };
     }
 

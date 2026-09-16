@@ -3157,7 +3157,7 @@ class ImportCommandTest {
         var personParquet = createParquetFile(
                 "persons.parquet", personTypes, List.of(new Object[] {1, "Alice"}, new Object[] {2, "Bob"}));
         var personHeader = createAndWriteFile("persons-header.csv", Charset.defaultCharset(), writer -> {
-            writer.println("nodeId:ID,name");
+            writer.println("nodeId:ID(Person),name");
             writer.println("person_id,person_name");
         });
 
@@ -3172,7 +3172,7 @@ class ImportCommandTest {
                 "companies.parquet", companyTypes, List.of(new Object[] {"c1", "Acme"}, new Object[] {"c2", "BigCorp"
                 }));
         var companyHeader = createAndWriteFile("companies-header.csv", Charset.defaultCharset(), writer -> {
-            writer.println("nodeId:ID,name");
+            writer.println("nodeId:ID(Company),name");
             writer.println("company_id,company_name");
         });
 
@@ -3202,7 +3202,7 @@ class ImportCommandTest {
         var personParquet = createParquetFile(
                 "persons.parquet", personTypes, List.of(new Object[] {1, "Alice"}, new Object[] {2, "Bob"}));
         var personHeader = createAndWriteFile("persons-header.csv", Charset.defaultCharset(), writer -> {
-            writer.println("nodeId:ID,name");
+            writer.println("nodeId:ID(Person),name");
             writer.println("person_id,person_name");
         });
 
@@ -3217,7 +3217,7 @@ class ImportCommandTest {
                 "companies.parquet", companyTypes, List.of(new Object[] {"c1", "Acme"}, new Object[] {"c2", "BigCorp"
                 }));
         var companyHeader = createAndWriteFile("companies-header.csv", Charset.defaultCharset(), writer -> {
-            writer.println("nodeId:ID,name");
+            writer.println("nodeId:ID(Company),name");
             writer.println("company_id,company_name");
         });
 
@@ -3254,7 +3254,7 @@ class ImportCommandTest {
                 personTypes,
                 List.of(new Object[] {1, "Alice", "Person"}, new Object[] {2, "Bob", "Person"}));
         var personHeader = createAndWriteFile("persons-header.csv", Charset.defaultCharset(), writer -> {
-            writer.println("nodeId:ID,name,:LABEL");
+            writer.println("nodeId:ID(Person),name,:LABEL");
             writer.println("person_id,person_name,label");
         });
 
@@ -3273,7 +3273,7 @@ class ImportCommandTest {
                 companyTypes,
                 List.of(new Object[] {"c1", "Acme", "Company"}, new Object[] {"c2", "BigCorp", "Company"}));
         var companyHeader = createAndWriteFile("companies-header.csv", Charset.defaultCharset(), writer -> {
-            writer.println("nodeId:ID,name,:LABEL");
+            writer.println("nodeId:ID(Company),name,:LABEL");
             writer.println("company_id,company_name,label");
         });
 

@@ -687,6 +687,7 @@ public class ImportCommand {
             if (format != null && StorageEngineFactory.isFormatDeprecated(format)) {
                 printf("WARNING: %s%n", DeprecatedFormatWarning.getTargetFormatWarning(format));
             }
+            var parseResult = spec.commandLine().getParseResult();
 
             try (var importContext = ImportContext.create(
                     ctx.fs(),
@@ -694,7 +695,7 @@ public class ImportCommand {
                     previousContextDir,
                     loadNeo4jConfig(format),
                     reportFile,
-                    spec.commandLine().getParseResult().expandedArgs(),
+                    parseResult.expandedArgs(),
                     includeUpdatesInProgress(),
                     !disableInstrumentation && captureProfile && captureProfileResultPath == null,
                     verbose,
@@ -714,6 +715,7 @@ public class ImportCommand {
                             .withStdOut(ctx.out())
                             .withStdErr(ctx.err())
                             .withDefaultIdType(defaultIdType)
+                            .withDefaultIdTypeExplicit(parseResult.hasMatchedOption("--id-type"))
                             .withInputEncoding(inputEncoding)
                             .withIgnoreExtraColumns(ignoreExtraColumns)
                             .withBadTolerance(badTolerance)

@@ -74,6 +74,8 @@ class ParquetDataReader implements Closeable {
     private final ParquetData parquetDataFile;
     private final Groups groups;
     private final IdType idType;
+    private final IdType defaultIdType;
+    private final boolean globalIdTypeExplicit;
     private final Supplier<ZoneId> defaultTimezoneSupplier;
     private final String arrayDelimiter;
     private final String vectorDelimiter;
@@ -89,12 +91,16 @@ class ParquetDataReader implements Closeable {
             ParquetData parquetDataFile,
             Groups groups,
             IdType idType,
+            IdType defaultIdType,
+            boolean globalIdTypeExplicit,
             Supplier<ZoneId> defaultTimezoneSupplier,
             String arrayDelimiter,
             String vectorDelimiter) {
         this.parquetDataFile = parquetDataFile;
         this.groups = groups;
         this.idType = idType;
+        this.defaultIdType = defaultIdType;
+        this.globalIdTypeExplicit = globalIdTypeExplicit;
         this.defaultTimezoneSupplier = defaultTimezoneSupplier;
         this.arrayDelimiter = arrayDelimiter;
         this.vectorDelimiter = vectorDelimiter;
@@ -209,6 +215,14 @@ class ParquetDataReader implements Closeable {
 
     public IdType getIdType() {
         return idType;
+    }
+
+    public IdType getDefaultIdType() {
+        return defaultIdType;
+    }
+
+    public boolean isGlobalIdTypeExplicit() {
+        return globalIdTypeExplicit;
     }
 
     public Supplier<ZoneId> getDefaultTimezoneSupplier() {

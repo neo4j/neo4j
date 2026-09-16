@@ -33,15 +33,25 @@ class ParquetGroupInputIterator implements InputIterator {
     private final Iterator<ParquetData> files;
     private final Groups groups;
     private final IdType idType;
+    private final IdType defaultIdType;
+    private final boolean globalIdTypeExplicit;
     private final String arrayDelimiter;
     private final String vectorDelimiter;
     private ParquetInputIterator current;
 
     ParquetGroupInputIterator(
-            List<ParquetData> files, Groups groups, IdType idType, String arrayDelimiter, String vectorDelimiter) {
+            List<ParquetData> files,
+            Groups groups,
+            IdType idType,
+            IdType defaultIdType,
+            boolean globalIdTypeExplicit,
+            String arrayDelimiter,
+            String vectorDelimiter) {
         this.files = files.iterator();
         this.groups = groups;
         this.idType = idType;
+        this.defaultIdType = defaultIdType;
+        this.globalIdTypeExplicit = globalIdTypeExplicit;
         this.arrayDelimiter = arrayDelimiter;
         this.vectorDelimiter = vectorDelimiter;
     }
@@ -60,7 +70,14 @@ class ParquetGroupInputIterator implements InputIterator {
                 }
                 var nextFile = files.next();
                 current = new ParquetInputIterator(
-                        nextFile, groups, idType, nextFile.defaultTimezoneSupplier(), arrayDelimiter, vectorDelimiter);
+                        nextFile,
+                        groups,
+                        idType,
+                        defaultIdType,
+                        globalIdTypeExplicit,
+                        nextFile.defaultTimezoneSupplier(),
+                        arrayDelimiter,
+                        vectorDelimiter);
             }
 
             if (current.next((ParquetInputChunk) chunk)) {
