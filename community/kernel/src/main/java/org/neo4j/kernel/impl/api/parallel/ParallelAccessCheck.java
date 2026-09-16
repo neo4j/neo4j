@@ -23,8 +23,10 @@ import static org.neo4j.scheduler.Group.CYPHER_WORKER;
 import static org.neo4j.util.FeatureToggles.flag;
 
 import java.util.Collection;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.ActiveLock;
@@ -37,6 +39,7 @@ public class ParallelAccessCheck {
 
     public static final boolean CHECK_PARALLEL_ACCESS = flag(ParallelAccessCheck.class, "CHECK_PARALLEL_ACCESS", false);
     private static final ThreadLocal<Boolean> DISABLED = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> ALLOWED_TX_BEGIN = new ThreadLocal<>();
 
     public static boolean shouldPerformCheck() {
         return CHECK_PARALLEL_ACCESS && DISABLED.get() == null;
@@ -54,6 +57,29 @@ public class ParallelAccessCheck {
         }
     }
 
+    /**
+     * Allows Cypher worker threads to access any kernel transaction begun by the current thread inside the
+     * given operation, for the transaction's entire lifetime. The transaction is still not thread-safe, so
+     * threads must execute in it one at a time. Unlike {@link #performWithCheckDisabled}, this applies to
+     * the transaction, not the thread.
+     */
+    public static <T, E extends Exception> T performTransactionBeginAllowingParallelAccess(
+            ThrowingSupplier<T, E> operation) throws E {
+        try {
+            if (ALLOWED_TX_BEGIN.get() != null) {
+                throw new IllegalStateException("A transaction begin allowing parallel access is already in progress");
+            }
+            ALLOWED_TX_BEGIN.set(true);
+            return operation.get();
+        } finally {
+            ALLOWED_TX_BEGIN.remove();
+        }
+    }
+
+    public static boolean isParallelAccessAllowedForNewTransactions() {
+        return ALLOWED_TX_BEGIN.get() != null;
+    }
+
     public static void checkNotCypherWorkerThread() {
         if (Thread.currentThread().getThreadGroup().getName().equals(CYPHER_WORKER.groupName())) {
             throw new IllegalStateException(
@@ -61,96 +87,109 @@ public class ParallelAccessCheck {
         }
     }
 
-    public static LockManager.Client maybeWrapLockClient(LockManager.Client wrappedLockClient) {
-        if (!shouldPerformCheck()) {
+    /**
+     * The wrap decision is per pooled transaction instance and depends only on the static flag.
+     * Whether checks fire is decided per call through the allowed supplier.
+     */
+    public static LockManager.Client maybeWrapLockClient(
+            LockManager.Client wrappedLockClient, BooleanSupplier allowed) {
+        if (!CHECK_PARALLEL_ACCESS) {
             return wrappedLockClient;
         }
-        return new ParallelAccessCheckClient(wrappedLockClient);
+        return new ParallelAccessCheckClient(wrappedLockClient, allowed);
     }
 
     public static final class ParallelAccessCheckClient implements LockManager.Client {
         private final LockManager.Client wrappedLockClient;
+        private final BooleanSupplier allowed;
 
-        public ParallelAccessCheckClient(LockManager.Client wrappedLockClient) {
+        public ParallelAccessCheckClient(LockManager.Client wrappedLockClient, BooleanSupplier allowed) {
             this.wrappedLockClient = wrappedLockClient;
+            this.allowed = allowed;
+        }
+
+        private void checkAccess() {
+            if (!allowed.getAsBoolean()) {
+                checkNotCypherWorkerThread();
+            }
         }
 
         @Override
         public boolean tryExclusiveLock(ResourceType resourceType, long resourceId) {
-            checkNotCypherWorkerThread();
+            checkAccess();
             return wrappedLockClient.tryExclusiveLock(resourceType, resourceId);
         }
 
         @Override
         public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
-            checkNotCypherWorkerThread();
+            checkAccess();
             wrappedLockClient.acquireExclusive(tracer, resourceType, resourceIds);
         }
 
         @Override
         public void releaseExclusive(ResourceType resourceType, long... resourceIds) {
-            checkNotCypherWorkerThread();
+            checkAccess();
             wrappedLockClient.releaseExclusive(resourceType, resourceIds);
         }
 
         @Override
         public void acquireShared(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
-            checkNotCypherWorkerThread();
+            checkAccess();
             wrappedLockClient.acquireShared(tracer, resourceType, resourceIds);
         }
 
         @Override
         public void releaseShared(ResourceType resourceType, long... resourceIds) {
-            checkNotCypherWorkerThread();
+            checkAccess();
             wrappedLockClient.releaseShared(resourceType, resourceIds);
         }
 
         @Override
         public Collection<ActiveLock> activeLocks(MemoryTracker memoryTracker) {
-            checkNotCypherWorkerThread();
+            checkAccess();
             return wrappedLockClient.activeLocks(memoryTracker);
         }
 
         @Override
         public boolean holdsLock(long id, ResourceType resource, LockType lockType) {
-            checkNotCypherWorkerThread();
+            checkAccess();
             return wrappedLockClient.holdsLock(id, resource, lockType);
         }
 
         @Override
         public void initialize(
                 LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config) {
-            checkNotCypherWorkerThread();
+            checkAccess();
             wrappedLockClient.initialize(leaseClient, transactionId, memoryTracker, config);
         }
 
         @Override
         public boolean trySharedLock(ResourceType resourceType, long resourceId) {
-            checkNotCypherWorkerThread();
+            checkAccess();
             return wrappedLockClient.trySharedLock(resourceType, resourceId);
         }
 
         @Override
         public void prepareForCommit() {
-            checkNotCypherWorkerThread();
+            checkAccess();
             wrappedLockClient.prepareForCommit();
         }
 
         @Override
         public void stop() {
-            checkNotCypherWorkerThread();
+            checkAccess();
             wrappedLockClient.stop();
         }
 
         @Override
         public void close() {
-            checkNotCypherWorkerThread();
+            checkAccess();
             wrappedLockClient.close();
         }
 
         @Override
         public long getTransactionId() {
-            checkNotCypherWorkerThread();
+            checkAccess();
             return wrappedLockClient.getTransactionId();
         }
 
@@ -166,7 +205,7 @@ public class ParallelAccessCheck {
 
         @Override
         public void reset() {
-            checkNotCypherWorkerThread();
+            checkAccess();
             wrappedLockClient.reset();
         }
 

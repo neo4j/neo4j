@@ -24,9 +24,11 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
+import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
 import org.neo4j.token.TokenCreator;
 
 /**
@@ -44,7 +46,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator {
     @Override
     public synchronized int createToken(String name, boolean internal) throws KernelException {
         Kernel kernel = kernelSupplier.get();
-        try (KernelTransaction tx = kernel.beginTransaction(Type.IMPLICIT, AUTH_DISABLED)) {
+        try (KernelTransaction tx = beginIsolatedTransaction(kernel)) {
             int id = createKey(tx, name, internal);
             tx.commit();
             return id;
@@ -55,7 +57,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator {
     public synchronized void createTokens(String[] names, int[] ids, boolean internal, IntPredicate filter)
             throws KernelException {
         Kernel kernel = kernelSupplier.get();
-        try (KernelTransaction tx = kernel.beginTransaction(Type.IMPLICIT, AUTH_DISABLED)) {
+        try (KernelTransaction tx = beginIsolatedTransaction(kernel)) {
             for (int i = 0; i < ids.length; i++) {
                 if (filter.test(i)) {
                     ids[i] = createKey(tx, names[i], internal);
@@ -63,6 +65,13 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator {
             }
             tx.commit();
         }
+    }
+
+    // The transaction lives entirely within the calling thread, which can legitimately be a Cypher worker
+    // (a concurrent transactions lane write creating a new token), so parallel access is allowed for it
+    private static KernelTransaction beginIsolatedTransaction(Kernel kernel) throws TransactionFailureException {
+        return ParallelAccessCheck.performTransactionBeginAllowingParallelAccess(
+                () -> kernel.beginTransaction(Type.IMPLICIT, AUTH_DISABLED));
     }
 
     abstract int createKey(KernelTransaction transaction, String name, boolean internal) throws KernelException;

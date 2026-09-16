@@ -65,6 +65,7 @@ import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.kernel.api.security.AuthToken
+import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory
 import org.neo4j.kernel.impl.locking.LockManager
@@ -300,7 +301,11 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   }
 
   def startNewTx(): InternalTransaction = {
-    cypherGraphDb.beginTransaction(defaultTransactionType, LoginContext.AUTH_DISABLED)
+    // Tests observe intermediate committed state from result-stream callbacks, which the parallel
+    // runtime invokes on Cypher worker threads, so parallel access is allowed for this transaction
+    ParallelAccessCheck.performTransactionBeginAllowingParallelAccess[InternalTransaction, RuntimeException](() =>
+      cypherGraphDb.beginTransaction(defaultTransactionType, LoginContext.AUTH_DISABLED)
+    )
   }
 
   def getLastClosedTransactionId: Long = {

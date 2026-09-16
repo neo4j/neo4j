@@ -278,6 +278,10 @@ public class KernelTransactionImplementation
     private volatile boolean closing;
     private volatile boolean closed;
     private boolean commit;
+    // True when begun inside ParallelAccessCheck.performTransactionBeginAllowingParallelAccess.
+    // NOTE: This allows parallel runtime worker threads to execute in the transaction, but still only one thread at a
+    // time.
+    private boolean parallelAccessAllowed;
 
     private volatile TerminationMark terminationMark;
     private long startTimeMillis;
@@ -425,7 +429,7 @@ public class KernelTransactionImplementation
         this.statusDetails = EMPTY;
         this.constraintSemantics = constraintSemantics;
         this.transactionalCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT);
-        this.lockClient = ParallelAccessCheck.maybeWrapLockClient(lockManager.newClient());
+        this.lockClient = ParallelAccessCheck.maybeWrapLockClient(lockManager.newClient(), () -> parallelAccessAllowed);
         StorageLocks storageLocks = storageEngine.createStorageLocks(lockClient);
         var kernelToken = new KernelToken(storageReader, commandCreationContext, this, tokenHolders, logProvider);
         DefaultPooledCursors cursorFactory = createCursors(
@@ -672,7 +676,7 @@ public class KernelTransactionImplementation
     }
 
     private void assertOpenWithParallelAccessCheck() {
-        if (ParallelAccessCheck.shouldPerformCheck()) {
+        if (ParallelAccessCheck.shouldPerformCheck() && !parallelAccessAllowed) {
             ParallelAccessCheck.checkNotCypherWorkerThread();
         }
         assertOpen();
@@ -700,6 +704,9 @@ public class KernelTransactionImplementation
         this.type = type;
         this.leaseClient = leaseService.newClient();
         this.leaseId = NO_LEASE;
+        // Must be assigned before lockClient.initialize, the first access-checked call
+        this.parallelAccessAllowed = ParallelAccessCheck.CHECK_PARALLEL_ACCESS
+                && ParallelAccessCheck.isParallelAccessAllowedForNewTransactions();
         this.lockClient.initialize(leaseClient, transactionSequenceNumber, memoryTracker, config);
         this.terminationMark = null;
         this.commit = false;

@@ -26,6 +26,7 @@ import static org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck.shouldPerfo
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.CallableExecutor;
@@ -78,6 +79,43 @@ class ParallelAccessCheckTest {
                     .hasRootCauseInstanceOf(IllegalStateException.class)
                     .hasMessageContaining(
                             "A resource that does not support parallel access is being accessed by a Cypher worker thread");
+        }
+    }
+
+    @Test
+    void testAllowedTransactionCanBeAccessedByCypherWorker() throws Exception {
+        executor.submit(() -> {
+                    try (var tx =
+                            ParallelAccessCheck.performTransactionBeginAllowingParallelAccess(databaseAPI::beginTx)) {
+                        var ktx = ((InternalTransaction) tx).kernelTransaction();
+                        ktx.dataRead().nodeExists(1);
+                        ktx.locks().acquireExclusiveNodeLock(1);
+                    }
+                    return null;
+                })
+                .get();
+    }
+
+    @Test
+    void testAllowedParallelAccessSticksToTheTransactionNotTheThread() throws Exception {
+        try (var plainTx = databaseAPI.beginTx()) {
+            var plainKtx = ((InternalTransaction) plainTx).kernelTransaction();
+            executor.submit(() -> {
+                        try (var allowedTx = ParallelAccessCheck.performTransactionBeginAllowingParallelAccess(
+                                databaseAPI::beginTx)) {
+                            ((InternalTransaction) allowedTx)
+                                    .kernelTransaction()
+                                    .dataRead()
+                                    .nodeExists(1);
+                            // The allowance belongs to the transaction, not the thread
+                            assertThatThrownBy(() -> plainKtx.dataRead().nodeExists(1))
+                                    .isInstanceOf(IllegalStateException.class)
+                                    .hasMessageContaining(
+                                            "A resource that does not support parallel access is being accessed by a Cypher worker thread");
+                        }
+                        return null;
+                    })
+                    .get();
         }
     }
 }
