@@ -31,5 +31,19 @@ public interface SslPolicyProvider {
 
     void removePolicyChangeListener(SslPolicyChangeListener listener);
 
+    /**
+     * Reloads all SSL policies, e.g. in response to an explicit request such as the
+     * {@code dbms.security.reloadTLS()} procedure. Implementations are expected to gate this on whichever
+     * setting controls manual/procedure-triggered reload, independently of
+     * {@link #reloadPoliciesOnFileChange()}.
+     */
     void reloadPolicies();
+
+    /**
+     * Reloads all SSL policies in response to a detected change to the underlying certificate files on disk.
+     * Implementations are expected to gate this on whichever setting controls automatic, file-change-triggered
+     * reload, independently of {@link #reloadPolicies()} - enabling one is not meant to implicitly enable the
+     * other.
+     */
+    void reloadPoliciesOnFileChange();
 }

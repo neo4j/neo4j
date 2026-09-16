@@ -30,26 +30,43 @@ import org.neo4j.ssl.SslPolicy;
 public class DefaultSslPolicyProvider implements SslPolicyProvider {
     private final FileSystemAbstraction fileSystem;
     private final Config config;
-    private final boolean enableReload;
+    private final boolean enableManualReload;
+    private final boolean enableFileChangeReload;
     private final InternalLogProvider logProvider;
     private SslPolicyLoader policyLoader;
     private final Set<SslPolicyChangeListener> listeners = new HashSet<SslPolicyChangeListener>();
 
     public DefaultSslPolicyProvider(
-            FileSystemAbstraction fileSystem, Config config, boolean enableReload, InternalLogProvider logProvider) {
+            FileSystemAbstraction fileSystem,
+            Config config,
+            boolean enableManualReload,
+            boolean enableFileChangeReload,
+            InternalLogProvider logProvider) {
         this.fileSystem = fileSystem;
         this.config = config;
-        this.enableReload = enableReload;
+        this.enableManualReload = enableManualReload;
+        this.enableFileChangeReload = enableFileChangeReload;
         this.logProvider = logProvider;
         policyLoader = SslPolicyLoader.create(fileSystem, config, logProvider);
     }
 
     @Override
     public void reloadPolicies() {
-        if (enableReload) {
-            policyLoader = SslPolicyLoader.create(fileSystem, config, logProvider);
-            notifyListeners();
+        if (enableManualReload) {
+            doReload();
         }
+    }
+
+    @Override
+    public void reloadPoliciesOnFileChange() {
+        if (enableFileChangeReload) {
+            doReload();
+        }
+    }
+
+    private void doReload() {
+        policyLoader = SslPolicyLoader.create(fileSystem, config, logProvider);
+        notifyListeners();
     }
 
     private synchronized void notifyListeners() {

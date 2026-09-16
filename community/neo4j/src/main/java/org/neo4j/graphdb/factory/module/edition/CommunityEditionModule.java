@@ -122,7 +122,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         this.globalModule = globalModule;
 
         var sslPolicyProvider = new DefaultSslPolicyProvider(
-                globalModule.getFileSystem(), globalConfig, true, logService.getInternalLogProvider());
+                globalModule.getFileSystem(), globalConfig, true, false, logService.getInternalLogProvider());
         globalDependencies.satisfyDependency(sslPolicyProvider); // for bolt and web server
         globalDependencies.satisfyDependency(new DatabaseOperationCounts.Counter()); // for global metrics
         globalDependencies.satisfyDependency(new DatabaseStateMonitor.Counter()); // for global metrics
