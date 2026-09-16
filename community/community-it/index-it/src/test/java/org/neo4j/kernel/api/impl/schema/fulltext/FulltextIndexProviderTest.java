@@ -51,6 +51,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.MutableSet;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -160,6 +161,11 @@ class FulltextIndexProviderTest {
     private final Label haLabel = label("ha");
     private final Label heLabel = label("he");
     private final RelationshipType hejType = RelationshipType.withName("hej");
+
+    @AfterEach
+    void resetBrokenAnalyzerProvider() {
+        BrokenAnalyzerProvider.reset();
+    }
 
     @BeforeEach
     void prepDB() {

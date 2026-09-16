@@ -34,6 +34,11 @@ public class BrokenAnalyzerProvider extends AnalyzerProvider {
         super(NAME);
     }
 
+    static void reset() {
+        shouldThrow = false;
+        shouldReturnNull = false;
+    }
+
     @Override
     public Analyzer createAnalyzer() {
         if (shouldThrow) {
