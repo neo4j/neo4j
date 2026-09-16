@@ -31,10 +31,14 @@ import java.util.function.LongPredicate;
 import org.apache.lucene.analysis.Analyzer;
 import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.kernel.api.EntityFilterBuilder;
+import org.neo4j.internal.kernel.api.EntityFilterIndexReader;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.FulltextSearchPredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.SharedEntityFilterBuilder;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -43,10 +47,12 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneEntityFilterBuilder;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
 import org.neo4j.kernel.api.impl.index.lucene.LucenePartitionedSearch;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryContext;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryParseException;
+import org.neo4j.kernel.api.impl.index.lucene.SharedLuceneEntityFilterBuilder;
 import org.neo4j.kernel.api.impl.schema.LuceneScoredEntityIndexProgressor;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -61,7 +67,7 @@ import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
 
-public class FulltextIndexReader implements ValueIndexReader {
+public class FulltextIndexReader implements ValueIndexReader, EntityFilterIndexReader {
     private static final LongPredicate ALWAYS_FALSE = LongPredicates.alwaysFalse();
     private final List<SearcherReference> searchers;
     private final TokenHolder propertyKeyTokenHolder;
@@ -99,6 +105,17 @@ public class FulltextIndexReader implements ValueIndexReader {
     }
 
     @Override
+    public EntityFilterBuilder newEntityFilterBuilder(MemoryTracker memoryTracker) {
+        return new LuceneEntityFilterBuilder(LuceneFulltextDocumentStructure.FIELD_ENTITY_ID, searchers, memoryTracker);
+    }
+
+    @Override
+    public SharedEntityFilterBuilder newSharedEntityFilterBuilder(MemoryTracker memoryTracker) {
+        return new SharedLuceneEntityFilterBuilder(
+                LuceneFulltextDocumentStructure.FIELD_ENTITY_ID, searchers, memoryTracker);
+    }
+
+    @Override
     public void query(
             IndexProgressor.EntityValueClient client,
             QueryContext queryContext,
@@ -108,6 +125,7 @@ public class FulltextIndexReader implements ValueIndexReader {
             throws IndexNotApplicableKernelException {
         validateQuery(constraints, queries);
         PropertyIndexQuery predicate = queries[0];
+        EntityFilterPredicate entityFilter = extractEntityFilter(queries);
         ValuesIterator iterator;
         if (searchers.isEmpty()) {
             // We are replicating the behaviour of IndexSearcher.search(Query, Collector), which starts out by
@@ -118,7 +136,7 @@ public class FulltextIndexReader implements ValueIndexReader {
             iterator = ValuesIterator.EMPTY;
         } else {
             iterator = searchLucene(
-                    toLuceneQuery(predicate),
+                    toLuceneQuery(predicate, entityFilter),
                     constraints,
                     queryContext,
                     queryContext.cursorContext(),
@@ -140,7 +158,12 @@ public class FulltextIndexReader implements ValueIndexReader {
     @Override
     public void validateQuery(IndexQueryConstraints constraints, PropertyIndexQuery... predicates)
             throws IndexNotApplicableKernelException {
-        if (predicates.length > 1) {
+        EntityFilterPredicate entityFilter = extractEntityFilter(predicates);
+        if (predicates.length > 1 && entityFilter == null) {
+            throw invalidCompositeQuery(
+                    msg -> IndexNotApplicableKernelException.indexNotApplicable(log, index.getName(), msg), predicates);
+        }
+        if (predicates.length > 2) {
             throw invalidCompositeQuery(
                     msg -> IndexNotApplicableKernelException.indexNotApplicable(log, index.getName(), msg), predicates);
         }
@@ -152,6 +175,12 @@ public class FulltextIndexReader implements ValueIndexReader {
         }
     }
 
+    private static EntityFilterPredicate extractEntityFilter(PropertyIndexQuery... predicates) {
+        return predicates.length > 1 && predicates[1] instanceof EntityFilterPredicate entityFilter
+                ? entityFilter
+                : null;
+    }
+
     private <E extends Exception> E invalidCompositeQuery(
             Function<String, E> constructor, PropertyIndexQuery... predicates) {
         IndexType indexType = index.getIndexType();
@@ -161,10 +190,15 @@ public class FulltextIndexReader implements ValueIndexReader {
                 .formatted(indexType, indexType, Arrays.toString(predicates)));
     }
 
-    private LuceneQueryContext toLuceneQuery(PropertyIndexQuery predicate) {
+    private LuceneQueryContext toLuceneQuery(PropertyIndexQuery predicate, EntityFilterPredicate entityFilter) {
         LuceneIndexSearcher indexSearcher = searchers.getFirst().getIndexSearcher();
         return switch (predicate.type()) {
-            case ALL_ENTRIES -> indexSearcher.newQueryContext().matchAll();
+            case ALL_ENTRIES ->
+                entityFilter != null
+                        ? indexSearcher
+                                .newQueryContext()
+                                .addEntityFilter(LuceneFulltextDocumentStructure.FIELD_ENTITY_ID, entityFilter)
+                        : indexSearcher.newQueryContext().matchAll();
             case FULLTEXT_SEARCH -> {
                 FulltextSearchPredicate fulltextSearchPredicate = (FulltextSearchPredicate) predicate;
                 try {
@@ -178,6 +212,9 @@ public class FulltextIndexReader implements ValueIndexReader {
 
                     queryContext.addShouldQueryText(
                             fulltextSearchPredicate.query(), propertyNames, actualQueryAnalyzer);
+                    if (entityFilter != null) {
+                        queryContext.addEntityFilter(LuceneFulltextDocumentStructure.FIELD_ENTITY_ID, entityFilter);
+                    }
 
                     yield queryContext;
                 } catch (LuceneQueryParseException parseException) {

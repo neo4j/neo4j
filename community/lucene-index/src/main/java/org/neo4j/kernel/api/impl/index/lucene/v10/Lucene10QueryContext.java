@@ -69,6 +69,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriter;
+import org.neo4j.kernel.api.impl.index.lucene.LucenePreparedEntityFilter;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryContext;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryParseException;
 import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10TrigramTokenStream.CodePointBuffer;
@@ -112,6 +113,31 @@ public class Lucene10QueryContext implements LuceneQueryContext {
         } catch (ParseException e) {
             throw new LuceneQueryParseException(e);
         }
+    }
+
+    @Override
+    public Lucene10QueryContext addEntityFilter(String entityIdKey, EntityFilterPredicate entityFilter) {
+        switch (entityFilter) {
+            case EntityFilterPredicate.MatchAll ignored -> {
+                // No restriction.
+            }
+            case EntityFilterPredicate.MatchEntitySet set
+            when set.entities().isEmpty() -> {
+                ensureBooleanBuilder();
+                booleanBuilder.add(MatchNoDocsQuery.INSTANCE, BooleanClause.Occur.FILTER);
+            }
+            case EntityFilterPredicate.MatchEntitySet set -> {
+                ensureBooleanBuilder();
+                booleanBuilder.add(EntityIdSetQuery.create(entityIdKey, set.entities()), BooleanClause.Occur.FILTER);
+            }
+            case EntityFilterPredicate.MatchPreparedEntityFilter prepared -> {
+                ensureBooleanBuilder();
+                booleanBuilder.add(
+                        PreparedEntityFilterQuery.create((LucenePreparedEntityFilter) prepared.filter()),
+                        BooleanClause.Occur.FILTER);
+            }
+        }
+        return this;
     }
 
     @Override

@@ -66,6 +66,16 @@ public interface LuceneQueryContext {
             throws LuceneQueryParseException;
 
     /**
+     * Restrict the query to only match the entities accepted by the given entity filter. The filter is
+     * added as a non-scoring filter clause alongside any text clauses added by e.g.
+     * {@link #addShouldQueryText(String, String[], Analyzer)}.
+     *
+     * @param entityIdKey Name of the field holding the entity id in the index documents.
+     * @param entityFilter The entity filter to apply.
+     */
+    LuceneQueryContext addEntityFilter(String entityIdKey, EntityFilterPredicate entityFilter);
+
+    /**
      * Query a filed for an exact value.
      *
      * @param entityIdKey Name of field to search.

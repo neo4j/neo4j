@@ -95,6 +95,15 @@ public class Lucene9QueryContext implements LuceneQueryContext {
     }
 
     @Override
+    public Lucene9QueryContext addEntityFilter(String entityIdKey, EntityFilterPredicate entityFilter) {
+        if (entityFilter != EntityFilterPredicate.MatchAll.INSTANCE) {
+            throw InternalException.internalError(
+                    getClass().getSimpleName(), "Entity filtering is not supported in this index");
+        }
+        return this;
+    }
+
+    @Override
     public Lucene9QueryContext exactTerm(String entityIdKey, long entityId) {
         assignSingle(new TermQuery(new Term(entityIdKey, Long.toString(entityId))));
         return this;

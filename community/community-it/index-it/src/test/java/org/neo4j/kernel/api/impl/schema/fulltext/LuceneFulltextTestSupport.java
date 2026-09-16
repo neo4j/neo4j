@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -153,6 +154,17 @@ public class LuceneFulltextTestSupport {
 
     static void assertQueryFindsIds(KernelTransaction ktx, boolean nodes, String indexName, String query, long... ids)
             throws Exception {
+        assertQueryFindsIds(ktx, nodes, indexName, query, null, ids);
+    }
+
+    static void assertQueryFindsIds(
+            KernelTransaction ktx,
+            boolean nodes,
+            String indexName,
+            String query,
+            EntityFilterPredicate entityFilter,
+            long... ids)
+            throws Exception {
         IndexDescriptor index = ktx.schemaRead().indexGetForName(indexName);
         IndexReadSession indexSession = ktx.dataRead().indexReadSession(index);
         MutableLongSet set = LongSets.mutable.of(ids);
@@ -165,7 +177,7 @@ public class LuceneFulltextTestSupport {
                                 indexSession,
                                 cursor,
                                 unconstrained(),
-                                PropertyIndexQuery.fulltextSearch(query));
+                                fulltextQueries(query, entityFilter));
                 while (cursor.next()) {
                     long nodeId = cursor.nodeReference();
                     assertTrue(
@@ -182,7 +194,7 @@ public class LuceneFulltextTestSupport {
                                 indexSession,
                                 cursor,
                                 unconstrained(),
-                                PropertyIndexQuery.fulltextSearch(query));
+                                fulltextQueries(query, entityFilter));
                 while (cursor.next()) {
                     long relationshipId = cursor.relationshipReference();
                     assertTrue(
@@ -197,6 +209,12 @@ public class LuceneFulltextTestSupport {
         if (!set.isEmpty()) {
             fail("Number of results differ from expected. " + set.size() + " IDs were not found in the result: " + set);
         }
+    }
+
+    private static PropertyIndexQuery[] fulltextQueries(String query, EntityFilterPredicate entityFilter) {
+        return entityFilter == null
+                ? new PropertyIndexQuery[] {PropertyIndexQuery.fulltextSearch(query)}
+                : new PropertyIndexQuery[] {PropertyIndexQuery.fulltextSearch(query), entityFilter};
     }
 
     static void assertQueryFindsNodeIdsInOrder(KernelTransaction ktx, String indexName, String query, long... ids)
