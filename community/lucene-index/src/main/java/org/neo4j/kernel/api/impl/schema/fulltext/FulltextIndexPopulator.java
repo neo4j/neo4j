@@ -118,19 +118,17 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
             }
             try {
                 long entityId = valueUpdate.getEntityId();
-                try (Lock lock = concurrentUpdateLockManager.lock(entityId)) {
+                try (Lock ignore = concurrentUpdateLockManager.lock(entityId)) {
                     switch (valueUpdate.updateMode()) {
                         case ADDED, CHANGED -> {
                             concurrentUpdateFilter.add(entityId);
                             Value[] values = valueUpdate.values();
-                            luceneIndex
-                                    .getIndexWriter()
-                                    .updateOrDeleteDocument(
-                                            FIELD_ENTITY_ID,
-                                            entityId,
-                                            documentsFactory.reusableFulltextDocument(entityId, propertyNames, values));
+                            writer.updateOrDeleteDocument(
+                                    FIELD_ENTITY_ID,
+                                    entityId,
+                                    documentsFactory.reusableFulltextDocument(entityId, propertyNames, values));
                         }
-                        case REMOVED -> luceneIndex.getIndexWriter().deleteDocuments(FIELD_ENTITY_ID, entityId);
+                        case REMOVED -> writer.deleteDocuments(FIELD_ENTITY_ID, entityId);
                         default -> throw new UnsupportedOperationException();
                     }
                 }
