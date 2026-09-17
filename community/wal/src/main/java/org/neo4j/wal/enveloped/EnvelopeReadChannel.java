@@ -1226,13 +1226,6 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         return length;
     }
 
-    public void reReadSegment() throws IOException {
-        var logPositionMarker = new LogPositionMarker();
-        var currentLogPosition = getCurrentLogPosition(logPositionMarker);
-        currentSegment = -1;
-        setLogPosition(currentLogPosition);
-    }
-
     public ByteBuffer getBuffer() {
         return buffer;
     }

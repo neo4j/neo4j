@@ -300,7 +300,7 @@ class EnvelopedLogFilesTest {
 
         var readData = new byte[data.length];
         try (var envelopeReadChannel = envelopedLogFiles.openReadChannel()) {
-            envelopeReadChannel.reReadSegment();
+            envelopeReadChannel.alignWithStartEntry();
             envelopeReadChannel.get(readData, readData.length);
         }
         assertThat(data).isEqualTo(readData);
