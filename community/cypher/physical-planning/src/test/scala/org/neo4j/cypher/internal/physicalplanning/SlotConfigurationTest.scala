@@ -488,6 +488,50 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
     cachedPropertiesTest(result, (cachedProp.runtimeKey, RefSlot(1, nullable = false, typ = CTAny)))
   }
 
+  test(
+    "addAllSlotsInOrderTo should reserve a duplicate ref slot when a plain variable already exists on target (issue 13981)"
+  ) {
+    // given
+    val slots = SlotConfigurationBuilder.empty
+    slots.newReference("a", nullable = false, CTNode)
+    slots.newReference("b", nullable = true, CTNode)
+
+    val result = SlotConfigurationBuilder.empty
+    result.newReference("a", nullable = false, CTNode)
+
+    // when
+    slots.addAllSlotsInOrderTo(result)
+
+    // then
+    // "a" is bound on both sides. addAllSlotsInOrderTo must still reserve a slot for it on
+    // `result`, matching the count a raw System.arraycopy (as used by
+    // CartesianProductSlottedPipe at runtime) will actually copy -- see issue #13981. The
+    // variable "a" itself keeps resolving to its original (first) slot.
+    result.numberOfReferences should equal(3)
+    result.refOffset("a") should equal(0)
+    result.refOffset("b") should equal(2)
+  }
+
+  test(
+    "addAllSlotsInOrderTo should reserve a duplicate long slot when a plain variable already exists on target (issue 13981)"
+  ) {
+    // given
+    val slots = SlotConfigurationBuilder.empty
+    slots.newLong("n", nullable = false, CTNode)
+    slots.newLong("m", nullable = false, CTNode)
+
+    val result = SlotConfigurationBuilder.empty
+    result.newLong("n", nullable = false, CTNode)
+
+    // when
+    slots.addAllSlotsInOrderTo(result)
+
+    // then
+    result.numberOfLongs should equal(3)
+    result.longOffset("n") should equal(0)
+    result.longOffset("m") should equal(2)
+  }
+
   test("addAllSlotsInOrderTo with skipSlots and cached properties") {
     // given
     val slots = SlotConfigurationBuilder.empty

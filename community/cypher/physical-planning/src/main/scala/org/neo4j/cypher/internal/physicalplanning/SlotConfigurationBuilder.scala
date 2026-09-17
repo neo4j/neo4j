@@ -383,7 +383,23 @@ final class SlotConfigurationBuilder private (
     require(!finalized)
     keyedSlotsOrdered(skipFirst).foreach {
       case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
-        other.add(key, slot)
+        if (other.get(VariableSlotKey(key)).isDefined) {
+          // `key` is already bound in `other` (e.g. the same variable is bound on both sides
+          // of a CartesianProduct). We must still reserve a slot here: the runtime pipe that
+          // consumes this slot configuration (e.g. CartesianProductSlottedPipe) copies a
+          // contiguous, count-based range of slots via System.arraycopy and has no notion of
+          // by-name deduplication, so every slot beyond `skipFirst` needs a corresponding
+          // reserved slot in `other`, even when we already have a slot for this variable name.
+          // We add a placeholder duplicate slot (never looked up by name) purely to reserve the
+          // array position; the live/authoritative slot for `key` remains the one already
+          // present in `other`. See issue #13981: without this, the reserved slot count could
+          // undercount what the runtime actually copies, causing an
+          // ArrayIndexOutOfBoundsException.
+          if (slot.isLongSlot) other.newDuplicatedLongSlot(key)
+          else other.newDuplicatedRefSlot(key)
+        } else {
+          other.add(key, slot)
+        }
         aliases.foreach { alias =>
           other.addAlias(alias, key)
         }
