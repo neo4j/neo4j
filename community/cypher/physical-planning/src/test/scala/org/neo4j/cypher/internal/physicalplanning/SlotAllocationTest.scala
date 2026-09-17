@@ -942,16 +942,24 @@ class SlotAllocationTest extends CypherFunSuite with AstConstructionTestSupport 
       Map(varFor("cRhs2") -> varFor("cRhs"), varFor("xRhs2") -> varFor("x"))
     )
 
-    val joins =
+    val otherJoins =
       List(
-        CartesianProduct(lhs, rhs),
         NodeHashJoin(Set(varFor("x")), lhs, rhs),
         LeftOuterHashJoin(Set(varFor("x")), lhs, rhs),
         ValueHashJoin(lhs, rhs, equals(varFor("x"), varFor("x"))),
         ValueMergeJoin(lhs, rhs, equals(varFor("x"), varFor("x")))
       )
 
-    for (join <- joins) {
+    val expectedJoinSlotConfig = SlotConfigurationBuilder.empty
+      .newLong("x", nullable = false, CTNode)
+      .newReference("cLhs", nullable = true, CTAny)
+      .addAlias("cLhs2", "cLhs")
+      .addAlias("xLhs2", "x")
+      .newReference("cRhs", nullable = true, CTAny)
+      .addAlias("cRhs2", "cRhs")
+      .addAlias("xRhs2", "x")
+
+    for (join <- otherJoins) {
       withClue(s"operator[${join.getClass.getSimpleName}]:") {
         // when
         val allocations = allocateSlots(
@@ -964,17 +972,43 @@ class SlotAllocationTest extends CypherFunSuite with AstConstructionTestSupport 
         ).slotConfigurations
 
         // then
-        val expectedJoinSlotConfig = SlotConfigurationBuilder.empty
-          .newLong("x", nullable = false, CTNode)
-          .newReference("cLhs", nullable = true, CTAny)
-          .addAlias("cLhs2", "cLhs")
-          .addAlias("xLhs2", "x")
-          .newReference("cRhs", nullable = true, CTAny)
-          .addAlias("cRhs2", "cRhs")
-          .addAlias("xRhs2", "x")
-
         allocations(join.id) should equal(expectedJoinSlotConfig)
       }
+    }
+
+    // Unlike the joins above, CartesianProduct does not constrain "x" to be the same node on
+    // both sides. When the same variable name is (synthetically) bound independently on both
+    // branches with no shared argument, a genuinely separate slot must be reserved for RHS's
+    // value, or CartesianProductSlottedPipe's runtime System.arraycopy overruns the row array
+    // -- see issue #13981. This exact shape (the same variable name freely reused with no
+    // shared scope) cannot arise from valid, semantically-checked Cypher text; it is only
+    // constructible via this internal plan-builder DSL. As an accepted consequence, "xRhs2",
+    // which aliased RHS's own "x", resolves through the merged config to LHS's "x" value
+    // rather than to the reserved duplicate slot that actually holds RHS's value -- correctness
+    // for every plan shape reachable from real Cypher, and never crashing at runtime, are what
+    // matter here.
+    val cartesianProduct = CartesianProduct(lhs, rhs)
+    val expectedCartesianProductSlotConfig = SlotConfigurationBuilder.empty
+      .newLong("x", nullable = false, CTNode)
+      .newDuplicatedLongSlot("x")
+      .newReference("cLhs", nullable = true, CTAny)
+      .newReference("cRhs", nullable = true, CTAny)
+      .addAlias("cLhs2", "cLhs")
+      .addAlias("xLhs2", "x")
+      .addAlias("cRhs2", "cRhs")
+      .addAlias("xRhs2", "x")
+
+    withClue(s"operator[${cartesianProduct.getClass.getSimpleName}]:") {
+      val cpAllocations = allocateSlots(
+        cartesianProduct,
+        semanticTable,
+        breakFor(cartesianProduct),
+        NO_EXPR_VARS,
+        config,
+        new AnonymousVariableNameGenerator()
+      ).slotConfigurations
+
+      cpAllocations(cartesianProduct.id) should equal(expectedCartesianProductSlotConfig)
     }
   }
 
@@ -1102,15 +1136,14 @@ class SlotAllocationTest extends CypherFunSuite with AstConstructionTestSupport 
     val lhs = IndexSeek.nodeIndexSeek("x:L(lhsProp = 42)", _ => GetValue)
     val rhs = IndexSeek.nodeIndexSeek("x:B(rhsProp = 42)", _ => GetValue)
 
-    val leftJoins =
+    val otherLeftJoins =
       List(
-        CartesianProduct(lhs, rhs),
         NodeHashJoin(Set(varFor("x")), lhs, rhs),
         LeftOuterHashJoin(Set(varFor("x")), lhs, rhs),
         ValueHashJoin(lhs, rhs, equals(varFor("x"), varFor("x")))
       )
 
-    for (join <- leftJoins) {
+    for (join <- otherLeftJoins) {
       withClue(s"operator[${join.getClass.getSimpleName}]:") {
         // when
         val joinAllocations = allocateSlots(
@@ -1130,6 +1163,29 @@ class SlotAllocationTest extends CypherFunSuite with AstConstructionTestSupport 
             .newCachedProperty(cachedNodeProp("x", "rhsProp").runtimeKey)
         )
       }
+    }
+
+    // CartesianProduct does not constrain "x" to be the same node on both sides, so a
+    // genuinely separate slot must be reserved for RHS's independently-bound "x" -- see
+    // issue #13981.
+    val cartesianProduct = CartesianProduct(lhs, rhs)
+    withClue(s"operator[${cartesianProduct.getClass.getSimpleName}]:") {
+      val cpAllocations = allocateSlots(
+        cartesianProduct,
+        semanticTable,
+        BREAK_FOR_LEAFS,
+        NO_EXPR_VARS,
+        config,
+        new AnonymousVariableNameGenerator()
+      ).slotConfigurations
+
+      cpAllocations(cartesianProduct.id) should be(
+        SlotConfigurationBuilder.empty
+          .newLong("x", false, CTNode)
+          .newDuplicatedLongSlot("x")
+          .newCachedProperty(cachedNodeProp("x", "lhsProp").runtimeKey)
+          .newCachedProperty(cachedNodeProp("x", "rhsProp").runtimeKey)
+      )
     }
   }
 
