@@ -1311,6 +1311,16 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             new GqlParams.GqlParam[] {GqlParams.StringParam.value},
             "invalid vector coordinates",
             ErrorClassification.CLIENT_ERROR),
+    STATUS_22NBH(
+            "The property value size: { %s } of element id: { %s } is too large for the index: { %s } you are trying "
+                    + "to add it to. See the Operations Manual for index limitations.",
+            new GqlParams.GqlParam[] {
+                new NonSensitiveGqlParam(GqlParams.NumberParam.bytes, List.of(NON_SENSITIVE_NUMBER)),
+                new NonSensitiveGqlParam(GqlParams.StringParam.entityId, List.of(SCHEMA)),
+                new NonSensitiveGqlParam(GqlParams.StringParam.idx, List.of(SCHEMA))
+            },
+            "property value too large to index",
+            ErrorClassification.CLIENT_ERROR),
     // Graph Type Errors
     STATUS_22NC1(
             "The graph type element includes a property key with name { %s } more than once.",

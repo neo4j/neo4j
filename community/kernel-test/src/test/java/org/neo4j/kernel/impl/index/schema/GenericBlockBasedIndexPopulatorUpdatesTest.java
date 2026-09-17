@@ -20,8 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.util.Collections.singleton;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions.assertThatThrownBy;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
@@ -30,6 +29,7 @@ import static org.neo4j.storageengine.api.EagerValueIndexEntryUpdate.add;
 import java.io.IOException;
 import java.util.Collection;
 import org.junit.jupiter.api.Test;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.storageengine.api.EagerValueIndexEntryUpdate;
@@ -72,18 +72,18 @@ abstract class GenericBlockBasedIndexPopulatorUpdatesTest<KEY extends GenericKey
                     1,
                     INDEX_DESCRIPTOR,
                     generateStringValueResultingInIndexEntrySize(populator.layout, maxKeyValueSize + 1));
-            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> {
-                Collection<EagerValueIndexEntryUpdate> updates = singleton(update);
-                populator.add(updates, NULL_CONTEXT);
-                populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
-            });
-            // then
-            assertThat(e)
-                    .hasMessageContaining(
-                            "Property value is too large to index, please see index documentation for limitations. Index: Index( id=1, name='index', "
-                                    + "type='" + indexType() + "', schema=(:Label1 {property1}), "
-                                    + "indexProvider='Undecided-0' ), element id: n::1, property size: ");
 
+            assertThatThrownBy(() -> {
+                        Collection<EagerValueIndexEntryUpdate> updates = singleton(update);
+                        populator.add(updates, NULL_CONTEXT);
+                        populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+                    })
+                    .hasGqlStatus(GqlStatusInfoCodes.STATUS_22NBH)
+                    .hasMessageContainingAll(
+                            "The property value size",
+                            "of element id",
+                            "is too large for the index",
+                            "See the Operations Manual for index limitations.");
         } finally {
             populator.close(true, NULL_CONTEXT);
         }

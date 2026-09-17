@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -146,7 +147,7 @@ public abstract class StringLengthIndexValidationIT {
 
     @Test
     void txMustFailIfExceedingIndexKeySizeLimit() throws KernelException {
-        long indexId = createAndAwaitIndex();
+        createAndAwaitIndex();
 
         // Write
         try (Transaction tx = db.beginTx()) {
@@ -154,13 +155,13 @@ public abstract class StringLengthIndexValidationIT {
             Node node = tx.createNode(LABEL_ONE);
             String nodeId = node.getElementId();
 
-            IllegalArgumentException e =
-                    assertThrows(IllegalArgumentException.class, () -> node.setProperty(propKey, propValue));
+            InvalidArgumentException e =
+                    assertThrows(InvalidArgumentException.class, () -> node.setProperty(propKey, propValue));
             assertThat(e.getMessage())
                     .contains(String.format(
-                            "Property value is too large to index, please see index documentation for limitations. "
-                                    + "Index: Index( id=%d, name='coolName', type='%s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' ), element id: %s",
-                            indexId, getIndexType(), getIndexProvider().name(), nodeId));
+                            "of element id: %s is too large for the index: `coolName` you are trying to add it to. "
+                                    + "See the Operations Manual for index limitations.",
+                            nodeId));
         }
     }
 

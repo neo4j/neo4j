@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
-import static java.lang.String.format;
+import static org.neo4j.exceptions.InvalidArgumentException.propertyValueTooLargeToIndex;
 
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Value;
@@ -32,18 +31,12 @@ public interface IndexValueValidator {
     IndexValueValidator NO_VALIDATION = (entityId, values) -> {};
 
     static void throwSizeViolationException(
-            IndexDescriptor descriptor,
-            TokenNameLookup tokenNameLookup,
-            ElementIdMapper elementIdMapper,
-            long entityId,
-            int size) {
+            IndexDescriptor descriptor, ElementIdMapper elementIdMapper, long entityId, int size) {
         String elementId =
                 switch (descriptor.schema().entityType()) {
                     case NODE -> elementIdMapper.nodeElementId(entityId);
                     case RELATIONSHIP -> elementIdMapper.relationshipElementId(entityId);
                 };
-        throw new IllegalArgumentException(format(
-                "Property value is too large to index, please see index documentation for limitations. Index: %s, element id: %s, property size: %d.",
-                descriptor.userDescription(tokenNameLookup), elementId, size));
+        throw propertyValueTooLargeToIndex(descriptor.getName(), elementId, size);
     }
 }

@@ -20,9 +20,10 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.apache.commons.lang3.RandomStringUtils.insecure;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions.assertThatThrownBy;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_22NBH;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.kernel.impl.api.LuceneIndexValueValidator.MAX_TERM_LENGTH;
 import static org.neo4j.values.storable.Values.of;
@@ -60,16 +61,21 @@ class LuceneIndexValueValidatorTest {
                             insecure().nextAlphabetic(MAX_TERM_LENGTH));
                     VALIDATOR.validate(ENTITY_ID, largeArray);
                 })
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Property value is too large to index");
+                .hasGqlStatus(STATUS_22NBH)
+                .hasMessageContaining("is too large for the index");
     }
 
     @Test
     void stringOverExceedLimitNotAllowed() {
         int length = MAX_TERM_LENGTH + 1;
         assertThatThrownBy(() -> VALIDATOR.validate(ENTITY_ID, values(insecure().nextAlphabetic(length))))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Property value is too large to index");
+                .hasGqlStatus(STATUS_22NBH)
+                .hasMessageContainingAll(
+                        "The property value size",
+                        String.valueOf(length * Byte.BYTES),
+                        "of element id",
+                        "is too large for the index",
+                        "See the Operations Manual for index limitations.");
     }
 
     @Test

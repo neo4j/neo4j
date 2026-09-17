@@ -29,6 +29,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -129,7 +130,7 @@ class CompositeStringLengthValidationIT {
         // given
         createIndex(KEY, KEY2);
 
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> {
+        InvalidArgumentException e = assertThrows(InvalidArgumentException.class, () -> {
             try (Transaction tx = db.beginTx()) {
                 Node node = tx.createNode(LABEL);
                 node.setProperty(KEY, firstSlot);
@@ -137,8 +138,7 @@ class CompositeStringLengthValidationIT {
                 tx.commit();
             }
         });
-        assertThat(e.getMessage())
-                .contains("Property value is too large to index, please see index documentation for limitations.");
+        assertThat(e.getMessage()).contains("is too large for the index", "you are trying to add it to");
     }
 
     private IndexDescriptor createIndex(String... keys) {

@@ -66,7 +66,7 @@ public class FailedIndexRestartIT {
 
         assertThatThrownBy(() -> awaitIndexesOnline(database))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll("IllegalArgumentException", "Property value is too large to index");
+                .hasMessageContainingAll("is too large for the index");
 
         // can add more nodes that do not satisfy failed index
         createNodeWithProperty(database, robot, megaProperty);

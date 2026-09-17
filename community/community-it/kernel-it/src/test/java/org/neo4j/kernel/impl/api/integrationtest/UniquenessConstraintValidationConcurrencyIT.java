@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -119,8 +120,8 @@ public class UniquenessConstraintValidationConcurrencyIT {
         }
 
         assertThatThrownBy(() -> createTestConstraint(entityControl))
-                .hasRootCauseInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Property value is too large to index");
+                .hasRootCauseInstanceOf(InvalidArgumentException.class)
+                .hasMessageContaining("is too large for the index");
     }
 
     private void createTestConstraint(EntityControl entityControl) {

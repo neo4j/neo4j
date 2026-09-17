@@ -79,8 +79,7 @@ public class LuceneIndexValueValidator implements IndexValueValidator {
 
     private void validateActualLength(long entityId, int length) {
         if (length > MAX_TERM_LENGTH) {
-            IndexValueValidator.throwSizeViolationException(
-                    descriptor, tokenNameLookup, elementIdMapper, entityId, length);
+            IndexValueValidator.throwSizeViolationException(descriptor, elementIdMapper, entityId, length);
         }
     }
 }

@@ -58,6 +58,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
@@ -175,8 +176,8 @@ public class RangeIndexKeySizeValidationIT {
                             .append(binarySearch.arrayLength)
                             .append(" = true")
                             .append('\n');
-                } catch (IllegalArgumentException e) {
-                    assertThat(e.getMessage()).contains("Property value is too large to index");
+                } catch (InvalidArgumentException e) {
+                    assertThat(e.getMessage()).contains("is too large for the index");
                     sb.append("Testing: ")
                             .append(binarySearch.arrayLength)
                             .append(" = ")

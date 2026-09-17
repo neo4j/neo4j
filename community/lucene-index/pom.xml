@@ -117,6 +117,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>gql-error-test-utils</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>io-test-utils</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

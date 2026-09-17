@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions.assertThatThrownBy;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_22NBH;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.Values.intValue;
@@ -34,6 +34,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -75,10 +76,10 @@ class GenericIndexKeyValidatorTest {
                 new GenericIndexKeyValidator(48, descriptor, layout, SIMPLE_NAME_LOOKUP, ElementIdMapper.PLACEHOLDER);
 
         // when
-        IllegalArgumentException e = assertThrows(
-                IllegalArgumentException.class,
-                () -> validator.validate(42, intValue(10), epochDate(100), stringValue("abcdefghijklmnopqrstuvw")));
-        assertThat(e.getMessage()).contains("Property value is too large to index");
+        assertThatThrownBy(() ->
+                        validator.validate(42, intValue(10), epochDate(100), stringValue("abcdefghijklmnopqrstuvw")))
+                .hasGqlStatus(STATUS_22NBH)
+                .hasMessageContaining("is too large for the index");
         verify(layout).newKey();
     }
 
@@ -99,7 +100,7 @@ class GenericIndexKeyValidatorTest {
             try {
                 validator.validate(42, tuple);
                 isOk = true;
-            } catch (IllegalArgumentException e) {
+            } catch (InvalidArgumentException e) {
                 isOk = false;
             }
             int actualSize = actualSize(tuple, key);

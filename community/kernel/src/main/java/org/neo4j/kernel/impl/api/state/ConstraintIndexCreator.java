@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionTerminatedHelper;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -246,15 +247,19 @@ public class ConstraintIndexCreator {
             } while (stillGoing);
         } catch (IndexPopulationFailedKernelException e) {
             Throwable cause = e.getCause();
-            if (cause instanceof IndexEntryConflictException exc) {
-                throw UniquePropertyValueValidationException.propertyUniquenessViolation(
-                        constraint, VERIFICATION, exc, transaction.tokenRead());
-            } else if (cause instanceof IllegalArgumentException exc) {
-                throw UniquePropertyValueValidationException.propertyUniquenessViolation(
-                        constraint, VERIFICATION, exc, transaction.tokenRead());
-            } else {
-                throw UniquePropertyValueValidationException.propertyUniquenessViolation(
-                        constraint, VERIFICATION, e, transaction.tokenRead());
+            switch (cause) {
+                case IndexEntryConflictException exc ->
+                    throw UniquePropertyValueValidationException.propertyUniquenessViolation(
+                            constraint, VERIFICATION, exc, transaction.tokenRead());
+                case IllegalArgumentException exc ->
+                    throw UniquePropertyValueValidationException.propertyUniquenessViolation(
+                            constraint, VERIFICATION, exc, transaction.tokenRead());
+                case InvalidArgumentException exc ->
+                    throw UniquePropertyValueValidationException.propertyUniquenessViolation(
+                            constraint, VERIFICATION, exc, transaction.tokenRead());
+                default ->
+                    throw UniquePropertyValueValidationException.propertyUniquenessViolation(
+                            constraint, VERIFICATION, e, transaction.tokenRead());
             }
         }
     }

@@ -51,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.index.internal.gbptree.CompactionReport;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -508,7 +509,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
         try {
             int size = populator.tree.keyValueSizeCap() + 1;
             assertThrows(
-                    IllegalArgumentException.class,
+                    expectedTooLargeValueExceptionType(),
                     () -> populator.add(
                             singletonList(EagerValueIndexEntryUpdate.add(
                                     0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize(layout(), size))),
@@ -532,7 +533,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
             if (!updateBeforeScanCompleted) {
                 populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
             }
-            assertThrows(IllegalArgumentException.class, () -> {
+            assertThrows(expectedTooLargeValueExceptionType(), () -> {
                 try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
                     updater.process(EagerValueIndexEntryUpdate.add(
                             0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize(layout(), size)));
@@ -541,6 +542,10 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
         } finally {
             populator.close(false, NULL_CONTEXT);
         }
+    }
+
+    Class<? extends RuntimeException> expectedTooLargeValueExceptionType() {
+        return InvalidArgumentException.class;
     }
 
     @Test

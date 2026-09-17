@@ -1418,6 +1418,15 @@ public class InvalidArgumentException extends Neo4jException {
         return new InvalidArgumentException(gql, gql.getMessage());
     }
 
+    public static InvalidArgumentException propertyValueTooLargeToIndex(String indexName, String elementId, long size) {
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NBH)
+                .withParam(GqlParams.NumberParam.bytes, size)
+                .withParam(GqlParams.StringParam.entityId, elementId)
+                .withParam(GqlParams.StringParam.idx, indexName)
+                .build();
+        return new InvalidArgumentException(gql, gql.getMessage());
+    }
+
     public static InvalidArgumentException invalidVectorCoordinate(float[] coordinates) {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NBG)
                 .withParam(GqlParams.StringParam.value, Arrays.toString(coordinates))
