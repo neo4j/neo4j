@@ -24,9 +24,14 @@ import static org.neo4j.kernel.internal.Version.CUSTOM_VERSION_SETTING;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.api.util.ReadsSystemProperty;
+import org.junit.jupiter.api.util.SetSystemProperty;
 
 @Isolated
 class VersionTest {
+
+    private static final String PLANET_EXPRESS = "planetExpress";
+
     @Test
     void shouldExposeCleanAndDetailedVersions() {
         assertThat(version("1.2.3-M01,abcdef012345").getReleaseVersion()).isEqualTo("1.2.3-M01");
@@ -77,26 +82,20 @@ class VersionTest {
 
     @Test
     void versionWithCustomString() {
-        var planetExpress = "planetExpress";
-        var planetExpressVersion = version(planetExpress);
-        assertThat(planetExpressVersion.getVersion()).isEqualTo(planetExpress);
-        assertThat(planetExpressVersion.getReleaseVersion()).isEqualTo(planetExpress);
+        var planetExpressVersion = version(PLANET_EXPRESS);
+        assertThat(planetExpressVersion.getVersion()).isEqualTo(PLANET_EXPRESS);
+        assertThat(planetExpressVersion.getReleaseVersion()).isEqualTo(PLANET_EXPRESS);
     }
 
     @Test
+    @SetSystemProperty(key = CUSTOM_VERSION_SETTING, value = PLANET_EXPRESS)
     void versionStringSelection() {
-        var planetExpress = "planetExpress";
-        try {
-            System.setProperty(CUSTOM_VERSION_SETTING, planetExpress);
-            assertThat(Version.selectVersion()).isEqualTo(planetExpress);
-        } finally {
-            System.clearProperty(CUSTOM_VERSION_SETTING);
-        }
+        assertThat(Version.selectVersion()).isEqualTo("planetExpress");
     }
 
     @Test
+    @ReadsSystemProperty
     void selectVersionAndKernelVersionUseManifestOrDev() {
-        System.clearProperty(CUSTOM_VERSION_SETTING);
         var manifestVersion = Version.getManifestVersion();
         var expected = manifestVersion != null ? manifestVersion : "dev";
         assertThat(Version.selectVersion()).isEqualTo(expected);
@@ -104,6 +103,7 @@ class VersionTest {
     }
 
     @Test
+    @ReadsSystemProperty
     void staticAccessorsAreConsistent() {
         assertThat(Version.getKernelVersion()).isEqualTo(Version.getKernel().getVersion());
         assertThat(Version.getNeo4jVersion()).isEqualTo(Version.getKernel().getReleaseVersion());
