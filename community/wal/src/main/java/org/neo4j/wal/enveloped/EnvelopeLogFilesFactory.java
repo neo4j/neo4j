@@ -36,6 +36,7 @@ public class EnvelopeLogFilesFactory {
     private final LogPruneThreshold pruneThreshold;
     private final StoreChannelNativeAccessor storeChannelNativeAccessor;
     private final InternalLogProvider logProvider;
+    private final LogTracers logTracers;
 
     public EnvelopeLogFilesFactory(
             FileSystemAbstraction fileSystem,
@@ -45,7 +46,8 @@ public class EnvelopeLogFilesFactory {
             MemoryTracker memoryTracker,
             LogPruneThreshold pruneThreshold,
             StoreChannelNativeAccessor storeChannelNativeAccessor,
-            InternalLogProvider logProvider) {
+            InternalLogProvider logProvider,
+            LogTracers logTracers) {
         this.fileSystem = fileSystem;
         this.defaultLogSegmentSize = defaultLogSegmentSize;
         this.writeBufferBlocks = writeBufferBlocks;
@@ -54,10 +56,22 @@ public class EnvelopeLogFilesFactory {
         this.pruneThreshold = pruneThreshold;
         this.storeChannelNativeAccessor = storeChannelNativeAccessor;
         this.logProvider = logProvider;
+        this.logTracers = logTracers;
     }
 
     public EnvelopedLogFiles createWithoutCache(
             SequentialFileNameHelper fileNameHelper, LogHeaderFactory logHeaderFactory) {
+        return instantiateEnvelopedLogFiles(fileNameHelper, logHeaderFactory, EnvelopedLogHeaderCache.NULL);
+    }
+
+    public EnvelopedLogFiles create(SequentialFileNameHelper fileNameHelper, LogHeaderFactory logHeaderFactory) {
+        return instantiateEnvelopedLogFiles(fileNameHelper, logHeaderFactory, new EnvelopedLogHeaderCacheImpl());
+    }
+
+    private EnvelopedLogFiles instantiateEnvelopedLogFiles(
+            SequentialFileNameHelper fileNameHelper,
+            LogHeaderFactory logHeaderFactory,
+            EnvelopedLogHeaderCache headerCache) {
         return new EnvelopedLogFiles(
                 new LogsRepository(fileSystem, fileNameHelper),
                 logHeaderFactory,
@@ -68,20 +82,7 @@ public class EnvelopeLogFilesFactory {
                 pruneThreshold,
                 storeChannelNativeAccessor,
                 logProvider,
-                LogTracers.NULL,
-                EnvelopedLogHeaderCache.NULL);
-    }
-
-    public EnvelopedLogFiles create(SequentialFileNameHelper fileNameHelper, LogHeaderFactory logHeaderFactory) {
-        return new EnvelopedLogFiles(
-                new LogsRepository(fileSystem, fileNameHelper),
-                logHeaderFactory,
-                defaultLogSegmentSize,
-                writeBufferBlocks,
-                segments,
-                memoryTracker,
-                pruneThreshold,
-                storeChannelNativeAccessor,
-                logProvider);
+                logTracers,
+                headerCache);
     }
 }
