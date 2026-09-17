@@ -22,6 +22,7 @@ package org.neo4j.wal.enveloped;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -33,6 +34,7 @@ import org.neo4j.io.fs.filename.SequentialFileNameHelper;
 
 public class LogsRepository {
     static final long BASE_VERSION = 0;
+    private static final String TEMP_FILE_SUFFIX = ".tmp";
     private final FileSystemAbstraction fs;
     private final SequentialFileNameHelper sequentialFilesHelper;
 
@@ -60,6 +62,14 @@ public class LogsRepository {
     private LogChannelContext<StoreChannel> openLogChannel(long version, Set<OpenOption> options) throws IOException {
         var path = pathFor(version);
         return new LogChannelContext<>(fs.open(path, options), path, version);
+    }
+
+    LogChannelContext<StoreChannel> createWriteChannelAt(Path openPath, long version) throws IOException {
+        // Opened at the temp path but identified by the final name it will be published under.
+        return new LogChannelContext<>(
+                fs.open(openPath, Set.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE)),
+                pathFor(version),
+                version);
     }
 
     void deleteLogFilesFrom(long fromVersion) throws IOException {
@@ -119,6 +129,24 @@ public class LogsRepository {
 
     Path pathFor(long version) {
         return sequentialFilesHelper.getFileForVersion(version);
+    }
+
+    Path tempPath() {
+        return Path.of(sequentialFilesHelper.baseName().toString() + TEMP_FILE_SUFFIX);
+    }
+
+    void deleteTempFileIfPresent() throws IOException {
+        var tempPath = tempPath();
+        if (fs.fileExists(tempPath)) {
+            fs.deleteFile(tempPath);
+        }
+    }
+
+    void publishTempFile(long version) throws IOException {
+        fs.renameFile(
+                tempPath(), pathFor(version), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        // the atomic move is only durable once the directory entry is forced
+        fs.tryForceDirectory(sequentialFilesHelper.directory());
     }
 
     long lastModifiedTime(long version) throws IOException {

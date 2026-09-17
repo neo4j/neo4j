@@ -176,6 +176,53 @@ class EnvelopedLogFilesTest {
     }
 
     @Test
+    void shouldPublishRotatedFileWithoutLeavingTempBehind() throws IOException {
+        envelopedLogFiles.initialise();
+
+        var data = EIGHT_BYTES_MESSAGE.getBytes(StandardCharsets.UTF_8);
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        while (mirroringRepository.logVersionsRange().to() < BASE_VERSION + 1) {
+            writeData(writeChannel, data);
+        }
+        writeChannel.prepareForFlush().flush();
+
+        assertThat(mirroringRepository.logVersions(false)).contains(BASE_VERSION, BASE_VERSION + 1);
+        // the new file was written to a temp name and atomically renamed into place
+        assertThat(fs.fileExists(mirroringRepository.tempPath())).isFalse();
+
+        var foundRotatedFile = false;
+        try (var metadata = envelopedLogFiles.logFilesMetadata()) {
+            while (metadata.next()) {
+                if (metadata.get().version() == BASE_VERSION + 1) {
+                    assertThat(metadata.get().logHeader().getLogVersion()).isEqualTo(BASE_VERSION + 1);
+                    foundRotatedFile = true;
+                }
+            }
+        }
+        assertThat(foundRotatedFile).isTrue();
+    }
+
+    @Test
+    void shouldDiscardStaleTempFileBeforeCreatingNewFile() throws IOException {
+        envelopedLogFiles.initialise();
+
+        // a crash left an unpublished stage file behind
+        var staleTemp = mirroringRepository.createWriteChannelAt(mirroringRepository.tempPath(), BASE_VERSION + 1);
+        staleTemp.channel().close();
+        assertThat(fs.fileExists(mirroringRepository.tempPath())).isTrue();
+
+        var data = EIGHT_BYTES_MESSAGE.getBytes(StandardCharsets.UTF_8);
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        while (mirroringRepository.logVersionsRange().to() < BASE_VERSION + 1) {
+            writeData(writeChannel, data);
+        }
+        writeChannel.prepareForFlush().flush();
+
+        assertThat(mirroringRepository.logVersions(false)).contains(BASE_VERSION, BASE_VERSION + 1);
+        assertThat(fs.fileExists(mirroringRepository.tempPath())).isFalse();
+    }
+
+    @Test
     void shouldReInitializeCorrectlyAfterRestart() throws IOException {
         assertThat(mirroringRepository.isEmpty()).isTrue();
         envelopedLogFiles.initialise();

@@ -64,6 +64,10 @@ public class SequentialFileNameHelper {
         return this.directory;
     }
 
+    public Path baseName() {
+        return baseName;
+    }
+
     public static long getVersion(Path path) {
         String filename = path.getFileName().toString();
         int index = filename.lastIndexOf(VERSION_SUFFIX);

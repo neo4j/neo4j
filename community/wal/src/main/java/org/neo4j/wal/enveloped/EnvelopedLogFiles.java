@@ -197,6 +197,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     public long initialise() throws IOException {
         clearCache();
         logsRepository.initialise();
+        logsRepository.deleteTempFileIfPresent();
         return recoverLogTail(0, true);
     }
 
@@ -652,11 +653,14 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
 
     private LogChannelContext<StoreChannel> createNewStoreChannel(long version, LogHeader logHeader)
             throws IOException {
-        var logChannelCtx = logsRepository.createWriteChannel(version);
-        channelNativeAccessor.preallocateSpace(logChannelCtx.channel(), maxFileSize, logChannelCtx.path());
+        logsRepository.deleteTempFileIfPresent(); // discard a temp file left over from a crash
+        var tempPath = logsRepository.tempPath();
+        var logChannelCtx = logsRepository.createWriteChannelAt(tempPath, version);
+        channelNativeAccessor.preallocateSpace(logChannelCtx.channel(), maxFileSize, tempPath);
         logChannelCtx.channel().position(0);
         LogFormat.writeLogHeader(logChannelCtx.channel(), logHeader, memoryTracker);
-        logChannelCtx.channel().flush(); // ensure header and metadata is flushed to disk
+        logChannelCtx.channel().force(true); // persist header and file size before the file becomes visible
+        logsRepository.publishTempFile(version); // atomic rename so a reader never sees a header-less file
         logChannelCtx.channel().position(segmentBlockSize);
         logHeaderCache.cache(logHeader);
         return logChannelCtx;

@@ -275,4 +275,44 @@ class LogsRepositoryTest {
 
     @Test
     void shouldDeleteFiles() {}
+
+    @Test
+    void shouldExcludeTempFileFromLogVersionRange() throws IOException {
+        createLogFile(1);
+        createFile(logRepository.tempPath());
+
+        assertThat(logRepository.logVersions(false)).containsExactly(1L);
+        assertThat(fs.listFiles(directory))
+                .containsExactlyInAnyOrder(directory.resolve(BASE_NAME + ".1"), logRepository.tempPath());
+    }
+
+    @Test
+    void deleteTempFileIfPresentRemovesTheTempFile() throws IOException {
+        createLogFile(1);
+        createFile(logRepository.tempPath());
+
+        logRepository.deleteTempFileIfPresent();
+
+        assertThat(fs.fileExists(logRepository.tempPath())).isFalse();
+        assertThat(fs.listFiles(directory)).containsExactly(directory.resolve(BASE_NAME + ".1"));
+    }
+
+    @Test
+    void createWriteChannelAtPublishesUnderFinalName() throws IOException {
+        var version = 7L;
+        var tempPath = logRepository.tempPath();
+
+        var context = logRepository.createWriteChannelAt(tempPath, version);
+        assertThat(context.path()).isEqualTo(logRepository.pathFor(version));
+        assertThat(context.version()).isEqualTo(version);
+        context.channel().close();
+
+        assertThat(fs.fileExists(tempPath)).isTrue();
+        assertThat(fs.fileExists(logRepository.pathFor(version))).isFalse();
+
+        logRepository.publishTempFile(version);
+
+        assertThat(fs.fileExists(tempPath)).isFalse();
+        assertThat(fs.fileExists(logRepository.pathFor(version))).isTrue();
+    }
 }
