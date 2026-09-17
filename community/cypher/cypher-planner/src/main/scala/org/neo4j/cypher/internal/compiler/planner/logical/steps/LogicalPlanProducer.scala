@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.IrHint
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentGraphTypeClause
+import org.neo4j.cypher.internal.ast.ShowCurrentUserClause
 import org.neo4j.cypher.internal.ast.ShowDatabasesClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
@@ -288,6 +289,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowCurrentGraphType
+import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabases
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
@@ -3492,6 +3494,16 @@ case class LogicalPlanProducer(
           removeUnneededVariables(s.unfilteredColumns.columns, s.yieldItems)
         ShowSettings(s.names, showColumns, yieldColumns, s.yieldAll, relevantVariables, inner.availableSymbols)
       // System database only commands
+      case s: ShowCurrentUserClause =>
+        val (relevantVariables, showColumns, yieldColumns) =
+          removeUnneededVariables(s.unfilteredColumns.columns, s.yieldItems)
+        ShowCurrentUser(
+          showColumns,
+          yieldColumns,
+          s.yieldAll,
+          relevantVariables,
+          inner.availableSymbols
+        )
       case s: ShowDatabasesClause =>
         val (relevantVariables, showColumns, yieldColumns) =
           removeUnneededVariables(s.unfilteredColumns.columns, s.yieldItems)

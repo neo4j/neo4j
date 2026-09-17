@@ -96,14 +96,6 @@ case class ShowUsers(
   returns: Option[Return]
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
-case class ShowCurrentUser(
-  override val returnColumns: List[LogicalVariable],
-  yields: Option[Yield],
-  returns: Option[Return]
-)(
-  implicit idGen: IdGen
-) extends SecurityAdministrationLogicalPlan(None)
-
 case class CreateUser(
   source: SecurityAdministrationLogicalPlan,
   userName: Either[String, Parameter],

@@ -1030,7 +1030,6 @@ showAdminCommand
       showAliases
       | showAuthRulePrivileges
       | showAuthRules
-      | showCurrentUser
       | showPrivileges
       | showRolePrivileges
       | showRoles
@@ -1087,6 +1086,7 @@ composableShowCommandClauses
       showIndexCommand
       | showConstraintCommand
       | showCurrentGraphTypeCommand
+      | showCurrentUser
       | showFunctions
       | showProcedures
       | showSettings
@@ -1637,7 +1637,7 @@ showUsers
    ;
 
 showCurrentUser
-   : CURRENT USER showCommandYield?
+   : CURRENT USER showCommandYieldWhere?
    ;
 
 // Privilege commands

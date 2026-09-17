@@ -134,7 +134,6 @@ import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowAuthRuleAction
 import org.neo4j.cypher.internal.ast.ShowAuthRules
 import org.neo4j.cypher.internal.ast.ShowAuthRulesPrivileges
-import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
@@ -421,9 +420,6 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           su.yields,
           su.returns
         ))
-
-      // SHOW CURRENT USER
-      case su: ShowCurrentUser => Some(plans.ShowCurrentUser(su.defaultColumnNames.map(varFor), su.yields, su.returns))
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH [PLAINTEXT | ENCRYPTED] PASSWORD password
       case c @ CreateUser(userName, userOptions, ifExistsDo, externalAuths, nativeAuth, tags) =>

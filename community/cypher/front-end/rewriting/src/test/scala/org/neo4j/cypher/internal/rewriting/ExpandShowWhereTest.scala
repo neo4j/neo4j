@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.ReadAdministrationCommand
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
-import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUsers
@@ -170,14 +169,6 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
     )
   }
 
-  test("SHOW CURRENT USER") {
-    assertRewrite(
-      "SHOW CURRENT USER WHERE name STARTS WITH 'g'",
-      "SHOW CURRENT USER YIELD * WHERE name STARTS WITH 'g'",
-      List("user", "roles", "passwordChangeRequired", "suspended", "home")
-    )
-  }
-
   test("SHOW AUTH RULES") {
     assertRewrite(
       "SHOW AUTH RULES WHERE name STARTS WITH 'g'",
@@ -215,9 +206,6 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
     // defaultColumnSet via copy(). Align expected to the rewriter's view.
     val updatedExpected = (withYield, result) match {
       case (e: ShowUsers, r: ShowUsers) =>
-        r.defaultColumnSet.map(_.name) shouldBe expectedDefaultColumns
-        e.copy(defaultColumnSet = r.defaultColumnSet)(e.position)
-      case (e: ShowCurrentUser, r: ShowCurrentUser) =>
         r.defaultColumnSet.map(_.name) shouldBe expectedDefaultColumns
         e.copy(defaultColumnSet = r.defaultColumnSet)(e.position)
       case _ => withYield

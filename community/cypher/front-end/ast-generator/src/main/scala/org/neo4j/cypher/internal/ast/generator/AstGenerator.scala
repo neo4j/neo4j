@@ -363,7 +363,7 @@ import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentGraphTypeClause
-import org.neo4j.cypher.internal.ast.ShowCurrentUser
+import org.neo4j.cypher.internal.ast.ShowCurrentUserClause
 import org.neo4j.cypher.internal.ast.ShowDatabasesClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexAction
@@ -2649,7 +2649,9 @@ class AstGenerator(
       (item: List[CommandResultItem], all: Boolean, w: With) =>
         ShowCurrentGraphTypeClause(asGraph, None, item, all, Some(w))(pos),
       (item: List[CommandResultItem], all: Boolean, w: With) =>
-        ShowDatabasesClause(scope, None, item, all, Some(w), cypher5ColumnsOnly = false)(pos)
+        ShowDatabasesClause(scope, None, item, all, Some(w), cypher5ColumnsOnly = false)(pos),
+      (item: List[CommandResultItem], all: Boolean, w: With) =>
+        ShowCurrentUserClause(None, item, all, Some(w))(pos)
     )
     clause = if (usesCypher5) clauseCypher5 else clauseCypher25orAbove
   } yield {
@@ -2743,6 +2745,7 @@ class AstGenerator(
         _terminateTransactions,
         _showSettings,
         _showDatabases,
+        _showCurrentUser,
         _combinedCommands
       )
     } else {
@@ -2756,6 +2759,7 @@ class AstGenerator(
         _terminateTransactions,
         _showSettings,
         _showDatabases,
+        _showCurrentUser,
         _combinedCommands
       )
     }
@@ -3437,9 +3441,29 @@ class AstGenerator(
     if (usesCypher5) false else asCommands
   )(pos)
 
-  def _showCurrentUser: Gen[ShowCurrentUser] = for {
+  def _showCurrentUser: Gen[SingleQuery] = for {
+    use <- option(_use)
     yields <- _eitherYieldOrWhere
-  } yield ShowCurrentUser(yields)(pos)
+    yieldAll <- boolean
+  } yield {
+    val showClauses = yields match {
+      case Some(Right(w)) =>
+        Seq(ShowCurrentUserClause(Some(w), List.empty, yieldAll = false, None)(pos))
+      case Some(Left((y, r))) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(ShowCurrentUserClause(None, yi, yieldAll = false, Some(w))(pos)) ++ r
+      case _ if yieldAll =>
+        Seq(ShowCurrentUserClause(
+          None,
+          List.empty,
+          yieldAll = true,
+          Some(getFullWithStarFromYield)
+        )(pos))
+      case _ =>
+        Seq(ShowCurrentUserClause(None, List.empty, yieldAll = false, None)(pos))
+    }
+    SingleQuery(use.map(u => u +: showClauses).getOrElse(showClauses))(pos)
+  }
 
   def _eitherYieldOrWhere: Gen[YieldOrWhere] = for {
     yields <- _yield
@@ -3577,9 +3601,9 @@ class AstGenerator(
 
   def _userCommand: Gen[AdministrationCommand] =
     if (usesCypher5)
-      oneOf(_showUsers, _showCurrentUser, _createUser, _renameUser, _dropUser, _alterUser, _setOwnPassword)
+      oneOf(_showUsers, _createUser, _renameUser, _dropUser, _alterUser, _setOwnPassword)
     else
-      oneOf(_showUsers, _showCurrentUser, _createUser, _renameUser, _dropUser, _alterUser, _alterUsers, _setOwnPassword)
+      oneOf(_showUsers, _createUser, _renameUser, _dropUser, _alterUser, _alterUsers, _setOwnPassword)
 
   // Auth rule commands
 

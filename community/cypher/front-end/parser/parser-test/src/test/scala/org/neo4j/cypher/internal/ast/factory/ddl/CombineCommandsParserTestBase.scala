@@ -115,4 +115,12 @@ class CombineCommandsParserTestBase extends AdministrationAndSchemaCommandParser
   ): InputPosition => ast.CommandClause =
     ast.ShowDatabasesClause(dbScope, where.map(_._1), yieldItems, yieldAll, yieldWith, cypher5ColumnsOnly = false)
 
+  protected def showCurrentUser(
+    where: Option[(ast.Where, InputPosition)],
+    yieldAll: Boolean,
+    yieldItems: List[ast.CommandResultItem],
+    yieldWith: Option[ast.With]
+  ): InputPosition => ast.CommandClause =
+    ast.ShowCurrentUserClause(where.map(_._1), yieldItems, yieldAll, yieldWith)
+
 }

@@ -190,6 +190,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
+import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabases
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
@@ -247,6 +248,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEf
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ValuePopulatingReferenceByName
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowCurrentUserCommunityCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowDatabaseCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowFunctionsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand
@@ -1422,6 +1424,10 @@ case class InterpretedPipeMapper(
         CommandPipe(ShowSettingsCommand(newNames, s.defaultColumns, s.yieldColumns, cypherVersion))(id)
 
       // System database only
+
+      case s: ShowCurrentUser =>
+        CommandPipe(ShowCurrentUserCommunityCommand(s.defaultColumns, s.yieldColumns))(id)
+
       case s: ShowDatabases =>
         CommandPipe(ShowDatabaseCommand(s.dbScope, s.defaultColumns, s.yieldColumns, cypherVersion))(id)
 

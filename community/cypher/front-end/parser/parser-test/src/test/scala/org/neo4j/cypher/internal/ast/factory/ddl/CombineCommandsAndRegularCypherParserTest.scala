@@ -206,6 +206,26 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       }
     }
 
+    test(s"SHOW CURRENT USER $otherClause") {
+      parsesIn[ast.Statements] {
+        case Cypher5 => _.withMessageStart("Invalid input")
+        case _ =>
+          val expectedClauses =
+            showCurrentUser(None, yieldAll = false, List.empty, None)(pos) +: clauseSeq
+          _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
+      }
+    }
+
+    test(s"$otherClause SHOW CURRENT USER") {
+      parsesIn[ast.Statements] {
+        case Cypher5 => _.withMessageStart("Invalid input")
+        case _ =>
+          val expectedClauses =
+            clauseSeq :+ showCurrentUser(None, yieldAll = false, List.empty, None)(pos)
+          _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
+      }
+    }
+
   }
 
   for {
@@ -219,7 +239,11 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       ("SHOW TRANSACTIONS tx", showTx(ExpressionNames(varFor("tx")), _, _, _, _)),
       ("TERMINATE TRANSACTION tx", terminateTx(ExpressionNames(varFor("tx")), _, _, _, _)),
       ("SHOW CURRENT GRAPH TYPE", showCurrentGraphType(false, _, _, _, _)),
-      ("SHOW DATABASE foo", showDatabase(ast.SingleNamedDatabaseScope(ast.NamespacedName("foo")(pos))(pos), _, _, _, _))
+      (
+        "SHOW DATABASE foo",
+        showDatabase(ast.SingleNamedDatabaseScope(ast.NamespacedName("foo")(pos))(pos), _, _, _, _)
+      ),
+      ("SHOW CURRENT USER", showCurrentUser _)
     )
   } {
     val maybeUseClause = if (prefix.nonEmpty) Some(use(List("neo4j"), resolveStrictly = true)) else None
@@ -240,6 +264,9 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           )
           else if (command.contains("DATABASE")) _.withSyntaxErrorContaining(
             "Invalid input 'WITH': expected a database name, 'WHERE', 'YIELD' or <EOF>"
+          )
+          else if (command.contains("USER")) _.withSyntaxErrorContaining(
+            "Invalid input 'WITH': expected 'WHERE', 'YIELD' or <EOF>"
           )
           else _.withSyntaxErrorContaining(
             "Invalid input 'WITH': expected an expression, 'WHERE', 'YIELD' or <EOF>"
@@ -318,6 +345,9 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           else if (command.contains("DATABASE")) _.withSyntaxErrorContaining(
             "Invalid input 'WITH': expected a database name, 'WHERE', 'YIELD' or <EOF>"
           )
+          else if (command.contains("USER")) _.withSyntaxErrorContaining(
+            "Invalid input 'WITH': expected 'WHERE', 'YIELD' or <EOF>"
+          )
           else _.withSyntaxErrorContaining(
             "Invalid input 'WITH': expected an expression, 'WHERE', 'YIELD' or <EOF>"
           )
@@ -375,6 +405,9 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           else if (command.contains("DATABASE")) _.withSyntaxErrorContaining(
             "Invalid input 'RETURN': expected a database name, 'WHERE', 'YIELD' or <EOF>"
           )
+          else if (command.contains("USER")) _.withSyntaxErrorContaining(
+            "Invalid input 'RETURN': expected 'WHERE', 'YIELD' or <EOF>"
+          )
           else _.withSyntaxErrorContaining(
             "Invalid input 'RETURN': expected an expression, 'WHERE', 'YIELD' or <EOF>"
           )
@@ -402,6 +435,9 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           )
           else if (command.contains("DATABASE")) _.withSyntaxErrorContaining(
             "Invalid input 'WITH': expected a database name, 'WHERE', 'YIELD' or <EOF>"
+          )
+          else if (command.contains("USER")) _.withSyntaxErrorContaining(
+            "Invalid input 'WITH': expected 'WHERE', 'YIELD' or <EOF>"
           )
           else _.withSyntaxErrorContaining(
             "Invalid input 'WITH': expected an expression, 'WHERE', 'YIELD' or <EOF>"
@@ -431,6 +467,9 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           )
           else if (command.contains("DATABASE")) _.withSyntaxErrorContaining(
             "Invalid input 'WITH': expected a database name, 'WHERE', 'YIELD' or <EOF>"
+          )
+          else if (command.contains("USER")) _.withSyntaxErrorContaining(
+            "Invalid input 'WITH': expected 'WHERE', 'YIELD' or <EOF>"
           )
           else _.withSyntaxErrorContaining(
             "Invalid input 'WITH': expected an expression, 'WHERE', 'YIELD' or <EOF>"
@@ -484,6 +523,9 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           )
           else if (command.contains("DATABASE")) _.withSyntaxErrorContaining(
             "Invalid input 'UNWIND': expected a database name, 'WHERE', 'YIELD' or <EOF>"
+          )
+          else if (command.contains("USER")) _.withSyntaxErrorContaining(
+            "Invalid input 'UNWIND': expected 'WHERE', 'YIELD' or <EOF>"
           )
           else _.withSyntaxErrorContaining(
             "Invalid input 'UNWIND': expected an expression, 'WHERE', 'YIELD' or <EOF>"
@@ -1138,6 +1180,14 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
     }
 
     test(s"$otherClause SHOW DEFAULT DATABASE") {
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
+    }
+
+    test(s"SHOW CURRENT USER $otherClause") {
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
+    }
+
+    test(s"$otherClause SHOW CURRENT USER") {
       failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 

@@ -148,7 +148,6 @@ import org.neo4j.cypher.internal.logical.plans.RevokeRoleFromUser
 import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
 import org.neo4j.cypher.internal.logical.plans.ShowAliases
 import org.neo4j.cypher.internal.logical.plans.ShowAuthRules
-import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabases
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowPrivilegeCommands
@@ -400,8 +399,6 @@ class AdminLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
       attach(ShowUsers(privLhsLP, withAuth = false, asCommands = true, List(), None, None), 1.0),
       adminPlanDescription
     )
-
-    assertGood(attach(ShowCurrentUser(List(), None, None), 1.0), adminPlanDescription)
 
     assertGood(
       attach(

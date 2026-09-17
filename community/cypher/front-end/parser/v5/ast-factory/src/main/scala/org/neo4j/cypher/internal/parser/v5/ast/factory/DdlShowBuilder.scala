@@ -66,7 +66,7 @@ import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
-import org.neo4j.cypher.internal.ast.ShowCurrentUser
+import org.neo4j.cypher.internal.ast.ShowCurrentUserClause
 import org.neo4j.cypher.internal.ast.ShowDatabasesClause
 import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
@@ -514,9 +514,8 @@ trait DdlShowBuilder extends Cypher5ParserListener {
   final override def exitShowCurrentUser(
     ctx: Cypher5Parser.ShowCurrentUserContext
   ): Unit = {
-    ctx.ast = ShowCurrentUser(
-      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
-    )(pos(ctx))
+    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
+      .buildShowCurrentUser(pos(ctx.getParent))
   }
 
   final override def exitShowSupportedPrivileges(
@@ -695,6 +694,17 @@ object DdlShowBuilder {
           yieldAll,
           yieldClause.map(turnYieldToWith),
           where.map(_.position)
+        )(position)
+      )
+    }
+
+    def buildShowCurrentUser(position: InputPosition): Seq[Clause] = {
+      buildClauses(
+        ShowCurrentUserClause(
+          where,
+          yieldedItems,
+          yieldAll,
+          yieldClause.map(turnYieldToWith)
         )(position)
       )
     }

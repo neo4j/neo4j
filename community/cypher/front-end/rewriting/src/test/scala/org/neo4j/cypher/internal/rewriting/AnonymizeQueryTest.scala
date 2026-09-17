@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.ast.ShowAuthRules
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentGraphTypeClause
-import org.neo4j.cypher.internal.ast.ShowCurrentUser
+import org.neo4j.cypher.internal.ast.ShowCurrentUserClause
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoles
@@ -417,18 +417,25 @@ class AnonymizeQueryTest extends AnonymizerTestBase {
       "SHOW DATABASE foo",
       "SHOW DATABASE foo"
     )
+    assertRewrite(
+      "SHOW CURRENT USER YIELD home",
+      "SHOW CURRENT USER YIELD home AS Xhome",
+      additionalExpectedAstUpdates = expectedStatement => {
+        expectedStatement.endoRewrite(bottomUp(Rewriter.lift {
+          case s: ShowCurrentUserClause =>
+            // Update WITH clause to 'keep' correct default order
+            val updatedWithClause = s.yieldWith.map(w => {
+              val updatedReturnItems =
+                w.returnItems.copy(defaultOrderOnColumns = Some(List("home")))(w.returnItems.position)
+              w.copy(returnItems = updatedReturnItems)(w.position)
+            })
+            s.copy(yieldWith = updatedWithClause)(s.position)
+        }))
+      }
+    )
   }
 
   test("administration user commands") {
-    assertRewrite(
-      "SHOW CURRENT USER YIELD home",
-      "SHOW CURRENT USER YIELD Xhome",
-      additionalExpectedAstUpdates = _ match {
-        case s: ShowCurrentUser =>
-          s.copy(defaultColumnSet = rewriteAdminShowDefaultColumnSet(s.defaultColumnSet))(s.position)
-        case s => s
-      }
-    )
     assertRewrite(
       "SHOW USERS WHERE user IN ['user1', $userParam]",
       "SHOW USERS WHERE Xuser IN ['string[user1]', $XuserParam]",

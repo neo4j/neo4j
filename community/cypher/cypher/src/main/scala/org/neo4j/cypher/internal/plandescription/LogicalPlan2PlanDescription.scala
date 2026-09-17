@@ -298,6 +298,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowCurrentGraphType
+import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabases
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
@@ -2220,6 +2221,19 @@ case class LogicalPlan2PlanDescription(
         )
 
       // System database only commands
+
+      case s: ShowCurrentUser =>
+        val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
+        PlanDescriptionImpl(
+          id,
+          "ShowCurrentUser",
+          children,
+          Seq(Details(colsDescription)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
       case s: ShowDatabases =>
         val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
         val scopeDescription: PartialFunction[DatabaseScope, PrettyString] = {

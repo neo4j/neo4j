@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
-import org.neo4j.cypher.internal.ast.ShowCurrentUser
+import org.neo4j.cypher.internal.ast.ShowCurrentUserClause
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
@@ -265,23 +265,87 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
   // Show current user
 
   test("SHOW CURRENT USER") {
-    parsesTo[Statements](ShowCurrentUser(None)(pos))
+    assertAst(
+      singleQuery(ShowCurrentUserClause(None, List.empty, yieldAll = false, None)(defaultPos))
+    )
   }
 
   test("SHOW CURRENT USER YIELD * WHERE suspended = false RETURN roles") {
-    val suspendedVar = varFor("suspended")
-    val yield_ = yieldClause(returnAllItems, where = Some(where(equals(suspendedVar, falseLiteral))))
-    val return_ = returnClause(returnItems(variableReturnItem("roles")))
-    val yieldOrWhere = Some(Left(yield_ -> Some(return_)))
-    parsesTo[Statements](ShowCurrentUser(yieldOrWhere)(pos))
+    assertAst(
+      singleQuery(
+        ShowCurrentUserClause(
+          None,
+          List.empty,
+          yieldAll = true,
+          Some(withFromYield(returnAllItems, where = Some(where(equals(varFor("suspended"), falseLiteral)))))
+        )(defaultPos),
+        return_(variableReturnItem("roles"))
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW CURRENT USER YIELD *") {
-    parsesTo[Statements](ShowCurrentUser(Some(Left((yieldClause(returnAllItems), None))))(pos))
+    assertAst(
+      singleQuery(
+        ShowCurrentUserClause(
+          None,
+          List.empty,
+          yieldAll = true,
+          Some(withFromYield(returnAllItems))
+        )(defaultPos)
+      ),
+      comparePosition = false
+    )
   }
 
   test("SHOW CURRENT USER WHERE user = 'GRANTED'") {
-    parsesTo[Statements](ShowCurrentUser(Some(Right(where(equals(varUser, grantedString)))))(pos))
+    assertAst(
+      singleQuery(
+        ShowCurrentUserClause(
+          Some(where(equals(varUser, grantedString))),
+          List.empty,
+          yieldAll = false,
+          None
+        )(defaultPos)
+      ),
+      comparePosition = false
+    )
+  }
+
+  test("USE system SHOW CURRENT USER") {
+    assertAstVersionBased(
+      cypher5 =>
+        singleQuery(
+          use(List("system"), !cypher5),
+          ShowCurrentUserClause(None, List.empty, yieldAll = false, None)(defaultPos)
+        ),
+      comparePosition = false
+    )
+  }
+
+  test("SHOW CURRENT USER RETURN *") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'RETURN'")
+      case _ => _.toAstPositioned(singleQuery(
+          ShowCurrentUserClause(None, List.empty, yieldAll = false, None)(defaultPos),
+          returnAll
+        ))
+    }
+  }
+
+  test("SHOW CURRENT USER WITH AUTH") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'WITH': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 19 (offset: 18))
+            |"SHOW CURRENT USER WITH AUTH"
+            |                   ^""".stripMargin
+        )
+      case _ => _.toAstPositioned(singleQuery(
+          ShowCurrentUserClause(None, List.empty, yieldAll = false, None)(defaultPos),
+          with_(variableReturnItem("AUTH"))
+        ))
+    }
   }
 
   // fails parsing
@@ -329,13 +393,5 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
             |              ^""".stripMargin
         )
     }
-  }
-
-  test("SHOW CURRENT USER WITH AUTH") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'WITH': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 19 (offset: 18))
-        |"SHOW CURRENT USER WITH AUTH"
-        |                   ^""".stripMargin
-    )
   }
 }

@@ -221,7 +221,7 @@ import org.neo4j.cypher.internal.ast.ShowAuthRules
 import org.neo4j.cypher.internal.ast.ShowAuthRulesPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentGraphTypeClause
-import org.neo4j.cypher.internal.ast.ShowCurrentUser
+import org.neo4j.cypher.internal.ast.ShowCurrentUserClause
 import org.neo4j.cypher.internal.ast.ShowDatabasesClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
@@ -571,10 +571,6 @@ case class Prettifier(
         val auth = if (withAuth) " WITH AUTH" else ""
         val asCmds = if (asCommands) " AS COMMANDS" else ""
         s"${x.name}$auth$asCmds$y$r"
-
-      case x @ ShowCurrentUser(yields, _) =>
-        val (y: String, r: String) = showClausesAsString(yields)
-        s"${x.name}$y$r"
 
       case x @ CreateUser(userName, userOptions, ifExistsDo, externalAuths, nativeAuth, tags) =>
         val userNameString = Prettifier.escapeName(userName)
@@ -1193,6 +1189,7 @@ case class Prettifier(
       case s: ShowTransactionsClause      => asString(s)
       case t: TerminateTransactionsClause => asString(t)
       case s: ShowSettingsClause          => asString(s)
+      case s: ShowCurrentUserClause       => asString(s)
       case s: ShowDatabasesClause         => asString(s)
       case s: SetClause                   => asString(s)
       case r: Remove                      => asString(r)
@@ -1618,6 +1615,13 @@ case class Prettifier(
       val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
       val yielded = yieldAsString(s.yieldItems, s.yieldAll, s.yieldWith)
       s"$INDENT${s.name}$names$where$yielded"
+    }
+
+    def asString(s: ShowCurrentUserClause): String = {
+      val ind = indented()
+      val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
+      val yielded = yieldAsString(s.yieldItems, s.yieldAll, s.yieldWith)
+      s"$INDENT${s.name}$where$yielded"
     }
 
     def asString(s: ShowDatabasesClause): String = {

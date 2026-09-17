@@ -2524,6 +2524,15 @@ class PrettifierIT extends AbstractPrettifierTest {
         |  WHERE database = db
         |RETURN transactionId""".stripMargin
     ),
+    FailsInCypher5(
+      "show current user yield user, home show databases yield name as db, default WHERE db = home RETURN user, db, default",
+      """SHOW CURRENT USER
+        |YIELD user, home
+        |SHOW DATABASES
+        |YIELD name AS db, default
+        |  WHERE db = home
+        |RETURN user, db, default""".stripMargin
+    ),
 
     // combine show and terminate commands with regular Cypher
 
@@ -2615,20 +2624,20 @@ class PrettifierIT extends AbstractPrettifierTest {
         |  WHERE user = "neo4j"""".stripMargin,
     "Show Current User YIELD * where user = 'neo4j' Return *" ->
       """SHOW CURRENT USER
-        |  YIELD *
-        |    WHERE user = "neo4j"
-        |  RETURN *""".stripMargin,
+        |YIELD *
+        |  WHERE user = "neo4j"
+        |RETURN *""".stripMargin,
     "Show Current User YIELD * Return DISTINCT roles, user" ->
       """SHOW CURRENT USER
-        |  YIELD *
-        |  RETURN DISTINCT roles, user""".stripMargin,
+        |YIELD *
+        |RETURN DISTINCT roles, user""".stripMargin,
     "show current user yield user order by user skip 1 limit 1 where user='neo4j'" ->
       """SHOW CURRENT USER
-        |  YIELD user
-        |    ORDER BY user ASCENDING
-        |    SKIP 1
-        |    LIMIT 1
-        |    WHERE user = "neo4j"""".stripMargin,
+        |YIELD user
+        |  ORDER BY user ASCENDING
+        |  SKIP 1
+        |  LIMIT 1
+        |  WHERE user = "neo4j"""".stripMargin,
     "create user abc set password 'foo'" ->
       "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED",
     "create user abc set password $password" ->
@@ -5083,7 +5092,7 @@ class PrettifierIT extends AbstractPrettifierTest {
         |  WHERE `` = $``""".stripMargin,
     "SHOW CURRENT USER YIELD `` AS ``" ->
       """SHOW CURRENT USER
-        |  YIELD `` AS ``""".stripMargin,
+        |YIELD ``""".stripMargin,
     "USE `` CREATE USER `` SET PASSWORD $`` SET HOME DATABASE ``" ->
       """USE ``
         |CREATE USER `` SET PASSWORD $`` CHANGE REQUIRED SET HOME DATABASE ``""".stripMargin,

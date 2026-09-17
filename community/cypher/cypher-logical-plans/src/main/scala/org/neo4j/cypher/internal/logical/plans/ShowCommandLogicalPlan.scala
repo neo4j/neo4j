@@ -203,6 +203,25 @@ case class ShowSettings(
 
 // System database only commands
 
+case class ShowCurrentUser(
+  defaultColumns: List[CommandDefaultColumn],
+  yieldColumns: List[CommandYieldColumn],
+  yieldAll: Boolean,
+  columnVariables: Set[LogicalVariable],
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen) extends CommandLogicalPlan(idGen, argumentIds) {
+  override def commandDescription: String = "SHOW CURRENT USER"
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): ShowCurrentUser =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): ShowCurrentUser =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
 case class ShowDatabases(
   dbScope: DatabaseScope,
   defaultColumns: List[CommandDefaultColumn],

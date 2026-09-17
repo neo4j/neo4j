@@ -338,6 +338,14 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         showDatabase(ast.SingleNamedDatabaseScope(ast.NamespacedName("foo")(pos))(pos), _, _, _, _)
       )
     ) ++ Seq(
+      // show current user only combinations
+      CommandCombinationsNoNames(
+        "SHOW CURRENT USER",
+        showCurrentUser,
+        "SHOW CURRENT USER",
+        showCurrentUser
+      )
+    ) ++ Seq(
       // mixed show and terminate commands
       // excluding mixes of only those accepting string expressions,
       // as that is handled by `commandCombinationsAllowingStringExpressions`
@@ -421,6 +429,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW TRANSACTIONS 'db1-transaction-123'",
         showTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
+      CommandCombinationsNoNames(
+        "SHOW CURRENT USER",
+        showCurrentUser,
+        "SHOW TRANSACTIONS 'db1-transaction-123'",
+        showTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
+      ),
       // terminate transaction combined with remaining commands
       CommandCombinationsNoNames(
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
@@ -491,6 +505,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       CommandCombinationsNoNames(
         "SHOW DATABASE foo",
         showDatabase(ast.SingleNamedDatabaseScope(ast.NamespacedName("foo")(pos))(pos), _, _, _, _),
+        "TERMINATE TRANSACTIONS 'db1-transaction-123'",
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
+      ),
+      CommandCombinationsNoNames(
+        "SHOW CURRENT USER",
+        showCurrentUser,
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
         terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
@@ -567,6 +587,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW SETTINGS $setting",
         showSetting(ExpressionNames(parameter("setting", CTAny)), _, _, _, _)
       ),
+      CommandCombinationsNoNames(
+        "SHOW SETTINGS $setting",
+        showSetting(ExpressionNames(parameter("setting", CTAny)), _, _, _, _),
+        "SHOW CURRENT USER",
+        showCurrentUser
+      ),
       // show functions combined with remaining commands
       CommandCombinationsNoNames(
         "SHOW BUILT IN FUNCTIONS EXECUTABLE BY CURRENT USER",
@@ -628,6 +654,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW FUNCTIONS",
         showFunction(ast.AllFunctions, None, _, _, _, _)
       ),
+      CommandCombinationsNoNames(
+        "SHOW CURRENT USER",
+        showCurrentUser,
+        "SHOW FUNCTIONS",
+        showFunction(ast.AllFunctions, None, _, _, _, _)
+      ),
       // show procedures combined with remaining commands
       CommandCombinationsNoNames(
         "SHOW ALL CONSTRAINTS",
@@ -677,6 +709,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW DATABASES",
         showDatabase(ast.AllDatabasesScope()(pos), _, _, _, _)
       ),
+      CommandCombinationsNoNames(
+        "SHOW PROCEDURES",
+        showProcedure(None, _, _, _, _),
+        "SHOW CURRENT USER",
+        showCurrentUser
+      ),
       // show constraints combined with remaining commands
       CommandCombinationsNoNames(
         "SHOW ALL CONSTRAINTS",
@@ -714,6 +752,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW CONSTRAINTS",
         showConstraint(ast.AllConstraints, _, _, _, _)
       ),
+      CommandCombinationsNoNames(
+        "SHOW CURRENT USER",
+        showCurrentUser,
+        "SHOW CONSTRAINTS",
+        showConstraint(ast.AllConstraints, _, _, _, _)
+      ),
       // show indexes combined with remaining commands
       CommandCombinationsNoNames(
         "SHOW CURRENT GRAPH TYPE AS GRAPH",
@@ -739,6 +783,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW DATABASES",
         showDatabase(ast.AllDatabasesScope()(pos), _, _, _, _)
       ),
+      CommandCombinationsNoNames(
+        "SHOW FULLTEXT INDEXES",
+        showIndex(ast.FulltextIndexes, _, _, _, _),
+        "SHOW CURRENT USER",
+        showCurrentUser
+      ),
       // show current graph type combined with remaining commands
       CommandCombinationsNoNames(
         "SHOW CURRENT GRAPH TYPE",
@@ -751,6 +801,19 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         showDatabase(ast.HomeDatabaseScope()(pos), _, _, _, _),
         "SHOW CURRENT GRAPH TYPE",
         showCurrentGraphType(false, _, _, _, _)
+      ),
+      CommandCombinationsNoNames(
+        "SHOW CURRENT USER",
+        showCurrentUser,
+        "SHOW CURRENT GRAPH TYPE",
+        showCurrentGraphType(false, _, _, _, _)
+      ),
+      // show databases combined with remaining commands
+      CommandCombinationsNoNames(
+        "SHOW CURRENT USER",
+        showCurrentUser,
+        "SHOW DATABASES",
+        showDatabase(ast.AllDatabasesScope()(pos), _, _, _, _)
       )
     )
 
@@ -2020,6 +2083,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       "SHOW CONSTRAINTS YIELD a7, b7 AS c7, d7 AS d7, e7 AS f7, g7 AS e7 ORDER BY a7, b7, d7, e7 WHERE a7 AND b7 AND d7 AND e7 " +
       "SHOW CURRENT GRAPH TYPE YIELD a8, b8 AS c8, d8 AS d8, e8 AS f8, g8 AS e8 ORDER BY a8, b8, d8, e8 WHERE a8 AND b8 AND d8 AND e8 " +
       "SHOW HOME DATABASE YIELD a9, b9 AS c9, d9 AS d9, e9 AS f9, g9 AS e9 ORDER BY a9, b9, d9, e9 WHERE a9 AND b9 AND d9 AND e9 " +
+      "SHOW CURRENT USER YIELD a10, b10 AS c10, d10 AS d10, e10 AS f10, g10 AS e10 ORDER BY a10, b10, d10, e10 WHERE a10 AND b10 AND d10 AND e10 " +
       "RETURN *"
   ) {
     assertAstVersionAware(
@@ -2322,6 +2386,38 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
           ))
         ))
       )(pos),
+      showCurrentUser(
+        None,
+        yieldAll = false,
+        List(
+          commandResultItem("a10"),
+          commandResultItem("b10", Some("c10")),
+          commandResultItem("d10", Some("d10")),
+          commandResultItem("e10", Some("f10")),
+          commandResultItem("g10", Some("e10"))
+        ),
+        Some(withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("a10", "c10", "d10", "f10", "e10")),
+          Some(orderBy(
+            sortItem(varFor("a10")),
+            sortItem(varFor("c10")),
+            sortItem(varFor("d10")),
+            sortItem(varFor("e10"))
+          )),
+          where = Some(where(
+            and(
+              and(
+                and(
+                  varFor("a10"),
+                  varFor("c10")
+                ),
+                varFor("d10")
+              ),
+              varFor("e10")
+            )
+          ))
+        ))
+      )(pos),
       returnAll
     )
   }
@@ -2573,6 +2669,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       "SHOW CONSTRAINTS YIELD a " +
       "SHOW CURRENT GRAPH TYPE YIELD a " +
       "SHOW DATABASES YIELD a " +
+      "SHOW CURRENT USER YIELD a " +
       "SHOW TRANSACTIONS YIELD a " +
       "TERMINATE TRANSACTIONS 'id' YIELD a " +
       "SHOW SETTINGS YIELD a " +
@@ -2582,6 +2679,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       "SHOW CONSTRAINTS YIELD a " +
       "SHOW CURRENT GRAPH TYPE YIELD a " +
       "SHOW DATABASES YIELD a " +
+      "SHOW CURRENT USER YIELD a " +
       "SHOW TRANSACTIONS YIELD a " +
       "TERMINATE TRANSACTIONS 'id' YIELD a " +
       "SHOW SETTINGS YIELD a " +
@@ -2591,6 +2689,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       "SHOW CONSTRAINTS YIELD a " +
       "SHOW CURRENT GRAPH TYPE YIELD a " +
       "SHOW DATABASES YIELD a " +
+      "SHOW CURRENT USER YIELD a " +
       "SHOW TRANSACTIONS YIELD a " +
       "TERMINATE TRANSACTIONS 'id' YIELD a " +
       "SHOW SETTINGS YIELD a " +
@@ -2600,6 +2699,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       "SHOW CONSTRAINTS YIELD a " +
       "SHOW CURRENT GRAPH TYPE YIELD a " +
       "SHOW DATABASES YIELD a " +
+      "SHOW CURRENT USER YIELD a " +
       "RETURN *"
   ) {
     assertAstVersionAware(
@@ -2668,65 +2768,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       )(pos),
-      showTx(
-        NoNames,
-        None,
-        yieldAll = false,
-        List(commandResultItem("a")),
-        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
-      )(pos),
-      terminateTx(
-        ExpressionNames(literalString("id")),
-        None,
-        yieldAll = false,
-        List(commandResultItem("a")),
-        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
-      )(pos),
-      showSetting(
-        NoNames,
-        None,
-        yieldAll = false,
-        List(commandResultItem("a")),
-        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
-      )(pos),
-      showFunction(
-        ast.AllFunctions,
-        None,
-        None,
-        yieldAll = false,
-        List(commandResultItem("a")),
-        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
-      )(pos),
-      showProcedure(
-        None,
-        None,
-        yieldAll = false,
-        List(commandResultItem("a")),
-        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
-      )(pos),
-      showIndex(
-        ast.AllIndexes,
-        None,
-        yieldAll = false,
-        List(commandResultItem("a")),
-        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
-      )(pos),
-      showConstraint(
-        ast.AllConstraints,
-        None,
-        yieldAll = false,
-        List(commandResultItem("a")),
-        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
-      )(pos),
-      showCurrentGraphType(
-        asGraph = false,
-        None,
-        yieldAll = false,
-        List(commandResultItem("a")),
-        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
-      )(pos),
-      showDatabase(
-        ast.AllDatabasesScope()(pos),
+      showCurrentUser(
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2796,6 +2838,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       )(pos),
+      showCurrentUser(
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
       showTx(
         NoNames,
         None,
@@ -2855,6 +2903,82 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       )(pos),
       showDatabase(
         ast.AllDatabasesScope()(pos),
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      showCurrentUser(
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      showTx(
+        NoNames,
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      terminateTx(
+        ExpressionNames(literalString("id")),
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      showSetting(
+        NoNames,
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      showFunction(
+        ast.AllFunctions,
+        None,
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      showProcedure(
+        None,
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      showIndex(
+        ast.AllIndexes,
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      showConstraint(
+        ast.AllConstraints,
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      showCurrentGraphType(
+        asGraph = false,
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      showDatabase(
+        ast.AllDatabasesScope()(pos),
+        None,
+        yieldAll = false,
+        List(commandResultItem("a")),
+        Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
+      )(pos),
+      showCurrentUser(
         None,
         yieldAll = false,
         List(commandResultItem("a")),

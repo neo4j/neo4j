@@ -3615,6 +3615,75 @@ object ShowSettingsClause {
 
 // System graph only commands
 
+case class ShowCurrentUserClause(
+  briefUserColumns: List[ShowAndTerminateColumn],
+  allUserColumns: List[ShowAndTerminateColumn],
+  where: Option[Where],
+  yieldItems: List[CommandResultItem],
+  yieldAll: Boolean,
+  yieldWith: Option[With]
+)(val position: InputPosition) extends CommandClause with CommandClauseRouteToSystem {
+
+  override def name: String = "SHOW CURRENT USER"
+
+  private val useAllColumns = yieldItems.nonEmpty || yieldAll
+
+  val originalColumns: List[ShowAndTerminateColumn] =
+    if (useAllColumns) allUserColumns else briefUserColumns
+
+  private val briefColumns = briefUserColumns.map(c => ShowColumn(c.name, c.cypherType)(position))
+  private val allColumns = allUserColumns.map(c => ShowColumn(c.name, c.cypherType)(position))
+
+  val unfilteredColumns: DefaultOrAllShowColumns =
+    DefaultOrAllShowColumns(useAllColumns, briefColumns, allColumns)
+
+  override def moveWhereToProjection: CommandClause = copy(where = None)(position)
+  override def moveOutWith: CommandClause = copy(yieldWith = None)(position)
+
+  override def getClauseWithoutSubclauses: CommandClause =
+    copy(where = None, yieldItems = List.empty, yieldWith = None)(position)
+}
+
+object ShowCurrentUserClause {
+  val userColumn = "user"
+  val rolesColumn = "roles"
+  val pwdChangeReqColumn = "passwordChangeRequired"
+  val suspendedColumn = "suspended"
+  val homeColumn = "home"
+  val tagsColumn = "tags"
+
+  def apply(
+    where: Option[Where],
+    yieldItems: List[CommandResultItem],
+    yieldAll: Boolean,
+    yieldWith: Option[With]
+  )(position: InputPosition): ShowCurrentUserClause = {
+
+    // (column, brief)
+    val cols: List[(ShowAndTerminateColumn, Boolean)] = List(
+      (ShowAndTerminateColumn(userColumn), true),
+      (ShowAndTerminateColumn(rolesColumn, CTList(CTString)), true),
+      (ShowAndTerminateColumn(pwdChangeReqColumn, CTBoolean), true),
+      (ShowAndTerminateColumn(suspendedColumn, CTBoolean), true),
+      (ShowAndTerminateColumn(homeColumn), true),
+      // The `tags` column is exposed regardless of the `SemanticFeature.UserTags` flag.
+      (ShowAndTerminateColumn(tagsColumn, CTList(CTString)), false)
+    )
+
+    val briefCols = cols.filter(_._2).map(_._1)
+    val allCols = cols.map(_._1)
+
+    ShowCurrentUserClause(
+      briefCols,
+      allCols,
+      where,
+      yieldItems,
+      yieldAll,
+      yieldWith
+    )(position)
+  }
+}
+
 case class ShowDatabasesClause(
   dbScope: DatabaseScope,
   briefDatabaseColumns: List[ShowAndTerminateColumn],

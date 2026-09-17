@@ -474,37 +474,6 @@ object ShowUsers {
   }
 }
 
-final case class ShowCurrentUser(
-  override val yieldOrWhere: YieldOrWhere,
-  override val defaultColumnSet: List[ShowColumn]
-)(val position: InputPosition) extends ReadAdministrationCommand {
-
-  override def name: String = "SHOW CURRENT USER"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck
-
-  override def withYieldOrWhere(newYieldOrWhere: YieldOrWhere): ShowCurrentUser =
-    this.copy(yieldOrWhere = newYieldOrWhere)(position)
-}
-
-object ShowCurrentUser {
-
-  def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowCurrentUser = {
-    val allColumns: List[(ShowColumn, DefaultOrAllShowColumns.ShowByDefault)] = List(
-      (ShowColumn("user")(position), true),
-      (ShowColumn("roles", CTList(CTString))(position), true),
-      (ShowColumn("passwordChangeRequired", CTBoolean)(position), true),
-      (ShowColumn("suspended", CTBoolean)(position), true),
-      (ShowColumn("home")(position), true),
-      // The `tags` column is exposed regardless of the `SemanticFeature.UserTags` flag.
-      (ShowColumn("tags", CTList(CTString))(position), false)
-    )
-    val columns = DefaultOrAllShowColumns(allColumns, yieldOrWhere).columns
-    ShowCurrentUser(yieldOrWhere, columns)(position)
-  }
-}
-
 sealed trait UserAuth extends SemanticAnalysisTooling {
   protected def newStyleAuth: List[Auth]
   protected def oldStyleAuth: Option[Auth]

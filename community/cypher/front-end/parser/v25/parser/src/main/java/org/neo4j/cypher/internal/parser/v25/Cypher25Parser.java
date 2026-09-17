@@ -15963,9 +15963,6 @@ public class Cypher25Parser extends Parser {
 		public ShowAuthRulesContext showAuthRules() {
 			return getRuleContext(ShowAuthRulesContext.class,0);
 		}
-		public ShowCurrentUserContext showCurrentUser() {
-			return getRuleContext(ShowCurrentUserContext.class,0);
-		}
 		public ShowPrivilegesContext showPrivileges() {
 			return getRuleContext(ShowPrivilegesContext.class,0);
 		}
@@ -16001,7 +15998,7 @@ public class Cypher25Parser extends Parser {
 			{
 			setState(2705);
 			match(SHOW);
-			setState(2717);
+			setState(2716);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,265,_ctx) ) {
 			case 1:
@@ -16025,48 +16022,42 @@ public class Cypher25Parser extends Parser {
 			case 4:
 				{
 				setState(2709);
-				showCurrentUser();
+				showPrivileges();
 				}
 				break;
 			case 5:
 				{
 				setState(2710);
-				showPrivileges();
+				showRolePrivileges();
 				}
 				break;
 			case 6:
 				{
 				setState(2711);
-				showRolePrivileges();
+				showRoles();
 				}
 				break;
 			case 7:
 				{
 				setState(2712);
-				showRoles();
+				showServers();
 				}
 				break;
 			case 8:
 				{
 				setState(2713);
-				showServers();
+				showSupportedPrivileges();
 				}
 				break;
 			case 9:
 				{
 				setState(2714);
-				showSupportedPrivileges();
+				showUserPrivileges();
 				}
 				break;
 			case 10:
 				{
 				setState(2715);
-				showUserPrivileges();
-				}
-				break;
-			case 11:
-				{
-				setState(2716);
 				showUsers();
 				}
 				break;
@@ -16106,20 +16097,20 @@ public class Cypher25Parser extends Parser {
 		enterRule(_localctx, 370, RULE_showCommandYield);
 		int _la;
 		try {
-			setState(2724);
+			setState(2723);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case YIELD:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(2719);
+				setState(2718);
 				yieldClause();
-				setState(2721);
+				setState(2720);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				if (_la==RETURN) {
 					{
-					setState(2720);
+					setState(2719);
 					returnClause();
 					}
 				}
@@ -16129,7 +16120,7 @@ public class Cypher25Parser extends Parser {
 			case WHERE:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(2723);
+				setState(2722);
 				whereClause();
 				}
 				break;
@@ -16166,20 +16157,20 @@ public class Cypher25Parser extends Parser {
 		ShowCommandYieldWhereContext _localctx = new ShowCommandYieldWhereContext(_ctx, getState());
 		enterRule(_localctx, 372, RULE_showCommandYieldWhere);
 		try {
-			setState(2728);
+			setState(2727);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case YIELD:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(2726);
+				setState(2725);
 				yieldClause();
 				}
 				break;
 			case WHERE:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(2727);
+				setState(2726);
 				whereClause();
 				}
 				break;
@@ -16220,16 +16211,16 @@ public class Cypher25Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(2730);
+			setState(2729);
 			variable();
-			setState(2733);
+			setState(2732);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==AS) {
 				{
-				setState(2731);
+				setState(2730);
 				match(AS);
-				setState(2732);
+				setState(2731);
 				variable();
 				}
 			}
@@ -16267,7 +16258,7 @@ public class Cypher25Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(2735);
+			setState(2734);
 			_la = _input.LA(1);
 			if ( !(_la==OFFSET || _la==SKIPROWS) ) {
 			_errHandler.recoverInline(this);
@@ -16277,7 +16268,7 @@ public class Cypher25Parser extends Parser {
 				_errHandler.reportMatch(this);
 				consume();
 			}
-			setState(2736);
+			setState(2735);
 			signedIntegerLiteral();
 			}
 		}
@@ -16310,9 +16301,9 @@ public class Cypher25Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(2738);
+			setState(2737);
 			match(LIMITROWS);
-			setState(2739);
+			setState(2738);
 			signedIntegerLiteral();
 			}
 		}
@@ -16366,14 +16357,14 @@ public class Cypher25Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(2741);
+			setState(2740);
 			match(YIELD);
-			setState(2751);
+			setState(2750);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case TIMES:
 				{
-				setState(2742);
+				setState(2741);
 				match(TIMES);
 				}
 				break;
@@ -16697,21 +16688,21 @@ public class Cypher25Parser extends Parser {
 			case ZONED:
 			case IDENTIFIER:
 				{
-				setState(2743);
+				setState(2742);
 				yieldItem();
-				setState(2748);
+				setState(2747);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				while (_la==COMMA) {
 					{
 					{
-					setState(2744);
+					setState(2743);
 					match(COMMA);
-					setState(2745);
+					setState(2744);
 					yieldItem();
 					}
 					}
-					setState(2750);
+					setState(2749);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				}
@@ -16720,42 +16711,42 @@ public class Cypher25Parser extends Parser {
 			default:
 				throw new NoViableAltException(this);
 			}
-			setState(2754);
+			setState(2753);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,272,_ctx) ) {
 			case 1:
 				{
-				setState(2753);
+				setState(2752);
 				orderBy();
 				}
 				break;
 			}
-			setState(2757);
+			setState(2756);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,273,_ctx) ) {
 			case 1:
 				{
-				setState(2756);
+				setState(2755);
 				yieldSkip();
 				}
 				break;
 			}
-			setState(2760);
+			setState(2759);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,274,_ctx) ) {
 			case 1:
 				{
-				setState(2759);
+				setState(2758);
 				yieldLimit();
 				}
 				break;
 			}
-			setState(2763);
+			setState(2762);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==WHERE) {
 				{
-				setState(2762);
+				setState(2761);
 				whereClause();
 				}
 			}
@@ -16791,9 +16782,9 @@ public class Cypher25Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(2765);
+			setState(2764);
 			match(OPTIONS);
-			setState(2766);
+			setState(2765);
 			mapOrParameter();
 			}
 		}
@@ -16826,9 +16817,9 @@ public class Cypher25Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(2768);
+			setState(2767);
 			match(TERMINATE);
-			setState(2769);
+			setState(2768);
 			terminateTransactions();
 			}
 		}
@@ -16861,20 +16852,20 @@ public class Cypher25Parser extends Parser {
 		ComposableCommandClausesContext _localctx = new ComposableCommandClausesContext(_ctx, getState());
 		enterRule(_localctx, 386, RULE_composableCommandClauses);
 		try {
-			setState(2773);
+			setState(2772);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case TERMINATE:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(2771);
+				setState(2770);
 				terminateCommand();
 				}
 				break;
 			case SHOW:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(2772);
+				setState(2771);
 				composableShowCommandClauses();
 				}
 				break;
@@ -16905,6 +16896,9 @@ public class Cypher25Parser extends Parser {
 		public ShowCurrentGraphTypeCommandContext showCurrentGraphTypeCommand() {
 			return getRuleContext(ShowCurrentGraphTypeCommandContext.class,0);
 		}
+		public ShowCurrentUserContext showCurrentUser() {
+			return getRuleContext(ShowCurrentUserContext.class,0);
+		}
 		public ShowFunctionsContext showFunctions() {
 			return getRuleContext(ShowFunctionsContext.class,0);
 		}
@@ -16932,54 +16926,60 @@ public class Cypher25Parser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(2775);
+			setState(2774);
 			match(SHOW);
 			setState(2784);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,277,_ctx) ) {
 			case 1:
 				{
-				setState(2776);
+				setState(2775);
 				showIndexCommand();
 				}
 				break;
 			case 2:
 				{
-				setState(2777);
+				setState(2776);
 				showConstraintCommand();
 				}
 				break;
 			case 3:
 				{
-				setState(2778);
+				setState(2777);
 				showCurrentGraphTypeCommand();
 				}
 				break;
 			case 4:
 				{
+				setState(2778);
+				showCurrentUser();
+				}
+				break;
+			case 5:
+				{
 				setState(2779);
 				showFunctions();
 				}
 				break;
-			case 5:
+			case 6:
 				{
 				setState(2780);
 				showProcedures();
 				}
 				break;
-			case 6:
+			case 7:
 				{
 				setState(2781);
 				showSettings();
 				}
 				break;
-			case 7:
+			case 8:
 				{
 				setState(2782);
 				showTransactions();
 				}
 				break;
-			case 8:
+			case 9:
 				{
 				setState(2783);
 				showDatabase();
@@ -24760,8 +24760,8 @@ public class Cypher25Parser extends Parser {
 	public static class ShowCurrentUserContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode CURRENT() { return getToken(Cypher25Parser.CURRENT, 0); }
 		public TerminalNode USER() { return getToken(Cypher25Parser.USER, 0); }
-		public ShowCommandYieldContext showCommandYield() {
-			return getRuleContext(ShowCommandYieldContext.class,0);
+		public ShowCommandYieldWhereContext showCommandYieldWhere() {
+			return getRuleContext(ShowCommandYieldWhereContext.class,0);
 		}
 		public ShowCurrentUserContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -24786,7 +24786,7 @@ public class Cypher25Parser extends Parser {
 			if (_la==WHERE || _la==YIELD) {
 				{
 				setState(3786);
-				showCommandYield();
+				showCommandYieldWhere();
 				}
 			}
 
@@ -38545,17 +38545,17 @@ public class Cypher25Parser extends Parser {
 		"\u0001\u00b7\u0001\u00b7\u0001\u00b7\u0001\u00b7\u0001\u00b7\u0001\u00b7"+
 		"\u0001\u00b7\u0001\u00b7\u0003\u00b7\u0a90\b\u00b7\u0001\u00b8\u0001\u00b8"+
 		"\u0001\u00b8\u0001\u00b8\u0001\u00b8\u0001\u00b8\u0001\u00b8\u0001\u00b8"+
-		"\u0001\u00b8\u0001\u00b8\u0001\u00b8\u0001\u00b8\u0003\u00b8\u0a9e\b\u00b8"+
-		"\u0001\u00b9\u0001\u00b9\u0003\u00b9\u0aa2\b\u00b9\u0001\u00b9\u0003\u00b9"+
-		"\u0aa5\b\u00b9\u0001\u00ba\u0001\u00ba\u0003\u00ba\u0aa9\b\u00ba\u0001"+
-		"\u00bb\u0001\u00bb\u0001\u00bb\u0003\u00bb\u0aae\b\u00bb\u0001\u00bc\u0001"+
-		"\u00bc\u0001\u00bc\u0001\u00bd\u0001\u00bd\u0001\u00bd\u0001\u00be\u0001"+
-		"\u00be\u0001\u00be\u0001\u00be\u0001\u00be\u0005\u00be\u0abb\b\u00be\n"+
-		"\u00be\f\u00be\u0abe\t\u00be\u0003\u00be\u0ac0\b\u00be\u0001\u00be\u0003"+
-		"\u00be\u0ac3\b\u00be\u0001\u00be\u0003\u00be\u0ac6\b\u00be\u0001\u00be"+
-		"\u0003\u00be\u0ac9\b\u00be\u0001\u00be\u0003\u00be\u0acc\b\u00be\u0001"+
-		"\u00bf\u0001\u00bf\u0001\u00bf\u0001\u00c0\u0001\u00c0\u0001\u00c0\u0001"+
-		"\u00c1\u0001\u00c1\u0003\u00c1\u0ad6\b\u00c1\u0001\u00c2\u0001\u00c2\u0001"+
+		"\u0001\u00b8\u0001\u00b8\u0001\u00b8\u0003\u00b8\u0a9d\b\u00b8\u0001\u00b9"+
+		"\u0001\u00b9\u0003\u00b9\u0aa1\b\u00b9\u0001\u00b9\u0003\u00b9\u0aa4\b"+
+		"\u00b9\u0001\u00ba\u0001\u00ba\u0003\u00ba\u0aa8\b\u00ba\u0001\u00bb\u0001"+
+		"\u00bb\u0001\u00bb\u0003\u00bb\u0aad\b\u00bb\u0001\u00bc\u0001\u00bc\u0001"+
+		"\u00bc\u0001\u00bd\u0001\u00bd\u0001\u00bd\u0001\u00be\u0001\u00be\u0001"+
+		"\u00be\u0001\u00be\u0001\u00be\u0005\u00be\u0aba\b\u00be\n\u00be\f\u00be"+
+		"\u0abd\t\u00be\u0003\u00be\u0abf\b\u00be\u0001\u00be\u0003\u00be\u0ac2"+
+		"\b\u00be\u0001\u00be\u0003\u00be\u0ac5\b\u00be\u0001\u00be\u0003\u00be"+
+		"\u0ac8\b\u00be\u0001\u00be\u0003\u00be\u0acb\b\u00be\u0001\u00bf\u0001"+
+		"\u00bf\u0001\u00bf\u0001\u00c0\u0001\u00c0\u0001\u00c0\u0001\u00c1\u0001"+
+		"\u00c1\u0003\u00c1\u0ad5\b\u00c1\u0001\u00c2\u0001\u00c2\u0001\u00c2\u0001"+
 		"\u00c2\u0001\u00c2\u0001\u00c2\u0001\u00c2\u0001\u00c2\u0001\u00c2\u0001"+
 		"\u00c2\u0003\u00c2\u0ae1\b\u00c2\u0001\u00c3\u0003\u00c3\u0ae4\b\u00c3"+
 		"\u0001\u00c3\u0001\u00c3\u0001\u00c4\u0001\u00c4\u0001\u00c5\u0001\u00c5"+
@@ -39076,11 +39076,11 @@ public class Cypher25Parser extends Parser {
 		"\u0000\u0166\u0a55\u0001\u0000\u0000\u0000\u0168\u0a5b\u0001\u0000\u0000"+
 		"\u0000\u016a\u0a6b\u0001\u0000\u0000\u0000\u016c\u0a7b\u0001\u0000\u0000"+
 		"\u0000\u016e\u0a86\u0001\u0000\u0000\u0000\u0170\u0a91\u0001\u0000\u0000"+
-		"\u0000\u0172\u0aa4\u0001\u0000\u0000\u0000\u0174\u0aa8\u0001\u0000\u0000"+
-		"\u0000\u0176\u0aaa\u0001\u0000\u0000\u0000\u0178\u0aaf\u0001\u0000\u0000"+
-		"\u0000\u017a\u0ab2\u0001\u0000\u0000\u0000\u017c\u0ab5\u0001\u0000\u0000"+
-		"\u0000\u017e\u0acd\u0001\u0000\u0000\u0000\u0180\u0ad0\u0001\u0000\u0000"+
-		"\u0000\u0182\u0ad5\u0001\u0000\u0000\u0000\u0184\u0ad7\u0001\u0000\u0000"+
+		"\u0000\u0172\u0aa3\u0001\u0000\u0000\u0000\u0174\u0aa7\u0001\u0000\u0000"+
+		"\u0000\u0176\u0aa9\u0001\u0000\u0000\u0000\u0178\u0aae\u0001\u0000\u0000"+
+		"\u0000\u017a\u0ab1\u0001\u0000\u0000\u0000\u017c\u0ab4\u0001\u0000\u0000"+
+		"\u0000\u017e\u0acc\u0001\u0000\u0000\u0000\u0180\u0acf\u0001\u0000\u0000"+
+		"\u0000\u0182\u0ad4\u0001\u0000\u0000\u0000\u0184\u0ad6\u0001\u0000\u0000"+
 		"\u0000\u0186\u0ae3\u0001\u0000\u0000\u0000\u0188\u0ae7\u0001\u0000\u0000"+
 		"\u0000\u018a\u0ae9\u0001\u0000\u0000\u0000\u018c\u0b0a\u0001\u0000\u0000"+
 		"\u0000\u018e\u0b0e\u0001\u0000\u0000\u0000\u0190\u0b16\u0001\u0000\u0000"+
@@ -40295,56 +40295,56 @@ public class Cypher25Parser extends Parser {
 		"\u0001\u0000\u0000\u0000\u0a8f\u0a89\u0001\u0000\u0000\u0000\u0a8f\u0a8a"+
 		"\u0001\u0000\u0000\u0000\u0a8f\u0a8b\u0001\u0000\u0000\u0000\u0a8f\u0a8c"+
 		"\u0001\u0000\u0000\u0000\u0a8f\u0a8d\u0001\u0000\u0000\u0000\u0a8f\u0a8e"+
-		"\u0001\u0000\u0000\u0000\u0a90\u016f\u0001\u0000\u0000\u0000\u0a91\u0a9d"+
-		"\u0005\u012d\u0000\u0000\u0a92\u0a9e\u0003\u032a\u0195\u0000\u0a93\u0a9e"+
-		"\u0003\u026c\u0136\u0000\u0a94\u0a9e\u0003\u02dc\u016e\u0000\u0a95\u0a9e"+
-		"\u0003\u0262\u0131\u0000\u0a96\u0a9e\u0003\u0266\u0133\u0000\u0a97\u0a9e"+
-		"\u0003\u0268\u0134\u0000\u0a98\u0a9e\u0003\u0232\u0119\u0000\u0a99\u0a9e"+
-		"\u0003\u0224\u0112\u0000\u0a9a\u0a9e\u0003\u0264\u0132\u0000\u0a9b\u0a9e"+
-		"\u0003\u026a\u0135\u0000\u0a9c\u0a9e\u0003\u0260\u0130\u0000\u0a9d\u0a92"+
-		"\u0001\u0000\u0000\u0000\u0a9d\u0a93\u0001\u0000\u0000\u0000\u0a9d\u0a94"+
-		"\u0001\u0000\u0000\u0000\u0a9d\u0a95\u0001\u0000\u0000\u0000\u0a9d\u0a96"+
-		"\u0001\u0000\u0000\u0000\u0a9d\u0a97\u0001\u0000\u0000\u0000\u0a9d\u0a98"+
-		"\u0001\u0000\u0000\u0000\u0a9d\u0a99\u0001\u0000\u0000\u0000\u0a9d\u0a9a"+
-		"\u0001\u0000\u0000\u0000\u0a9d\u0a9b\u0001\u0000\u0000\u0000\u0a9d\u0a9c"+
-		"\u0001\u0000\u0000\u0000\u0a9e\u0171\u0001\u0000\u0000\u0000\u0a9f\u0aa1"+
-		"\u0003\u017c\u00be\u0000\u0aa0\u0aa2\u0003,\u0016\u0000\u0aa1\u0aa0\u0001"+
-		"\u0000\u0000\u0000\u0aa1\u0aa2\u0001\u0000\u0000\u0000\u0aa2\u0aa5\u0001"+
-		"\u0000\u0000\u0000\u0aa3\u0aa5\u0003B!\u0000\u0aa4\u0a9f\u0001\u0000\u0000"+
-		"\u0000\u0aa4\u0aa3\u0001\u0000\u0000\u0000\u0aa5\u0173\u0001\u0000\u0000"+
-		"\u0000\u0aa6\u0aa9\u0003\u017c\u00be\u0000\u0aa7\u0aa9\u0003B!\u0000\u0aa8"+
-		"\u0aa6\u0001\u0000\u0000\u0000\u0aa8\u0aa7\u0001\u0000\u0000\u0000\u0aa9"+
-		"\u0175\u0001\u0000\u0000\u0000\u0aaa\u0aad\u0003\u0156\u00ab\u0000\u0aab"+
-		"\u0aac\u0005\u001b\u0000\u0000\u0aac\u0aae\u0003\u0156\u00ab\u0000\u0aad"+
-		"\u0aab\u0001\u0000\u0000\u0000\u0aad\u0aae\u0001\u0000\u0000\u0000\u0aae"+
-		"\u0177\u0001\u0000\u0000\u0000\u0aaf\u0ab0\u0007\u0003\u0000\u0000\u0ab0"+
-		"\u0ab1\u0003\u0144\u00a2\u0000\u0ab1\u0179\u0001\u0000\u0000\u0000\u0ab2"+
-		"\u0ab3\u0005\u00b4\u0000\u0000\u0ab3\u0ab4\u0003\u0144\u00a2\u0000\u0ab4"+
-		"\u017b\u0001\u0000\u0000\u0000\u0ab5\u0abf\u0005\u0167\u0000\u0000\u0ab6"+
-		"\u0ac0\u0005\u013f\u0000\u0000\u0ab7\u0abc\u0003\u0176\u00bb\u0000\u0ab8"+
-		"\u0ab9\u00053\u0000\u0000\u0ab9\u0abb\u0003\u0176\u00bb\u0000\u0aba\u0ab8"+
-		"\u0001\u0000\u0000\u0000\u0abb\u0abe\u0001\u0000\u0000\u0000\u0abc\u0aba"+
-		"\u0001\u0000\u0000\u0000\u0abc\u0abd\u0001\u0000\u0000\u0000\u0abd\u0ac0"+
-		"\u0001\u0000\u0000\u0000\u0abe\u0abc\u0001\u0000\u0000\u0000\u0abf\u0ab6"+
-		"\u0001\u0000\u0000\u0000\u0abf\u0ab7\u0001\u0000\u0000\u0000\u0ac0\u0ac2"+
-		"\u0001\u0000\u0000\u0000\u0ac1\u0ac3\u0003<\u001e\u0000\u0ac2\u0ac1\u0001"+
-		"\u0000\u0000\u0000\u0ac2\u0ac3\u0001\u0000\u0000\u0000\u0ac3\u0ac5\u0001"+
-		"\u0000\u0000\u0000\u0ac4\u0ac6\u0003\u0178\u00bc\u0000\u0ac5\u0ac4\u0001"+
-		"\u0000\u0000\u0000\u0ac5\u0ac6\u0001\u0000\u0000\u0000\u0ac6\u0ac8\u0001"+
-		"\u0000\u0000\u0000\u0ac7\u0ac9\u0003\u017a\u00bd\u0000\u0ac8\u0ac7\u0001"+
-		"\u0000\u0000\u0000\u0ac8\u0ac9\u0001\u0000\u0000\u0000\u0ac9\u0acb\u0001"+
-		"\u0000\u0000\u0000\u0aca\u0acc\u0003B!\u0000\u0acb\u0aca\u0001\u0000\u0000"+
-		"\u0000\u0acb\u0acc\u0001\u0000\u0000\u0000\u0acc\u017d\u0001\u0000\u0000"+
-		"\u0000\u0acd\u0ace\u0005\u00e0\u0000\u0000\u0ace\u0acf\u0003\u034c\u01a6"+
-		"\u0000\u0acf\u017f\u0001\u0000\u0000\u0000\u0ad0\u0ad1\u0005\u013b\u0000"+
-		"\u0000\u0ad1\u0ad2\u0003\u01a2\u00d1\u0000\u0ad2\u0181\u0001\u0000\u0000"+
-		"\u0000\u0ad3\u0ad6\u0003\u0180\u00c0\u0000\u0ad4\u0ad6\u0003\u0184\u00c2"+
-		"\u0000\u0ad5\u0ad3\u0001\u0000\u0000\u0000\u0ad5\u0ad4\u0001\u0000\u0000"+
-		"\u0000\u0ad6\u0183\u0001\u0000\u0000\u0000\u0ad7\u0ae0\u0005\u012d\u0000"+
-		"\u0000\u0ad8\u0ae1\u0003\u0186\u00c3\u0000\u0ad9\u0ae1\u0003\u018c\u00c6"+
-		"\u0000\u0ada\u0ae1\u0003\u0194\u00ca\u0000\u0adb\u0ae1\u0003\u0198\u00cc"+
-		"\u0000\u0adc\u0ae1\u0003\u0196\u00cb\u0000\u0add\u0ae1\u0003\u01a4\u00d2"+
-		"\u0000\u0ade\u0ae1\u0003\u01a0\u00d0\u0000\u0adf\u0ae1\u0003\u0312\u0189"+
+		"\u0001\u0000\u0000\u0000\u0a90\u016f\u0001\u0000\u0000\u0000\u0a91\u0a9c"+
+		"\u0005\u012d\u0000\u0000\u0a92\u0a9d\u0003\u032a\u0195\u0000\u0a93\u0a9d"+
+		"\u0003\u026c\u0136\u0000\u0a94\u0a9d\u0003\u02dc\u016e\u0000\u0a95\u0a9d"+
+		"\u0003\u0266\u0133\u0000\u0a96\u0a9d\u0003\u0268\u0134\u0000\u0a97\u0a9d"+
+		"\u0003\u0232\u0119\u0000\u0a98\u0a9d\u0003\u0224\u0112\u0000\u0a99\u0a9d"+
+		"\u0003\u0264\u0132\u0000\u0a9a\u0a9d\u0003\u026a\u0135\u0000\u0a9b\u0a9d"+
+		"\u0003\u0260\u0130\u0000\u0a9c\u0a92\u0001\u0000\u0000\u0000\u0a9c\u0a93"+
+		"\u0001\u0000\u0000\u0000\u0a9c\u0a94\u0001\u0000\u0000\u0000\u0a9c\u0a95"+
+		"\u0001\u0000\u0000\u0000\u0a9c\u0a96\u0001\u0000\u0000\u0000\u0a9c\u0a97"+
+		"\u0001\u0000\u0000\u0000\u0a9c\u0a98\u0001\u0000\u0000\u0000\u0a9c\u0a99"+
+		"\u0001\u0000\u0000\u0000\u0a9c\u0a9a\u0001\u0000\u0000\u0000\u0a9c\u0a9b"+
+		"\u0001\u0000\u0000\u0000\u0a9d\u0171\u0001\u0000\u0000\u0000\u0a9e\u0aa0"+
+		"\u0003\u017c\u00be\u0000\u0a9f\u0aa1\u0003,\u0016\u0000\u0aa0\u0a9f\u0001"+
+		"\u0000\u0000\u0000\u0aa0\u0aa1\u0001\u0000\u0000\u0000\u0aa1\u0aa4\u0001"+
+		"\u0000\u0000\u0000\u0aa2\u0aa4\u0003B!\u0000\u0aa3\u0a9e\u0001\u0000\u0000"+
+		"\u0000\u0aa3\u0aa2\u0001\u0000\u0000\u0000\u0aa4\u0173\u0001\u0000\u0000"+
+		"\u0000\u0aa5\u0aa8\u0003\u017c\u00be\u0000\u0aa6\u0aa8\u0003B!\u0000\u0aa7"+
+		"\u0aa5\u0001\u0000\u0000\u0000\u0aa7\u0aa6\u0001\u0000\u0000\u0000\u0aa8"+
+		"\u0175\u0001\u0000\u0000\u0000\u0aa9\u0aac\u0003\u0156\u00ab\u0000\u0aaa"+
+		"\u0aab\u0005\u001b\u0000\u0000\u0aab\u0aad\u0003\u0156\u00ab\u0000\u0aac"+
+		"\u0aaa\u0001\u0000\u0000\u0000\u0aac\u0aad\u0001\u0000\u0000\u0000\u0aad"+
+		"\u0177\u0001\u0000\u0000\u0000\u0aae\u0aaf\u0007\u0003\u0000\u0000\u0aaf"+
+		"\u0ab0\u0003\u0144\u00a2\u0000\u0ab0\u0179\u0001\u0000\u0000\u0000\u0ab1"+
+		"\u0ab2\u0005\u00b4\u0000\u0000\u0ab2\u0ab3\u0003\u0144\u00a2\u0000\u0ab3"+
+		"\u017b\u0001\u0000\u0000\u0000\u0ab4\u0abe\u0005\u0167\u0000\u0000\u0ab5"+
+		"\u0abf\u0005\u013f\u0000\u0000\u0ab6\u0abb\u0003\u0176\u00bb\u0000\u0ab7"+
+		"\u0ab8\u00053\u0000\u0000\u0ab8\u0aba\u0003\u0176\u00bb\u0000\u0ab9\u0ab7"+
+		"\u0001\u0000\u0000\u0000\u0aba\u0abd\u0001\u0000\u0000\u0000\u0abb\u0ab9"+
+		"\u0001\u0000\u0000\u0000\u0abb\u0abc\u0001\u0000\u0000\u0000\u0abc\u0abf"+
+		"\u0001\u0000\u0000\u0000\u0abd\u0abb\u0001\u0000\u0000\u0000\u0abe\u0ab5"+
+		"\u0001\u0000\u0000\u0000\u0abe\u0ab6\u0001\u0000\u0000\u0000\u0abf\u0ac1"+
+		"\u0001\u0000\u0000\u0000\u0ac0\u0ac2\u0003<\u001e\u0000\u0ac1\u0ac0\u0001"+
+		"\u0000\u0000\u0000\u0ac1\u0ac2\u0001\u0000\u0000\u0000\u0ac2\u0ac4\u0001"+
+		"\u0000\u0000\u0000\u0ac3\u0ac5\u0003\u0178\u00bc\u0000\u0ac4\u0ac3\u0001"+
+		"\u0000\u0000\u0000\u0ac4\u0ac5\u0001\u0000\u0000\u0000\u0ac5\u0ac7\u0001"+
+		"\u0000\u0000\u0000\u0ac6\u0ac8\u0003\u017a\u00bd\u0000\u0ac7\u0ac6\u0001"+
+		"\u0000\u0000\u0000\u0ac7\u0ac8\u0001\u0000\u0000\u0000\u0ac8\u0aca\u0001"+
+		"\u0000\u0000\u0000\u0ac9\u0acb\u0003B!\u0000\u0aca\u0ac9\u0001\u0000\u0000"+
+		"\u0000\u0aca\u0acb\u0001\u0000\u0000\u0000\u0acb\u017d\u0001\u0000\u0000"+
+		"\u0000\u0acc\u0acd\u0005\u00e0\u0000\u0000\u0acd\u0ace\u0003\u034c\u01a6"+
+		"\u0000\u0ace\u017f\u0001\u0000\u0000\u0000\u0acf\u0ad0\u0005\u013b\u0000"+
+		"\u0000\u0ad0\u0ad1\u0003\u01a2\u00d1\u0000\u0ad1\u0181\u0001\u0000\u0000"+
+		"\u0000\u0ad2\u0ad5\u0003\u0180\u00c0\u0000\u0ad3\u0ad5\u0003\u0184\u00c2"+
+		"\u0000\u0ad4\u0ad2\u0001\u0000\u0000\u0000\u0ad4\u0ad3\u0001\u0000\u0000"+
+		"\u0000\u0ad5\u0183\u0001\u0000\u0000\u0000\u0ad6\u0ae0\u0005\u012d\u0000"+
+		"\u0000\u0ad7\u0ae1\u0003\u0186\u00c3\u0000\u0ad8\u0ae1\u0003\u018c\u00c6"+
+		"\u0000\u0ad9\u0ae1\u0003\u0194\u00ca\u0000\u0ada\u0ae1\u0003\u0262\u0131"+
+		"\u0000\u0adb\u0ae1\u0003\u0198\u00cc\u0000\u0adc\u0ae1\u0003\u0196\u00cb"+
+		"\u0000\u0add\u0ae1\u0003\u01a4\u00d2\u0000\u0ade\u0ae1\u0003\u01a0\u00d0"+
+		"\u0000\u0adf\u0ae1\u0003\u0312\u0189\u0000\u0ae0\u0ad7\u0001\u0000\u0000"+
 		"\u0000\u0ae0\u0ad8\u0001\u0000\u0000\u0000\u0ae0\u0ad9\u0001\u0000\u0000"+
 		"\u0000\u0ae0\u0ada\u0001\u0000\u0000\u0000\u0ae0\u0adb\u0001\u0000\u0000"+
 		"\u0000\u0ae0\u0adc\u0001\u0000\u0000\u0000\u0ae0\u0add\u0001\u0000\u0000"+
@@ -40933,8 +40933,8 @@ public class Cypher25Parser extends Parser {
 		"\u0000\u0000\u0000\u0ec4\u0ec6\u0001\u0000\u0000\u0000\u0ec5\u0ec7\u0003"+
 		"\u0172\u00b9\u0000\u0ec6\u0ec5\u0001\u0000\u0000\u0000\u0ec6\u0ec7\u0001"+
 		"\u0000\u0000\u0000\u0ec7\u0261\u0001\u0000\u0000\u0000\u0ec8\u0ec9\u0005"+
-		"D\u0000\u0000\u0ec9\u0ecb\u0005\u0155\u0000\u0000\u0eca\u0ecc\u0003\u0172"+
-		"\u00b9\u0000\u0ecb\u0eca\u0001\u0000\u0000\u0000\u0ecb\u0ecc\u0001\u0000"+
+		"D\u0000\u0000\u0ec9\u0ecb\u0005\u0155\u0000\u0000\u0eca\u0ecc\u0003\u0174"+
+		"\u00ba\u0000\u0ecb\u0eca\u0001\u0000\u0000\u0000\u0ecb\u0ecc\u0001\u0000"+
 		"\u0000\u0000\u0ecc\u0263\u0001\u0000\u0000\u0000\u0ecd\u0ece\u0005\u0136"+
 		"\u0000\u0000\u0ece\u0ed0\u0003\u0270\u0138\u0000\u0ecf\u0ed1\u0003\u0172"+
 		"\u00b9\u0000\u0ed0\u0ecf\u0001\u0000\u0000\u0000\u0ed0\u0ed1\u0001\u0000"+
@@ -41630,7 +41630,7 @@ public class Cypher25Parser extends Parser {
 		"\u0965\u0974\u0978\u097a\u0984\u0989\u0993\u0996\u09a3\u09a8\u09af\u09b2"+
 		"\u09c0\u09cc\u09d4\u09d9\u09de\u09ea\u09fb\u0a02\u0a13\u0a19\u0a31\u0a38"+
 		"\u0a3a\u0a3f\u0a43\u0a47\u0a55\u0a58\u0a5b\u0a69\u0a6e\u0a79\u0a84\u0a8f"+
-		"\u0a9d\u0aa1\u0aa4\u0aa8\u0aad\u0abc\u0abf\u0ac2\u0ac5\u0ac8\u0acb\u0ad5"+
+		"\u0a9c\u0aa0\u0aa3\u0aa7\u0aac\u0abb\u0abe\u0ac1\u0ac4\u0ac7\u0aca\u0ad4"+
 		"\u0ae0\u0ae3\u0aeb\u0aee\u0af2\u0af8\u0afd\u0b03\u0b06\u0b0a\u0b0e\u0b16"+
 		"\u0b1a\u0b21\u0b24\u0b28\u0b2b\u0b2e\u0b32\u0b35\u0b3e\u0b40\u0b47\u0b4f"+
 		"\u0b57\u0b5b\u0b5d\u0b61\u0b6b\u0b74\u0b7b\u0b80\u0b85\u0b89\u0b90\u0b98"+

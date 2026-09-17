@@ -69,7 +69,7 @@ import org.neo4j.cypher.internal.ast.ShowAuthRulesPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentGraphTypeClause
-import org.neo4j.cypher.internal.ast.ShowCurrentUser
+import org.neo4j.cypher.internal.ast.ShowCurrentUserClause
 import org.neo4j.cypher.internal.ast.ShowDatabasesClause
 import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
@@ -504,9 +504,8 @@ trait DdlShowBuilder extends Cypher25ParserListener {
   final override def exitShowCurrentUser(
     ctx: Cypher25Parser.ShowCurrentUserContext
   ): Unit = {
-    ctx.ast = ShowCurrentUser(
-      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
-    )(pos(ctx))
+    ctx.ast = decomposeYield(astOpt(ctx.showCommandYieldWhere()))
+      .buildShowCurrentUserClause(pos(ctx.getParent))
   }
 
   final override def exitShowAuthRules(
@@ -697,6 +696,14 @@ object DdlShowBuilder {
         yieldAll,
         yieldClause.map(turnYieldToWith),
         where.map(_.position)
+      )(position)
+
+    def buildShowCurrentUserClause(position: InputPosition): Clause =
+      ShowCurrentUserClause(
+        where,
+        yieldedItems,
+        yieldAll,
+        yieldClause.map(turnYieldToWith)
       )(position)
 
     def buildShowDatabasesClause(dbScope: DatabaseScope, position: InputPosition): Clause =

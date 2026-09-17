@@ -114,6 +114,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipElementTypeReferenceB
 import org.neo4j.cypher.internal.logical.plans.RelationshipElementTypeReferenceByLabel
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowCurrentGraphType
+import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabases
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
@@ -5418,6 +5419,71 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         "ShowDatabases",
         Seq.empty,
         Seq(details("database(neo4j), columns(xxx, yyy AS zzz)")),
+        Set("xxx", "yyy")
+      )
+    )
+  }
+
+  test("ShowCurrentUser") {
+    val defaultColumns = List(commandDefaultColumn("xxx"), commandDefaultColumn("yyy"))
+    val defaultVariables: Set[LogicalVariable] = Set(varFor("xxx"), varFor("yyy"))
+
+    assertGood(
+      attach(
+        ShowCurrentUser(
+          defaultColumns,
+          List.empty,
+          yieldAll = true,
+          defaultVariables,
+          Set.empty
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "ShowCurrentUser",
+        Seq.empty,
+        Seq(details("allColumns")),
+        Set("xxx", "yyy")
+      )
+    )
+
+    assertGood(
+      attach(
+        ShowCurrentUser(
+          defaultColumns,
+          List.empty,
+          yieldAll = false,
+          defaultVariables,
+          Set.empty
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "ShowCurrentUser",
+        Seq.empty,
+        Seq(details("defaultColumns")),
+        Set("xxx", "yyy")
+      )
+    )
+
+    assertGood(
+      attach(
+        ShowCurrentUser(
+          defaultColumns,
+          List(CommandYieldColumn("xxx", "xxx"), CommandYieldColumn("yyy", "zzz")),
+          yieldAll = false,
+          defaultVariables,
+          Set.empty
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "ShowCurrentUser",
+        Seq.empty,
+        Seq(details("columns(xxx, yyy AS zzz)")),
         Set("xxx", "yyy")
       )
     )
