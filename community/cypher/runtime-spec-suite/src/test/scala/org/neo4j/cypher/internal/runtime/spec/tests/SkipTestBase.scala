@@ -405,6 +405,34 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("group", "c").withRows(expected)
   }
 
+  test("should support skip leveraging order on top of a sort over a union on the RHS of an apply") {
+    val nodesPerLabel = 10
+    val argumentRows = 5
+    val nodes = givenGraph { nodeGraph(nodesPerLabel, "A") }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .planIf(isParallel)(_.sort("x ASC", "y ASC"))
+      .apply()
+      .|.skip(1).withLeveragedOrder()
+      .|.sort("y ASC")
+      .|.distinct("y AS y")
+      .|.union()
+      .|.|.nodeByLabelScan("y", "A", IndexOrderNone, "x")
+      .|.nodeByLabelScan("y", "A", IndexOrderNone, "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult =
+      execute(logicalQuery, runtime, inputValues((1 to argumentRows).map(Array[Any](_)): _*))
+
+    val expected = for {
+      x <- 1 to argumentRows
+      y <- nodes.sortBy(_.getId).tail
+    } yield Array[Any](x, y)
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expected))
+  }
+
   test("should work with chained skips on the RHS of an apply") {
     givenGraph {
       nodePropertyGraph(
