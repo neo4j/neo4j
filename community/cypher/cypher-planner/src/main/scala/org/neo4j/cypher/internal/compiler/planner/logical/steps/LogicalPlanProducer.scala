@@ -2039,10 +2039,9 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val (rewrittenExpr, rewrittenOuter) = SubqueryExpressionSolver.ForSingle.solve(outer, expr, context)
-    annotate(
+    annotateApply(
       SelectOrAntiSemiApply(rewrittenOuter, inner, rewrittenExpr),
       solveds.get(outer.id),
-      ProvidedOrder.Left,
       cachedPropertiesPerPlan.get(rewrittenOuter.id),
       context
     )
@@ -2056,10 +2055,9 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val (rewrittenExpr, rewrittenOuter) = SubqueryExpressionSolver.ForSingle.solve(outer, expr, context)
-    annotate(
+    annotateApply(
       LetSelectOrAntiSemiApply(rewrittenOuter, inner, id, rewrittenExpr),
       solveds.get(outer.id),
-      ProvidedOrder.Left,
       cachedPropertiesPerPlan.get(rewrittenOuter.id),
       context
     )
@@ -2072,10 +2070,9 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val (rewrittenExpr, rewrittenOuter) = SubqueryExpressionSolver.ForSingle.solve(outer, expr, context)
-    annotate(
+    annotateApply(
       SelectOrSemiApply(rewrittenOuter, inner, rewrittenExpr),
       solveds.get(outer.id),
-      ProvidedOrder.Left,
       cachedPropertiesPerPlan.get(rewrittenOuter.id),
       context
     )
@@ -2089,10 +2086,9 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val (rewrittenExpr, rewrittenOuter) = SubqueryExpressionSolver.ForSingle.solve(outer, expr, context)
-    annotate(
+    annotateApply(
       LetSelectOrSemiApply(rewrittenOuter, inner, id, rewrittenExpr),
       solveds.get(outer.id),
-      ProvidedOrder.Left,
       cachedPropertiesPerPlan.get(rewrittenOuter.id),
       context
     )
@@ -2104,10 +2100,9 @@ case class LogicalPlanProducer(
     id: LogicalVariable,
     context: LogicalPlanningContext
   ): LogicalPlan =
-    annotate(
+    annotateApply(
       LetAntiSemiApply(left, right, id),
       solveds.get(left.id),
-      ProvidedOrder.Left,
       cachedPropertiesPerPlan.get(right.id),
       context
     )
@@ -2118,10 +2113,9 @@ case class LogicalPlanProducer(
     id: LogicalVariable,
     context: LogicalPlanningContext
   ): LogicalPlan =
-    annotate(
+    annotateApply(
       LetSemiApply(left, right, id),
       solveds.get(left.id),
-      ProvidedOrder.Left,
       cachedPropertiesPerPlan.get(right.id),
       context
     )
@@ -2133,7 +2127,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(expr)))
-    annotate(AntiSemiApply(left, right), solved, ProvidedOrder.Left, cachedPropertiesPerPlan.get(right.id), context)
+    annotateApply(AntiSemiApply(left, right), solved, cachedPropertiesPerPlan.get(right.id), context)
   }
 
   def planSemiApply(
@@ -2143,7 +2137,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(expr)))
-    annotate(SemiApply(left, right), solved, ProvidedOrder.Left, cachedPropertiesPerPlan.get(right.id), context)
+    annotateApply(SemiApply(left, right), solved, cachedPropertiesPerPlan.get(right.id), context)
   }
 
   def planSemiApplyInHorizon(

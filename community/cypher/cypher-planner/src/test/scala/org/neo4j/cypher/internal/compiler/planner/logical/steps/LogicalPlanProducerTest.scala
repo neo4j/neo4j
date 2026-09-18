@@ -938,8 +938,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("SemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+  test("SemiApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
@@ -950,8 +950,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("AntiSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+  test("AntiSemiApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
@@ -962,8 +962,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("LetSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+  test("LetSemiApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planLetSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
@@ -974,8 +974,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("LetAntiSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+  test("LetAntiSemiApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planLetAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
@@ -986,8 +986,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("SelectOrSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+  test("SelectOrSemiApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
@@ -998,8 +998,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("SelectOrAntiSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+  test("SelectOrAntiSemiApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
@@ -1010,8 +1010,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("LetSelectOrSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+  test("LetSelectOrSemiApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", v"x", ctx.context)
     )
   }
@@ -1022,8 +1022,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("LetSelectOrAntiSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+  test("LetSelectOrAntiSemiApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", v"x", ctx.context)
     )
   }
