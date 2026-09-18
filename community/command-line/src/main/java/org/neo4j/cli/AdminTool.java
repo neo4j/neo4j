@@ -118,11 +118,17 @@ public class AdminTool {
     protected static CommandLine getCommandLine(ExecutionContext ctx, Strategy strategy) {
         CommandLine cmd = new CommandLine(strategy.createRootCommand(), new ContextInjectingFactory(ctx));
         registerCommands(cmd, strategy, Services.loadAll(CommandProvider.class));
-        cmd.setOut(new PrintWriter(ctx.out(), true))
+        return applyExecutionContext(cmd, ctx);
+    }
+
+    /**
+     * Applies the output streams and parse behavior that commands running in the given execution context run with.
+     */
+    public static CommandLine applyExecutionContext(CommandLine cmd, ExecutionContext ctx) {
+        return cmd.setOut(new PrintWriter(ctx.out(), true))
                 .setErr(new PrintWriter(ctx.err(), true))
                 .setUsageHelpWidth(120)
                 .setCaseInsensitiveEnumValuesAllowed(true);
-        return cmd;
     }
 
     private static void registerCommands(

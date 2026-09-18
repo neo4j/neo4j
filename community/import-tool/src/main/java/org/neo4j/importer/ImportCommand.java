@@ -67,6 +67,7 @@ import org.neo4j.batchimport.api.input.FileGroup.NumberedFile;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.cli.AbstractAdminCommand;
+import org.neo4j.cli.AdminTool;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.ByteUnitConverter;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
@@ -884,13 +885,16 @@ public class ImportCommand {
          * options allowed alongside '--resume' are appended, overriding the attempt where they overlap.
          */
         private void adoptInvocationOf(Path contextDir) throws IOException {
-            // the overrides go last, since where they repeat an option the attempt already used the later occurrence
-            // has to win rather than be rejected as a duplicate
-            String[] replayArgs = Stream.concat(
-                            ImportContext.readCliArgs(ctx.fs(), contextDir).orElse(List.of()).stream(),
-                            optionOverridesForResume().stream())
-                    .toArray(String[]::new);
-            new CommandLine(this).setOverwrittenOptionsAllowed(true).parseArgs(replayArgs);
+            List<String> replayArgs = new ArrayList<>(
+                    ImportContext.readCliArgs(ctx.fs(), contextDir).orElse(List.of()));
+            // The overrides go last among the options. If they repeat an option the original attempt already used,
+            // the later occurrence wins. Behind an end-of-options separator (`--`) they would parse as positionals,
+            // so they go in ahead of it - and it keeps variadic options from consuming what follows it.
+            int endOfOptions = replayArgs.indexOf("--");
+            replayArgs.addAll(endOfOptions < 0 ? replayArgs.size() : endOfOptions, optionOverridesForResume());
+            AdminTool.applyExecutionContext(new CommandLine(this), ctx)
+                    .setOverwrittenOptionsAllowed(true)
+                    .parseArgs(replayArgs.toArray(new String[0]));
         }
 
         /**
