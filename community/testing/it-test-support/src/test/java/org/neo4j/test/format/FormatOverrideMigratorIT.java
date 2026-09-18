@@ -26,30 +26,17 @@ import static org.neo4j.test.format.FormatOverrideMigrator.OVERRIDE_STORE_FORMAT
 import static org.neo4j.test.format.FormatOverrideMigrator.OVERRIDE_SYSTEM_STORE_FORMAT_KEY;
 
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.api.util.ClearSystemProperty;
+import org.junit.jupiter.api.util.SetSystemProperty;
 import org.neo4j.configuration.Config;
 import org.neo4j.test.extension.RequireAlignedFormat;
 
 @Isolated
+@ClearSystemProperty(key = OVERRIDE_STORE_FORMAT_KEY)
+@ClearSystemProperty(key = OVERRIDE_SYSTEM_STORE_FORMAT_KEY)
 class FormatOverrideMigratorIT {
-    private String originalFormatOverride;
-    private String originalSystemFormatOverride;
-
-    @BeforeEach
-    void clearOverrides() {
-        originalFormatOverride = System.clearProperty(OVERRIDE_STORE_FORMAT_KEY);
-        originalSystemFormatOverride = System.clearProperty(OVERRIDE_SYSTEM_STORE_FORMAT_KEY);
-    }
-
-    @AfterEach
-    void restoreOverrides() {
-        restore(OVERRIDE_STORE_FORMAT_KEY, originalFormatOverride);
-        restore(OVERRIDE_SYSTEM_STORE_FORMAT_KEY, originalSystemFormatOverride);
-    }
-
     @Test
     @RequireAlignedFormat
     void noOverridesKeepDeclaredDefaults() {
@@ -60,10 +47,9 @@ class FormatOverrideMigratorIT {
     }
 
     @Test
+    @SetSystemProperty(key = OVERRIDE_STORE_FORMAT_KEY, value = "standard")
+    @SetSystemProperty(key = OVERRIDE_SYSTEM_STORE_FORMAT_KEY, value = "multiversion_block")
     void overridesReplaceDefaultsOfMatchingSettings() {
-        System.setProperty(OVERRIDE_STORE_FORMAT_KEY, "standard");
-        System.setProperty(OVERRIDE_SYSTEM_STORE_FORMAT_KEY, "multiversion_block");
-
         Config config = Config.defaults();
 
         assertThat(config.get(db_format)).isEqualTo("standard");
@@ -73,10 +59,9 @@ class FormatOverrideMigratorIT {
     }
 
     @Test
+    @SetSystemProperty(key = OVERRIDE_STORE_FORMAT_KEY, value = "standard")
+    @SetSystemProperty(key = OVERRIDE_SYSTEM_STORE_FORMAT_KEY, value = "standard")
     void explicitlySetValuesWinOverOverrides() {
-        System.setProperty(OVERRIDE_STORE_FORMAT_KEY, "standard");
-        System.setProperty(OVERRIDE_SYSTEM_STORE_FORMAT_KEY, "standard");
-
         Config config = Config.newBuilder()
                 .set(db_format, "block")
                 .set(system_database_format, "block")
@@ -87,23 +72,14 @@ class FormatOverrideMigratorIT {
     }
 
     @Test
+    @SetSystemProperty(key = OVERRIDE_STORE_FORMAT_KEY, value = "standard")
+    @SetSystemProperty(key = OVERRIDE_SYSTEM_STORE_FORMAT_KEY, value = "standard")
     void explicitlySetRawValuesWinOverOverrides() {
-        System.setProperty(OVERRIDE_STORE_FORMAT_KEY, "standard");
-        System.setProperty(OVERRIDE_SYSTEM_STORE_FORMAT_KEY, "standard");
-
         Config config = Config.newBuilder()
                 .setRaw(Map.of(db_format.name(), "block", system_database_format.name(), "block"))
                 .build();
 
         assertThat(config.get(db_format)).isEqualTo("block");
         assertThat(config.get(system_database_format)).isEqualTo("block");
-    }
-
-    private static void restore(String key, String originalValue) {
-        if (originalValue != null) {
-            System.setProperty(key, originalValue);
-        } else {
-            System.clearProperty(key);
-        }
     }
 }

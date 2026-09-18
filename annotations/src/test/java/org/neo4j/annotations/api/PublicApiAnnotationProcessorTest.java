@@ -26,15 +26,11 @@ import static org.neo4j.annotations.AnnotationTestHelper.detectNewLineSignature;
 import static org.neo4j.annotations.api.PublicApiAnnotationProcessor.GENERATED_SIGNATURE_DESTINATION;
 import static org.neo4j.annotations.api.PublicApiAnnotationProcessor.VERIFY_TOGGLE;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.util.SetSystemProperty;
 
+@SetSystemProperty(key = VERIFY_TOGGLE, value = "true")
 class PublicApiAnnotationProcessorTest {
-    @BeforeEach
-    void setUp() {
-        System.setProperty(VERIFY_TOGGLE, "true");
-    }
-
     @Test
     void printPublicSignature() throws Exception {
         assertThat(forResource("org/neo4j/annotations/api/PublicClass.java"))

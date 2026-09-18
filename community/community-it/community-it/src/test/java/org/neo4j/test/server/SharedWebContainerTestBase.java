@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.api.util.SetSystemProperty;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -42,6 +43,7 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 @ExtendWith(SuppressOutputExtension.class)
 @ResourceLock(SHARED_RESOURCE)
 @ResourceLock(Resources.SYSTEM_OUT)
+@SetSystemProperty(key = "org.neo4j.useInsecureCertificateGeneration", value = "true")
 public class SharedWebContainerTestBase {
     protected static TestWebContainer container() {
         return testWebContainer;
@@ -51,7 +53,6 @@ public class SharedWebContainerTestBase {
 
     @BeforeAll
     public static void allocateServer() throws Throwable {
-        System.setProperty("org.neo4j.useInsecureCertificateGeneration", "true");
         suppressAll().call((Callable<Void>) () -> {
             setWebContainerBuilderProperty(GraphDatabaseSettings.cypher_hints_error.name(), TRUE);
             setWebContainerBuilderProperty(BoltConnector.enabled.name(), TRUE);

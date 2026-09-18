@@ -43,11 +43,11 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.io.output.NullPrintStream;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.util.RestoreSystemProperties;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.CommandTestUtils;
 import org.neo4j.cli.ContextInjectingFactory;
@@ -71,6 +71,7 @@ import org.neo4j.test.utils.TestDirectory;
 import picocli.CommandLine;
 
 @TestDirectoryExtension
+@RestoreSystemProperties
 class DiagnosticsReportCommandIT {
     @Inject
     private TestDirectory testDirectory;
@@ -80,7 +81,6 @@ class DiagnosticsReportCommandIT {
 
     private Path homeDir;
     private Path configDir;
-    private String originalUserDir;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -92,19 +92,12 @@ class DiagnosticsReportCommandIT {
         Files.createFile(configDir.resolve("neo4j.conf"));
 
         // To make sure files are resolved from the working directory
-        originalUserDir =
-                System.setProperty("user.dir", testDirectory.absolutePath().toString());
+        System.setProperty("user.dir", testDirectory.absolutePath().toString());
     }
 
     private void createDatabaseDir(Path homeDir) throws IOException {
         // Database directory needed for command to be able to collect anything
         Files.createDirectories(homeDir.resolve("data").resolve("databases").resolve("neo4j"));
-    }
-
-    @AfterEach
-    void tearDown() {
-        // Restore directory
-        System.setProperty("user.dir", originalUserDir);
     }
 
     @Test

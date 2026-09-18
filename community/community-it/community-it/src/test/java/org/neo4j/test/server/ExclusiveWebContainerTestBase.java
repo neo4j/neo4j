@@ -28,6 +28,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.api.util.SetSystemProperty;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -37,6 +38,7 @@ import org.neo4j.test.utils.TestDirectory;
 @TestDirectoryExtension
 @ExtendWith(SuppressOutputExtension.class)
 @ResourceLock(Resources.SYSTEM_OUT)
+@SetSystemProperty(key = "org.neo4j.useInsecureCertificateGeneration", value = "true")
 public class ExclusiveWebContainerTestBase {
     @Inject
     protected TestDirectory testDirectory;
@@ -48,7 +50,6 @@ public class ExclusiveWebContainerTestBase {
 
     @BeforeAll
     public static void ensureServerNotRunning() throws Exception {
-        System.setProperty("org.neo4j.useInsecureCertificateGeneration", "true");
         suppressAll().call((Callable<Void>) () -> {
             WebContainerHolder.ensureNotRunning();
             return null;
