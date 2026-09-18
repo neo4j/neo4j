@@ -50,6 +50,7 @@ import org.neo4j.internal.schema.SemanticSearchSchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.internal.schema.constraints.SchemaValueType;
+import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.VectorType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -547,5 +548,28 @@ class SchemaStoreMapificationTest {
                 Values.stringArray("BOOLEAN", "VECTOR[coordinate=INTEGER8, dimensions=7]"));
 
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relTypeConstraintWithVector);
+    }
+
+    @Test
+    void mapificationShouldIterateInDeterministicOrder() {
+        TypeConstraintDescriptor rule = ConstraintDescriptorFactory.typeForSchema(
+                        SchemaDescriptors.forLabel(1, 2, 3, 4, 5, 6, 7),
+                        PropertyTypeSet.of(SchemaValueType.DATE, SchemaValueType.STRING),
+                        false)
+                .withId(100)
+                .withName("nodeType");
+        var mapified = mapifySchemaRule(rule);
+        var iterationOrder1 = mapified.entrySet().stream().toList();
+        // add and remove items in the map to verify that iteration order is stable
+        // i.e. the Map isn't a HashMap
+        final int GrowBy = 1000;
+        for (int i = 0; i < GrowBy; i++) {
+            mapified.put("temp_" + i, Values.intValue(i));
+        }
+        for (int i = 0; i < GrowBy; i++) {
+            mapified.remove("temp_" + i);
+        }
+        var iterationOrder2 = mapified.entrySet().stream().toList();
+        assertThat(iterationOrder1).isEqualTo(iterationOrder2);
     }
 }

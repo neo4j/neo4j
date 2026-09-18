@@ -19,21 +19,25 @@
  */
 package org.neo4j.internal.kernel.api.leases;
 
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.storageengine.api.Leases;
 
 public class PropertyShardLeases implements Leases {
     public static final PropertyShardLeases EMPTY = new PropertyShardLeases(Map.of());
-    private final Map<DatabaseId, PropertyShardLease> leases;
+    // Use a SortedMap to ensure deterministic iteration and serialization
+    private final SortedMap<DatabaseId, PropertyShardLease> leases;
 
     public PropertyShardLeases(Map<DatabaseId, PropertyShardLease> leases) {
-        this.leases = Map.copyOf(leases);
+        this.leases = new TreeMap<>(Comparator.comparing(DatabaseId::uuid));
+        this.leases.putAll(leases);
     }
 
     public static PropertyShardLeases from(Map<DatabaseId, PropertyShardLease> leases) {
@@ -61,7 +65,7 @@ public class PropertyShardLeases implements Leases {
     }
 
     public PropertyShardLeases updateLease(DatabaseId propertyShardId, ServerId serverId) {
-        var lease = leases.get(propertyShardId);
+        PropertyShardLease lease = leases.get(propertyShardId);
         long leaseId = 0;
         if (lease != null) {
             leaseId = lease.id() + 1;
@@ -71,7 +75,7 @@ public class PropertyShardLeases implements Leases {
     }
 
     public PropertyShardLeases merge(PropertyShardLeases nextLeases) {
-        var copy = new HashMap<>(this.leases);
+        SortedMap<DatabaseId, PropertyShardLease> copy = new TreeMap<>(this.leases);
         if (isValidTransition(nextLeases)) {
             copy.putAll(nextLeases.leases);
         }
@@ -80,11 +84,11 @@ public class PropertyShardLeases implements Leases {
 
     public boolean doLeasesMatch(Leases other) {
         for (Lease otherLease : other) {
-            var propertyShardId = otherLease.databaseId();
+            DatabaseId propertyShardId = otherLease.databaseId();
             if (!leases.containsKey(propertyShardId)) {
                 return false;
             }
-            var currentLease = leases.get(propertyShardId);
+            PropertyShardLease currentLease = leases.get(propertyShardId);
 
             if (!currentLease.equals(PropertyShardLease.from(otherLease))) {
                 return false;
@@ -94,8 +98,8 @@ public class PropertyShardLeases implements Leases {
     }
 
     private boolean isValidTransition(PropertyShardLeases nextLeases) {
-        for (var next : nextLeases) {
-            var currentLease = leases.get(next.databaseId());
+        for (Lease next : nextLeases) {
+            PropertyShardLease currentLease = leases.get(next.databaseId());
             if (currentLease != null && !currentLease.isValidTransition(next)) {
                 return false;
             }

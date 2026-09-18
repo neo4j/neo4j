@@ -32,6 +32,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.function.Consumer;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
@@ -285,6 +286,8 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_3_D3 {
      */
     private static void writeStringValueMap(WritableChannel channel, Map<String, Value> ruleMap) throws IOException {
         channel.putInt(ruleMap.size());
+        // The map returned from SchemaRuleMapifier.mapifySchemaRule is sorted to ensure deterministic checksums
+        assert ruleMap instanceof SortedMap<String, Value> : "Schema rules must be mapped deterministically";
         for (Map.Entry<String, Value> entry : ruleMap.entrySet()) {
             writeMapKeyByteArray(channel, UTF8.encode(entry.getKey()));
             writeMapValue(channel, entry.getValue());

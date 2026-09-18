@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.TreeMap;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.constraints.ConstrainableType;
@@ -99,11 +100,12 @@ public class SchemaRuleMapifier {
     /**
      * Turn a {@link SchemaRule} into a map-of-string-to-value representation.
      * @param rule the schema rule to convert.
-     * @return a map representation of the given schema rule.
+     * @return a sorted map representation of the given schema rule.
+     * The iterators are sorted to ensure deterministic checksums in logs
      * @see #unmapifySchemaRule(long, Map)
      */
     public static Map<String, Value> mapifySchemaRule(SchemaRule rule) {
-        Map<String, Value> map = new HashMap<>();
+        Map<String, Value> map = new TreeMap<>();
         putStringProperty(map, PROP_SCHEMA_RULE_NAME, rule.getName());
 
         // Schema
