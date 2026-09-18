@@ -204,13 +204,14 @@ public class Configuration {
     }
 
     public static class Builder {
+        public static final int DEFAULT_BUFFER_SIZE = (int) mebiBytes(4);
         public static final int DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR = (int) kibiBytes(64);
 
         private char quotationCharacter = '"';
         private char delimiter = ',';
         private char arrayDelimiter = ';';
         private char vectorDelimiter = ';';
-        private int bufferSize = (int) mebiBytes(4);
+        private int bufferSize = DEFAULT_BUFFER_SIZE;
         private boolean legacyMultilineFieldsForNodes;
         private boolean legacyMultilineFieldsForRelationships;
         private Predicate<String> multilineDocuments = Predicates.alwaysFalse();
