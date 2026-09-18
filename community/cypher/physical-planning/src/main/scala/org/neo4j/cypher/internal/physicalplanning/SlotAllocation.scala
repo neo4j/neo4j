@@ -171,6 +171,7 @@ import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.Liv
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.NestedPlanArgumentConfigurations
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TransactionApplyPlans
 import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.DiscardFromLhs
 import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.DiscardFromRhs
 import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.DoNotDiscard
@@ -232,12 +233,14 @@ object SlotAllocation {
    * @param conditionalApplyPlan the nearest outer [Anti]ConditionalApply plan
    * @param trailPlan the nearest outer Trail plan
    * @param acyclicPlan the nearest outer Acyclic plan
+   * @param transactionApplyPlan the nearest outer transaction subquery plan (e.g. TransactionApply or TransactionForeach)
    */
   case class SlotsAndArgument(
     slotConfiguration: SlotConfigurationBuilder,
     argumentSize: Size,
     argumentPlan: Id,
     conditionalApplyPlan: Id,
+    transactionApplyPlan: Id,
     trailPlan: Id,
     acyclicPlan: Id
   ) {
@@ -253,6 +256,7 @@ object SlotAllocation {
     slotConfigurations: SlotConfigurations,
     argumentSizes: ArgumentSizes,
     applyPlans: ApplyPlans,
+    transactionApplyPlans: TransactionApplyPlans,
     trailPlans: TrailPlans,
     acyclicPlans: AcyclicPlans,
     nestedPlanArgumentConfigurations: NestedPlanArgumentConfigurations
@@ -263,7 +267,7 @@ object SlotAllocation {
     if (allocateArgumentSlots) {
       slots.newArgument(Id.INVALID_ID)
     }
-    SlotsAndArgument(slots, Size.zero, Id.INVALID_ID, Id.INVALID_ID, Id.INVALID_ID, Id.INVALID_ID)
+    SlotsAndArgument(slots, Size.zero, Id.INVALID_ID, Id.INVALID_ID, Id.INVALID_ID, Id.INVALID_ID, Id.INVALID_ID)
   }
 
   final val INITIAL_SLOT_CONFIGURATION: SlotConfiguration = NO_ARGUMENT(true).slotConfiguration.build()
@@ -308,11 +312,14 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   private val allocations: SlotConfigurations = new SlotConfigurations,
   private val argumentSizes: ArgumentSizes = new ArgumentSizes,
   private val applyPlans: ApplyPlans = new ApplyPlans,
+  private val transactionApplyPlans: TransactionApplyPlans = new TransactionApplyPlans,
   private val trailPlans: TrailPlans = new TrailPlans,
   private val acyclicPlans: AcyclicPlans = new AcyclicPlans,
   private val liveVariables: LiveVariables = new LiveVariables,
   private val nestedPlanArgumentConfigurations: NestedPlanArgumentConfigurations = new NestedPlanArgumentConfigurations
 ) {
+
+  private[this] val breakingPolicyAttributes = PipelineBreakingPolicy.Attributes(applyPlans, transactionApplyPlans)
 
   /**
    * We need argument row id slots for cartesian product in the pipelines runtime
@@ -396,11 +403,17 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       cancellationChecker.throwIfCancelled()
       val (nullable, current) = planStack.pop()
 
-      val (outerApplyPlan, outerTrailPlan, outerAcyclicPlan) = if (argumentStack.isEmpty)
-        (Id.INVALID_ID, Id.INVALID_ID, Id.INVALID_ID)
-      else (argumentStack.getFirst.argumentPlan, argumentStack.getFirst.trailPlan, argumentStack.getFirst.acyclicPlan)
+      val (outerApplyPlan, outerTrailPlan, outerAcyclicPlan, outerTransactionApplyPlan) = if (argumentStack.isEmpty)
+        (Id.INVALID_ID, Id.INVALID_ID, Id.INVALID_ID, Id.INVALID_ID)
+      else (
+        argumentStack.getFirst.argumentPlan,
+        argumentStack.getFirst.trailPlan,
+        argumentStack.getFirst.acyclicPlan,
+        argumentStack.getFirst.transactionApplyPlan
+      )
 
       applyPlans.set(current.id, outerApplyPlan)
+      transactionApplyPlans.set(current.id, outerTransactionApplyPlan)
       trailPlans.set(current.id, outerTrailPlan)
       acyclicPlans.set(current.id, outerAcyclicPlan)
 
@@ -409,7 +422,12 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           val argument = getArgument()
           recordArgument(current, argument)
 
-          val slots = breakingPolicy.invoke(current, argument.slotConfiguration, argument.slotConfiguration, applyPlans)
+          val slots = breakingPolicy.invoke(
+            current,
+            argument.slotConfiguration,
+            argument.slotConfiguration,
+            breakingPolicyAttributes
+          )
 
           allocateExpressionsOneChild(current, nullable, slots, semanticTable, cancellationChecker)
           allocateLeaf(current, nullable, slots)
@@ -421,7 +439,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           val argument = getArgument()
           allocateExpressionsOneChildOnInput(current, nullable, sourceSlots, semanticTable, cancellationChecker)
 
-          val slots = breakingPolicy.invoke(current, sourceSlots, argument.slotConfiguration, applyPlans)
+          val slots = breakingPolicy.invoke(current, sourceSlots, argument.slotConfiguration, breakingPolicyAttributes)
           allocateOneChild(
             argument,
             current,
@@ -440,14 +458,23 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           val argumentSlots = resultStack.getFirst
           val argument = getArgument()
 
-          def isConditionalApplyPlan: Boolean = current match {
-            case _: ConditionalApply | _: AntiConditionalApply => true
-            case _                                             => false
+          // Determine apply plan attributes
+          var conditionalApplyPlan = argument.conditionalApplyPlan
+          var trailPlan = argument.trailPlan
+          var acyclicPlan = argument.acyclicPlan
+          var transactionApplyPlan = argument.transactionApplyPlan
+          current match {
+            case _: ConditionalApply | _: AntiConditionalApply =>
+              conditionalApplyPlan = current.id
+            case _: RepeatTrail | _: RepeatWalk =>
+              trailPlan = current.id
+            case _: RepeatAcyclic =>
+              acyclicPlan = current.id
+            case _: TransactionApply | _: TransactionForeach =>
+              transactionApplyPlan = current.id
+            case _ =>
+            // Do nothing
           }
-          val conditionalApplyPlan = if (isConditionalApplyPlan) current.id else argument.conditionalApplyPlan
-          val trailPlan = if (current.isInstanceOf[RepeatTrail] || current.isInstanceOf[RepeatWalk]) current.id
-          else argument.trailPlan
-          val acyclicPlan = if (current.isInstanceOf[RepeatAcyclic]) current.id else argument.acyclicPlan
           if (allocateArgumentSlots) {
             if (nestedArgumentRowIdSlotNeeded(current)) {
               argumentSlots.newNestedArgument(current.id)
@@ -462,6 +489,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             argumentSlots.size(),
             current.id,
             conditionalApplyPlan,
+            transactionApplyPlan,
             trailPlan,
             acyclicPlan
           ))
@@ -480,6 +508,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
               newArgument.size(),
               current.id,
               previousArgument.conditionalApplyPlan,
+              previousArgument.transactionApplyPlan,
               previousArgument.trailPlan,
               previousArgument.acyclicPlan
             ))
@@ -512,7 +541,15 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       comingFrom = current
     }
 
-    SlotMetaData(allocations, argumentSizes, applyPlans, trailPlans, acyclicPlans, nestedPlanArgumentConfigurations)
+    SlotMetaData(
+      allocations,
+      argumentSizes,
+      applyPlans,
+      transactionApplyPlans,
+      trailPlans,
+      acyclicPlans,
+      nestedPlanArgumentConfigurations
+    )
   }
 
   case class Accumulator(doNotTraverseExpression: Option[Expression])
@@ -664,6 +701,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
              */
             val conditionalApplyPlan = Id.INVALID_ID
             val argumentPlan = Id.INVALID_ID
+            val transactionApplyPlan = Id.INVALID_ID
+
             /*
              * We don't think we need to propagate the Trail plan id since
              * nested plans are only ever run with slotted pipes.
@@ -676,6 +715,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
                 argumentSlotConfiguration.size(),
                 argumentPlan,
                 conditionalApplyPlan,
+                transactionApplyPlan,
                 trailPlanId,
                 acyclicPlanId
               )
@@ -734,6 +774,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       allocations,
       argumentSizes,
       applyPlans,
+      transactionApplyPlans,
       trailPlans,
       nestedPlanArgumentConfigurations = nestedPlanArgumentConfigurations
     )
@@ -1156,7 +1197,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: AbstractSelectOrSemiApply =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans)
+        val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, breakingPolicyAttributes)
         rhs.keyedSlots.foreach {
           case SlotWithKeyAndAliases(VariableSlotKey(key), slot, _) if slot.offset >= lhs.numberOfLongs =>
             result.add(key, slot.asNullable)
@@ -1183,7 +1224,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case _: CartesianProduct =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, breakingPolicyAttributes)
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
         // Note, we can potentially carry discarded slots from rhs here to save memory
@@ -1194,7 +1235,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case RightOuterHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans)
+        val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, breakingPolicyAttributes)
 
         // Note, we can potentially carry discarded slots from lhs here to save memory
         lhs.keyedSlotsOrdered().foreach {
@@ -1228,7 +1269,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case LeftOuterHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, breakingPolicyAttributes)
 
         // Note, we can potentially carry discarded slots from rhs here to save memory
         rhs.keyedSlotsOrdered().foreach {
@@ -1262,7 +1303,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case NodeHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, breakingPolicyAttributes)
 
         // Note, we can potentially carry discaded slots from rhs here to save memory
         rhs.keyedSlotsOrdered().foreach {
@@ -1296,7 +1337,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         rhs.addArgumentAliasesTo(lhs, argument.argumentSize)
-        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, breakingPolicyAttributes)
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
         // Note, we can potentially carry discarded slots from rhs here to save memory
@@ -1400,7 +1441,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         lhs
 
       case _: SubqueryForeach =>
-        breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
+        breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, breakingPolicyAttributes)
 
       case t: TransactionForeach =>
         // For consistency with TransactionApply
@@ -1410,7 +1451,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           lhs.newReference(statusVar, nullable, CTMap)
         }
 
-        breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
+        breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, breakingPolicyAttributes)
 
       case t: TransactionApply =>
         // We need argument size to determine which slots to (not) null out later
@@ -1433,11 +1474,11 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           }
         }
 
-        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans)
+        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, breakingPolicyAttributes)
 
       case _: Repeat =>
         recordArgument(lp)
-        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans)
+        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, breakingPolicyAttributes)
 
       case p =>
         throw SlotAllocationFailed.internalError(this.getClass.getSimpleName, s"Don't know how to handle $p")
@@ -1535,7 +1576,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       }
     }
 
-    breakingPolicy.discardPolicy(lp, applyPlans) match {
+    breakingPolicy.discardPolicy(lp, breakingPolicyAttributes) match {
       case DoNotDiscard   => // Do nothing
       case DiscardFromLhs => doDiscard(lhs)
       case DiscardFromRhs => doDiscard(rhs.getOrElse(throw new IllegalStateException(s"Expected plan to ha $lp")))

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.Attributes
 import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.DiscardFromLhs
 import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.DiscardFromRhs
 import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.DiscardPolicy
@@ -47,15 +48,15 @@ trait PipelineBreakingPolicy {
   /**
    * True if the an operator should be the start of a new pipeline.
    */
-  def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean
+  def breakOn(lp: LogicalPlan, attributes: Attributes): Boolean
 
   def invoke(
     lp: LogicalPlan,
     slots: SlotConfigurationBuilder,
     argumentSlots: SlotConfigurationBuilder,
-    applyPlans: PhysicalPlanningAttributes.ApplyPlans
+    attributes: Attributes
   ): SlotConfigurationBuilder =
-    if (breakOn(lp, applyPlans)) {
+    if (breakOn(lp, attributes)) {
       lp match {
         case _: AggregatingPlan => argumentSlots.copy()
         case _                  => slots.copy()
@@ -65,8 +66,8 @@ trait PipelineBreakingPolicy {
   def nestedPlanBreakingPolicy: PipelineBreakingPolicy = this
 
   /** Used to determine if an operator supports discarding */
-  def discardPolicy(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): DiscardPolicy = {
-    if (breakOn(lp, applyPlans)) {
+  def discardPolicy(lp: LogicalPlan, attributes: Attributes): DiscardPolicy = {
+    if (breakOn(lp, attributes)) {
       // Only plans that break can allow discarding, discarding needs to be the last thing that happens to the data
       // before creating a new row.
       discardPolicyWhenBreaking(lp)
@@ -93,11 +94,25 @@ trait PipelineBreakingPolicy {
 
 object BREAK_FOR_LEAFS extends PipelineBreakingPolicy {
 
-  override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean =
+  override def breakOn(lp: LogicalPlan, attributes: Attributes): Boolean =
     lp.isInstanceOf[LogicalLeafPlan]
 }
 
 object PipelineBreakingPolicy {
+
+  case class Attributes(
+    applyPlans: PhysicalPlanningAttributes.ApplyPlans,
+    transactionApplyPlans: PhysicalPlanningAttributes.TransactionApplyPlans
+  )
+
+  object Attributes {
+
+    // NOTE: Technically mutable. Don't mutate it!
+    final val empty: Attributes = Attributes(
+      new PhysicalPlanningAttributes.ApplyPlans,
+      new PhysicalPlanningAttributes.TransactionApplyPlans
+    )
+  }
 
   sealed trait DiscardPolicy
   object DoNotDiscard extends DiscardPolicy
@@ -111,14 +126,14 @@ object PipelineBreakingPolicy {
   def breakFor(logicalPlans: LogicalPlan*): PipelineBreakingPolicy =
     new PipelineBreakingPolicy {
 
-      override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean =
+      override def breakOn(lp: LogicalPlan, applyPlans: Attributes): Boolean =
         logicalPlans.contains(lp)
     }
 
   def breakForIds(ids: Id*): PipelineBreakingPolicy =
     new PipelineBreakingPolicy {
 
-      override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean =
+      override def breakOn(lp: LogicalPlan, attributes: Attributes): Boolean =
         ids.contains(lp.id)
     }
 }

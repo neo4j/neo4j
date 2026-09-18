@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.physicalplanning.LivenessAnalysisTest.IncorrectLivenessException
 import org.neo4j.cypher.internal.physicalplanning.LivenessAnalysisTest.PlanWithLiveAsserts
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.LiveVariables
+import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.Attributes
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -449,11 +450,11 @@ object LivenessAnalysisTest {
   case class IncorrectLivenessException(msg: String) extends IllegalStateException(msg)
 
   object TestBreakingPolicy extends PipelineBreakingPolicy {
-    override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean = ???
+    override def breakOn(lp: LogicalPlan, applyPlans: Attributes): Boolean = ???
   }
 
   object DiscardInAllPlansPolicy extends PipelineBreakingPolicy {
-    override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean = ???
+    override def breakOn(lp: LogicalPlan, applyPlans: Attributes): Boolean = ???
     override def canBeDiscardingPlan(lp: LogicalPlan): Boolean = true
   }
 

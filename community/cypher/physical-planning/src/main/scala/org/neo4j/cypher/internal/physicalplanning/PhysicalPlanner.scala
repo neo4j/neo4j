@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.App
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ArgumentSizes
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.LiveVariables
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TransactionApplyPlans
 import org.neo4j.cypher.internal.physicalplanning.debug.events.PhysicalPlanning
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
@@ -78,6 +79,7 @@ object PhysicalPlanner {
       slotMetaData.slotConfigurations.finalizeSlots(),
       slotMetaData.argumentSizes,
       slotMetaData.applyPlans,
+      slotMetaData.transactionApplyPlans,
       slotMetaData.trailPlans,
       slotMetaData.acyclicPlans,
       slotMetaData.nestedPlanArgumentConfigurations.finalizeSlots(),
@@ -93,6 +95,7 @@ case class PhysicalPlan(
   slotConfigurations: ImmutableAttribute[SlotConfiguration],
   argumentSizes: ArgumentSizes,
   applyPlans: ApplyPlans,
+  transactionApplyPlans: TransactionApplyPlans,
   trailPlans: TrailPlans,
   acyclicPlans: AcyclicPlans,
   nestedPlanArgumentConfigurations: ImmutableAttribute[SlotConfiguration],
