@@ -149,7 +149,7 @@
     <jdk25.vm.options>-XX:+UseCompactObjectHeaders --sun-misc-unsafe-memory-access=allow</jdk25.vm.options>
     <jersey.version>2.46</jersey.version>
     <jetty.toolchain.version>4.0.9</jetty.toolchain.version>
-    <jetty.version>12.1.11</jetty.version>
+    <jetty.version>12.1.13</jetty.version>
     <json-unit.version>6.2.0</json-unit.version>
     <json4s.version>4.1.0</json4s.version>
     <jsr305.version>3.0.2</jsr305.version>
