@@ -49,10 +49,16 @@ abstract class TransactionalQueryErrorAcceptanceTestBase
     with CreateTempFileTestSupport
     with BeforeAndAfterAll {
 
-  val db: FeatureDatabaseManagementService = dbms
+  private var db: FeatureDatabaseManagementService = _
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    db = dbms
+  }
 
   override def afterAll(): Unit = {
     db.shutdown()
+    super.afterAll()
   }
 
   // This is an absolute mess...

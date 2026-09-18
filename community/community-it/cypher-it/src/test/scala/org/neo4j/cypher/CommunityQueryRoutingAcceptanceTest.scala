@@ -48,15 +48,18 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherITTestSuite
     with FeatureDatabaseManagementService.TestBase
     with BeforeAndAfterAll {
 
-  val db: FeatureDatabaseManagementService = dbms
+  private var db: FeatureDatabaseManagementService = _
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
+    db = dbms
     db.execute(s"CREATE (:Db {name:'$DEFAULT_DATABASE_NAME'})", _.consume())
     db.execute("CREATE INDEX myIndex FOR (db:Db) ON (db.name)", _.consume())
   }
 
   override def afterAll(): Unit = {
     db.shutdown()
+    super.afterAll()
   }
 
   test("should route a query with leading USE") {

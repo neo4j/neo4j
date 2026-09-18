@@ -31,7 +31,7 @@ import org.neo4j.notifications.StandardGqlStatusObject
 
 trait DeprecationTestSupport extends CypherITTestSuite {
 
-  protected val dbms: FeatureDatabaseManagementService
+  protected def dbms: FeatureDatabaseManagementService
 
   def assertNotification(
     queries: Seq[String],

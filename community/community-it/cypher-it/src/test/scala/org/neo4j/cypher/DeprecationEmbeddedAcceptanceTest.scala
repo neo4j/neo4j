@@ -32,10 +32,16 @@ class DeprecationEmbeddedAcceptanceTest extends DeprecationAcceptanceTestBase {
     // Might need to be enabled when the next experimental version appear: .set(GraphDatabaseInternalSettings.enable_experimental_cypher_versions, java.lang.Boolean.TRUE)
     .build()
 
-  private val managementService: DatabaseManagementService =
-    new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
-  private val executorFactory: CypherExecutorFactory = EmbeddedCypherExecutorFactory(managementService, config)
+  private var managementService: DatabaseManagementService = _
+  private var executorFactory: CypherExecutorFactory = _
+  private var _dbms: FeatureDatabaseManagementService = _
 
-  override protected val dbms: FeatureDatabaseManagementService =
-    FeatureDatabaseManagementService(managementService, executorFactory)
+  override protected def dbms: FeatureDatabaseManagementService = _dbms
+
+  override def beforeAll(): Unit = {
+    managementService = new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
+    executorFactory = EmbeddedCypherExecutorFactory(managementService, config)
+    _dbms = FeatureDatabaseManagementService(managementService, executorFactory)
+    super.beforeAll()
+  }
 }

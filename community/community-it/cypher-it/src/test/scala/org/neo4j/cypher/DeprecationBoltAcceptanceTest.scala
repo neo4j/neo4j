@@ -44,10 +44,16 @@ class DeprecationBoltAcceptanceTest extends DeprecationAcceptanceTestBase {
     .set(boltConfig.asJava)
     .build()
 
-  private val managementService: DatabaseManagementService =
-    new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
-  private val executorFactory: CypherExecutorFactory = DriverCypherExecutorFactory(managementService, config)
+  private var managementService: DatabaseManagementService = _
+  private var executorFactory: CypherExecutorFactory = _
+  private var _dbms: FeatureDatabaseManagementService = _
 
-  override protected val dbms: FeatureDatabaseManagementService =
-    FeatureDatabaseManagementService(managementService, executorFactory)
+  override protected def dbms: FeatureDatabaseManagementService = _dbms
+
+  override def beforeAll(): Unit = {
+    managementService = new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
+    executorFactory = DriverCypherExecutorFactory(managementService, config)
+    _dbms = FeatureDatabaseManagementService(managementService, executorFactory)
+    super.beforeAll()
+  }
 }

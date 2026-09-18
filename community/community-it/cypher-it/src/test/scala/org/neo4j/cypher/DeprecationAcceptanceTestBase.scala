@@ -73,6 +73,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
     with DeprecationTestSupport {
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     // Used for testing deprecated procedures
     dbms.registerProcedure(classOf[TestProcedures])
     dbms.registerFunction(classOf[TestFunctions])
@@ -81,6 +82,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
 
   override def afterAll(): Unit = {
     dbms.shutdown()
+    super.afterAll()
   }
 
   private val dbName = if (isSpd) "neo4j-g000" else "neo4j"
