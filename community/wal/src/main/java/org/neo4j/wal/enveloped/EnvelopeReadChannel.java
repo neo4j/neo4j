@@ -31,6 +31,8 @@ import static org.neo4j.wal.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.IGNORE_CONTENT_VERSION;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.KERNEL_CONTENT_TYPE;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.MAX_ZERO_PADDING_SIZE;
+import static org.neo4j.wal.entry.LogEnvelopeHeader.OFFSET_ENVELOPE_TYPE;
+import static org.neo4j.wal.entry.LogEnvelopeHeader.OFFSET_PAYLOAD_LENGTH;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.REPLICATED_TX_CONTENT_TYPE;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.UNSPECIFIED_INDEX;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.UNSPECIFIED_TERM;
@@ -669,8 +671,10 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
             payloadStartOffset = buffer.limit();
             payloadEndOffset = buffer.limit();
         } else {
-            readAllEnvelopesUpToIncluding(buffer.position(), true);
-            buffer.position(initialPosition);
+            readAllEnvelopesUpToIncluding(initialPosition, true);
+            // payloadStartOffset wins when initialPosition sits in the segment's trailing padding, which reports
+            // as the payload at the segment end - standing there keeps the position within the payload bounds
+            buffer.position(Math.max(initialPosition, payloadStartOffset));
         }
     }
 
@@ -700,11 +704,8 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     private int endOfContentInLoadedSegment() throws IOException {
         int offset = 0;
         final int limit = buffer.limit();
-        while (limit - offset > HEADER_SIZE) {
-            if (buffer.get(offset + LogEnvelopeHeader.OFFSET_ENVELOPE_TYPE) == EnvelopeType.ZERO.typeValue) {
-                break;
-            }
-            int payloadLength = buffer.getInt(offset + LogEnvelopeHeader.OFFSET_PAYLOAD_LENGTH);
+        while (!isEndOfContent(offset)) {
+            int payloadLength = buffer.getInt(offset + OFFSET_PAYLOAD_LENGTH);
             if (payloadLength <= 0) {
                 break;
             }
@@ -713,6 +714,14 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         int endOfContent = min(offset, limit);
         enforceZerosFrom(endOfContent, limit);
         return endOfContent;
+    }
+
+    // Whether nothing but zero padding can follow this offset: either the segment has too little room left for
+    // another envelope header, or the byte where the next envelope's type would sit reads as ZERO. Uses absolute
+    // gets so the buffer's position is left untouched.
+    private boolean isEndOfContent(int offset) {
+        return buffer.limit() - offset <= HEADER_SIZE
+                || buffer.get(offset + OFFSET_ENVELOPE_TYPE) == EnvelopeType.ZERO.typeValue;
     }
 
     // Same zero check readEnvelopeHeader()/enforceZeros() would have made had we walked this region
@@ -779,6 +788,20 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         }
 
         while (payloadEndOffset < bufferOffset) {
+            if (isEndOfContent(payloadEndOffset)) {
+                // bufferOffset points into the zeros that close this segment. No envelope ends in there.
+                // This could be preallocated file content, or zero padding
+                // We don't want to walk further than the available data, so end the loop here.
+                enforceZerosFrom(payloadEndOffset, buffer.limit());
+                if (buffer.limit() - payloadEndOffset > MAX_ZERO_PADDING_SIZE) {
+                    // Wider than the writer ever pads, so these zeros are not padding but the pre-allocated
+                    // space after the last content in the file. Report the file end.
+                    throw ReadPastEndException.INSTANCE;
+                }
+                payloadStartOffset = buffer.limit();
+                payloadEndOffset = buffer.limit();
+                break;
+            }
             readEnvelopeHeader();
             skipToNextEnvelope();
         }
