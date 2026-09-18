@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.ast.ParsedAsLet
 import org.neo4j.cypher.internal.ast.ParsedAsOrderBy
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.test.util.ParseStringMatcher
 import org.neo4j.cypher.internal.ast.test.util.Parsers
 import org.neo4j.cypher.internal.ast.test.util.Parses
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
@@ -36,21 +38,27 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.Namespace
+import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.prop.TableFor2
+import org.scalatest.prop.Tables
 
 import scala.reflect.ClassTag
 import scala.util.Random
 
-class LetParserTest extends AstParsingTestBase {
+class LetParserTest extends AstParsingTestBase with TableDrivenPropertyChecks {
 
   // positive tests
 
-  def parsesValidLet[T <: ASTNode : ClassTag](expected: T, offset: Int)(implicit p: Parsers[T]): Parses[T] =
-    parsesIn[T] {
+  def parseValidLet[T <: ASTNode : ClassTag](expected: T, offset: Int)(implicit p: Parsers[T]): ParseStringMatcher[T] =
+    parseIn[T] {
       case Cypher5 => _.withSyntaxErrorContaining(
           "Invalid input 'LET': expected"
         ).withSyntaxErrorContaining(s"(line 1, column ${offset + 1} (offset: $offset))")
       case _ => _.toAst(expected)
     }
+
+  def parsesValidLet[T <: ASTNode : ClassTag](expected: T, offset: Int)(implicit p: Parsers[T]): Unit =
+    testName should parseValidLet(expected, offset)
 
   test(s"LET DISTINCT = false") {
     parsesValidLet[Clause](withAdditionalItemsTyped(ParsedAsLet, aliasedReturnItem(falseLiteral, "DISTINCT")), 0)
@@ -138,37 +146,52 @@ class LetParserTest extends AstParsingTestBase {
       )
     )
 
-  private val rand = new Random(1)
-
-  private def pickNFrom[T](n: Int, seq: Seq[T]): Seq[T] = Random.shuffle(seq).take(n)
-
-  private def pickMaxNFrom[T](n: Int, seq: Seq[T]): Seq[T] = pickNFrom(rand.nextInt(n + 1), seq)
-
   private val samples = 20
   private val maxAdditionalItems = 6
 
-  for {
-    firstItem <- letItems
-    additionalItems <- (0 until samples).map(_ => pickMaxNFrom(maxAdditionalItems, letItems)).distinct
-  } {
-    val itemsGen = (firstItem +: additionalItems)
-    val items = itemsGen.zip(pickNFrom(itemsGen.size, variableNames)).map {
-      case ((rhsCypher, rhsExpression), (variable, escaped)) =>
-        val ari = aliasedReturnItem(rhsExpression, variable)
-        val cypher = if (escaped) s"`$variable` = $rhsCypher" else s"$variable = $rhsCypher"
-        (cypher, ari)
-    }
-    val cypherLet = s"LET ${items.map(_._1).mkString(", ")}"
-    val expectedWith = withAdditionalItemsTyped(ParsedAsLet, items.map(_._2): _*)
+  private val seed = new Random().nextLong()
 
-    test(s"$cypherLet") {
-      parsesValidLet[Clause](
-        expectedWith,
-        0
-      )
+  private def positiveCases: TableFor2[String, With] = {
+    val rand = new Random(seed)
+
+    def pickNFrom[T](n: Int, seq: Seq[T]): Seq[T] = rand.shuffle(seq).take(n)
+
+    def pickMaxNFrom[T](n: Int, seq: Seq[T]): Seq[T] = pickNFrom(rand.nextInt(n + 1), seq)
+
+    val cases =
+      for {
+        firstItem <- letItems
+        additionalItems <- (0 until samples).map(_ => pickMaxNFrom(maxAdditionalItems, letItems)).distinct
+      } yield {
+        val itemsGen = (firstItem +: additionalItems)
+        val items = itemsGen.zip(pickNFrom(itemsGen.size, variableNames)).map {
+          case ((rhsCypher, rhsExpression), (variable, escaped)) =>
+            val ari = aliasedReturnItem(rhsExpression, variable)
+            val cypher = if (escaped) s"`$variable` = $rhsCypher" else s"$variable = $rhsCypher"
+            (cypher, ari)
+        }
+        val cypherLet = s"LET ${items.map(_._1).mkString(", ")}"
+        val expectedWith = withAdditionalItemsTyped(ParsedAsLet, items.map(_._2): _*)
+        (cypherLet, expectedWith)
+      }
+
+    Tables.Table(("cypherLet", "expectedWith"), cases: _*)
+  }
+
+  private def forAllPositiveCases(f: (String, With) => Unit): Unit =
+    withClue(s"random seed = $seed (reproduce with new Random($seed)): ") {
+      forAll(positiveCases) { case (cypherLet, expectedWith) => f(cypherLet, expectedWith) }
     }
-    test(s"MATCH (a) $cypherLet RETURN a") {
-      parsesValidLet[Statements](
+
+  test("<cypherLet>") {
+    forAllPositiveCases { (cypherLet, expectedWith) =>
+      cypherLet should parseValidLet[Clause](expectedWith, 0)
+    }
+  }
+
+  test("MATCH (a) <cypherLet> RETURN a") {
+    forAllPositiveCases { (cypherLet, expectedWith) =>
+      s"MATCH (a) $cypherLet RETURN a" should parseValidLet(
         Statements(Seq(SingleQuery(Seq(
           match_(Seq(nodePat(Some("a"))), None),
           expectedWith,
@@ -177,8 +200,11 @@ class LetParserTest extends AstParsingTestBase {
         10
       )
     }
-    test(s"MATCH (a) WHERE true $cypherLet RETURN a") {
-      parsesValidLet[Statements](
+  }
+
+  test("MATCH (a) WHERE true <cypherLet> RETURN a") {
+    forAllPositiveCases { (cypherLet, expectedWith) =>
+      s"MATCH (a) WHERE true $cypherLet RETURN a" should parseValidLet(
         Statements(Seq(SingleQuery(Seq(
           match_(Seq(nodePat(Some("a"))), Some(where(trueLiteral))),
           expectedWith,
@@ -187,8 +213,11 @@ class LetParserTest extends AstParsingTestBase {
         21
       )
     }
-    test(s"MATCH (a) WITH * WHERE true $cypherLet RETURN a") {
-      parsesValidLet[Statements](
+  }
+
+  test("MATCH (a) WITH * WHERE true <cypherLet> RETURN a") {
+    forAllPositiveCases { (cypherLet, expectedWith) =>
+      s"MATCH (a) WITH * WHERE true $cypherLet RETURN a" should parseValidLet(
         Statements(Seq(SingleQuery(Seq(
           match_(Seq(nodePat(Some("a"))), None),
           withAllTyped(Some(where(trueLiteral)), DefaultWith),
@@ -198,8 +227,11 @@ class LetParserTest extends AstParsingTestBase {
         28
       )
     }
-    test(s"MATCH (a) $cypherLet WITH *, 1 AS b RETURN a") {
-      parsesValidLet[Statements](
+  }
+
+  test("MATCH (a) <cypherLet> WITH *, 1 AS b RETURN a") {
+    forAllPositiveCases { (cypherLet, expectedWith) =>
+      s"MATCH (a) $cypherLet WITH *, 1 AS b RETURN a" should parseValidLet(
         Statements(Seq(SingleQuery(Seq(
           match_(Seq(nodePat(Some("a"))), None),
           expectedWith,
@@ -209,8 +241,11 @@ class LetParserTest extends AstParsingTestBase {
         10
       )
     }
-    test(s"MATCH (a) ORDER BY a.prop OFFSET 1 LIMIT 1 $cypherLet FILTER true RETURN a") {
-      parsesValidLet[Statements](
+  }
+
+  test("MATCH (a) ORDER BY a.prop OFFSET 1 LIMIT 1 <cypherLet> FILTER true RETURN a") {
+    forAllPositiveCases { (cypherLet, expectedWith) =>
+      s"MATCH (a) ORDER BY a.prop OFFSET 1 LIMIT 1 $cypherLet FILTER true RETURN a" should parseValidLet(
         Statements(Seq(SingleQuery(Seq(
           match_(Seq(nodePat(Some("a"))), None),
           withAllTyped(
@@ -226,8 +261,11 @@ class LetParserTest extends AstParsingTestBase {
         43
       )
     }
-    test(s"MATCH (a) $cypherLet ORDER BY a.prop OFFSET 1 LIMIT 1 RETURN a") {
-      parsesValidLet[Statements](
+  }
+
+  test("MATCH (a) <cypherLet> ORDER BY a.prop OFFSET 1 LIMIT 1 RETURN a") {
+    forAllPositiveCases { (cypherLet, expectedWith) =>
+      s"MATCH (a) $cypherLet ORDER BY a.prop OFFSET 1 LIMIT 1 RETURN a" should parseValidLet(
         Statements(Seq(SingleQuery(Seq(
           match_(Seq(nodePat(Some("a"))), None),
           expectedWith,
