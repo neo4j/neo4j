@@ -382,9 +382,11 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         awaitIndexesOnline();
 
         // then
-        assertQueryFindsIdsInOrder(
-                db, true, DEFAULT_NODE_IDX_NAME, "integration", node1.getElementId(), node2.getElementId());
-        assertQueryFindsIdsInOrder(db, true, DEFAULT_NODE_IDX_NAME, "test", node1.getElementId(), node2.getElementId());
+        // Both nodes hold the query term exactly once, in a field of their own, so they score
+        // identically -- their relative order is decided by entity id and cannot be asserted.
+        var bothNodes = Sets.mutable.of(node1.getElementId(), node2.getElementId());
+        assertQueryFindsIds(db, true, DEFAULT_NODE_IDX_NAME, "integration", bothNodes);
+        assertQueryFindsIds(db, true, DEFAULT_NODE_IDX_NAME, "test", bothNodes);
         assertQueryFindsIds(db, true, DEFAULT_NODE_IDX_NAME, "related", Sets.mutable.of(node2.getElementId()));
         assertQueryFindsIds(db, false, DEFAULT_REL_IDX_NAME, "relate", Sets.mutable.of(relationship.getElementId()));
     }
