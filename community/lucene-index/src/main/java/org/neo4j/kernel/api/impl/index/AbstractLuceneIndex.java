@@ -285,8 +285,13 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> implements
      * Refresh all partitions to make newly inserted data visible for readers.
      */
     public void maybeRefreshBlocking() throws IOException {
+        List<AbstractIndexPartition> partitions = getPartitions();
+        if (hasSinglePartition(partitions)) {
+            getFirstPartition(partitions).maybeRefreshBlocking();
+            return;
+        }
         try {
-            getPartitions().parallelStream().forEach(AbstractLuceneIndex::maybeRefreshPartition);
+            partitions.parallelStream().forEach(AbstractLuceneIndex::maybeRefreshPartition);
         } catch (UncheckedIOException e) {
             throw e.getCause();
         }
