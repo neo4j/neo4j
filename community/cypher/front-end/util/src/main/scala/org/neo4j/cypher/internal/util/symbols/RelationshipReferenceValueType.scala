@@ -28,15 +28,15 @@ case class RelationshipReferenceValueType(
   override val isNullable: Boolean
 )(val position: InputPosition) extends AbstractRecordType {
 
-  if (ASSERTIONS_ENABLED && !source.isNullable) {
+  if (ASSERTIONS_ENABLED && source.isNullable) {
     throw new AssertionError(
-      s"The source of a RelationshipReferenceValueType cannot be null, but they are not in ${this.description}"
+      s"The source of a RelationshipReferenceValueType cannot be nullable, but it is in ${this.description}"
     )
   }
 
-  if (ASSERTIONS_ENABLED && !destination.isNullable) {
+  if (ASSERTIONS_ENABLED && destination.isNullable) {
     throw new AssertionError(
-      s"The destination of a RelationshipReferenceValueType cannot be null, but they are not in ${this.description}"
+      s"The destination of a RelationshipReferenceValueType cannot be nullable, but it is in ${this.description}"
     )
   }
 
