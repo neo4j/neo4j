@@ -1276,6 +1276,12 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         assertQueryFindsIdsInOrder(db, true, DEFAULT_NODE_IDX_NAME, "primo", nodeId);
     }
 
+    // This test adds three documents "dude sweet dude sweet", "dude sweet", and
+    // "dude sweet dude dude dude sweet" and assumes that by searching for "dude" we
+    // will get the results back ordered by the "dude-count". However, if the second
+    // document ends up alone on a shard it will rank higher since Lucene considers
+    // inverse document frequency as well as "dude-count".
+    @SkipOnSpd
     @MethodSource("entityTypeProvider")
     @ParameterizedTest
     void queryResultsMustBeOrderedByScore(EntityUtil entityUtil) {
