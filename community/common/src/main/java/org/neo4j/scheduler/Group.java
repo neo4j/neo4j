@@ -214,7 +214,8 @@ public enum Group {
     TESTING("TestingGroup", ExecutorServiceFactory.callingThread()),
 
     // Graph Engine
-    GRAPH_ENGINE_DATA_SOURCE_POOL("GraphEngineDataSourcePool", true);
+    GRAPH_ENGINE_DATA_SOURCE_POOL("GraphEngineDataSourcePool", true),
+    GRAPH_ENGINE_STATEMENT_CANCEL("GraphEngineStatementCancel", true);
 
     private final String name;
     private final ExecutorServiceFactory executorServiceFactory;
