@@ -55,7 +55,7 @@ public final class ByteBuffers {
 
     /**
      * Allocate direct byte buffer with default byte order
-     *
+     * <br>
      * Allocated memory will be tracked by global memory allocator.
      * @param capacity byte buffer capacity
      * @param order byte order
@@ -103,6 +103,17 @@ public final class ByteBuffers {
             }
         }
         return false;
+    }
+
+    /**
+     * Sorts a buffer, where the contents of the buffer between {@link ByteBuffer#position()} and
+     * {@link ByteBuffer#limit()} <strong>MUST</strong> all be {@link Long}s
+     * @param buffer the buffer to sort
+     * @param memoryTracker a memory tracker - to use in the case when a merge sort needs to occur. Otherwise, all
+     *                      sorting is done directly in-place in the provided buffer
+     */
+    public static void sortLongs(ByteBuffer buffer, MemoryTracker memoryTracker) {
+        ByteBufferQuicksort.sort(buffer, memoryTracker);
     }
 
     private static ByteBuffer allocateDirectFallback(int capacity, MemoryTracker memoryTracker) {
