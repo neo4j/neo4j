@@ -34,11 +34,11 @@ import org.neo4j.configuration.Config;
 import org.neo4j.test.extension.RequireAlignedFormat;
 
 @Isolated
-@ClearSystemProperty(key = OVERRIDE_STORE_FORMAT_KEY)
-@ClearSystemProperty(key = OVERRIDE_SYSTEM_STORE_FORMAT_KEY)
 class FormatOverrideMigratorIT {
     @Test
     @RequireAlignedFormat
+    @ClearSystemProperty(key = OVERRIDE_STORE_FORMAT_KEY)
+    @ClearSystemProperty(key = OVERRIDE_SYSTEM_STORE_FORMAT_KEY)
     void noOverridesKeepDeclaredDefaults() {
         Config config = Config.defaults();
 
