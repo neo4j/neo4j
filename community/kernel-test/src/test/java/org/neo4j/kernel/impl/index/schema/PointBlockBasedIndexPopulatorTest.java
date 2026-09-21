@@ -118,11 +118,6 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
         return Values.pointValue(CoordinateReferenceSystem.CARTESIAN, i, i);
     }
 
-    @Override
-    Class<? extends RuntimeException> expectedTooLargeValueExceptionType() {
-        return IllegalArgumentException.class;
-    }
-
     @Test
     final void shouldIgnoreAddedUnsupportedValueTypes() throws Exception {
         // given  the population of an empty index

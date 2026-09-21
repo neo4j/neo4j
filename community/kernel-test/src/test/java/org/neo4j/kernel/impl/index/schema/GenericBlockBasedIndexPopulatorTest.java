@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
@@ -35,6 +36,7 @@ import java.util.Collection;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -113,6 +115,51 @@ abstract class GenericBlockBasedIndexPopulatorTest<KEY extends GenericKey<KEY>>
             } finally {
                 populator.close(true, NULL_CONTEXT);
             }
+        }
+    }
+
+    @Test
+    void shouldFailOnBatchAddedTooLargeValue() throws IOException {
+        /// given
+        ByteBufferFactory bufferFactory =
+                new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE);
+        BlockBasedIndexPopulator<KEY> populator =
+                instantiatePopulator(NO_MONITOR, bufferFactory, INSTANCE, IndexPopulator.DEFAULT_CONFIGURATION);
+        try {
+            int size = populator.tree.keyValueSizeCap() + 1;
+            assertThrows(
+                    InvalidArgumentException.class,
+                    () -> populator.add(
+                            singletonList(EagerValueIndexEntryUpdate.add(
+                                    0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize(layout(), size))),
+                            NULL_CONTEXT));
+        } finally {
+            populator.close(false, NULL_CONTEXT);
+        }
+    }
+
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void shouldFailOnUpdatedTooLargeValue(boolean updateBeforeScanCompleted)
+            throws IndexEntryConflictException, IOException {
+        /// given
+        ByteBufferFactory bufferFactory =
+                new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE);
+        BlockBasedIndexPopulator<KEY> populator =
+                instantiatePopulator(NO_MONITOR, bufferFactory, INSTANCE, IndexPopulator.DEFAULT_CONFIGURATION);
+        try {
+            int size = populator.tree.keyValueSizeCap() + 1;
+            if (!updateBeforeScanCompleted) {
+                populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+            }
+            assertThrows(InvalidArgumentException.class, () -> {
+                try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+                    updater.process(EagerValueIndexEntryUpdate.add(
+                            0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize(layout(), size)));
+                }
+            });
+        } finally {
+            populator.close(false, NULL_CONTEXT);
         }
     }
 

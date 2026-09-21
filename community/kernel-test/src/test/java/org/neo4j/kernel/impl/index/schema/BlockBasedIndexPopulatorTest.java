@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -32,7 +30,6 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.NO_MONITOR;
-import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.Race.throwing;
 
@@ -48,10 +45,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.index.internal.gbptree.CompactionReport;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -497,55 +491,6 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
                 populator.close(true, NULL_CONTEXT);
             }
         }
-    }
-
-    @Test
-    void shouldFailOnBatchAddedTooLargeValue() throws IOException {
-        /// given
-        ByteBufferFactory bufferFactory =
-                new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE);
-        BlockBasedIndexPopulator<KEY> populator =
-                instantiatePopulator(NO_MONITOR, bufferFactory, INSTANCE, IndexPopulator.DEFAULT_CONFIGURATION);
-        try {
-            int size = populator.tree.keyValueSizeCap() + 1;
-            assertThrows(
-                    expectedTooLargeValueExceptionType(),
-                    () -> populator.add(
-                            singletonList(EagerValueIndexEntryUpdate.add(
-                                    0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize(layout(), size))),
-                            NULL_CONTEXT));
-        } finally {
-            populator.close(false, NULL_CONTEXT);
-        }
-    }
-
-    @ValueSource(booleans = {true, false})
-    @ParameterizedTest
-    void shouldFailOnUpdatedTooLargeValue(boolean updateBeforeScanCompleted)
-            throws IndexEntryConflictException, IOException {
-        /// given
-        ByteBufferFactory bufferFactory =
-                new ByteBufferFactory(UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE);
-        BlockBasedIndexPopulator<KEY> populator =
-                instantiatePopulator(NO_MONITOR, bufferFactory, INSTANCE, IndexPopulator.DEFAULT_CONFIGURATION);
-        try {
-            int size = populator.tree.keyValueSizeCap() + 1;
-            if (!updateBeforeScanCompleted) {
-                populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
-            }
-            assertThrows(expectedTooLargeValueExceptionType(), () -> {
-                try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
-                    updater.process(EagerValueIndexEntryUpdate.add(
-                            0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize(layout(), size)));
-                }
-            });
-        } finally {
-            populator.close(false, NULL_CONTEXT);
-        }
-    }
-
-    Class<? extends RuntimeException> expectedTooLargeValueExceptionType() {
-        return InvalidArgumentException.class;
     }
 
     @Test
