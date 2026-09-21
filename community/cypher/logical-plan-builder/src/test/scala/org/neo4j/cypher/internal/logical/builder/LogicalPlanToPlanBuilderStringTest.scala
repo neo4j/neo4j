@@ -1035,6 +1035,44 @@ class LogicalPlanToPlanBuilderStringTest
   )
 
   testPlan(
+    "remoteMergeUniqueNode",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .apply()
+      .|.mergeUniqueNode(
+        "x",
+        "L",
+        Seq("p1" -> "i", "p2" -> "true"),
+        onMatch = Seq("created" -> "false"),
+        onCreate = Seq("created" -> "true"),
+        args = Set("i"),
+        indexType = IndexType.POINT
+      )
+      .unwind("[1, 2, 3] AS i")
+      .argument()
+      .build()
+  )
+
+  testPlan(
+    "remoteMergeUniqueNodeExpression",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .apply()
+      .|.mergeUniqueNodeExpression(
+        "x",
+        "L",
+        Seq("p1" -> "i", "p2" -> "true"),
+        onMatch = Seq("created" -> literalBoolean(false)),
+        onCreate = Seq("created" -> literalBoolean(true)),
+        args = Set("i"),
+        indexType = IndexType.POINT
+      )
+      .unwind("[1, 2, 3] AS i")
+      .argument()
+      .build()
+  )
+
+  testPlan(
     "mergeInto",
     new TestPlanBuilder()
       .produceResults("x")

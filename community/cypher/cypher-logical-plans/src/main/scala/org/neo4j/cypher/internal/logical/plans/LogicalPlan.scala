@@ -4570,6 +4570,42 @@ case class MergeUniqueNode(
 }
 
 /**
+ * Similar to [[MergeUniqueNode]] but in the context of a sharded properties database.
+ */
+case class RemoteMergeUniqueNode(
+  idName: LogicalVariable,
+  override val label: LabelToken,
+  properties: Seq[IndexedProperty],
+  seekExpressions: Seq[Expression],
+  argumentIds: Set[LogicalVariable],
+  override val indexOrder: IndexOrder,
+  override val indexType: IndexType,
+  onMatchProperties: Seq[(PropertyKeyName, Expression)],
+  onCreateProperties: Seq[(PropertyKeyName, Expression)]
+)(implicit idGen: IdGen) extends NodeIndexSingleLabelLeafPlan(idGen) with StableLeafPlan with UpdatingPlan {
+  override def localAvailableSymbols: Set[LogicalVariable] = Set(idName)
+
+  override def usedVariables: Set[LogicalVariable] =
+    (seekExpressions ++ onMatchProperties.map(_._2) ++ onCreateProperties.map(_._2)).flatMap(_.dependencies).toSet
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): RemoteMergeUniqueNode =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): RemoteMergeUniqueNode =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexLeafPlan =
+    copy(properties = properties.map(f))(SameId(this.id))
+
+  override def copyWithoutGettingValues: NodeIndexLeafPlan =
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
+
+}
+
+/**
  * Produces one or zero rows containing the node per given label and property value combination.
  *
  * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching

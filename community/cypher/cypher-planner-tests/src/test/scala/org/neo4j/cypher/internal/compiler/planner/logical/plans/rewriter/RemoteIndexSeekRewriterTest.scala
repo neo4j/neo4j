@@ -587,6 +587,140 @@ class RemoteIndexSeekRewriterTest extends CypherPlannerTestSuite {
     rewrite(input, rewriteNodes = false) shouldEqual input
   }
 
+  test(
+    "should rewrite MergeUniqueNode on RHS of Apply to RemoteMergeUniqueNode when MERGE_UNIQUE_NODE is added to config remote_node_index_write_operators"
+  ) {
+    val input = new LogicalPlanBuilder(wholePlan = false)
+      .apply()
+      .|.mergeUniqueNode("n", "Person", Seq("id" -> "m.id"), args = Set("m"))
+      .nodeByLabelScan("m", "Person", IndexOrderNone)
+      .build()
+
+    val result = rewrite(input)
+    val result_NL = rewrite(input, Set(RemoteNodeIndexWriteOperators.NON_LOCKING))
+    val result_UIL = rewrite(input, Set(RemoteNodeIndexWriteOperators.UNIQUE_INDEX_LOCKING))
+
+    result shouldEqual input
+    result_NL shouldEqual input
+    result_UIL shouldEqual input
+
+    val rewritten = new LogicalPlanBuilder(wholePlan = false)
+      .apply()
+      .|.remoteMergeUniqueNode("n", "Person", Seq("id" -> "m.id"), args = Set("m"))
+      .nodeByLabelScan("m", "Person", IndexOrderNone)
+      .build()
+
+    val result_MUN = rewrite(input, Set(RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE))
+    val result_MUN_NL_UIL = rewrite(
+      input,
+      Set(
+        RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE,
+        RemoteNodeIndexWriteOperators.NON_LOCKING,
+        RemoteNodeIndexWriteOperators.UNIQUE_INDEX_LOCKING
+      )
+    )
+
+    result_MUN shouldEqual rewritten
+    result_MUN_NL_UIL shouldEqual rewritten
+  }
+
+  test(
+    "should only rewrite MergeUniqueNode on RHS of a CALL IN TRANSACTION when MERGE_UNIQUE_NODE and CALL_IN_TRANSACTIONS are added to config remote_node_index_write_operators"
+  ) {
+    def run(input: LogicalPlan, rewritten: LogicalPlan): Unit = {
+      val result = rewrite(input)
+      val result_NL = rewrite(input, Set(RemoteNodeIndexWriteOperators.NON_LOCKING))
+      val result_UIL = rewrite(input, Set(RemoteNodeIndexWriteOperators.UNIQUE_INDEX_LOCKING))
+      val result_MUN = rewrite(input, Set(RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE))
+      val result_CIT = rewrite(input, Set(RemoteNodeIndexWriteOperators.CALL_IN_TRANSACTIONS))
+      val result_MUN_NL_UIL =
+        rewrite(
+          input,
+          Set(
+            RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE,
+            RemoteNodeIndexWriteOperators.NON_LOCKING,
+            RemoteNodeIndexWriteOperators.UNIQUE_INDEX_LOCKING
+          )
+        )
+
+      result shouldEqual input
+      result_NL shouldEqual input
+      result_UIL shouldEqual input
+      result_MUN shouldEqual input
+      result_CIT shouldEqual input
+      result_MUN_NL_UIL shouldEqual input
+
+      val result_MUN_CIT = rewrite(
+        input,
+        Set(RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE, RemoteNodeIndexWriteOperators.CALL_IN_TRANSACTIONS)
+      )
+      val result_MUN_NL_UIL_CIT = rewrite(
+        input,
+        Set(
+          RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE,
+          RemoteNodeIndexWriteOperators.NON_LOCKING,
+          RemoteNodeIndexWriteOperators.UNIQUE_INDEX_LOCKING,
+          RemoteNodeIndexWriteOperators.CALL_IN_TRANSACTIONS
+        )
+      )
+
+      result_MUN_CIT shouldEqual rewritten
+      result_MUN_NL_UIL_CIT shouldEqual rewritten
+    }
+
+    withClue("transactionApply") {
+      val txApplyInput = new LogicalPlanBuilder(wholePlan = false)
+        .transactionApply()
+        .|.mergeUniqueNode("n", "Person", Seq("id" -> "m.id"), args = Set("m"))
+        .nodeByLabelScan("m", "Person", IndexOrderNone)
+        .build()
+
+      val txApplyRewritten = new LogicalPlanBuilder(wholePlan = false)
+        .transactionApply()
+        .|.remoteMergeUniqueNode("n", "Person", Seq("id" -> "m.id"), args = Set("m"))
+        .nodeByLabelScan("m", "Person", IndexOrderNone)
+        .build()
+      run(txApplyInput, txApplyRewritten)
+    }
+
+    withClue("transactionForeach") {
+      val txForeachInput = new LogicalPlanBuilder(wholePlan = false)
+        .transactionForeach()
+        .|.mergeUniqueNode("n", "Person", Seq("id" -> "m.id"), args = Set("m"))
+        .nodeByLabelScan("m", "Person", IndexOrderNone)
+        .build()
+
+      val txForeachRewritten = new LogicalPlanBuilder(wholePlan = false)
+        .transactionForeach()
+        .|.remoteMergeUniqueNode("n", "Person", Seq("id" -> "m.id"), args = Set("m"))
+        .nodeByLabelScan("m", "Person", IndexOrderNone)
+        .build()
+      run(txForeachInput, txForeachRewritten)
+    }
+  }
+
+  test("should not rewrite a top-level MergeUniqueNode even with MERGE_UNIQUE_NODE enabled") {
+    val input = new LogicalPlanBuilder(wholePlan = false)
+      .mergeUniqueNode("n", "Person", Seq("id" -> "42"))
+      .build()
+
+    rewrite(input, Set(RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE)) shouldEqual input
+  }
+
+  test("should not rewrite MergeUniqueNode when rewriteNodes = false") {
+    val input = new LogicalPlanBuilder(wholePlan = false)
+      .apply()
+      .|.mergeUniqueNode("n", "Person", Seq("id" -> "m.id"), args = Set("m"))
+      .nodeByLabelScan("m", "Person", IndexOrderNone)
+      .build()
+
+    rewrite(
+      input,
+      writeConfig = Set(RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE),
+      rewriteNodes = false
+    ) shouldEqual input
+  }
+
   test("should rewrite only node seeks when rewriteRelationships = false") {
     val input = new LogicalPlanBuilder(wholePlan = false)
       .apply()

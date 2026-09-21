@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MergeInto
 import org.neo4j.cypher.internal.logical.plans.MergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.RemoteMergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
@@ -134,6 +135,21 @@ case class TransactionDisjointByRewriter(globalStrategyIsAuto: Boolean) extends 
       // Updating plans
       // ======================================================================
       case mun: MergeUniqueNode =>
+        TraverseChildrenBU { acc =>
+          val exprs = mun.seekExpressions
+          val usedVariables = exprs.flatMap(_.dependencies).toSet
+          if (usedVariables.subsetOf(inputVars)) {
+            acc.copy(
+              raidExpressions = acc.raidExpressions ++ exprs,
+              raidEntityVars = acc.raidEntityVars + mun.idName,
+              applicable = Applicable.allow(acc.applicable)
+            )
+          } else {
+            Acc.deny(acc)
+          }
+        }
+
+      case mun: RemoteMergeUniqueNode =>
         TraverseChildrenBU { acc =>
           val exprs = mun.seekExpressions
           val usedVariables = exprs.flatMap(_.dependencies).toSet

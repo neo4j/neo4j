@@ -210,6 +210,7 @@ import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.RemoteMergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.RepeatTrail
@@ -3825,6 +3826,37 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
       planDescription(
         id,
         "MergeUniqueNode",
+        Seq.empty,
+        Seq(details(
+          Seq(
+            "UNIQUE n:Label(prop) WHERE prop = \"A value\"",
+            "ON MATCH SET n.p1 = \"A\", n.p2 = \"B\" ON CREATE SET n.p3 = \"C\", n.p4 = \"D\""
+          )
+        )),
+        Set("n")
+      )
+    )
+  }
+
+  test("RemoteMergeUniqueNode") {
+    assertGood(
+      attach(
+        RemoteMergeUniqueNode(
+          varFor("n"),
+          LabelToken("Label", LabelId(0)),
+          Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
+          Seq(stringLiteral("A value")),
+          Set.empty,
+          IndexOrderNone,
+          IndexType.RANGE,
+          Seq(PropertyKeyName("p1")(pos) -> stringLiteral("A"), PropertyKeyName("p2")(pos) -> stringLiteral("B")),
+          Seq(PropertyKeyName("p3")(pos) -> stringLiteral("C"), PropertyKeyName("p4")(pos) -> stringLiteral("D"))
+        ),
+        32.2
+      ),
+      planDescription(
+        id,
+        "RemoteMergeUniqueNode",
         Seq.empty,
         Seq(details(
           Seq(

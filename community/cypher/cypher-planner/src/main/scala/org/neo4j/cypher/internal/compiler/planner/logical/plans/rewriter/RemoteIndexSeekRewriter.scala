@@ -23,10 +23,12 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.RemoteNodeIndexWrit
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.MergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoteDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoteDirectedRelationshipUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.RemoteMergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.RemoteNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoteNodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoteUndirectedRelationshipIndexSeek
@@ -49,6 +51,8 @@ import org.neo4j.cypher.internal.util.topDown
  * rewritten into their [[RemoteDirectedRelationshipIndexSeek]], [[RemoteUndirectedRelationshipIndexSeek]],
  * [[RemoteDirectedRelationshipUniqueIndexSeek]] and [[RemoteUndirectedRelationshipUniqueIndexSeek]]
  * counterparts.
+ * [[MergeUniqueNode]] is likewise rewritten into [[RemoteMergeUniqueNode]], gated by the
+ * [[RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE]] write config, since it is always a write operator.
  * Currently supported only for read-only queries.
  * Additionally, only seeks with arguments are rewritten: the remote operators batch index queries across
  * argument rows, and a seek with no arguments is a single invocation with nothing to batch.
@@ -139,6 +143,33 @@ case class RemoteIndexSeekRewriter(
         indexType,
         supportPartitionedScan
       )(SameId(seek.id))
+
+    case merge @ MergeUniqueNode(
+        idName,
+        label,
+        properties,
+        seekExpressions,
+        argumentIds,
+        indexOrder,
+        indexType,
+        onMatchProperties,
+        onCreateProperties
+      )
+      if argumentIds.nonEmpty && rewriteNodes && rewriteForWriteQuery(
+        RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE,
+        insideCallInTransactionsIds.contains(merge.id)
+      ) =>
+      RemoteMergeUniqueNode(
+        idName,
+        label,
+        properties,
+        seekExpressions,
+        argumentIds,
+        indexOrder,
+        indexType,
+        onMatchProperties,
+        onCreateProperties
+      )(SameId(merge.id))
 
     case seek @ DirectedRelationshipIndexSeek(
         idName,

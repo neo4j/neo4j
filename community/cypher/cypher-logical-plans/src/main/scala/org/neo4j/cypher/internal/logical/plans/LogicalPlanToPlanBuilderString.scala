@@ -445,6 +445,20 @@ object LogicalPlanToPlanBuilderString {
           indexType
         )
 
+      case RemoteMergeUniqueNode(node, label, props, seekExpressions, args, _, indexType, onMatch, onCreate) =>
+        val combined = props.zip(seekExpressions).map {
+          case (p, e) => Param.tupleArrow(p.propertyKeyToken, e.quoted)
+        }
+        params(
+          node.escaped,
+          label,
+          combined,
+          s"Seq(${setPropertiesParam(onMatch)})",
+          s"Seq(${setPropertiesParam(onCreate)})",
+          args.map(_.escaped),
+          indexType
+        )
+
       case MergeInto(_, rel, from, dir, relTYpe, to, onMatch, onCreate) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(Seq(relTYpe))

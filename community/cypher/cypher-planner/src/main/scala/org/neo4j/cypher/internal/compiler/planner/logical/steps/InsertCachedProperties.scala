@@ -91,6 +91,7 @@ import org.neo4j.cypher.internal.logical.plans.PhysicalPlanningPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.RemoteMergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
@@ -814,6 +815,13 @@ object RestrictedCaching {
         else None
 
       case upsert: MergeUniqueNode =>
+        val protectedUpsertProps = upsert.onMatchProperties.map {
+          case (p, v) => protectedProperties(upsert.idName, Seq(p.name -> v))
+        }
+        if (protectedUpsertProps.nonEmpty) Some(CombinedProtectedProperties(protectedUpsertProps))
+        else None
+
+      case upsert: RemoteMergeUniqueNode =>
         val protectedUpsertProps = upsert.onMatchProperties.map {
           case (p, v) => protectedProperties(upsert.idName, Seq(p.name -> v))
         }

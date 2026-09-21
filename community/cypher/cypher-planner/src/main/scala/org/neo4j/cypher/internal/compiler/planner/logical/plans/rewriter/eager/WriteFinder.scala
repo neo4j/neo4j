@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MergeInto
 import org.neo4j.cypher.internal.logical.plans.MergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.PhysicalPlanningPlan
+import org.neo4j.cypher.internal.logical.plans.RemoteMergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
@@ -315,6 +316,28 @@ object WriteFinder {
           PlanWrites(setPart, createPart)
 
         case MergeUniqueNode(idName, label, properties, _, _, _, _, onMatch, onCreate) =>
+          val setPart = Function.chain[PlanSets](Seq(
+            onMatch.foldLeft(_) {
+              case (acc, (p, _)) =>
+                acc.withNodePropertyWritten(AccessedProperty(p, Some(idName)))
+            },
+            onCreate.foldLeft(_) {
+              case (acc, (p, _)) =>
+                acc.withNodePropertyWritten(AccessedProperty(p, Some(idName)))
+            }
+          ))(PlanSets())
+
+          val createPart =
+            PlanCreates()
+              .withCreatedNode(CreatedNode(
+                CreatesStaticNodeLabels(Set(LabelName(label.name)(InputPosition.NONE))),
+                CreatesKnownPropertyKeys(properties.map(p =>
+                  PropertyKeyName(p.propertyKeyToken.name)(InputPosition.NONE)
+                ).toSet)
+              ))
+          PlanWrites(setPart, createPart)
+
+        case RemoteMergeUniqueNode(idName, label, properties, _, _, _, _, onMatch, onCreate) =>
           val setPart = Function.chain[PlanSets](Seq(
             onMatch.foldLeft(_) {
               case (acc, (p, _)) =>

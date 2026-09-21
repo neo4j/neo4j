@@ -177,6 +177,17 @@ abstract class AbstractRemoteBatchPropertiesWritePlanningIntegrationTest(executi
     .setRelationshipCardinality("()-[:FRIEND]->(:Person)", 10)
     .setRelationshipCardinality("(:Person)-[:FRIEND]->(:Person)", 10)
 
+  private def remoteNodeIndexWriteSettings(
+    operators: RemoteNodeIndexWriteOperators*
+  ): util.HashSet[RemoteNodeIndexWriteOperators] = {
+    val set = new util.HashSet[RemoteNodeIndexWriteOperators]()
+    operators.foreach(set.add)
+    set
+  }
+
+  private def remoteNodeIndexWriteDisabled: util.HashSet[RemoteNodeIndexWriteOperators] =
+    new util.HashSet[RemoteNodeIndexWriteOperators]()
+
   val planner = plannerBase.build()
 
   test("should fetch properties again after properties have been set") {
@@ -1504,15 +1515,11 @@ abstract class AbstractRemoteBatchPropertiesWritePlanningIntegrationTest(executi
         |  MERGE (p1)-[k:KNOWS]->(p2:Person {firstName: "J"})
         |} IN TRANSACTIONS OF 1000 ROWS;""".stripMargin
 
-    val remoteNodeIndexWriteSettingsEmpty = new util.HashSet[RemoteNodeIndexWriteOperators]()
-
-    val remoteNodeIndexWriteSettingsNl = new util.HashSet[RemoteNodeIndexWriteOperators]()
-    remoteNodeIndexWriteSettingsNl.add(RemoteNodeIndexWriteOperators.NON_LOCKING)
-
-    val remoteNodeIndexWriteSettingsCit = new util.HashSet[RemoteNodeIndexWriteOperators]()
-    remoteNodeIndexWriteSettingsCit.add(RemoteNodeIndexWriteOperators.CALL_IN_TRANSACTIONS)
-
-    Seq(remoteNodeIndexWriteSettingsEmpty, remoteNodeIndexWriteSettingsEmpty, remoteNodeIndexWriteSettingsCit).foreach {
+    Seq(
+      remoteNodeIndexWriteDisabled,
+      remoteNodeIndexWriteSettings(RemoteNodeIndexWriteOperators.NON_LOCKING),
+      remoteNodeIndexWriteSettings(RemoteNodeIndexWriteOperators.CALL_IN_TRANSACTIONS)
+    ).foreach {
       remoteNodeIndexWriteSettings =>
         val plannerWithConfig = plannerBase
           .withSetting(GraphDatabaseInternalSettings.remote_node_index_write_operators, remoteNodeIndexWriteSettings)
@@ -1553,12 +1560,13 @@ abstract class AbstractRemoteBatchPropertiesWritePlanningIntegrationTest(executi
         |  MERGE (p1)-[k:KNOWS]->(p2:Person {firstName: "J"})
         |} IN TRANSACTIONS OF 1000 ROWS;""".stripMargin
 
-    val remoteNodeIndexWriteSettings = new util.HashSet[RemoteNodeIndexWriteOperators]()
-    remoteNodeIndexWriteSettings.add(RemoteNodeIndexWriteOperators.NON_LOCKING)
-    remoteNodeIndexWriteSettings.add(RemoteNodeIndexWriteOperators.CALL_IN_TRANSACTIONS)
+    val remoteNodeIndexWriteOperators = remoteNodeIndexWriteSettings(
+      RemoteNodeIndexWriteOperators.NON_LOCKING,
+      RemoteNodeIndexWriteOperators.CALL_IN_TRANSACTIONS
+    )
 
     val plannerWithConfig = plannerBase
-      .withSetting(GraphDatabaseInternalSettings.remote_node_index_write_operators, remoteNodeIndexWriteSettings)
+      .withSetting(GraphDatabaseInternalSettings.remote_node_index_write_operators, remoteNodeIndexWriteOperators)
       .build()
 
     val plan = plannerWithConfig.plan(query).stripProduceResults
@@ -1583,6 +1591,71 @@ abstract class AbstractRemoteBatchPropertiesWritePlanningIntegrationTest(executi
         Id(3),
         Id(7)
       ))))
+      .nodeByLabelScan("p1", "Person")
+      .build())
+  }
+
+  test(
+    "should not plan a RemoteMergeUniqueNode on RHS of CIT when RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE or RemoteNodeIndexWriteOperators.CALL_IN_TRANSACTIONS is not set"
+  ) {
+    val query =
+      """MATCH (p1:Person)
+        |CALL (p1) {
+        |  MERGE (p2:Person {id: p1.id})
+        |} IN TRANSACTIONS OF 1000 ROWS;""".stripMargin
+
+    Seq(
+      remoteNodeIndexWriteDisabled,
+      remoteNodeIndexWriteSettings(RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE),
+      remoteNodeIndexWriteSettings(RemoteNodeIndexWriteOperators.CALL_IN_TRANSACTIONS)
+    ).foreach {
+      remoteNodeIndexWriteSettings =>
+        val plannerWithConfig = plannerBase
+          .withSetting(GraphDatabaseInternalSettings.remote_node_index_write_operators, remoteNodeIndexWriteSettings)
+          .build()
+
+        val plan = plannerWithConfig.plan(query).stripProduceResults
+        plan should equal(plannerWithConfig.subPlanBuilder()
+          .emptyResult()
+          .transactionForeach(1000)
+          .|.mergeUniqueNode("p2", "Person", Seq("id" -> "cacheN[p1.id]"), args = Set("p1"))
+          .remoteBatchProperties("cacheNFromStore[p1.id]")
+          .eager(ListSet(EagernessReason.LabelReadSetConflict(labelName("Person")).withConflict(
+            EagernessReason.Conflict(Id(3), Id(6))
+          )))
+          .nodeByLabelScan("p1", "Person")
+          .build())
+    }
+  }
+
+  test(
+    "should plan a RemoteMergeUniqueNode for write query when MERGE_UNIQUE_NODE and CALL_IN_TRANSACTIONS config settings are enabled and MergeUniqueNode is on RHS with argumentIds"
+  ) {
+    val query =
+      """MATCH (p1:Person)
+        |CALL (p1) {
+        |  MERGE (p2:Person {id: p1.id})
+        |} IN TRANSACTIONS OF 1000 ROWS;""".stripMargin
+
+    val plannerWithConfig = plannerBase
+      .withSetting(
+        GraphDatabaseInternalSettings.remote_node_index_write_operators,
+        remoteNodeIndexWriteSettings(
+          RemoteNodeIndexWriteOperators.MERGE_UNIQUE_NODE,
+          RemoteNodeIndexWriteOperators.CALL_IN_TRANSACTIONS
+        )
+      )
+      .build()
+
+    val plan = plannerWithConfig.plan(query).stripProduceResults
+    plan should equal(plannerWithConfig.subPlanBuilder()
+      .emptyResult()
+      .transactionForeach(1000)
+      .|.remoteMergeUniqueNode("p2", "Person", Seq("id" -> "cacheN[p1.id]"), args = Set("p1"))
+      .remoteBatchProperties("cacheNFromStore[p1.id]")
+      .eager(ListSet(EagernessReason.LabelReadSetConflict(labelName("Person")).withConflict(
+        EagernessReason.Conflict(Id(3), Id(6))
+      )))
       .nodeByLabelScan("p1", "Person")
       .build())
   }

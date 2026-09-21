@@ -166,6 +166,7 @@ import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithFilter
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithPushdownOperators
 import org.neo4j.cypher.internal.logical.plans.RemoteDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoteDirectedRelationshipUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.RemoteMergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.RemoteNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoteNodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoteUndirectedRelationshipIndexSeek
@@ -497,6 +498,9 @@ object ReadFinder {
         processNodeIndexPlan(node, labelName, properties)
 
       case MergeUniqueNode(node, LabelToken(labelName, _), properties, _, _, _, _, _, _) =>
+        processNodeIndexPlan(node, labelName, properties)
+
+      case RemoteMergeUniqueNode(node, LabelToken(labelName, _), properties, _, _, _, _, _, _) =>
         processNodeIndexPlan(node, labelName, properties)
 
       case NodeIndexContainsScan(

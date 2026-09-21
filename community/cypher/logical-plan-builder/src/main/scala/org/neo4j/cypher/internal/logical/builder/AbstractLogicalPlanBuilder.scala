@@ -248,6 +248,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithFilter
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithPushdownOperators
+import org.neo4j.cypher.internal.logical.plans.RemoteMergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatAcyclic
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
@@ -3380,6 +3381,72 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         )
     )
     appendAtCurrentIndent(LeafOperator(MergeUniqueNode(
+      n,
+      LabelToken(labelName, LabelId(label)),
+      properties,
+      seekExpressions,
+      args.map(a => VariableParser.unescapedVar(a)),
+      IndexOrderNone,
+      indexType,
+      onMatch.map {
+        case (k, v) => PropertyKeyName(k)(pos) -> v
+      },
+      onCreate.map {
+        case (k, v) => PropertyKeyName(k)(pos) -> v
+      }
+    )(_)))
+  }
+
+  def remoteMergeUniqueNode(
+    node: String,
+    labelName: String,
+    predicates: Seq[(String, String)],
+    onMatch: Seq[(String, String)] = Seq.empty,
+    onCreate: Seq[(String, String)] = Seq.empty,
+    args: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.RANGE,
+    cacheValues: Boolean = false
+  ): IMPL = {
+    remoteMergeUniqueNodeExpression(
+      node,
+      labelName,
+      predicates,
+      onMatch.map(e => e._1 -> parseExpression(e._2)),
+      onCreate.map(e => e._1 -> parseExpression(e._2)),
+      args,
+      indexType,
+      cacheValues
+    )
+  }
+
+  def remoteMergeUniqueNodeExpression(
+    node: String,
+    labelName: String,
+    predicates: Seq[(String, String)],
+    onMatch: Seq[(String, Expression)] = Seq.empty,
+    onCreate: Seq[(String, Expression)] = Seq.empty,
+    args: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.RANGE,
+    cacheValues: Boolean = false
+  ): IMPL = {
+
+    val n = varFor(VariableParser.unescaped(node))
+    newNode(n)
+    val label = resolver.getLabelId(labelName)
+
+    val (properties, seekExpressions) = predicates.foldLeft((Seq.empty[IndexedProperty], Seq.empty[Expression]))(
+      (acc, current) =>
+        (
+          acc._1 :+
+            IndexedProperty(
+              PropertyKeyToken(current._1, PropertyKeyId(resolver.getPropertyKeyId(current._1))),
+              if (cacheValues) GetValue else DoNotGetValue,
+              NODE_TYPE
+            ),
+          acc._2 :+ parseExpression(current._2)
+        )
+    )
+    appendAtCurrentIndent(LeafOperator(RemoteMergeUniqueNode(
       n,
       LabelToken(labelName, LabelId(label)),
       properties,

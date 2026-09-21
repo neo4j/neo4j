@@ -1391,12 +1391,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public enum RemoteNodeIndexWriteOperators {
         NON_LOCKING,
         UNIQUE_INDEX_LOCKING,
+        MERGE_UNIQUE_NODE,
         CALL_IN_TRANSACTIONS
     }
 
     @Internal
     @Description(
-            "Control flags to decide whether to plan remote (unique) node index seeks on the RHS of write queries in sharded databases.")
+            "Control flags to decide whether to plan remote (unique) node index seeks and remote merge unique node operators on the RHS of write queries in sharded databases.")
     public static final Setting<Set<RemoteNodeIndexWriteOperators>> remote_node_index_write_operators = newBuilder(
                     "internal.cypher.remote_node_index_write_operators",
                     setOf(ofEnum(RemoteNodeIndexWriteOperators.class)),
