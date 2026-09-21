@@ -25,6 +25,7 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.lessThanOrEqualLong;
@@ -41,6 +42,7 @@ import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
+import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.UNSIGNED_BYTE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
@@ -59,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.memory.HeapEstimatorCacheConfig;
@@ -2003,6 +2006,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description("")
+    public static final Setting<Boolean> spd_import_enabled =
+            newBuilder("internal.db.spd_import.enabled", BOOL, false).build();
+
+    @Internal
+    @Description("")
     public static final Setting<Double> spd_segment_memory_reclaim = newBuilder(
                     "internal.db.spd_import.segment_memory_reclaim", DOUBLE, 0.1)
             .build();
@@ -2093,6 +2101,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             + "without creating an IT with huge number of relationships and consuming too much memory.")
     public static final Setting<Integer> spd_import_batch_memory_limit_override = newBuilder(
                     "internal.db.spd_import.batch_memory_limit_override", INT, null)
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<SocketAddress> spd_import_rpc_listen_address = newBuilder(
+                    "internal.db.spd_import.rpc.listen_address", SOCKET_ADDRESS, new SocketAddress(8000))
+            .setDependency(default_listen_address)
             .build();
 
     @Internal
