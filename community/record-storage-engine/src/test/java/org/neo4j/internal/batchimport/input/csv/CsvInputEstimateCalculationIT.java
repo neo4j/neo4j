@@ -61,6 +61,7 @@ import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.input.DataGeneratorInput;
@@ -177,6 +178,7 @@ class CsvInputEstimateCalculationIT {
                             IndexImporterFactory.EMPTY,
                             EmptyMemoryTracker.INSTANCE,
                             NULL_CONTEXT_FACTORY,
+                            BatchImporterFactory.NO_INDEX_PROVIDERS,
                             DatabaseCreationOptions.EMPTY_CREATION_OPTIONS)
                     .doImport(input);
 

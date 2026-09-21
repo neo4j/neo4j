@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport;
 
+import java.util.function.Supplier;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.batchimport.api.AdditionalInitialIds;
 import org.neo4j.batchimport.api.BatchImporter;
@@ -33,6 +34,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DatabaseCreationOptions;
+import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -68,6 +70,7 @@ public class StandardBatchImporterFactory extends BatchImporterFactory {
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
+            Supplier<IndexProvidersAccess> indexProvidersAccess,
             DatabaseCreationOptions databaseCreationOptions) {
         return new ParallelBatchImporter(
                 directoryStructure,
@@ -86,6 +89,7 @@ public class StandardBatchImporterFactory extends BatchImporterFactory {
                 indexImporterFactory,
                 memoryTracker,
                 contextFactory,
+                indexProvidersAccess,
                 databaseCreationOptions);
     }
 }

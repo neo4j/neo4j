@@ -64,6 +64,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.GeneratingInputIterator;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.RandomsStates;
@@ -394,6 +395,7 @@ class MultipleIndexPopulationStressIT {
                     indexImporterFactory,
                     INSTANCE,
                     NULL_CONTEXT_FACTORY,
+                    BatchImporterFactory.NO_INDEX_PROVIDERS,
                     DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
             importer.doImport(input);
         }

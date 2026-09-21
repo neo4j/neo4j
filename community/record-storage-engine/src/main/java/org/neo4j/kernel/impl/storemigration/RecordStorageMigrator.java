@@ -386,6 +386,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     indexImporterFactory,
                     memoryTracker,
                     contextFactory,
+                    BatchImporterFactory.NO_INDEX_PROVIDERS,
                     DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
             InputIterable nodes =
                     () -> legacyNodesAsInput(legacyStore, requiresPropertyMigration, contextFactory, memoryTracker);

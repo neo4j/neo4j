@@ -84,6 +84,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.input.Groups;
@@ -166,6 +167,7 @@ class CsvInputBatchImportIT {
                     new IndexImporterFactoryImpl(),
                     INSTANCE,
                     NULL_CONTEXT_FACTORY,
+                    BatchImporterFactory.NO_INDEX_PROVIDERS,
                     DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
             Groups groups = new Groups();
             var group = groups.getOrCreate(null);

@@ -47,6 +47,7 @@ import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.DataStatistics;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.NodeDegreeCountStage;
@@ -130,6 +131,7 @@ class HumanUnderstandableExecutionMonitorIT {
                             IndexImporterFactory.EMPTY,
                             EmptyMemoryTracker.INSTANCE,
                             NULL_CONTEXT_FACTORY,
+                            BatchImporterFactory.NO_INDEX_PROVIDERS,
                             DatabaseCreationOptions.EMPTY_CREATION_OPTIONS)
                     .doImport(input);
 

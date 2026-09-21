@@ -248,13 +248,9 @@ public class ImportLogic implements Closeable {
         dependencies.satisfyDependency(state);
     }
 
-    public void importNodes() throws IOException {
-        importNodes(SchemaMonitors.NO_SCHEMA);
-    }
-
     /**
      * Imports nodes w/ their properties and labels from {@link Input#nodes(Collector)}. This will as a side-effect populate the {@link IdMapper},
-     * to later be used for looking up ID --> nodeId in {@link #importRelationships()}. After a completed node import,
+     * to later be used for looking up ID --> nodeId in {@link #importRelationships(SchemaMonitors)}. After a completed node import,
      * {@link #prepareIdMapper(LongSet)} must be called.
      *
      * @throws IOException on I/O error.
@@ -288,7 +284,7 @@ public class ImportLogic implements Closeable {
     }
 
     /**
-     * Prepares {@link IdMapper} to be queried for ID --> nodeId lookups. This is required for running {@link #importRelationships()}.
+     * Prepares {@link IdMapper} to be queried for ID --> nodeId lookups. This is required for running {@link #importRelationships(SchemaMonitors)}.
      */
     private void prepareIdMapper(LongSet otherViolatingNodes) {
         if (idMapper.needsPreparation()) {
@@ -303,10 +299,6 @@ public class ImportLogic implements Closeable {
             }
             updatePeakMemoryUsage();
         }
-    }
-
-    public void importRelationships() throws IOException {
-        importRelationships(SchemaMonitors.NO_SCHEMA);
     }
 
     public void removeViolatingRelationships(LongSet violatingRelationships) {
@@ -592,7 +584,7 @@ public class ImportLogic implements Closeable {
     }
 
     /**
-     * Builds the counts store and lookup indexes. Requires that {@link #importNodes()} and {@link #importRelationships()} has run.
+     * Builds the counts store and lookup indexes. Requires that {@link #importNodes(SchemaMonitors)} and {@link #importRelationships(SchemaMonitors)} has run.
      */
     public void buildAuxiliaryStores(long fromNodeId, LogMetadataProvider logMetadataProvider) {
         neoStore.buildCountsStore(

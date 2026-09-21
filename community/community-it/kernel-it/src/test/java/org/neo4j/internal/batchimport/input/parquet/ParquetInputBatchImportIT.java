@@ -101,6 +101,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.input.BadCollector;
@@ -185,6 +186,7 @@ class ParquetInputBatchImportIT {
                     new IndexImporterFactoryImpl(),
                     INSTANCE,
                     NULL_CONTEXT_FACTORY,
+                    BatchImporterFactory.NO_INDEX_PROVIDERS,
                     DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
             Groups groups = new Groups();
             var group = groups.getOrCreate(null);
@@ -230,6 +232,7 @@ class ParquetInputBatchImportIT {
                     new IndexImporterFactoryImpl(),
                     INSTANCE,
                     NULL_CONTEXT_FACTORY,
+                    BatchImporterFactory.NO_INDEX_PROVIDERS,
                     DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
             Groups groups = new Groups();
             groups.getOrCreate(null);
@@ -352,6 +355,7 @@ class ParquetInputBatchImportIT {
                     new IndexImporterFactoryImpl(),
                     INSTANCE,
                     NULL_CONTEXT_FACTORY,
+                    BatchImporterFactory.NO_INDEX_PROVIDERS,
                     DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
             Groups groups = new Groups();
             groups.getOrCreate(null);

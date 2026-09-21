@@ -209,6 +209,7 @@ public class ParallelBatchImporterTest {
                 indexImporterFactory,
                 INSTANCE,
                 contextFactory,
+                BatchImporterFactory.NO_INDEX_PROVIDERS,
                 DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
         LongAdder propertyCount = new LongAdder();
         LongAdder relationshipCount = new LongAdder();

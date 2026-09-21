@@ -776,6 +776,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         indexImporterFactory,
                         memoryTracker,
                         contextFactory,
+                        indexProvidersAccess,
                         databaseCreationOptions);
     }
 

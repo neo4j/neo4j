@@ -87,6 +87,7 @@ import org.neo4j.wal.files.LogTailMetadataFactoryImpl;
  */
 public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
     private final StoreAugmenter storeAugmenter;
+    private final Supplier<Input> initialContent;
     private final Supplier<StorageEngineFactory> storageEngineFactorySupplier;
     private final Config config;
     private final FileSystemAbstraction fs;
@@ -113,6 +114,7 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
             boolean createForMergedLog) {
         this(
                 StoreAugmenter.NO_OP,
+                noInitialContent(),
                 storageEngineFactorySupplier,
                 config,
                 fs,
@@ -124,10 +126,15 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
                 createForMergedLog);
     }
 
+    public static Supplier<Input> noInitialContent() {
+        return NoInput::new;
+    }
+
     /**
      * Creates the empty database seed, returning the generated contents packaged up as a byte[].
      *
      * @param storeAugmenter               may augment the store before serializing it.
+     * @param initialContent               supplies the batch-import input the seed is created from.
      * @param storageEngineFactorySupplier which database format to use.
      * @param config                       for the database to create
      * @param fs                           the file system in which the empty database gets created.
@@ -137,6 +144,7 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
      */
     public EmptyStoreSeeder(
             StoreAugmenter storeAugmenter,
+            Supplier<Input> initialContent,
             Supplier<StorageEngineFactory> storageEngineFactorySupplier,
             Config config,
             FileSystemAbstraction fs,
@@ -147,6 +155,7 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
             DatabaseCreationOptions databaseCreationOptions,
             boolean createForMergedLog) {
         this.storeAugmenter = storeAugmenter;
+        this.initialContent = initialContent;
         this.storageEngineFactorySupplier = storageEngineFactorySupplier;
         this.config = config;
         this.fs = fs;
@@ -181,7 +190,9 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
         try (var pageCache = openNonForcingSmallPageCache(fs, jobScheduler)) {
             var batchImporter = batchImporter(
                     storageEngineFactory, updatedConfig, tempDatabaseLayout, pageCache, indexProvidersAccess);
-            batchImporter.doImport(new NoInput());
+            try (var input = initialContent.get()) {
+                batchImporter.doImport(input);
+            }
             if (createForMergedLog) {
                 // when creating an initial store seed for merged log we need to make sure there are no logs in the
                 // archive as Raft will create the logs already and expanding these would overwrite the log.

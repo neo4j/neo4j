@@ -21,6 +21,8 @@ package org.neo4j.internal.batchimport;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
+import java.util.function.Supplier;
 import org.neo4j.batchimport.api.AdditionalInitialIds;
 import org.neo4j.batchimport.api.BatchImporter;
 import org.neo4j.batchimport.api.Configuration;
@@ -30,15 +32,16 @@ import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.batchimport.api.input.PropertySizeCalculator;
 import org.neo4j.configuration.Config;
-import org.neo4j.importer.SchemaCommandSource;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.internal.schema.SchemaCommand;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DatabaseCreationOptions;
+import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -75,6 +78,7 @@ public class ParallelBatchImporter implements BatchImporter {
     private final IndexImporterFactory indexImporterFactory;
     private final MemoryTracker memoryTracker;
     private final CursorContextFactory contextFactory;
+    private final Supplier<IndexProvidersAccess> indexProvidersAccess;
     private final DatabaseCreationOptions databaseCreationOptions;
 
     public ParallelBatchImporter(
@@ -94,6 +98,7 @@ public class ParallelBatchImporter implements BatchImporter {
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
+            Supplier<IndexProvidersAccess> indexProvidersAccess,
             DatabaseCreationOptions databaseCreationOptions) {
         this.databaseLayout = RecordDatabaseLayout.convert(databaseLayout);
         this.fileSystem = fileSystem;
@@ -111,6 +116,7 @@ public class ParallelBatchImporter implements BatchImporter {
         this.indexImporterFactory = indexImporterFactory;
         this.memoryTracker = memoryTracker;
         this.contextFactory = contextFactory;
+        this.indexProvidersAccess = indexProvidersAccess;
         this.databaseCreationOptions = databaseCreationOptions;
     }
 
@@ -133,9 +139,8 @@ public class ParallelBatchImporter implements BatchImporter {
 
     @Override
     public void doImport(Input input) throws IOException {
-        if (SchemaCommandSource.mayHaveCommands(input.schemaCommandSource())) {
-            throw new UnsupportedOperationException("Record format batch import does not support schema changes");
-        }
+        List<SchemaCommand> schemaCommands =
+                ImporterSchemaCommandExecutor.validateSupported(input.schemaCommandSource());
 
         LogMetadataProvider logMetadataProvider = new LogMetadataProviderImpl(logTailMetadata);
         try (BatchingNeoStores store = ImportLogic.instantiateNeoStores(
@@ -166,19 +171,37 @@ public class ParallelBatchImporter implements BatchImporter {
                         memoryTracker)) {
             store.createNew();
             logic.initialize(input);
-            logic.importNodes();
-            logic.importRelationships();
-            logic.calculateNodeDegrees();
-            logic.linkRelationshipsOfAllTypes();
-            logic.defragmentRelationshipGroups();
-            logFilesInitializer.initializeLogFiles(
-                    databaseLayout,
-                    store.getNeoStores().getMetaDataStore(),
-                    logMetadataProvider,
+            try (ImporterSchemaPopulation schemaPopulation = ImporterSchemaPopulation.create(
+                    schemaCommands,
+                    store,
                     fileSystem,
-                    BATCH_IMPORTER_CHECKPOINT,
-                    dbConfig);
-            logic.buildAuxiliaryStores(logMetadataProvider);
+                    indexProvidersAccess,
+                    databaseLayout,
+                    config,
+                    dbConfig,
+                    jobScheduler,
+                    pageCacheTracer,
+                    contextFactory,
+                    memoryTracker)) {
+                try (SchemaMonitors schemaMonitors = schemaPopulation.nodeMonitors()) {
+                    logic.importNodes(schemaMonitors);
+                }
+                try (SchemaMonitors schemaMonitors = schemaPopulation.relationshipMonitors()) {
+                    logic.importRelationships(schemaMonitors);
+                }
+                logic.calculateNodeDegrees();
+                logic.linkRelationshipsOfAllTypes();
+                logic.defragmentRelationshipGroups();
+                logFilesInitializer.initializeLogFiles(
+                        databaseLayout,
+                        store.getNeoStores().getMetaDataStore(),
+                        logMetadataProvider,
+                        fileSystem,
+                        BATCH_IMPORTER_CHECKPOINT,
+                        dbConfig);
+                logic.buildAuxiliaryStores(logMetadataProvider);
+                schemaPopulation.completeAfterImport();
+            }
             logic.success();
         }
     }

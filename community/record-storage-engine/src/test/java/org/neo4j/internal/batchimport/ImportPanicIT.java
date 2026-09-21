@@ -104,6 +104,7 @@ class ImportPanicIT {
                     IndexImporterFactory.EMPTY,
                     EmptyMemoryTracker.INSTANCE,
                     new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
+                    BatchImporterFactory.NO_INDEX_PROVIDERS,
                     DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
             Iterable<DataFactory> nodeData = DataFactories.datas(DataFactories.data(
                     InputEntityDecorators.NO_DECORATOR, StandardCharsets.UTF_8, nodeCsvFileWithBrokenEntries()));

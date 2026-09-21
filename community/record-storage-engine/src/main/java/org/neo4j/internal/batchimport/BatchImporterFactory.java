@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.batchimport.api.AdditionalInitialIds;
 import org.neo4j.batchimport.api.BatchImporter;
@@ -34,6 +35,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DatabaseCreationOptions;
+import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -44,6 +46,16 @@ import org.neo4j.wal.LogTailMetadata;
 
 @Service
 public abstract class BatchImporterFactory implements NamedService {
+    /**
+     * For importers that will never apply schema commands. Fails with a diagnosable error instead of a bare
+     * {@link NullPointerException} if an {@link org.neo4j.batchimport.api.input.Input} with schema commands
+     * is imported anyway.
+     */
+    public static final Supplier<IndexProvidersAccess> NO_INDEX_PROVIDERS = () -> {
+        throw new IllegalStateException(
+                "This batch importer was created without index providers and cannot apply schema commands");
+    };
+
     private final int priority;
 
     protected BatchImporterFactory(int priority) {
@@ -67,6 +79,7 @@ public abstract class BatchImporterFactory implements NamedService {
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
+            Supplier<IndexProvidersAccess> indexProvidersAccess,
             DatabaseCreationOptions databaseCreationOptions);
 
     public static BatchImporterFactory withHighestPriority() {
