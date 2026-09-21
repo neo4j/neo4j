@@ -107,8 +107,7 @@ case class AllReduceSingletonRewriter(
           case typedRepeat: RepeatAcyclic =>
             typedRepeat.copy(right = newRhs, accumulatorMappings = newAccumulatorMappings)(SameId(repeat.id))
         }
-    },
-    stopper = !_.isInstanceOf[LogicalPlan]
+    }
   )
 
   private def rhsRewriter(renamings: Map[LogicalVariable, LogicalVariable]) = topDown(
@@ -118,7 +117,7 @@ case class AllReduceSingletonRewriter(
           predicates.exprs.collect {
             case arsp @ AllReduceSingletonPredicate(previousAcc, reductionStep, predicate) =>
               val nextAccumulator =
-                // if we still have a AllReduceSingletPredicate, then the accumulators in Repeat should be equal,
+                // if we still have a AllReduceSingletonPredicate, then the accumulators in Repeat should be equal,
                 // and we should have created a renamings entry.
                 renamings(previousAcc)
               arsp -> ProjectAndSelect(

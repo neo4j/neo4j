@@ -1736,4 +1736,65 @@ class AllReducePlanningIntegrationTest extends CypherPlannerTestSuite with Logic
       .nodeByLabelScan("c", "B", IndexOrderNone)
       .build()
   }
+
+  test("should rewrite allReduce singleton predicate inside nested plan expression") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .build()
+
+    val query =
+      """
+        |RETURN
+        |  coalesce(1, // coalesce forces nested plan expression
+        |    EXISTS {
+        |      MATCH (a) ((n)-[rels]->(m))+ (b)
+        |      WHERE allReduce(acc = 0, r IN rels | acc + 1, acc < 10)
+        |      RETURN a, b
+        |    }
+        |  ) AS result
+        |""".stripMargin
+
+    val trailParameters = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "a",
+      end = "b",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(),
+      groupRelationships = Set(),
+      innerRelationships = Set("rels"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false,
+      expansionMode = ExpandAll,
+      accumulators = Set(("0", "acc", "acc"))
+    )
+    val nestedPlan = planner.subPlanBuilder()
+      .repeatTrail(trailParameters)
+      .|.filter(isRepeatTrailUnique("rels"))
+      .|.expandAll("(n)-[rels]->(m)")
+      .|.filter("acc < 10")
+      .|.projection("acc + 1 AS acc")
+      .|.argument("n", "acc")
+      .allNodeScan("a")
+      .build()
+
+    val nestedExpr = nestedExistsExpr(
+      plan = nestedPlan,
+      solvedExpressionAsString =
+        """EXISTS {
+          |  MATCH (a) ((`n`)-[`rels`]->(`m`))+ (b)
+          |    WHERE allReduce(acc = 0, r IN `rels` | acc + 1, acc < 10) AND unique(`rels`)
+          |  RETURN a AS a, b AS b
+          |}""".stripMargin
+    )
+
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection(Map("result" -> function("coalesce", literal(1), nestedExpr)))
+      .argument()
+      .build()
+  }
 }
