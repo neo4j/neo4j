@@ -109,7 +109,7 @@
     <!-- JDBC drivers and some related tools (Connection Pooling and Proxying), being used in Graph-Engine
          Update with caution and observe nightly tests against Big Query, Databricks and Snowflake. -->
     <ge-HikariCP.version>7.1.0</ge-HikariCP.version>
-    <ge-bigquery-jdbc.version>1.3.0</ge-bigquery-jdbc.version>
+    <ge-bigquery-jdbc.version>1.4.1</ge-bigquery-jdbc.version>
     <ge-databricks-jdbc.version>3.4.2</ge-databricks-jdbc.version>
     <ge-datasource-proxy.version>1.11.0</ge-datasource-proxy.version>
     <ge-duckdb_jdbc.version>1.5.5.1</ge-duckdb_jdbc.version>
