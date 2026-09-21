@@ -52,8 +52,7 @@ object distinct {
     if (previousDistinctness.covers(newGroupingExpressionsMap.values)) {
       val projections =
         projection.filterOutEmptyProjections(
-          newGroupingExpressionsMap,
-          plan.availableSymbols
+          newGroupingExpressionsMap
         )
 
       if (projections.isEmpty) {

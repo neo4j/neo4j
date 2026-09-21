@@ -117,6 +117,18 @@ class ProjectionTest extends CypherPlannerTestSuite with LogicalPlanningTestSupp
     )
   }
 
+  test("filterOutEmptyProjections removes identity projections but keeps renames and other expressions") {
+    val projections = Map[LogicalVariable, Expression](
+      v"n" -> v"n",
+      v"m" -> v"m2",
+      v"x" -> literalInt(42)
+    )
+
+    projection.filterOutEmptyProjections(projections) should equal(
+      Map(v"m" -> v"m2", v"x" -> literalInt(42))
+    )
+  }
+
   private def queryGraphWith(projectionsMap: Map[LogicalVariable, Expression])
     : (LogicalPlanningContext, LogicalPlan) = {
     val context = newMockedLogicalPlanningContext(
