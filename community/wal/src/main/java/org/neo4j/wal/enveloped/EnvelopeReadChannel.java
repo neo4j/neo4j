@@ -1168,10 +1168,13 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
                         <= logHeader.getLogFormatVersion().getVersionByte(),
                 "Envelopes are not supported in LogFormat versions older than V10, but found: %s.",
                 logHeader.getLogFormatVersion());
-        checkState(
-                currentChecksum == logHeader.getPreviousLogFileChecksum(),
-                "Checksum chain broken on file change to logFileVersion: %d currentChecksum: %d header checksum: %d"
-                        .formatted(channel.getLogVersion(), currentChecksum, logHeader.getPreviousLogFileChecksum()));
+        if (currentChecksum != logHeader.getPreviousLogFileChecksum()) {
+            throw new ChecksumMismatchException(
+                    "Checksum chain broken on file change to logFileVersion: " + channel.getLogVersion()
+                            + " currentChecksum: %d header checksum: %d",
+                    currentChecksum,
+                    logHeader.getPreviousLogFileChecksum());
+        }
 
         enforceZeros(segmentBlockSize - buffer.position());
     }
