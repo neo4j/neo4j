@@ -44,7 +44,9 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
+import org.neo4j.test.extension.SkipOnSpd;
 
+@SkipOnSpd
 @RandomSupportExtension
 class FulltextEntityFilterTest extends LuceneFulltextTestSupport {
     private static final String NODE_INDEX_NAME = "nodeFulltextEntityFilterIndex";
