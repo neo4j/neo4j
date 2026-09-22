@@ -66,6 +66,27 @@ public class TransactionExecutionStatistic {
                 this.cpuTimeMillis != null ? elapsedTimeMillis - this.cpuTimeMillis - waitTimeMillis : null;
     }
 
+    public TransactionExecutionStatistic(
+            Long heapAllocatedBytes,
+            Long nativeAllocatedBytes,
+            Long estimatedUsedHeapMemory,
+            Long cpuTimeMillis,
+            long waitTimeMillis,
+            long elapsedTimeMillis,
+            Long idleTimeMillis,
+            long pageFaults,
+            long pageHits) {
+        this.heapAllocatedBytes = heapAllocatedBytes;
+        this.nativeAllocatedBytes = nativeAllocatedBytes;
+        this.estimatedUsedHeapMemory = estimatedUsedHeapMemory;
+        this.cpuTimeMillis = cpuTimeMillis;
+        this.waitTimeMillis = waitTimeMillis;
+        this.elapsedTimeMillis = elapsedTimeMillis;
+        this.idleTimeMillis = idleTimeMillis;
+        this.pageFaults = pageFaults;
+        this.pageHits = pageHits;
+    }
+
     public Long getEstimatedUsedHeapMemory() {
         return estimatedUsedHeapMemory;
     }
