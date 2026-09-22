@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.parser.CypherErrorStrategy.RelationshipPatternR
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy.StringLiteralRule
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy.VariableRule
 import org.neo4j.cypher.internal.parser.v25.Cypher25Parser
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 
 import java.util
 
@@ -40,15 +41,17 @@ class Cypher25ErrorStrategyConf extends CypherErrorStrategy.Conf {
 
   override def vocabulary: VocabularyImpl = Cypher25Parser.VOCABULARY.asInstanceOf[VocabularyImpl]
 
-  override def ignoredTokens: util.Set[Integer] = java.util.Set.of[java.lang.Integer](
+  private val lazyIgnoredTokens: LazyVal[util.Set[Integer]] = LazyVal(java.util.Set.of[java.lang.Integer](
     Token.EPSILON,
     Cypher25Parser.SEMICOLON,
     // Feature flag based exclusions:
     Cypher25Parser.DEFINE, // Feature flagged keyword, remove when DEFINE is released.
     Cypher25Parser.OBFUSCATION
-  )
+  ))
 
-  override def customTokenDisplayNames: Map[Int, String] = Map(
+  override def ignoredTokens: util.Set[Integer] = lazyIgnoredTokens.value
+
+  private val lazyCustomTokenDisplayNames: LazyVal[Map[Int, String]] = LazyVal(Map(
     Cypher25Parser.DOT_METRIC -> "'DOT'",
     Cypher25Parser.SPACE -> "' '",
     Cypher25Parser.SINGLE_LINE_COMMENT -> "'//'",
@@ -82,9 +85,11 @@ class Cypher25ErrorStrategyConf extends CypherErrorStrategy.Conf {
     Cypher25Parser.ALLREDUCE -> "'allReduce'",
     Cypher25Parser.LCURLY -> "'{'",
     Token.EOF -> "<EOF>"
-  )
+  ))
 
-  override def ruleGroups: Map[Int, CypherErrorStrategy.CypherRuleGroup] = {
+  override def customTokenDisplayNames: Map[Int, String] = lazyCustomTokenDisplayNames.value
+
+  private val lazyRuleGroups: LazyVal[Map[Int, CypherErrorStrategy.CypherRuleGroup]] = LazyVal {
     Map(
       Cypher25Parser.RULE_expression -> ExpressionRule,
       Cypher25Parser.RULE_expression1 -> ExpressionRule,
@@ -119,6 +124,8 @@ class Cypher25ErrorStrategyConf extends CypherErrorStrategy.Conf {
       Cypher25Parser.RULE_labelExpression1 -> LabelExpression1Rule
     )
   }
+
+  override def ruleGroups: Map[Int, CypherErrorStrategy.CypherRuleGroup] = lazyRuleGroups.value
 
   override def errorCharTokenType: Int = Cypher25Parser.ErrorChar
 

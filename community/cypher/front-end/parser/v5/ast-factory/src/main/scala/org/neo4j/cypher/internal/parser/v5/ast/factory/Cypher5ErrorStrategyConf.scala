@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.parser.CypherErrorStrategy.RelationshipPatternR
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy.StringLiteralRule
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy.VariableRule
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 
 import java.util
 
@@ -39,13 +40,15 @@ class Cypher5ErrorStrategyConf extends CypherErrorStrategy.Conf {
 
   override def vocabulary: VocabularyImpl = Cypher5Parser.VOCABULARY.asInstanceOf[VocabularyImpl]
 
-  override def ignoredTokens: util.Set[Integer] = java.util.Set.of[java.lang.Integer](
+  private val lazyIgnoredTokens: LazyVal[util.Set[Integer]] = LazyVal(java.util.Set.of[java.lang.Integer](
     Token.EPSILON,
     Cypher5Parser.SEMICOLON,
     Cypher5Parser.OBFUSCATION
-  )
+  ))
 
-  override def customTokenDisplayNames: Map[Int, String] = Map(
+  override def ignoredTokens: util.Set[Integer] = lazyIgnoredTokens.value
+
+  private val lazyCustomTokenDisplayNames: LazyVal[Map[Int, String]] = LazyVal(Map(
     Cypher5Parser.SPACE -> "' '",
     Cypher5Parser.SINGLE_LINE_COMMENT -> "'//'",
     Cypher5Parser.DECIMAL_DOUBLE -> "a float value",
@@ -65,9 +68,11 @@ class Cypher5ErrorStrategyConf extends CypherErrorStrategy.Conf {
     Cypher5Parser.LIMITROWS -> "'LIMIT'",
     Cypher5Parser.SKIPROWS -> "'SKIP'",
     Token.EOF -> "<EOF>"
-  )
+  ))
 
-  override def ruleGroups: Map[Int, CypherErrorStrategy.CypherRuleGroup] = {
+  override def customTokenDisplayNames: Map[Int, String] = lazyCustomTokenDisplayNames.value
+
+  private val lazyRuleGroups: LazyVal[Map[Int, CypherErrorStrategy.CypherRuleGroup]] = LazyVal {
     Map(
       Cypher5Parser.RULE_expression -> ExpressionRule,
       Cypher5Parser.RULE_expression1 -> ExpressionRule,
@@ -98,6 +103,8 @@ class Cypher5ErrorStrategyConf extends CypherErrorStrategy.Conf {
       Cypher5Parser.RULE_labelExpression1 -> LabelExpression1Rule
     )
   }
+
+  override def ruleGroups: Map[Int, CypherErrorStrategy.CypherRuleGroup] = lazyRuleGroups.value
 
   override def errorCharTokenType: Int = Cypher5Parser.ErrorChar
 
