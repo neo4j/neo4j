@@ -120,7 +120,7 @@ public class TransactionLogWriter implements LogWriter {
             channel.resetAppendedBytesCounter();
         }
         long newTerm = logTermProvider.getCurrentTerm();
-        if (currentTerm != newTerm) {
+        if (newTerm > currentTerm) {
             currentTerm = newTerm;
             channel.putTerm(currentTerm);
         }
