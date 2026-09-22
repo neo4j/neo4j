@@ -201,6 +201,7 @@ public enum Group {
 
     // SECURITY
     AUTH_CACHE("AuthCache", ExecutorServiceFactory.workStealing()),
+    SECRET_CACHE("SecretCache", ExecutorServiceFactory.workStealing()),
     SECURITY_MAINTAINENCE("SecurityMaintainence"),
 
     // GDS
