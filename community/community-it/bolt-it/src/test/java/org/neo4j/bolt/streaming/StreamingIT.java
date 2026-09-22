@@ -46,11 +46,13 @@ import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.messages.BoltV44Wire;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.boltmessages.request.streaming.PullMessage;
 import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.testing.PackstreamBufAssertions;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.storable.DateTimeValue;
@@ -368,9 +370,8 @@ public class StreamingIT {
     @IncludeWire(since = @Version(major = 5, minor = 0))
     void shouldReturnElementIdForRelationships(BoltWire wire, @Authenticated BoltTestConnection connection) {
         connection
-                .send(
-                        wire.run(
-                                "CREATE (:Actor{name: \"Greg\"})-[r:PLAYED_IN{year: 2021}]->(:Movie{title:\"The Matrix\"}) RETURN r"))
+                .send(wire.run("CREATE (:Actor{name: \"Greg\"})-[r:PLAYED_IN{year: 2021}]->(:Movie{title:\"The"
+                        + " Matrix\"}) RETURN r"))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection)
@@ -398,9 +399,8 @@ public class StreamingIT {
     @IncludeWire(since = @Version(major = 5, minor = 0))
     void shouldReturnElementIdForPaths(BoltWire wire, @Authenticated BoltTestConnection connection) {
         connection
-                .send(
-                        wire.run(
-                                "CREATE p=(:Actor{name: \"Greg\"})-[:PLAYED_IN{year: 2021}]->(:Movie{title:\"The Matrix\"}) RETURN p"))
+                .send(wire.run("CREATE p=(:Actor{name: \"Greg\"})-[:PLAYED_IN{year: 2021}]->(:Movie{title:\"The"
+                        + " Matrix\"}) RETURN p"))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection)
@@ -511,7 +511,8 @@ public class StreamingIT {
                         .hasCause(FailureCauseAssertions.create()
                                 .hasStatus(GqlStatusInfoCodes.STATUS_22N00)
                                 .hasDescription(
-                                        "error: data exception - unsupported value. The provided value is unsupported and cannot be processed.")
+                                        "error: data exception - unsupported value. The provided value is unsupported"
+                                                + " and cannot be processed.")
                                 .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                         .hasClassification(ErrorClassification.CLIENT_ERROR))
                                 .hasCause(FailureCauseAssertions.create()
@@ -519,7 +520,8 @@ public class StreamingIT {
                                                 GqlStatusInfoCodes.STATUS_22N97,
                                                 GqlMessageParameters.create().withString("0x46"))
                                         .hasDescription(
-                                                "error: data exception - unexpected struct tag. Unexpected struct tag: 0x46.")
+                                                "error: data exception - unexpected struct tag. Unexpected struct tag:"
+                                                        + " 0x46.")
                                         .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                                 .hasClassification(ErrorClassification.CLIENT_ERROR)))));
     }
@@ -550,7 +552,8 @@ public class StreamingIT {
                         .hasCause(FailureCauseAssertions.create()
                                 .hasStatus(GqlStatusInfoCodes.STATUS_22N00)
                                 .hasDescription(
-                                        "error: data exception - unsupported value. The provided value is unsupported and cannot be processed.")
+                                        "error: data exception - unsupported value. The provided value is unsupported"
+                                                + " and cannot be processed.")
                                 .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                         .hasClassification(ErrorClassification.CLIENT_ERROR))
                                 .hasCause(FailureCauseAssertions.create()
@@ -558,7 +561,110 @@ public class StreamingIT {
                                                 GqlStatusInfoCodes.STATUS_22N97,
                                                 GqlMessageParameters.create().withString("0x46"))
                                         .hasDescription(
-                                                "error: data exception - unexpected struct tag. Unexpected struct tag: 0x46.")
+                                                "error: data exception - unexpected struct tag. Unexpected struct tag:"
+                                                        + " 0x46.")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.CLIENT_ERROR)))));
+    }
+
+    @ProtocolTest
+    @ExcludeWire(@Version(major = 4))
+    void shouldReturnUniqueNodeIds(BoltWire wire, @Authenticated BoltTestConnection connection) {
+        connection
+                .send(wire.run("CREATE (a), (b), (c), (d), (e) RETURN a,b,c,d,e"))
+                .send(wire.pull());
+
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess()
+                .packstreamSatisfies(stream -> stream.receivesMessage()
+                        .containsStruct(0x71, 1)
+                        .containsListHeader(5)
+                        .satisfies(StreamingIT::assertUniqueNodeIdsReturned)
+                        .asBuffer()
+                        .hasNoRemainingReadableBytes())
+                .receivesSuccess();
+    }
+
+    @ProtocolTest
+    void shouldErrorForInvalidPull(BoltWire wire, @Authenticated BoltTestConnection connection) {
+        var invalidPullMessage = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(1, PullMessage.SIGNATURE))
+                .writeString("Unexpected")
+                .raw();
+
+        connection
+                .send(wire.run("CREATE (a), (b), (c), (d), (e) RETURN a,b,c,d,e"))
+                .send(invalidPullMessage);
+
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess()
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage(
+                                "Illegal value for field \"meta\": Unexpected type: Expected MAP but got STRING")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                        .hasDescription("error: connection exception - protocol error. General network protocol error.")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(GqlStatusInfoCodes.STATUS_22G03)
+                                .hasDescription("error: data exception - invalid value type")
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))
+                                .hasCause(FailureCauseAssertions.create()
+                                        .hasStatus(
+                                                GqlStatusInfoCodes.STATUS_22N01,
+                                                GqlMessageParameters.create()
+                                                        .withString("128")
+                                                        .withString("MAP")
+                                                        .withString("STRING"))
+                                        .hasDescription("error: data exception - invalid type. Expected the value 128 "
+                                                + "to be of type MAP, but was of type STRING.")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.CLIENT_ERROR)))));
+    }
+
+    @ProtocolTest
+    void shouldErrorForInvalidPullValue(BoltWire wire, @Authenticated BoltTestConnection connection) {
+        var invalidPullMessage = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(1, PullMessage.SIGNATURE))
+                .writeMapHeader(1)
+                .writeString("n")
+                .writeInt(0)
+                .raw();
+
+        connection
+                .send(wire.run("CREATE (a), (b), (c), (d), (e) RETURN a,b,c,d,e"))
+                .send(invalidPullMessage);
+
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess()
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Illegal value for field \"meta\": Illegal value for field \"n\": "
+                                + "Expecting size to be at least 1, but got: 0")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                        .hasDescription("error: connection exception - protocol error. General network protocol error.")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                                .hasDescription(
+                                        "error: connection exception - protocol error. General network protocol error.")
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))
+                                .hasCause(FailureCauseAssertions.create()
+                                        .hasStatus(
+                                                GqlStatusInfoCodes.STATUS_22N03,
+                                                GqlMessageParameters.create()
+                                                        .withString("n")
+                                                        .withString("INTEGER")
+                                                        .withInt(1)
+                                                        .withInt(2147483647)
+                                                        .withInt(0))
+                                        .hasDescription("error: data exception - specified numeric value out of range."
+                                                + " Expected 'n' to be of type INTEGER and in the range 1 to"
+                                                + " 2147483647 but found 0.")
                                         .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                                 .hasClassification(ErrorClassification.CLIENT_ERROR)))));
     }
@@ -583,23 +689,5 @@ public class StreamingIT {
                 .containsString(elementId -> assertThat(elementId).isNotBlank());
 
         return nodeId;
-    }
-
-    @ProtocolTest
-    @ExcludeWire(@Version(major = 4))
-    void shouldReturnUniqueNodeIds(BoltWire wire, @Authenticated BoltTestConnection connection) {
-        connection
-                .send(wire.run("CREATE (a), (b), (c), (d), (e) RETURN a,b,c,d,e"))
-                .send(wire.pull());
-
-        BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess()
-                .packstreamSatisfies(stream -> stream.receivesMessage()
-                        .containsStruct(0x71, 1)
-                        .containsListHeader(5)
-                        .satisfies(StreamingIT::assertUniqueNodeIdsReturned)
-                        .asBuffer()
-                        .hasNoRemainingReadableBytes())
-                .receivesSuccess();
     }
 }

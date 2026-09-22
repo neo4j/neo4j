@@ -86,6 +86,9 @@ public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> 
         connection.submit((fsm, responseHandler) -> {
             fsm.fail();
             responseHandler.onFailure(error);
+            if (error.isFatal()) {
+                connection.close();
+            }
         });
     }
 }

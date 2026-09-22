@@ -43,6 +43,7 @@ import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.setup.preset.EnableAuthentication;
 import org.neo4j.bolt.test.annotation.test.BoltTest;
+import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.test.connection.setup.SettingBuilder;
@@ -57,6 +58,7 @@ import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.boltmessages.request.authentication.HelloMessage;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.gqlstatus.ErrorClassification;
@@ -67,6 +69,8 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.extension.SkipOnSpd;
@@ -145,7 +149,8 @@ class AuthenticationIT {
                         .hasLegacyMessage("The client is unauthorized due to authentication failure.")
                         .hasStatus(GqlStatusInfoCodes.STATUS_42NFF)
                         .hasDescription(
-                                "error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.")
+                                "error: syntax error or access rule violation - permission/access denied. Access"
+                                        + " denied, see the security logs for details.")
                         .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                 .hasClassification(ErrorClassification.CLIENT_ERROR)))
                 .isEventuallyTerminated();
@@ -228,7 +233,8 @@ class AuthenticationIT {
                             .hasLegacyMessage("The client is unauthorized due to authentication failure.")
                             .hasStatus(GqlStatusInfoCodes.STATUS_42NFF)
                             .hasDescription(
-                                    "error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.")
+                                    "error: syntax error or access rule violation - permission/access denied. Access"
+                                            + " denied, see the security logs for details.")
                             .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                     .hasClassification(ErrorClassification.CLIENT_ERROR)))
                     .isEventuallyTerminated();
@@ -255,10 +261,12 @@ class AuthenticationIT {
                 .receivesFailure(FailureMetadataAssertions.create()
                         .hasLegacyStatus(Status.Security.Unauthorized)
                         .hasLegacyMessage(
-                                "Unsupported authentication token, the value associated with the key `principal` must be a String but was: ArrayList")
+                                "Unsupported authentication token, the value associated with the key `principal` must"
+                                        + " be a String but was: ArrayList")
                         .hasStatus(GqlStatusInfoCodes.STATUS_42NFF)
                         .hasDescription(
-                                "error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.")
+                                "error: syntax error or access rule violation - permission/access denied. Access"
+                                        + " denied, see the security logs for details.")
                         .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                 .hasClassification(ErrorClassification.CLIENT_ERROR)))
                 .isEventuallyTerminated();
@@ -286,7 +294,8 @@ class AuthenticationIT {
                         .hasLegacyMessage("Unsupported authentication token, missing key `credentials`")
                         .hasStatus(GqlStatusInfoCodes.STATUS_42NFF)
                         .hasDescription(
-                                "error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.")
+                                "error: syntax error or access rule violation - permission/access denied. Access"
+                                        + " denied, see the security logs for details.")
                         .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                 .hasClassification(ErrorClassification.CLIENT_ERROR)))
                 .isEventuallyTerminated();
@@ -310,7 +319,8 @@ class AuthenticationIT {
                         .hasLegacyMessage("Unsupported authentication token, missing key `scheme`")
                         .hasStatus(GqlStatusInfoCodes.STATUS_42NFF)
                         .hasDescription(
-                                "error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.")
+                                "error: syntax error or access rule violation - permission/access denied. Access"
+                                        + " denied, see the security logs for details.")
                         .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                 .hasClassification(ErrorClassification.CLIENT_ERROR)))
                 .isEventuallyTerminated();
@@ -339,7 +349,8 @@ class AuthenticationIT {
                         .hasLegacyMessage("Unsupported authentication token, scheme 'unknown' is not supported.")
                         .hasStatus(GqlStatusInfoCodes.STATUS_42NFF)
                         .hasDescription(
-                                "error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.")
+                                "error: syntax error or access rule violation - permission/access denied. Access"
+                                        + " denied, see the security logs for details.")
                         .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                 .hasClassification(ErrorClassification.CLIENT_ERROR)))
                 .isEventuallyTerminated();
@@ -366,10 +377,12 @@ class AuthenticationIT {
                         .receivesFailure(FailureMetadataAssertions.create()
                                 .hasLegacyStatus(Status.Security.AuthenticationRateLimit)
                                 .hasLegacyMessage(
-                                        "The client has provided incorrect authentication details too many times in a row.")
+                                        "The client has provided incorrect authentication details too many times in a"
+                                                + " row.")
                                 .hasStatus(GqlStatusInfoCodes.STATUS_42NFF)
                                 .hasDescription(
-                                        "error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.")
+                                        "error: syntax error or access rule violation - permission/access denied."
+                                                + " Access denied, see the security logs for details.")
                                 .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                         .hasClassification(ErrorClassification.CLIENT_ERROR)))
                         .isEventuallyTerminated();
@@ -416,18 +429,20 @@ class AuthenticationIT {
                 .receivesFailure(FailureMetadataAssertions.create()
                         .hasLegacyStatus(Status.Statement.ArgumentError)
                         .hasLegacyMessage(
-                                "User 'neo4j' failed to alter their own password: Old password and new password cannot be the same.")
+                                "User 'neo4j' failed to alter their own password: Old password and new password cannot"
+                                        + " be the same.")
                         .hasStatus(
                                 GqlStatusInfoCodes.STATUS_22N05,
                                 GqlMessageParameters.create().withString("***").withString("neo4j password"))
-                        .hasDescription(
-                                "error: data exception - input failed validation. Invalid input '***' for neo4j password.")
+                        .hasDescription("error: data exception - input failed validation. Invalid input '***' for neo4j"
+                                + " password.")
                         .hasDiagnosticRecord(
                                 DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
                         .hasCause(FailureCauseAssertions.create()
                                 .hasStatus(GqlStatusInfoCodes.STATUS_22N89)
                                 .hasDescription(
-                                        "error: data exception - new password cannot be the same as the old password. Expected the new password to be different from the old password.")
+                                        "error: data exception - new password cannot be the same as the old password."
+                                                + " Expected the new password to be different from the old password.")
                                 .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                         .hasClassification(ErrorClassification.CLIENT_ERROR))))
                 .receivesIgnored();
@@ -472,7 +487,8 @@ class AuthenticationIT {
                                 GqlStatusInfoCodes.STATUS_22NB6,
                                 GqlMessageParameters.create().withString("Password"))
                         .hasDescription(
-                                "error: data exception - input empty. Invalid input. Password is not allowed to be an empty string.")
+                                "error: data exception - input empty. Invalid input. Password is not allowed to be an"
+                                        + " empty string.")
                         .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                 .hasClassification(ErrorClassification.CLIENT_ERROR)))
                 .receivesIgnored();
@@ -513,16 +529,20 @@ class AuthenticationIT {
                     .receivesFailure(FailureMetadataAssertions.create()
                             .hasLegacyStatus(Status.Security.CredentialsExpired)
                             .hasLegacyMessageFuzzy(
-                                    "The credentials you provided were valid, but must be changed before you can use this instance.")
+                                    "The credentials you provided were valid, but must be changed before you can use"
+                                            + " this instance.")
                             .hasStatus(GqlStatusInfoCodes.STATUS_42NFF)
                             .hasDescription(
-                                    "error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.")
+                                    "error: syntax error or access rule violation - permission/access denied. Access"
+                                            + " denied, see the security logs for details.")
                             .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                     .hasClassification(ErrorClassification.CLIENT_ERROR))
                             .hasCause(FailureCauseAssertions.create()
                                     .hasStatus(GqlStatusInfoCodes.STATUS_42NFD)
                                     .hasDescription(
-                                            "error: syntax error or access rule violation - credentials expired. Permission denied. The credentials you provided were valid, but must be changed before you can use this instance.")
+                                            "error: syntax error or access rule violation - credentials expired."
+                                                    + " Permission denied. The credentials you provided were valid, but"
+                                                    + " must be changed before you can use this instance.")
                                     .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                             .hasClassification(ErrorClassification.CLIENT_ERROR))));
         } catch (StackOverflowError e) {
@@ -537,23 +557,27 @@ class AuthenticationIT {
                             FailureMetadataAssertions.create()
                                     .hasLegacyStatus(Status.Security.CredentialsExpired)
                                     .hasLegacyMessageFuzzy(
-                                            "The credentials you provided were valid, but must be changed before you can use this instance.")
+                                            "The credentials you provided were valid, but must be changed before you"
+                                                    + " can use this instance.")
                                     .hasStatus(GqlStatusInfoCodes.STATUS_42NFF)
                                     .hasDescription(
-                                            "error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.")
+                                            "error: syntax error or access rule violation - permission/access denied."
+                                                    + " Access denied, see the security logs for details.")
                                     .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                             .hasClassification(ErrorClassification.CLIENT_ERROR))
                                     .hasCause(FailureCauseAssertions.create()
                                             .hasStatus(GqlStatusInfoCodes.STATUS_42NFD)
-                                            .hasDescription(
-                                                    "error: syntax error or access rule violation - credentials expired. Permission denied. The credentials you provided were valid, but must be changed before you can use this instance.")
+                                            .hasDescription("error: syntax error or access rule violation - credentials"
+                                                    + " expired. Permission denied. The credentials you provided"
+                                                    + " were valid, but must be changed before you can use this"
+                                                    + " instance.")
                                             .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                                     .hasClassification(ErrorClassification.CLIENT_ERROR))));
         }
 
         LogAssertions.assertThat(this.securityLogProvider)
-                .containsMessages(
-                        "The credentials you provided were valid, but must be changed before you can use this instance.");
+                .containsMessages("The credentials you provided were valid, but must be changed before you can use this"
+                        + " instance.");
     }
 
     @BoltTest
@@ -598,7 +622,8 @@ class AuthenticationIT {
                 .receivesFailure(FailureMetadataAssertions.create()
                         .hasLegacyStatus(Status.Request.Invalid)
                         .hasLegacyMessage(
-                                "Message of type BeginMessage cannot be handled by a session in the AUTHENTICATION state.")
+                                "Message of type BeginMessage cannot be handled by a session in the AUTHENTICATION"
+                                        + " state.")
                         .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
                         .hasDescription("error: connection exception - protocol error. General network protocol error.")
                         .hasDiagnosticRecord(
@@ -610,7 +635,8 @@ class AuthenticationIT {
                                                 .withString("BeginMessage")
                                                 .withString("AUTHENTICATION"))
                                 .hasDescription(
-                                        "error: connection exception - invalid server state. Message BeginMessage cannot be handled by session in the 'AUTHENTICATION' state.")
+                                        "error: connection exception - invalid server state. Message BeginMessage"
+                                                + " cannot be handled by session in the 'AUTHENTICATION' state.")
                                 .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
                                         .hasClassification(ErrorClassification.CLIENT_ERROR))));
     }
@@ -675,5 +701,77 @@ class AuthenticationIT {
         BoltConnectionAssertions.assertThat(connection)
                 .receivesSuccess(
                         meta -> assertThat(meta).containsEntry("advertised_address", "my-server.neo4j.io:7688"));
+    }
+
+    @ProtocolTest
+    void shouldErrorForInvalidRoutingContextMap(BoltWire wire, @VersionSelected BoltTestConnection connection) {
+        var badRoutingHelloMessage = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(1, HelloMessage.SIGNATURE))
+                .writeMap(Map.of("routing", Map.of("fast_con", true), "user_agent", "bad_routing"));
+
+        connection.send(badRoutingHelloMessage);
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage(
+                                "Illegal value for field \"routing\": Must be a map with string keys and string"
+                                        + " values.")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                        .hasDescription("error: connection exception - protocol error. General network protocol error.")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(GqlStatusInfoCodes.STATUS_22G03)
+                                .hasDescription("error: data exception - invalid value type")
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))
+                                .hasCause(FailureCauseAssertions.create()
+                                        .hasStatus(
+                                                GqlStatusInfoCodes.STATUS_22N01,
+                                                GqlMessageParameters.create()
+                                                        .withString("fast_con=true")
+                                                        .withString("MAP<STRING, STRING>")
+                                                        .withString("class java.util.HashMap$Node"))
+                                        .hasDescription("error: data exception - invalid type. Expected the value"
+                                                + " fast_con=true to be of type MAP<STRING, STRING>, but was of"
+                                                + " type class java.util.HashMap$Node.")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.CLIENT_ERROR)))));
+        BoltConnectionAssertions.assertThat(connection).isEventuallyTerminated();
+    }
+
+    @ProtocolTest
+    void shouldErrorForInvalidRoutingContext(BoltWire wire, @VersionSelected BoltTestConnection connection) {
+        var badRoutingHelloMessage = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(1, HelloMessage.SIGNATURE))
+                .writeMap(Map.of("routing", "bananas", "user_agent", "bad_routing"));
+
+        connection.send(badRoutingHelloMessage);
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Illegal value for field \"routing\": Expected map but got String")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                        .hasDescription("error: connection exception - protocol error. General network protocol error.")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(GqlStatusInfoCodes.STATUS_22G03)
+                                .hasDescription("error: data exception - invalid value type")
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))
+                                .hasCause(FailureCauseAssertions.create()
+                                        .hasStatus(
+                                                GqlStatusInfoCodes.STATUS_22N01,
+                                                GqlMessageParameters.create()
+                                                        .withString("bananas")
+                                                        .withString("MAP")
+                                                        .withString("String"))
+                                        .hasDescription(
+                                                "error: data exception - invalid type. Expected the value bananas to"
+                                                        + " be of type MAP, but was of type String.")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.CLIENT_ERROR)))));
+        BoltConnectionAssertions.assertThat(connection).isEventuallyTerminated();
     }
 }

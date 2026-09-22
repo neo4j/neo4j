@@ -33,6 +33,7 @@ import org.neo4j.boltmessages.notifications.NotificationsConfig;
 import org.neo4j.boltmessages.request.authentication.HelloMessage;
 import org.neo4j.boltmessages.request.connection.RoutingContext;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
+import org.neo4j.packstream.error.struct.FatalIllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
@@ -109,7 +110,7 @@ public class DefaultHelloMessageDecoder implements MessageDecoder<HelloMessage> 
         if (routingStringMap != null) return new RoutingContext(true, Map.copyOf(routingStringMap));
 
         // DRI-012
-        throw IllegalStructArgumentException.wrongTypeForFieldName(
+        throw FatalIllegalStructArgumentException.wrongTypeForFieldName(
                 FIELD_ROUTING,
                 property.toString(),
                 List.of("MAP"),
@@ -155,7 +156,7 @@ public class DefaultHelloMessageDecoder implements MessageDecoder<HelloMessage> 
         for (var entry : propertyMap.entrySet()) {
             if (!(entry.getKey() instanceof String key && entry.getValue() instanceof String value)) {
                 // DRI-014
-                throw IllegalStructArgumentException.wrongTypeForFieldName(
+                throw FatalIllegalStructArgumentException.wrongTypeForFieldName(
                         field,
                         String.valueOf(entry),
                         List.of("MAP<STRING, STRING>"),

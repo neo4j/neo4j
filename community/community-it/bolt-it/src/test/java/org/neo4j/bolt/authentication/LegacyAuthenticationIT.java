@@ -28,6 +28,7 @@ import static org.neo4j.test.assertion.Assert.awaitUntilAsserted;
 import static org.neo4j.test.conditions.Conditions.TRUE;
 
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.protocol.common.connector.connection.AtomicSchedulingConnection;
@@ -36,6 +37,7 @@ import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.preset.EnableAuthentication;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
+import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
 import org.neo4j.bolt.testing.annotation.Version;
@@ -44,11 +46,14 @@ import org.neo4j.bolt.testing.assertions.FailureMetadataAssertions;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.boltmessages.request.authentication.HelloMessage;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
+import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.extension.SkipOnSpd;
@@ -348,5 +353,37 @@ public class LegacyAuthenticationIT {
                 throw e;
             }
         }
+    }
+
+    @ProtocolTest
+    @ExcludeWire(until = @Version(major = 4, minor = 0))
+    void shouldErrorForInvalidRoutingContextMap(BoltWire wire, @VersionSelected BoltTestConnection connection) {
+        var badRoutingHelloMessage = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(1, HelloMessage.SIGNATURE))
+                .writeMap(Map.of("routing", Map.of("fast_con", true), "user_agent", "bad_routing"));
+
+        connection.send(badRoutingHelloMessage);
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage(
+                                "Illegal value for field \"routing\": Must be a map with string keys and string"
+                                        + " values."));
+        BoltConnectionAssertions.assertThat(connection).isEventuallyTerminated();
+    }
+
+    @ProtocolTest
+    @ExcludeWire(until = @Version(major = 4, minor = 0))
+    void shouldErrorInvalidRoutingContext(BoltWire wire, @VersionSelected BoltTestConnection connection) {
+        var badRoutingHelloMessage = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(1, HelloMessage.SIGNATURE))
+                .writeMap(Map.of("routing", "bananas", "user_agent", "bad_routing"));
+
+        connection.send(badRoutingHelloMessage);
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Illegal value for field \"routing\": Expected map but got String"));
+        BoltConnectionAssertions.assertThat(connection).isEventuallyTerminated();
     }
 }

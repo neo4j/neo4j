@@ -64,6 +64,11 @@ public final class BeginMessageBuilder implements NotificationsMessageBuilder<Be
         return this;
     }
 
+    public BeginMessageBuilder withTxMetadata(Map<String, String> value) {
+        meta.put("tx_metadata", value);
+        return this;
+    }
+
     @Override
     public Map<String, Object> getMeta() {
         return meta;
