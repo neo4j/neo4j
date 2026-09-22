@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api.txstate.validation;
 
 import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_25N11;
+import static org.neo4j.util.FeatureToggles.flag;
 
 import java.util.Arrays;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
@@ -32,6 +33,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class TransactionConflictException extends TransientFailureException implements NonSensitiveException {
 
+    private static final boolean INCLUDE_STACKTRACE =
+            flag(TransactionConflictException.class, "preserveConflictException", false);
     private static final String GENERIC_MESSAGE = "Transaction conflict validation failed.";
     private static final ErrorGqlStatusObject GQL_STATUS =
             ErrorGqlStatusObjectImplementation.from(STATUS_25N11).build();
@@ -99,6 +102,9 @@ public class TransactionConflictException extends TransientFailureException impl
 
     @Override
     public synchronized Throwable fillInStackTrace() {
+        if (INCLUDE_STACKTRACE) {
+            return super.fillInStackTrace();
+        }
         return this;
     }
 
