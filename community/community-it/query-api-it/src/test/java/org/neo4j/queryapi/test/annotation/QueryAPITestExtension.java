@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.queryapi.test.annotation.support.QueryAPITestSupportExtension;
 import org.neo4j.queryapi.test.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.test.testclient.QueryContentType;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 /**
  * Extension for running test against Query API.
@@ -115,4 +116,13 @@ public @interface QueryAPITestExtension {
      * by {@link org.neo4j.queryapi.test.QueryAPITestRetryException}
      */
     int maxAttempts() default 3;
+
+    /**
+     * Selects a test database management service builder which shall be used in order to instantiate a new server
+     * instance for testing.
+     *
+     * @return a database management service builder.
+     */
+    Class<? extends TestDatabaseManagementServiceBuilder> databaseManagementServiceBuilder() default
+            TestDatabaseManagementServiceBuilder.class;
 }

@@ -23,6 +23,8 @@ import static java.time.Duration.ofSeconds;
 import static org.neo4j.queryapi.test.QueryApiTestUtil.resolveDependency;
 import static org.neo4j.queryapi.test.QueryApiTestUtil.setupLogging;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,7 +58,7 @@ import org.neo4j.queryapi.test.procedure.SleepQueryApiTestProcedure;
 import org.neo4j.queryapi.test.testclient.QueryAPITestClient;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.queryapi.tx.TransactionManager;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 
 public class QueryAPITestSupportExtension
         implements ClassTemplateInvocationContextProvider,
@@ -77,9 +79,17 @@ public class QueryAPITestSupportExtension
 
         var testClass = context.getRequiredTestClass();
         var annotation = testClass.getAnnotation(QueryAPITestExtension.class);
+        var databaseManagementServiceBuilder = annotation.databaseManagementServiceBuilder();
+        var constructor = databaseManagementServiceBuilder.getConstructor();
+        var extensionMethods = new ArrayList<Method>();
+        for (var method : testClass.getMethods()) {
+            if (method.isAnnotationPresent(ExtensionCallback.class)) {
+                extensionMethods.add(method);
+            }
+        }
 
         for (var transportType : annotation.boltTransports()) {
-            var builder = new TestDatabaseManagementServiceBuilder();
+            var builder = constructor.newInstance();
             builder = builder.setConfig(HttpConnector.enabled, true)
                     .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
                     .setConfig(
@@ -108,6 +118,16 @@ public class QueryAPITestSupportExtension
                 builder = builder.setConfig(
                         GraphDatabaseSettings.bookmark_ready_timeout,
                         Duration.ofSeconds(annotation.bookmarkReadyTimeoutInSeconds()));
+            }
+
+            for (var method : extensionMethods) {
+                method.setAccessible(true);
+                try {
+                    method.invoke(null, builder);
+                } catch (InvocationTargetException e) {
+                    throw new RuntimeException(
+                            "The method %s  threw an exception.".formatted(method.getName()), e.getCause());
+                }
             }
 
             var dbms = builder.build();
