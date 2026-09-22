@@ -151,6 +151,14 @@ public class CantCompileQueryException extends Neo4jException {
         return new CantCompileQueryException(gql, msg);
     }
 
+    public static CantCompileQueryException unsupportedWritePlanInParallelRuntime(String planComponent) {
+        var msg = String.format(
+                "Updating plan %s can only be executed within a CALL {...} IN TRANSACTION subquery scope with parallel runtime.",
+                planComponent);
+        var gql = GqlHelper.getGql22000_22N48("parallel", planComponent);
+        return new CantCompileQueryException(gql, msg);
+    }
+
     @Override
     public Status status() {
         return Status.Statement.ExecutionFailed;

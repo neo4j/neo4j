@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.result
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.runtime.ExceptionUtils.runAllWithExceptionChaining
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.ProfileMode
@@ -97,9 +98,11 @@ class StandardInternalExecutionResult(
         runtimeResult.cancel()
 
       case _ =>
-        runtimeResult.cancel()
-        closer.close(reason)
-        outerCloseable.close()
+        runAllWithExceptionChaining(
+          () => runtimeResult.cancel(),
+          () => closer.close(reason),
+          () => outerCloseable.close()
+        )
     }
   }
 

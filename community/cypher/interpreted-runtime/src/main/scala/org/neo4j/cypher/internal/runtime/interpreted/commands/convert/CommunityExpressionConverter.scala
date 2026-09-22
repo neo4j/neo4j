@@ -1154,7 +1154,7 @@ case class CommunityExpressionConverter(
       predicates.Not(predicates.True())
 
     case _ =>
-      predicates.CachedIn(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs), id)
+      predicates.CachedIn(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs), id.x)
   }
 
   private def caseExpression(id: Id, e: internal.expressions.CaseExpression, self: ExpressionConverters) = {

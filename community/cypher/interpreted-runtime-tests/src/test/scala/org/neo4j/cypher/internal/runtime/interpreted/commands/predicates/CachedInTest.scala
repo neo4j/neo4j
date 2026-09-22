@@ -34,7 +34,7 @@ import org.neo4j.values.virtual.VirtualValues
 
 class CachedInTest extends InterpretedRuntimeTestSuite {
 
-  protected def createPredicate(lhs: Variable, rhs: Expression): Predicate = CachedIn(lhs, rhs, Id.INVALID_ID)
+  protected def createPredicate(lhs: Variable, rhs: Expression): Predicate = CachedIn(lhs, rhs, Id.INVALID_ID.x)
 
   test("tests") {
     // given

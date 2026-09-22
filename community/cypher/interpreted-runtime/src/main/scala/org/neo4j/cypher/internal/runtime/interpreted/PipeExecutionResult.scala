@@ -58,9 +58,12 @@ class PipeExecutionResult(
   override def heapHighWaterMark: Long = state.queryMemoryTracker.heapHighWaterMark
 
   override def close(): Unit = {
-    state.close()
-    if (inner != null) {
-      inner.close()
+    try {
+      if (inner != null) {
+        inner.close()
+      }
+    } finally {
+      state.close()
     }
   }
 

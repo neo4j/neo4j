@@ -25,14 +25,13 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Values
 
 /*
 This class is used for making the common <exp> IN <constant-expression> fast
  */
-case class CachedIn(value: Expression, list: Expression, id: Id) extends Predicate with ListSupport {
+case class CachedIn(value: Expression, list: Expression, operatorId: Int) extends Predicate with ListSupport {
 
   override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val listValue = list(ctx, state)
@@ -46,7 +45,7 @@ case class CachedIn(value: Expression, list: Expression, id: Id) extends Predica
         state.cachedIn.check(
           value(ctx, state),
           input,
-          state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
+          state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(operatorId)
         ) match {
           case IsNoValue()     => IsUnknown
           case b: BooleanValue => IsMatchResult(b.booleanValue())
@@ -61,5 +60,5 @@ case class CachedIn(value: Expression, list: Expression, id: Id) extends Predica
   override def arguments: Seq[Expression] = Seq(list)
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(CachedIn(value.rewrite(f), list.rewrite(f), id))
+    f(CachedIn(value.rewrite(f), list.rewrite(f), operatorId))
 }
