@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt;
 
+import static org.neo4j.bolt.test.util.ConnectionUtil.assertEventuallyNewConnectionProcessWorkAndReturned;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
@@ -35,6 +36,7 @@ import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
 import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
+import org.neo4j.bolt.test.util.ConnectionUtil;
 import org.neo4j.bolt.test.util.ServerUtil;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.assertions.DiagnosticRecordAssertions;
@@ -108,9 +110,12 @@ class SchedulerBusyIT {
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
     }
 
-    private static void establishNewConnection(BoltWire wire, BoltTestConnection connection) throws Exception {
-        connection.send(wire.hello());
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+    private static void eventuallyEstablishConnection(BoltWire wire, ConnectionProvider connectionProvider)
+            throws Exception {
+        ConnectionUtil.assertEventuallyNewConnectionProcessWork(connectionProvider, connection -> {
+            connection.send(wire.hello());
+            BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+        });
     }
 
     @TransportTest
@@ -207,8 +212,7 @@ class SchedulerBusyIT {
             BoltWire wire,
             @Authenticated BoltTestConnection connection1,
             @Authenticated BoltTestConnection connection2,
-            @VersionSelected BoltTestConnection connection3,
-            @VersionSelected BoltTestConnection connection4)
+            @VersionSelected ConnectionProvider connectionProvider)
             throws Exception {
         // saturate the thread pool using autocommit transactions (this works since open transactions currently force
         // Bolt to stick to the worker thread until closed or timed out)
@@ -223,7 +227,7 @@ class SchedulerBusyIT {
         ServerUtil.awaitPrimaryThreadPoolSaturation(boltServer(), 1);
 
         // send another request on a third connection in order to generate a new job submission
-        establishNewConnection(wire, connection3);
+        eventuallyEstablishConnection(wire, connectionProvider);
 
         ServerUtil.awaitPrimaryThreadPoolSaturation(boltServer(), 1);
 
@@ -233,7 +237,7 @@ class SchedulerBusyIT {
         ServerUtil.awaitPrimaryThreadPoolSaturation(boltServer(), 0);
 
         // send another request on a fourth connection in order to generate a new job submission
-        establishNewConnection(wire, connection4);
+        eventuallyEstablishConnection(wire, connectionProvider);
 
         ServerUtil.awaitPrimaryThreadPoolSaturation(boltServer(), 0);
     }
@@ -243,8 +247,7 @@ class SchedulerBusyIT {
             BoltWire wire,
             @Authenticated BoltTestConnection connection1,
             @Authenticated BoltTestConnection connection2,
-            @Authenticated BoltTestConnection connection3,
-            @Authenticated BoltTestConnection connection4)
+            @Authenticated ConnectionProvider connectionProvider)
             throws IOException {
         // start and terminate a few jobs regularly
         enterStreaming(wire, connection1);
@@ -256,24 +259,26 @@ class SchedulerBusyIT {
         ServerUtil.awaitPrimaryThreadPoolSaturation(boltServer(), 0);
 
         // saturate the thread pool
-        enterStreaming(wire, connection3);
-        enterStreaming(wire, connection4);
+        try (var connection3 = assertEventuallyNewConnectionProcessWorkAndReturned(
+                        connectionProvider, connection -> enterStreaming(wire, connection));
+                var connection4 = assertEventuallyNewConnectionProcessWorkAndReturned(
+                        connectionProvider, connection -> enterStreaming(wire, connection))) {
+            ServerUtil.awaitPrimaryThreadPoolSaturation(boltServer(), 2);
 
-        ServerUtil.awaitPrimaryThreadPoolSaturation(boltServer(), 2);
+            // shutdown the server in order to trigger Bolt shutdown procedures
+            this.server.shutdownDatabase();
 
-        // shutdown the server in order to trigger Bolt shutdown procedures
-        this.server.shutdownDatabase();
+            LogAssertions.assertThat(userLogProvider)
+                    .doesNotContainMessage(
+                            "since there are no available threads to serve it at the moment. You can retry at a later time");
+            LogAssertions.assertThat(internalLogProvider)
+                    .doesNotContainMessage(
+                            "since there are no available threads to serve it at the moment. You can retry at a later time");
 
-        LogAssertions.assertThat(userLogProvider)
-                .doesNotContainMessage(
-                        "since there are no available threads to serve it at the moment. You can retry at a later time");
-        LogAssertions.assertThat(internalLogProvider)
-                .doesNotContainMessage(
-                        "since there are no available threads to serve it at the moment. You can retry at a later time");
-
-        BoltConnectionAssertions.assertThat(connection1).isEventuallyTerminated();
-        BoltConnectionAssertions.assertThat(connection2).isEventuallyTerminated();
-        BoltConnectionAssertions.assertThat(connection3).isEventuallyTerminated();
-        BoltConnectionAssertions.assertThat(connection4).isEventuallyTerminated();
+            BoltConnectionAssertions.assertThat(connection1).isEventuallyTerminated();
+            BoltConnectionAssertions.assertThat(connection2).isEventuallyTerminated();
+            BoltConnectionAssertions.assertThat(connection3).isEventuallyTerminated();
+            BoltConnectionAssertions.assertThat(connection4).isEventuallyTerminated();
+        }
     }
 }

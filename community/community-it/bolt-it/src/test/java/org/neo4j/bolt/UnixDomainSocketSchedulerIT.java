@@ -39,6 +39,7 @@ import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
 import org.neo4j.bolt.test.connection.setup.SettingBuilder;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
+import org.neo4j.bolt.test.util.ConnectionUtil;
 import org.neo4j.bolt.test.util.ServerUtil;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.assertions.DiagnosticRecordAssertions;
@@ -112,11 +113,11 @@ public class UnixDomainSocketSchedulerIT {
 
         // create a new UNIX domain socket connection and ensure that it is still responsive regardless
         // of the primary pool being fully in use
-        try (var unixConnection = unixConnectionProvider.create()) {
+        ConnectionUtil.assertEventuallyNewConnectionProcessWork(unixConnectionProvider, unixConnection -> {
             unixConnection.send(wire.run("RETURN 1"));
 
             BoltConnectionAssertions.assertThat(unixConnection).receivesSuccess();
-        }
+        });
 
         exitStreaming(wire, standardConnection1);
         exitStreaming(wire, standardConnection2);

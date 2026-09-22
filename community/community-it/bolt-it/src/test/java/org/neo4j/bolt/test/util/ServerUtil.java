@@ -24,6 +24,7 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSi
 
 import java.util.concurrent.ThreadPoolExecutor;
 import org.neo4j.bolt.BoltServer;
+import org.neo4j.bolt.test.provider.ConnectionProvider;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.exceptions.KernelException;
@@ -118,6 +119,10 @@ public final class ServerUtil {
 
     /**
      * Suspends test execution until {@code n} threads within the Bolt thread pool are occupied.
+     * <p/>
+     * This method doesn't guarantee that the threads in case are de-occupied and free for use.
+     * Use eventual methods such as {@link ConnectionUtil#assertEventuallyNewConnectionProcessWork(ConnectionProvider, ConnectionUtil.ThrowableConsumer)} for
+     * processing work on the primary thread pool after the threads are de-occupied.
      *
      * @param n the desired number of occupied threads.
      */
@@ -129,6 +134,10 @@ public final class ServerUtil {
 
     /**
      * Suspends test execution until {@code n} threads within the Bolt thread pool are occupied.
+     * <p/
+     * This method doesn't guarantee that the threads in case are de-occupied and free for use.
+     * Use eventual methods such as {@link ConnectionUtil#assertEventuallyNewConnectionProcessWork(ConnectionProvider, ConnectionUtil.ThrowableConsumer)} for
+     * processing work on the domain socket thread pool after the threads are de-occupied.
      *
      * @param n the desired number of occupied threads.
      */
