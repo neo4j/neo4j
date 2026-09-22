@@ -56,7 +56,8 @@ class ResumableStateDataTest {
             relationshipIrRanges.add(randomRelationshipsIrRangeData());
         }
 
-        return new ResumableStateData(randByte(), random.nextLong(), random.nextLong(), relationshipIrRanges);
+        return new ResumableStateData(
+                randByte(), random.nextLong(), random.nextLong(), relationshipIrRanges, randByte());
     }
 
     private RelationshipsIrRangeData randomRelationshipsIrRangeData() {

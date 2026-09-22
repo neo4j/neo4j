@@ -1315,7 +1315,8 @@ class ImportContextTest {
     @Test
     void checkpointIsReadBackOnResume() throws IOException {
         Path baseDir;
-        ResumableStateData resumableStateData = new ResumableStateData((byte) 1, 2, 3, Collections.emptyList());
+        ResumableStateData resumableStateData =
+                new ResumableStateData((byte) 1, 2, 3, Collections.emptyList(), (byte) 0);
         try (var importContext =
                 ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false, Duration.ofHours(1))) {
             baseDir = importContext.baseDir();
@@ -1333,8 +1334,10 @@ class ImportContextTest {
 
     @Test
     void checkpointReplacesThePreviousOne() throws IOException {
-        ResumableStateData resumableStateData1 = new ResumableStateData((byte) 1, 2, 3, Collections.emptyList());
-        ResumableStateData resumableStateData2 = new ResumableStateData((byte) 4, 5, 6, Collections.emptyList());
+        ResumableStateData resumableStateData1 =
+                new ResumableStateData((byte) 1, 2, 3, Collections.emptyList(), (byte) 0);
+        ResumableStateData resumableStateData2 =
+                new ResumableStateData((byte) 4, 5, 6, Collections.emptyList(), (byte) 0);
         try (var importContext =
                 ImportContext.create(fs, DB, null, config, null, List.of(), false, true, false, Duration.ofHours(1))) {
             importContext.writeCheckpoint(resumableStateData1);
@@ -1352,8 +1355,10 @@ class ImportContextTest {
 
     @Test
     void checkpointOfThePreviousAttemptSurvivesAFailedReplacement() throws IOException {
-        ResumableStateData resumableStateData1 = new ResumableStateData((byte) 1, 2, 3, Collections.emptyList());
-        ResumableStateData resumableStateData2 = new ResumableStateData((byte) 4, 5, 6, Collections.emptyList());
+        ResumableStateData resumableStateData1 =
+                new ResumableStateData((byte) 1, 2, 3, Collections.emptyList(), (byte) 0);
+        ResumableStateData resumableStateData2 =
+                new ResumableStateData((byte) 4, 5, 6, Collections.emptyList(), (byte) 0);
 
         // when the replacement never gets written out in full
         var failing = new DelegatingFileSystemAbstraction(fs) {

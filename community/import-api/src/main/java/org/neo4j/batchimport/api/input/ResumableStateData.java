@@ -30,7 +30,8 @@ public record ResumableStateData(
         byte stepOrdinal,
         long badCollectedEntriesCount,
         long problemHandlerPosition,
-        List<RelationshipsIrRangeData> relationshipsIrRanges) {
+        List<RelationshipsIrRangeData> relationshipsIrRanges,
+        byte relationshipIdCountersSnapshot) {
 
     public ResumableStateData {
         relationshipsIrRanges = List.copyOf(relationshipsIrRanges);
@@ -51,6 +52,7 @@ public record ResumableStateData(
         for (RelationshipsIrRangeData relationshipsIrRange : relationshipsIrRanges) {
             relationshipsIrRange.writeDataToOutputStream(checkpointStream);
         }
+        checkpointStream.writeByte(relationshipIdCountersSnapshot);
     }
 
     public static ResumableStateData fromInputStream(DataInputStream inputStream) throws IOException {
@@ -62,7 +64,13 @@ public record ResumableStateData(
         for (int i = 0; i < numRanges; i++) {
             relationshipsIrRanges.add(RelationshipsIrRangeData.fromInputStream(inputStream));
         }
-        return new ResumableStateData(stepOrdinal, collectorBadEntries, problemHandlerPosition, relationshipsIrRanges);
+        byte relationshipIdCountersSnapshot = inputStream.readByte();
+        return new ResumableStateData(
+                stepOrdinal,
+                collectorBadEntries,
+                problemHandlerPosition,
+                relationshipsIrRanges,
+                relationshipIdCountersSnapshot);
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -71,6 +79,7 @@ public record ResumableStateData(
         private byte stepOrdinal;
         private long badCollectedEntriesCount;
         private long problemHandlerPosition;
+        private byte relationshipIdCountersSnapshot;
 
         public ResumableStateDataBuilder setStepOrdinal(byte stepOrdinal) {
             this.stepOrdinal = stepOrdinal;
@@ -92,9 +101,18 @@ public record ResumableStateData(
             return this;
         }
 
+        public ResumableStateDataBuilder setRelationshipIdCountersSnapshot(byte relationshipIdCountersSnapshot) {
+            this.relationshipIdCountersSnapshot = relationshipIdCountersSnapshot;
+            return this;
+        }
+
         public ResumableStateData build() {
             return new ResumableStateData(
-                    stepOrdinal, badCollectedEntriesCount, problemHandlerPosition, relationshipsIrRanges);
+                    stepOrdinal,
+                    badCollectedEntriesCount,
+                    problemHandlerPosition,
+                    relationshipsIrRanges,
+                    relationshipIdCountersSnapshot);
         }
     }
 }
