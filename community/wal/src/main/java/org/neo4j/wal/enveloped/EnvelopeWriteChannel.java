@@ -614,7 +614,8 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         if (envelopePreviousChecksum != previousChecksum) {
             throw new ChecksumMismatchException(
                     "Raw appended envelope at file position " + filePosition(envelopeStart) + " (index " + currentIndex
-                            + ", term " + currentTerm + ") broke the checksum chain. Previous checksum field: %d, "
+                            + ", term " + currentTerm
+                            + "): Envelope checksum chain is broken. Previous checksum field: %d, "
                             + "expected: %d.",
                     envelopePreviousChecksum,
                     previousChecksum);

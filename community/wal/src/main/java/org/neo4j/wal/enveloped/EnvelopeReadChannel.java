@@ -1170,7 +1170,7 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
                 logHeader.getLogFormatVersion());
         if (currentChecksum != logHeader.getPreviousLogFileChecksum()) {
             throw new ChecksumMismatchException(
-                    "Checksum chain broken on file change to logFileVersion: " + channel.getLogVersion()
+                    "Envelope checksum chain is broken on file change to logFileVersion: " + channel.getLogVersion()
                             + " currentChecksum: %d header checksum: %d",
                     currentChecksum,
                     logHeader.getPreviousLogFileChecksum());

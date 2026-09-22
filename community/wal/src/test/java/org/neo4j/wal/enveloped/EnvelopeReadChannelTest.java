@@ -730,7 +730,7 @@ class EnvelopeReadChannelTest {
             // THEN
             assertThatThrownBy(() -> channel.get(bytes, bytes.length))
                     .isInstanceOf(ChecksumMismatchException.class)
-                    .hasMessageContainingAll("checksum chain is broken", "42", "666");
+                    .hasMessageContainingAll("Envelope checksum chain is broken", "42", "666");
         }
     }
 
