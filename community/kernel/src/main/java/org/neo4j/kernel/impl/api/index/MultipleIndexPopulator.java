@@ -38,6 +38,7 @@ import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
@@ -50,7 +51,6 @@ import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -125,6 +125,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
 
     private static final long VERSIONED_ENTRY_UPDATE_SIZE =
             HeapEstimator.shallowSizeOfInstance(VersionedEntryUpdate.class);
+    private static final long HORIZON_POLL_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos(10);
 
     private final int queueThreshold;
     final int batchMaxByteSizeScan;
@@ -150,12 +151,12 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     private final JobScheduler jobScheduler;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
-    private final long horizonPollIntervalNanos;
     private volatile StoreScan storeScan;
     private final TokenNameLookup tokenNameLookup;
     private final String databaseName;
     private final Subject subject;
     private final TransactionVisibilityProvider transactionVisibilityProvider;
+    private final Runnable transactionMonitorRefresher;
     private final IndexMonitor monitor;
     private final AtomicBoolean populationJobStopped = new AtomicBoolean(false);
     private final long transactionIdCreatedIndexes;
@@ -175,6 +176,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
             Subject subject,
             Config config,
             TransactionVisibilityProvider transactionVisibilityProvider,
+            Runnable transactionMonitorRefresher,
             IndexMonitor monitor,
             CursorContext cursorContextOfIndexCreator,
             boolean multiversion) {
@@ -195,9 +197,8 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         this.queueThreshold = config.get(GraphDatabaseInternalSettings.index_population_queue_threshold);
         this.batchMaxByteSizeScan = config.get(GraphDatabaseInternalSettings.index_population_batch_max_byte_size)
                 .intValue();
-        this.horizonPollIntervalNanos = config.get(GraphDatabaseSettings.transaction_monitor_check_interval)
-                .toNanos();
         this.transactionVisibilityProvider = transactionVisibilityProvider;
+        this.transactionMonitorRefresher = transactionMonitorRefresher;
         this.monitor = monitor;
         this.transactionIdCreatedIndexes =
                 cursorContextOfIndexCreator.getVersionContext().committingTransactionId();
@@ -779,10 +780,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         }
         while (!populationJobStopped.getAcquire()
                 && transactionVisibilityProvider.oldestCleanupHorizon() < targetTransaction) {
-            LockSupport.parkNanos(horizonPollIntervalNanos);
+            LockSupport.parkNanos(HORIZON_POLL_INTERVAL_NANOS);
             if (needToApplyExternalUpdates()) {
                 applyExternalUpdates(Long.MAX_VALUE);
             }
+            transactionMonitorRefresher.run();
         }
     }
 

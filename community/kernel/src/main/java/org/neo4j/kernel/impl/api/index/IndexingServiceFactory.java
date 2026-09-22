@@ -68,7 +68,8 @@ public final class IndexingServiceFactory {
             Clock clock,
             KernelVersionProvider kernelVersionProvider,
             FileSystemAbstraction fs,
-            TransactionVisibilityProvider transactionVisibilityProvider) {
+            TransactionVisibilityProvider transactionVisibilityProvider,
+            Runnable transactionMonitorRefresher) {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig(config);
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory = new IndexSamplingControllerFactory(
@@ -114,6 +115,7 @@ public final class IndexingServiceFactory {
                 config,
                 kernelVersionProvider,
                 fs,
-                transactionVisibilityProvider);
+                transactionVisibilityProvider,
+                transactionMonitorRefresher);
     }
 }

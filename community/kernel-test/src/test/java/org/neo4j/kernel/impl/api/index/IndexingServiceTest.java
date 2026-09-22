@@ -81,6 +81,7 @@ import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.util.concurrent.Runnables.EMPTY_RUNNABLE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.io.IOException;
@@ -469,7 +470,8 @@ class IndexingServiceTest {
                 Clocks.nanoClock(),
                 mock(KernelVersionProvider.class),
                 new DefaultFileSystemAbstraction(),
-                EMPTY_VISIBILITY_PROVIDER));
+                EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE));
 
         when(provider.getInitialState(eq(onlineIndex), any(), any())).thenReturn(ONLINE);
         when(provider.getInitialState(eq(populatingIndex), any(), any())).thenReturn(POPULATING);
@@ -524,7 +526,8 @@ class IndexingServiceTest {
                 Clocks.nanoClock(),
                 mock(KernelVersionProvider.class),
                 new DefaultFileSystemAbstraction(),
-                EMPTY_VISIBILITY_PROVIDER);
+                EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE);
 
         when(provider.getInitialState(eq(onlineIndex), any(), any())).thenReturn(ONLINE);
         when(provider.getInitialState(eq(populatingIndex), any(), any())).thenReturn(POPULATING);
@@ -1200,7 +1203,8 @@ class IndexingServiceTest {
                 Clocks.nanoClock(),
                 mock(KernelVersionProvider.class),
                 new DefaultFileSystemAbstraction(),
-                EMPTY_VISIBILITY_PROVIDER));
+                EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE));
 
         nameLookup.propertyKey(1, "prop");
 
@@ -1263,7 +1267,8 @@ class IndexingServiceTest {
                 Clocks.nanoClock(),
                 mock(KernelVersionProvider.class),
                 new DefaultFileSystemAbstraction(),
-                EMPTY_VISIBILITY_PROVIDER);
+                EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE);
         when(indexStatisticsStore.indexSample(anyLong())).thenReturn(new IndexSample(100, 32, 32));
         nameLookup.propertyKey(1, "prop");
 
@@ -1421,7 +1426,8 @@ class IndexingServiceTest {
                 config,
                 mock(KernelVersionProvider.class),
                 new DefaultFileSystemAbstraction(),
-                EMPTY_VISIBILITY_PROVIDER);
+                EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE);
         // and where index population starts
         indexingService.init();
 
@@ -1660,7 +1666,8 @@ class IndexingServiceTest {
                 Clocks.nanoClock(),
                 mock(KernelVersionProvider.class),
                 new DefaultFileSystemAbstraction(),
-                EMPTY_VISIBILITY_PROVIDER));
+                EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE));
 
         // when
         life.init();
@@ -2050,7 +2057,8 @@ class IndexingServiceTest {
                 clock,
                 kernelVersionProvider,
                 new DefaultFileSystemAbstraction(),
-                EMPTY_VISIBILITY_PROVIDER));
+                EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE));
     }
 
     private static DataUpdates withData(Update... updates) {
@@ -2206,7 +2214,8 @@ class IndexingServiceTest {
                 config,
                 mock(KernelVersionProvider.class),
                 new DefaultFileSystemAbstraction(),
-                EMPTY_VISIBILITY_PROVIDER);
+                EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE);
     }
 
     private static IndexProvider mockIndexProviderWithAccessor(IndexProviderDescriptor descriptor) throws IOException {

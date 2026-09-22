@@ -43,6 +43,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISIBILITY_PROVIDER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.util.concurrent.Runnables.EMPTY_RUNNABLE;
 import static org.neo4j.values.storable.Values.intValue;
 
 import java.io.IOException;
@@ -125,6 +126,7 @@ class MultipleIndexPopulatorTest {
                 AUTH_DISABLED,
                 Config.defaults(),
                 EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE,
                 IndexMonitor.NO_MONITOR,
                 NULL_CONTEXT,
                 false);

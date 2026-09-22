@@ -41,6 +41,7 @@ import static org.neo4j.time.Clocks.systemClock;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
+import static org.neo4j.util.concurrent.Runnables.EMPTY_RUNNABLE;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -763,7 +764,8 @@ public final class Recovery {
                 clock,
                 logMetadataProvider,
                 fs,
-                EMPTY_VISIBILITY_PROVIDER);
+                EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE);
 
         StoreId storeId = storageEngine.metadataProvider().getStoreId();
         validateStoreId(logTailMetadata, storeId);

@@ -51,6 +51,7 @@ import static org.neo4j.storageengine.api.EagerValueIndexEntryUpdate.add;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
 import static org.neo4j.test.PageCacheTracerAssertions.pins;
+import static org.neo4j.util.concurrent.Runnables.EMPTY_RUNNABLE;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -948,6 +949,7 @@ class IndexPopulationJobTest {
                 AUTH_DISABLED,
                 Config.defaults(),
                 EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE,
                 NO_MONITOR,
                 CursorContext.NULL_CONTEXT,
                 false);
@@ -1036,6 +1038,7 @@ class IndexPopulationJobTest {
                     AUTH_DISABLED,
                     Config.defaults(),
                     EMPTY_VISIBILITY_PROVIDER,
+                    EMPTY_RUNNABLE,
                     NO_MONITOR,
                     CursorContext.NULL_CONTEXT,
                     false);

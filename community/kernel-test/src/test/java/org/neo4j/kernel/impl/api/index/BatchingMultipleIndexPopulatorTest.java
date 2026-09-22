@@ -36,6 +36,7 @@ import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISI
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.util.concurrent.Runnables.EMPTY_RUNNABLE;
 
 import java.util.Arrays;
 import java.util.List;
@@ -110,6 +111,7 @@ public class BatchingMultipleIndexPopulatorTest {
                 AUTH_DISABLED,
                 Config.defaults(GraphDatabaseInternalSettings.index_population_queue_threshold, 5),
                 EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE,
                 IndexMonitor.NO_MONITOR,
                 CursorContext.NULL_CONTEXT,
                 false);
@@ -153,6 +155,7 @@ public class BatchingMultipleIndexPopulatorTest {
                 AUTH_DISABLED,
                 Config.defaults(GraphDatabaseInternalSettings.index_population_queue_threshold, 2),
                 EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE,
                 IndexMonitor.NO_MONITOR,
                 CursorContext.NULL_CONTEXT,
                 false);
@@ -203,6 +206,7 @@ public class BatchingMultipleIndexPopulatorTest {
                 AUTH_DISABLED,
                 Config.defaults(),
                 EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE,
                 IndexMonitor.NO_MONITOR,
                 CursorContext.NULL_CONTEXT,
                 false);
@@ -241,6 +245,7 @@ public class BatchingMultipleIndexPopulatorTest {
                         AUTH_DISABLED,
                         Config.defaults(GraphDatabaseInternalSettings.index_population_batch_max_byte_size, 1L),
                         EMPTY_VISIBILITY_PROVIDER,
+                        EMPTY_RUNNABLE,
                         IndexMonitor.NO_MONITOR,
                         CursorContext.NULL_CONTEXT,
                         false);

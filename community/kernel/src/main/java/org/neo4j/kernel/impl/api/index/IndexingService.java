@@ -146,6 +146,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final Config config;
     private final ImmutableSet<OpenOption> openOptions;
     private final TransactionVisibilityProvider transactionVisibilityProvider;
+    private final Runnable transactionMonitorRefresher;
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler jobScheduler;
     private final InternalLogProvider internalLogProvider;
@@ -192,7 +193,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             Config config,
             KernelVersionProvider kernelVersionProvider,
             FileSystemAbstraction fs,
-            TransactionVisibilityProvider transactionVisibilityProvider) {
+            TransactionVisibilityProvider transactionVisibilityProvider,
+            Runnable transactionMonitorRefresher) {
         this.storageEngineIndexingBehaviour = storageEngine.indexingBehaviour();
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
@@ -215,6 +217,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.openOptions = storageEngine.getOpenOptions();
         this.multiversion = openOptions.contains(MULTI_VERSIONED);
         this.transactionVisibilityProvider = multiversion ? transactionVisibilityProvider : EMPTY_VISIBILITY_PROVIDER;
+        this.transactionMonitorRefresher = transactionMonitorRefresher;
         this.storeView = indexStoreViewFactory.createTokenIndexStoreView(indexMapRef::getIndexProxy);
         this.kernelVersionProvider = kernelVersionProvider;
         this.indexDropController =
@@ -937,6 +940,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 subject,
                 config,
                 transactionVisibilityProvider,
+                transactionMonitorRefresher,
                 monitor,
                 cursorContext,
                 multiversion);

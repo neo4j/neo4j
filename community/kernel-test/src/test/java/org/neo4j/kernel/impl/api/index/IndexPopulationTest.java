@@ -26,6 +26,7 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISIBILITY_PROVIDER;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.util.concurrent.Runnables.EMPTY_RUNNABLE;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
@@ -87,6 +88,7 @@ class IndexPopulationTest {
                         AUTH_DISABLED,
                         Config.defaults(),
                         EMPTY_VISIBILITY_PROVIDER,
+                        EMPTY_RUNNABLE,
                         IndexMonitor.NO_MONITOR,
                         CursorContext.NULL_CONTEXT,
                         false)) {

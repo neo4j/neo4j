@@ -29,6 +29,7 @@ import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_POPULATION;
 import static org.neo4j.scheduler.Group.INDEX_POPULATION_WORK;
+import static org.neo4j.util.concurrent.Runnables.EMPTY_RUNNABLE;
 
 import java.io.IOException;
 import java.util.List;
@@ -308,7 +309,8 @@ public class KernelIndexesLifecycleManager implements IndexesLifecycleManager {
                 clock,
                 context.kernelVersionProvider(),
                 fileSystem,
-                EMPTY_VISIBILITY_PROVIDER));
+                EMPTY_VISIBILITY_PROVIDER,
+                EMPTY_RUNNABLE));
     }
 
     private IndexDescriptor reportIndexPopulationFailure(IndexProxy indexProxy, CreationListener creationListener) {

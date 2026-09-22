@@ -1017,7 +1017,8 @@ public class Database extends AbstractDatabase {
                 clock,
                 kernelVersionProvider,
                 fs,
-                new KernelTransactionVisibilityProvider()));
+                new KernelTransactionVisibilityProvider(),
+                () -> kernelModule.transactionMonitor().run()));
     }
 
     /**
@@ -1043,7 +1044,8 @@ public class Database extends AbstractDatabase {
             Clock clock,
             KernelVersionProvider kernelVersionProvider,
             FileSystemAbstraction fs,
-            TransactionVisibilityProvider transactionVisibilityProvider) {
+            TransactionVisibilityProvider transactionVisibilityProvider,
+            Runnable transactionMonitorRefresher) {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService(
                 storageEngine,
                 config,
@@ -1065,7 +1067,8 @@ public class Database extends AbstractDatabase {
                 clock,
                 kernelVersionProvider,
                 fs,
-                transactionVisibilityProvider);
+                transactionVisibilityProvider,
+                transactionMonitorRefresher);
         storageEngine.addIndexUpdateListener(indexingService);
         return indexingService;
     }
