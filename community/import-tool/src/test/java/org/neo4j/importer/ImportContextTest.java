@@ -525,6 +525,7 @@ class ImportContextTest {
         assertThat(ImportContext.resumeSensitiveChanges(contextDir, movedData, NOTHING_EXEMPT))
                 .extracting(change -> change.setting().name())
                 .containsExactly(
+                        GraphDatabaseInternalSettings.spd_import_work_directory.name(),
                         GraphDatabaseInternalSettings.auth_store_directory.name(),
                         GraphDatabaseInternalSettings.databases_root_path.name(),
                         GraphDatabaseSettings.data_directory.name(),

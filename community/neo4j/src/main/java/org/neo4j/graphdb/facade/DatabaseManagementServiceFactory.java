@@ -183,6 +183,8 @@ public class DatabaseManagementServiceFactory {
 
         edition.bootstrapQueryRouterServices(managementService);
 
+        edition.bootstrapImport();
+
         globalLife.add(globalModule.getGlobalExtensions());
         edition.registerDatabaseInitializers(globalModule, systemDatabaseProvider);
 

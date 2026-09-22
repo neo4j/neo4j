@@ -2011,6 +2011,28 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description("")
+    public static final Setting<Path> spd_import_work_directory = newBuilder(
+                    "internal.db.spd_import.work_directory", PATH, Path.of("spd_import_work_directory"))
+            .setDependency(GraphDatabaseSettings.data_directory)
+            .immutable()
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Long> spd_import_off_heap_memory_limit = newBuilder(
+                    "internal.db.spd_import.off_heap_memory_limit", BYTES, null)
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Integer> spd_import_worker_threads = newBuilder(
+                    "internal.db.spd_import.worker_threads",
+                    INT,
+                    Runtime.getRuntime().availableProcessors())
+            .build();
+
+    @Internal
+    @Description("")
     public static final Setting<Double> spd_segment_memory_reclaim = newBuilder(
                     "internal.db.spd_import.segment_memory_reclaim", DOUBLE, 0.1)
             .build();

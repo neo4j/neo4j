@@ -211,6 +211,8 @@ public abstract class AbstractEditionModule {
 
     public abstract void bootstrapQueryRouterServices(DatabaseManagementService databaseManagementService);
 
+    public void bootstrapImport() {}
+
     public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider();
 
     public AuthManager getBoltAuthManager(DependencyResolver dependencyResolver) {
