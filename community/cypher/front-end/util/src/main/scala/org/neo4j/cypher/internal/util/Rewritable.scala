@@ -126,7 +126,8 @@ object Rewritable {
       while (iterator.hasNext && that.hasNext) {
         val dis = iterator.next()
         val dat = that.next()
-        val same = dis match {
+        // Children are usually unchanged, so try reference equality before any type test below.
+        val same = (dis eq dat) || (dis match {
           case v: java.lang.Integer   => v == dat
           case v: java.lang.Long      => v == dat
           case v: java.lang.Double    => v == dat
@@ -135,8 +136,17 @@ object Rewritable {
           case v: java.lang.Byte      => v == dat
           case v: java.lang.Character => v == dat
           case v: java.lang.Boolean   => v == dat
-          case _                      => dis eq dat
-        }
+          // Rewritable extends RewritableUniversal, so without this case a non-value class would
+          // be compared by value below. Reference equality is the contract for those, and the eq
+          // above has already tried it.
+          case _: Rewritable => false
+          // A value class child is boxed anew on every productIterator access, so reference
+          // equality never holds for it and every node holding one would be considered changed on
+          // every rewrite pass. A value class cannot carry state outside its single parameter, so
+          // comparing the box by value is safe and keeps instance sharing intact.
+          case r: RewritableUniversal => r == dat
+          case _                      => false
+        })
         if (!same)
           return false
       }
@@ -176,6 +186,10 @@ object Rewritable {
             builder.result()
           case p: Product =>
             copyProduct(p, children.toArray)
+          case a: Array[_] =>
+            // Arrays are reified, so a plain children.toArray would allocate Object[] and fail the
+            // cast in any dup that expects a typed array. Tag it with the original component type.
+            children.toArray(ClassTag[AnyRef](a.getClass.getComponentType))
           case t =>
             t
         }
@@ -213,6 +227,10 @@ case class TypedRewriter[T <: Rewritable](rewriter: Rewriter) extends (T => T) {
 
 /**
  * Mix into value classes to provide a custom copy constructor.
+ *
+ * Non-value classes must mix in [[Rewritable]] instead. Rewriting compares children declared here
+ * by value, because a value class is boxed anew on every productIterator access. A non-value class
+ * mixed in here would silently get structural equality in place of identity.
  */
 trait RewritableUniversal extends Any {
   def dup(children: Seq[AnyRef]): this.type

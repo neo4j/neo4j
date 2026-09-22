@@ -36,7 +36,8 @@ final class Unchangeable[A]() {
 
   // Setter
   def value_=(newValue: A): Unit = {
-    if (_seen) throw new IllegalStateException("Can't change a seen value")
+    if (_seen)
+      throw new IllegalStateException("Can't change a seen value")
     _value = Some(newValue)
   }
 

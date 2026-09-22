@@ -18,15 +18,19 @@ package org.neo4j.cypher.internal.util
 
 import org.neo4j.cypher.internal.util.Foldable.TreeAny
 import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
+import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.RewritableTest.Add
+import org.neo4j.cypher.internal.util.RewritableTest.ArrayHolder
 import org.neo4j.cypher.internal.util.RewritableTest.Exp
 import org.neo4j.cypher.internal.util.RewritableTest.ExpList
 import org.neo4j.cypher.internal.util.RewritableTest.Mappings
+import org.neo4j.cypher.internal.util.RewritableTest.NodeWithId
 import org.neo4j.cypher.internal.util.RewritableTest.Options
 import org.neo4j.cypher.internal.util.RewritableTest.Pos
 import org.neo4j.cypher.internal.util.RewritableTest.Sum
 import org.neo4j.cypher.internal.util.RewritableTest.Val
 import org.neo4j.cypher.internal.util.RewritableTest.Wrap
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -79,6 +83,19 @@ object RewritableTest {
 
     override def dup(children: Seq[AnyRef]): this.type =
       Mappings(children.head.asInstanceOf[Map[String, Exp]]).asInstanceOf[this.type]
+  }
+
+  // Deliberately a plain Product without a custom dup, so reconstruction goes through the
+  // reflective copy. The bare value class field is the interesting part: its erased copy
+  // signature takes an int, which reflection cannot unbox an Id box into.
+  case class NodeWithId(id: Id, name: String)
+
+  // Mirrors the execution graph's `middleBuffers: Array[BufferDefinition]`: a typed array of a
+  // reference type, which is the shape the Array support in dupAny exists for.
+  case class ArrayHolder(args: Array[Exp]) extends Exp {
+
+    def dup(children: Seq[AnyRef]): this.type =
+      ArrayHolder(children.head.asInstanceOf[Array[Exp]]).asInstanceOf[this.type]
   }
 }
 
@@ -631,5 +648,56 @@ class RewritableTest extends CypherFunSuite {
     )))
 
     assert(e.getMessage === cancellation.message)
+  }
+
+  test("eqElements should compare value class children by value") {
+    // Value class children are boxed anew on every productIterator access, so they are never
+    // reference-identical between two traversals of the same node.
+    val node = NodeWithId(Id(7), "name")
+    val first = node.treeChildren.toSeq
+    (first.iterator eqElements node.treeChildren) shouldBe true
+    (Seq(Id(8).asInstanceOf[AnyRef], "name").iterator eqElements node.treeChildren) shouldBe false
+  }
+
+  test("eqElements should compare null children without dereferencing them") {
+    // A partially parsed AST can hold null children.
+    // (This can happen on the semantic-analysis-js path, which keeps building an AST after a rule fails
+    //  and then rewrites it to filter the nulls out).
+    val node = NodeWithId(Id(7), null)
+    (node.treeChildren.toSeq.iterator eqElements node.treeChildren) shouldBe true
+    (node.treeChildren.toSeq.iterator eqElements Seq(Id(7).asInstanceOf[AnyRef], "name").iterator) shouldBe false
+    (Seq(Id(7).asInstanceOf[AnyRef], "name").iterator eqElements node.treeChildren) shouldBe false
+  }
+
+  test("bottomUp should not reconstruct an unchanged node with a bare Id child") {
+    val node = NodeWithId(Id(7), "name")
+    val result = node.rewrite(bottomUp(Rewriter.lift { case Val(99) => Val(99) }))
+    result should be theSameInstanceAs node
+  }
+
+  test("bottomUp should not reconstruct a node whose Array child is unchanged") {
+    val holder = ArrayHolder(Array(Val(1), Val(2)))
+    val result = holder.rewrite(bottomUp(Rewriter.lift { case Val(99) => Val(99) }))
+    result should be theSameInstanceAs holder
+  }
+
+  test("bottomUp should rebuild an Array child when an element is rewritten") {
+    val holder = ArrayHolder(Array(Val(1), Val(2)))
+    val result = holder.rewrite(bottomUp(Rewriter.lift { case Val(1) => Val(99) }))
+    result should not be theSameInstanceAs(holder)
+    result.asInstanceOf[ArrayHolder].args.toSeq should equal(Seq(Val(99), Val(2)))
+  }
+
+  test("dupAny should preserve the component type of a rebuilt Array") {
+    val original = Array[Exp](Val(1), Val(2))
+    val rebuilt = Rewritable.dupAny(original, Seq(Val(99), Val(2)))
+    rebuilt.getClass.getComponentType should equal(classOf[Exp])
+  }
+
+  test("dupAny should rebuild a primitive Array as a primitive Array") {
+    val original = Array(1, 2)
+    val rebuilt = Rewritable.dupAny(original, Seq(Int.box(99), Int.box(2)))
+    rebuilt.getClass.getComponentType should equal(java.lang.Integer.TYPE)
+    rebuilt.asInstanceOf[Array[Int]].toSeq should equal(Seq(99, 2))
   }
 }

@@ -33,7 +33,10 @@ object Foldable {
       case s: Set[_]                  => s.iterator.asInstanceOf[Iterator[AnyRef]]
       case m: Map[_, _] =>
         m.iterator.flatMap { case (k, v) => Iterator[Any](k, v) }.asInstanceOf[Iterator[AnyRef]]
-      case p: Product => p.productIterator.asInstanceOf[Iterator[AnyRef]]
+      case p: Product =>
+        p.productIterator.asInstanceOf[Iterator[AnyRef]]
+      case _: Array[_] =>
+        that.asInstanceOf[Array[_]].iterator.asInstanceOf[Iterator[AnyRef]]
       case i: Iterable[_] =>
         i.iterator.asInstanceOf[Iterator[AnyRef]]
       case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]

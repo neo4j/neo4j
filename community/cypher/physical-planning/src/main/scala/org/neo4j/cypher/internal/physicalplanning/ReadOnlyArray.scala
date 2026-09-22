@@ -19,6 +19,10 @@
  */
 package org.neo4j.cypher.internal.physicalplanning
 
+import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Rewritable
+import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
+
 import scala.reflect.ClassTag
 
 /**
@@ -29,7 +33,7 @@ import scala.reflect.ClassTag
   *      comes from having general solutions and mega-morphic call sites preventing inlining.
   *   2) prevent accidental modification of the arrays, which could happen if we used standard arrays.
   */
-class ReadOnlyArray[T](private val inner: Array[T]) {
+class ReadOnlyArray[T](private val inner: Array[T]) extends Product with Foldable with Rewritable {
 
   final val length = inner.length
   final val isEmpty = inner.length == 0
@@ -58,6 +62,8 @@ class ReadOnlyArray[T](private val inner: Array[T]) {
       i += 1
     }
   }
+
+  def iterator: Iterator[T] = inner.iterator
 
   /**
     * Return this data in a `Seq`. Not for hot path use.
@@ -108,6 +114,20 @@ class ReadOnlyArray[T](private val inner: Array[T]) {
 
   override def hashCode(): Int = {
     inner.foldLeft(0)((a, b) => 31 * a + b.hashCode())
+  }
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    if (children.iterator eqElements this.treeChildren) {
+      this
+    } else {
+      new ReadOnlyArray[T](children.toArray[AnyRef].asInstanceOf[Array[T]]).asInstanceOf[this.type]
+    }
+  }
+
+  override def productArity: Int = inner.length
+
+  override def productElement(n: Int): Any = {
+    inner(n)
   }
 }
 
