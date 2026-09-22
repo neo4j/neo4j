@@ -706,10 +706,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       _txContext,
       MasterCompiler.CLOCK,
       debugOptions,
-      compileExpressions = queryOptions.useCompiledExpressions,
-      materializedEntitiesMode = queryOptions.materializedEntitiesMode,
-      operatorEngine = queryOptions.queryOptions.operatorEngine,
-      interpretedPipesFallback = queryOptions.queryOptions.interpretedPipesFallback,
+      queryOptions,
       anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
       executionModel,
       indexComparatorFactory = NoPreferenceIndexComparatorFactory

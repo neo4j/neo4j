@@ -279,10 +279,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         transactionalContext,
         logicalPlanResult.plannerContext.clock,
         logicalPlanResult.plannerContext.debugOptions,
-        query.options.useCompiledExpressions,
-        query.options.materializedEntitiesMode,
-        query.options.queryOptions.operatorEngine,
-        query.options.queryOptions.interpretedPipesFallback,
+        query.options,
         planState.anonymousVariableNameGenerator,
         logicalPlanResult.plannerContext.executionModel,
         logicalPlanResult.indexSelector

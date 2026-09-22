@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.options.CypherDebugOptions
-import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.planner.spi.IndexComparatorFactory
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.preparser.QueryOptions
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.internal.kernel.api.Procedures
@@ -64,10 +63,7 @@ case class CommunityRuntimeContextManager(log: InternalLog, config: CypherRuntim
     transactionalContext: TransactionalContext,
     clock: Clock,
     debugOptions: CypherDebugOptions,
-    ignore: Boolean,
-    ignore2: Boolean,
-    ignore3: CypherOperatorEngineOption,
-    ignore4: CypherInterpretedPipesFallbackOption,
+    queryOptions: QueryOptions,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     ignore5: ExecutionModel,
     indexComparatorFactory: IndexComparatorFactory

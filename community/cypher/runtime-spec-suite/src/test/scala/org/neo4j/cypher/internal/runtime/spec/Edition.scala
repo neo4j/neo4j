@@ -30,8 +30,6 @@ import org.neo4j.cypher.internal.RuntimeContextManager
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherDebugOptions
-import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.planner.spi.IndexComparatorFactory
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
@@ -187,10 +185,7 @@ object COMMUNITY {
       transactionalContext: TransactionalContext,
       clock: Clock,
       debugOptions: CypherDebugOptions,
-      compileExpressions: Boolean,
-      materializedEntitiesMode: Boolean,
-      operatorEngine: CypherOperatorEngineOption,
-      interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
+      queryOptions: QueryOptions,
       anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
       executionModel: ExecutionModel,
       indexComparatorFactory: IndexComparatorFactory
@@ -201,10 +196,7 @@ object COMMUNITY {
         transactionalContext,
         clock,
         debugOptions,
-        compileExpressions,
-        materializedEntitiesMode,
-        operatorEngine,
-        interpretedPipesFallback,
+        queryOptions,
         anonymousVariableNameGenerator,
         executionModel,
         indexComparatorFactory

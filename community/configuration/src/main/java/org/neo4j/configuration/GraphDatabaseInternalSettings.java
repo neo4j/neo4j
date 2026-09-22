@@ -591,7 +591,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     public enum CypherParallelRuntimeSupport {
         DISABLED,
-        ALL
+        ALL,
+        EXPERIMENTAL
     }
 
     @Internal

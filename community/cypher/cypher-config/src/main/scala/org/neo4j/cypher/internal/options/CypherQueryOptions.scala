@@ -520,9 +520,6 @@ object CypherOperatorEngineOption extends CypherOptionCompanion[CypherOperatorEn
 sealed abstract class CypherParallelRuntimeSupportOption(mode: String) extends CypherKeyValueOption(mode) {
   override def companion: CypherParallelRuntimeSupportOption.type = CypherParallelRuntimeSupportOption
 
-  /**
-   * The expression engine does not affect logical planning, only physical planning.
-   */
   override def relevantForLogicalPlanCacheKey: Boolean = false
 }
 
@@ -534,9 +531,10 @@ object CypherParallelRuntimeSupportOption extends CypherOptionCompanion[CypherPa
 
   case object disabled extends CypherParallelRuntimeSupportOption("disabled")
   case object all extends CypherParallelRuntimeSupportOption("all")
+  case object experimental extends CypherParallelRuntimeSupportOption("experimental")
   override def default: CypherParallelRuntimeSupportOption = all
 
-  override def values: Set[CypherParallelRuntimeSupportOption] = Set(disabled, all)
+  override def values: Set[CypherParallelRuntimeSupportOption] = Set(disabled, all, experimental)
 
   implicit val hasDefault: OptionDefault[CypherParallelRuntimeSupportOption] = OptionDefault.create(default)
   implicit val renderer: OptionRenderer[CypherParallelRuntimeSupportOption] = OptionRenderer.create(_.render)

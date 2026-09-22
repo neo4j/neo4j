@@ -363,7 +363,7 @@ object TransformingPlanner {
     case CypherRuntimeOption.pipelined =>
       val batchSize = getBatchSize()
       BatchedSingleThreaded(batchSize.small, batchSize.big)
-    case CypherRuntimeOption.parallel if !containsUpdates =>
+    case CypherRuntimeOption.parallel =>
       val batchSize = getBatchSize()
       val inferredRuntimeConfig = getParallelRuntimeConfigOption()
       BatchedParallel(batchSize.small, batchSize.big, inferredRuntimeConfig.leverageOrder)

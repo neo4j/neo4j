@@ -26,8 +26,6 @@ import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.notification.RecordingNotificationLogger
 import org.neo4j.cypher.internal.notification.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.options.CypherDebugOptions
-import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.planner.spi.IndexComparatorFactory
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
@@ -35,6 +33,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.preparser.QueryOptions
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -145,10 +144,7 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
     transactionalContext: TransactionalContext,
     clock: Clock,
     debugOptions: CypherDebugOptions,
-    compileExpressions: Boolean,
-    materializedEntitiesMode: Boolean,
-    operatorEngine: CypherOperatorEngineOption,
-    interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
+    queryOptions: QueryOptions,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     executionModel: ExecutionModel,
     indexComparatorFactory: IndexComparatorFactory

@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.options.CypherDerivedQueryOptions
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherInferSchemaPartsOption
+import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
 import org.neo4j.cypher.internal.options.CypherPlanMode
 import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
@@ -155,6 +157,8 @@ case class QueryOptions(
 
   def withRecompilationLimitReached: QueryOptions = copy(recompilationLimitReached = true)
 
+  def withMaterializedEntitiesMode(mode: Boolean): QueryOptions = copy(materializedEntitiesMode = mode)
+
   def withReplanOption(replanOption: CypherReplanOption): QueryOptions =
     copy(queryOptions = queryOptions.copy(replan = replanOption))
 
@@ -221,6 +225,29 @@ object QueryOptions {
     derivedOptions = CypherQueryOptions.derivedOptions(CypherQueryOptions.defaultOptions, cypherConfig),
     defaultLanguage = defaultLanguage
   )
+
+  // Used by micro benchmarks
+  def defaultWith(
+    defaultLanguage: CypherVersion,
+    useCompiledExpressions: Boolean,
+    materializedEntitiesMode: Boolean,
+    operatorEngine: CypherOperatorEngineOption,
+    parallelRuntimeSupport: CypherParallelRuntimeSupportOption
+  ): QueryOptions = {
+    val expressionEngine =
+      if (useCompiledExpressions) CypherExpressionEngineOption.compiled else CypherExpressionEngineOption.interpreted
+    QueryOptions(
+      offset = InputPosition.NONE,
+      queryOptions = CypherQueryOptions.defaultOptions.copy(
+        expressionEngine = expressionEngine,
+        operatorEngine = operatorEngine,
+        parallelRuntimeSupportOption = parallelRuntimeSupport
+      ),
+      derivedOptions = CypherQueryOptions.defaultDerivedOptions,
+      materializedEntitiesMode = materializedEntitiesMode,
+      defaultLanguage = defaultLanguage
+    )
+  }
 
   // Test-only
   def default(defaultLanguage: CypherVersion): QueryOptions = {

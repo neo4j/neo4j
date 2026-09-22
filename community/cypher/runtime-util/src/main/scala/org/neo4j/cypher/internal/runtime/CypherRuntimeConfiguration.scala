@@ -23,6 +23,7 @@ import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.config.MemoryTrackingController
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
+import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
 import org.neo4j.util.Preconditions
 
 import java.io.File
@@ -51,6 +52,7 @@ object CypherRuntimeConfiguration {
       errorIfShortestPathHasCommonNodesAtRuntime = config.errorIfShortestPathHasCommonNodesAtRuntime,
       pipelinedSubqueryTransactionRetryEnabled = config.pipelinedSubqueryTransactionRetryEnabled,
       enableNonFusedMerge = config.enableNonFusedMerge,
+      parallelRuntimeSupport = config.parallelRuntimeSupport,
       displayPlannerVersion = config.displayPlannerVersion
     )(config)
   }
@@ -80,6 +82,7 @@ case class CypherRuntimeConfiguration(
   errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
   pipelinedSubqueryTransactionRetryEnabled: Boolean,
   enableNonFusedMerge: Boolean,
+  parallelRuntimeSupport: CypherParallelRuntimeSupportOption,
   displayPlannerVersion: Boolean = false
 )(val cypherConfiguration: CypherConfiguration = null) {
 
