@@ -629,11 +629,14 @@ case class CommunityAdministrationCommandRuntime(
           checkCredentialsExpired
         )
 
-    case CheckNativeAuthentication() => _ =>
+    case CheckNativeAuthentication(source) => context =>
         val usernameKey = internalKey("username")
         val nativeAuth = internalKey("nativelyAuthenticated")
 
         def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
+
+        val sourcePlan: Option[ExecutionPlan] =
+          source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
 
         UpdatingSystemCommandExecutionPlan(
           "CheckNativeAuthentication",
@@ -670,6 +673,7 @@ case class CommunityAdministrationCommandRuntime(
               )
             )
           ),
+          source = sourcePlan,
           checkCredentialsExpired = false
         )
 

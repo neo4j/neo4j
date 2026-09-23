@@ -143,7 +143,8 @@ case class SetOwnPassword(
   currentPassword: Expression
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
-case class CheckNativeAuthentication()(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan()
+case class CheckNativeAuthentication(source: Option[AdministrationCommandLogicalPlan] = None)(implicit idGen: IdGen)
+    extends SecurityAdministrationLogicalPlan(source)
 
 case class ShowRoles(
   source: PrivilegePlan,

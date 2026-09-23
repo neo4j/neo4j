@@ -549,8 +549,9 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
       case c: SetOwnPassword =>
+        val canAlterCheck = plans.AssertManagementActionNotBlocked(c.name, SetPasswordsAction)
         Some(plans.LogSystemCommand(
-          plans.SetOwnPassword(plans.CheckNativeAuthentication(), c.newPassword, c.currentPassword),
+          plans.SetOwnPassword(plans.CheckNativeAuthentication(Some(canAlterCheck)), c.newPassword, c.currentPassword),
           prettifier.asString(c)
         ))
 

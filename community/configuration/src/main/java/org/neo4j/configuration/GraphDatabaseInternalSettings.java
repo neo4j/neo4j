@@ -758,6 +758,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.block_alter_database", BOOL, false).build();
 
     @Internal
+    @Description("Enable or disable the ability to alter the current user.")
+    public static final Setting<Boolean> block_alter_current_user =
+            newBuilder("internal.dbms.block_alter_current_user", BOOL, false).build();
+
+    @Internal
     @Description("Enable or disable the ability to use remote aliases.")
     public static final Setting<Boolean> block_remote_alias =
             newBuilder("internal.dbms.block_remote_alias", BOOL, false).build();
