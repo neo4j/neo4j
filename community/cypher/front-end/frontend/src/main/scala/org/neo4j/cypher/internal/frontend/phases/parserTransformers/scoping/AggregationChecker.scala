@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.ExplicitGroupingElements
 import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.GroupBy
+import org.neo4j.cypher.internal.ast.LegacyAmbiguousAggregation
 import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.ProjectionClause.Elements
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
@@ -220,8 +221,8 @@ case object AggregationChecker extends VariableCheckerUtil {
     (ambiguousReferences ++ subclauseInaccessibleVariable ++ invalidGroupingElementResults.map(_.error)).toSet
   }
 
-  def legacyIllegalAggregationCheck(clause: ProjectionClause): Set[SemanticError] = {
-    clause.orderBy.toSeq.flatMap(_.checkIllegalOrdering(clause.returnItems)).toSet
+  private def legacyIllegalAggregationCheck(clause: ProjectionClause): Set[SemanticError] = {
+    clause.orderBy.flatMap(ob => LegacyAmbiguousAggregation.checkIllegalOrdering(ob, clause.returnItems)).toSet
   }
 
   def checkClause(

@@ -16,14 +16,17 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.CypherVersionHelpers.arbitrarySemanticContext
+import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.CypherVersionHelpers.versionedSemanticContext
+import org.neo4j.cypher.internal.ast.semantics.*
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.ast.semantics._
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+// This logic is only used in Cypher 5
+// Superseded by AggregationChecker
 class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   case class TestOrderBy(
@@ -158,9 +161,14 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
     tests.foreach { test =>
       val orderBy = OrderBy(test.sortItems)(InputPosition.NONE)
+      // This logic is only used in Cypher 5
+      // Superseded by AggregationChecker
       val result =
-        orderBy.checkIllegalOrdering(ReturnItems(FreeProjection, test.returnItems)(InputPosition.NONE))
-          .run(SemanticState.clean, arbitrarySemanticContext())
+        LegacyAmbiguousAggregation.checkIllegalOrdering(
+          orderBy,
+          ReturnItems(FreeProjection, test.returnItems)(InputPosition.NONE)
+        )
+          .run(SemanticState.clean, versionedSemanticContext(CypherVersion.Cypher5))
 
       result.errors should have size 0
     }
@@ -182,8 +190,13 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
       autoAliasedReturnItem(add(CountStar()(InputPosition(20, 1, 21)), literalInt(1)))
     )
     val orderBy = OrderBy(sortItems)(InputPosition.NONE)
-    val result = orderBy.checkIllegalOrdering(ReturnItems(FreeProjection, returnItems)(InputPosition.NONE))
-      .run(SemanticState.clean, arbitrarySemanticContext())
+    // This logic is only used in Cypher 5
+    // Superseded by AggregationChecker
+    val result = LegacyAmbiguousAggregation.checkIllegalOrdering(
+      orderBy,
+      ReturnItems(FreeProjection, returnItems)(InputPosition.NONE)
+    )
+      .run(SemanticState.clean, versionedSemanticContext(CypherVersion.Cypher5))
     result.errors should equal(Seq(
       // Reports all offending aggregation expressions.
       // Uses position of the first offending aggregation expressions.
@@ -203,8 +216,13 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
       autoAliasedReturnItem(add(CountStar()(InputPosition(20, 1, 21)), literalInt(1)))
     )
     val orderBy = OrderBy(sortItems)(InputPosition.NONE)
-    val result = orderBy.checkIllegalOrdering(ReturnItems(FreeProjection, returnItems)(InputPosition.NONE)).get
-      .run(SemanticState.clean, arbitrarySemanticContext())
+    // This logic is only used in Cypher 5
+    // Superseded by AggregationChecker
+    val result = LegacyAmbiguousAggregation.checkIllegalOrdering(
+      orderBy,
+      ReturnItems(FreeProjection, returnItems)(InputPosition.NONE)
+    ).get
+      .run(SemanticState.clean, versionedSemanticContext(CypherVersion.Cypher5))
     val expectedErrorMessage = SemanticError.aggregateExpressionsInOrderBy(Seq("count(*)"), failingPosition).msg
 
     withClue(s"orderBy expressions [${sortItems.map(_.asCanonicalStringVal).mkString(",")}] " +
