@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.scheduling
 
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.attribution.Id
 
 object WorkIdentity {
@@ -64,8 +65,16 @@ trait WorkIdentityMutableDescription extends WorkIdentity {
   def updateDescription(newDescription: String): Unit
 }
 
-case class WorkIdentityImpl(workId: Id, workDescription: String) extends WorkIdentity with HasWorkIdentity {
+case class WorkIdentityImpl(workId: Id, workDescription: String) extends WorkIdentity with HasWorkIdentity
+    with Rewritable {
   override def workIdentity: WorkIdentity = this
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    val newId = children.head.asInstanceOf[Id].x
+    if (newId != workId.x || children(1).asInstanceOf[String] != workDescription)
+      WorkIdentityImpl(Id(newId), children(1).asInstanceOf[String]).asInstanceOf[this.type]
+    else this
+  }
 }
 
 case class WorkIdentityMutableDescriptionImpl(workId: Id, prefix: String, description: String)
