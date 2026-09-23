@@ -19,9 +19,54 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.Neo4jLogMessage;
+import org.neo4j.logging.log4j.Neo4jLogMarkers;
+
 public class DefaultPooledCursorsTest extends DefaultPooledCursorsTestBase<ReadTestSupport> {
     @Override
     public ReadTestSupport newTestSupport() {
         return new ReadTestSupport();
+    }
+
+    @Test
+    void shouldLogKernelMarkedWarningWhenLeakLoggingEnabled() {
+        InternalLog log = mock(InternalLog.class);
+
+        DefaultPooledCursors.reportLeakedCursors(false, true, log, "node: 1");
+
+        ArgumentCaptor<Neo4jLogMessage> message = ArgumentCaptor.forClass(Neo4jLogMessage.class);
+        verify(log).warn(message.capture());
+        assertThat(message.getValue().getMarker()).isEqualTo(Neo4jLogMarkers.KERNEL);
+        assertThat(message.getValue().getFormattedMessage()).contains("node: 1").contains("track_cursor_close");
+    }
+
+    @Test
+    void shouldStaySilentWhenLeakLoggingDisabled() {
+        InternalLog log = mock(InternalLog.class);
+
+        assertThatCode(() -> DefaultPooledCursors.reportLeakedCursors(false, false, log, "node: 1"))
+                .doesNotThrowAnyException();
+        verifyNoInteractions(log);
+    }
+
+    @Test
+    void shouldThrowWhenLeakFailureEnabled() {
+        InternalLog log = mock(InternalLog.class);
+
+        assertThatThrownBy(() -> DefaultPooledCursors.reportLeakedCursors(true, false, log, "node: 1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("node: 1")
+                .hasMessageContaining("track_cursor_close");
+        verifyNoInteractions(log);
     }
 }

@@ -302,6 +302,27 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c2.close();
     }
 
+    @Test
+    void shouldReportAllLeakedCursorKindsByName() throws Exception {
+        KernelTransaction tx = beginTransaction();
+        // Allocate two cursors of different kinds and never return them to the pool.
+        tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+        tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
+
+        IllegalStateException leaked = null;
+        try {
+            tx.commit();
+        } catch (IllegalStateException e) {
+            leaked = e;
+        }
+        assertThat(leaked)
+                .as("leaked cursors should make commit throw an IllegalStateException")
+                .isNotNull()
+                .hasMessageContaining("node: 1")
+                .hasMessageContaining("property: 1")
+                .hasMessageContaining("track_cursor_close");
+    }
+
     private static int[] array(int... elements) {
         return elements;
     }

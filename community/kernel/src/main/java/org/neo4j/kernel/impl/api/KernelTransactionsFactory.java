@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.ExceptionHandlerService;
@@ -99,7 +99,7 @@ public interface KernelTransactionsFactory {
             DatabaseHealth databaseHealth,
             TransactionValidatorFactory transactionValidatorFactory,
             ExceptionHandlerService exceptionHandlerService,
-            LogProvider internalLogProvider,
+            InternalLogProvider internalLogProvider,
             TopologyGraphDbmsModel.HostedOnMode mode,
             DatabaseMonitors databaseMonitors,
             RaftUpgradeBarrier raftUpgradeBarrier);

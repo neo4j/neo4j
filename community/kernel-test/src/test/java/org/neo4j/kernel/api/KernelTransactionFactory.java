@@ -41,6 +41,7 @@ import org.mockito.Mockito;
 import org.neo4j.collection.factory.OnHeapCollectionsFactory;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.identity.ServerIdentity;
@@ -118,7 +119,9 @@ public final class KernelTransactionFactory {
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         KernelVersionProvider kernelVersionProvider = LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                Config.defaults(),
+                Config.newBuilder()
+                        .set(GraphDatabaseInternalSettings.fail_on_leaked_cursors, true)
+                        .build(),
                 mock(DatabaseTransactionEventListeners.class),
                 mock(ConstraintIndexCreator.class),
                 mock(InternalTransactionCommitProcess.class),

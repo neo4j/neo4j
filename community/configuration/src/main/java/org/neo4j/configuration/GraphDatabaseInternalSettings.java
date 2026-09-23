@@ -1150,6 +1150,19 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.debug.trace_cursors", BOOL, false).build();
 
     @Internal
+    @Description("Fail with an exception when a pooled cursor is not returned to its pool. Disabled by default so "
+            + "leaks are not fatal in production; the test harness enables it to surface leaks as failures.")
+    public static final Setting<Boolean> fail_on_leaked_cursors = newBuilder(
+                    "internal.dbms.debug.fail_on_leaked_cursors", BOOL, false)
+            .build();
+
+    @Internal
+    @Description("Log a KERNEL-marked warning when a pooled cursor is not returned to its pool. Disabled by default; "
+            + "enable to report leaks without failing the transaction.")
+    public static final Setting<Boolean> log_leaked_cursors =
+            newBuilder("internal.dbms.debug.log_leaked_cursors", BOOL, false).build();
+
+    @Internal
     @Description("Reporting interval for page cache speed logging")
     public static final Setting<Duration> page_cache_tracer_speed_reporting_threshold = newBuilder(
                     "internal.dbms.debug.page_cache_tracer_speed_reporting_threshold", DURATION, ofSeconds(10))

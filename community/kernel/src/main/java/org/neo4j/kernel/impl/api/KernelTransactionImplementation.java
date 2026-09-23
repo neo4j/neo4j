@@ -169,6 +169,7 @@ import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.TransactionEventListeners;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.HeapEstimatorCacheConfig;
@@ -246,7 +247,7 @@ public class KernelTransactionImplementation
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final ConstraintSemantics constraintSemantics;
     protected final TransactionMemoryPool transactionMemoryPool;
-    protected final LogProvider logProvider;
+    protected final InternalLogProvider logProvider;
     private final CursorContextFactory contextFactory;
     private final EntityLocks entityLocks;
     private final KernelProcedures.ForTransactionScope procedures;
@@ -379,7 +380,7 @@ public class KernelTransactionImplementation
             ApplyEnrichmentStrategy enrichmentStrategy,
             TransactionStateBehaviour transactionStateBehaviour,
             DatabaseHealth databaseHealth,
-            LogProvider logProvider,
+            InternalLogProvider logProvider,
             TransactionValidatorFactory transactionValidatorFactory,
             DatabaseSerialGuard databaseSerialGuard,
             RaftUpgradeBarrier raftUpgradeBarrier,
@@ -541,7 +542,13 @@ public class KernelTransactionImplementation
             StorageEngineIndexingBehaviour indexingBehaviour,
             boolean multiVersioned,
             boolean parallel) {
-        return new DefaultPooledCursors(storageReader, transactionalCursors, config, indexingBehaviour, multiVersioned);
+        return new DefaultPooledCursors(
+                storageReader,
+                transactionalCursors,
+                config,
+                indexingBehaviour,
+                multiVersioned,
+                logProvider.getLog(DefaultPooledCursors.class));
     }
 
     @Override
@@ -768,7 +775,7 @@ public class KernelTransactionImplementation
             SecurityAuthorizationHandler securityAuthorizationHandler,
             ElementIdMapper elementIdMapper,
             boolean multiVersioned,
-            LogProvider logProvider) {
+            InternalLogProvider logProvider) {
         return (securityContext,
                 transactionId,
                 transactionCursorContext,

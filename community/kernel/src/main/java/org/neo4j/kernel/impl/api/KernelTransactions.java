@@ -91,8 +91,8 @@ import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.ExceptionHandlerService;
@@ -148,7 +148,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final TransactionIdGenerator transactionIdGenerator;
     private final DatabaseHealth databaseHealth;
     private final TransactionValidatorFactory transactionValidatorFactory;
-    private final LogProvider internalLogProvider;
+    private final InternalLogProvider internalLogProvider;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
@@ -232,7 +232,7 @@ public class KernelTransactions extends LifecycleAdapter
             DatabaseHealth databaseHealth,
             TransactionValidatorFactory transactionValidatorFactory,
             ExceptionHandlerService exceptionHandlerService,
-            LogProvider internalLogProvider,
+            InternalLogProvider internalLogProvider,
             TopologyGraphDbmsModel.HostedOnMode mode,
             DatabaseMonitors databaseMonitors,
             RaftUpgradeBarrier raftUpgradeBarrier) {
@@ -788,7 +788,7 @@ public class KernelTransactions extends LifecycleAdapter
                 ApplyEnrichmentStrategy enrichmentStrategy,
                 TransactionStateBehaviour transactionStateBehaviour,
                 DatabaseHealth databaseHealth,
-                LogProvider logProvider,
+                InternalLogProvider logProvider,
                 TransactionValidatorFactory transactionValidatorFactory,
                 DatabaseSerialGuard databaseSerialGuard,
                 RaftUpgradeBarrier raftUpgradeBarrier,
