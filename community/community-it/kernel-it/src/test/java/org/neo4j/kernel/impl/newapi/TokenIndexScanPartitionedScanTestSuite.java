@@ -150,6 +150,7 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
         @MethodSource("rangeFromOneToMaxPartitions")
         final void shouldFollowTheLeadingScanSingles(int desiredNumberOfPartitions) throws KernelException {
             try (var tx = beginTx();
+                    var statement = tx.acquireStatement();
                     var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext())) {
                 final var validQueryEntries = queries.valid().iterator();
                 final var leadingQueryEntry = validQueryEntries.next();
@@ -190,6 +191,7 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
         @MethodSource("rangeFromOneToMaxPartitions")
         final void shouldFollowTheLeadingScanList(int desiredNumberOfPartitions) throws KernelException {
             try (var tx = beginTx();
+                    var statement = tx.acquireStatement();
                     var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext())) {
                 final var validQueries = new ArrayList<TokenScanQuery>();
                 final var expectedMatches = new ArrayList<Set<Long>>();

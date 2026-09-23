@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -108,13 +109,21 @@ class RequireTransactionIT {
 
     @Test
     void requireTransactionForQueryExecution() {
-        Executable executable = () -> transaction.execute("MATCH (n) RETURN count(n)");
+        Executable executable = () -> {
+            try (Result result = transaction.execute("MATCH (n) RETURN count(n)")) {
+                result.next();
+            }
+        };
         checkTransactionRequirement(transaction, executable);
     }
 
     @Test
     void requireTransactionForQueryExecutionWithParameters() {
-        Executable executable = () -> transaction.execute("MATCH (n) RETURN count(n)", emptyMap());
+        Executable executable = () -> {
+            try (Result result = transaction.execute("MATCH (n) RETURN count(n)", emptyMap())) {
+                result.next();
+            }
+        };
         checkTransactionRequirement(transaction, executable);
     }
 

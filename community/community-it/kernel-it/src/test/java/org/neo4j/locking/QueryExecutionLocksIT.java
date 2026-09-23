@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
@@ -371,7 +372,8 @@ class QueryExecutionLocksIT {
                 queryService.beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper(createTransactionContext(queryService, tx, query), listeners);
-            executionEngine.executeQuery(query, EMPTY_MAP, context, false);
+            // locks are recorded during execution setup; the result only needs closing, not consuming
+            try (Result ignored = executionEngine.executeQuery(query, EMPTY_MAP, context, false)) {}
             return new ArrayList<>(context.recordingLocks.getLockOperationRecords());
         }
     }
@@ -382,7 +384,7 @@ class QueryExecutionLocksIT {
                 queryService.beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper(createTransactionContext(queryService, tx, query), listeners);
-            executionEngine.executeQuery(query, EMPTY_MAP, context, false);
+            try (Result ignored = executionEngine.executeQuery(query, EMPTY_MAP, context, false)) {}
             return new ArrayList<>(context.recordingLocks.getLookupLockOperationRecords());
         }
     }

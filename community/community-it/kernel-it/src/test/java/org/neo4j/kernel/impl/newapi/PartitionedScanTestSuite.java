@@ -232,8 +232,8 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         @EnumSource(PartitionedScanAPI.class)
         final void shouldHandleEmptyDatabase(PartitionedScanAPI api) throws KernelException {
             try (var tx = beginTx();
-                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext());
                     var statement = tx.acquireStatement();
+                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext());
                     var executionContext = tx.createExecutionContext()) {
                 for (final var entry : queries.valid()) {
                     final var query = entry.getKey();
@@ -275,8 +275,8 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         @EnumSource(PartitionedScanAPI.class)
         final void shouldScanSubsetOfEntriesWithSinglePartition(PartitionedScanAPI api) throws KernelException {
             try (var tx = beginTx();
-                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext());
                     var statement = tx.acquireStatement();
+                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext());
                     var executionContext = tx.createExecutionContext()) {
                 for (final var entry : queries.valid()) {
                     final var query = entry.getKey();
@@ -345,8 +345,8 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
 
         private void singleThreadedCheck(PartitionedScanAPI api, int desiredNumberOfPartitions) throws KernelException {
             try (var tx = beginTx();
-                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext());
                     var statement = tx.acquireStatement();
+                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext());
                     var executionContext = tx.createExecutionContext()) {
                 for (final var entry : queries.valid()) {
                     final var query = entry.getKey();

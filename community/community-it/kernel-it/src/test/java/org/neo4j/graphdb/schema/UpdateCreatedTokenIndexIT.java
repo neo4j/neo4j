@@ -138,7 +138,13 @@ class UpdateCreatedTokenIndexIT {
             }
 
             try (var tx = db.beginTx()) {
-                assertThatNoException().isThrownBy(() -> tx.execute("MATCH (n:Label) RETURN n"));
+                assertThatNoException().isThrownBy(() -> {
+                    try (var result = tx.execute("MATCH (n:Label) RETURN n")) {
+                        while (result.hasNext()) {
+                            result.next();
+                        }
+                    }
+                });
             }
         } finally {
             populationScanLatch.countDown();
