@@ -16,7 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.scoping
 
+import org.neo4j.cypher.internal.CypherVersion
+
 class ScopeSurveyorReferenceTest extends VariableCheckingTestSuite {
+
+  private val bothVersions = Array(CypherVersion.Cypher5, CypherVersion.Cypher25)
 
   test("""WITH 1 AS x
          |RETURN x""".stripMargin) {
@@ -176,5 +180,61 @@ class ScopeSurveyorReferenceTest extends VariableCheckingTestSuite {
       ExpectedSymbolGroup(varOf("x", 78), Seq(varOf("x", 78), varOf("x", 142), varOf("x", 142)), None),
       ExpectedSymbolGroup(varOf("s", 91), Seq(varOf("s", 145), varOf("s", 145), varOf("s", 91)), None)
     ))
+  }
+
+  test("""MATCH (a)
+         |WITH a AS b
+         |MERGE (a {prop: a.hello})""".stripMargin) {
+    hasSymbolGroups(
+      Seq(
+        ExpectedSymbolGroup(varOf("a", 7), Seq(varOf("a", 7), varOf("a", 15)), Some("  a@0")),
+        ExpectedSymbolGroup(varOf("b", 20), Seq(varOf("b", 20)), None),
+        ExpectedSymbolGroup(varOf("a", 29), Seq(varOf("a", 29), varOf("a", 38)), Some("  a@1"))
+      ),
+      bothVersions
+    )
+  }
+
+  test("""MATCH (r)
+         |WITH r AS s
+         |MERGE ()-[r:R {p: r.x}]->()""".stripMargin) {
+    hasSymbolGroups(
+      Seq(
+        ExpectedSymbolGroup(varOf("r", 7), Seq(varOf("r", 15), varOf("r", 7)), Some("  r@0")),
+        ExpectedSymbolGroup(varOf("s", 20), Seq(varOf("s", 20)), None),
+        ExpectedSymbolGroup(varOf("r", 32), Seq(varOf("r", 40), varOf("r", 32)), Some("  r@1")),
+        ExpectedSymbolGroup(varOf("  SURVEYOR0", 28), Seq(varOf("  SURVEYOR0", 28)), None),
+        ExpectedSymbolGroup(varOf("  SURVEYOR1", 47), Seq(varOf("  SURVEYOR1", 47)), None)
+      ),
+      bothVersions
+    )
+  }
+
+  test("""MATCH (a)
+         |WITH a AS b
+         |MERGE (a)-[:R]->(c {p: a.x})""".stripMargin) {
+    hasSymbolGroups(
+      Seq(
+        ExpectedSymbolGroup(varOf("a", 7), Seq(varOf("a", 15), varOf("a", 7)), Some("  a@0")),
+        ExpectedSymbolGroup(varOf("b", 20), Seq(varOf("b", 20)), None),
+        ExpectedSymbolGroup(varOf("a", 29), Seq(varOf("a", 45), varOf("a", 29)), Some("  a@1")),
+        ExpectedSymbolGroup(varOf("c", 39), Seq(varOf("c", 39)), None),
+        ExpectedSymbolGroup(varOf("  SURVEYOR0", 31), Seq(varOf("  SURVEYOR0", 31)), None)
+      ),
+      bothVersions
+    )
+  }
+
+  test("""MATCH (a)
+         |WITH a AS b
+         |MERGE (a {prop: zzz.hello})""".stripMargin) {
+    hasSymbolGroups(
+      Seq(
+        ExpectedSymbolGroup(varOf("a", 7), Seq(varOf("a", 7), varOf("a", 15)), Some("  a@0")),
+        ExpectedSymbolGroup(varOf("b", 20), Seq(varOf("b", 20)), None),
+        ExpectedSymbolGroup(varOf("a", 29), Seq(varOf("a", 29)), Some("  a@1"))
+      ),
+      bothVersions
+    )
   }
 }

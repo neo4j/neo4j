@@ -349,6 +349,36 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         |RETURN 1 AS `1`""".stripMargin,
       List(varFor("  movie@0")),
       excludedVersions = Set(CypherVersion.Cypher5)
+    ),
+    TestCase(
+      "MATCH (a) WITH a AS b MERGE (a {prop: a.hello})",
+      "MATCH (`  a@0`) WITH `  a@0` AS b MERGE (`  a@1` {prop: `  a@1`.hello})",
+      List(varFor("  a@0"), varFor("  a@1")),
+      excludedVersions = Set(CypherVersion.Cypher25)
+    ),
+    TestCase(
+      "MATCH (r) WITH r AS s MERGE ()-[r:R {p: r.x}]->()",
+      "MATCH (`  r@0`) WITH `  r@0` AS s MERGE ()-[`  r@1`:R {p: `  r@1`.x}]->()",
+      List(varFor("  r@0"), varFor("  r@1")),
+      excludedVersions = Set(CypherVersion.Cypher25)
+    ),
+    TestCase(
+      "MATCH (a) WITH a AS b MERGE (a)-[:R]->(c {p: a.x})",
+      "MATCH (`  a@0`) WITH `  a@0` AS b MERGE (`  a@1`)-[:R]->(c {p: `  a@1`.x})",
+      List(varFor("  a@0"), varFor("  a@1")),
+      excludedVersions = Set(CypherVersion.Cypher25)
+    ),
+    TestCase(
+      "MERGE (a {prop: a.hello})",
+      "MERGE (a {prop: a.hello})",
+      List.empty,
+      excludedVersions = Set(CypherVersion.Cypher25)
+    ),
+    TestCase(
+      "MATCH (a) FOREACH (x IN [1] | MERGE (a {p: a.q}))",
+      "MATCH (`  a@0`) FOREACH (x IN [1] | MERGE (`  a@1` {p: `  a@0`.q}))",
+      List(varFor("  a@0"), varFor("  a@1")),
+      excludedVersions = Set(CypherVersion.Cypher25)
     )
   )
 

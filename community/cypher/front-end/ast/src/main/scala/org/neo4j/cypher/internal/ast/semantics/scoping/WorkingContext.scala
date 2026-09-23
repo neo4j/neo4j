@@ -588,9 +588,29 @@ case class PatternIncomingContext(
   )(
     implicit astNode: ASTNode
   ): PatternScope = {
-    val referenced =
-      (WorkingScope.referencedInChildren(children) diff declared.variables.toSet) union referencedInTopology
-    PatternScope(astNode, this, referenced, declared, result, children)
+    val fromChildren = WorkingScope.referencedInChildren(children)
+    val declaredVariables = declared.variables.toSet
+    val referenced = (fromChildren diff declaredVariables) union referencedInTopology
+    // An update pattern withholds its own variables from its property/label/predicate scopes, so a use of one
+    // resolves to itself and would not be renamed with its declaration. Group variables are a different binding.
+    val selfReferencesToDeclaration =
+      if (fromChildren.references.isEmpty || declaredVariables.isEmpty) Seq.empty
+      else References.resolveByName(
+        fromChildren.references.collect {
+          case (use, target)
+            if use == target && declaredVariables.contains(use.value) && !groupConstants.contains(use.value) =>
+            use.value
+        },
+        declared.variables.filterNot(groupConstants.contains)
+      )
+    PatternScope(
+      astNode,
+      this,
+      referenced.addHidden(selfReferencesToDeclaration.toMap),
+      declared,
+      result,
+      children
+    )
   }
 
   def toRegularContext: RegularContext =

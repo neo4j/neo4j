@@ -637,6 +637,27 @@ class GQL_42I58_InvalidEntityReferenceTest extends VariableCheckingWithLocalCall
       Seq("n")
     ),
     TestQuery(
+      """MATCH (a)
+        |WITH a AS b
+        |MERGE (a {prop: a.hello})""".stripMargin,
+      notifiesBeforeCypher25(E42I58("a"), Notified.deprecatedPropertyReferenceInMerge("a")),
+      Seq.empty
+    ),
+    TestQuery(
+      """MATCH (r)
+        |WITH r AS s
+        |MERGE ()-[r:R {p: r.x}]->()""".stripMargin,
+      notifiesBeforeCypher25(E42I58("r"), Notified.deprecatedPropertyReferenceInMerge("r")),
+      Seq.empty
+    ),
+    TestQuery(
+      """MATCH (a)
+        |WITH a AS b
+        |MERGE (a)-[:R]->(c {p: a.x})""".stripMargin,
+      notifiesBeforeCypher25(E42I58("a"), Notified.deprecatedPropertyReferenceInMerge("a")),
+      Seq.empty
+    ),
+    TestQuery(
       """MERGE (n {p: 1})-[:R]->(:$all("A" + n.p) {p: 1})""".stripMargin,
       notifiesBeforeCypher25(E42I58("n"), Notified.deprecatedPropertyReferenceInMerge("n")),
       Seq.empty
