@@ -26,6 +26,7 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.SocketProtocolFamily;
 import io.netty.channel.unix.DomainSocketChannel;
 import io.netty.channel.unix.ServerDomainSocketChannel;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -47,7 +48,7 @@ public sealed interface ConnectorTransport extends PrioritizedService
      * @return a stream of available transports.
      */
     static Stream<ConnectorTransport> listAvailable() {
-        return Services.loadAll(ConnectorTransport.class).stream();
+        return ConnectorTransportHolder.TRANSPORTS.stream();
     }
 
     /**
@@ -154,4 +155,10 @@ public sealed interface ConnectorTransport extends PrioritizedService
     }
 
     DatagramChannel createDatagramChannel(SocketProtocolFamily protocolFamily);
+
+    final class ConnectorTransportHolder {
+        private static final Collection<ConnectorTransport> TRANSPORTS = Services.loadAll(ConnectorTransport.class);
+
+        private ConnectorTransportHolder() {}
+    }
 }

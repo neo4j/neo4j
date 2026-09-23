@@ -74,8 +74,13 @@ public abstract class IncrementalBatchImporterFactory implements NamedService {
             Supplier<IndexProvidersAccess> indexProvidersAccess);
 
     public static IncrementalBatchImporterFactory withHighestPriority() {
-        return Services.loadAll(IncrementalBatchImporterFactory.class).stream()
-                .max(comparingLong(f -> f.priority))
-                .orElseThrow(() -> new NoSuchElementException("No batch importers found"));
+        return HighestPriorityFactoryHolder.FACTORY;
+    }
+
+    private static final class HighestPriorityFactoryHolder {
+        private static final IncrementalBatchImporterFactory FACTORY =
+                Services.loadAll(IncrementalBatchImporterFactory.class).stream()
+                        .max(comparingLong(f -> f.priority))
+                        .orElseThrow(() -> new NoSuchElementException("No batch importers found"));
     }
 }

@@ -94,7 +94,7 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
 
     public SchemeFileSystemAbstraction(
             FileSystemAbstraction fs, Config config, InternalLogProvider logProvider, MemoryTracker memoryTracker) {
-        this(fs, loadAll(StorageSystemProviderFactory.class), config, logProvider, memoryTracker);
+        this(fs, StorageSystemProviderFactoriesHolder.FACTORIES, config, logProvider, memoryTracker);
     }
 
     public SchemeFileSystemAbstraction(
@@ -468,5 +468,10 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
 
     private static StorageSystemProvider provider(StoragePath path) {
         return path.getFileSystem().provider();
+    }
+
+    private static final class StorageSystemProviderFactoriesHolder {
+        private static final Collection<StorageSystemProviderFactory> FACTORIES =
+                loadAll(StorageSystemProviderFactory.class);
     }
 }

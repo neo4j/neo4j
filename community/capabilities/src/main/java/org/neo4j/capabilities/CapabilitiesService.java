@@ -182,12 +182,8 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
     }
 
     public static CapabilitiesService newCapabilities(Configuration config, DependencyResolver resolver) {
-        Collection<Class<? extends CapabilityDeclaration>> declarationClasses =
-                Services.loadAll(CapabilityDeclaration.class).stream()
-                        .map(CapabilityDeclaration::getClass)
-                        .collect(Collectors.toList());
-        Collection<CapabilityProvider> capabilityProviders = Services.loadAll(CapabilityProvider.class);
-        return new CapabilitiesService(declarationClasses, capabilityProviders, config, resolver);
+        return new CapabilitiesService(
+                CapabilitiesHolder.DECLARATION_CLASSES, CapabilitiesHolder.CAPABILITY_PROVIDERS, config, resolver);
     }
 
     private static Map<Name, Capability<?>> getDeclaredCapabilities(
@@ -230,5 +226,14 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
                 });
 
         return capabilities;
+    }
+
+    private static final class CapabilitiesHolder {
+        private static final Collection<Class<? extends CapabilityDeclaration>> DECLARATION_CLASSES =
+                Services.loadAll(CapabilityDeclaration.class).stream()
+                        .map(CapabilityDeclaration::getClass)
+                        .collect(Collectors.toUnmodifiableList());
+        private static final Collection<CapabilityProvider> CAPABILITY_PROVIDERS =
+                Services.loadAll(CapabilityProvider.class);
     }
 }

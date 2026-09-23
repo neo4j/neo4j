@@ -83,15 +83,23 @@ public abstract class BatchImporterFactory implements NamedService {
             DatabaseCreationOptions databaseCreationOptions);
 
     public static BatchImporterFactory withHighestPriority() {
-        BatchImporterFactory highestPrioritized = null;
-        for (BatchImporterFactory candidate : Services.loadAll(BatchImporterFactory.class)) {
-            if (highestPrioritized == null || candidate.priority > highestPrioritized.priority) {
-                highestPrioritized = candidate;
+        return HighestPriorityFactoryHolder.FACTORY;
+    }
+
+    private static final class HighestPriorityFactoryHolder {
+        private static final BatchImporterFactory FACTORY = loadFactory();
+
+        private static BatchImporterFactory loadFactory() {
+            BatchImporterFactory highestPrioritized = null;
+            for (BatchImporterFactory candidate : Services.loadAll(BatchImporterFactory.class)) {
+                if (highestPrioritized == null || candidate.priority > highestPrioritized.priority) {
+                    highestPrioritized = candidate;
+                }
             }
+            if (highestPrioritized == null) {
+                throw new NoSuchElementException("No batch importers found");
+            }
+            return highestPrioritized;
         }
-        if (highestPrioritized == null) {
-            throw new NoSuchElementException("No batch importers found");
-        }
-        return highestPrioritized;
     }
 }
