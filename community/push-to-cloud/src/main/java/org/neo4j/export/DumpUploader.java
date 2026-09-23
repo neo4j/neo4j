@@ -19,12 +19,14 @@ package org.neo4j.export;
 import static java.lang.String.format;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
+import org.neo4j.dbms.archive.ArchiveFormat;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.backup.BackupDescription;
 import org.neo4j.dbms.archive.backup.BackupFormatSelector;
@@ -37,6 +39,9 @@ import org.neo4j.util.VisibleForTesting;
 
 public class DumpUploader extends Uploader {
     private static final String BACKUP_EXTENSION = ".backup";
+
+    @VisibleForTesting
+    static final String SPLIT_ARCHIVE_ERROR_MESSAGE = "Uploading split backups to Aura is not supported.";
 
     private final ExecutionContext ctx;
     private final boolean verbose;
@@ -66,6 +71,7 @@ public class DumpUploader extends Uploader {
 
         if (ctx.fs().fileExists(dumpFile)) {
             ctx.out().println("Detected source dump file at: " + dumpFile);
+            assertNotSplitArchive(dumpFile, ctx);
             return new DumpUploader(
                     new Source(ctx.fs(), dumpFile, archiveSize(dumpFile, database, ctx, verbose)),
                     ctx,
@@ -85,6 +91,7 @@ public class DumpUploader extends Uploader {
         if (!backupFiles.isEmpty() && ctx.fs().fileExists(backupFiles.get(0))) {
             Path backupFile = backupFiles.get(0);
             ctx.out().println("Detected source backup file at: " + backupFile);
+            assertNotSplitArchive(backupFile, ctx);
             return new DumpUploader(
                     new Source(ctx.fs(), backupFile, archiveSize(backupFile, database, ctx, verbose)),
                     ctx,
@@ -185,6 +192,18 @@ public class DumpUploader extends Uploader {
         }
 
         return result;
+    }
+
+    private static void assertNotSplitArchive(Path archive, ExecutionContext ctx) {
+        try (InputStream stream = ctx.fs().openAsInputStream(archive)) {
+            byte[] magic = stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
+            if (Dumper.SplitFileOutput.MAGIC_MANIFEST_HEADER.matches(magic)) {
+                throw new CommandFailedException(format(
+                        "%s The archive at %s is split into multiple parts.", SPLIT_ARCHIVE_ERROR_MESSAGE, archive));
+            }
+        } catch (IOException e) {
+            throw new CommandFailedException(format("Failed to read archive file %s", archive), e);
+        }
     }
 
     @VisibleForTesting

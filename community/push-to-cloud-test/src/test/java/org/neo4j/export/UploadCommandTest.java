@@ -189,27 +189,17 @@ class UploadCommandTest {
     }
 
     @Test
-    void happyPathGCPSplitUploadCommandTest() {
-        String authResponse = "token";
-        createAuraHappyPathStubs(authResponse);
-        createGCPHappyPathWireMockStubs(authResponse);
+    void shouldFailOnSplitArchiveGCPUpload() {
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
-                .withHeader("Authorization", equalTo("Bearer " + authResponse))
-                .willReturn(firstSuccessfulDatabaseRunningResponse())
-                .inScenario("test")
-                .whenScenarioStateIs(Scenario.STARTED)
-                .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
-
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         UploadCommand command = buildUploadCommand(auraURLFactory);
-        String[] args = getNormalRuntimeArgs(SPLIT_DBNAME);
 
-        assertThatCode(() -> new CommandLine(command).execute(args)).doesNotThrowAnyException();
+        CommandLine.populateCommand(command, getNormalRuntimeArgs(SPLIT_DBNAME));
 
-        verifyCommonConsoleUrls();
-        verifyGCPPresignedEndpoints();
+        assertThatThrownBy(command::execute)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining(DumpUploader.SPLIT_ARCHIVE_ERROR_MESSAGE);
     }
 
     private String[] getNormalRuntimeArgs() {
@@ -296,22 +286,8 @@ class UploadCommandTest {
     }
 
     @Test
-    void happyPathAWSSplitUploadCommandTest() {
-        String authResponse = "token";
-        createAuraHappyPathStubs(authResponse);
-
-        wireMockServer.stubFor(
-                initiateUploadTargetRequest(authResponse).willReturn(successfulInitiateUploadTargetAWSResponse()));
-        wireMockServer.stubFor(uploadRequest().willReturn(aResponse().withStatus(HTTP_OK)));
+    void shouldFailOnSplitArchiveAWSUpload() {
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
-        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
-                .withHeader("Authorization", equalTo("Bearer " + authResponse))
-                .willReturn(firstSuccessfulDatabaseRunningResponse())
-                .inScenario("test")
-                .whenScenarioStateIs(Scenario.STARTED)
-                .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
-        wireMockServer.stubFor(getMultiPartStatusRequest().willReturn(successfulMultiPartStatusResponse()));
-
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         when(auraURLFactory.buildConsoleURI(any(), anyBoolean(), any())).thenReturn(testConsole);
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
@@ -322,14 +298,11 @@ class UploadCommandTest {
                 new FakeAWSUploadURLFactory(),
                 PushToCloudCLI.fakeCLI("username", "password", false));
 
-        String[] args = getNormalRuntimeArgs(SPLIT_DBNAME);
-        assertThatCode(() -> new CommandLine(command).execute(args)).doesNotThrowAnyException();
+        CommandLine.populateCommand(command, getNormalRuntimeArgs(SPLIT_DBNAME));
 
-        verifyCommonConsoleUrls();
-
-        verify(putRequestedFor(urlEqualTo("/signed1")));
-        verify(putRequestedFor(urlEqualTo("/signed2")));
-        verify(putRequestedFor(urlEqualTo("/signed3")));
+        assertThatThrownBy(command::execute)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining(DumpUploader.SPLIT_ARCHIVE_ERROR_MESSAGE);
     }
 
     @Test
