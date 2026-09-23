@@ -30,7 +30,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.neo4j.configuration.Config;
 import org.neo4j.fleetmanagement.communication.ConnectService;
 import org.neo4j.fleetmanagement.communication.DiagnosticsService;
@@ -291,7 +290,7 @@ public class MainService implements PropertyChangeListener {
     }
 
     private void stopReportingTasks() {
-        fleetManagerLog.debug("Stopping reporting tasks from: %s", ExceptionUtils.getStackTrace(new Throwable()));
+        fleetManagerLog.debug("Stopping reporting tasks");
         if (!jobHandles.isEmpty()) {
             jobHandles.forEach(jobHandle -> jobHandle.cancel(false));
             jobHandles.clear();
