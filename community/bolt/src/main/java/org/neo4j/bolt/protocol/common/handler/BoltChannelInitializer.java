@@ -128,9 +128,11 @@ public class BoltChannelInitializer extends ChannelInitializer<Channel> {
 
     private BoltProtocol initializeProtocolPipeline(Channel ch, Connection connection) {
         if (this.connector.configuration().enableJavaObjectMessages()) {
-            var preconfiguredVersion = this.connector.configuration().javaObjectProtocolVersion();
-            var protocol =
-                    this.connector.protocolRegistry().get(preconfiguredVersion).orElseThrow();
+            var protocol = this.connector
+                    .protocolRegistry()
+                    .getLatest()
+                    .orElseThrow(
+                            () -> new IllegalStateException("Protocol version not configured for Local Connector."));
             connection.selectProtocol(protocol, Set.of());
 
             ch.pipeline()

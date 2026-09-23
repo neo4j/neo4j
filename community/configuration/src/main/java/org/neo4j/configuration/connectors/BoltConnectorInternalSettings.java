@@ -287,12 +287,11 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
 
     @Internal
     @Description("Define protocol version of object messages on local bolt connector .")
-    public static final Setting<ConfiguredProtocolVersion> enable_object_messages_protocol_version_local_connector =
-            newBuilder(
-                            "internal.dbms.bolt.local_object_protocol_version",
-                            PROTOCOL_VERSION,
-                            ConfiguredProtocolVersion.fromString("6.1"))
-                    .build();
+    public static final Setting<ConfiguredProtocolVersion> local_connector_protocol_version = newBuilder(
+                    "internal.dbms.bolt.local_object_protocol_version",
+                    PROTOCOL_VERSION,
+                    ConfiguredProtocolVersion.fromString("6.1"))
+            .build();
 
     @Internal
     @Description(

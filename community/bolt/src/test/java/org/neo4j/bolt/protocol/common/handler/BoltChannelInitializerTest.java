@@ -28,7 +28,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.pcap.PcapWriteHandler;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
@@ -187,20 +186,21 @@ class BoltChannelInitializerTest {
 
     @Test
     void shouldSupportJavaObjectMessages() {
+        var expectedProtocol = BoltProtocol.latestInstalled();
+        var protocolRegistry =
+                BoltProtocolRegistry.builder().register(expectedProtocol).build();
+
         var listener = Mockito.mock(ConnectionListener.class);
         var connection = ConnectionMockFactory.newInstance();
         var pipeline = Mockito.mock(ChannelPipeline.class, Mockito.RETURNS_SELF);
         var channel = Mockito.mock(Channel.class, Mockito.RETURNS_MOCKS);
         var connectionConfiguration = Mockito.mock(NettyConnectorConfiguration.class, Mockito.RETURNS_MOCKS);
-        var protocolRegistry = Mockito.mock(BoltProtocolRegistry.class, Mockito.RETURNS_MOCKS);
-        var expectedProtocol = BoltProtocol.latestInstalled();
 
         Mockito.doReturn(pipeline).when(channel).pipeline();
         Mockito.doReturn(connection).when(this.connector).createConnection(channel);
         Mockito.doReturn(connectionConfiguration).when(connector).configuration();
         Mockito.doReturn(true).when(connectionConfiguration).enableJavaObjectMessages();
         Mockito.doReturn(protocolRegistry).when(connector).protocolRegistry();
-        Mockito.doReturn(Optional.of(expectedProtocol)).when(protocolRegistry).get(any());
 
         this.initializer.initChannel(channel);
 

@@ -838,14 +838,23 @@ public class BoltServer extends LifecycleAdapter {
             Authentication authentication,
             ByteBufAllocator allocator,
             ThreadAccountant threadAccountant) {
+        var enableObjectMessages = this.config.get(BoltConnector.enable_object_messages_local_connector);
         var config = LocalConnectorConfiguration.factory()
                 .fromConfig(this.config)
-                .enableJavaObjectMessages(this.config.get(BoltConnector.enable_object_messages_local_connector));
+                .enableJavaObjectMessages(enableObjectMessages);
 
-        Optional.ofNullable(this.config.get(
-                        BoltConnectorInternalSettings.enable_object_messages_protocol_version_local_connector))
-                .map(protocolVer -> new ProtocolVersion(protocolVer.major(), protocolVer.minor()))
-                .ifPresent(config::withJavaObjectProtocolVersion);
+        var localChannelProtocolRegistry = enableObjectMessages
+                ? Optional.ofNullable(this.config.get(BoltConnectorInternalSettings.local_connector_protocol_version))
+                        .map(protocolVer -> new ProtocolVersion(protocolVer.major(), protocolVer.minor()))
+                        .flatMap(protocolVer -> BoltProtocol.installed().stream()
+                                .filter(boltProtocol -> boltProtocol.version().equals(protocolVer))
+                                .findFirst())
+                        .map(protocol -> BoltProtocolRegistry.builder()
+                                .register(protocol)
+                                .build())
+                        .orElseThrow(() -> new IllegalArgumentException("Invalid protocol version for %s"
+                                .formatted(BoltConnectorInternalSettings.local_connector_protocol_version.name())))
+                : protocolRegistry;
 
         var bindAddress = new LocalAddress(this.config.get(BoltConnectorInternalSettings.local_channel_address));
 
@@ -859,7 +868,7 @@ public class BoltServer extends LifecycleAdapter {
                 localWorkerEventLoopGroup,
                 connectionFactory,
                 connectionTracker,
-                protocolRegistry,
+                localChannelProtocolRegistry,
                 authentication,
                 authConfigProvider,
                 defaultDatabaseResolver,

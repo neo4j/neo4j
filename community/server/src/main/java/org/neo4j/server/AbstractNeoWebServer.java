@@ -206,8 +206,8 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
                 if (availableController == null) {
                     QueryApiBoltConnectionProviderFactory.setUseJavaObjects(
                             config.get(BoltConnector.enable_object_messages_local_connector));
-                    QueryApiBoltConnectionProviderFactory.setPreconfiguredProtocolVersion(config.get(
-                            BoltConnectorInternalSettings.enable_object_messages_protocol_version_local_connector));
+                    QueryApiBoltConnectionProviderFactory.setPreconfiguredProtocolVersion(
+                            config.get(BoltConnectorInternalSettings.local_connector_protocol_version));
                     driverFactory = new LocalChannelDriverFactory(
                             new LocalAddress(config.get(BoltConnectorInternalSettings.local_channel_address)),
                             internalLogProvider,
