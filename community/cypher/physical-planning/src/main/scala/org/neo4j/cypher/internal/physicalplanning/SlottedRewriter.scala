@@ -590,7 +590,9 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
         }
 
       case ssp: StatefulShortestPath =>
-        val nonExpressionVariables = (ssp.nfa.variables -- ssp.boundNodes).collect { case Variable(name) => name }
+        val groupingSingletons = (ssp.nodeVariableGroupings ++ ssp.relationshipVariableGroupings).map(_.singleton)
+        val nonExpressionVariables =
+          (ssp.nfa.variables ++ groupingSingletons -- ssp.boundNodes).collect { case Variable(name) => name }
 
         val refVariables = Rewriter.lift {
           case Variable(name) if nonExpressionVariables contains name => VariableRef(name)
