@@ -150,18 +150,19 @@ sealed trait RegularContext extends WorkingContext {
     }
   }
 
-  @inline private def checkIfNameOccursTwiceInDeclared(
+  /** For each name declared more than once, flags every occurrence but the textually first one. */
+  @inline def checkIfNameOccursTwiceInDeclared(
     newVariables: Seq[LogicalVariable],
-    errorFunc: (String, InputPosition) => SemanticError
+    errorFunc: (String, InputPosition) => SemanticError = (n, p) => SemanticError.variableAlreadyDeclared(n, p)
   ): Seq[SemanticError] = {
-    if (newVariables.nonEmpty) {
-      newVariables.collect {
-        case variable if newVariables.exists(v => v.name == variable.name && v.position != variable.position) =>
-          errorFunc(variable.name, variable.position)
-      }
-    } else {
-      Seq.empty
-    }
+    newVariables
+      .groupBy(_.name)
+      .values
+      .flatMap(_.sortBy(_.position.offset) match {
+        case _ +: duplicates => duplicates.map(v => errorFunc(v.name, v.position))
+        case _               => Seq.empty
+      })
+      .toSeq
   }
 
   @inline def resultScope(

@@ -128,7 +128,7 @@ case class VariableChecker(
                 SemanticError.variableAlreadyDeclaredInOuterScope(n, p) // Inner query throws 42N07
               else SemanticError.variableAlreadyDeclared(n, p) // IN TRANSACTIONS throw 42N59
             }
-          )
+          ) ++ incoming.checkIfNameOccursTwiceInDeclared(variables)
         case _ => Seq.empty
       }
       acc(redeclarationOfConstants ++ redeclarationOfVariables)

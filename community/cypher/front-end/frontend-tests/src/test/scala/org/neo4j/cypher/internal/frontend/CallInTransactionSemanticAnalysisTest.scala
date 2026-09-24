@@ -700,6 +700,22 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
     )
   }
 
+  test(
+    "SURF-1588: CALL IN TRANSACTIONS REPORT STATUS AS <v> should fail semantic check if <v> collides with the subquery's own returned column"
+  ) {
+    val query =
+      """CALL () {
+        |  RETURN {p:1} AS name
+        |} IN TRANSACTIONS ON ERROR CONTINUE REPORT STATUS AS name
+        |RETURN name
+        |""".stripMargin
+    run(query, disabledVersions = Set(Cypher5)).hasError(
+      GqlHelper.getGql42001_42N59("name", 86, 3, 54),
+      "Variable `name` already declared",
+      p(86, 3, 54)
+    )
+  }
+
   test("CALL IN TRANSACTIONS ON ERROR BREAK REPORT STATUS AS status should pass semantic check") {
     val query =
       """CALL {

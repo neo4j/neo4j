@@ -100,6 +100,22 @@ class GQL_42N59_VariableAlreadyDeclaredTest extends VariableCheckingWithLocalCal
       Seq("a", "x")
     ),
     TestQuery(
+      """CALL () {
+        |  RETURN {p:1} AS name
+        |} IN TRANSACTIONS ON ERROR CONTINUE REPORT STATUS AS name
+        |RETURN name""".stripMargin,
+      ignoreBeforeCypher25(E42N59("name")),
+      Seq("name")
+    ),
+    TestQuery(
+      """CALL {
+        |  RETURN 1 AS name
+        |} IN TRANSACTIONS ON ERROR CONTINUE REPORT STATUS AS name
+        |RETURN name""".stripMargin,
+      ignoreBeforeCypher25(E42N59("name")),
+      Seq("name")
+    ),
+    TestQuery(
       """CALL test.my.proc(null) YIELD a, b AS a
         |RETURN a""".stripMargin,
       E42N59("a"),
