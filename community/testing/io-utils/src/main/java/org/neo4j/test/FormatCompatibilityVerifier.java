@@ -33,7 +33,6 @@ import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.TestDirectory;
 
 /**
@@ -51,7 +50,6 @@ public abstract class FormatCompatibilityVerifier {
     protected FileSystemAbstraction globalFs;
 
     @Test
-    @MultiVersionedTag
     public void shouldDetectFormatChange() throws Throwable {
         Path storeFile = globalDir.file(storeFileName());
         doShouldDetectFormatChange(zipName(), storeFile);

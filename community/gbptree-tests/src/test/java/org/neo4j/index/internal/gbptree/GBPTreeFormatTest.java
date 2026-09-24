@@ -48,7 +48,6 @@ import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.PageCacheConfig;
 
 @RandomSupportExtension
@@ -184,7 +183,6 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
 
     @ParameterizedTest
     @MethodSource("data")
-    @MultiVersionedTag
     public void shouldDetectFormatChange(
             TestLayout<KEY, VALUE> layout, String zipName, int pageSize, ImmutableSet<OpenOption> openOptions)
             throws Throwable {
