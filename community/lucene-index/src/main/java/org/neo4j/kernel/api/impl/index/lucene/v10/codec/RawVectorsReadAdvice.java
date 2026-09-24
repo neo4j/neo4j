@@ -31,6 +31,7 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.ReadAdvice;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDirectory;
 import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10Directory;
+import org.neo4j.util.VisibleForTesting;
 
 /// Applies [ReadAdvice#RANDOM] to the raw float32 vectors (`.vec`) and to nothing else.
 ///
@@ -74,6 +75,22 @@ public final class RawVectorsReadAdvice {
 
     private RawVectorsReadAdvice() {}
 
+    /// Why the raw vectors stopped being advised after they started being -- a kernel that rejected
+    /// the `posix_madvise` -- or null while they still are. Set once, never cleared, for the same
+    /// reason as [NativeAccessRawVectorAdvisor]'s disabled latch: a call the kernel keeps rejecting
+    /// should not be repeated, and advice that silently stopped applying is the failure mode this
+    /// class exists to prevent. Reachable for tests and diagnosis.
+    private static volatile String adviseRejected;
+
+    static String adviseRejected() {
+        return adviseRejected;
+    }
+
+    @VisibleForTesting
+    static void clearRejectedForTesting() {
+        adviseRejected = null;
+    }
+
     /// For [MMapDirectory#setReadAdvice]. Everything unmarked falls through to
     /// [org.apache.lucene.util.Constants#DEFAULT_READADVICE].
     private static final Optional<ReadAdvice> RANDOM_ADVICE = Optional.of(ReadAdvice.RANDOM);
@@ -109,7 +126,15 @@ public final class RawVectorsReadAdvice {
 
         @Override
         public IndexInput openInput(String name, IOContext context) throws IOException {
-            return in.openInput(name, isRawVectors(name) ? marked(context) : context);
+            if (!isRawVectors(name) || adviseRejected != null) {
+                return in.openInput(name, context);
+            }
+            try {
+                return in.openInput(name, marked(context));
+            } catch (IOException e) {
+                adviseRejected = e.getMessage();
+                return in.openInput(name, context);
+            }
         }
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.index.lucene.v10.codec;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIOException;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriterConfig.MergePolicyOption.LOG_BYTE_SIZED;
 
@@ -89,12 +90,14 @@ class RawVectorsReadAdviceTest {
     /// range: available, so the advice is applied, and inert, so nothing else changes.
     @BeforeEach
     void makeAdviceAvailable() {
+        RawVectorsReadAdvice.clearRejectedForTesting();
         RawVectorAdvisors.overrideForTesting((slice, offset, length) -> false);
     }
 
     @AfterEach
     void restoreAdviceAvailability() {
         RawVectorAdvisors.clearOverrideForTesting();
+        RawVectorsReadAdvice.clearRejectedForTesting();
     }
 
     private static final LuceneContext CONTEXT = LuceneContext.LUCENE_10;
@@ -224,6 +227,93 @@ class RawVectorsReadAdviceTest {
                         .filter(Request::isRandom)
                         .map(request -> request.name))
                 .noneMatch(name -> name.endsWith(QUANTIZED_VECTORS) || name.endsWith(HNSW_GRAPH));
+    }
+
+    @Test
+    void openRawVectorsUnmarkedWhenTheAdviceIsRejected() throws IOException {
+        String name = "_0_Foo_0" + RAW_VECTORS;
+        List<IOContext> reaching = new ArrayList<>();
+
+        try (ByteBuffersDirectory directory = new ByteBuffersDirectory()) {
+            try (IndexOutput output = directory.createOutput(name, IOContext.DEFAULT)) {
+                output.writeLong(0);
+            }
+            FilterDirectory rejecting = new FilterDirectory(directory) {
+                @Override
+                public IndexInput openInput(String file, IOContext context) throws IOException {
+                    reaching.add(context);
+                    if (RawVectorsReadAdvice.READ_ADVICE.apply(file, context).isPresent()) {
+                        throw new IOException("Call to posix_madvise failed with return code 11.");
+                    }
+                    return in.openInput(file, context);
+                }
+            };
+
+            RawVectorsReadAdvice.markRawVectors(rejecting)
+                    .openInput(name, IOContext.DEFAULT.withHints(DataAccessHint.RANDOM))
+                    .close();
+        }
+
+        assertThat(reaching).hasSize(2);
+        assertThat(RawVectorsReadAdvice.READ_ADVICE.apply(name, reaching.getFirst()))
+                .contains(ReadAdvice.RANDOM);
+        assertThat(RawVectorsReadAdvice.READ_ADVICE.apply(name, reaching.getLast()))
+                .isEmpty();
+    }
+
+    /// The rejection is latched rather than retried: the next marked open would be rejected the
+    /// same way, and each rejected attempt still asks the kernel for the doomed VMA split.
+    @Test
+    void stopMarkingAfterARejectedAdvice() throws IOException {
+        String name = "_0_Foo_0" + RAW_VECTORS;
+        ArrayList<IOContext> reaching = new ArrayList<>();
+
+        try (ByteBuffersDirectory directory = new ByteBuffersDirectory()) {
+            try (IndexOutput output = directory.createOutput(name, IOContext.DEFAULT)) {
+                output.writeLong(0);
+            }
+            FilterDirectory rejecting = new FilterDirectory(directory) {
+                @Override
+                public IndexInput openInput(String file, IOContext context) throws IOException {
+                    reaching.add(context);
+                    if (RawVectorsReadAdvice.READ_ADVICE.apply(file, context).isPresent()) {
+                        throw new IOException("Call to posix_madvise failed with return code 11.");
+                    }
+                    return in.openInput(file, context);
+                }
+            };
+
+            Directory marking = RawVectorsReadAdvice.markRawVectors(rejecting);
+            marking.openInput(name, IOContext.DEFAULT).close();
+            reaching.clear();
+            marking.openInput(name, IOContext.DEFAULT).close();
+        }
+
+        assertThat(RawVectorsReadAdvice.adviseRejected()).contains("return code 11");
+        assertThat(reaching)
+                .singleElement()
+                .satisfies(context -> assertThat(RawVectorsReadAdvice.READ_ADVICE.apply(name, context))
+                        .isEmpty());
+    }
+
+    /// A real read failure is not the advice failing: the fallback rethrows whatever the unmarked
+    /// open produces, so a genuinely broken `.vec` still fails loudly instead of being swallowed.
+    @Test
+    void stillFailWhenTheFileCannotBeReadAtAll() throws IOException {
+        String name = "_0_Foo_0" + RAW_VECTORS;
+        try (ByteBuffersDirectory directory = new ByteBuffersDirectory()) {
+            FilterDirectory failing = new FilterDirectory(directory) {
+                @Override
+                public IndexInput openInput(String file, IOContext context) throws IOException {
+                    throw new IOException("Read past EOF");
+                }
+            };
+
+            Directory marking = RawVectorsReadAdvice.markRawVectors(failing);
+            assertThatIOException()
+                    .isThrownBy(() -> marking.openInput(name, IOContext.DEFAULT))
+                    .withMessage("Read past EOF");
+        }
     }
 
     /// Builds a binary quantized index on a real [MMapDirectory], reads every vector back, and
