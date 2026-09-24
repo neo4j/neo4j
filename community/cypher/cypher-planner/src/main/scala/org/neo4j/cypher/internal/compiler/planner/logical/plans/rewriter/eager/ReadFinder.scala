@@ -824,6 +824,7 @@ object ReadFinder {
           _,
           _,
           _,
+          _,
           _
         ) =>
         processRelationshipIndexPlan(
@@ -840,6 +841,7 @@ object ReadFinder {
           rightNode,
           types,
           properties,
+          _,
           _,
           _,
           _,

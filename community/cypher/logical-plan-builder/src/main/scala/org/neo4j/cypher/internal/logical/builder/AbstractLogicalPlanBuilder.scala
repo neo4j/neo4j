@@ -2553,7 +2553,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     skip: Option[ToExpression] = None,
     score: String = "",
     argumentIds: Set[String] = Set.empty,
-    getValueFromIndex: String => GetValueFromIndexBehavior = _ => DoNotGetValue
+    getValueFromIndex: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    entityFilter: EntityFilterQueryExpression[Expression] = MatchAllQueryExpression
   ): IMPL = {
     val labels = labelNames.map(labelName => LabelToken(labelName, LabelId(resolver.getLabelId(labelName))))
     val propIDs = properties
@@ -2579,6 +2580,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         analyzer.map(a => toExpression(a)),
         skip.map(s => toExpression(s)),
         toExpression(limit),
+        entityFilter,
         argumentIds.map(varFor)
       )(idGen)
     }
@@ -2596,7 +2598,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     skip: Option[ToExpression] = None,
     score: String = "",
     argumentIds: Set[String] = Set.empty,
-    getValueFromIndex: String => GetValueFromIndexBehavior = _ => DoNotGetValue
+    getValueFromIndex: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    entityFilter: EntityFilterQueryExpression[Expression] = MatchAllQueryExpression
   ): IMPL = {
 
     val p = patternParser.parse(pattern)
@@ -2629,6 +2632,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             toExpression(limit),
             analyzer.map(a => toExpression(a)),
             skip.map(s => toExpression(s)),
+            entityFilter,
             argumentIds.map(varFor)
           )(_)
         ))
@@ -2646,6 +2650,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             toExpression(limit),
             analyzer.map(a => toExpression(a)),
             skip.map(s => toExpression(s)),
+            entityFilter,
             argumentIds.map(varFor)
           )(_)
         ))
@@ -2663,6 +2668,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             toExpression(limit),
             analyzer.map(a => toExpression(a)),
             skip.map(s => toExpression(s)),
+            entityFilter,
             argumentIds.map(varFor)
           )(_)
         ))

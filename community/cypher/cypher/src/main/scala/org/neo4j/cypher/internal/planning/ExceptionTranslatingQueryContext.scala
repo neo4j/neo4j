@@ -198,16 +198,18 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def nodeFulltextIndexSeek(
     index: IndexReadSession,
     constraints: IndexQueryConstraints,
-    query: PropertyIndexQuery.FulltextSearchPredicate
+    query: PropertyIndexQuery.FulltextSearchPredicate,
+    filter: PropertyIndexQuery.EntityFilterPredicate
   ): NodeValueIndexCursor =
-    translateException(tokenNameLookup, inner.nodeFulltextIndexSeek(index, constraints, query))
+    translateException(tokenNameLookup, inner.nodeFulltextIndexSeek(index, constraints, query, filter))
 
   override def relationshipFulltextIndexSeek(
     index: IndexReadSession,
     constraints: IndexQueryConstraints,
-    query: PropertyIndexQuery.FulltextSearchPredicate
+    query: PropertyIndexQuery.FulltextSearchPredicate,
+    filter: PropertyIndexQuery.EntityFilterPredicate
   ): RelationshipValueIndexCursor =
-    translateException(tokenNameLookup, inner.relationshipFulltextIndexSeek(index, constraints, query))
+    translateException(tokenNameLookup, inner.relationshipFulltextIndexSeek(index, constraints, query, filter))
 
   override def relationshipIndexSeek(
     index: IndexReadSession,

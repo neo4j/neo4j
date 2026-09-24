@@ -19,6 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.logical.plans.EntityFilterQueryExpression
+import org.neo4j.cypher.internal.logical.plans.MatchAllQueryExpression
+import org.neo4j.cypher.internal.logical.plans.MatchEntitySetQueryExpression
+import org.neo4j.cypher.internal.logical.plans.PreparedEntityFilterExpression
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -27,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeFulltextIndexSearchPipe.fulltextSearchCursor
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.operations.CypherFunctions
+import org.neo4j.cypher.operations.PropertyIndexQueries
 import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
@@ -41,7 +46,8 @@ abstract class BaseNodeFulltextIndexSearchPipe(
   analyzerExpression: Option[Expression],
   skipExpression: Option[Expression],
   limitExpression: Expression,
-  queryIndexId: Int
+  queryIndexId: Int,
+  entityFilterExpression: EntityFilterQueryExpression[Expression]
 ) extends Pipe {
 
   protected def newRow(row: CypherRow, cursor: NodeValueIndexCursor): CypherRow
@@ -61,6 +67,7 @@ abstract class BaseNodeFulltextIndexSearchPipe(
           query,
           index,
           queryString,
+          entityFilterExpression,
           analyzerExpression,
           skipExpression,
           limitExpression,
@@ -99,14 +106,16 @@ case class NodeFulltextIndexSearchPipe(
   analyzerExpression: Option[Expression],
   skipExpression: Option[Expression],
   limitExpression: Expression,
-  queryIndexId: Int
+  queryIndexId: Int,
+  entityFilterQueryExpression: EntityFilterQueryExpression[Expression]
 )(val id: Id = Id.INVALID_ID)
     extends BaseNodeFulltextIndexSearchPipe(
       queryStringExpression,
       analyzerExpression,
       skipExpression,
       limitExpression,
-      queryIndexId
+      queryIndexId,
+      entityFilterQueryExpression
     ) {
 
   private[this] val _newRow: (CypherRow, NodeValueIndexCursor) => CypherRow = score match {
@@ -131,6 +140,7 @@ object NodeFulltextIndexSearchPipe {
     query: QueryContext,
     index: IndexReadSession,
     queryString: AnyValue,
+    entityFilter: EntityFilterQueryExpression[Expression],
     analyzer: Option[Expression],
     skip: Option[Expression],
     limit: Expression,
@@ -141,9 +151,10 @@ object NodeFulltextIndexSearchPipe {
     if (l == 0) {
       NodeValueIndexCursor.EMPTY
     } else {
-      val (constraints, predicate) = fulltextSearchQuery(queryString, l, analyzer, skip, row, state)
+      val (constraints, predicate, filter) =
+        fulltextSearchQuery(queryString, entityFilter, l, analyzer, skip, row, state)
       // No includeChangesFromThisTransaction: the reader merges transaction state anyway.
-      query.nodeFulltextIndexSeek(index, constraints, predicate)
+      query.nodeFulltextIndexSeek(index, constraints, predicate, filter)
     }
   }
 
@@ -154,12 +165,18 @@ object NodeFulltextIndexSearchPipe {
    */
   def fulltextSearchQuery(
     queryString: AnyValue,
+    entityFilter: EntityFilterQueryExpression[Expression],
     limit: Int,
     analyzer: Option[Expression],
     skip: Option[Expression],
     row: ReadableRow,
     state: QueryState
-  ): (IndexQueryConstraints, PropertyIndexQuery.FulltextSearchPredicate) = {
+  ): (IndexQueryConstraints, PropertyIndexQuery.FulltextSearchPredicate, PropertyIndexQuery.EntityFilterPredicate) = {
+    val entityPredicate = entityFilter match {
+      case PreparedEntityFilterExpression(expression) => PropertyIndexQueries.matchEntitySet(expression(row, state))
+      case MatchEntitySetQueryExpression(expression)  => PropertyIndexQueries.matchEntitySet(expression(row, state))
+      case MatchAllQueryExpression                    => PropertyIndexQuery.matchAllEntityFilter()
+    }
     val analyzerOrNull = analyzer.map(_.apply(row, state)) match {
       case Some(value) if value ne NO_VALUE => CypherFunctions.asTextValue(value).stringValue()
       case _                                => null
@@ -168,7 +185,8 @@ object NodeFulltextIndexSearchPipe {
     skip.foreach(s => constraints = constraints.skip(CypherFunctions.asNonNegativeIntExact(s(row, state))))
     (
       constraints,
-      PropertyIndexQuery.fulltextSearch(CypherFunctions.asTextValue(queryString).stringValue(), analyzerOrNull)
+      PropertyIndexQuery.fulltextSearch(CypherFunctions.asTextValue(queryString).stringValue(), analyzerOrNull),
+      entityPredicate
     )
   }
 }

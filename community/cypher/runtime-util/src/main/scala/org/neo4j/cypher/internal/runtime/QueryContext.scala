@@ -220,7 +220,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with KernelVersion
   def nodeFulltextIndexSeek(
     index: IndexReadSession,
     constraints: IndexQueryConstraints,
-    query: PropertyIndexQuery.FulltextSearchPredicate
+    query: PropertyIndexQuery.FulltextSearchPredicate,
+    filter: PropertyIndexQuery.EntityFilterPredicate
   ): NodeValueIndexCursor
 
   def nodeIndexSeekByContains(
@@ -262,7 +263,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with KernelVersion
   def relationshipFulltextIndexSeek(
     index: IndexReadSession,
     constraints: IndexQueryConstraints,
-    query: PropertyIndexQuery.FulltextSearchPredicate
+    query: PropertyIndexQuery.FulltextSearchPredicate,
+    filter: PropertyIndexQuery.EntityFilterPredicate
   ): RelationshipValueIndexCursor
 
   def relationshipLockingUniqueIndexSeek(

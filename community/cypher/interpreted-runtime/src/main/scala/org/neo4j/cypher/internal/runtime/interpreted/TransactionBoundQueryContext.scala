@@ -903,10 +903,11 @@ private[internal] class TransactionBoundReadQueryContext(
   override def nodeFulltextIndexSeek(
     index: IndexReadSession,
     constraints: IndexQueryConstraints,
-    query: PropertyIndexQuery.FulltextSearchPredicate
+    query: PropertyIndexQuery.FulltextSearchPredicate,
+    filter: PropertyIndexQuery.EntityFilterPredicate
   ): NodeValueIndexCursor = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexSeek(transactionalContext.kernelQueryContext, index, nodeCursor, constraints, query)
+    reads().nodeIndexSeek(transactionalContext.kernelQueryContext, index, nodeCursor, constraints, query, filter)
     nodeCursor
   }
 
@@ -927,10 +928,11 @@ private[internal] class TransactionBoundReadQueryContext(
   override def relationshipFulltextIndexSeek(
     index: IndexReadSession,
     constraints: IndexQueryConstraints,
-    query: PropertyIndexQuery.FulltextSearchPredicate
+    query: PropertyIndexQuery.FulltextSearchPredicate,
+    filter: PropertyIndexQuery.EntityFilterPredicate
   ): RelationshipValueIndexCursor = {
     val relCursor = allocateAndTraceRelationshipValueIndexCursor()
-    reads().relationshipIndexSeek(transactionalContext.kernelQueryContext, index, relCursor, constraints, query)
+    reads().relationshipIndexSeek(transactionalContext.kernelQueryContext, index, relCursor, constraints, query, filter)
     relCursor
   }
 

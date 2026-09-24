@@ -406,16 +406,18 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def nodeFulltextIndexSeek(
     index: IndexReadSession,
     constraints: IndexQueryConstraints,
-    query: PropertyIndexQuery.FulltextSearchPredicate
+    query: PropertyIndexQuery.FulltextSearchPredicate,
+    filter: PropertyIndexQuery.EntityFilterPredicate
   ): NodeValueIndexCursor =
-    inner.nodeFulltextIndexSeek(index, constraints, query)
+    inner.nodeFulltextIndexSeek(index, constraints, query, filter)
 
   override def relationshipFulltextIndexSeek(
     index: IndexReadSession,
     constraints: IndexQueryConstraints,
-    query: PropertyIndexQuery.FulltextSearchPredicate
+    query: PropertyIndexQuery.FulltextSearchPredicate,
+    filter: PropertyIndexQuery.EntityFilterPredicate
   ): RelationshipValueIndexCursor =
-    inner.relationshipFulltextIndexSeek(index, constraints, query)
+    inner.relationshipFulltextIndexSeek(index, constraints, query, filter)
 
   override def nodeIndexScan(
     index: IndexReadSession,

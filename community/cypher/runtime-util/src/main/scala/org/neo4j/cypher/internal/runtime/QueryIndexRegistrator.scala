@@ -50,7 +50,7 @@ trait QueryIndexRegistrator {
   def registerTypeScan(): Unit
   def registerQueryIndex(indexType: IndexType, label: LabelToken, property: IndexedProperty): Int
   def registerQueryIndex(indexType: IndexType, label: LabelToken, properties: collection.Seq[IndexedProperty]): Int
-  def registerNamedQueryIndex(indexName: String, indexType: IndexType): Int
+  def registerNamedQueryIndex(indexName: String): Int
 
   def registerNamedQueryIndex(
     indexName: String,
@@ -100,10 +100,10 @@ object QueryIndexRegistrator {
       label: LabelToken,
       properties: collection.Seq[IndexedProperty]
     ): Int =
-      registerQueryIndex(indexType, Seq(label.nameId), properties, None)
+      registerQueryIndex(indexType, Seq(label.nameId), properties)
 
-    override def registerNamedQueryIndex(indexName: String, indexType: IndexType): Int =
-      registerQueryIndex(indexType, Seq.empty, Seq.empty, Some(indexName))
+    override def registerNamedQueryIndex(indexName: String): Int =
+      registerQueryIndex(indexName)
 
     override def registerNamedQueryIndex(
       indexName: String,
@@ -111,7 +111,7 @@ object QueryIndexRegistrator {
       labels: Seq[LabelToken],
       properties: collection.Seq[IndexedProperty]
     ): Int =
-      registerQueryIndex(indexType, labels.map(_.nameId), properties, Some(indexName))
+      registerQueryIndex(indexType, labels.map(_.nameId), properties, indexName)
 
     override def registerQueryIndex(
       indexType: IndexType,
@@ -125,7 +125,7 @@ object QueryIndexRegistrator {
       relationshipTypeToken: RelationshipTypeToken,
       properties: collection.Seq[IndexedProperty]
     ): Int =
-      registerQueryIndex(indexType, Seq(relationshipTypeToken.nameId), properties, None)
+      registerQueryIndex(indexType, Seq(relationshipTypeToken.nameId), properties)
 
     override def registerNamedRelationshipQueryIndex(
       indexName: String,
@@ -133,22 +133,21 @@ object QueryIndexRegistrator {
       types: Seq[RelationshipTypeToken],
       properties: collection.Seq[IndexedProperty]
     ): Int =
-      registerQueryIndex(indexType, types.map(_.nameId), properties, Some(indexName))
+      registerQueryIndex(indexType, types.map(_.nameId), properties, indexName)
 
     private def registerQueryIndex(
       indexType: IndexType,
       tokenNameId: collection.Seq[NameId],
-      properties: collection.Seq[IndexedProperty],
-      name: Option[String]
+      properties: collection.Seq[IndexedProperty]
     ): Int = {
       val reference = InternalIndexReference(
         tokenNameId,
         properties.map(_.propertyKeyToken.nameId.id),
-        internal.schema.IndexType.fromPublicApi(indexType),
-        name
+        Some(internal.schema.IndexType.fromPublicApi(indexType)),
+        None
       )
       val index = indexReferences.indexOf(reference)
-      if (index > 0) {
+      if (index >= 0) {
         index
       } else {
         val queryIndexId = indexReferences.size
@@ -157,55 +156,128 @@ object QueryIndexRegistrator {
       }
     }
 
+    private def registerQueryIndex(
+      indexType: IndexType,
+      tokenNameId: collection.Seq[NameId],
+      properties: collection.Seq[IndexedProperty],
+      name: String
+    ): Int = {
+      val index = indexReferences.indexWhere(_.name.contains(name), 0)
+
+      val reference = InternalIndexReference(
+        tokenNameId,
+        properties.map(_.propertyKeyToken.nameId.id),
+        Some(internal.schema.IndexType.fromPublicApi(indexType)),
+        Some(name)
+      )
+      if (index >= 0) {
+        // upgrade reference if not set previously
+        indexReferences(index) match {
+          case InternalIndexReference(Seq(), Seq(), None, _) =>
+            indexReferences(index) = reference
+          case InternalIndexReference(_, _, Some(t), _) if reference.indexType.get != t =>
+            throw InvalidArgumentException.wrongIndexType(
+              name,
+              indexType.name().toLowerCase(Locale.ROOT),
+              t.name().toLowerCase(Locale.ROOT)
+            )
+          case r if r != reference => throw new IllegalStateException()
+          case _                   => // do nothing
+        }
+        index
+      } else {
+        val queryIndexId = indexReferences.size
+        indexReferences += reference
+        queryIndexId
+      }
+    }
+
+    private def registerQueryIndex(name: String): Int = {
+      val index = indexReferences.indexWhere(_.name.contains(name), 0)
+      if (index >= 0) {
+        index
+      } else {
+        val queryIndexId = indexReferences.size
+        indexReferences += InternalIndexReference(
+          Seq.empty,
+          Seq.empty,
+          None,
+          Some(name)
+        )
+        queryIndexId
+      }
+    }
+
+    private def isSemanticIndex(indexType: internal.schema.IndexType): Boolean =
+      indexType == schema.IndexType.VECTOR ||
+        indexType == schema.IndexType.FULLTEXT
+
     override def result(): QueryIndexes = {
       val indexes =
         indexReferences.map {
-          case InternalIndexReference(labels, properties, schema.IndexType.VECTOR, None)
-            if labels.forall(_.isInstanceOf[LabelId]) =>
+          case InternalIndexReference(labels, properties, Some(indexType), None)
+            if isSemanticIndex(indexType) && labels.forall(_.isInstanceOf[LabelId]) =>
             schemaRead.indexForSchemaAndIndexTypeNonTransactional(
               SchemaDescriptors.forSemanticSearch(EntityType.NODE, labels.map(_.id).toArray, properties.toArray),
-              schema.IndexType.VECTOR
+              indexType
             )
 
-          case InternalIndexReference(types, properties, schema.IndexType.VECTOR, None)
-            if types.forall(_.isInstanceOf[RelTypeId]) =>
+          case InternalIndexReference(types, properties, Some(indexType), None)
+            if isSemanticIndex(indexType) && types.forall(_.isInstanceOf[RelTypeId]) =>
             schemaRead.indexForSchemaAndIndexTypeNonTransactional(
               SchemaDescriptors.forSemanticSearch(EntityType.RELATIONSHIP, types.map(_.id).toArray, properties.toArray),
-              schema.IndexType.VECTOR
+              indexType
             )
 
-          case InternalIndexReference(Seq(LabelId(token)), properties, indexType, None) =>
+          case InternalIndexReference(Seq(LabelId(token)), properties, Some(indexType), None) =>
             schemaRead.indexForSchemaAndIndexTypeNonTransactional(
               SchemaDescriptors.forLabel(token, properties.toSeq: _*),
               indexType
             )
 
-          case InternalIndexReference(relypes, properties, schema.IndexType.VECTOR, None)
-            if relypes.forall(_.isInstanceOf[RelTypeId]) =>
+          case InternalIndexReference(relypes, properties, Some(indexType), None)
+            if isSemanticIndex(indexType) && relypes.forall(_.isInstanceOf[RelTypeId]) =>
             schemaRead.indexForSchemaAndIndexTypeNonTransactional(
               SchemaDescriptors.forSemanticSearch(
                 EntityType.RELATIONSHIP,
                 relypes.map(_.id).toArray,
                 properties.toArray
               ),
-              schema.IndexType.VECTOR
+              indexType
             )
 
-          case InternalIndexReference(Seq(RelTypeId(token)), properties, indexType, None) =>
+          case InternalIndexReference(Seq(RelTypeId(token)), properties, Some(indexType), None) =>
             schemaRead.indexForSchemaAndIndexTypeNonTransactional(
               SchemaDescriptors.forRelType(token, properties.toSeq: _*),
               indexType
             )
 
-          case InternalIndexReference(_, _, indexType, Some(name)) =>
+          case InternalIndexReference(_, _, Some(indexType), Some(name)) =>
             val index = schemaRead.indexGetForName(name)
             if (index eq IndexDescriptor.NO_INDEX) {
-              throw IndexNotFoundKernelException.indexNotFound(name);
+              throw IndexNotFoundKernelException.indexNotFound(name)
             }
             if (index.getIndexType != indexType) {
               throw InvalidArgumentException.wrongIndexType(
                 name,
                 indexType.name().toLowerCase(Locale.ROOT),
+                index.getIndexType.name().toLowerCase(Locale.ROOT)
+              )
+            }
+            index
+
+          // A name-only reference comes from an entity filter, which is only meaningful for a semantic index.
+          case InternalIndexReference(_, _, _, Some(name)) =>
+            val index = schemaRead.indexGetForName(name)
+            if (index eq IndexDescriptor.NO_INDEX) {
+              throw IndexNotFoundKernelException.indexNotFound(name)
+            }
+            if (!isSemanticIndex(index.getIndexType)) {
+              throw InvalidArgumentException.wrongIndexType(
+                name,
+                s"${schema.IndexType.VECTOR.name().toLowerCase(Locale.ROOT)} or ${schema.IndexType.FULLTEXT
+                    .name()
+                    .toLowerCase(Locale.ROOT)}",
                 index.getIndexType.name().toLowerCase(Locale.ROOT)
               )
             }
@@ -236,7 +308,7 @@ object QueryIndexRegistrator {
     private case class InternalIndexReference(
       token: collection.Seq[NameId],
       properties: collection.Seq[Int],
-      indexType: internal.schema.IndexType,
+      indexType: Option[internal.schema.IndexType],
       name: Option[String]
     )
     private case class InternalTokenReference(token: NameId)
@@ -261,7 +333,7 @@ object QueryIndexRegistrator {
       properties: collection.Seq[IndexedProperty]
     ): Int = unsupported
 
-    override def registerNamedQueryIndex(indexName: String, indexType: IndexType): Int = unsupported
+    override def registerNamedQueryIndex(indexName: String): Int = unsupported
 
     override def registerNamedQueryIndex(
       indexName: String,

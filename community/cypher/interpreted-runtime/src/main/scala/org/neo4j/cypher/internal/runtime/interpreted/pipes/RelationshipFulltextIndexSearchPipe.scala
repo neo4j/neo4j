@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.logical.plans.EntityFilterQueryExpression
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -41,7 +42,8 @@ abstract class RelationshipFulltextIndexSearchPipe(
   analyzerExpression: Option[Expression],
   skipExpression: Option[Expression],
   limitExpression: Expression,
-  queryIndexId: Int
+  queryIndexId: Int,
+  entityFilter: EntityFilterQueryExpression[Expression]
 ) extends Pipe {
 
   protected def newRow(
@@ -64,6 +66,7 @@ abstract class RelationshipFulltextIndexSearchPipe(
         state.query,
         index,
         queryString,
+        entityFilter,
         analyzerExpression,
         skipExpression,
         limitExpression,
@@ -182,13 +185,15 @@ abstract class BaseRelationshipFulltextIndexSearchPipe(
   analyzerExpression: Option[Expression],
   skipExpression: Option[Expression],
   limitExpression: Expression,
-  queryIndexId: Int
+  queryIndexId: Int,
+  entityFilter: EntityFilterQueryExpression[Expression]
 ) extends RelationshipFulltextIndexSearchPipe(
       queryStringExpression,
       analyzerExpression,
       skipExpression,
       limitExpression,
-      queryIndexId
+      queryIndexId,
+      entityFilter
     ) {
 
   private val relationshipWriter: Relationships.RelationshipWriter =
@@ -231,7 +236,8 @@ case class DirectedRelationshipFulltextIndexSearchPipe(
   analyzerExpression: Option[Expression],
   skipExpression: Option[Expression],
   limitExpression: Expression,
-  queryIndexId: Int
+  queryIndexId: Int,
+  entityFilter: EntityFilterQueryExpression[Expression]
 )(val id: Id = Id.INVALID_ID)
     extends BaseRelationshipFulltextIndexSearchPipe(
       ident,
@@ -242,7 +248,8 @@ case class DirectedRelationshipFulltextIndexSearchPipe(
       analyzerExpression,
       skipExpression,
       limitExpression,
-      queryIndexId
+      queryIndexId,
+      entityFilter
     ) {
 
   override protected def iteratorFrom(cursor: RelationshipValueIndexCursor): RelationshipFulltextSearchIterator = {
@@ -263,7 +270,8 @@ case class UndirectedRelationshipFulltextIndexSearchPipe(
   analyzerExpression: Option[Expression],
   skipExpression: Option[Expression],
   limitExpression: Expression,
-  queryIndexId: Int
+  queryIndexId: Int,
+  entityFilter: EntityFilterQueryExpression[Expression]
 )(val id: Id = Id.INVALID_ID)
     extends BaseRelationshipFulltextIndexSearchPipe(
       ident,
@@ -274,7 +282,8 @@ case class UndirectedRelationshipFulltextIndexSearchPipe(
       analyzerExpression,
       skipExpression,
       limitExpression,
-      queryIndexId
+      queryIndexId,
+      entityFilter
     ) {
 
   override protected def iteratorFrom(cursor: RelationshipValueIndexCursor): RelationshipFulltextSearchIterator =
@@ -287,6 +296,7 @@ object RelationshipFulltextIndexSearchPipe {
     query: QueryContext,
     index: IndexReadSession,
     queryString: AnyValue,
+    entityFilter: EntityFilterQueryExpression[Expression],
     analyzer: Option[Expression],
     skip: Option[Expression],
     limit: Expression,
@@ -297,9 +307,9 @@ object RelationshipFulltextIndexSearchPipe {
     if (l == 0) {
       RelationshipValueIndexCursor.EMPTY
     } else {
-      val (constraints, predicate) =
-        NodeFulltextIndexSearchPipe.fulltextSearchQuery(queryString, l, analyzer, skip, row, state)
-      query.relationshipFulltextIndexSeek(index, constraints, predicate)
+      val (constraints, predicate, filter) =
+        NodeFulltextIndexSearchPipe.fulltextSearchQuery(queryString, entityFilter, l, analyzer, skip, row, state)
+      query.relationshipFulltextIndexSeek(index, constraints, predicate, filter)
     }
   }
 }

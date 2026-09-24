@@ -2006,6 +2006,7 @@ object LogicalPlanToPlanBuilderString {
           analyzer,
           skip,
           limit,
+          entityFilter,
           argumentIds
         ) =>
         params(
@@ -2019,7 +2020,8 @@ object LogicalPlanToPlanBuilderString {
           skip.map(_.quoted.some).getOrElse(Param("None")),
           score.map(_.name.quoted).getOrElse("".quoted),
           argumentIds,
-          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex)
+          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),
+          entityFilter
         )
 
       case DirectedRelationshipFulltextIndexSearch(
@@ -2034,6 +2036,7 @@ object LogicalPlanToPlanBuilderString {
           limit,
           analyzer,
           skip,
+          entityFilter,
           argumentIds
         ) =>
         params(
@@ -2047,7 +2050,8 @@ object LogicalPlanToPlanBuilderString {
           skip.map(_.quoted.some).getOrElse(Param("None")),
           score.map(_.name.quoted).getOrElse("".quoted),
           argumentIds,
-          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex)
+          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),
+          entityFilter
         )
 
       case UndirectedRelationshipFulltextIndexSearch(
@@ -2062,6 +2066,7 @@ object LogicalPlanToPlanBuilderString {
           limit,
           analyzer,
           skip,
+          entityFilter,
           argumentIds
         ) =>
         params(
@@ -2075,7 +2080,8 @@ object LogicalPlanToPlanBuilderString {
           skip.map(_.quoted.some).getOrElse(Param("None")),
           score.map(_.name.quoted).getOrElse("".quoted),
           argumentIds,
-          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex)
+          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),
+          entityFilter
         )
 
       case RollUpApply(_, _, collectionName, variableToCollect) => params(collectionName, variableToCollect)

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
+import org.neo4j.cypher.internal.logical.plans.EntityFilterQueryExpression
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipFulltextIndexSearchPipe
@@ -35,13 +36,15 @@ abstract class BaseRelationshipFulltextIndexSearchSlottedPipe(
   analyzerExpression: Option[Expression],
   skipExpression: Option[Expression],
   limitExpression: Expression,
-  queryIndexId: Int
+  queryIndexId: Int,
+  entityFilter: EntityFilterQueryExpression[Expression]
 ) extends RelationshipFulltextIndexSearchPipe(
       queryStringExpression,
       analyzerExpression,
       skipExpression,
       limitExpression,
-      queryIndexId
+      queryIndexId,
+      entityFilter
     ) {
 
   private val relationshipWriter = Relationships.compileRelationshipWriter(relOffset, fromOffset, toOffset)
@@ -74,7 +77,8 @@ case class DirectedRelationshipFulltextIndexSearchSlottedPipe(
   analyzerExpression: Option[Expression],
   skipExpression: Option[Expression],
   limitExpression: Expression,
-  queryIndexId: Int
+  queryIndexId: Int,
+  entityFilter: EntityFilterQueryExpression[Expression]
 )(val id: Id = Id.INVALID_ID) extends BaseRelationshipFulltextIndexSearchSlottedPipe(
       relOffset,
       fromOffset,
@@ -84,7 +88,8 @@ case class DirectedRelationshipFulltextIndexSearchSlottedPipe(
       analyzerExpression,
       skipExpression,
       limitExpression,
-      queryIndexId
+      queryIndexId,
+      entityFilter
     ) {
 
   override protected def iteratorFrom(cursor: RelationshipValueIndexCursor): RelationshipFulltextSearchIterator = {
@@ -105,7 +110,8 @@ case class UndirectedRelationshipFulltextIndexSearchSlottedPipe(
   analyzerExpression: Option[Expression],
   skipExpression: Option[Expression],
   limitExpression: Expression,
-  queryIndexId: Int
+  queryIndexId: Int,
+  entityFilter: EntityFilterQueryExpression[Expression]
 )(val id: Id = Id.INVALID_ID) extends BaseRelationshipFulltextIndexSearchSlottedPipe(
       relOffset,
       fromOffset,
@@ -115,7 +121,8 @@ case class UndirectedRelationshipFulltextIndexSearchSlottedPipe(
       analyzerExpression,
       skipExpression,
       limitExpression,
-      queryIndexId
+      queryIndexId,
+      entityFilter
     ) {
 
   override protected def iteratorFrom(cursor: RelationshipValueIndexCursor): RelationshipFulltextSearchIterator =

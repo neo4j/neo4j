@@ -368,7 +368,7 @@ sealed abstract class LogicalPlan(idGen: IdGen)
             entityTypes,
             properties.map(_.propertyKeyToken)
           )
-      case NodeFulltextIndexSearch(idName, entityTypes, properties, _, _, _, _, _, _, _) =>
+      case NodeFulltextIndexSearch(idName, entityTypes, properties, _, _, _, _, _, _, _, _) =>
         acc => acc :+ SchemaSemanticNodeIndexUsage(idName, entityTypes, properties.map(_.propertyKeyToken))
       case UndirectedRelationshipFulltextIndexSearch(
           maybeIdName,
@@ -376,6 +376,7 @@ sealed abstract class LogicalPlan(idGen: IdGen)
           _,
           entityTypes,
           properties,
+          _,
           _,
           _,
           _,
@@ -396,6 +397,7 @@ sealed abstract class LogicalPlan(idGen: IdGen)
           _,
           entityTypes,
           properties,
+          _,
           _,
           _,
           _,
@@ -2697,6 +2699,7 @@ case class DirectedRelationshipFulltextIndexSearch(
   limit: Expression,
   analyzer: Option[Expression],
   skip: Option[Expression],
+  entityFilter: EntityFilterQueryExpression[Expression],
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
@@ -2706,7 +2709,9 @@ case class DirectedRelationshipFulltextIndexSearch(
     queryString.dependencies ++
       analyzer.map(_.dependencies).getOrElse(Set.empty) ++
       skip.map(_.dependencies).getOrElse(Set.empty) ++
-      limit.dependencies
+      limit.dependencies ++ entityFilter.expressions.flatMap(
+        _.dependencies
+      )
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipFulltextIndexSearch =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
@@ -2753,6 +2758,7 @@ case class UndirectedRelationshipFulltextIndexSearch(
   limit: Expression,
   analyzer: Option[Expression],
   skip: Option[Expression],
+  entityFilter: EntityFilterQueryExpression[Expression],
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
@@ -2762,7 +2768,9 @@ case class UndirectedRelationshipFulltextIndexSearch(
     queryString.dependencies ++
       analyzer.map(_.dependencies).getOrElse(Set.empty) ++
       skip.map(_.dependencies).getOrElse(Set.empty) ++
-      limit.dependencies
+      limit.dependencies ++ entityFilter.expressions.flatMap(
+        _.dependencies
+      )
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipFulltextIndexSearch =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
@@ -4432,6 +4440,7 @@ case class NodeFulltextIndexSearch(
   analyzer: Option[Expression],
   skip: Option[Expression],
   limit: Expression,
+  entityFilter: EntityFilterQueryExpression[Expression],
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen) extends NodeIndexLeafPlan(idGen) with StableLeafPlan {
   override val localAvailableSymbols: Set[LogicalVariable] = argumentIds + idName ++ score
@@ -4440,7 +4449,7 @@ case class NodeFulltextIndexSearch(
     queryString.dependencies ++
       analyzer.map(_.dependencies).getOrElse(Set.empty) ++
       skip.map(_.dependencies).getOrElse(Set.empty) ++
-      limit.dependencies
+      limit.dependencies ++ entityFilter.expressions.flatMap(_.dependencies)
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeFulltextIndexSearch =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))

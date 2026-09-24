@@ -4254,7 +4254,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
   }
 
   // entity filtering
-  test("should filter entities") {
+  test("should filter entities (directed)") {
     givenGraph {
       relationshipIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v")
       val write = tx.kernelTransaction().dataWrite
@@ -4290,6 +4290,48 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
     // then
     execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
       case rows: Seq[_] if rows.size == 13 && rows.forall {
+          case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
+          case _                     => false
+        } =>
+    })
+  }
+
+  test("should filter entities (undirected)") {
+    givenGraph {
+      relationshipIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val vectorToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      relationshipGraph(sizeHint, "Foo").zipWithIndex.foreach({
+        case (r, i) =>
+          write.relationshipSetProperty(r.getId, vectorToken, randomVector)
+          write.relationshipSetProperty(r.getId, idToken, longValue(i))
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("r.id AS id")
+      .apply()
+      .|.relationshipVectorIndexSearch(
+        "()-[r]-()",
+        typeNames = Seq("Foo"),
+        properties = Seq("v"),
+        indexName = "VectorIndex",
+        vector = s"${vectorAsCypherList(randomVector)}",
+        limit = "13",
+        entityFilter = matchEntities(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Map.empty[String, Expression], Map("c" -> collectDistinctIds(id(varFor("x")))))
+      .filter("x.id < 100")
+      .allRelationshipsScan("()-[x]->()")
+      .build()
+
+    // then
+    execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
+      case rows: Seq[_] if rows.size == 26 && rows.forall {
           case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
           case _                     => false
         } =>
@@ -4383,7 +4425,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
-  test("should filter entities using prepared entity filter") {
+  test("should filter entities using prepared entity filter (directed)") {
     givenGraph {
       relationshipIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v")
       val write = tx.kernelTransaction().dataWrite
@@ -4419,6 +4461,48 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
     // then
     execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
       case rows: Seq[_] if rows.size == 13 && rows.forall {
+          case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
+          case _                     => false
+        } =>
+    })
+  }
+
+  test("should filter entities using prepared entity filter (undirected)") {
+    givenGraph {
+      relationshipIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val vectorToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      relationshipGraph(sizeHint, "Foo").zipWithIndex.foreach({
+        case (r, i) =>
+          write.relationshipSetProperty(r.getId, vectorToken, randomVector)
+          write.relationshipSetProperty(r.getId, idToken, longValue(i))
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("r.id AS id")
+      .apply()
+      .|.relationshipVectorIndexSearch(
+        "()-[r]-()",
+        typeNames = Seq("Foo"),
+        properties = Seq("v"),
+        indexName = "VectorIndex",
+        vector = s"${vectorAsCypherList(randomVector)}",
+        limit = "13",
+        entityFilter = preparedEntityFilter(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Map.empty[String, Expression], Map("c" -> compileEntityFilter(id(varFor("x")), "VectorIndex")))
+      .filter("x.id < 100")
+      .allRelationshipsScan("()-[x]->()")
+      .build()
+
+    // then
+    execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
+      case rows: Seq[_] if rows.size == 26 && rows.forall {
           case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
           case _                     => false
         } =>

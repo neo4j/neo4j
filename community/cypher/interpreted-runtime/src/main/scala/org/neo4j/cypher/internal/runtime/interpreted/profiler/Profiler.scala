@@ -355,19 +355,21 @@ final class ProfilingPipeQueryContext(
   override def nodeFulltextIndexSeek(
     index: IndexReadSession,
     constraints: IndexQueryConstraints,
-    query: PropertyIndexQuery.FulltextSearchPredicate
+    query: PropertyIndexQuery.FulltextSearchPredicate,
+    filter: PropertyIndexQuery.EntityFilterPredicate
   ): NodeValueIndexCursor = {
     PipeTracer.onIndexSeek(index.reference())
-    trace(super.nodeFulltextIndexSeek(index, constraints, query))
+    trace(super.nodeFulltextIndexSeek(index, constraints, query, filter))
   }
 
   override def relationshipFulltextIndexSeek(
     index: IndexReadSession,
     constraints: IndexQueryConstraints,
-    query: PropertyIndexQuery.FulltextSearchPredicate
+    query: PropertyIndexQuery.FulltextSearchPredicate,
+    filter: PropertyIndexQuery.EntityFilterPredicate
   ): RelationshipValueIndexCursor = {
     PipeTracer.onIndexSeek(index.reference())
-    trace(super.relationshipFulltextIndexSeek(index, constraints, query))
+    trace(super.relationshipFulltextIndexSeek(index, constraints, query, filter))
   }
 
   override def nodeIndexScan(

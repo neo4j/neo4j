@@ -1253,6 +1253,7 @@ case class InterpretedPipeMapper(
           analyzer,
           skip,
           limit,
+          entityFilter,
           _
         ) =>
         NodeFulltextIndexSearchPipe(
@@ -1262,7 +1263,8 @@ case class InterpretedPipeMapper(
           analyzer.map(buildExpression),
           skip.map(buildExpression),
           buildExpression(limit),
-          indexRegistrator.registerNamedQueryIndex(indexName, IndexType.FULLTEXT, labels, properties)
+          indexRegistrator.registerNamedQueryIndex(indexName, IndexType.FULLTEXT, labels, properties),
+          entityFilter.map(buildExpression)
         )(id)
 
       case DirectedRelationshipVectorIndexSearch(
@@ -1331,6 +1333,7 @@ case class InterpretedPipeMapper(
           limit,
           analyzer,
           skip,
+          entityFilter,
           _
         ) =>
         DirectedRelationshipFulltextIndexSearchPipe(
@@ -1342,7 +1345,8 @@ case class InterpretedPipeMapper(
           analyzer.map(buildExpression),
           skip.map(buildExpression),
           buildExpression(limit),
-          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties)
+          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties),
+          entityFilter.map(buildExpression)
         )(id)
 
       case UndirectedRelationshipFulltextIndexSearch(
@@ -1357,6 +1361,7 @@ case class InterpretedPipeMapper(
           limit,
           analyzer,
           skip,
+          entityFilter,
           _
         ) =>
         UndirectedRelationshipFulltextIndexSearchPipe(
@@ -1368,7 +1373,8 @@ case class InterpretedPipeMapper(
           analyzer.map(buildExpression),
           skip.map(buildExpression),
           buildExpression(limit),
-          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties)
+          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties),
+          entityFilter.map(buildExpression)
         )(id)
 
       case s: ShowIndexes =>

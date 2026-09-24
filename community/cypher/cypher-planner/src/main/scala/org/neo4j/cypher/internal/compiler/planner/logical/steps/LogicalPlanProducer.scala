@@ -2265,6 +2265,8 @@ case class LogicalPlanProducer(
         analyzer = rewrittenAnalyzer,
         skip = rewrittenSkip,
         limit = rewrittenLimit,
+        // TODO: we only produce match all for now
+        entityFilter = MatchAllQueryExpression,
         argumentIds = allArgumentIds
       )(idGen)
 
@@ -2491,6 +2493,8 @@ case class LogicalPlanProducer(
             limit = rewrittenLimit,
             analyzer = rewrittenAnalyzer,
             skip = rewrittenSkip,
+            // TODO: we only produce match all for now
+            entityFilter = MatchAllQueryExpression,
             argumentIds = allArgumentIds
           )(idGen)
         case _ => DirectedRelationshipFulltextIndexSearch(
@@ -2505,6 +2509,8 @@ case class LogicalPlanProducer(
             limit = rewrittenLimit,
             analyzer = rewrittenAnalyzer,
             skip = rewrittenSkip,
+            // TODO: we only produce match all for now
+            entityFilter = MatchAllQueryExpression,
             argumentIds = allArgumentIds
           )(idGen)
       }

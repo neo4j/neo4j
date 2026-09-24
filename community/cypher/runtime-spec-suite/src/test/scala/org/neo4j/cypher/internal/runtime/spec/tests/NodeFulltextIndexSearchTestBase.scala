@@ -21,17 +21,22 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.matchEntities
+import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.preparedEntityFilter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.exceptions.Neo4jException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -1056,6 +1061,257 @@ abstract class NodeFulltextIndexSearchTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
     val expected = nodes.map(n => Array[Any](n))
     runtimeResult should beColumns("n").withRows(expected, listInAnyOrder = true)
+  }
+
+  // entity filtering
+  test("should filter entities") {
+    // node 0 gets an empty document, so only ids 1..99 (bounded by sizeHint) can match
+    val limit = math.min(13, math.min(100, sizeHint) - 1)
+    givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val docToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      nodeGraph(sizeHint, "Doc").zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, idToken, Values.longValue(i))
+          write.nodeSetProperty(
+            n.getId,
+            docToken,
+            Values.stringValue("a word is ".repeat(i))
+          )
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .apply()
+      .|.nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("v"),
+        indexName = "FulltextIndex",
+        queryString = "'word'",
+        limit = s"$limit",
+        entityFilter = matchEntities(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Map.empty[String, Expression], Map("c" -> collectDistinctIds(id(varFor("x")))))
+      .filter("x.id < 100")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
+      case rows: Seq[_] if rows.size == limit && rows.forall {
+          case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
+          case _                     => false
+        } =>
+    })
+  }
+
+  test("should fail if entities isn't a list of ids") {
+    givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val docToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      nodeGraph(sizeHint, "Doc").zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, idToken, Values.longValue(i))
+          write.nodeSetProperty(
+            n.getId,
+            docToken,
+            Values.stringValue("a word is ".repeat(i))
+          )
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .apply()
+      .|.nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("v"),
+        indexName = "FulltextIndex",
+        queryString = "'word'",
+        limit = "13",
+        entityFilter = matchEntities(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Seq.empty, Seq("collect('hello') AS c"))
+      .filter("x.id < 100")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    the[Neo4jException] thrownBy consume(execute(logicalQuery, runtime)) shouldBe gqlStatus(
+      GqlStatusInfoCodes.STATUS_22G03,
+      "error: data exception - invalid value type"
+    ).withCause(
+      GqlStatusInfoCodes.STATUS_22N01,
+      "error: data exception - invalid type.",
+      fuzzyStatusDescr = true
+    )
+  }
+
+  // entity filtering v2
+  test("should filter entities using prepared entity filter") {
+    // node 0 gets an empty document, so only ids 1..99 (bounded by sizeHint) can match
+    val limit = math.min(13, math.min(100, sizeHint) - 1)
+    givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val docToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      nodeGraph(sizeHint, "Doc").zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, idToken, Values.longValue(i))
+          write.nodeSetProperty(
+            n.getId,
+            docToken,
+            Values.stringValue("a word is ".repeat(i))
+          )
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .apply()
+      .|.nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("v"),
+        indexName = "FulltextIndex",
+        queryString = "'word'",
+        limit = s"$limit",
+        entityFilter = preparedEntityFilter(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Map.empty[String, Expression], Map("c" -> compileEntityFilter(id(varFor("x")), "FulltextIndex")))
+      .filter("x.id < 100")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
+      case rows: Seq[_] if rows.size == limit && rows.forall {
+          case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
+          case _                     => false
+        } =>
+    })
+  }
+
+  test("should fail if entities isn't a list of ids using prepared entity filter") {
+    givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val docToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      nodeGraph(sizeHint, "Doc").zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, idToken, Values.longValue(i))
+          write.nodeSetProperty(
+            n.getId,
+            docToken,
+            Values.stringValue("a word is ".repeat(i))
+          )
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .apply()
+      .|.nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("v"),
+        indexName = "FulltextIndex",
+        queryString = "'word'",
+        limit = "13",
+        entityFilter = preparedEntityFilter(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Seq.empty, Seq("collect('hello') AS c"))
+      .filter("x.id < 100")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    the[Neo4jException] thrownBy consume(execute(logicalQuery, runtime)) shouldBe gqlStatus(
+      GqlStatusInfoCodes.STATUS_22G03,
+      "error: data exception - invalid value type"
+    ).withCause(
+      GqlStatusInfoCodes.STATUS_22N01,
+      "error: data exception - invalid type.",
+      fuzzyStatusDescr = true
+    )
+  }
+
+  test("should filter entities using prepared entity filter after the indexed documents were updated") {
+    // every id in 0..99 is rewritten below to a matching document, bounded by sizeHint
+    val limit = math.min(13, math.min(100, sizeHint))
+    val nodes = givenGraph {
+      nodeIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val docToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      val nodes = nodeGraph(sizeHint, "Doc")
+      nodes.zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, idToken, Values.longValue(i))
+          write.nodeSetProperty(
+            n.getId,
+            docToken,
+            Values.stringValue("a word is ".repeat(i))
+          )
+      })
+      nodes
+    }
+
+    // ids 0..99 are exactly the candidates the filter below selects -- rewrite their documents in their own
+    // committed transaction, so the index holds a dead document for each of them
+    val write = tx.kernelTransaction().dataWrite
+    val docToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+    nodes.take(100).foreach(n => write.nodeSetProperty(n.getId, docToken, Values.stringValue("word word word word")))
+    restartTx()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .apply()
+      .|.nodeFulltextIndexSearch(
+        node = "n",
+        labelNames = Seq("Doc"),
+        properties = Seq("v"),
+        indexName = "FulltextIndex",
+        queryString = "'word'",
+        limit = s"$limit",
+        entityFilter = preparedEntityFilter(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Map.empty[String, Expression], Map("c" -> compileEntityFilter(id(varFor("x")), "FulltextIndex")))
+      .filter("x.id < 100")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
+      case rows: Seq[_] if rows.size == limit && rows.forall {
+          case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
+          case _                     => false
+        } =>
+    })
   }
 
 }

@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.matchEntities
+import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.preparedEntityFilter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -35,6 +38,7 @@ import org.neo4j.graphdb.schema.IndexSettingImpl
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -1155,5 +1159,184 @@ abstract class RelationshipFulltextIndexSearchTestBase[CONTEXT <: RuntimeContext
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = triples.flatMap { case (a, r, b) => Seq(Array[Any](a, r, b), Array[Any](b, r, a)) }
     runtimeResult should beColumns("a", "r", "b").withRows(expected, listInAnyOrder = true)
+  }
+
+  // entity filtering
+  test("should filter entities (directed)") {
+    // relationship 0 gets an empty document, so only ids 1..99 (bounded by sizeHint) can match
+    val limit = math.min(13, math.min(100, sizeHint) - 1)
+    givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val docToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      relationshipGraph(sizeHint, "Doc").zipWithIndex.foreach({
+        case (r, i) =>
+          write.relationshipSetProperty(r.getId, docToken, Values.stringValue("a word is ".repeat(i)))
+          write.relationshipSetProperty(r.getId, idToken, longValue(i))
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("r.id AS id")
+      .apply()
+      .|.relationshipFulltextIndexSearch(
+        "()-[r]->()",
+        typeNames = Seq("Doc"),
+        properties = Seq("v"),
+        indexName = "FulltextIndex",
+        queryString = "'word'",
+        limit = s"$limit",
+        entityFilter = matchEntities(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Map.empty[String, Expression], Map("c" -> collectDistinctIds(id(varFor("x")))))
+      .filter("x.id < 100")
+      .allRelationshipsScan("()-[x]->()")
+      .build()
+
+    // then
+    execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
+      case rows: Seq[_] if rows.size == limit && rows.forall {
+          case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
+          case _                     => false
+        } =>
+    })
+  }
+
+  test("should filter entities (undirected)") {
+    // relationship 0 gets an empty document, so only ids 1..99 (bounded by sizeHint) can match;
+    // an undirected search emits each match twice
+    val limit = math.min(13, math.min(100, sizeHint) - 1)
+    givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val docToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      relationshipGraph(sizeHint, "Doc").zipWithIndex.foreach({
+        case (r, i) =>
+          write.relationshipSetProperty(r.getId, docToken, Values.stringValue("a word is ".repeat(i)))
+          write.relationshipSetProperty(r.getId, idToken, longValue(i))
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("r.id AS id")
+      .apply()
+      .|.relationshipFulltextIndexSearch(
+        "()-[r]-()",
+        typeNames = Seq("Doc"),
+        properties = Seq("v"),
+        indexName = "FulltextIndex",
+        queryString = "'word'",
+        limit = s"$limit",
+        entityFilter = matchEntities(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Map.empty[String, Expression], Map("c" -> collectDistinctIds(id(varFor("x")))))
+      .filter("x.id < 100")
+      .allRelationshipsScan("()-[x]->()")
+      .build()
+
+    // then
+    execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
+      case rows: Seq[_] if rows.size == 2 * limit && rows.forall {
+          case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
+          case _                     => false
+        } =>
+    })
+  }
+
+  test("should filter entities using prepared entity filter (directed)") {
+    // relationship 0 gets an empty document, so only ids 1..99 (bounded by sizeHint) can match
+    val limit = math.min(13, math.min(100, sizeHint) - 1)
+    givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val docToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      relationshipGraph(sizeHint, "Doc").zipWithIndex.foreach({
+        case (r, i) =>
+          write.relationshipSetProperty(r.getId, docToken, Values.stringValue("a word is ".repeat(i)))
+          write.relationshipSetProperty(r.getId, idToken, longValue(i))
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("r.id AS id")
+      .apply()
+      .|.relationshipFulltextIndexSearch(
+        "()-[r]->()",
+        typeNames = Seq("Doc"),
+        properties = Seq("v"),
+        indexName = "FulltextIndex",
+        queryString = "'word'",
+        limit = s"$limit",
+        entityFilter = preparedEntityFilter(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Map.empty[String, Expression], Map("c" -> compileEntityFilter(id(varFor("x")), "FulltextIndex")))
+      .filter("x.id < 100")
+      .allRelationshipsScan("()-[x]->()")
+      .build()
+
+    // then
+    execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
+      case rows: Seq[_] if rows.size == limit && rows.forall {
+          case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
+          case _                     => false
+        } =>
+    })
+  }
+
+  test("should filter entities using prepared entity filter (undirected)") {
+    // relationship 0 gets an empty document, so only ids 1..99 (bounded by sizeHint) can match;
+    // an undirected search emits each match twice
+    val limit = math.min(13, math.min(100, sizeHint) - 1)
+    givenGraph {
+      relationshipIndex("FulltextIndex", IndexType.FULLTEXT, Seq("Doc"), "v")
+      val write = tx.kernelTransaction().dataWrite
+      val docToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("v")
+      val idToken = tx.kernelTransaction().token().propertyKeyGetOrCreateForName("id")
+      relationshipGraph(sizeHint, "Doc").zipWithIndex.foreach({
+        case (r, i) =>
+          write.relationshipSetProperty(r.getId, docToken, Values.stringValue("a word is ".repeat(i)))
+          write.relationshipSetProperty(r.getId, idToken, longValue(i))
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("r.id AS id")
+      .apply()
+      .|.relationshipFulltextIndexSearch(
+        "()-[r]-()",
+        typeNames = Seq("Doc"),
+        properties = Seq("v"),
+        indexName = "FulltextIndex",
+        queryString = "'word'",
+        limit = s"$limit",
+        entityFilter = preparedEntityFilter(varFor("c")),
+        argumentIds = Set("c")
+      )
+      .aggregation(Map.empty[String, Expression], Map("c" -> compileEntityFilter(id(varFor("x")), "FulltextIndex")))
+      .filter("x.id < 100")
+      .allRelationshipsScan("()-[x]->()")
+      .build()
+
+    // then
+    execute(logicalQuery, runtime) should beColumns("id").withRows(matching {
+      case rows: Seq[_] if rows.size == 2 * limit && rows.forall {
+          case Array(i: NumberValue) => i.longValue() >= 0 && i.longValue() < 100
+          case _                     => false
+        } =>
+    })
   }
 }

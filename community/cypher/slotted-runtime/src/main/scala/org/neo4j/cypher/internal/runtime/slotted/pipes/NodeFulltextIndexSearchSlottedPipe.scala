@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
+import org.neo4j.cypher.internal.logical.plans.EntityFilterQueryExpression
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.BaseNodeFulltextIndexSearchPipe
@@ -33,14 +34,16 @@ case class NodeFulltextIndexSearchSlottedPipe(
   analyzerExpression: Option[Expression],
   skipExpression: Option[Expression],
   limitExpression: Expression,
-  queryIndexId: Int
+  queryIndexId: Int,
+  entityFilter: EntityFilterQueryExpression[Expression]
 )(val id: Id = Id.INVALID_ID)
     extends BaseNodeFulltextIndexSearchPipe(
       queryStringExpression,
       analyzerExpression,
       skipExpression,
       limitExpression,
-      queryIndexId
+      queryIndexId,
+      entityFilter
     ) {
 
   private[this] val withScore: Boolean = score.isDefined

@@ -489,6 +489,7 @@ class SlottedPipeMapper(
           analyzer,
           skip,
           limit,
+          entityFilter,
           _
         ) =>
         NodeFulltextIndexSearchSlottedPipe(
@@ -498,7 +499,8 @@ class SlottedPipeMapper(
           analyzer.map(convertExpressions),
           skip.map(convertExpressions),
           convertExpressions(limit),
-          indexRegistrator.registerNamedQueryIndex(indexName, IndexType.FULLTEXT, labels, properties)
+          indexRegistrator.registerNamedQueryIndex(indexName, IndexType.FULLTEXT, labels, properties),
+          entityFilter.map(convertExpressions)
         )(id)
 
       case NodeIndexSeek(column, label, properties, valueExpr, _, indexOrder, indexType, _) =>
@@ -1201,6 +1203,7 @@ class SlottedPipeMapper(
           limit,
           analyzer,
           skip,
+          entityFilter,
           _
         ) =>
         DirectedRelationshipFulltextIndexSearchSlottedPipe(
@@ -1212,7 +1215,8 @@ class SlottedPipeMapper(
           analyzer.map(convertExpressions),
           skip.map(convertExpressions),
           convertExpressions(limit),
-          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties)
+          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties),
+          entityFilter.map(convertExpressions)
         )(id)
 
       case UndirectedRelationshipFulltextIndexSearch(
@@ -1227,6 +1231,7 @@ class SlottedPipeMapper(
           limit,
           analyzer,
           skip,
+          entityFilter,
           _
         ) =>
         UndirectedRelationshipFulltextIndexSearchSlottedPipe(
@@ -1238,7 +1243,8 @@ class SlottedPipeMapper(
           analyzer.map(convertExpressions),
           skip.map(convertExpressions),
           convertExpressions(limit),
-          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties)
+          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties),
+          entityFilter.map(convertExpressions)
         )(id)
 
       case _: Argument =>

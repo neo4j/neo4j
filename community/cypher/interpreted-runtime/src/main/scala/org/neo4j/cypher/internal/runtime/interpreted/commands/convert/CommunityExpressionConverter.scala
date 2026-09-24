@@ -205,7 +205,6 @@ import org.neo4j.cypher.internal.util.symbols.Integer32Type
 import org.neo4j.cypher.internal.util.symbols.Integer8Type
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.exceptions.InternalException
-import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarity
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values
@@ -575,7 +574,7 @@ case class CommunityExpressionConverter(
       case e: internal.expressions.CompileEntityFilter =>
         commands.expressions.CompileEntityFilter(
           self.toCommandExpression(id, e.arguments.head),
-          indexRegistrator.registerNamedQueryIndex(e.indexName, IndexType.VECTOR, Seq.empty, Seq.empty)
+          indexRegistrator.registerNamedQueryIndex(e.indexName)
         )
       case e: DefaultValueLiteral => commands.expressions.Literal(e.value)
       case e: RuntimeConstant =>
