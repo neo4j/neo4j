@@ -37,6 +37,4 @@ public interface TokenIndexIdLayout {
      * @return first entity id of the range
      */
     long firstIdOfRange(long idRange);
-
-    long roundUp(long sizeHint);
 }

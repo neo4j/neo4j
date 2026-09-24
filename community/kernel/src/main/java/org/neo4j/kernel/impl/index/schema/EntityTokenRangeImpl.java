@@ -51,10 +51,10 @@ public class EntityTokenRangeImpl implements EntityTokenRange {
         this.idRange = idRange;
         this.tokens = tokens;
         this.entityType = entityType;
-        int rangeSize = tokens.length;
         this.lowRangeId = idLayout.firstIdOfRange(idRange);
         this.highRangeId = idLayout.firstIdOfRange(idRange + 1) - 1;
 
+        int rangeSize = (int) Math.min(highRangeId - lowRangeId + 1, tokens.length);
         this.entities = new long[rangeSize];
         for (int i = 0; i < rangeSize; i++) {
             entities[i] = lowRangeId + i;

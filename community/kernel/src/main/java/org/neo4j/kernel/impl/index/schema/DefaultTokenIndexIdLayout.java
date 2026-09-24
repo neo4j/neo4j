@@ -40,9 +40,4 @@ public class DefaultTokenIndexIdLayout implements TokenIndexIdLayout {
     public long firstIdOfRange(long idRange) {
         return idRange << RANGE_SHIFT;
     }
-
-    @Override
-    public long roundUp(long sizeHint) {
-        return ((sizeHint + RANGE_SIZE - 1) / RANGE_SIZE) * RANGE_SIZE;
-    }
 }
