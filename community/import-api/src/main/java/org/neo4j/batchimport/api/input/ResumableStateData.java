@@ -26,10 +26,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * All data that makes up a resumable import checkpoint, and the serialization and deserialization logic for it.
+ * Note that the serialization is **not versioned**. Any changes to this protocol can be made without needing
+ * to be backwards compatible. Checkpoints are only valid for the same version of Neo4j that created them.
+ */
 public record ResumableStateData(
         byte stepOrdinal,
         long badCollectedEntriesCount,
         long problemHandlerPosition,
+        ProgressReportData progressReport,
         List<RelationshipsIrRangeData> relationshipsIrRanges,
         byte relationshipIdCountersSnapshot) {
 
@@ -48,6 +54,10 @@ public record ResumableStateData(
         checkpointStream.writeByte(stepOrdinal);
         checkpointStream.writeLong(badCollectedEntriesCount);
         checkpointStream.writeLong(problemHandlerPosition);
+        checkpointStream.writeBoolean(progressReport != null);
+        if (progressReport != null) {
+            progressReport.writeDataToOutputStream(checkpointStream);
+        }
         checkpointStream.writeInt(relationshipsIrRanges.size());
         for (RelationshipsIrRangeData relationshipsIrRange : relationshipsIrRanges) {
             relationshipsIrRange.writeDataToOutputStream(checkpointStream);
@@ -59,6 +69,8 @@ public record ResumableStateData(
         byte stepOrdinal = inputStream.readByte();
         long collectorBadEntries = inputStream.readLong();
         long problemHandlerPosition = inputStream.readLong();
+        boolean hasProgressReport = inputStream.readBoolean();
+        ProgressReportData progressReport = hasProgressReport ? ProgressReportData.fromInputStream(inputStream) : null;
         int numRanges = inputStream.readInt();
         List<RelationshipsIrRangeData> relationshipsIrRanges = new ArrayList<>(numRanges);
         for (int i = 0; i < numRanges; i++) {
@@ -69,6 +81,7 @@ public record ResumableStateData(
                 stepOrdinal,
                 collectorBadEntries,
                 problemHandlerPosition,
+                progressReport,
                 relationshipsIrRanges,
                 relationshipIdCountersSnapshot);
     }
@@ -79,6 +92,7 @@ public record ResumableStateData(
         private byte stepOrdinal;
         private long badCollectedEntriesCount;
         private long problemHandlerPosition;
+        private ProgressReportData progressReport;
         private byte relationshipIdCountersSnapshot;
 
         public ResumableStateDataBuilder setStepOrdinal(byte stepOrdinal) {
@@ -93,6 +107,11 @@ public record ResumableStateData(
 
         public ResumableStateDataBuilder setProblemHandlerPosition(long problemHandlerPosition) {
             this.problemHandlerPosition = problemHandlerPosition;
+            return this;
+        }
+
+        public ResumableStateDataBuilder setProgressReport(ProgressReportData progressReport) {
+            this.progressReport = progressReport;
             return this;
         }
 
@@ -111,6 +130,7 @@ public record ResumableStateData(
                     stepOrdinal,
                     badCollectedEntriesCount,
                     problemHandlerPosition,
+                    progressReport,
                     relationshipsIrRanges,
                     relationshipIdCountersSnapshot);
         }

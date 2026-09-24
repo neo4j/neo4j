@@ -29,6 +29,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.RepeatedTest;
+import org.neo4j.batchimport.api.DetailedProgressReport.Stats;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
@@ -57,7 +58,12 @@ class ResumableStateDataTest {
         }
 
         return new ResumableStateData(
-                randByte(), random.nextLong(), random.nextLong(), relationshipIrRanges, randByte());
+                randByte(),
+                random.nextLong(),
+                random.nextLong(),
+                randomProgressReportData(),
+                relationshipIrRanges,
+                randByte());
     }
 
     private RelationshipsIrRangeData randomRelationshipsIrRangeData() {
@@ -69,6 +75,39 @@ class ResumableStateDataTest {
         }
         return new RelationshipsIrRangeData(
                 hasRelationshipsInPhase, random.nextBoolean(), random.nextLong(), random.nextBoolean());
+    }
+
+    private ProgressReportData randomProgressReportData() {
+        return new ProgressReportData(
+                randomStats(),
+                randomStats(),
+                randomStatsMap(),
+                randomStatsMap(),
+                randomStats(),
+                randomStats(),
+                randomStatsMap(),
+                randomStatsMap(),
+                randomStats(),
+                randomStats(),
+                randomStatsMap(),
+                randomStatsMap(),
+                random.nextLong(),
+                random.nextLong(),
+                random.nextLong(),
+                random.nextLong());
+    }
+
+    private Stats randomStats() {
+        return new Stats(random.nextLong(), random.nextLong(), 0, 0);
+    }
+
+    private Map<Integer, Stats> randomStatsMap() {
+        int size = random.nextInt(5);
+        Map<Integer, Stats> map = new java.util.HashMap<>();
+        for (int i = 0; i < size; i++) {
+            map.put(random.nextInt(100), randomStats());
+        }
+        return map;
     }
 
     private byte randByte() {

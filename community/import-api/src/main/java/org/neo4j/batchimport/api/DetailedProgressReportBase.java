@@ -28,6 +28,10 @@ import java.util.function.IntFunction;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.batchimport.api.DetailedProgressReport.Stats;
 import org.neo4j.batchimport.api.input.ApplicationMode;
+import org.neo4j.batchimport.api.input.ProgressReportData;
+import org.neo4j.batchimport.api.input.ResumableState;
+import org.neo4j.batchimport.api.input.ResumableStateData;
+import org.neo4j.batchimport.api.input.ResumableStateData.ResumableStateDataBuilder;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.FallbackTokenNameLookup;
 import org.neo4j.common.TokenNameLookup;
@@ -37,7 +41,7 @@ import org.neo4j.internal.schema.SchemaUserDescription;
  * Class for gathering information while import is running, into mutable state rich enough to be able to
  * generate {@link DetailedProgressReport} from.
  */
-public class DetailedProgressReportBase {
+public class DetailedProgressReportBase implements ResumableState {
     private final MutableStats nodeStats = new MutableStats();
     private final MutableStats relationshipStats = new MutableStats();
     private final PerTokenMutableStats nodePerLabelStats = new PerTokenMutableStats();
@@ -173,7 +177,7 @@ public class DetailedProgressReportBase {
         }
     }
 
-    public DetailedProgressReport snapshot() {
+    public DetailedProgressReport.Standard snapshot() {
         return new DetailedProgressReport.Standard(
                 estimatedTotalNumberOfNodes,
                 estimatedTotalNumberOfRelationships,
@@ -194,7 +198,7 @@ public class DetailedProgressReportBase {
                 schemaTimer.snapshot());
     }
 
-    public DetailedProgressReport skidbladnirSnapshot() {
+    public DetailedProgressReport.Skidbladnir skidbladnirSnapshot() {
         return new DetailedProgressReport.Skidbladnir(
                 estimatedTotalNumberOfNodes,
                 estimatedTotalNumberOfRelationships,
@@ -216,6 +220,56 @@ public class DetailedProgressReportBase {
                 schemaTimer.snapshot());
     }
 
+    @Override
+    public void checkpoint(ResumableStateDataBuilder resumableStateDataBuilder) {
+        resumableStateDataBuilder.setProgressReport(new ProgressReportData(
+                nodeStats.snapshot(),
+                relationshipStats.snapshot(),
+                nodePerLabelStats.snapshotById(),
+                relationshipPerTypeStats.snapshotById(),
+                nodeIndexStats.snapshot(),
+                nodeConstraintStats.snapshot(),
+                nodeIndexPerLabelStats.snapshotById(),
+                nodeConstraintPerLabelStats.snapshotById(),
+                relationshipIndexStats.snapshot(),
+                relationshipConstraintStats.snapshot(),
+                relationshipIndexPerTypeStats.snapshotById(),
+                relationshipConstraintPerTypeStats.snapshotById(),
+                nodeIdMappingTimer.snapshot().toNanos(),
+                relationshipRangeDivisionTimer.snapshot().toNanos(),
+                storeApplyingTimer.snapshot().toNanos(),
+                schemaTimer.snapshot().toNanos()));
+    }
+
+    @Override
+    public void resumeFromCheckpoint(ResumableStateData resumableStateData) {
+        ProgressReportData report = resumableStateData.progressReport();
+        if (report == null) {
+            return;
+        }
+        nodeStats.restore(report.nodeStats());
+        relationshipStats.restore(report.relationshipStats());
+        nodePerLabelStats.restore(report.nodePerLabelStats());
+        relationshipPerTypeStats.restore(report.relationshipPerTypeStats());
+        nodeIndexStats.restore(report.nodeIndexStats());
+        nodeConstraintStats.restore(report.nodeConstraintStats());
+        nodeIndexPerLabelStats.restore(report.nodeIndexPerLabelStats());
+        nodeConstraintPerLabelStats.restore(report.nodeConstraintPerLabelStats());
+        relationshipIndexStats.restore(report.relationshipIndexStats());
+        relationshipConstraintStats.restore(report.relationshipConstraintStats());
+        relationshipIndexPerTypeStats.restore(report.relationshipIndexPerTypeStats());
+        relationshipConstraintPerTypeStats.restore(report.relationshipConstraintPerTypeStats());
+        nodeIdMappingTimer.restore(Duration.ofNanos(report.nodeIdMappingDurationNanos()));
+        relationshipRangeDivisionTimer.restore(Duration.ofNanos(report.relationshipRangeDivisionDurationNanos()));
+        storeApplyingTimer.restore(Duration.ofNanos(report.storeApplyingDurationNanos()));
+        schemaTimer.restore(Duration.ofNanos(report.schemaImportDurationNanos()));
+    }
+
+    @Override
+    public void resumeFromStart() {
+        // Nothing to do
+    }
+
     public record MutableStats(
             LongAdder numProcessed, LongAdder numCreated, LongAdder numUpdated, LongAdder numDeleted) {
         public MutableStats() {
@@ -225,6 +279,21 @@ public class DetailedProgressReportBase {
         public Stats snapshot() {
             return new Stats(
                     numProcessed.longValue(), numCreated.longValue(), numUpdated.longValue(), numDeleted.longValue());
+        }
+
+        /**
+         * Restores checkpointed counts, replacing whatever was counted so far. Counts registered after the
+         * restore accumulate on top.
+         */
+        void restore(Stats stats) {
+            numProcessed.reset();
+            numProcessed.add(stats.processed());
+            numCreated.reset();
+            numCreated.add(stats.created());
+            numUpdated.reset();
+            numUpdated.add(stats.updated());
+            numDeleted.reset();
+            numDeleted.add(stats.deleted());
         }
 
         /**
@@ -258,8 +327,12 @@ public class DetailedProgressReportBase {
     public static class Timer {
         private volatile long start;
         private volatile long end;
+        private volatile Duration restored;
 
         public void start() {
+            // Re-running the timed work replaces whatever duration a resume carried over
+            this.restored = null;
+            this.end = 0;
             this.start = System.nanoTime();
         }
 
@@ -267,10 +340,20 @@ public class DetailedProgressReportBase {
             this.end = System.nanoTime();
         }
 
+        /**
+         * Carries a duration over from a previous attempt, making {@link #snapshot()} return it until
+         * {@link #start()} is called again. A step resuming mid-work from a checkpoint would instead need
+         * to add its remaining time to the restored duration, which this class does not support yet.
+         */
+        void restore(Duration duration) {
+            this.restored = duration;
+        }
+
         public Duration snapshot() {
             long start = this.start;
             if (start == 0) {
-                return Duration.ZERO;
+                Duration restored = this.restored;
+                return restored != null ? restored : Duration.ZERO;
             }
 
             long end = this.end;
@@ -323,6 +406,22 @@ public class DetailedProgressReportBase {
             higherIdStats.forEach(
                     (tokenId, mutableStats) -> snapshot.put(tokenNameLookup.apply(tokenId), mutableStats.snapshot()));
             return snapshot;
+        }
+
+        private Map<Integer, Stats> snapshotById() {
+            Map<Integer, Stats> snapshot = new HashMap<>();
+            for (int tokenId = 0; tokenId < lowIdStats.length; tokenId++) {
+                var stats = lowIdStats[tokenId];
+                if (stats.numProcessed.sum() > 0) {
+                    snapshot.put(tokenId, stats.snapshot());
+                }
+            }
+            higherIdStats.forEach((tokenId, mutableStats) -> snapshot.put(tokenId, mutableStats.snapshot()));
+            return snapshot;
+        }
+
+        private void restore(Map<Integer, Stats> stats) {
+            stats.forEach((tokenId, tokenStats) -> forToken(tokenId).restore(tokenStats));
         }
 
         private MutableStats forToken(int tokenId) {
