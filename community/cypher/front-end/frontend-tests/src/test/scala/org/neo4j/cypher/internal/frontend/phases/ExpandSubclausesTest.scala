@@ -357,6 +357,27 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
     )
   }
 
+  test(
+    "RETURN: a declaration hidden behind a CALL inside a COUNT subquery is not confused with the outer grouping key"
+  ) {
+    assertRewritten(
+      """WITH 1 AS z
+        |RETURN COUNT { CALL () { WITH 2 AS z RETURN z } RETURN z } AS c, count(*) AS cnt
+        |  GROUP BY z""".stripMargin,
+      """WITH 1 AS z
+        |WITH z AS `  UNNAMED0`, count(*) AS `  UNNAMED1`
+        |RETURN COUNT {
+        |  CALL () {
+        |    WITH 2 AS z
+        |    RETURN z AS z
+        |  }
+        |  RETURN z AS z
+        |} AS c, `  UNNAMED1` AS cnt""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
   test("RETURN: inset complex grouping key inside a COUNT subquery uses the hoisted alias") {
     assertRewritten(
       """WITH {p: [1, 2, 3]} AS a

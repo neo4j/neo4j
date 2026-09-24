@@ -68,6 +68,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionDynamicLeafExpression
@@ -354,7 +355,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                   "Variable length relationships cannot be part of a quantified path pattern.",
                   rel.position
                 ))
-            case _: FullSubqueryExpression => acc => SkipChildren(acc)
+            case _: SubqueryExpression => acc => SkipChildren(acc)
           }
 
         def checkRelCount: SemanticCheck =

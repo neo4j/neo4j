@@ -65,7 +65,6 @@ import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.Range
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
@@ -497,7 +496,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
           }
           case _: FullSubqueryExpression => acc => SkipChildren(acc)
           case exp: Expression => {
-            case ByTable if containsAggregate(exp) =>
+            case ByTable if exp.containsAggregate =>
               SkipChildren(RequiresCollecting)
             case acc => TraverseChildren(acc)
           }

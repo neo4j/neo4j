@@ -1374,6 +1374,36 @@ class LocalCallableResolutionTest extends CypherFunSuite with TestName with AstC
   }
 
   test(
+    """DEFINE PROCEDURE checker(n) {
+      |  DEFINE FUNCTION fun(n) {
+      |    DEFINE PROCEDURE set(o) {
+      |      SET o:B
+      |      FINISH
+      |    }
+      |
+      |
+      |    CALL set(n)
+      |    RETURN n LIMIT 1
+      |  }
+      |
+      |  DEFINE FUNCTION outer(n) = [(n)-->(m) | fun(m)]
+      |
+      |  RETURN outer(n) AS r
+      |}
+      |
+      |MATCH (a:A)
+      |CALL checker(a) YIELD r
+      |RETURN r
+      |""".stripMargin
+  ) {
+    // containsUpdatesInExpressionTree keeps digging into the pattern comprehension and finds fun(m)
+    cypher25OnwardsTestName.hasResolvedLocalCallWithBodyContainsUpdates(
+      "set" -> true,
+      "checker" -> true
+    )
+  }
+
+  test(
     """DEFINE PROCEDURE foo(n) {
       |  DEFINE PROCEDURE bar(o) {
       |    DEFINE PROCEDURE set(o) {

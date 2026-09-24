@@ -75,6 +75,15 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     )
   }
 
+  test("Rewrites pattern comprehension in CREATE") {
+    assertRewritten(
+      "CREATE (a {p: [(b)-->(c) | c.name]})",
+      """WITH [(b)-->(c) | c.name] AS `  UNNAMED0`
+        |CREATE (a {p: `  UNNAMED0`})""".stripMargin,
+      additionalExpectedAstUpdates = additionalExpectedAstUpdates
+    )
+  }
+
   test("Rewrites subquery expression in dynamic labels in CREATE") {
     assertRewritten(
       "CREATE (a:$(COLLECT { MATCH (b) RETURN b.name }))",

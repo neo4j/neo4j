@@ -19,11 +19,13 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 
 /**
- * Trait for all expressions that evaluate full subqueries.
- * E.g Count, Collect and Exists.
+ * Trait for all expressions that evaluate full subqueries: [[org.neo4j.cypher.internal.ast.ExistsExpression]],
+ * [[org.neo4j.cypher.internal.ast.CountExpression]] and [[org.neo4j.cypher.internal.ast.CollectExpression]].
  */
 trait FullSubqueryExpression extends SubqueryExpression {
   def query: Query
 
   def withQuery(query: Query): FullSubqueryExpression
+
+  override def introducedVariablesShadow: Boolean = false
 }

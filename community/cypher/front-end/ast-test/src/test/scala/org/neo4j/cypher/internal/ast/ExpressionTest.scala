@@ -181,6 +181,202 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     ))
   }
 
+  test("occurrences should not find declarations hidden behind a non-importing CALL subquery") {
+    val a1 = varFor("a")
+    val a2 = varFor("a")
+    // EXISTS { WITH a AS x CALL () { WITH 1 AS a RETURN a AS y } RETURN x, y }
+    val exists = ExistsExpression(singleQuery(
+      with_(AliasedReturnItem(a1, varFor("x"))(pos)),
+      scopeClauseSubqueryCall(
+        isImportingAll = false,
+        importedVariables = Seq.empty,
+        with_(aliasedReturnItem(literalInt(1), "a")),
+        return_(aliasedReturnItem("a", "y"))
+      ),
+      return_(variableReturnItem("x"), variableReturnItem("y"))
+    ))(pos, Some(Set(varFor("x"), varFor("a"), varFor("y"))), Some(Set(a2)))
+
+    exists.occurrences(varFor("a")) should equal(Set(
+      Ref(a1),
+      Ref(a2)
+    ))
+  }
+
+  test("occurrences should not find declarations hidden behind an importing WITH subquery") {
+    val a1 = varFor("a")
+    val a2 = varFor("a")
+    // EXISTS { WITH a AS x CALL { WITH x WITH 1 AS a RETURN a AS y } RETURN x, y }
+    val exists = ExistsExpression(singleQuery(
+      with_(AliasedReturnItem(a1, varFor("x"))(pos)),
+      importingWithSubqueryCall(
+        with_(variableReturnItem("x")),
+        with_(aliasedReturnItem(literalInt(1), "a")),
+        return_(aliasedReturnItem("a", "y"))
+      ),
+      return_(variableReturnItem("x"), variableReturnItem("y"))
+    ))(pos, Some(Set(varFor("x"), varFor("a"), varFor("y"))), Some(Set(a2)))
+
+    exists.occurrences(varFor("a")) should equal(Set(
+      Ref(a1),
+      Ref(a2)
+    ))
+  }
+
+  test("occurrences should find occurrences behind a CALL subquery that imports the variable") {
+    val a1 = varFor("a")
+    val a2 = varFor("a")
+    val a3 = varFor("a")
+    // EXISTS { CALL (a) { RETURN a AS y } RETURN y }
+    val exists = ExistsExpression(singleQuery(
+      scopeClauseSubqueryCall(
+        isImportingAll = false,
+        importedVariables = Seq(a1),
+        return_(AliasedReturnItem(a2, varFor("y"))(pos))
+      ),
+      return_(variableReturnItem("y"))
+    ))(pos, Some(Set(varFor("y"))), Some(Set(a3)))
+
+    exists.occurrences(varFor("a")) should equal(Set(
+      Ref(a1),
+      Ref(a2),
+      Ref(a3)
+    ))
+  }
+
+  test("occurrences should find occurrences behind a CALL subquery that imports all variables") {
+    val a1 = varFor("a")
+    val a2 = varFor("a")
+    // EXISTS { CALL (*) { RETURN a AS y } RETURN y }
+    val exists = ExistsExpression(singleQuery(
+      scopeClauseSubqueryCall(
+        isImportingAll = true,
+        importedVariables = Seq.empty,
+        return_(AliasedReturnItem(a1, varFor("y"))(pos))
+      ),
+      return_(variableReturnItem("y"))
+    ))(pos, Some(Set(varFor("y"))), Some(Set(a2)))
+
+    exists.occurrences(varFor("a")) should equal(Set(
+      Ref(a1),
+      Ref(a2)
+    ))
+  }
+
+  test("occurrences should find occurrences in an importing WITH that imports the variable") {
+    val a1 = varFor("a")
+    val a2 = varFor("a")
+    val a3 = varFor("a")
+    // EXISTS { CALL { WITH a RETURN a AS y } RETURN y }
+    val exists = ExistsExpression(singleQuery(
+      importingWithSubqueryCall(
+        with_(returnItem(a1, "a")),
+        return_(AliasedReturnItem(a2, varFor("y"))(pos))
+      ),
+      return_(variableReturnItem("y"))
+    ))(pos, Some(Set(varFor("y"))), Some(Set(a3)))
+
+    exists.occurrences(varFor("a")) should equal(Set(
+      Ref(a1),
+      Ref(a2),
+      Ref(a3)
+    ))
+  }
+
+  test("occurrences should not find a UNION branch's own declaration when only the other branch imports the variable") {
+    val a1 = varFor("a")
+    val a2 = varFor("a")
+    val a3 = varFor("a")
+    val aUnrelated = varFor("a")
+    // EXISTS { CALL { WITH a RETURN a AS r UNION UNWIND [1] AS a RETURN a AS r } RETURN r }
+    val importingBranch = singleQuery(
+      with_(returnItem(a1, "a")),
+      return_(AliasedReturnItem(a2, varFor("r"))(pos))
+    )
+    val unrelatedBranch = singleQuery(
+      unwind(listOf(literalInt(1)), aUnrelated),
+      return_(AliasedReturnItem(aUnrelated, varFor("r"))(pos))
+    )
+    val exists = ExistsExpression(singleQuery(
+      importingWithSubqueryCall(unionAll(importingBranch, unrelatedBranch)),
+      return_(variableReturnItem("r"))
+    ))(pos, Some(Set(varFor("r"))), Some(Set(a3)))
+
+    exists.occurrences(varFor("a")) should equal(Set(
+      Ref(a1),
+      Ref(a2),
+      Ref(a3)
+    ))
+  }
+
+  test("occurrences should find occurrences behind an importing WITH * that imports all variables") {
+    val a1 = varFor("a")
+    val a2 = varFor("a")
+    // EXISTS { CALL { WITH * RETURN a AS y } RETURN y }
+    val exists = ExistsExpression(singleQuery(
+      importingWithSubqueryCall(
+        withAll(),
+        return_(AliasedReturnItem(a1, varFor("y"))(pos))
+      ),
+      return_(variableReturnItem("y"))
+    ))(pos, Some(Set(varFor("y"))), Some(Set(a2)))
+
+    exists.occurrences(varFor("a")) should equal(Set(
+      Ref(a1),
+      Ref(a2)
+    ))
+  }
+
+  test("occurrences should find occurrences in the IN TRANSACTIONS parameters of a skipped CALL subquery") {
+    val a1 = varFor("a")
+    val a2 = varFor("a")
+    // EXISTS { CALL () { WITH 1 AS a RETURN a AS y } IN TRANSACTIONS OF a ROWS REPORT STATUS AS s RETURN y, s }
+    val exists = ExistsExpression(singleQuery(
+      scopeClauseSubqueryCallInTransactions(
+        isImportingAll = false,
+        importedVariables = Seq.empty,
+        inTransactionsParameters(
+          Some(SubqueryCall.InTransactionsBatchParameters(a1)(pos)),
+          None,
+          None,
+          Some(SubqueryCall.InTransactionsReportParameters(varFor("s"))(pos))
+        ),
+        with_(aliasedReturnItem(literalInt(1), "a")),
+        return_(aliasedReturnItem("a", "y"))
+      ),
+      return_(variableReturnItem("y"), variableReturnItem("s"))
+    ))(pos, Some(Set(varFor("a"), varFor("y"), varFor("s"))), Some(Set(a2)))
+
+    exists.occurrences(varFor("a")) should equal(Set(
+      Ref(a1),
+      Ref(a2)
+    ))
+  }
+
+  test("occurrences should not treat a REPORT STATUS AS variable as an occurrence of its own name") {
+    val a1 = varFor("a")
+    val s1 = varFor("s")
+    // EXISTS { CALL () { WITH 1 AS a RETURN a AS y } IN TRANSACTIONS OF a ROWS REPORT STATUS AS s RETURN y, s }
+    val exists = ExistsExpression(singleQuery(
+      scopeClauseSubqueryCallInTransactions(
+        isImportingAll = false,
+        importedVariables = Seq.empty,
+        inTransactionsParameters(
+          Some(SubqueryCall.InTransactionsBatchParameters(a1)(pos)),
+          None,
+          None,
+          Some(SubqueryCall.InTransactionsReportParameters(varFor("s"))(pos))
+        ),
+        with_(aliasedReturnItem(literalInt(1), "a")),
+        return_(aliasedReturnItem("a", "y"))
+      ),
+      return_(variableReturnItem("y"), AliasedReturnItem(s1, s1)(pos))
+    ))(pos, Some(Set(varFor("a"), varFor("y"), varFor("s"))), Some(Set()))
+
+    // Only the genuine reference in the final RETURN counts; the REPORT STATUS AS s
+    // declaration itself must not be picked up as an occurrence.
+    exists.occurrences(varFor("s")) should equal(Set(Ref(s1)))
+  }
+
   test("replaceAllOccurrencesBy of simple expression") {
     val exp = listOf(varFor("a"), varFor("b"), varFor("a"))
     exp.replaceAllOccurrencesBy(varFor("a"), varFor("b")) should equal(
@@ -291,6 +487,52 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     result.asInstanceOf[PatternComprehension].scopeDependencies should equal(
       Set(varFor("b"))
     )
+  }
+
+  test("replaceAllOccurrencesBy should not replace declarations hidden behind a non-importing CALL subquery") {
+    // EXISTS { WITH a AS x CALL () { WITH 1 AS a RETURN a AS y } RETURN x, y }
+    val hiddenCall = scopeClauseSubqueryCall(
+      isImportingAll = false,
+      importedVariables = Seq.empty,
+      with_(aliasedReturnItem(literalInt(1), "a")),
+      return_(aliasedReturnItem("a", "y"))
+    )
+    val exists = ExistsExpression(singleQuery(
+      with_(aliasedReturnItem("a", "x")),
+      hiddenCall,
+      return_(variableReturnItem("x"), variableReturnItem("y"))
+    ))(pos, Some(Set(varFor("x"), varFor("a"), varFor("y"))), Some(Set(varFor("a"))))
+
+    val result = exists.replaceAllOccurrencesBy(varFor("a"), varFor("b"))
+    result should equal(ExistsExpression(singleQuery(
+      with_(aliasedReturnItem("b", "x")),
+      hiddenCall,
+      return_(variableReturnItem("x"), variableReturnItem("y"))
+    ))(pos, None, None))
+    result.asInstanceOf[ExistsExpression].scopeDependencies should equal(Set(varFor("b")))
+  }
+
+  test("replaceAllOccurrencesBy should replace occurrences behind a CALL subquery that imports the variable") {
+    // EXISTS { CALL (a) { RETURN a AS y } RETURN y }
+    val exists = ExistsExpression(singleQuery(
+      scopeClauseSubqueryCall(
+        isImportingAll = false,
+        importedVariables = Seq(varFor("a")),
+        return_(aliasedReturnItem("a", "y"))
+      ),
+      return_(variableReturnItem("y"))
+    ))(pos, Some(Set(varFor("y"))), Some(Set(varFor("a"))))
+
+    val result = exists.replaceAllOccurrencesBy(varFor("a"), varFor("b"))
+    result should equal(ExistsExpression(singleQuery(
+      scopeClauseSubqueryCall(
+        isImportingAll = false,
+        importedVariables = Seq(varFor("b")),
+        return_(aliasedReturnItem("b", "y"))
+      ),
+      return_(variableReturnItem("y"))
+    ))(pos, None, None))
+    result.asInstanceOf[ExistsExpression].scopeDependencies should equal(Set(varFor("b")))
   }
 
   test("replaceAllOccurrencesBy accepts call-by-name parameter") {

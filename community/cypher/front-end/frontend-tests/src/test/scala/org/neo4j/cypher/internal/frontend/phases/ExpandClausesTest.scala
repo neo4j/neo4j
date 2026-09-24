@@ -746,6 +746,22 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
     )
   }
 
+  test("NEXT query is not collected due to a UNION DISTINCT hidden inside a subquery expression") {
+    // A FullSubqueryExpression's own query must not leak its by-table triggers (UNION, DISTINCT,
+    // pagination) into the enclosing NEXT chain's requiresCollecting computation.
+    assertRewritten(
+      """RETURN 1 AS a
+        |
+        |NEXT
+        |
+        |RETURN a, COUNT { RETURN 1 AS x UNION RETURN 2 AS x } AS c""".stripMargin,
+      """WITH 1 AS a
+        |RETURN a AS a, COUNT { RETURN 1 AS x UNION RETURN 2 AS x } AS c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
   test("NEXT query rewritten 19") {
     assertRewritten(
       """RETURN 1 AS a
@@ -928,6 +944,30 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  RETURN x AS `  UNNAMED0`
         |  UNION ALL
         |  RETURN COUNT { RETURN sum(x) AS `sum(x)` } AS `  UNNAMED0`
+        |}
+        |RETURN `  UNNAMED0` AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("Should not wrap on inner aggregation nested inside arithmetic in subquery expression") {
+    assertRewritten(
+      """
+      UNWIND [1,2,3] AS x
+      RETURN x
+
+      NEXT
+
+      RETURN x
+      UNION ALL
+      RETURN 1 + COUNT{ RETURN sum(x) } AS x""".stripMargin,
+      """UNWIND [1, 2, 3] AS x
+        |WITH x AS x
+        |CALL (x) {
+        |  RETURN x AS `  UNNAMED0`
+        |  UNION ALL
+        |  RETURN 1 + COUNT { RETURN sum(x) AS `sum(x)` } AS `  UNNAMED0`
         |}
         |RETURN `  UNNAMED0` AS x""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
@@ -6565,6 +6605,120 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  RETURN 2 AS `  UNNAMED3`
         |}
         |RETURN `  UNNAMED3` AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("anonymized RETURN renames a use next to a declaration hidden behind a CALL in a subquery expression") {
+    assertRewritten(
+      """UNWIND [1] AS x
+        |RETURN x
+        |NEXT
+        |USE neo4j
+        |RETURN x
+        |  ORDER BY COLLECT { WITH x AS a CALL () { WITH 2 AS x RETURN x AS b } RETURN a + b AS d }""".stripMargin,
+      """UNWIND [1] AS x
+        |WITH x AS x
+        |CALL (x) {
+        |  USE `neo4j`
+        |  RETURN x AS `  UNNAMED0`
+        |    ORDER BY COLLECT {
+        |      WITH `  UNNAMED0` AS a
+        |      CALL () {
+        |        WITH 2 AS x
+        |        RETURN x AS b
+        |      }
+        |      RETURN a + b AS d
+        |    } ASCENDING
+        |}
+        |RETURN `  UNNAMED0` AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test(
+    "anonymized RETURN renames a use next to a declaration hidden behind an importing WITH in a subquery expression"
+  ) {
+    assertRewritten(
+      """UNWIND [1] AS x
+        |RETURN x
+        |NEXT
+        |USE neo4j
+        |RETURN x
+        |  ORDER BY COLLECT { WITH x AS a CALL { WITH a WITH 2 AS x RETURN x AS b } RETURN a + b AS d }""".stripMargin,
+      """UNWIND [1] AS x
+        |WITH x AS x
+        |CALL (x) {
+        |  USE `neo4j`
+        |  RETURN x AS `  UNNAMED0`
+        |    ORDER BY COLLECT {
+        |      WITH `  UNNAMED0` AS a
+        |      CALL {
+        |        WITH a
+        |        WITH 2 AS x
+        |        RETURN x AS b
+        |      }
+        |      RETURN a + b AS d
+        |    } ASCENDING
+        |}
+        |RETURN `  UNNAMED0` AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("anonymized RETURN leaves a star-expanded declaration hidden behind a CALL alone") {
+    assertRewritten(
+      """UNWIND [1] AS x
+        |RETURN x
+        |NEXT
+        |USE neo4j
+        |RETURN x
+        |  ORDER BY COLLECT { CALL () { WITH 1 AS x WITH * LIMIT 1 RETURN x AS y } RETURN y }""".stripMargin,
+      """UNWIND [1] AS x
+        |WITH x AS x
+        |CALL (x) {
+        |  USE `neo4j`
+        |  RETURN x AS `  UNNAMED0`
+        |    ORDER BY COLLECT {
+        |      CALL () {
+        |        WITH 1 AS x
+        |        WITH x AS x
+        |          LIMIT 1
+        |        RETURN x AS y
+        |      }
+        |      RETURN y AS y
+        |    } ASCENDING
+        |}
+        |RETURN `  UNNAMED0` AS x""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("anonymized RETURN renames uses behind a CALL that imports them in a subquery expression") {
+    assertRewritten(
+      """UNWIND [1] AS x
+        |RETURN x
+        |NEXT
+        |USE neo4j
+        |RETURN x
+        |  ORDER BY COLLECT { CALL (x) { RETURN x AS b } RETURN b }""".stripMargin,
+      """UNWIND [1] AS x
+        |WITH x AS x
+        |CALL (x) {
+        |  USE `neo4j`
+        |  RETURN x AS `  UNNAMED0`
+        |    ORDER BY COLLECT {
+        |      CALL (`  UNNAMED0`) {
+        |        RETURN `  UNNAMED0` AS b
+        |      }
+        |      RETURN b AS b
+        |    } ASCENDING
+        |}
+        |RETURN `  UNNAMED0` AS x""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
     )

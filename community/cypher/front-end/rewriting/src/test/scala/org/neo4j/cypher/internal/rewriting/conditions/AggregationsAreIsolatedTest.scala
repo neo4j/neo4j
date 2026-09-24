@@ -47,6 +47,22 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
     condition(ast) should equal(Seq(s"Expression $innerEquals contains child expressions which are aggregations"))
   }
 
+  test("happy when a pattern expression sits next to nothing else") {
+    // Pattern expressions/comprehensions are SubqueryExpression but not FullSubqueryExpression: pin that
+    // they're still correctly treated as inert here (they can never contain an aggregate themselves).
+    val pe = patternExpression(varFor("a"), varFor("b"))
+    val l = listOf(pe)
+
+    condition(l) shouldBe empty
+  }
+
+  test("unhappy when aggregations and a pattern expression sit inside the same expression") {
+    val pe = patternExpression(varFor("a"), varFor("b"))
+    val l = listOf(pe, CountStar()(pos))
+
+    condition(l) should equal(Seq(s"Expression $l contains child expressions which are aggregations"))
+  }
+
   test("happy when aggregations are in Exists Expressions inside an Expression") {
     val fe = ExistsExpression(
       singleQuery(with_(CountStar()(pos) as "x"), match_(nodePat(Some("n"))), return_(varFor("n").as("n")))

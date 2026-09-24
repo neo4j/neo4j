@@ -156,6 +156,45 @@ class ComputeExpressionDependenciesTest extends ComputeExpressionDependenciesPar
     }
   }
 
+  test("a declaration hidden behind a CALL boundary is introduced, unlike in the legacy derivation") {
+    val query = "WITH 1 AS x RETURN COLLECT { CALL () { WITH 2 AS x RETURN x AS y } RETURN y } AS r"
+    val state = prepareFrom(CypherVersion.Cypher25, query, rewriterPhaseUnderTest)
+    val context =
+      ContextHelper.create(CypherVersion.Cypher25, query, phaseTestConfig.semanticFeatures, databaseReference)
+
+    val workingScopeEcd = ecdOf(ComputeExpressionDependencies.process(state, context).statement())
+    workingScopeEcd.introducedVariables.map(_.name) shouldEqual Set("x", "y")
+
+    // The legacy derivation drops the hidden `x` because the name is also incoming, which loses the
+    // shadowing it does inside the CALL.
+    val legacyEcd = ecdOf(state.statement().endoRewrite(computeDependenciesForExpressions(state.semantics())))
+    legacyEcd.introducedVariables.map(_.name) shouldEqual Set("y")
+  }
+
+  test("a re-projection of an incoming variable is no declaration") {
+    val query = "WITH 1 AS x RETURN COLLECT { WITH x AS x RETURN x AS y } AS r"
+    val state = prepareFrom(CypherVersion.Cypher25, query, rewriterPhaseUnderTest)
+    val context =
+      ContextHelper.create(CypherVersion.Cypher25, query, phaseTestConfig.semanticFeatures, databaseReference)
+
+    val ecd = ecdOf(ComputeExpressionDependencies.process(state, context).statement())
+    ecd.introducedVariables.map(_.name) shouldEqual Set("y")
+  }
+
+  test("shadowing an incoming variable in the expression's own scope is rejected before this phase") {
+    // The invariant the introduced set relies on: a declaration repeating an incoming name only ever
+    // reaches this phase from behind a CALL boundary.
+    Seq(
+      "WITH 1 AS x RETURN COLLECT { WITH 2 AS x RETURN x AS y } AS r",
+      "WITH 1 AS x RETURN COLLECT { WITH 2 AS z RETURN z AS x } AS r",
+      "WITH 1 AS x RETURN COLLECT { CALL () { RETURN 2 AS x } RETURN x AS y } AS r"
+    ).foreach { query =>
+      withClue(s"Query: $query\n") {
+        an[Exception] should be thrownBy prepareFrom(CypherVersion.Cypher25, query, rewriterPhaseUnderTest)
+      }
+    }
+  }
+
   private def ecdOf(statement: Statement): ExpressionWithComputedDependencies =
     statement.folder.treeCollect { case e: ExpressionWithComputedDependencies => e }.head
 }

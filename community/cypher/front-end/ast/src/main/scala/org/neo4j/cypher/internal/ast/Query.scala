@@ -164,6 +164,8 @@ sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysi
    */
   def importColumns: Seq[LogicalVariable]
 
+  def importsEverything: Boolean
+
   def getImportingWithItems: Seq[ReturnItem]
 
   /**
@@ -287,6 +289,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       )
     case _ => Seq.empty
   }
+
+  override def importsEverything: Boolean = partitionedClauses.importingWith.exists(_.returnItems.includeExisting)
 
   override def getImportingWithItems: Seq[ReturnItem] =
     partitionedClauses.importingWith.toSeq.flatMap(_.returnItems.items)
@@ -1069,6 +1073,7 @@ case class TopLevelBraces(
   override def checkImportingWith(optional: Boolean): SemanticCheck = query.checkImportingWith(optional)
   override def invalidImportingWith: Seq[SemanticError] = query.invalidImportingWith
   override def importColumns: Seq[LogicalVariable] = query.importColumns
+  override def importsEverything: Boolean = query.importsEverything
 
   override def getImportingWithItems: Seq[ReturnItem] = query.getImportingWithItems
 
@@ -1126,6 +1131,8 @@ sealed trait Union extends Query {
   }
 
   override def importColumns: Seq[LogicalVariable] = lhs.importColumns ++ rhs.importColumns
+
+  override def importsEverything: Boolean = lhs.importsEverything || rhs.importsEverything
 
   override def getImportingWithItems: Seq[ReturnItem] = lhs.getImportingWithItems ++ rhs.getImportingWithItems
 
@@ -1602,6 +1609,8 @@ case class ConditionalQueryWhen(
   override def importColumns: Seq[LogicalVariable] =
     allBranches.flatMap(_.query.importColumns)
 
+  override def importsEverything: Boolean = allBranches.exists(_.query.importsEverything)
+
   override def getImportingWithItems: Seq[ReturnItem] =
     allBranches.flatMap(_.query.getImportingWithItems)
 
@@ -1646,6 +1655,8 @@ case class NextStatement(queries: Seq[Query])(val position: InputPosition) exten
   override def isCorrelated: Boolean = queries.exists(_.isCorrelated)
 
   override def importColumns: Seq[LogicalVariable] = queries.flatMap(_.importColumns)
+
+  override def importsEverything: Boolean = queries.exists(_.importsEverything)
 
   override def getImportingWithItems: Seq[ReturnItem] =
     queries.flatMap(_.getImportingWithItems)
@@ -1795,6 +1806,8 @@ case class QueryWithLocalDefinitions(
    * Returns names of variables imported using importing WITH
    */
   override def importColumns: Seq[LogicalVariable] = query.importColumns
+
+  override def importsEverything: Boolean = query.importsEverything
 
   override def getImportingWithItems: Seq[ReturnItem] = query.getImportingWithItems
 

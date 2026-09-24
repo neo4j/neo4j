@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction.isFunctionDeterministic
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.DynamicLeaf
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable.FoldingBehavior
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
@@ -136,7 +137,8 @@ abstract class Expression extends ASTNode {
    * Otherwise an [[ExpressionWithComputedDependencies]] will not have computed
    * its dependencies.
    *
-   * Setting `skipScopeExpression` to true will skip checking [[ScopeExpression]]
+   * Setting `skipScopeExpression` to true will skip checking [[ScopeExpression]], but not the
+   * [[ScopeBoundary]] stop.
    */
   def occurrences(variable: LogicalVariable, skipScopeExpression: Boolean = false): Set[Ref[Variable]] = {
     def visitOccurrence(
@@ -147,23 +149,39 @@ abstract class Expression extends ASTNode {
       else acc.mapData(_ + Ref(occurrence))
     }
 
-    this.folder.treeFold(Expression.TreeAcc[Set[Ref[Variable]]](Set.empty)) {
+    type Acc = Expression.TreeAcc[Set[Ref[Variable]]]
+
+    def folding: PartialFunction[Any, Acc => FoldingBehavior[Acc]] = {
       case scope: ScopeExpression if !skipScopeExpression =>
         acc =>
           val accStep1 = scope match {
             case ewcd: ExpressionWithComputedDependencies =>
               // Also look for occurrences in scope dependencies.
-              // No need to look in introducedVariables, as they will always shadow and can't be an occurrence of the same
-              // variable.
+              // No need to look in introducedVariables: a declaration of the same name there is either
+              // shadowing or behind a ScopeBoundary, and a different variable either way.
               val scopeDependencies = ewcd.scopeDependencies.asInstanceOf[Set[Variable]]
               scopeDependencies.foldLeft(acc)(visitOccurrence)
             case _ => acc
           }
-          val newAcc = accStep1.pushScope(scope.introducedVariables)
-          TraverseChildrenNewAccForSiblings(newAcc, _.popScope)
+          if (scope.introducedVariablesShadow) {
+            TraverseChildrenNewAccForSiblings(accStep1.pushScope(scope.introducedVariables), _.popScope)
+          } else {
+            // Hiding is left to each ScopeBoundary further inside, rather than applied to all of
+            // introducedVariables at once.
+            TraverseChildren(accStep1)
+          }
+      case boundary: ScopeBoundary =>
+        // Only the parts of the boundary node still evaluated in the enclosing scope can hold an
+        // occurrence of the variable.
+        acc =>
+          SkipChildren(boundary.nodesInEnclosingScope(variable.name).foldLeft(acc)((a, node) =>
+            node.folder.treeFold(a)(folding)
+          ))
       case occurrence: Variable =>
         acc => TraverseChildren(visitOccurrence(acc, occurrence))
-    }.data
+    }
+
+    this.folder.treeFold(Expression.TreeAcc[Set[Ref[Variable]]](Set.empty))(folding).data
   }
 
   /**
@@ -190,8 +208,8 @@ abstract class Expression extends ASTNode {
       case occurrence: Variable if occurrencesToReplace(Ref(occurrence))                        => replacement
       case ewcd: ExpressionWithComputedDependencies if !skipExpressionsWithComputedDependencies =>
         // Rewrite scope dependencies.
-        // No need to rewrite introducedVariables, as they will always shadow and can't be an occurrence of the same
-        // variable.
+        // No need to rewrite introducedVariables: a declaration of the same name there is either
+        // shadowing or behind a ScopeBoundary, and keeps its name either way.
         val newScopeDependencies = ewcd.scopeDependencies.map {
           case occurrence: Variable if occurrencesToReplace(Ref(occurrence)) =>
             replacement match {

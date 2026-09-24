@@ -1394,6 +1394,20 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     )
   }
 
+  test("accepts an aggregation hidden behind a subquery expression in ORDER BY without one in RETURN") {
+    // The COUNT{}'s own sum(n.foo) aggregates over the subquery's rows, not the outer RETURN's rows,
+    // so this ORDER BY does not need a matching aggregate in RETURN.
+    assertRewrite(
+      """MATCH (n)
+        |RETURN n.prop AS prop ORDER BY 1 + COUNT { RETURN sum(n.foo) }
+      """.stripMargin,
+      """MATCH (n)
+        |RETURN n.prop AS prop
+        |  ORDER BY 1 + COUNT { RETURN sum(n.foo) AS `sum(n.foo)` } ASCENDING
+      """.stripMargin
+    )
+  }
+
   test("accepts use of aggregation in WHERE if aggregation is used in associated WITH") {
     assertRewrite(
       """MATCH (n)

@@ -509,6 +509,10 @@ class normalizePredicatesTest extends CypherFunSuite with TestName with AstRewri
     assertRewrite(s"MATCH (a) WHERE COUNT {($node) WHERE $node:A} > 1 RETURN *")
   }
 
+  test("MATCH (a {p: EXISTS {MATCH (m WHERE m.q = 1) RETURN m}}) RETURN a") {
+    assertRewrite("MATCH (a) WHERE a.p = EXISTS {MATCH (m) WHERE m.q = 1 RETURN m} RETURN a")
+  }
+
   test("MATCH (n WHERE EXISTS {MATCH (:A)-[]->(b:B)}) RETURN *") {
     val anonVarNameGen = new AnonymousVariableNameGenerator
     val node = s"`${anonVarNameGen.nextName}`"

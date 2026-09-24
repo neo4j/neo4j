@@ -133,6 +133,7 @@ import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.ScopeBoundary
 import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SimplePattern
@@ -141,7 +142,6 @@ import org.neo4j.cypher.internal.expressions.StringInterpolation
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions.Function.isIdFunction
 import org.neo4j.cypher.internal.expressions.functions.GraphByElementId
 import org.neo4j.cypher.internal.expressions.functions.GraphByName
@@ -383,7 +383,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
       // We should traverse into subqeries to implement CIP-40 correctly.
       // We don't, because changing this would break backwards compatibility.
       // See the "GPM Sync Rolling Agenda" notes for Nov 23, 2023
-      case _: SubqueryCall | _: FullSubqueryExpression => acc => SkipChildren(acc)
+      case _: SubqueryCall | _: SubqueryExpression => acc => SkipChildren(acc)
     }
     val hasQPP = this.folder.treeFold(false) {
       case _: QuantifiedPath => _ =>
@@ -391,8 +391,8 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
       // We should traverse into subqeries to implement CIP-40 correctly.
       // We don't, because changing this would break backwards compatibility.
       // See the "GPM Sync Rolling Agenda" notes for Nov 23, 2023
-      case _: SubqueryCall | _: FullSubqueryExpression => acc => SkipChildren(acc)
-      case _                                           => acc => if (acc) SkipChildren(acc) else TraverseChildren(acc)
+      case _: SubqueryCall | _: SubqueryExpression => acc => SkipChildren(acc)
+      case _                                       => acc => if (acc) SkipChildren(acc) else TraverseChildren(acc)
     }
 
     when(hasQPP) {
@@ -2131,7 +2131,7 @@ sealed trait ProjectionClause extends HorizonClause {
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
     val aggregationInProjection = returnItems.containsAggregate
-    val aggregationInOrderBy = orderBy.exists(_.sortItems.map(_.expression).exists(containsAggregate))
+    val aggregationInOrderBy = orderBy.exists(_.sortItems.map(_.expression).exists(_.containsAggregate))
     if (!aggregationInProjection && aggregationInOrderBy)
       fail(name, position)
   }
@@ -2468,6 +2468,13 @@ object SubqueryCall {
     disjointByParams: Option[InTransactionsDisjointByParameters]
   )(val position: InputPosition) extends ASTNode with SemanticCheckable {
 
+    /**
+     * The parts of these parameters that are evaluated in the enclosing scope.
+     * Excludes reportParams: REPORT STATUS AS s declares s, it does not use it.
+     */
+    def nodesInEnclosingScope: Seq[ASTNode] =
+      Seq(batchParams, concurrencyParams, errorParams.flatMap(_.retryParameters), disjointByParams).flatten
+
     override def semanticCheck: SemanticCheck = {
       val checkBatchParams = batchParams.foldSemanticCheck(_.semanticCheck)
       val checkConcurrencyParams = concurrencyParams.foldSemanticCheck(_.semanticCheck)
@@ -2499,7 +2506,7 @@ object SubqueryCall {
     node.folder.treeFind[SubqueryCall] { case s if isTransactionalSubquery(s) => true }
 }
 
-sealed trait SubqueryCall extends HorizonClause with SemanticAnalysisTooling {
+sealed trait SubqueryCall extends HorizonClause with SemanticAnalysisTooling with ScopeBoundary {
   def innerQuery: Query
   def inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters]
   def optional: Boolean
@@ -2611,7 +2618,19 @@ sealed trait SubqueryCall extends HorizonClause with SemanticAnalysisTooling {
   }
 }
 
-case object ImportingWithSubqueryCall extends UnaliasedNotAllowed { override val msg = "CALL { RETURN ... }" }
+case object ImportingWithSubqueryCall extends UnaliasedNotAllowed {
+  override val msg = "CALL { RETURN ... }"
+
+  /**
+   * The nodes of `query` reachable from the enclosing scope when searching for occurrences of `name`.
+   * Each UNION branch has its own importing WITH, and UNION is the only such split allowed here.
+   */
+  def reachablePartsOf(query: Query, name: String): Seq[ASTNode] = query match {
+    case u: Union => reachablePartsOf(u.lhs, name) ++ reachablePartsOf(u.rhs, name)
+    case _ if query.importsEverything || query.importColumns.exists(_.name == name) => Seq(query)
+    case _                                                                          => query.getImportingWithItems
+  }
+}
 
 case class ImportingWithSubqueryCall(
   override val innerQuery: Query,
@@ -2622,6 +2641,15 @@ case class ImportingWithSubqueryCall(
   override def isCorrelated: Boolean = {
     innerQuery.isCorrelated
   }
+
+  /**
+   * The importing WITH items are uses of the enclosing scope's variables, even though they sit
+   * inside `innerQuery`.
+   */
+  override def nodesInEnclosingScope(name: String): Seq[ASTNode] =
+    ImportingWithSubqueryCall.reachablePartsOf(innerQuery, name) ++ inTransactionsParameters.toSeq.flatMap(
+      _.nodesInEnclosingScope
+    )
 
   override def checkSubquery(optional: Boolean): SemanticCheck = {
     for {
@@ -2672,6 +2700,11 @@ case class ScopeClauseSubqueryCall(
 
   override def isCorrelated: Boolean = {
     isImportingAll || importedVariables.nonEmpty
+  }
+
+  override def nodesInEnclosingScope(name: String): Seq[ASTNode] = {
+    val ownItems = importedVariables ++ inTransactionsParameters.toSeq.flatMap(_.nodesInEnclosingScope)
+    if (isImportingAll || importedVariables.exists(_.name == name)) innerQuery +: ownItems else ownItems
   }
 
   override def checkSubquery(optional: Boolean): SemanticCheck = {

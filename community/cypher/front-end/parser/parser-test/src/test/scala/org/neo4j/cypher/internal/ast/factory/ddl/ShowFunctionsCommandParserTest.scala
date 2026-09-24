@@ -453,6 +453,28 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
     ))
   }
 
+  test("SHOW FUNCTIONS YIELD a AS b WHERE EXISTS { CALL { WITH 1 AS a RETURN a AS c } RETURN c }") {
+    assertAst(singleQuery(
+      ShowFunctionsClause(
+        AllFunctions,
+        None,
+        None,
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false,
+        Some(withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("b")),
+          where = Some(where(existsSubquery(
+            importingWithSubqueryCall(
+              with_(aliasedReturnItem(literalInt(1), "a")),
+              return_(aliasedReturnItem("a", "c"))
+            ),
+            return_(variableReturnItem("c"))
+          )))
+        ))
+      )(pos)
+    ))
+  }
+
   test("SHOW FUNCTIONS YIELD name as option, category as name where size(name) > 0 RETURN option as name") {
     assertAst(singleQuery(
       ShowFunctionsClause(

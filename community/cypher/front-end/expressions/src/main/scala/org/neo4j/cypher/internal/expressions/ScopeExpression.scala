@@ -32,6 +32,15 @@ trait ScopeExpression extends Expression {
   def introducedVariables: Set[LogicalVariable]
   def scopeDependencies: Set[LogicalVariable]
 
+  /**
+   * Whether [[introducedVariables]] shadow same-named variables of the enclosing scope.
+   *
+   * False where the set also collects nested scopes' declarations, as for `FullSubqueryExpression`:
+   * shadowing all of them at once would hide an outer occurrence that a nested declaration behind a
+   * [[ScopeBoundary]] merely shares a name with.
+   */
+  def introducedVariablesShadow: Boolean = true
+
   // We need to override dependencies because the default implementation relies on scope Expressions computing the dependencies manually,
   // so that it does not need to recurse into them.
   final override def dependencies: Set[LogicalVariable] = scopeDependencies

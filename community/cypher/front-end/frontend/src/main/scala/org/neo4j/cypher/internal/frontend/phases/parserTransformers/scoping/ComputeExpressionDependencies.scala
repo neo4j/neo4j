@@ -16,13 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping
 
-import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ast.semantics.scoping.SurveyorNameGenerator
 import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
-import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -58,14 +56,13 @@ case object ComputeExpressionDependencies extends Phase[BaseContext, BaseState, 
     val rewritten: Statement = from.statement().endoRewrite(topDown(Rewriter.lift {
       case ecd: ExpressionWithComputedDependencies =>
         ecd match {
-          case _: FullSubqueryExpression | _: PatternExpression | _: PatternComprehension =>
+          case _: SubqueryExpression =>
             val scope = scopeState.scopeOfOpt(ecd).getOrElse(
               throw new IllegalStateException(s"No working scope was recorded for expression: $ecd")
             )
             val introduced = (scope.collectAllDeclarations ++ scope.collectAllReturnAliases).iterator
               .map(_.value)
               .filter(v => SurveyorNameGenerator.named(v.name))
-              .filterNot(v => scope.incoming.allSymbols.exists(_.name == v.name))
               .toSet
             val dependencies = scope.referenced.getVariables.toSet
             ecd

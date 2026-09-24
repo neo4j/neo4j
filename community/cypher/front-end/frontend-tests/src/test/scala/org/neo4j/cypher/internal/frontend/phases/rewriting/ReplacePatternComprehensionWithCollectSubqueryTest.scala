@@ -109,6 +109,26 @@ class ReplacePatternComprehensionWithCollectSubqueryTest extends CypherFunSuite 
     )
   }
 
+  test("[p = (n)--(m) | COLLECT { CALL () { WITH 1 AS p RETURN p AS q } RETURN q }]") {
+    assertRewrite(
+      testName,
+      """COLLECT {
+        |  MATCH anon_0 = (n)--(m)
+        |  RETURN COLLECT { CALL () { WITH 1 AS p RETURN p AS q } RETURN q } AS anon_1
+        |}""".stripMargin
+    )
+  }
+
+  test("[p = (n)--(m) | COLLECT { CALL (p) { RETURN nodes(p)[0] AS q } RETURN q }]") {
+    assertRewrite(
+      testName,
+      """COLLECT {
+        |  MATCH anon_0 = (n)--(m)
+        |  RETURN COLLECT { CALL (anon_0) { RETURN nodes(anon_0)[0] AS q } RETURN q } AS anon_1
+        |}""".stripMargin
+    )
+  }
+
   test("[(n)--(m) WHERE m.prop = 0 | n.prop]") {
     assertRewrite(
       testName,

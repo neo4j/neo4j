@@ -425,6 +425,10 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
     run().hasNoErrors
   }
 
+  test("MATCH (a) ((n)-[r]->(m) WHERE size([(x)-[*1..3]->(y) | x]) > 0)+ (b) RETURN count(*)") {
+    run().hasNoErrors
+  }
+
   // variable overlap
   test("MATCH ((a)-->(b)-->(a)-->(c))+ RETURN count(*)") {
     run().hasNoErrors

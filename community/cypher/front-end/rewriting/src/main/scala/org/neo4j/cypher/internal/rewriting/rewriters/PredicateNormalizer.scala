@@ -63,8 +63,9 @@ trait PredicateNormalizer {
     pattern.endoRewrite(
       topDown(
         Rewriter.lift(replace),
+        // Mirrors extractAllFrom's boundary, or a predicate it never extracted gets stripped here
         stopper = {
-          case _: QuantifiedPath                               => true
+          case _: QuantifiedPath | _: ScopeExpression          => true
           case PrefixedPatternPart(_: SelectiveSelector, _, _) => true
           case _                                               => false
         }

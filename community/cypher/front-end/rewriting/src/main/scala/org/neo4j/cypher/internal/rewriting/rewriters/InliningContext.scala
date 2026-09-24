@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.rewriting.rewriters.InliningContext.INLINING_THRESHOLD
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.TypedRewriter
@@ -39,7 +38,7 @@ case class InliningContext(
 
   def enterQueryPart(newProjections: Map[LogicalVariable, Expression]): InliningContext = {
     val inlineExpressions = TypedRewriter[Expression](variableRewriter)
-    val containsAggregation = newProjections.values.exists(containsAggregate)
+    val containsAggregation = newProjections.values.exists(_.containsAggregate)
     val shadowing = newProjections.view.filterKeys(seenVariables.contains).filter {
       case (_, _: PathExpression) => false
       case (key, value)           => key != value
