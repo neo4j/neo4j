@@ -361,7 +361,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         renderPlanDescription = true,
         query.resolvedLanguage,
         planState.maybeExplainScope,
-        None
+        None,
+        redactSensitiveLiterals = true
       )
       val internalPlanDescription = planDescriptionBuilder.explain()
       val runtimeInfo = new PlanRuntimeInfo(
@@ -587,7 +588,8 @@ object CypherCurrentCompiler {
         renderPlanDescription,
         cypherVersion,
         maybeExplainScope,
-        cypherPlannerVersion
+        cypherPlannerVersion,
+        redactSensitiveLiterals = false
       )
 
     private def createQueryContext(

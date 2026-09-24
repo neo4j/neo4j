@@ -53,7 +53,8 @@ object PlanDescriptionBuilder {
     renderPlanDescription: Boolean,
     cypherVersion: CypherVersion,
     explainScopeOpt: Option[WorkingScope],
-    cypherPlannerVersion: Option[String]
+    cypherPlannerVersion: Option[String],
+    redactSensitiveLiterals: Boolean
   ): PlanDescriptionBuilder = {
     // NOTE: We should not keep a reference to the ExecutionPlan in the PlanDescriptionBuilder since it can end up in long-lived caches, e.g. RecentQueryBuffer
     val batchSize = executionPlan.maybeBatchSize
@@ -79,7 +80,8 @@ object PlanDescriptionBuilder {
       renderPlanDescription,
       cypherVersion,
       explainScopeOpt,
-      cypherPlannerVersion
+      cypherPlannerVersion,
+      redactSensitiveLiterals
     )
   }
 }
@@ -101,7 +103,8 @@ class PlanDescriptionBuilder(
   includeStringRepresentation: Boolean,
   cypherVersion: CypherVersion,
   explainScopeOpt: Option[WorkingScope],
-  cypherPlannerVersion: Option[String]
+  cypherPlannerVersion: Option[String],
+  redactSensitiveLiterals: Boolean = false
 ) {
 
   def scope(): InternalPlanDescription = {
@@ -125,7 +128,8 @@ class PlanDescriptionBuilder(
           providedOrders,
           runtimeOperatorMetadata,
           cypherVersion,
-          cypherPlannerVersion
+          cypherPlannerVersion,
+          redactSensitiveLiterals
         )
         .addArgument(Runtime(runtimeName.toTextOutput))
         .addArgument(RuntimeImpl(runtimeName.toTextOutput))

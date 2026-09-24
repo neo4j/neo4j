@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.functions.Labels
@@ -389,7 +390,8 @@ object LogicalPlan2PlanDescription {
     providedOrders: ImmutablePlanningAttributes.ProvidedOrders,
     runtimeOperatorMetadata: Id => Seq[Argument],
     cypherVersion: CypherVersion,
-    cypherPlannerVersion: Option[String] = None
+    cypherPlannerVersion: Option[String] = None,
+    redactSensitiveLiterals: Boolean = false
   ): InternalPlanDescription = {
     new LogicalPlan2PlanDescription(
       readOnly,
@@ -398,7 +400,8 @@ object LogicalPlan2PlanDescription {
       withDistinctness,
       renderNestedPlanExpressions,
       providedOrders,
-      runtimeOperatorMetadata
+      runtimeOperatorMetadata,
+      redactSensitiveLiterals
     )
       .create(input)
       .addArgument(Version(cypherVersion.versionName))
@@ -443,6 +446,18 @@ object LogicalPlan2PlanDescription {
   }
 }
 
+/**
+ * Converts a logical plan to a plan description.
+ *
+ * @param readOnly                  whether the plan is read-only
+ * @param effectiveCardinalities    the effective cardinalities for the plan
+ * @param withRawCardinalities      whether to include raw cardinalities in the plan description
+ * @param withDistinctness          whether to include distinctness information in the plan description
+ * @param renderNestedPlanExpressions whether to render nested plan expressions in the plan description
+ * @param providedOrders            the provided orders for the plan
+ * @param runtimeOperatorMetadata   a function that returns runtime operator metadata for a given plan id
+ * @param redactSensitiveLiterals   whether to redact arguments marked @sensitive in procedure calls in the plan description
+ */
 case class LogicalPlan2PlanDescription(
   readOnly: Boolean,
   effectiveCardinalities: ImmutablePlanningAttributes.EffectiveCardinalities,
@@ -450,7 +465,8 @@ case class LogicalPlan2PlanDescription(
   withDistinctness: Boolean = false,
   renderNestedPlanExpressions: Boolean = false,
   providedOrders: ImmutablePlanningAttributes.ProvidedOrders,
-  runtimeOperatorMetadata: Id => Seq[Argument]
+  runtimeOperatorMetadata: Id => Seq[Argument],
+  redactSensitiveLiterals: Boolean = false
 ) extends LogicalPlans.Mapper[InternalPlanDescription] {
   private val SEPARATOR = ", "
 
@@ -4349,8 +4365,14 @@ case class LogicalPlan2PlanDescription(
       pretty"= ${asPrettyString(expr)}"
   }
 
+  /** Redacts a procedure-call argument that is both a literal and marked @Sensitive by the procedure signature. */
+  private def argumentPrettyString(argument: Expression): PrettyString = argument match {
+    case _: SensitiveLiteral if redactSensitiveLiterals => asPrettyString.raw("******")
+    case _                                              => asPrettyString(argument)
+  }
+
   private def signatureInfo(call: ResolvedNonLocalCall): PrettyString = {
-    val argString = call.callArguments.map(asPrettyString(_)).mkPrettyString(SEPARATOR)
+    val argString = call.callArguments.map(argumentPrettyString).mkPrettyString(SEPARATOR)
     val resultString = call.callResultTypes
       .map { case (name, typ) =>
         pretty"${asPrettyString(name)} :: ${asPrettyString.raw(typ.normalizedCypherTypeString())}"
