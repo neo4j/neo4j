@@ -46,6 +46,13 @@ class GQL_42N29_UnboundVariablesInPatternExpressionTest extends VariableChecking
         |RETURN 1""".stripMargin,
       passesCypher25Onwards(E42N29("WHERE")),
       Seq("`1`")
+    ),
+    TestQuery(
+      """MATCH (o)--(s)
+        |RETURN o, count(*) AS c
+        |  ORDER BY exists((s)-->(o))""".stripMargin,
+      E42N29("s"),
+      Seq("o", "c")
     )
   )
 }

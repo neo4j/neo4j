@@ -222,7 +222,8 @@ object pegExpression {
         ))
 
       case pc @ PatternComprehension(optVar, pattern, innerPredicate, projection) =>
-        val patternResult = pegPattern(pattern.element, incoming, foreachIterVar = None)
+        val patternResult =
+          pegPattern(pattern.element, incoming.amendedWithConstant(incoming.variables), foreachIterVar = None)
         val variables = optVar match {
           case Some(value) => Seq(value) ++ patternResult.declared.variables
           case None        => patternResult.declared.variables

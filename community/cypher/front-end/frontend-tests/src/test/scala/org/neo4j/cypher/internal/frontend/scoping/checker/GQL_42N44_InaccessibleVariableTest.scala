@@ -395,6 +395,20 @@ class GQL_42N44_InaccessibleVariableTest extends VariableCheckingWithLocalCallab
         |RETURN p""".stripMargin,
       Passes,
       Seq("p")
+    ),
+    TestQuery(
+      """MATCH (o)--(s)
+        |RETURN o, count(*) AS c
+        |  ORDER BY EXISTS { (s)-->(o) }""".stripMargin,
+      Passes,
+      Seq("o", "c")
+    ),
+    TestQuery(
+      """MATCH (o)--(s)
+        |RETURN o, count(*) AS c
+        |  ORDER BY size([(s)-->(o) | 1])""".stripMargin,
+      Passes,
+      Seq("o", "c")
     )
   )
 }

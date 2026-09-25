@@ -118,6 +118,24 @@ class GQL_42I18_ReferenceToNonGroupingSubExpressionTest extends VariableChecking
       Seq("metric")
     ),
     TestQuery(
+      """MATCH (m) RETURN count(m) > 0 AND exists((m)-->()) AS metric""".stripMargin,
+      E42I18("m"),
+      Seq("metric")
+    ),
+    TestQuery(
+      """MATCH (m) RETURN count(m) + size([(m)-->(x) | x]) AS metric""".stripMargin,
+      E42I18("m"),
+      Seq("metric")
+    ),
+    TestQuery(
+      """MATCH (o)
+        |OPTIONAL MATCH (s)-[e:REL]->(o)
+        |WITH o, size([x IN collect(e) WHERE exists((s)-[:OTHER]->(o))]) AS cnt
+        |RETURN cnt""".stripMargin,
+      E42I18("s"),
+      Seq("cnt")
+    ),
+    TestQuery(
       """MATCH (m)
         |RETURN count(m) AS value, count(m) + count { MATCH (m)-->() RETURN m } AS metric""".stripMargin,
       E42I18("m"),
@@ -294,6 +312,19 @@ class GQL_42I18_ReferenceToNonGroupingSubExpressionTest extends VariableChecking
         |RETURN m, count { MATCH (m)-->(x) RETURN count(x) } AS c""".stripMargin,
       Passes,
       Seq("m", "c")
+    ),
+    TestQuery(
+      """MATCH (m) RETURN m, count(*) + size([(m)-->(x) | x]) AS metric""".stripMargin,
+      Passes,
+      Seq("m", "metric")
+    ),
+    TestQuery(
+      """MATCH (o)
+        |OPTIONAL MATCH (s)-[e:REL]->(o)
+        |WITH o, size([x IN collect(e) WHERE exists((o)-[:OTHER]->())]) AS cnt
+        |RETURN cnt""".stripMargin,
+      Passes,
+      Seq("cnt")
     )
   )
 }

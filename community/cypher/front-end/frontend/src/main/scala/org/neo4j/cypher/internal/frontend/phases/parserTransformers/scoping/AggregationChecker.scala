@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Ref
@@ -97,7 +98,7 @@ case object AggregationChecker extends VariableCheckerUtil {
     inSubExpression: Boolean
   ): Set[LogicalVariable] = scope match {
     // A SubqueryExpression can only reference simple variable references - no recognition
-    case ExpressionScope(_: FullSubqueryExpression, ctx: ProjectionExpressionContext, referenced, _, _) =>
+    case ExpressionScope(_: SubqueryExpression, ctx: ProjectionExpressionContext, referenced, _, _) =>
       referenced.filterTargets(t => !ctx.isConstantForPart(t, part)).getVariables.toSet
     // If an expression is recognized we skip the children
     case ExpressionScope(expr: Expression, ctx: ProjectionExpressionContext, _, _, _)
