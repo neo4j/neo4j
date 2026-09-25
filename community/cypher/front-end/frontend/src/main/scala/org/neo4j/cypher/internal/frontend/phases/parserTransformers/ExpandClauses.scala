@@ -115,7 +115,8 @@ import scala.annotation.tailrec
  * collected and unwound where relevant.
  *
  * A When query is rewritten into a chain of UNION queries with a controlling WHERE ensuring that only one
- * branch of the UNION is excuted according to the predicate.
+ * branch of the UNION is excuted according to the predicate. The whole switch is nested in a CALL subquery so
+ * that it is evaluated per incoming row, seeing the updates of the branches executed for previous rows.
  *
  * QUERY
  *    WHEN $param < 1 THEN RETURN 1 AS res
@@ -123,21 +124,24 @@ import scala.annotation.tailrec
  *    ELSE RETURN 3 AS res
  *
  * REWRITE
- *    WITH *, CASE WHEN $param < 1 THEN 0 WHEN $param > 1 THEN 1 ELSE 2 END AS `  UNNAMED0`
  *    CALL (*) {
- *       // WHEN #1
- *       WITH * WHERE `  UNNAMED0` = 0
- *       // THEN #1
- *       RETURN 1 AS res
- *       UNION ALL
- *       // WHEN #2
- *       WITH * WHERE `  UNNAMED0` = 1
- *       // THEN #2
- *       RETURN 2 AS res
- *       UNION ALL
- *       WITH * WHERE `  UNNAMED0` = 2
- *       // ELSE
- *       RETURN 3 AS res
+ *       WITH *, CASE WHEN $param < 1 THEN 0 WHEN $param > 1 THEN 1 ELSE 2 END AS `  UNNAMED0`
+ *       CALL (*) {
+ *          // WHEN #1
+ *          WITH * WHERE `  UNNAMED0` = 0
+ *          // THEN #1
+ *          RETURN 1 AS res
+ *          UNION ALL
+ *          // WHEN #2
+ *          WITH * WHERE `  UNNAMED0` = 1
+ *          // THEN #2
+ *          RETURN 2 AS res
+ *          UNION ALL
+ *          WITH * WHERE `  UNNAMED0` = 2
+ *          // ELSE
+ *          RETURN 3 AS res
+ *       }
+ *       RETURN res
  *    }
  *    RETURN res
  *
@@ -294,16 +298,19 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
           use.toSeq ++ getIngress ++ rewrittenClauses
         }
 
-        val lastClause = (semanticContext.kind, adaptedClauses.last) match {
+        singleQuery.copy(adaptPartEnding(adaptedClauses))(singleQuery.position)
+      }
+
+      // Hands the result of a non-last NEXT part on to the next part: its return columns, or a single unit row.
+      def adaptPartEnding(clauses: Seq[Clause]): Seq[Clause] = {
+        val lastClause = (semanticContext.kind, clauses.last) match {
           case (LastInNextCtx, c)                                => Seq(c)
           case (FirstInNextCtx | BodyInNextCtx, f: Finish)       => Seq(drivingTableReset(f.position))
           case (FirstInNextCtx | BodyInNextCtx, u: UpdateClause) => Seq(u, drivingTableReset(u.position))
           case (FirstInNextCtx | BodyInNextCtx, r: Return)       => Seq(r.convertToWith())
           case (_, c)                                            => Seq(c)
         }
-
-        singleQuery.copy(adaptedClauses.dropRight(1) ++ lastClause)(singleQuery.position)
-
+        clauses.dropRight(1) ++ lastClause
       }
 
       def anonymize(returnItem: ReturnItem): ReturnItem =
@@ -435,10 +442,10 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
       def needsWrapping(ast: Query): Boolean = ast match {
         case sq: SingleQuery         => sq.partitionedClauses.initialGraphSelection.isDefined
         case _: ConditionalQueryWhen => false
-        case tlb: TopLevelBraces => tlb.query match {
+        case tlb: TopLevelBraces => tlb.use.isDefined || (tlb.query match {
             case _: Union => true
             case _        => false
-          }
+          })
         case _ => true
       }
 
@@ -615,7 +622,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
           } else Seq.empty
 
         val getExpandedAST: Seq[Clause] = rewrittenQuery match {
-          case sq: SingleQuery if !willBeWrapped => preface ++ sq.clauses ++ postface
+          case sq: SingleQuery if !willBeWrapped => preface ++ updatedLayout.adaptPartEnding(sq.clauses) ++ postface
           case q: Query =>
             preface ++ Seq(ScopeClauseSubqueryCall(q, imports.toSeq)(q.position)) ++ postface
         }
@@ -755,7 +762,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
          *          ELSE 2
          *  END AS condition
          */
-        val preface: Seq[Clause] = incomingItems._1.toSeq ++ Seq(With(
+        val switch: Clause = With(
           ReturnItems(
             FreeProjection,
             incomingItems._2 :+ AliasedReturnItem(
@@ -770,18 +777,23 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
             )(pos)
           )(pos),
           withType = AddedInRewriteGeneral()
-        )(pos))
+        )(pos)
 
-        val subquery = ScopeClauseSubqueryCall(unionOfBranches, imports)(pos)
+        val branchesSubquery = ScopeClauseSubqueryCall(unionOfBranches, imports)(pos)
 
-        def inNextPostface: Option[Clause] =
-          Option.when(resultColumns.exists(incomingSymbols.contains)) {
-            val items = resultColumns.map { k =>
-              val v = returnsMapped.getOrElse(k, k)
-              AliasedReturnItem(v.copyId, incomingLayout.resultMapping.getOrElse(k, k).copyId)(v.position)
-            }
-            With(ReturnItems(FreeProjection, items)(ast.position), withType = AddedInRewriteGeneral())(ast.position)
-          }
+        val perRowReturn: Clause =
+          if (ast.isReturning)
+            Return(ReturnItems(
+              FreeProjection,
+              resultColumns.map(k => AliasedReturnItem(returnsMapped.getOrElse(k, k).copyId))
+            )(pos))(pos)
+          else Finish()(pos)
+
+        // GQL evaluates the conditions of each incoming record after the branches of the preceding records have run
+        val perRowSubquery = ScopeClauseSubqueryCall(
+          SingleQuery(Seq(switch, branchesSubquery, perRowReturn))(pos),
+          referencedSorted.map(_.copyId)
+        )(pos)
 
         def defaultPostface: Clause = {
           val items = scopeState.getResultCols(ast).map { v =>
@@ -793,15 +805,16 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
           Return(ReturnItems(FreeProjection, items)(pos))(pos)
         }
 
-        val postface: Option[Clause] = (incomingLayout.semanticContext.kind, ast.isReturning) match {
-          case (FirstInNextCtx | BodyInNextCtx, _) => inNextPostface
-          case (_, false)                          => Some(Finish()(pos))
-          case (_, true)                           => Some(defaultPostface)
-        }
+        val postface: Clause = if (ast.isReturning) defaultPostface else Finish()(pos)
 
         // Emit a graph selection inherited from an enclosing `USE g { ... }` as the leading clause, so the whole
-        // expanded WHEN (the switch WITH, the branch subquery, the postface) is scoped to g.
-        SingleQuery(incomingLayout.use.toSeq ++ incomingLayout.getIngress ++ preface ++ Seq(subquery) ++ postface)(
+        // expanded WHEN (the per-row subquery and the postface) is scoped to g.
+        SingleQuery(
+          incomingLayout.use.toSeq ++ incomingLayout.getIngress ++ incomingItems._1.toSeq ++ Seq(
+            perRowSubquery,
+            postface
+          )
+        )(
           ast.position
         )
           .endoRewrite(ensureUniqueIds)
