@@ -87,8 +87,8 @@ public class BatchingMultipleIndexPopulatorTest {
     @Inject
     private JobScheduler jobScheduler;
 
-    private final IndexDescriptor index1 = TestIndexDescriptorFactory.forLabel(1, 1);
-    private final IndexDescriptor index42 = TestIndexDescriptorFactory.forLabel(42, 42);
+    private final IndexDescriptor index1 = TestIndexDescriptorFactory.forLabel(1L, 1, 1);
+    private final IndexDescriptor index42 = TestIndexDescriptorFactory.forLabel(2L, 42, 42);
     private final InMemoryTokens tokens = new InMemoryTokens();
 
     @Test

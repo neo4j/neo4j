@@ -73,6 +73,10 @@ public class TestIndexDescriptorFactory {
         return forSchema(SchemaDescriptors.forLabel(labelId, propertyIds));
     }
 
+    public static IndexDescriptor forLabel(long indexId, int labelId, int... propertyIds) {
+        return forSchema(indexId, SchemaDescriptors.forLabel(labelId, propertyIds));
+    }
+
     public static IndexDescriptor forLabel(IndexType indexType, int labelId, int... propertyIds) {
         return forSchema(indexType, SchemaDescriptors.forLabel(labelId, propertyIds));
     }
@@ -89,8 +93,8 @@ public class TestIndexDescriptorFactory {
         return uniqueForSchema(indexType, SchemaDescriptors.forLabel(labelId, propertyIds));
     }
 
-    private static int randomId() {
-        return ThreadLocalRandom.current().nextInt(1, 1000);
+    private static long randomId() {
+        return ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE);
     }
 
     private static class TestIndexConfigCompleter implements IndexConfigCompleter {
