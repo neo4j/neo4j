@@ -95,6 +95,7 @@ import org.mockito.Mockito;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseStateService;
@@ -2437,7 +2438,7 @@ class RecoveryIT {
                         fileSystem,
                         pageCache,
                         EMPTY,
-                        Config.defaults(),
+                        new DatabaseConfig(Config.defaults()),
                         databaseLayout,
                         INSTANCE,
                         IOController.DISABLED,
@@ -2670,7 +2671,7 @@ class RecoveryIT {
                                 fileSystem,
                                 pageCache,
                                 EMPTY,
-                                config,
+                                new DatabaseConfig(config),
                                 databaseLayout,
                                 INSTANCE,
                                 IOController.DISABLED,

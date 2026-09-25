@@ -41,6 +41,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -184,7 +185,7 @@ class ForwardRecoveryIT {
     }
 
     private void recoverDatabase() throws Exception {
-        Config config = Config.newBuilder().build();
+        DatabaseConfig config = new DatabaseConfig(Config.defaults());
         LogFiles logFiles = buildLogFiles(EMPTY);
         assertTrue(isRecoveryRequired(databaseLayout, config, logFiles, EMPTY));
 

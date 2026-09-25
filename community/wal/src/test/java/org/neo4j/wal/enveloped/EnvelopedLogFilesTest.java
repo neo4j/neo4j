@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
@@ -134,7 +135,11 @@ class EnvelopedLogFilesTest {
         var baseFolder = testDirectory.directory("logsFolder");
         var filesHelper = new SequentialFileNameHelper(baseFolder, baseFileName);
         mirroringRepository = new LogsRepository(fs, filesHelper);
-        logHeaderFactory = new BaseLogHeaderFactory(kernelVersion, StoreIdentifier.newStoreIdentifier(12345), clock);
+        logHeaderFactory = new BaseLogHeaderFactory(
+                new DatabaseConfig(DatabaseConfig.defaults()),
+                kernelVersion,
+                StoreIdentifier.newStoreIdentifier(12345),
+                clock);
         envelopedLogFiles = new EnvelopedLogFiles(
                 mirroringRepository,
                 logHeaderFactory,

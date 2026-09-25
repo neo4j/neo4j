@@ -21,8 +21,7 @@ package org.neo4j.wal.enveloped;
 
 import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdentifier;
@@ -32,18 +31,26 @@ import org.neo4j.wal.entry.LogHeader;
 public class BaseLogHeaderFactory implements LogHeaderFactory {
     // Once the store identifier is set or used for a log, then it cannot be changed.
     private final AtomicBoolean storeIdentifierFinalized = new AtomicBoolean(false);
+    private final DatabaseConfig config;
     private volatile KernelVersion currentAppendedDatabaseVersion;
     private volatile StoreIdentifier storeIdentifier;
     private final Clock clock;
+    private static final LogFormat MIN_VERSION = LogFormat.V11;
 
     public BaseLogHeaderFactory(
-            KernelVersion currentAppendedDatabaseVersion, StoreIdentifier storeIdentifier, Clock clock) {
+            DatabaseConfig config,
+            KernelVersion currentAppendedDatabaseVersion,
+            StoreIdentifier storeIdentifier,
+            Clock clock) {
+        this.config = config;
         this.currentAppendedDatabaseVersion = currentAppendedDatabaseVersion;
         this.storeIdentifier = storeIdentifier;
         this.clock = clock;
     }
 
-    public BaseLogHeaderFactory(KernelVersion currentAppendedDatabaseVersion, StoreId storeId, Clock clock) {
+    public BaseLogHeaderFactory(
+            DatabaseConfig config, KernelVersion currentAppendedDatabaseVersion, StoreId storeId, Clock clock) {
+        this.config = config;
         this.currentAppendedDatabaseVersion = currentAppendedDatabaseVersion;
         this.storeIdentifier = StoreIdentifier.newStoreIdentifier(storeId);
         this.clock = clock;
@@ -54,11 +61,9 @@ public class BaseLogHeaderFactory implements LogHeaderFactory {
             long newFileVersion, long lastAppendIndex, int lastChecksum, int segmentSize, long preFileTerm) {
         storeIdentifierFinalized.set(true);
         KernelVersion version = getCurrentDatabaseVersion();
-        Config envelopeEnabledConfig = Config.defaults(GraphDatabaseInternalSettings.merged_log, true);
-        LogFormat logFormat = LogFormat.fromConfigAndKernelVersion(envelopeEnabledConfig, version);
-        if (!logFormat.usesSegments()) {
-            throw new IllegalArgumentException("Unable to find enveloped LogFormat for KernelVersion=" + version
-                    + " found logFormat=" + logFormat);
+        LogFormat logFormat = LogFormat.fromConfigAndKernelVersion(config, version);
+        if (logFormat.getVersionByte() < MIN_VERSION.getVersionByte()) {
+            logFormat = MIN_VERSION;
         }
         return logFormat.newHeader(
                 newFileVersion,

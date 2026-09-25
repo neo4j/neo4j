@@ -25,7 +25,7 @@ import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 import java.io.IOException;
-import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingSupplier;
@@ -76,9 +76,9 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
 
     private final LogFiles logFiles;
     private final Monitor monitor;
-    private final Config config;
+    private final DatabaseConfig config;
 
-    RecoveryStartInformationProvider(LogFiles logFiles, Monitor monitor, Config config) {
+    RecoveryStartInformationProvider(LogFiles logFiles, Monitor monitor, DatabaseConfig config) {
         this.logFiles = logFiles;
         this.monitor = monitor;
         this.config = config;

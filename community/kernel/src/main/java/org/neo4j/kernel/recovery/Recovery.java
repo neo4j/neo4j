@@ -47,18 +47,20 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LocalConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -332,7 +334,7 @@ public final class Recovery {
             FileSystemAbstraction fs,
             PageCache pageCache,
             DatabaseTracers tracers,
-            Config config,
+            DatabaseConfig config,
             DatabaseLayout databaseLayout,
             MemoryTracker memoryTracker,
             IOController ioController,
@@ -507,13 +509,13 @@ public final class Recovery {
 
         assert !(context.pageCache instanceof DatabasePageCache)
                 : "Recovery should use global page cache to avoid using overloaded mapping.";
-        var config = new LocalConfig(recoveryOptimizedConfig(context.config));
+        var databaseConfig = new DatabaseConfig(recoveryOptimizedConfig(context.config), context.config);
         try {
             return performRecovery(
                     context.fs,
                     context.pageCache,
                     context.tracers,
-                    config,
+                    databaseConfig,
                     storageEngineFactory.formatSpecificDatabaseLayout(context.databaseLayout),
                     storageEngineFactory,
                     context.forceRunRecovery,
@@ -534,25 +536,22 @@ public final class Recovery {
                     context.failOnCorruptedLogs,
                     context.treatBrokenLastEntryAsCorruption);
         } finally {
-            config.removeAllLocalListeners();
+            databaseConfig.removeAllLocalListeners();
         }
     }
 
-    private static Config recoveryOptimizedConfig(Config config) {
-        return Config.newBuilder()
-                .fromConfig(config)
-                .set(
-                        GraphDatabaseInternalSettings.parallel_index_updates_apply,
-                        config.get(GraphDatabaseInternalSettings.do_parallel_recovery)
-                                && config.get(GraphDatabaseInternalSettings.do_parallel_index_updates_in_recovery))
-                .build();
+    private static Map<Setting<?>, Object> recoveryOptimizedConfig(Config config) {
+        return Map.of(
+                GraphDatabaseInternalSettings.parallel_index_updates_apply,
+                config.get(GraphDatabaseInternalSettings.do_parallel_recovery)
+                        && config.get(GraphDatabaseInternalSettings.do_parallel_index_updates_in_recovery));
     }
 
     private static RecoveryResult performRecovery(
             FileSystemAbstraction fs,
             PageCache pageCache,
             DatabaseTracers tracers,
-            Config config,
+            DatabaseConfig config,
             DatabaseLayout databaseLayout,
             StorageEngineFactory storageEngineFactory,
             boolean forceRunRecovery,
@@ -1013,7 +1012,7 @@ public final class Recovery {
             ChunkedTransactionTracker chunkedTransactionTracker,
             BinarySupportedKernelVersions binarySupportedKernelVersions,
             StoreFileChecker storageFilesState,
-            Config config) {
+            DatabaseConfig config) {
         RecoveryService recoveryService = new DefaultRecoveryService(
                 storageEngine,
                 transactionIdStore,

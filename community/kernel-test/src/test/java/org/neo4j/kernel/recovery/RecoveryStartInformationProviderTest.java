@@ -37,9 +37,11 @@ import static org.neo4j.wal.LogTermProvider.UNKNOWN_TERM_PROVIDER;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.io.IOException;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.ReadableChannel;
@@ -99,7 +101,7 @@ class RecoveryStartInformationProviderTest {
 
         // when
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, Config.defaults()).get();
+                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults())).get();
 
         // then
         verify(monitor).recoveryNotRequired(null);
@@ -144,7 +146,7 @@ class RecoveryStartInformationProviderTest {
 
         // when
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, Config.defaults()).get();
+                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults())).get();
 
         // then
         verify(monitor).recoveryRequiredAfterLastCheckPoint(txPosition, txPosition, 10L);
@@ -188,7 +190,7 @@ class RecoveryStartInformationProviderTest {
                         EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER));
 
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, Config.defaults()).get();
+                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults())).get();
 
         verify(monitor).recoveryRequiredAfterLastCheckPoint(txPosition, oldestNotVisibleTransactionPosition, 10L);
         assertEquals(txPosition, recoveryStartInformation.transactionLogPosition());
@@ -219,7 +221,7 @@ class RecoveryStartInformationProviderTest {
 
         // when
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, Config.defaults()).get();
+                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults())).get();
 
         // then
         verify(monitor).noCheckPointFound();
@@ -246,7 +248,7 @@ class RecoveryStartInformationProviderTest {
                         null));
 
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, Config.defaults()).get();
+                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults())).get();
 
         assertSame(MISSING_LOGS, recoveryStartInformation);
     }
@@ -273,7 +275,7 @@ class RecoveryStartInformationProviderTest {
         final String expectedMessage = "No check point found in any log file and transaction log "
                 + "files do not exist from expected version 0. Lowest found log file is 1.";
         RecoveryStartInformationProvider provider =
-                new RecoveryStartInformationProvider(logFiles, monitor, Config.defaults());
+                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults()));
         assertThatThrownBy(provider::get)
                 .isInstanceOf(UnderlyingStorageException.class)
                 .hasMessage(expectedMessage);
@@ -353,9 +355,7 @@ class RecoveryStartInformationProviderTest {
                 null);
     }
 
-    private static Config mergedLogConfig() {
-        return Config.newBuilder()
-                .set(GraphDatabaseInternalSettings.merged_log, true)
-                .build();
+    private static DatabaseConfig mergedLogConfig() {
+        return new DatabaseConfig(Map.of(GraphDatabaseInternalSettings.merged_log, true), Config.defaults());
     }
 }

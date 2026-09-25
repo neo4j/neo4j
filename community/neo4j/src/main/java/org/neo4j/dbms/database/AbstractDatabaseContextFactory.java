@@ -31,7 +31,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -77,12 +79,17 @@ public abstract class AbstractDatabaseContextFactory<CONTEXT, OPTIONS>
         return new DefaultLabelIdCreator(kernelSupplier);
     }
 
+    protected void setSystemConfig(Config globalConfig, HashMap<Setting<?>, Object> settings) {
+        settings.put(GraphDatabaseInternalSettings.merged_log, false);
+        settings.put(db_format, globalConfig.get(system_database_format));
+    }
+
     protected DatabaseConfig createDatabaseConfig(
             NamedDatabaseId namedDatabaseId, Map<Setting<?>, Object> databaseSpecificSettings) {
         var globalConfig = globalModule.getGlobalConfig();
         var settings = new HashMap<>(databaseSpecificSettings);
         if (namedDatabaseId.isSystemDatabase()) {
-            settings.put(db_format, globalConfig.get(system_database_format));
+            setSystemConfig(globalConfig, settings);
         }
         return new DatabaseConfig(settings, globalConfig);
     }

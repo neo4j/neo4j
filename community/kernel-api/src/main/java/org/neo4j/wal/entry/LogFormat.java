@@ -302,9 +302,9 @@ public enum LogFormat {
      * - 1 byte kernel version
      * - 31 bytes reserved
      * <pre>
-     *   |<-                      LOG_HEADER_SIZE                                                   ->|
-     *   |<-LOG_HEADER_VERSION_SIZE->|                                                                |
-     *   |--------------------------------------------------------------------------------------------|
+     *   |<-                                    LOG_HEADER_SIZE                                          ->|
+     *   |<-LOG_HEADER_VERSION_SIZE->|                                                                     |
+     *   |-------------------------------------------------------------------------------------------------|
      *   |          version          | append index | store id | block size | previous checksum | reserved |
      *  </pre>
      */
@@ -391,18 +391,18 @@ public enum LogFormat {
      * Total 128 bytes
      * - 8 bytes version
      * - 8 bytes append index
-     * - 64 bytes Store ID
+     * - 8 bytes Store Identifier
      * - 4 bytes segment block size
      * - 4 bytes previous checksum, i.e. last checksum in the previous file
      * - 8 bytes last term
      * - 1 byte kernel version
      * - 8 bytes creation time
-     * - 23 bytes reserved
+     * - 79 bytes reserved
      * <pre>
-     *   |<-                      LOG_HEADER_SIZE                                                   ->|
-     *   |<-LOG_HEADER_VERSION_SIZE->|                                                                |
-     *   |--------------------------------------------------------------------------------------------|
-     *   |          version          | append index | store id | block size | previous checksum | reserved |
+     *   |<-                                                        LOG_HEADER_SIZE                                                              ->|
+     *   |<-LOG_HEADER_VERSION_SIZE->|                                                                                                             |
+     *   |-----------------------------------------------------------------------------------------------------------------------------------------|
+     *   |          version          | append index | store id | block size | previous checksum | term | kernel version | creation time | reserved |
      *  </pre>
      */
     V11(
@@ -562,6 +562,10 @@ public enum LogFormat {
 
     public boolean usesSegments() {
         return defaultSegmentBlockSize != UNKNOWN_LOG_SEGMENT_SIZE;
+    }
+
+    public boolean supportsConsensusEntries() {
+        return versionByte >= V11.versionByte;
     }
 
     // Where possible read the LogHeader and use LogHeader.getStartPosition() to find the start position,

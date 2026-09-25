@@ -68,6 +68,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
@@ -253,7 +254,7 @@ class TransactionLogsRecoveryTest {
                             false,
                             contextFactory,
                             recovering -> StorageFilesState.recoveredState(),
-                            config) {
+                            new DatabaseConfig(config)) {
                         private int nr;
 
                         @Override
@@ -389,7 +390,7 @@ class TransactionLogsRecoveryTest {
                             false,
                             contextFactory,
                             recovering -> StorageFilesState.recoveredState(),
-                            config),
+                            new DatabaseConfig(config)),
                     logPruner,
                     schemaLife,
                     monitor,
@@ -503,7 +504,7 @@ class TransactionLogsRecoveryTest {
                             contextFactory,
                             recovering -> StorageFilesState.unrecoverableState(
                                     List.of(new StoreFile(Path.of("store_file_should_be_here")))),
-                            config),
+                            new DatabaseConfig(config)),
                     logPruner,
                     schemaLife,
                     monitor,
@@ -598,7 +599,7 @@ class TransactionLogsRecoveryTest {
                             contextFactory,
                             recovering -> StorageFilesState.unrecoverableState(
                                     List.of(new StoreFile(Path.of("store_file_should_be_here")))),
-                            config),
+                            new DatabaseConfig(config)),
                     logPruner,
                     schemaLife,
                     monitor,
@@ -944,7 +945,7 @@ class TransactionLogsRecoveryTest {
                             false,
                             contextFactory,
                             recovering -> StorageFilesState.recoveredState(),
-                            config),
+                            new DatabaseConfig(config)),
                     logPruner,
                     schemaLife,
                     monitor,
