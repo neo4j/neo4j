@@ -481,6 +481,72 @@ class RecoveryIT {
     }
 
     @Test
+    void boundedRecoveryFailsOnCorruptTailDespiteFailOnCorruptedLogFilesFalse() throws Exception {
+        var database = createNonEnvelopedDatabase();
+
+        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
+        var logFileToManipulate = logFiles.getLogFile().getLogRangeInfo().highestFile();
+
+        var marker = withName("Type");
+        var propertyName = "a";
+
+        // we do transaction before checkpoint to force token creation that we will use after checkpoint to make sure
+        // that its a first transaction after the checkpoint
+        try (Transaction tx = database.beginTx()) {
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
+            node1.createRelationshipTo(node2, marker);
+            node2.setProperty(propertyName, "b");
+            tx.commit();
+        }
+
+        checkpointer.forceCheckPoint(new SimpleTriggerInfo("test"));
+
+        LogPosition position = getTransactionLogWriter(logFiles.getLogFile()).getCurrentPosition();
+
+        // our test big transaction
+        try (Transaction tx = database.beginTx()) {
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
+            node1.createRelationshipTo(node2, marker);
+            node2.setProperty(propertyName, random.nextAlphaNumericString(TEN_KB));
+            tx.commit();
+        }
+        managementService.shutdown();
+
+        removeLastCheckpointRecordFromLogFile(databaseLayout, fileSystem);
+        // we write big transaction with huge property command above and here we truncate a bit of that to simulate
+        // partially written command
+        removeLastKbFromLogFile(logFileToManipulate, position);
+
+        var corruptTailEnd = fileSystem.getFileSize(logFileToManipulate);
+        Config config = Config.newBuilder()
+                .fromConfig(defaults())
+                .set(GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false)
+                .set(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create, false)
+                .build();
+
+        // A bounded recovery may not modify the log, so its predicate must fail on the corrupt tail, not truncate it.
+        Recovery.Context context = Recovery.contextWithNoLogTail(
+                        fileSystem,
+                        pageCache,
+                        EMPTY,
+                        config,
+                        databaseLayout,
+                        INSTANCE,
+                        IOController.DISABLED,
+                        logProvider,
+                        LATEST_KERNEL_VERSION_PROVIDER)
+                .recoveryPredicate(
+                        RecoveryPredicate.untilPosition(new LogPosition(position.getLogVersion(), corruptTailEnd)));
+        assertThatThrownBy(() -> performRecovery(context.startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
+                        .clock(fakeClock)))
+                .rootCause()
+                .isInstanceOfAny(ChecksumMismatchException.class, InconsistentLogFilesException.class);
+    }
+
+    @Test
     void recoverTxLogsWithBrokenFirstEntryInFirstTransactionAfterCheckpoint() throws Exception {
         var database = createDatabase();
 
@@ -2931,6 +2997,15 @@ class RecoveryIT {
 
     protected GraphDatabaseAPI createDatabase(long logThreshold) {
         createBuilder(logThreshold);
+        managementService = builder.build();
+        return (GraphDatabaseAPI) managementService.database(databaseLayout.getDatabaseName());
+    }
+
+    // Pins the non-enveloped log format so the recovery exercises the standard reverse cursor; the enveloped
+    // bounded path rejects a broken tail regardless of fail_on_corrupted_log_files.
+    private GraphDatabaseAPI createNonEnvelopedDatabase() {
+        createBuilder(logical_log_rotation_threshold.defaultValue());
+        builder.setConfig(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create, false);
         managementService = builder.build();
         return (GraphDatabaseAPI) managementService.database(databaseLayout.getDatabaseName());
     }

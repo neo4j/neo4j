@@ -34,8 +34,7 @@ public interface RecoveryFacade {
             RecoveryFacadeMonitor recoveryFacadeMonitor,
             RecoveryMode recoveryMode,
             ChunkedTransactionTracker chunkedTransactionTracker,
-            IncompleteTransactionAction incompleteTransactionAction,
-            boolean forceFailOnCorruptedLogs)
+            IncompleteTransactionAction incompleteTransactionAction)
             throws IOException;
 
     void performRecovery(
@@ -48,7 +47,6 @@ public interface RecoveryFacade {
             DatabaseLayout databaseLayout,
             RecoveryFacadeMonitor monitor,
             RecoveryMode mode,
-            boolean forceFailOnCorruptedLogs,
             ChunkedTransactionTracker chunkedTransactionTracker)
             throws IOException;
 

@@ -44,6 +44,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
     private final MemoryTracker memoryTracker;
     private final InternalLogProvider logProvider;
     private final KernelVersionProvider emptyLogsFallbackKernelVersion;
+    private final boolean failOnCorruptedLogs;
 
     public DatabaseRecoveryFacade(
             FileSystemAbstraction fs,
@@ -53,6 +54,18 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             MemoryTracker memoryTracker,
             InternalLogProvider logProvider,
             KernelVersionProvider emptyLogsFallbackKernelVersion) {
+        this(fs, pageCache, tracers, config, memoryTracker, logProvider, emptyLogsFallbackKernelVersion, false);
+    }
+
+    public DatabaseRecoveryFacade(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            DatabaseTracers tracers,
+            Config config,
+            MemoryTracker memoryTracker,
+            InternalLogProvider logProvider,
+            KernelVersionProvider emptyLogsFallbackKernelVersion,
+            boolean failOnCorruptedLogs) {
         this.fs = fs;
         this.pageCache = pageCache;
         this.tracers = tracers;
@@ -60,6 +73,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
         this.memoryTracker = memoryTracker;
         this.logProvider = logProvider;
         this.emptyLogsFallbackKernelVersion = emptyLogsFallbackKernelVersion;
+        this.failOnCorruptedLogs = failOnCorruptedLogs;
     }
 
     @Override
@@ -69,8 +83,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             RecoveryFacadeMonitor recoveryFacadeMonitor,
             RecoveryMode recoveryMode,
             ChunkedTransactionTracker chunkedTransactionTracker,
-            IncompleteTransactionAction incompleteTransactionAction,
-            boolean forceFailOnCorruptedLogs)
+            IncompleteTransactionAction incompleteTransactionAction)
             throws IOException {
         recovery(
                 layout,
@@ -79,7 +92,6 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
                 recoveryMode,
                 false,
                 incompleteTransactionAction,
-                forceFailOnCorruptedLogs,
                 chunkedTransactionTracker);
     }
 
@@ -95,8 +107,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
                 EMPTY_MONITOR,
                 RecoveryMode.FULL,
                 chunkedTransactionTracker,
-                incompleteTransactionAction,
-                false);
+                incompleteTransactionAction);
     }
 
     @Override
@@ -104,7 +115,6 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             DatabaseLayout databaseLayout,
             RecoveryFacadeMonitor monitor,
             RecoveryMode mode,
-            boolean forceFailOnCorruptedLogs,
             ChunkedTransactionTracker chunkedTransactionTracker)
             throws IOException {
         performRecovery(
@@ -113,8 +123,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
                 monitor,
                 mode,
                 chunkedTransactionTracker,
-                IncompleteTransactionAction.APPLY,
-                forceFailOnCorruptedLogs);
+                IncompleteTransactionAction.APPLY);
     }
 
     @Override
@@ -130,8 +139,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
                 monitor,
                 RecoveryMode.FULL,
                 new ChunkedTransactionTracker(),
-                rollbackIncompleteTransactions,
-                false);
+                rollbackIncompleteTransactions);
     }
 
     @Override
@@ -148,7 +156,6 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
                 RecoveryMode.FULL,
                 true,
                 rollbackIncompleteTransactions,
-                false,
                 new ChunkedTransactionTracker());
     }
 
@@ -159,7 +166,6 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             RecoveryMode mode,
             boolean force,
             IncompleteTransactionAction incompleteTransactionAction,
-            boolean forceFailOnCorruptedLogs,
             ChunkedTransactionTracker chunkedTransactionTracker)
             throws IOException {
         monitor.recoveryStarted();
@@ -176,9 +182,8 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
         if (force) {
             recoveryContext.force();
         }
-        if (forceFailOnCorruptedLogs) {
-            // this forces recovery to fail on corrupted logs, regardless of the configuration. There are
-            // clustering components that may never accept truncating corrupt log tails.
+        if (failOnCorruptedLogs) {
+            // online recovery may never truncate a corrupt tail, regardless of config.
             recoveryContext.forceFailOnCorruptedLogs();
         }
         Recovery.performRecovery(recoveryContext

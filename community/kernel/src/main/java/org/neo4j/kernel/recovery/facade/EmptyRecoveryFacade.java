@@ -37,8 +37,7 @@ class EmptyRecoveryFacade implements RecoveryFacade {
             RecoveryFacadeMonitor recoveryFacadeMonitor,
             RecoveryMode recoveryMode,
             ChunkedTransactionTracker chunkedTransactionTracker,
-            IncompleteTransactionAction incompleteTransactionAction,
-            boolean forceFailOnCorruptedLogs)
+            IncompleteTransactionAction incompleteTransactionAction)
             throws IOException {
         // noop
     }
@@ -55,7 +54,6 @@ class EmptyRecoveryFacade implements RecoveryFacade {
             DatabaseLayout databaseLayout,
             RecoveryFacadeMonitor monitor,
             RecoveryMode mode,
-            boolean forceFailOnCorruptedLogs,
             ChunkedTransactionTracker chunkedTransactionTracker)
             throws IOException {
         // noop

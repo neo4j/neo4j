@@ -192,6 +192,28 @@ public final class Recovery {
             InternalLogProvider logProvider,
             KernelVersionProvider emptyLogsFallbackKernelVersion,
             NamedDatabaseId databaseId) {
+        return recoveryFacade(
+                fs,
+                pageCache,
+                tracers,
+                config,
+                memoryTracker,
+                logProvider,
+                emptyLogsFallbackKernelVersion,
+                databaseId,
+                false);
+    }
+
+    public static DatabaseRecoveryFacade recoveryFacade(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Tracers tracers,
+            Config config,
+            MemoryTracker memoryTracker,
+            InternalLogProvider logProvider,
+            KernelVersionProvider emptyLogsFallbackKernelVersion,
+            NamedDatabaseId databaseId,
+            boolean failOnCorruptedLogs) {
         return new DatabaseRecoveryFacade(
                 fs,
                 pageCache,
@@ -199,7 +221,8 @@ public final class Recovery {
                 config,
                 memoryTracker,
                 logProvider,
-                emptyLogsFallbackKernelVersion);
+                emptyLogsFallbackKernelVersion,
+                failOnCorruptedLogs);
     }
 
     /**
@@ -427,6 +450,10 @@ public final class Recovery {
          */
         public Context recoveryPredicate(RecoveryPredicate recoveryPredicate) {
             this.recoveryPredicate = recoveryPredicate;
+            if (!recoveryPredicate.changingTheLogAllowed()) {
+                // A recovery that may not change the log must fail on a corrupt tail, not truncate it away.
+                forceFailOnCorruptedLogs();
+            }
             return this;
         }
 
