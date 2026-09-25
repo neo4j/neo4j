@@ -170,6 +170,41 @@ class VectorIndexPopulatorCompactionTest {
         }
     }
 
+    /**
+     * The thread stopping the population and the population thread itself meet on the same lucene index: the abort
+     * walks that index's partitions, and the walk throws as soon as the population thread has closed it.
+     */
+    @Test
+    void shouldNotReadIndexPartitionsWhileIndexIsBeingClosed() throws Exception {
+        // GIVEN a population thread that has started closing the index
+        CountDownLatch closeEntered = new CountDownLatch(1);
+        CountDownLatch releaseClose = new CountDownLatch(1);
+        doAnswer(invocation -> {
+                    closeEntered.countDown();
+                    assertTrue(releaseClose.await(10, SECONDS));
+                    return null;
+                })
+                .when(luceneIndex)
+                .close();
+
+        try (OtherThreadExecutor closingThread = new OtherThreadExecutor("Closing thread")) {
+            Future<Void> close = closingThread.executeDontWait(() -> {
+                populator.close(true, NULL_CONTEXT);
+                return null;
+            });
+            assertTrue(closeEntered.await(10, SECONDS));
+
+            // WHEN the population is stopped at that exact moment
+            populator.cancelPostScanWork();
+
+            // THEN the index being closed is left alone
+            verify(luceneIndex, never()).getPartitions();
+
+            releaseClose.countDown();
+            close.get(10, SECONDS);
+        }
+    }
+
     private void scanCompleted() throws Exception {
         // The compaction schedules no work of its own, hence the null scheduler
         populator.scanCompleted(PhaseTracker.nullInstance, null, NULL_CONTEXT);

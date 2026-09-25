@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -56,6 +57,10 @@ class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<VectorInde
     private volatile boolean cancelled;
     private volatile CompactionState compactionState = CompactionState.NOT_STARTED;
     private final BinaryLatch compactionDone = new BinaryLatch();
+
+    // Held while the lucene index is torn down, and while the merge abort reads its partitions, so the two cannot
+    // overlap: the partition walk throws if the index closes underneath it.
+    private final ReentrantLock indexTeardownLock = new ReentrantLock();
 
     VectorIndexPopulator(
             DatabaseIndex<VectorIndexReader> luceneIndex,
@@ -112,20 +117,30 @@ class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<VectorInde
 
     @Override
     public synchronized void drop() {
-        abandonMerging();
-        super.drop();
+        indexTeardownLock.lock();
+        try {
+            abandonMerging();
+            super.drop();
+        } finally {
+            indexTeardownLock.unlock();
+        }
     }
 
     @Override
     public synchronized void close(boolean populationCompletedSuccessfully, CursorContext cursorContext) {
-        if (populationCompletedSuccessfully) {
-            // Compaction ran in scanCompleted on this same thread, so it has already finished. Wait rather than
-            // abort, so that the final commit is free to merge as usual.
-            awaitCompaction();
-        } else {
-            abandonMerging();
+        indexTeardownLock.lock();
+        try {
+            if (populationCompletedSuccessfully) {
+                // Compaction ran in scanCompleted on this same thread, so it has already finished. Wait rather than
+                // abort, so that the final commit is free to merge as usual.
+                awaitCompaction();
+            } else {
+                abandonMerging();
+            }
+            super.close(populationCompletedSuccessfully, cursorContext);
+        } finally {
+            indexTeardownLock.unlock();
         }
-        super.close(populationCompletedSuccessfully, cursorContext);
     }
 
     private synchronized boolean markCompactionStarted() {
@@ -141,10 +156,23 @@ class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<VectorInde
      * population, which then waits for the population job to finish. Blocking here - either on this populator's
      * monitor or on the merging itself - would reintroduce exactly the wait it exists to avoid. The subsequent
      * {@link #close(boolean, CursorContext)} is what waits for the merges to actually stop.
+     * <p/>
+     * The {@code tryLock} is what keeps the abort off the lucene index while {@link #drop()} or
+     * {@link #close(boolean, CursorContext)} is tearing it down: reading its partitions then throws. Skipping the
+     * abort in that case loses nothing, since drop and an unsuccessful close request it themselves and a successful
+     * close deliberately lets its final merges finish. The cancellation flag is still set unconditionally, so a
+     * compaction that has not started yet never starts.
      */
     @Override
     public void cancelPostScanWork() {
-        requestMergeAbort();
+        cancelled = true;
+        if (indexTeardownLock.tryLock()) {
+            try {
+                requestMergeAbort();
+            } finally {
+                indexTeardownLock.unlock();
+            }
+        }
     }
 
     /**
