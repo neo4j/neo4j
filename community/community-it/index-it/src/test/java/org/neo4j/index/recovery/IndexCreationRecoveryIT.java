@@ -49,6 +49,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -82,6 +83,10 @@ class IndexCreationRecoveryIT {
      * - ==> We're now in a state where X is ONLINE, recovered, but outdated
      */
     @Test
+    @SkipOnSpd(
+            reason = "The test setup doesn't work with SPD. It uses a single latch, keyed only by index "
+                    + "name, which can't tell shards apart (each shard has its own untagged IndexMonitor).",
+            notes = SkipOnSpd.Note.incompatible)
     void shouldEnsurePopulateIndexRecreation() throws Exception {
         // given
         Label label = Label.label("L");
