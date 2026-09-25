@@ -139,6 +139,52 @@ object SemanticError {
 
   }
 
+  def denyNotPermittedWithAbacFunctions(
+    expression: String,
+    functionName: String,
+    position: InputPosition
+  ): SemanticError = abacFunctionNotPermittedWith("DENY", expression, functionName, position)
+
+  def notOperatorNotPermittedWithAbacFunctions(
+    expression: String,
+    functionName: String,
+    position: InputPosition
+  ): SemanticError = abacFunctionNotPermittedWith("The NOT operator", expression, functionName, position)
+
+  def comparisonOperatorNotPermittedWithAbacFunctions(
+    operator: String,
+    expression: String,
+    functionName: String,
+    position: InputPosition
+  ): SemanticError = abacFunctionNotPermittedWith(s"The $operator operator", expression, functionName, position)
+
+  /**
+   * A property rule that combines an abac function with a construct that cannot be resolved per user.
+   * Nested under 22NA0 like every other property rule rejection, so anything matching on the
+   * property-based access control condition sees these too.
+   */
+  private def abacFunctionNotPermittedWith(
+    construct: String,
+    expression: String,
+    functionName: String,
+    position: InputPosition
+  ): SemanticError = {
+    val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NA0)
+      .atPosition(position.offset, position.line, position.column)
+      .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22ND4)
+        .withParam(GqlParams.StringParam.query, expression)
+        .withParam(GqlParams.StringParam.item, construct)
+        .withParam(GqlParams.StringParam.fun, functionName)
+        .atPosition(position.offset, position.line, position.column)
+        .build()).build()
+
+    SemanticError(
+      gql,
+      s"Invalid input: `$expression`. $construct is not permitted in conjunction with $functionName().",
+      position
+    )
+  }
+
   def yieldMissingColumn(
     originalName: String,
     expectedColumns: java.util.List[String],

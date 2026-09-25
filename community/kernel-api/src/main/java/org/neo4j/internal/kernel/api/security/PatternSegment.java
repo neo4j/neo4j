@@ -168,6 +168,115 @@ public interface PatternSegment extends Segment {
         }
     }
 
+    /**
+     * A pattern segment whose comparison value comes from a per-user ABAC function (today
+     * {@code abac.native.user_tags()}) rather than a literal. The function cannot be evaluated when the
+     * privilege is granted -- there is no user in context -- so only its name is stored, and the value is
+     * supplied per user via {@link #buildPropertyRule(int, Value)} when the access mode is built. The segment
+     * names the function without knowing which provider backs it, so a further ABAC function needs no new
+     * segment type.
+     *
+     * <p>Restricted to {@code IN}: it is the operator that takes the list of attributes such a function
+     * returns, and negating a per-user list is rejected when the privilege is granted, so no negated form
+     * can reach here.
+     */
+    abstract class AbacPatternSegment implements PatternSegment {
+        protected final Set<String> elementTypes;
+        protected final String property;
+        protected final String functionName;
+        protected final PropertyRule.ComparisonOperator operator;
+
+        public AbacPatternSegment(
+                Set<String> elementTypes,
+                String property,
+                String functionName,
+                PropertyRule.ComparisonOperator operator) {
+            Preconditions.requireNonNull(elementTypes, "elementTypes must not be null");
+            Preconditions.requireNonNull(property, "property must not be null");
+            Preconditions.requireNonNull(functionName, "functionName must not be null");
+            Preconditions.checkArgument(operator == PropertyRule.ComparisonOperator.IN, "operator must be IN");
+            this.elementTypes = elementTypes;
+            this.property = property;
+            this.functionName = functionName;
+            this.operator = operator;
+        }
+
+        @Override
+        public Set<String> elementTypes() {
+            return elementTypes;
+        }
+
+        @Override
+        public String property() {
+            return property;
+        }
+
+        public String functionName() {
+            return functionName;
+        }
+
+        public PropertyRule.ComparisonOperator operator() {
+            return operator;
+        }
+
+        @Override
+        public PropertyRule buildPropertyRule(int securityProperty) {
+            throw new UnsupportedOperationException(
+                    "abac pattern segments are resolved with user context before building property rules");
+        }
+
+        public PropertyRule buildPropertyRule(int securityProperty, Value resolvedValue) {
+            return PropertyRule.newRule(securityProperty, resolvedValue, operator());
+        }
+
+        String predicateString(String elementVariableName) {
+            return operator.toPredicateString(propertyString(elementVariableName), functionName + "()");
+        }
+
+        @Override
+        public String toString() {
+            return String.format("FOR(%s)", pattern());
+        }
+    }
+
+    class NodeAbacPatternSegment extends AbacPatternSegment {
+        public NodeAbacPatternSegment(
+                Set<String> elementTypes,
+                String property,
+                String functionName,
+                PropertyRule.ComparisonOperator operator) {
+            super(elementTypes, property, functionName, operator);
+        }
+
+        public NodeAbacPatternSegment(String property, String functionName, PropertyRule.ComparisonOperator operator) {
+            this(ALL_ELEMENT_TYPES, property, functionName, operator);
+        }
+
+        @Override
+        public String pattern() {
+            return String.format("(n%s) WHERE %s", elementTypeString(), predicateString("n"));
+        }
+    }
+
+    class RelAbacPatternSegment extends AbacPatternSegment {
+        public RelAbacPatternSegment(
+                Set<String> elementTypes,
+                String property,
+                String functionName,
+                PropertyRule.ComparisonOperator operator) {
+            super(elementTypes, property, functionName, operator);
+        }
+
+        public RelAbacPatternSegment(String property, String functionName, PropertyRule.ComparisonOperator operator) {
+            this(ALL_ELEMENT_TYPES, property, functionName, operator);
+        }
+
+        @Override
+        public String pattern() {
+            return String.format("()-[r%s]-() WHERE %s", elementTypeString(), predicateString("r"));
+        }
+    }
+
     abstract class NullPatternSegment implements PatternSegment {
 
         protected final Set<String> elementTypes;

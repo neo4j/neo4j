@@ -18,10 +18,13 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
+import org.neo4j.cypher.internal.ast.AdministrationCommand.PropertyComparedToUserTags
 import org.neo4j.cypher.internal.ast.AdministrationCommand.authRuleAllowListedFunctions
 import org.neo4j.cypher.internal.ast.AdministrationCommand.checkIsStringLiteralOrParameter
 import org.neo4j.cypher.internal.ast.AdministrationCommand.checkIsStringOrStringListOrParameter
+import org.neo4j.cypher.internal.ast.AdministrationCommand.isUserTagsFunction
 import org.neo4j.cypher.internal.ast.AdministrationCommand.propertyRuleAllowedTemporalFunctions
+import org.neo4j.cypher.internal.ast.AdministrationCommand.userTagsFunctionName
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -31,12 +34,14 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics._
 import org.neo4j.cypher.internal.ast.semantics.iterableOnceSemanticChecking
 import org.neo4j.cypher.internal.ast.semantics.optionSemanticChecking
+import org.neo4j.cypher.internal.expressions.BinaryPredicateExpression
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
@@ -83,6 +88,7 @@ import org.neo4j.gqlstatus.GqlParams
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.jdk.OptionConverters.RichOptional
 
 sealed trait AdministrationCommand extends StatementWithGraph with SemanticAnalysisTooling {
 
@@ -117,11 +123,39 @@ object AdministrationCommand extends SemanticAnalysisTooling {
   val propertyRuleAllowedTemporalFunctions: Seq[String] =
     Seq("date", "datetime", "localdatetime", "localtime", "time", "duration", "point")
 
+  val userTagsFunctionName: String = "abac.native.user_tags"
+
+  def isUserTagsFunction(f: FunctionInvocationLike): Boolean =
+    f.callArguments.isEmpty && !f.isUserDefined &&
+      f.functionName.fullName.equalsIgnoreCase(userTagsFunctionName)
+
+  /** A property compared to the user tags function with an ordering or (in)equality operator, in either argument order. */
+  private[ast] object PropertyComparedToUserTags {
+
+    def unapply(e: Expression): Option[(String, FunctionInvocationLike)] = e match {
+      case cmp: BinaryPredicateExpression if isComparisonOperator(cmp) =>
+        (cmp.lhs, cmp.rhs) match {
+          case (_: Property, f: FunctionInvocationLike) if isUserTagsFunction(f) =>
+            Some((cmp.canonicalOperatorSymbol, f))
+          case (f: FunctionInvocationLike, _: Property) if isUserTagsFunction(f) =>
+            Some((cmp.canonicalOperatorSymbol, f))
+          case _ => None
+        }
+      case _ => None
+    }
+
+    private def isComparisonOperator(e: BinaryPredicateExpression): Boolean = e match {
+      case _: Equals | _: NotEquals | _: GreaterThan | _: GreaterThanOrEqual | _: LessThan | _: LessThanOrEqual =>
+        true
+      case _ => false
+    }
+  }
+
   val authRuleAllowListedFunctions: Seq[String] = Seq(
     // ABAC oidc user attributes function
     "abac.oidc.user_attribute",
     // ABAC native user tags function
-    "abac.native.user_tags",
+    userTagsFunctionName,
     // List functions
     "range",
     "reduce",
@@ -1581,18 +1615,42 @@ sealed abstract class PrivilegeCommand(
           case PatternQualifier(_, v, e, Relationship) =>
             featureCheck chain
               v.foldSemanticCheck(declareVariable(_, CTRelationship)) chain
-              SemanticExpressionCheck.check(SemanticContext.Results, e) chain
+              checkPropertyRulePredicate(e, context.cypherVersion) chain
               checkActionTypeForPropertyRules(privilege) chain
               whenState(!_.semanticCheckHasRunOnce) { checkExpression(e, context.cypherVersion) }
           case PatternQualifier(_, v, e, Node) =>
             v.foldSemanticCheck(declareVariable(_, CTNode)) chain
-              SemanticExpressionCheck.check(SemanticContext.Results, e) chain
+              checkPropertyRulePredicate(e, context.cypherVersion) chain
               checkActionTypeForPropertyRules(privilege) chain
               whenState(!_.semanticCheckHasRunOnce) { checkExpression(e, context.cypherVersion) }
           case _ => SemanticCheck.success
         })
       })
     }
+
+  /**
+   * The generic expression check, minus the `Unknown function` error for an abac function whose provider is
+   * off. Without that tolerance the rule could not be authored, nor `SHOW PRIVILEGES AS COMMANDS` output
+   * replayed, on a server configured differently from the one that wrote the grant.
+   */
+  private def checkPropertyRulePredicate(e: Expression, cypherVersion: CypherVersion): SemanticCheck = {
+    val tolerated = unresolvedAbacFunctionPositions(e, cypherVersion)
+    SemanticExpressionCheck.check(SemanticContext.Results, e)
+      .map(result => result.copy(errors = result.errors.filterNot(isUnknownFunctionAt(tolerated))))
+  }
+
+  /** Abac functions that did not resolve to a signature. Empty under Cypher 5, which rejects them anyway. */
+  private def unresolvedAbacFunctionPositions(e: Expression, cypherVersion: CypherVersion): Set[InputPosition] =
+    if (cypherVersion == CypherVersion.Cypher5) Set.empty
+    else (e +: e.subExpressions).collect {
+      case f: FunctionInvocationLike if isUserTagsFunction(f) && !f.isBuiltIn => f.position
+    }.toSet
+
+  private def isUnknownFunctionAt(positions: Set[InputPosition])(error: SemanticErrorDef): Boolean =
+    positions(error.position) && hasGqlCause(error, GqlStatusInfoCodes.STATUS_42N48)
+
+  private def hasGqlCause(error: SemanticErrorDef, code: GqlStatusInfoCodes): Boolean =
+    error.gqlStatusObject.cause().toScala.exists(_.gqlStatus() == code.getStatusString)
 
   private def checkExpression(expression: Expression, cypherVersion: CypherVersion) = {
 
@@ -1644,6 +1702,51 @@ sealed abstract class PrivilegeCommand(
       case e                         => e
     }
 
+    def userTagsInPropertyRulesCheck: SemanticCheck = {
+      unwrappedExpression match {
+        case In(_: Property, f: FunctionInvocationLike)
+          if cypherVersion.isAfter(CypherVersion.Cypher5) && isUserTagsFunction(f) =>
+          requireFeatureSupport(
+            s"The `$name` clause using a `<property> IN $userTagsFunctionName()` predicate",
+            SemanticFeature.UserTagsInPropertyRules,
+            expression.position
+          ) ifOkChain {
+            expression match {
+              case Not(_) =>
+                SemanticCheck.error(
+                  SemanticError.notOperatorNotPermittedWithAbacFunctions(
+                    stringifyExpression,
+                    f.functionName.fullName,
+                    expression.position
+                  )
+                )
+              case _ =>
+                this match {
+                  case _: DenyPrivilege | RevokePrivilege(_, _, _, _, _, _: RevokeDenyType) =>
+                    SemanticCheck.error(
+                      SemanticError.denyNotPermittedWithAbacFunctions(
+                        stringifyExpression,
+                        f.functionName.fullName,
+                        expression.position
+                      )
+                    )
+                  case _ => SemanticCheck.success
+                }
+            }
+          }
+        case PropertyComparedToUserTags(operator, f) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
+          SemanticCheck.error(
+            SemanticError.comparisonOperatorNotPermittedWithAbacFunctions(
+              operator,
+              stringifyExpression,
+              f.functionName.fullName,
+              expression.position
+            )
+          )
+        case _ => SemanticCheck.success
+      }
+    }
+
     def valueInListPropertyFeatureCheck: SemanticCheck = {
       def requireValueInListProperty(operator: String): SemanticCheck =
         requireFeatureSupport(
@@ -1655,6 +1758,8 @@ sealed abstract class PrivilegeCommand(
         SemanticCheck.success
       } else {
         unwrappedExpression match {
+          // reported by userTagsInPropertyRulesCheck instead
+          case PropertyComparedToUserTags(_, _)                                    => SemanticCheck.success
           case In(lhs, _: Property) if !lhs.isInstanceOf[Property]                 => requireValueInListProperty("IN")
           case Equals(lhs, _: Property) if !lhs.isInstanceOf[Property]             => requireValueInListProperty("=")
           case NotEquals(lhs, _: Property) if !lhs.isInstanceOf[Property]          => requireValueInListProperty("<>")
@@ -1667,7 +1772,7 @@ sealed abstract class PrivilegeCommand(
       }
     }
 
-    valueInListPropertyFeatureCheck chain (unwrappedExpression match {
+    valueInListPropertyFeatureCheck chain userTagsInPropertyRulesCheck chain (unwrappedExpression match {
       // NaN cases
       // LHS property (RHS = NaN)
       case Equals(_: Property, l: NaN)             => nanError(l)
@@ -1751,6 +1856,11 @@ sealed abstract class PrivilegeCommand(
       case LessThanOrEqual(_, p: Property) if cypherVersion.equals(CypherVersion.Cypher5) =>
         propertyPositionError(p, "<=")
 
+      // already rejected by userTagsInPropertyRulesCheck above; short-circuit here so the generic
+      // scalar check does not raise a second, redundant error.
+      case PropertyComparedToUserTags(_, _) if cypherVersion.isAfter(CypherVersion.Cypher5) =>
+        SemanticCheck.success
+
       // Cypher 25+: RHS property allowed
       case Equals(e: Expression, _: Property)             => checkScalarExpression(e)
       case NotEquals(e: Expression, _: Property)          => checkScalarExpression(e)
@@ -1768,7 +1878,10 @@ sealed abstract class PrivilegeCommand(
       case GreaterThanOrEqual(_: Property, e: Expression) => checkScalarExpression(e)
       case LessThan(_: Property, e: Expression)           => checkScalarExpression(e)
       case LessThanOrEqual(_: Property, e: Expression)    => checkScalarExpression(e)
-      case In(_: Property, e: Expression)                 => checkListExpression(e)
+      case In(_: Property, f: FunctionInvocationLike)
+        if cypherVersion.isAfter(CypherVersion.Cypher5) && isUserTagsFunction(f) =>
+        SemanticCheck.success
+      case In(_: Property, e: Expression) => checkListExpression(e)
 
       case IsNull(_: Property) | IsNotNull(_: Property) => SemanticCheck.success
 
@@ -1794,7 +1907,7 @@ sealed abstract class PrivilegeCommand(
 
       case _ =>
         AdministrationCommandSemanticAnalysis.invalidPropertyBasedAccessControlRuleInvolvingNontrivialPredicatesError(
-          expression.asCanonicalStringVal,
+          stringifyExpression,
           unsupportedExpression,
           expression.position
         )

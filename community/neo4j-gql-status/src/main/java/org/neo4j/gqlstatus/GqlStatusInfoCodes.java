@@ -1451,6 +1451,12 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             },
             "wrong property for vector search with filters",
             ErrorClassification.CLIENT_ERROR),
+    STATUS_22ND4(
+            "Invalid input: { %s }. { %s } is not permitted in conjunction with { %s }.",
+            new GqlParams.GqlParam[] {GqlParams.StringParam.query, GqlParams.StringParam.item, GqlParams.StringParam.fun
+            },
+            "operation not permitted in conjunction with abac functions",
+            ErrorClassification.CLIENT_ERROR),
     STATUS_25000("", "", ErrorClassification.DATABASE_ERROR),
     STATUS_25G01("", "active GQL-transaction", ErrorClassification.UNKNOWN),
     STATUS_25G02("", "catalog and data statement mixing not supported", ErrorClassification.CLIENT_ERROR),

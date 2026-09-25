@@ -297,6 +297,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionInvocationLike
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
@@ -1916,18 +1917,20 @@ object Prettifier {
         case e @ In(_, _: ListLiteral)                       => propertyAndWherePrettifier(e)
         case e @ In(_, _: ExplicitParameter)                 => propertyAndWherePrettifier(e)
         case e @ In(_, _: Property)                          => propertyAndWherePrettifier(e)
+        case e @ In(_, _: FunctionInvocationLike)            => propertyAndWherePrettifier(e)
         case e @ Not(innerExpression) => innerExpression match {
-            case _: Equals                      => propertyAndWherePrettifier(e)
-            case _: NotEquals                   => propertyAndWherePrettifier(e)
-            case _: GreaterThan                 => propertyAndWherePrettifier(e)
-            case _: GreaterThanOrEqual          => propertyAndWherePrettifier(e)
-            case _: LessThan                    => propertyAndWherePrettifier(e)
-            case _: LessThanOrEqual             => propertyAndWherePrettifier(e)
-            case _: IsNull                      => propertyAndWherePrettifier(e)
-            case _: IsNotNull                   => propertyAndWherePrettifier(e)
-            case _ @In(_, _: ListLiteral)       => propertyAndWherePrettifier(e)
-            case _ @In(_, _: ExplicitParameter) => propertyAndWherePrettifier(e)
-            case _ @In(_, _: Property)          => propertyAndWherePrettifier(e)
+            case _: Equals                           => propertyAndWherePrettifier(e)
+            case _: NotEquals                        => propertyAndWherePrettifier(e)
+            case _: GreaterThan                      => propertyAndWherePrettifier(e)
+            case _: GreaterThanOrEqual               => propertyAndWherePrettifier(e)
+            case _: LessThan                         => propertyAndWherePrettifier(e)
+            case _: LessThanOrEqual                  => propertyAndWherePrettifier(e)
+            case _: IsNull                           => propertyAndWherePrettifier(e)
+            case _: IsNotNull                        => propertyAndWherePrettifier(e)
+            case _ @In(_, _: ListLiteral)            => propertyAndWherePrettifier(e)
+            case _ @In(_, _: ExplicitParameter)      => propertyAndWherePrettifier(e)
+            case _ @In(_, _: Property)               => propertyAndWherePrettifier(e)
+            case _ @In(_, _: FunctionInvocationLike) => propertyAndWherePrettifier(e)
             case _ => throw new IllegalStateException(
                 s"Unknown expression: ${ExpressionStringifier.apply(e => e.asCanonicalStringVal).apply(e)}"
               )

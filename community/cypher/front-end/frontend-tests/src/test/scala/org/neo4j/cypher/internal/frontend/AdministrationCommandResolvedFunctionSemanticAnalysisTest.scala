@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.ast.Node
 import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.WindowsSemanticErrorDefSeqStringSafe
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
@@ -40,7 +42,13 @@ import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
@@ -137,6 +145,20 @@ class AdministrationCommandResolvedFunctionSemanticAnalysisTest extends CypherFu
         Seq(LabelQualifier("A")(p)),
         Some(varFor("n")),
         Equals(prop(varFor("n"), "prop1"), fn)(p),
+        Node
+      )),
+      Seq(literalString("role1"))
+    )(p)
+
+  private def nodePropertyRuleWithIn(expression: Expression): GrantPrivilege =
+    new GrantPrivilege(
+      GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+      false,
+      None,
+      List(PatternQualifier(
+        Seq(LabelQualifier("A")(p)),
+        Some(varFor("n")),
+        expression,
         Node
       )),
       Seq(literalString("role1"))
@@ -702,5 +724,181 @@ class AdministrationCommandResolvedFunctionSemanticAnalysisTest extends CypherFu
         ).errors shouldBe empty
       }
     }
+  }
+
+  // -- prettifier --------------------------------------------------------------
+
+  test("property rules with a resolved abac.native.user_tags() should prettify") {
+    val userTags = ResolvedFunctionInvocation(
+      function(Seq("abac", "native"), "user_tags").functionName,
+      Some(signature("abac.native.user_tags", builtIn = true)),
+      IndexedSeq.empty
+    )(p)
+    val prettifier = Prettifier(ExpressionStringifier())
+
+    prettifier.asString(nodePropertyRuleWithIn(In(prop(varFor("n"), "prop1"), userTags)(p))) should be(
+      "GRANT TRAVERSE ON HOME GRAPH FOR (n:A) WHERE n.prop1 IN abac.native.user_tags() TO role1"
+    )
+    prettifier.asString(nodePropertyRuleWithIn(Not(In(prop(varFor("n"), "prop1"), userTags)(p))(p))) should be(
+      "GRANT TRAVERSE ON HOME GRAPH FOR (n:A) WHERE NOT n.prop1 IN abac.native.user_tags() TO role1"
+    )
+  }
+
+  // -- unresolved abac.native.user_tags() (provider disabled) -------------------
+
+  private val stateWithUserTagsInPropertyRules = state.withFeature(SemanticFeature.UserTagsInPropertyRules)
+
+  private def userTagsRule(fn: Expression, negated: Boolean = false): GrantPrivilege = {
+    val in = In(prop(varFor("n"), "prop1"), fn)(p)
+    nodePropertyRuleWithIn(if (negated) Not(in)(p) else in)
+  }
+
+  private def unresolvedUserTags: ResolvedFunctionInvocation = resolved("abac.native.user_tags", None, p)
+
+  test("property rule IN abac.native.user_tags() accepts an unresolved function (provider disabled)") {
+    userTagsRule(unresolvedUserTags).semanticCheck
+      .run(stateWithUserTagsInPropertyRules, context)
+      .errors shouldBe empty
+  }
+
+  test(
+    "property rule NOT IN abac.native.user_tags() is rejected even with an unresolved function (provider disabled)"
+  ) {
+    val result = userTagsRule(unresolvedUserTags, negated = true).semanticCheck
+      .run(stateWithUserTagsInPropertyRules, context)
+    result.errors.size shouldBe 1
+    result.errors.head.msg should include(
+      "The NOT operator is not permitted in conjunction with abac.native.user_tags()"
+    )
+    result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+    result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+      GqlStatusInfoCodes.STATUS_22ND4.getStatusString
+  }
+
+  test(
+    "property rule property = abac.native.user_tags() is rejected even with an unresolved function (provider disabled)"
+  ) {
+    val rule = nodePropertyRuleWithIn(Equals(prop(varFor("n"), "prop1"), unresolvedUserTags)(p))
+    val result = rule.semanticCheck.run(stateWithUserTagsInPropertyRules, context)
+    result.errors.size shouldBe 1
+    result.errors.head.msg should include(
+      "The = operator is not permitted in conjunction with abac.native.user_tags()"
+    )
+    result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+    result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+      GqlStatusInfoCodes.STATUS_22ND4.getStatusString
+  }
+
+  private def assertComparisonOperatorRejected(
+    operator: String,
+    rule: => GrantPrivilege
+  ): Unit = {
+    val result = rule.semanticCheck.run(stateWithUserTagsInPropertyRules, context)
+    result.errors.size shouldBe 1
+    result.errors.head.msg should include(
+      s"The $operator operator is not permitted in conjunction with abac.native.user_tags()"
+    )
+    result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+    result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+      GqlStatusInfoCodes.STATUS_22ND4.getStatusString
+  }
+
+  test("property rule property <> abac.native.user_tags() is rejected") {
+    assertComparisonOperatorRejected(
+      "<>",
+      nodePropertyRuleWithIn(NotEquals(prop(varFor("n"), "prop1"), unresolvedUserTags)(p))
+    )
+  }
+
+  test("property rule abac.native.user_tags() <> property is rejected") {
+    assertComparisonOperatorRejected(
+      "<>",
+      nodePropertyRuleWithIn(NotEquals(unresolvedUserTags, prop(varFor("n"), "prop1"))(p))
+    )
+  }
+
+  test("property rule property > abac.native.user_tags() is rejected") {
+    assertComparisonOperatorRejected(
+      ">",
+      nodePropertyRuleWithIn(GreaterThan(prop(varFor("n"), "prop1"), unresolvedUserTags)(p))
+    )
+  }
+
+  test("property rule abac.native.user_tags() > property is rejected") {
+    assertComparisonOperatorRejected(
+      ">",
+      nodePropertyRuleWithIn(GreaterThan(unresolvedUserTags, prop(varFor("n"), "prop1"))(p))
+    )
+  }
+
+  test("property rule property >= abac.native.user_tags() is rejected") {
+    assertComparisonOperatorRejected(
+      ">=",
+      nodePropertyRuleWithIn(GreaterThanOrEqual(prop(varFor("n"), "prop1"), unresolvedUserTags)(p))
+    )
+  }
+
+  test("property rule abac.native.user_tags() >= property is rejected") {
+    assertComparisonOperatorRejected(
+      ">=",
+      nodePropertyRuleWithIn(GreaterThanOrEqual(unresolvedUserTags, prop(varFor("n"), "prop1"))(p))
+    )
+  }
+
+  test("property rule property < abac.native.user_tags() is rejected") {
+    assertComparisonOperatorRejected(
+      "<",
+      nodePropertyRuleWithIn(LessThan(prop(varFor("n"), "prop1"), unresolvedUserTags)(p))
+    )
+  }
+
+  test("property rule abac.native.user_tags() < property is rejected") {
+    assertComparisonOperatorRejected(
+      "<",
+      nodePropertyRuleWithIn(LessThan(unresolvedUserTags, prop(varFor("n"), "prop1"))(p))
+    )
+  }
+
+  test("property rule property <= abac.native.user_tags() is rejected") {
+    assertComparisonOperatorRejected(
+      "<=",
+      nodePropertyRuleWithIn(LessThanOrEqual(prop(varFor("n"), "prop1"), unresolvedUserTags)(p))
+    )
+  }
+
+  test("property rule abac.native.user_tags() <= property is rejected") {
+    assertComparisonOperatorRejected(
+      "<=",
+      nodePropertyRuleWithIn(LessThanOrEqual(unresolvedUserTags, prop(varFor("n"), "prop1"))(p))
+    )
+  }
+
+  test("property rule IN an unresolved non-allow-listed abac function is still rejected") {
+    // Guards that the tolerance is scoped to the allow-listed name: a mistyped abac.native function that does
+    // not resolve must still be reported as unknown, not silently accepted.
+    val result = userTagsRule(resolved("abac.native.used_rags", None, p)).semanticCheck
+      .run(stateWithUserTagsInPropertyRules, context)
+    result.errors.map(_.msg) should contain("Unknown function 'abac.native.used_rags'")
+  }
+
+  private val cypher5Context = SemanticCheckContext(CypherVersion.Cypher5, NotImplementedErrorMessageProvider)
+
+  test("Cypher 5 property rule still reports the version hint for a user_tags function of a newer version") {
+    val existsInCypher25 = ResolvedFunctionInvocation(
+      FunctionName("abac.native.user_tags")(p),
+      None,
+      IndexedSeq.empty,
+      Some(CypherVersion.Cypher25)
+    )(p)
+
+    val result = userTagsRule(existsInCypher25).semanticCheck
+      .run(stateWithUserTagsInPropertyRules, cypher5Context)
+    result.errors.map(_.msg) should contain("Unknown function 'abac.native.user_tags'")
+  }
+
+  test("Cypher 5 property rule still rejects an unresolved user_tags function") {
+    val result = userTagsRule(unresolvedUserTags).semanticCheck
+      .run(stateWithUserTagsInPropertyRules, cypher5Context)
+    result.errors.map(_.msg) should contain("Unknown function 'abac.native.user_tags'")
   }
 }

@@ -154,6 +154,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       .withFeature(SemanticFeature.AttributeBasedAccessControl)
       .withFeature(SemanticFeature.UserTags)
       .withFeature(SemanticFeature.ValueInListProperty)
+      .withFeature(SemanticFeature.UserTagsInPropertyRules)
 
   // Privilege command tests
 
@@ -1787,6 +1788,403 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 .get()
                 .gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
             }
+          }
+        }
+      }
+
+      // e.g. FOR (n) WHERE n.prop1 IN abac.native.user_tags()
+      testVersions(
+        s"property rules with property IN abac.native.user_tags() should pass semantic checking in Cypher 25 ($qualifierDescription)"
+      ) { version =>
+        val expressionStringifier = ExpressionStringifier()
+
+        Seq(
+          In(
+            prop(varFor("n"), "prop1"),
+            function(Seq("abac", "native"), "user_tags")
+          )(p), // n.prop1 IN abac.native.user_tags()
+          In(prop(varFor("n"), "prop1"), function(Seq("ABAC", "NATIVE"), "USER_TAGS"))(p) // case-insensitive
+        ).foreach { expression =>
+          withClue(expressionStringifier(expression)) {
+            val privilege = GrantPrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              false,
+              None,
+              qualifierFn(Some(varFor("n", p)), expression),
+              Seq(literalString("role1"))
+            )(p)
+
+            val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+            if (version == CypherVersion.Cypher5) {
+              result.errors.size shouldBe 1
+              result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+                GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+            } else {
+              result.errors shouldBe empty
+            }
+          }
+        }
+      }
+
+      // e.g. GRANT/DENY/REVOKE ... FOR (n) WHERE NOT n.prop1 IN abac.native.user_tags()
+      // NOT is otherwise allowed in property rule predicates, but is rejected in conjunction with an abac
+      // function for every privilege type -- unlike DENY, which is only rejected for DENY/REVOKE DENY.
+      testVersions(
+        s"NOT wrapping property IN abac.native.user_tags() should fail semantic checking for every privilege type ($qualifierDescription)"
+      ) { version =>
+        val notExpression =
+          Not(In(prop(varFor("n"), "prop1"), function(Seq("abac", "native"), "user_tags"))(p))(p)
+        val qualifier = qualifierFn(Some(varFor("n", p)), notExpression)
+
+        def assertRejected(privilege: PrivilegeCommand): Unit = {
+          val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+          result.errors.size shouldBe 1
+          if (version == CypherVersion.Cypher5) {
+            result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+              GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+          } else {
+            result.errors.head.msg should include(
+              "The NOT operator is not permitted in conjunction with abac.native.user_tags()"
+            )
+            // Both the Cypher 5 and Cypher 25 rejections hang off the property rule condition
+            result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+            result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+              GqlStatusInfoCodes.STATUS_22ND4.getStatusString
+          }
+        }
+
+        withClue("GRANT") {
+          assertRejected(GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifier,
+            Seq(literalString("role1"))
+          )(p))
+        }
+
+        withClue("DENY") {
+          assertRejected(DenyPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            immutable = false,
+            None,
+            qualifier,
+            Seq(literalString("role1"))
+          )(p))
+        }
+
+        Seq(RevokeGrantType()(pos), RevokeBothType()(pos), RevokeDenyType()(pos)).foreach { revokeType =>
+          withClue(s"REVOKE ${revokeType.name}") {
+            assertRejected(RevokePrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              immutableOnly = false,
+              None,
+              qualifier,
+              Seq(literalString("role1")),
+              revokeType
+            )(p))
+          }
+        }
+      }
+
+      // e.g. GRANT/DENY/REVOKE ... FOR (n) WHERE n.prop1 = abac.native.user_tags()
+      // The abac function is only meaningful as the right-hand side of an IN predicate; using = to
+      // compare a property against the per-user tag list is rejected for every privilege type.
+      testVersions(
+        s"= between a property and abac.native.user_tags() should fail semantic checking for every privilege type ($qualifierDescription)"
+      ) { version =>
+        val equalsExpression =
+          Equals(prop(varFor("n"), "prop1"), function(Seq("abac", "native"), "user_tags"))(p)
+        val qualifier = qualifierFn(Some(varFor("n", p)), equalsExpression)
+
+        def assertRejected(privilege: PrivilegeCommand): Unit = {
+          val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+          result.errors.size shouldBe 1
+          if (version == CypherVersion.Cypher5) {
+            result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+              GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+          } else {
+            result.errors.head.msg should include(
+              "The = operator is not permitted in conjunction with abac.native.user_tags()"
+            )
+            // Both the Cypher 5 and Cypher 25 rejections hang off the property rule condition
+            result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+            result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+              GqlStatusInfoCodes.STATUS_22ND4.getStatusString
+          }
+        }
+
+        withClue("GRANT") {
+          assertRejected(GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifier,
+            Seq(literalString("role1"))
+          )(p))
+        }
+
+        withClue("DENY") {
+          assertRejected(DenyPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            immutable = false,
+            None,
+            qualifier,
+            Seq(literalString("role1"))
+          )(p))
+        }
+
+        Seq(RevokeGrantType()(pos), RevokeBothType()(pos), RevokeDenyType()(pos)).foreach { revokeType =>
+          withClue(s"REVOKE ${revokeType.name}") {
+            assertRejected(RevokePrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              immutableOnly = false,
+              None,
+              qualifier,
+              Seq(literalString("role1")),
+              revokeType
+            )(p))
+          }
+        }
+      }
+
+      // e.g. FOR (n) WHERE abac.native.user_tags() = n.prop1 -- the reversed operand order is rejected too
+      testVersionsExcept5(
+        s"abac.native.user_tags() = property should fail semantic checking in Cypher 25 ($qualifierDescription)"
+      ) { version =>
+        val equalsExpression =
+          Equals(function(Seq("abac", "native"), "user_tags"), prop(varFor("n"), "prop1"))(p)
+        val privilege = GrantPrivilege(
+          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+          false,
+          None,
+          qualifierFn(Some(varFor("n", p)), equalsExpression),
+          Seq(literalString("role1"))
+        )(p)
+
+        val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+        result.errors.size shouldBe 1
+        result.errors.head.msg should include(
+          "The = operator is not permitted in conjunction with abac.native.user_tags()"
+        )
+        result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+        result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+          GqlStatusInfoCodes.STATUS_22ND4.getStatusString
+      }
+
+      // e.g. REVOKE ... FOR (n) WHERE n.prop1 IN abac.native.user_tags()
+      testVersions(
+        s"revoking property rules with property IN abac.native.user_tags() should pass semantic checking in Cypher 25 ($qualifierDescription)"
+      ) { version =>
+        Seq(
+          RevokeGrantType()(pos),
+          RevokeBothType()(pos)
+        ).foreach { revokeType =>
+          withClue(revokeType.name) {
+            val privilege = RevokePrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              immutableOnly = false,
+              None,
+              qualifierFn(
+                Some(varFor("n", p)),
+                In(prop(varFor("n"), "prop1"), function(Seq("abac", "native"), "user_tags"))(p)
+              ),
+              Seq(literalString("role1")),
+              revokeType
+            )(p)
+
+            val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+            if (version == CypherVersion.Cypher5) {
+              result.errors.size shouldBe 1
+              result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+                GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+            } else {
+              result.errors shouldBe empty
+            }
+          }
+        }
+      }
+
+      // e.g. REVOKE DENY ... FOR (n) WHERE n.prop1 IN abac.native.user_tags()
+      testVersions(
+        s"revoking a denied property rule with property IN abac.native.user_tags() should fail semantic checking ($qualifierDescription)"
+      ) { version =>
+        val privilege = RevokePrivilege(
+          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+          immutableOnly = false,
+          None,
+          qualifierFn(
+            Some(varFor("n", p)),
+            In(prop(varFor("n"), "prop1"), function(Seq("abac", "native"), "user_tags"))(p)
+          ),
+          Seq(literalString("role1")),
+          RevokeDenyType()(pos)
+        )(p)
+
+        val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+        result.errors.size shouldBe 1
+        if (version == CypherVersion.Cypher5) {
+          result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+            GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+        } else {
+          result.errors.head.msg should include(
+            "DENY is not permitted in conjunction with abac.native.user_tags()"
+          )
+          result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+          result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+            GqlStatusInfoCodes.STATUS_22ND4.getStatusString
+        }
+      }
+
+      // e.g. DENY ... FOR (n) WHERE n.prop1 IN abac.native.user_tags()
+      testVersions(
+        s"denying property rules with property IN abac.native.user_tags() should fail semantic checking ($qualifierDescription)"
+      ) { version =>
+        val privilege = DenyPrivilege(
+          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+          immutable = false,
+          None,
+          qualifierFn(
+            Some(varFor("n", p)),
+            In(prop(varFor("n"), "prop1"), function(Seq("abac", "native"), "user_tags"))(p)
+          ),
+          Seq(literalString("role1"))
+        )(p)
+
+        val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+        result.errors.size shouldBe 1
+        if (version == CypherVersion.Cypher5) {
+          result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+            GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+        } else {
+          result.errors.head.msg should include(
+            "DENY is not permitted in conjunction with abac.native.user_tags()"
+          )
+          result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+          result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+            GqlStatusInfoCodes.STATUS_22ND4.getStatusString
+        }
+      }
+
+      test(
+        s"property rules with property IN abac.native.user_tags() should fail semantic checking without the feature flag ($qualifierDescription)"
+      ) {
+        val stateWithoutUserTagsInPropertyRules =
+          SemanticState.clean
+            .withFeature(SemanticFeature.MultipleDatabases)
+            .withFeature(SemanticFeature.RelationshipPropertyValueAccessRules)
+            .withFeature(SemanticFeature.AttributeBasedAccessControl)
+            .withFeature(SemanticFeature.UserTags)
+            .withFeature(SemanticFeature.ValueInListProperty)
+
+        val privilege = GrantPrivilege(
+          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+          false,
+          None,
+          qualifierFn(
+            Some(varFor("n", p)),
+            In(prop(varFor("n"), "prop1"), function(Seq("abac", "native"), "user_tags"))(p)
+          ),
+          Seq(literalString("role1"))
+        )(p)
+
+        val result = privilege.semanticCheck.run(
+          stateWithoutUserTagsInPropertyRules,
+          versionedSemanticContext(CypherVersion.Cypher25)
+        )
+        result.errors.size shouldBe 1
+        result.errors.head.msg should endWith(
+          "due to lack of support for user tags in property-based access control rules."
+        )
+      }
+
+      // e.g. FOR (n) WHERE abac.native.user_tags() = n.prop1 -- rejected the same way with any feature flag off
+      test(
+        s"abac.native.user_tags() = rejection does not depend on the feature flags ($qualifierDescription)"
+      ) {
+        val stateWithoutValueInListProperty =
+          SemanticState.clean
+            .withFeature(SemanticFeature.MultipleDatabases)
+            .withFeature(SemanticFeature.RelationshipPropertyValueAccessRules)
+            .withFeature(SemanticFeature.AttributeBasedAccessControl)
+            .withFeature(SemanticFeature.UserTags)
+            .withFeature(SemanticFeature.UserTagsInPropertyRules)
+
+        val stateWithoutUserTagsInPropertyRules =
+          SemanticState.clean
+            .withFeature(SemanticFeature.MultipleDatabases)
+            .withFeature(SemanticFeature.RelationshipPropertyValueAccessRules)
+            .withFeature(SemanticFeature.AttributeBasedAccessControl)
+            .withFeature(SemanticFeature.UserTags)
+            .withFeature(SemanticFeature.ValueInListProperty)
+
+        val expressionStringifier = ExpressionStringifier()
+
+        Seq(
+          Equals(prop(varFor("n"), "prop1"), function(Seq("abac", "native"), "user_tags"))(p),
+          Equals(function(Seq("abac", "native"), "user_tags"), prop(varFor("n"), "prop1"))(p)
+        ).foreach { expression =>
+          Seq(stateWithoutValueInListProperty, stateWithoutUserTagsInPropertyRules).foreach { state =>
+            withClue(expressionStringifier(expression)) {
+              val privilege = GrantPrivilege(
+                GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+                false,
+                None,
+                qualifierFn(Some(varFor("n", p)), expression),
+                Seq(literalString("role1"))
+              )(p)
+
+              val result = privilege.semanticCheck.run(state, versionedSemanticContext(CypherVersion.Cypher25))
+              result.errors.size shouldBe 1
+              result.errors.head.msg should include(
+                "The = operator is not permitted in conjunction with abac.native.user_tags()"
+              )
+              result.errors.head.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+              result.errors.head.gqlStatusObject.cause().get().gqlStatus() shouldBe
+                GqlStatusInfoCodes.STATUS_22ND4.getStatusString
+            }
+          }
+        }
+      }
+
+      testVersions(
+        s"property rules using abac functions in unsupported shapes should fail semantic checking ($qualifierDescription)"
+      ) { version =>
+        val expressionStringifier = ExpressionStringifier()
+
+        val nontrivialPredicate =
+          "Only single, literal-based predicate expressions are allowed for property-based access control."
+        val sameTypeList = "All elements in a list must be literals of the same type for property-based access control."
+
+        Seq(
+          // function with an argument is not the user_tags shape
+          (
+            In(prop(varFor("n"), "prop1"), function(Seq("abac", "native"), "user_tags", literalString("x")))(p),
+            nontrivialPredicate
+          ),
+          // other abac functions stay rejected
+          (
+            In(prop(varFor("n"), "prop1"), function(Seq("abac", "oidc"), "user_attribute", literalString("k")))(p),
+            nontrivialPredicate
+          ),
+          // function inside a list literal
+          (In(prop(varFor("n"), "prop1"), listOf(function(Seq("abac", "native"), "user_tags")))(p), sameTypeList)
+          // `<property> = abac.native.user_tags()` has its own dedicated rejection, covered separately below
+        ).foreach { case (expression, expectedReason) =>
+          withClue(expressionStringifier(expression)) {
+            val privilege = GrantPrivilege(
+              GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+              false,
+              None,
+              qualifierFn(Some(varFor("n", p)), expression),
+              Seq(literalString("role1"))
+            )(p)
+
+            val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, versionedSemanticContext(version))
+            result.errors.size shouldBe 1
+            // assert the reason, so the test cannot pass on an unrelated error
+            result.errors.head.msg should startWith("Failed to administer property rule.")
+            result.errors.head.msg should endWith(expectedReason)
           }
         }
       }

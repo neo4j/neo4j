@@ -3921,7 +3921,8 @@ class AstGenerator(
       _propertyRuleComparisonPredicate(Property(variable, propertyName)(pos), rhs),
       _propertyRuleUnaryPredicate(Property(v, propertyName)(pos)),
       _propertyRuleComparisonPredicate(Property(v, propertyName)(pos), rhs),
-      _propertyRulePropertyInList(Property(v, propertyName)(pos))
+      _propertyRulePropertyInList(Property(v, propertyName)(pos)),
+      _propertyRulePropertyInUserTags(Property(v, propertyName)(pos))
     )
   } yield pred
 
@@ -3977,6 +3978,16 @@ class AstGenerator(
       in = In(p, ListLiteral(list)(pos))(pos)
       expression <- oneOf(in, Not(in)(pos))
     } yield expression
+
+  def _propertyRulePropertyInUserTags(p: Expression): Gen[Expression] = {
+    val userTags = FunctionInvocation(
+      FunctionName(Namespace(List("abac", "native"))(pos), "user_tags")(pos),
+      distinct = false,
+      IndexedSeq.empty
+    )(pos)
+    val in = In(p, userTags)(pos)
+    oneOf(in, Not(in)(pos))
+  }
 
   def _graphQualifierAndResource(graphAction: GraphAction)
     : Gen[(List[GraphPrivilegeQualifier], Option[ActionResourceBase])] =

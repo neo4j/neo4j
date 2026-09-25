@@ -4144,6 +4144,12 @@ class PrettifierIT extends AbstractPrettifierTest {
             s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT $$foo IN Bar.fOO $preposition role",
           s"""$action traverse on graph * for ()-[a]-() where 1 in a.b $preposition role""" ->
             s"""$action TRAVERSE ON GRAPH * FOR ()-[a]-() WHERE 1 IN a.b $preposition role""",
+          s"$action traverse on graph FoO FOR (Bar) WHERE Bar.fOO in abac.native.user_tags() $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE Bar.fOO IN abac.native.user_tags() $preposition role",
+          s"$action traverse on graph FoO FOR (Bar) WHERE not Bar.fOO in abac.native.user_tags() $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN abac.native.user_tags() $preposition role",
+          s"""$action traverse on graph * for ()-[a]-() where a.b in abac.native.user_tags() $preposition role""" ->
+            s"""$action TRAVERSE ON GRAPH * FOR ()-[a]-() WHERE a.b IN abac.native.user_tags() $preposition role""",
           s"$action traverse on graph FoO FOR (Bar) WHERE 1 > Bar.fOO $preposition role" ->
             s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE 1 > Bar.fOO $preposition role",
           s"$action traverse on graph FoO FOR (Bar) WHERE 1 = Bar.fOO $preposition role" ->
@@ -4308,6 +4314,10 @@ class PrettifierIT extends AbstractPrettifierTest {
             s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE 1 IN Bar.fOO $preposition role",
           s"$action read {*} on graph FoO FOR (Bar) WHERE not $$foo in Bar.fOO $preposition role" ->
             s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT $$foo IN Bar.fOO $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE Bar.fOO in abac.native.user_tags() $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO IN abac.native.user_tags() $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in abac.native.user_tags() $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN abac.native.user_tags() $preposition role",
           s"$action read {*} on graph FoO FOR (Bar) WHERE 1 = Bar.fOO $preposition role" ->
             s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE 1 = Bar.fOO $preposition role",
           s"$action read {*} on graph FoO FOR (Bar) WHERE not $$foo <> Bar.fOO $preposition role" ->
@@ -4370,6 +4380,8 @@ class PrettifierIT extends AbstractPrettifierTest {
             s"$action READ {*} ON GRAPH FoO FOR ()-[Bar]-() WHERE NOT Bar.fOO IN $$foo $preposition role",
           s"$action read {*} on graph FoO FOR ()-[Bar]-() WHERE 1 in Bar.fOO $preposition role" ->
             s"$action READ {*} ON GRAPH FoO FOR ()-[Bar]-() WHERE 1 IN Bar.fOO $preposition role",
+          s"$action read {*} on graph FoO FOR ()-[Bar]-() WHERE Bar.fOO in abac.native.user_tags() $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR ()-[Bar]-() WHERE Bar.fOO IN abac.native.user_tags() $preposition role",
           s"$action read {*} on graph FoO FOR ()-[Bar]-() WHERE 1 < Bar.fOO $preposition role" ->
             s"$action READ {*} ON GRAPH FoO FOR ()-[Bar]-() WHERE 1 < Bar.fOO $preposition role",
           s"$action read {*} on graph FoO FOR ()-[Bar]-() WHERE Bar.fOO > 1 $preposition role" ->
@@ -4460,6 +4472,10 @@ class PrettifierIT extends AbstractPrettifierTest {
             s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE 1 IN Bar.fOO $preposition role",
           s"$action match {*} on graph FoO FOR (Bar) WHERE not $$foo in Bar.fOO $preposition role" ->
             s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE NOT $$foo IN Bar.fOO $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE Bar.fOO in abac.native.user_tags() $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO IN abac.native.user_tags() $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in abac.native.user_tags() $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN abac.native.user_tags() $preposition role",
           s"$action match {*} on graph FoO FOR (Bar) WHERE 1 = Bar.fOO $preposition role" ->
             s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE 1 = Bar.fOO $preposition role",
           s"$action match {*} on graph FoO FOR (Bar) WHERE not 1 <= Bar.fOO $preposition role" ->
@@ -4518,6 +4534,8 @@ class PrettifierIT extends AbstractPrettifierTest {
             s"$action MATCH {*} ON GRAPH FoO FOR ()-[Bar]-() WHERE NOT Bar.fOO IN $$foo $preposition role",
           s"$action match {*} on graph FoO FOR ()-[Bar]-() WHERE 1 in Bar.fOO $preposition role" ->
             s"$action MATCH {*} ON GRAPH FoO FOR ()-[Bar]-() WHERE 1 IN Bar.fOO $preposition role",
+          s"$action match {*} on graph FoO FOR ()-[Bar]-() WHERE Bar.fOO in abac.native.user_tags() $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR ()-[Bar]-() WHERE Bar.fOO IN abac.native.user_tags() $preposition role",
           s"$action match {*} on graph FoO FOR ()-[Bar]-() WHERE $$foo = Bar.fOO $preposition role" ->
             s"$action MATCH {*} ON GRAPH FoO FOR ()-[Bar]-() WHERE $$foo = Bar.fOO $preposition role",
           s"$action match {*} on graph FoO FOR ()-[Bar]-() WHERE Bar.fOO > 1 $preposition role" ->
