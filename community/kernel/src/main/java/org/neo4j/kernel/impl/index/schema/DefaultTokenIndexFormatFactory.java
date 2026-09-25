@@ -26,17 +26,17 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 
 @ServiceProvider
-public class DefaultTokenIndexIdLayoutFactory implements TokenIndexIdLayoutFactory {
+public class DefaultTokenIndexFormatFactory implements TokenIndexFormatFactory {
     @Override
     public int getPriority() {
         return 1000;
     }
 
     @Override
-    public TokenIndexIdLayout createIdLayout(
+    public TokenIndexFormat<?> createFormat(
             ImmutableSet<OpenOption> openOptions,
             EntityType entityType,
             StorageEngineIndexingBehaviour indexingBehaviour) {
-        return new DefaultTokenIndexIdLayout();
+        return BasicTokenIndexFormat.INSTANCE;
     }
 }

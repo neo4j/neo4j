@@ -50,7 +50,7 @@ public class TokenIndexImporter implements IndexImporter {
     private static final String INDEX_TOKEN_IMPORTER_TAG = "indexTokenImporter";
     private final IndexDescriptor index;
     private final PageCacheTracer pageCacheTracer;
-    private final TokenIndexAccessor accessor;
+    private final TokenIndexAccessor<?> accessor;
     private final CursorContext cursorContext;
 
     TokenIndexImporter(
@@ -108,7 +108,7 @@ public class TokenIndexImporter implements IndexImporter {
         closeAll(flush, accessor);
     }
 
-    private TokenIndexAccessor tokenIndexAccessor(
+    private TokenIndexAccessor<?> tokenIndexAccessor(
             DatabaseLayout layout,
             FileSystemAbstraction fs,
             PageCache pageCache,
@@ -124,6 +124,8 @@ public class TokenIndexImporter implements IndexImporter {
                         layout.databaseDirectory())
                 .forProvider(AllIndexProviderDescriptors.TOKEN_DESCRIPTOR);
         IndexFiles indexFiles = TokenIndexProvider.indexFiles(index, fs, indexDirectoryStructure);
-        return new TokenIndexAccessor(context, indexFiles, index, immediate(), openOptions, false, indexingBehaviour);
+        TokenIndexFormat<?> format =
+                TokenIndexFormatFactory.select(openOptions, index.schema().entityType(), indexingBehaviour);
+        return new TokenIndexAccessor<>(context, indexFiles, index, immediate(), openOptions, false, format);
     }
 }

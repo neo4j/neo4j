@@ -46,7 +46,7 @@ import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
  * <p>
  * Updates aren't visible to {@link TokenIndexReader readers} immediately, rather when queue happens to be applied.
  */
-class TokenIndexUpdater implements IndexUpdater {
+class TokenIndexUpdater implements TokenIndexFormat.Updater {
 
     /**
      * {@link Comparator} for sorting the entity id ranges, used in batches to apply updates in sorted order.

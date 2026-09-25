@@ -69,7 +69,6 @@ import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -87,14 +86,14 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
                         pageCache, fs, contextFactory, pageCacheTracer, DEFAULT_DATABASE_NAME)
                 .withReadOnlyChecker(writable())
                 .build();
-        return new TokenIndexAccessor(
+        return new TokenIndexAccessor<>(
                 context,
                 createIndexFiles(fs, directory, indexDescriptor),
                 indexDescriptor,
                 cleanup,
                 Sets.immutable.empty(),
                 false,
-                StorageEngineIndexingBehaviour.EMPTY);
+                BasicTokenIndexFormat.INSTANCE);
     }
 
     @Override

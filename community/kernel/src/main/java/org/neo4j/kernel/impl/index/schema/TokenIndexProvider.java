@@ -117,17 +117,12 @@ public class TokenIndexProvider extends IndexProvider {
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour,
             MemoryTracker memoryTracker) {
+        TokenIndexFormat<?> format = format(descriptor, openOptions, indexingBehaviour);
         if (openOptions.contains(PageCacheOpenOptions.MULTI_VERSIONED)) {
-            return new MultiVersionTokenIndexPopulator(
-                    databaseIndexContext,
-                    indexFiles(descriptor),
-                    descriptor,
-                    openOptions,
-                    indexingBehaviour,
-                    memoryTracker);
+            return new MultiVersionTokenIndexPopulator<>(
+                    databaseIndexContext, indexFiles(descriptor), descriptor, openOptions, format, memoryTracker);
         }
-        return new TokenIndexPopulator(
-                databaseIndexContext, indexFiles(descriptor), descriptor, openOptions, indexingBehaviour);
+        return new TokenIndexPopulator<>(databaseIndexContext, indexFiles(descriptor), descriptor, openOptions, format);
     }
 
     @Override
@@ -139,14 +134,21 @@ public class TokenIndexProvider extends IndexProvider {
             ImmutableSet<OpenOption> openOptions,
             boolean readOnly,
             StorageEngineIndexingBehaviour indexingBehaviour) {
-        return new TokenIndexAccessor(
+        return new TokenIndexAccessor<>(
                 databaseIndexContext,
                 indexFiles(descriptor),
                 descriptor,
                 recoveryCleanupWorkCollector,
                 openOptions,
                 readOnly,
-                indexingBehaviour);
+                format(descriptor, openOptions, indexingBehaviour));
+    }
+
+    private static TokenIndexFormat<?> format(
+            IndexDescriptor descriptor,
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
+        return TokenIndexFormatFactory.select(openOptions, descriptor.schema().entityType(), indexingBehaviour);
     }
 
     @Override

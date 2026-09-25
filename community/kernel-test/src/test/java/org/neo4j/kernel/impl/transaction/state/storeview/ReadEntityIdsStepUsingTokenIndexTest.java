@@ -44,7 +44,6 @@ import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -55,6 +54,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.StoreScan.ExternalUpdatesCheck;
+import org.neo4j.kernel.impl.index.schema.BasicTokenIndexFormat;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
@@ -128,7 +128,8 @@ class ReadEntityIdsStepUsingTokenIndexTest {
         }
     }
 
-    private void populateTokenIndex(TokenIndexAccessor indexAccessor, BitSet entityIds, long count) throws Exception {
+    private void populateTokenIndex(TokenIndexAccessor<?> indexAccessor, BitSet entityIds, long count)
+            throws Exception {
         try (IndexUpdater updater = indexAccessor.newUpdater(ONLINE, CursorContext.NULL_CONTEXT, false)) {
             long id = 0;
             for (int i = 0; i < count; i++) {
@@ -141,10 +142,10 @@ class ReadEntityIdsStepUsingTokenIndexTest {
     }
 
     private class ControlledUpdatesCheck implements ExternalUpdatesCheck {
-        private final TokenIndexAccessor indexAccessor;
+        private final TokenIndexAccessor<?> indexAccessor;
         private final BitSet expectedEntityIds;
 
-        ControlledUpdatesCheck(TokenIndexAccessor indexAccessor, BitSet expectedEntityIds) {
+        ControlledUpdatesCheck(TokenIndexAccessor<?> indexAccessor, BitSet expectedEntityIds) {
             this.indexAccessor = indexAccessor;
             this.expectedEntityIds = expectedEntityIds;
         }
@@ -195,12 +196,12 @@ class ReadEntityIdsStepUsingTokenIndexTest {
         }
     }
 
-    private TokenIndexAccessor indexAccessor() {
+    private TokenIndexAccessor<?> indexAccessor() {
         IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider(databaseLayout.databaseDirectory())
                 .forProvider(AllIndexProviderDescriptors.TOKEN_DESCRIPTOR);
         IndexFiles indexFiles =
                 new IndexFiles(testDir.getFileSystem(), indexDirectoryStructure, INDEX_DESCRIPTOR.getId());
-        return new TokenIndexAccessor(
+        return new TokenIndexAccessor<>(
                 DatabaseIndexContext.builder(
                                 pageCache,
                                 testDir.getFileSystem(),
@@ -213,6 +214,6 @@ class ReadEntityIdsStepUsingTokenIndexTest {
                 immediate(),
                 Sets.immutable.empty(),
                 false,
-                StorageEngineIndexingBehaviour.EMPTY);
+                BasicTokenIndexFormat.INSTANCE);
     }
 }

@@ -23,7 +23,7 @@ package org.neo4j.kernel.impl.index.schema;
  * Keys in {@link TokenScanLayout}, each key consists of {@code tokenId} and {@code entityIdRange}, i.e.
  * {@code entityId/rangeSize}, where each range is a small bit set of size {@link TokenScanValue#RANGE_SIZE}.
  */
-class TokenScanKey {
+public class TokenScanKey {
     int tokenId;
     long idRange;
 

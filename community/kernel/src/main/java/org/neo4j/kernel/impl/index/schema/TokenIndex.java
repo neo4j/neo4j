@@ -33,7 +33,6 @@ import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -44,7 +43,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.util.Preconditions;
 
-public class TokenIndex implements ConsistencyCheckable, IndexFileSnapshotter {
+public class TokenIndex<VALUE> implements ConsistencyCheckable, IndexFileSnapshotter {
     /**
      * Written in header to indicate native token index is clean
      *
@@ -115,12 +114,12 @@ public class TokenIndex implements ConsistencyCheckable, IndexFileSnapshotter {
     /**
      * The actual index which backs this token index.
      */
-    GBPTree<TokenScanKey, TokenScanValue> index;
+    GBPTree<TokenScanKey, VALUE> index;
 
     /**
-     * The single instance of {@link TokenIndexUpdater} used for updates.
+     * The single updater instance used for batched single threaded updates.
      */
-    TokenIndexUpdater singleUpdater;
+    TokenIndexFormat.SingleUpdater<VALUE> singleUpdater;
 
     /**
      * Name of the store that will be used when describing work related to this store.
@@ -142,6 +141,8 @@ public class TokenIndex implements ConsistencyCheckable, IndexFileSnapshotter {
      */
     private final IndexDescriptor monitoringDescriptor;
 
+    final TokenIndexFormat<VALUE> format;
+
     protected final TokenIndexIdLayout idLayout;
 
     public TokenIndex(
@@ -150,7 +151,7 @@ public class TokenIndex implements ConsistencyCheckable, IndexFileSnapshotter {
             IndexDescriptor descriptor,
             ImmutableSet<OpenOption> openOptions,
             boolean readOnly,
-            StorageEngineIndexingBehaviour indexingBehaviour) {
+            TokenIndexFormat<VALUE> format) {
         this.readOnlyChecker = databaseIndexContext.readOnlyChecker;
         this.monitors = databaseIndexContext.monitors;
         this.monitorTag = databaseIndexContext.monitorTag;
@@ -165,8 +166,8 @@ public class TokenIndex implements ConsistencyCheckable, IndexFileSnapshotter {
         this.monitoringDescriptor = descriptor;
         this.openOptions = openOptions;
         this.readOnly = readOnly;
-        this.idLayout = TokenIndexIdLayoutFactory.getInstance()
-                .createIdLayout(openOptions, descriptor.schema().entityType(), indexingBehaviour);
+        this.format = format;
+        this.idLayout = format.idLayout();
     }
 
     void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
@@ -176,7 +177,7 @@ public class TokenIndex implements ConsistencyCheckable, IndexFileSnapshotter {
                 pageCache,
                 fs,
                 indexFiles.getStoreFile(),
-                new TokenScanLayout(),
+                format.treeLayout(),
                 monitor,
                 NO_HEADER_READER,
                 recoveryCleanupWorkCollector,
@@ -190,7 +191,7 @@ public class TokenIndex implements ConsistencyCheckable, IndexFileSnapshotter {
     }
 
     void instantiateUpdater() {
-        singleUpdater = new TokenIndexUpdater(1_000, idLayout);
+        singleUpdater = format.newSingleUpdater();
     }
 
     private MultiRootGBPTree.Monitor treeMonitor() {

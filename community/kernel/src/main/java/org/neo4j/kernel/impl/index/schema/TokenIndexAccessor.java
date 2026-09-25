@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 
 import java.io.IOException;
@@ -38,7 +37,6 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.async.AsyncBlockAccessor;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -51,7 +49,7 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.scheduler.JobScheduler;
 
-public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
+public class TokenIndexAccessor<VALUE> extends TokenIndex<VALUE> implements IndexAccessor {
     private final EntityType entityType;
     private final NativeIndexHeaderWriter headerWriter = new NativeIndexHeaderWriter(ONLINE);
     private final int extraWriterParallelFlags;
@@ -63,8 +61,8 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             ImmutableSet<OpenOption> openOptions,
             boolean readOnly,
-            StorageEngineIndexingBehaviour indexingBehaviour) {
-        super(databaseIndexContext, indexFiles, descriptor, openOptions, readOnly, indexingBehaviour);
+            TokenIndexFormat<VALUE> format) {
+        super(databaseIndexContext, indexFiles, descriptor, openOptions, readOnly, format);
         this.entityType = descriptor.schema().entityType();
         this.extraWriterParallelFlags =
                 openOptions.contains(PageCacheOpenOptions.MULTI_VERSIONED) ? DataTree.W_ESCALATING_COORDINATION : 0;
@@ -78,12 +76,9 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
         assertWritable();
         try {
             if (parallel) {
-                TokenIndexUpdater parallelUpdater = new TokenIndexUpdater(1_000, idLayout);
-                return parallelUpdater.initialize(
-                        context -> index.writer(extraWriterParallelFlags, context), true, cursorContext);
+                return format.openParallelUpdater(index, extraWriterParallelFlags, cursorContext);
             }
-            return singleUpdater.initialize(
-                    context -> index.writer(W_BATCHED_SINGLE_THREADED, context), false, cursorContext);
+            return singleUpdater.open(index, cursorContext);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -135,13 +130,13 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
     @Override
     public TokenIndexReader newTokenReader(IndexUsageTracking usageTracker) {
         assertTreeOpen();
-        return new DefaultTokenIndexReader(index, usageTracker, idLayout);
+        return new DefaultTokenIndexReader<>(index, usageTracker, format);
     }
 
     @Override
     public BoundedIterable<EntityTokenRange> newAllEntriesTokenReader(
             long fromEntityId, long toEntityId, CursorContext cursorContext) {
-        IntFunction<Seeker<TokenScanKey, TokenScanValue>> seekProvider = tokenId -> {
+        IntFunction<Seeker<TokenScanKey, VALUE>> seekProvider = tokenId -> {
             try {
                 return index.seek(
                         new TokenScanKey(tokenId, idLayout.rangeOf(fromEntityId)),
@@ -153,11 +148,11 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
         };
 
         int highestTokenId = findHighestTokenId(cursorContext);
-        return new NativeAllEntriesTokenScanReader(seekProvider, highestTokenId, entityType, idLayout);
+        return format.newAllEntriesReader(seekProvider, highestTokenId, entityType);
     }
 
     private int findHighestTokenId(CursorContext cursorContext) {
-        try (Seeker<TokenScanKey, TokenScanValue> cursor = index.seek(
+        try (Seeker<TokenScanKey, VALUE> cursor = index.seek(
                 new TokenScanKey(Integer.MAX_VALUE, Long.MAX_VALUE), new TokenScanKey(0, -1), cursorContext)) {
             if (cursor.next()) {
                 return cursor.key().tokenId;

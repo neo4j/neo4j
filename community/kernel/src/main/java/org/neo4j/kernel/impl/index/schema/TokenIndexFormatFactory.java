@@ -28,24 +28,27 @@ import org.neo4j.service.PrioritizedService;
 import org.neo4j.service.Services;
 
 @Service
-public interface TokenIndexIdLayoutFactory extends PrioritizedService {
+public interface TokenIndexFormatFactory extends PrioritizedService {
 
-    TokenIndexIdLayout createIdLayout(
+    TokenIndexFormat<?> createFormat(
             ImmutableSet<OpenOption> openOptions,
             EntityType entityType,
             StorageEngineIndexingBehaviour indexingBehaviour);
 
-    static TokenIndexIdLayoutFactory getInstance() {
-        return TokenIndexIdLayoutFactoryHolder.FACTORY;
+    static TokenIndexFormat<?> select(
+            ImmutableSet<OpenOption> openOptions,
+            EntityType entityType,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
+        return TokenIndexFormatFactoryHolder.FACTORY.createFormat(openOptions, entityType, indexingBehaviour);
     }
 
-    final class TokenIndexIdLayoutFactoryHolder {
-        static final TokenIndexIdLayoutFactory FACTORY = loadFactory();
+    final class TokenIndexFormatFactoryHolder {
+        static final TokenIndexFormatFactory FACTORY = loadFactory();
 
-        private static TokenIndexIdLayoutFactory loadFactory() {
-            return Services.loadByPriority(TokenIndexIdLayoutFactory.class)
+        private static TokenIndexFormatFactory loadFactory() {
+            return Services.loadByPriority(TokenIndexFormatFactory.class)
                     .orElseThrow(() ->
-                            new IllegalStateException("Failed to load instance of " + TokenIndexIdLayoutFactory.class));
+                            new IllegalStateException("Failed to load instance of " + TokenIndexFormatFactory.class));
         }
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.kernel.impl.index.schema.TokenIndex.FAILED;
 import static org.neo4j.kernel.impl.index.schema.TokenIndex.ONLINE;
 
@@ -33,7 +32,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.async.AsyncBlockAccessor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,8 +48,8 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.util.Preconditions;
 
-public class MultiVersionTokenIndexPopulator implements IndexPopulator {
-    private final TokenIndex tokenIndex;
+public class MultiVersionTokenIndexPopulator<VALUE> implements IndexPopulator {
+    private final TokenIndex<VALUE> tokenIndex;
     private final FileSystemAbstraction fs;
     private final MemoryTracker memoryTracker;
     private final IndexDescriptor descriptor;
@@ -68,11 +66,10 @@ public class MultiVersionTokenIndexPopulator implements IndexPopulator {
             IndexFiles indexFiles,
             IndexDescriptor descriptor,
             ImmutableSet<OpenOption> openOptions,
-            StorageEngineIndexingBehaviour indexingBehaviour,
+            TokenIndexFormat<VALUE> format,
             MemoryTracker memoryTracker) {
         this.memoryTracker = memoryTracker;
-        this.tokenIndex =
-                new TokenIndex(databaseIndexContext, indexFiles, descriptor, openOptions, false, indexingBehaviour);
+        this.tokenIndex = new TokenIndex<>(databaseIndexContext, indexFiles, descriptor, openOptions, false, format);
         this.fs = databaseIndexContext.fileSystem;
         this.descriptor = descriptor;
     }
@@ -107,11 +104,8 @@ public class MultiVersionTokenIndexPopulator implements IndexPopulator {
 
     @Override
     public void add(Collection<? extends IndexEntryUpdate> updates, CursorContext cursorContext) {
-        try (TokenIndexUpdater updater = tokenIndex.singleUpdater.initialize(
-                context -> tokenIndex.index.writer(W_BATCHED_SINGLE_THREADED, context), false, cursorContext)) {
-            for (IndexEntryUpdate update : updates) {
-                updater.process(update);
-            }
+        try {
+            tokenIndex.singleUpdater.addAll(tokenIndex.index, updates, cursorContext);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -122,8 +116,7 @@ public class MultiVersionTokenIndexPopulator implements IndexPopulator {
         if (scanCompleted) {
             // update index in place
             try {
-                return tokenIndex.singleUpdater.initialize(
-                        context -> tokenIndex.index.writer(W_BATCHED_SINGLE_THREADED, context), false, cursorContext);
+                return tokenIndex.singleUpdater.open(tokenIndex.index, cursorContext);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -158,9 +151,8 @@ public class MultiVersionTokenIndexPopulator implements IndexPopulator {
             IndexEntryConflictHandler conflictHandler,
             CursorContext cursorContext) {
         scanCompleted = true;
-        try (CursorContext localContext = cursorContext.createUnboundedReadRelatedContext("TOKEN_POPULATION");
-                TokenIndexUpdater updater = tokenIndex.singleUpdater.initialize(
-                        context -> tokenIndex.index.writer(W_BATCHED_SINGLE_THREADED, context), false, localContext)) {
+        try (var localContext = cursorContext.createUnboundedReadRelatedContext("TOKEN_POPULATION");
+                var updater = tokenIndex.singleUpdater.open(tokenIndex.index, localContext)) {
             try (Reader updatesReader = external.reader()) {
                 while (updatesReader.next()) {
                     localContext.getVersionContext().initWrite(updatesReader.version);

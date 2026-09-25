@@ -36,17 +36,19 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.util.Preconditions;
 
-public class DefaultTokenIndexReader implements TokenIndexReader {
+public class DefaultTokenIndexReader<VALUE> implements TokenIndexReader {
 
-    private final GBPTree<TokenScanKey, TokenScanValue> index;
+    private final GBPTree<TokenScanKey, VALUE> index;
     private final IndexUsageTracking usageTracker;
+    private final TokenIndexFormat<VALUE> format;
     private final TokenIndexIdLayout idLayout;
 
     public DefaultTokenIndexReader(
-            GBPTree<TokenScanKey, TokenScanValue> index, IndexUsageTracking usageTracker, TokenIndexIdLayout idLayout) {
+            GBPTree<TokenScanKey, VALUE> index, IndexUsageTracking usageTracker, TokenIndexFormat<VALUE> format) {
         this.index = index;
         this.usageTracker = usageTracker;
-        this.idLayout = idLayout;
+        this.format = format;
+        this.idLayout = format.idLayout();
     }
 
     @Override
@@ -69,9 +71,8 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
         try {
             int tokenId = query.tokenId();
             IndexOrder order = constraints.order();
-            Seeker<TokenScanKey, TokenScanValue> seeker = seekerForToken(range, tokenId, order, cursorContext);
-            IndexProgressor progressor =
-                    TokenScanValueIndexProgressor.create(seeker, client, order, range, idLayout, tokenId);
+            var seeker = seekerForToken(range, tokenId, order, cursorContext);
+            var progressor = format.newProgressor(seeker, client, order, range, tokenId);
             client.initializeQuery(progressor, tokenId, order);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -95,7 +96,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
         return new NativePartitionedTokenScan((NativePartitionedTokenScan) leadingPartition, query);
     }
 
-    private Seeker<TokenScanKey, TokenScanValue> seekerForToken(
+    private Seeker<TokenScanKey, VALUE> seekerForToken(
             EntityRange range, int tokenId, IndexOrder indexOrder, CursorContext cursorContext) throws IOException {
         long idRangeFromInclusive;
         long idRangeToExclusive;
@@ -160,12 +161,11 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
             try {
                 TokenScanKey fromInclusive = copyKey(partitionEdges.get(from));
                 TokenScanKey toExclusive = copyKey(partitionEdges.get(to));
-                return TokenScanValueIndexProgressor.create(
+                return format.newProgressor(
                         index.seek(fromInclusive, toExclusive, cursorContext),
                         client,
                         IndexOrder.NONE,
                         range,
-                        idLayout,
                         fromInclusive.tokenId);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

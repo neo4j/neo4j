@@ -99,8 +99,8 @@ class DefaultTokenIndexReaderTest {
     @Test
     void shouldFindMultipleEntitiesInEachRange() {
         // WHEN
-        DefaultTokenIndexReader reader =
-                new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
+        DefaultTokenIndexReader<TokenScanValue> reader =
+                new DefaultTokenIndexReader<>(index, NO_USAGE_TRACKING, BasicTokenIndexFormat.INSTANCE);
         try (SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient()) {
             reader.query(tokenClient, unconstrained(), new TokenPredicate(LABEL_ID), NULL_CONTEXT);
 
@@ -112,8 +112,8 @@ class DefaultTokenIndexReaderTest {
     @Test
     void shouldFindMultipleWithProgressorAscending() {
         // WHEN
-        DefaultTokenIndexReader reader =
-                new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
+        DefaultTokenIndexReader<TokenScanValue> reader =
+                new DefaultTokenIndexReader<>(index, NO_USAGE_TRACKING, BasicTokenIndexFormat.INSTANCE);
         try (SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient()) {
             reader.query(
                     tokenClient,
@@ -129,8 +129,8 @@ class DefaultTokenIndexReaderTest {
     @Test
     void shouldFindMultipleWithProgressorDescending() {
         // WHEN
-        DefaultTokenIndexReader reader =
-                new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
+        DefaultTokenIndexReader<TokenScanValue> reader =
+                new DefaultTokenIndexReader<>(index, NO_USAGE_TRACKING, BasicTokenIndexFormat.INSTANCE);
         try (SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient()) {
             reader.query(
                     tokenClient,

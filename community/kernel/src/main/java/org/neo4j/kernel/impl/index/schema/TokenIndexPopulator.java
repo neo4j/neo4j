@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +27,6 @@ import java.util.Collection;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.async.AsyncBlockAccessor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -39,7 +36,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.util.Preconditions;
 
-public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
+public class TokenIndexPopulator<VALUE> extends TokenIndex<VALUE> implements IndexPopulator {
     private byte[] failureBytes;
     private boolean dropped;
     private boolean closed;
@@ -49,8 +46,8 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
             IndexFiles indexFiles,
             IndexDescriptor descriptor,
             ImmutableSet<OpenOption> openOptions,
-            StorageEngineIndexingBehaviour indexingBehaviour) {
-        super(databaseIndexContext, indexFiles, descriptor, openOptions, false, indexingBehaviour);
+            TokenIndexFormat<VALUE> format) {
+        super(databaseIndexContext, indexFiles, descriptor, openOptions, false, format);
     }
 
     @Override
@@ -79,11 +76,8 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
 
     @Override
     public void add(Collection<? extends IndexEntryUpdate> updates, CursorContext cursorContext) {
-        try (TokenIndexUpdater updater = singleUpdater.initialize(
-                context -> index.writer(W_BATCHED_SINGLE_THREADED, context), false, cursorContext)) {
-            for (IndexEntryUpdate update : updates) {
-                updater.process(update);
-            }
+        try {
+            singleUpdater.addAll(index, updates, cursorContext);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -92,8 +86,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
     @Override
     public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
         try {
-            return singleUpdater.initialize(
-                    context -> index.writer(W_BATCHED_SINGLE_THREADED, context), false, cursorContext);
+            return singleUpdater.open(index, cursorContext);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

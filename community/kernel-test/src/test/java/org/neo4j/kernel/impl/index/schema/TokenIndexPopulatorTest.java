@@ -46,7 +46,6 @@ import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -86,19 +85,20 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
     }
 
     @Override
-    TokenIndexPopulator createPopulator(PageCache pageCache) {
+    TokenIndexPopulator<TokenScanValue> createPopulator(PageCache pageCache) {
         return createPopulator(pageCache, new Monitors(), "");
     }
 
-    private TokenIndexPopulator createPopulator(PageCache pageCache, Monitors monitors, String monitorTag) {
+    private TokenIndexPopulator<TokenScanValue> createPopulator(
+            PageCache pageCache, Monitors monitors, String monitorTag) {
         DatabaseIndexContext context = DatabaseIndexContext.builder(
                         pageCache, fs, NULL_CONTEXT_FACTORY, PageCacheTracer.NULL, DEFAULT_DATABASE_NAME)
                 .withMonitors(monitors)
                 .withTag(monitorTag)
                 .withReadOnlyChecker(writable())
                 .build();
-        return new TokenIndexPopulator(
-                context, indexFiles, indexDescriptor, Sets.immutable.empty(), StorageEngineIndexingBehaviour.EMPTY);
+        return new TokenIndexPopulator<>(
+                context, indexFiles, indexDescriptor, Sets.immutable.empty(), BasicTokenIndexFormat.INSTANCE);
     }
 
     @Test

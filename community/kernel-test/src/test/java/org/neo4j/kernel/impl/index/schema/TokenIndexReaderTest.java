@@ -99,7 +99,8 @@ class TokenIndexReaderTest {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
         CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         CursorContext cursorContext = contextFactory.create("tracePageCache");
-        DefaultTokenIndexReader reader = new DefaultTokenIndexReader(tree, NO_USAGE_TRACKING, idLayout);
+        DefaultTokenIndexReader<TokenScanValue> reader =
+                new DefaultTokenIndexReader<>(tree, NO_USAGE_TRACKING, BasicTokenIndexFormat.INSTANCE);
         int actualNodes;
         try (SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient()) {
             reader.query(tokenClient, unconstrained(), new TokenPredicate(labelId), cursorContext);
@@ -154,7 +155,8 @@ class TokenIndexReaderTest {
         long fromId = random.nextInt(highNodeId);
         int nextExpectedId = expected.nextSetBit(toIntExact(fromId));
 
-        DefaultTokenIndexReader reader = new DefaultTokenIndexReader(tree, NO_USAGE_TRACKING, idLayout);
+        DefaultTokenIndexReader<TokenScanValue> reader =
+                new DefaultTokenIndexReader<>(tree, NO_USAGE_TRACKING, BasicTokenIndexFormat.INSTANCE);
         try (SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient()) {
             reader.query(
                     tokenClient, unconstrained(), new TokenPredicate(labelId), EntityRange.from(fromId), NULL_CONTEXT);
