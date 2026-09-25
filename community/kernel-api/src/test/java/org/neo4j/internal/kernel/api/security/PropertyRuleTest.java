@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator;
+import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator.ANY_IN_LIST;
 import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator.EQUAL;
 import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator.GREATER_THAN;
 import static org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator.GREATER_THAN_OR_EQUAL;
@@ -241,7 +242,27 @@ public class PropertyRuleTest {
                         Values.of(new int[] {1, 2}),
                         Values.NO_VALUE,
                         NOT_VALUE_IN_LIST_PROPERTY,
-                        false)); // null needle: in is NO_VALUE
+                        false), // null needle: in is NO_VALUE
+                // ANY_IN_LIST: any(x IN n.prop WHERE x IN <rule list>), strict list semantics on the property
+                of(Values.of(new String[] {"gold", "blue"}), Values.of(new String[] {"gold"}), ANY_IN_LIST, true),
+                of(Values.of(new String[] {"blue"}), Values.of(new String[] {"gold"}), ANY_IN_LIST, false),
+                of(Values.of(new int[] {1}), Values.of(new double[] {1.0, 2.0}), ANY_IN_LIST, true), // numeric coercion
+                of(Values.of(new String[] {"one"}), Values.of(new int[] {1, 2}), ANY_IN_LIST, false), // cross-type
+                // never matches, never throws
+                of(Values.of(new String[0]), Values.of(new String[] {"gold"}), ANY_IN_LIST, false), // empty list
+                // property
+                of(Values.of(new String[] {"gold"}), Values.of(new String[0]), ANY_IN_LIST, false), // empty rule
+                // list
+                of(Values.of("gold"), Values.of(new String[] {"gold"}), ANY_IN_LIST, false), // strict: scalar
+                // property never matches, even when equal
+                of(Values.of(1), Values.of(new int[] {1, 2}), ANY_IN_LIST, false),
+                of(Values.NO_VALUE, Values.of(new String[] {"gold"}), ANY_IN_LIST, false), // absent property
+                of(Values.of(new String[] {"gold"}), Values.NO_VALUE, ANY_IN_LIST, false), // null rule list
+                of(
+                        Values.of(new String[] {"gold"}),
+                        Values.of("gold"),
+                        ANY_IN_LIST,
+                        true)); // scalar rule value degrades to equality -- the semantic layer must reject it
     }
 
     private static Stream<Arguments> ValuePredicateStrings() {
@@ -255,7 +276,8 @@ public class PropertyRuleTest {
                 of(IN, "l IN r"),
                 of(NOT_IN, "NOT l IN r"),
                 of(VALUE_IN_LIST_PROPERTY, "r IN l"),
-                of(NOT_VALUE_IN_LIST_PROPERTY, "NOT r IN l"));
+                of(NOT_VALUE_IN_LIST_PROPERTY, "NOT r IN l"),
+                of(ANY_IN_LIST, "any(x IN l WHERE x IN r)"));
     }
 
     private static Stream<Arguments> nullPropertyRules() {

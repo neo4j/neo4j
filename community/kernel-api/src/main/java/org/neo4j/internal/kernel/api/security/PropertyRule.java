@@ -26,6 +26,7 @@ import static org.neo4j.values.storable.Values.TRUE;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import org.neo4j.util.Preconditions;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.utils.ValueBooleanLogic;
@@ -116,6 +117,25 @@ public interface PropertyRule extends Predicate<Value> {
             @Override
             public String toPredicateString(String lhs, String rhs) {
                 return String.format("NOT %s IN %s", rhs, lhs);
+            }
+        },
+        ANY_IN_LIST("ANY IN") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                if (!(lhs instanceof ArrayValue list)) {
+                    return false;
+                }
+                for (AnyValue element : list) {
+                    if (ValueBooleanLogic.in(element, rhs).equals(TRUE)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public String toPredicateString(String lhs, String rhs) {
+                return String.format("any(x IN %s WHERE x IN %s)", lhs, rhs);
             }
         };
 
