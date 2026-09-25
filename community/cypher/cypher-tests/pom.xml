@@ -27,13 +27,6 @@
 
   <dependencies>
 
-    <!-- neo4j-cypher's test dependencies -->
-    <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!-- neo4j-cypher's compile dependencies, referenced by the tests (test scope here) -->
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
@@ -356,6 +349,13 @@
       <artifactId>scalatest_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- neo4j-cypher's test dependencies -->
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
+      <artifactId>junit-5-14_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.scalatestplus</groupId>
       <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
@@ -382,7 +382,7 @@
                 <ignoredUnusedDeclaredDependency>org.scalactic:*</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.scalatestplus:*</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.scalacheck:*</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>co.helmethair:scalatest-junit-runner</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scalatestplus:junit-5-14_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.scala-lang:scala3-library_3</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>

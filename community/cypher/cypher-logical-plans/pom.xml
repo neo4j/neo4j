@@ -107,11 +107,6 @@
       <artifactId>scala-collection-contrib_${scala.binary.version}</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
@@ -170,6 +165,11 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
+      <artifactId>junit-5-14_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
 

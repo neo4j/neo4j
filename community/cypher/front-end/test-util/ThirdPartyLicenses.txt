@@ -15,6 +15,7 @@ Apache Software License, Version 2.0
   IPAddress
   Java Native Access
   JSpecify annotations
+  junit-5.14
   mockito-4.6
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
@@ -426,6 +427,7 @@ Eclipse Public License v2.0
   JUnit Jupiter Engine
   JUnit Platform Commons
   JUnit Platform Engine API
+  JUnit Platform Launcher
 ------------------------------------------------------------------------------
 
 Eclipse Public License - v 2.0
@@ -709,7 +711,6 @@ version(s), and exceptions or additional permissions here}."
 
 ------------------------------------------------------------------------------
 MIT License
-  co.helmethair:scalatest-junit-runner
   fansi_3
   mockito-core
   pprint_3

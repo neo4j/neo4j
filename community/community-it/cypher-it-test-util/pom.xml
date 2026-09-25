@@ -134,7 +134,6 @@
     <dependency>
       <groupId>org.scalatestplus</groupId>
       <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
-      <version>${scala.test.version}.0</version>
     </dependency>
   </dependencies>
 

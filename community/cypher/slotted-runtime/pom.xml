@@ -160,11 +160,6 @@
       <artifactId>scala3-library_3</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
@@ -250,6 +245,11 @@
     </dependency>
     <dependency>
       <groupId>org.scalatestplus</groupId>
+      <artifactId>junit-5-14_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
       <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
@@ -271,7 +271,7 @@
               <failOnWarning>true</failOnWarning>
               <ignoredUnusedDeclaredDependencies>
                 <ignoredUnusedDeclaredDependency>org.scalatest:*</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>co.helmethair:scalatest-junit-runner</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scalatestplus:junit-5-14_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
                 <!-- Not sure why this is needed, module fails to compile without this dependency. -->
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-logical-plan-builder</ignoredUnusedDeclaredDependency>

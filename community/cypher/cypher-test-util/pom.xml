@@ -25,12 +25,6 @@
   </properties>
 
   <dependencies>
-
-    <!-- scalatest (compile scope: these are test utilities) -->
-    <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher</artifactId>
@@ -130,6 +124,12 @@
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
     </dependency>
+
+    <!-- scalatest (compile scope: these are test utilities) -->
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
+      <artifactId>junit-5-14_${scala.binary.version}</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -161,7 +161,7 @@
                 <ignoredUnusedDeclaredDependency>org.scala-lang:scala3-library_3</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.scalatest:*</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.scalactic:*</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>co.helmethair:scalatest-junit-runner</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scalatestplus:junit-5-14_${scala.binary.version}</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
           </execution>

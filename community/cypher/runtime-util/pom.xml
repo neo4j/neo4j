@@ -248,7 +248,7 @@
               <failOnWarning>true</failOnWarning>
               <ignoredUnusedDeclaredDependencies>
                 <ignoredUnusedDeclaredDependency>org.scalatest:*</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>co.helmethair:scalatest-junit-runner</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scalatestplus:junit-5-14_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-macros-scala3</ignoredUnusedDeclaredDependency>
                 <!-- I suspect byte code compilation inlines what's used from this dependency. -->

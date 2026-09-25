@@ -90,6 +90,7 @@ Apache Software License, Version 2.0
   json4s-native
   json4s-native-core
   JSpecify annotations
+  junit-5.14
   magnolia
   mockito-4.6
   Neo4j Java Driver
@@ -1655,7 +1656,6 @@ version.
 
 ------------------------------------------------------------------------------
 MIT License
-  co.helmethair:scalatest-junit-runner
   Cucumber CiEnvironment
   Cucumber Expressions
   Cucumber HTML Formatter

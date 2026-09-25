@@ -194,13 +194,14 @@
     <scala.binary.version>3</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <scala.target.vm>${vm.target.version}</scala.target.vm>
-    <scala.test.version>3.2.13</scala.test.version>
+    <scala.test.version>3.2.20</scala.test.version>
     <scala.version>2.13.17</scala.version>
     <scala.wunused.conf>${scala.wunused.conf.default}</scala.wunused.conf>
     <!-- Empty to disable -Wunused checks -->
     <scala.wunused.conf.default />
     <scala.wunused.conf.strict>-Wunused:imports,privates,locals</scala.wunused.conf.strict>
     <scala3.version>3.7.4</scala3.version>
+    <scalatestplus.junit5.version>3.2.20.0</scalatestplus.junit5.version>
     <shiro.version>3.0.1</shiro.version>
     <skip-scalastyle>false</skip-scalastyle>
     <slf4j.version>2.0.17</slf4j.version>
@@ -331,12 +332,6 @@
         <artifactId>parquet-floor</artifactId>
         <version>${parquet-floor.version}</version>
       </dependency>
-      <dependency>
-        <groupId>co.helmethair</groupId>
-        <artifactId>scalatest-junit-runner</artifactId>
-        <version>0.2.0</version>
-      </dependency>
-
       <dependency>
         <groupId>com.databricks</groupId>
         <artifactId>databricks-jdbc</artifactId>
@@ -1160,6 +1155,36 @@
         <artifactId>junit-jupiter</artifactId>
         <version>${junit.version}</version>
       </dependency>
+      <!--
+        org.scalatestplus:junit-5-14 brings its own JUnit Platform 1.14.3 / Jupiter 5.14.3 along
+        transitively. Pin the artifacts it pulls in to the JUnit version the rest of the build uses,
+        so a single JUnit Platform version is on every test classpath.
+      -->
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-commons</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-engine</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-launcher</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.junit.platform</groupId>
         <artifactId>junit-platform-testkit</artifactId>
@@ -1311,15 +1336,23 @@
         <artifactId>scalatest_${scala.binary.version}</artifactId>
         <version>${scala.test.version}</version>
       </dependency>
+      <!-- Runs ScalaTest suites on the JUnit Platform, under engine id "scalatest". -->
+      <dependency>
+        <groupId>org.scalatestplus</groupId>
+        <artifactId>junit-5-14_${scala.binary.version}</artifactId>
+        <version>${scalatestplus.junit5.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.scalatestplus</groupId>
         <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}.0</version>
+        <!-- No release paired with ScalaTest 3.2.20; this one is binary compatible with it. -->
+        <version>3.2.13.0</version>
       </dependency>
       <dependency>
         <groupId>org.scalatestplus</groupId>
         <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}.0</version>
+        <!-- No release paired with ScalaTest 3.2.20; this one is binary compatible with it. -->
+        <version>3.2.13.0</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -2058,7 +2091,7 @@
                 <ignoredDependency>org.junit.platform:*</ignoredDependency>
                 <ignoredDependency>org.scalatest:*</ignoredDependency>
                 <ignoredDependency>org.scalacheck:*</ignoredDependency>
-                <ignoredDependency>co.helmethair:scalatest-junit-runner</ignoredDependency>
+                <ignoredDependency>org.scalatestplus:junit-5-14_${scala.binary.version}</ignoredDependency>
                 <ignoredDependency>org.opentest4j:opentest4j</ignoredDependency>
                 <ignoredDependency>org.assertj:*</ignoredDependency>
 

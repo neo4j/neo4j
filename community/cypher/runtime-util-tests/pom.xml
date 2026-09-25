@@ -27,12 +27,6 @@
 
   <dependencies>
 
-    <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!-- test frameworks -->
     <dependency>
       <groupId>com.github.jbellis</groupId>
@@ -286,6 +280,12 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
+      <artifactId>junit-5-14_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -40,8 +40,8 @@ abstract class CypherFunSuite
 
   object Tags {
 
-    // Exclusion is done natively in withFixture below to avoid JUnit Platform post-discovery
-    // tag pruning on the ScalaTest tree (helmethair scalatest-junit-runner is not safe under it).
+    // Exclusion is done natively in withFixture below: JUnit Platform post-discovery tag pruning
+    // on the ScalaTest tree has proven unreliable, so these tags must not reach the JUnit Platform.
 
     /**
      * Use this tag to exclude tests from running with overridden default query language.

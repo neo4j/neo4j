@@ -47,6 +47,7 @@ Apache Software License, Version 2.0
   jPowerShell
   jProcesses
   JSpecify annotations
+  junit-5.14
   magnolia
   mockito-4.6
   Netty/Common
@@ -1549,7 +1550,6 @@ version.
 
 ------------------------------------------------------------------------------
 MIT License
-  co.helmethair:scalatest-junit-runner
   fansi_3
   mockito-core
   pprint_3

@@ -28,10 +28,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.lihaoyi</groupId>
       <artifactId>fansi_${scala.binary.version}</artifactId>
     </dependency>
@@ -113,6 +109,10 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
+      <artifactId>junit-5-14_${scala.binary.version}</artifactId>
     </dependency>
     <dependency>
       <groupId>org.scalatestplus</groupId>

@@ -47,13 +47,13 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.io.InputStreamReader
 import java.net.URL
 import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.Files
 import java.nio.file.NoSuchFileException
-import java.nio.file.Paths
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.util.Using
 
 class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport
     with DontRunOnSpdBuild {
@@ -513,8 +513,11 @@ object CommunityShowFuncProcAcceptanceTest {
 
   def readAll(resourceUrl: URL): List[Map[String, Any]] = {
     val jsonMapper = JsonMapper.builder().addModule(DefaultScalaModule).build()
-    val reader = Files.newBufferedReader(Paths.get(resourceUrl.toURI), UTF_8)
-    jsonMapper.readValue(reader, new TypeReference[List[Map[String, Any]]] {})
+    // Read through the URL rather than a Path: these resources live in the cypher-it-test-util jar,
+    // where Paths.get(url.toURI) throws FileSystemNotFoundException and aborts suite construction.
+    Using.resource(new InputStreamReader(resourceUrl.openStream(), UTF_8)) { reader =>
+      jsonMapper.readValue(reader, new TypeReference[List[Map[String, Any]]] {})
+    }
   }
 }
 

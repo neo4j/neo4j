@@ -349,7 +349,7 @@
                 <ignoredDependency>org.neo4j.bolt:neo4j-bolt-connection</ignoredDependency>
               </ignoredDependencies>
               <ignoredUnusedDeclaredDependencies>
-                <ignoredUnusedDeclaredDependency>co.helmethair:scalatest-junit-runner</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.scalatestplus:junit-5-14_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-codegen</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.jline:jline-terminal-jansi</ignoredUnusedDeclaredDependency>

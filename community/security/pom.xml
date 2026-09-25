@@ -180,7 +180,7 @@
                 <ignoredDependency>org.junit.jupiter:*</ignoredDependency>
                 <ignoredDependency>org.scalatest:*</ignoredDependency>
                 <ignoredDependency>org.scalacheck:*</ignoredDependency>
-                <ignoredDependency>co.helmethair:scalatest-junit-runner</ignoredDependency>
+                <ignoredDependency>org.scalatestplus:junit-5-14_${scala.binary.version}</ignoredDependency>
                 <ignoredDependency>org.opentest4j:opentest4j</ignoredDependency>
                 <ignoredDependency>org.assertj:*</ignoredDependency>
               </ignoredDependencies>

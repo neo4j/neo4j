@@ -81,11 +81,6 @@
       <version>${teavm.version}</version>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <groupId>com.lihaoyi</groupId>
@@ -141,6 +136,11 @@
     </dependency>
     <dependency>
       <groupId>org.scalatestplus</groupId>
+      <artifactId>junit-5-14_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
       <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
@@ -164,7 +164,7 @@
             <dependency>org.ow2.asm:asm</dependency>
             <dependency>org.scala-lang:scala-library</dependency>
             <dependency>org.scala-lang:scala3-library_3</dependency>
-            <dependency>co.helmethair:scalatest-junit-runner</dependency>
+            <dependency>org.scalatestplus:junit-5-14_${scala.binary.version}</dependency>
             <dependency>org.scalatest:scalatest_3</dependency>
             <dependency>org.teavm:teavm-interop</dependency>
             <dependency>org.teavm:teavm-metaprogramming-api</dependency>

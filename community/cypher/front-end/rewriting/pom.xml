@@ -70,11 +70,6 @@
       <artifactId>scala3-library_3</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
@@ -146,6 +141,11 @@
     </dependency>
     <dependency>
       <groupId>org.scalatestplus</groupId>
+      <artifactId>junit-5-14_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
       <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
@@ -166,7 +166,7 @@
               <failOnWarning>true</failOnWarning>
               <ignoredUnusedDeclaredDependencies>
                 <dependency>org.scala-lang:scala3-library_3</dependency>
-                <dependency>co.helmethair:scalatest-junit-runner</dependency>
+                <dependency>org.scalatestplus:junit-5-14_${scala.binary.version}</dependency>
                 <dependency>org.scalatest:scalatest_3</dependency>
                 <dependency>org.neo4j:neo4j-test-util</dependency>
               </ignoredUnusedDeclaredDependencies>

@@ -81,11 +81,6 @@
       <artifactId>scala3-library_3</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-test-util</artifactId>
       <version>${project.version}</version>
@@ -127,6 +122,11 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
+      <artifactId>junit-5-14_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
