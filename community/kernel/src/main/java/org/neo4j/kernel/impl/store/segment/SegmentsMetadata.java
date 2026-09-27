@@ -20,15 +20,19 @@
 package org.neo4j.kernel.impl.store.segment;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.io.pagecache.impl.muninn.StoreFile.segmentPath;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.segment.FileSegmentMetadata;
+import org.neo4j.storageengine.api.SegmentsFilter;
 
 public record SegmentsMetadata(long lastCheckpointAppendIndex, Collection<FileSegmentsMetadata> filesMetadata) {
     public static final SegmentsMetadata EMPTY_SEGMENTS_METADATA =
@@ -61,6 +65,59 @@ public record SegmentsMetadata(long lastCheckpointAppendIndex, Collection<FileSe
             combined.add(new FileSegmentsMetadata(changes.name(), marks));
         }
         return new SegmentsMetadata(checkpointAppendIndex, combined);
+    }
+
+    public SegmentsFilter differenceFilter(SegmentsMetadata other, DatabaseLayout databaseLayout) {
+        if (other == EMPTY_SEGMENTS_METADATA || isIncorrectState(other)) {
+            return SegmentsFilter.ALL;
+        }
+        Map<Path, Long> localSegmentMarks = buildSegmentMarks(this);
+        Map<Path, Long> clientSegmentMarks = buildSegmentMarks(other);
+
+        return segments -> {
+            List<Path> differentFiles = new ArrayList<>();
+            Path databaseDirectory = databaseLayout.databaseDirectory();
+            for (Path segment : segments) {
+                Path relativePath = databaseDirectory.relativize(segment);
+                if (isDifferent(relativePath, localSegmentMarks, clientSegmentMarks)) {
+                    differentFiles.add(segment);
+                }
+            }
+            return differentFiles;
+        };
+    }
+
+    private static Map<Path, Long> buildSegmentMarks(SegmentsMetadata metadata) {
+        Map<Path, Long> markers = new HashMap<>();
+        for (var fileMetadata : metadata.filesMetadata) {
+            var basePath = Path.of(fileMetadata.name());
+            long[] marks = fileMetadata.segmentAppendIndexes();
+            for (int segment = 0; segment < marks.length; segment++) {
+                markers.put(segmentPath(basePath, segment), marks[segment]);
+            }
+        }
+        return markers;
+    }
+
+    private boolean isIncorrectState(SegmentsMetadata clientState) {
+        long clientCheckpoint = clientState.lastCheckpointAppendIndex;
+        return clientCheckpoint < 0
+                || clientState.filesMetadata.isEmpty()
+                || filesMetadata.isEmpty()
+                || clientCheckpoint > lastCheckpointAppendIndex;
+    }
+
+    private static boolean isDifferent(
+            Path file, Map<Path, Long> localSegmentMarks, Map<Path, Long> clientSegmentMarks) {
+        Long clientStamp = clientSegmentMarks.get(file);
+        if (clientStamp == null) {
+            return true;
+        }
+        Long localStamp = localSegmentMarks.get(file);
+        if (localStamp == null) {
+            return true;
+        }
+        return clientStamp < localStamp;
     }
 
     private static int requiredLength(int[] changedSegments) {

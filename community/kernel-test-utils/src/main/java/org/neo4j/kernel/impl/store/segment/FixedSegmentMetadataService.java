@@ -17,26 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.store.segment;
 
-import java.io.IOException;
-import java.util.Collection;
-import org.neo4j.graphdb.Resource;
-import org.neo4j.io.IOUtils;
-
-public final class MultiResource implements Resource {
-    private final Collection<? extends Resource> resources;
-
-    public MultiResource(Collection<? extends Resource> resources) {
-        this.resources = resources;
-    }
+public record FixedSegmentMetadataService(SegmentsMetadata segmentsMetadata) implements SegmentMetadataService {
+    @Override
+    public void storeMetadata(long checkpointAppendIndex) {}
 
     @Override
-    public void close() {
-        try {
-            IOUtils.closeAll(resources);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public boolean trackedSegmentedStore() {
+        return true;
     }
 }

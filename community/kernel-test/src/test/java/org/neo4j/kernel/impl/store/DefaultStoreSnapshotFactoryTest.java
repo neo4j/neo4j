@@ -23,12 +23,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
+import static org.neo4j.kernel.impl.store.segment.SegmentsMetadata.EMPTY_SEGMENTS_METADATA;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
@@ -38,13 +40,20 @@ import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.store.segment.FileSegmentsMetadata;
+import org.neo4j.kernel.impl.store.segment.FixedSegmentMetadataService;
+import org.neo4j.kernel.impl.store.segment.SegmentsMetadata;
 import org.neo4j.logging.internal.DatabaseLogProvider;
+import org.neo4j.storageengine.api.SegmentsFilter;
 import org.neo4j.storageengine.api.StoreIdentifier;
 import org.neo4j.storageengine.api.StoreResource;
 import org.neo4j.test.extension.Inject;
@@ -66,10 +75,12 @@ class DefaultStoreSnapshotFactoryTest {
     private DatabaseLayout databaseLayout;
     private StoreFileListing.Builder fileListingBuilder;
     private StoreCopyCheckPointMutex storeCopyCheckPointMutex;
+    private CheckPointer checkPointer;
+    private Database database;
 
     @BeforeEach
     void setUp() throws IOException {
-        var database = mock(Database.class);
+        database = mock(Database.class);
         fileListingBuilder = mock(StoreFileListing.Builder.class, CALLS_REAL_METHODS);
         databaseLayout = DatabaseLayout.ofFlat(testDirectory.directory("neo4j", "data", "databases"));
         when(database.getDatabaseLayout()).thenReturn(databaseLayout);
@@ -79,7 +90,7 @@ class DefaultStoreSnapshotFactoryTest {
         when(storeFileListing.builder()).thenReturn(fileListingBuilder);
         when(database.getStoreFileListing()).thenReturn(storeFileListing);
         when(database.getInternalLogProvider()).thenReturn(DatabaseLogProvider.nullDatabaseLogProvider());
-        var checkPointer = mock(CheckPointer.class);
+        checkPointer = mock(CheckPointer.class);
         when(checkPointer.latestCheckPointInfo())
                 .thenReturn(new LatestCheckpointInfo(
                         UNKNOWN_TRANSACTION_ID.kernelVersion(),
@@ -112,7 +123,15 @@ class DefaultStoreSnapshotFactoryTest {
     }
 
     private void setExpectedFiles(Path[] expectedFiles) throws IOException {
-        doAnswer(invocation -> Iterators.asResourceIterator(Iterators.iterator(expectedFiles)))
+        var segmentsFilter = new AtomicReference<SegmentsFilter>(SegmentsFilter.ALL);
+        doAnswer(invocation -> {
+                    segmentsFilter.set(invocation.getArgument(0));
+                    return fileListingBuilder;
+                })
+                .when(fileListingBuilder)
+                .includeReplayableStorageFiles(any(SegmentsFilter.class));
+        doAnswer(invocation -> Iterators.asResourceIterator(
+                        segmentsFilter.get().filter(List.of(expectedFiles)).iterator()))
                 .when(fileListingBuilder)
                 .build();
     }
@@ -143,6 +162,38 @@ class DefaultStoreSnapshotFactoryTest {
             StoreResource actual = atomicFilesSnapshot[i];
             var relativePath = databaseLayout.databaseDirectory().relativize(actual.path());
             assertEquals(expected.relativePath(), relativePath.toString());
+        }
+    }
+
+    @Test
+    void shouldPartitionRecoverableFilesByRequestedSegmentState() throws Exception {
+        var baseFile = databaseLayout.file("block.x1.db").baseSegment();
+        var expectedFiles = new Path[] {baseFile, StoreFile.segmentPath(baseFile, 1)};
+        setExpectedFiles(expectedFiles);
+        defaultStoreSnapshotFactory = new DefaultStoreSnapshotFactory(
+                database,
+                testDirectory.getFileSystem(),
+                new FixedSegmentMetadataService(new SegmentsMetadata(
+                        9, List.of(new FileSegmentsMetadata("block.x1.db", new long[] {3, 7})))));
+        var requestedSegmentState =
+                new SegmentsMetadata(5, List.of(new FileSegmentsMetadata("block.x1.db", new long[] {3, 5})));
+
+        try (var snapshot = defaultStoreSnapshotFactory
+                .createStoreSnapshot(requestedSegmentState)
+                .get()) {
+            assertArrayEquals(new Path[] {expectedFiles[1]}, snapshot.recoverableFiles());
+        }
+    }
+
+    @Test
+    void shouldNotFilterRecoverableFilesWithoutRequestedSegmentState() throws Exception {
+        var expectedFiles = new Path[] {databaseLayout.file("block.x1.db").baseSegment()};
+        setExpectedFiles(expectedFiles);
+
+        try (var snapshot = defaultStoreSnapshotFactory
+                .createStoreSnapshot(EMPTY_SEGMENTS_METADATA)
+                .get()) {
+            assertArrayEquals(expectedFiles, snapshot.recoverableFiles());
         }
     }
 

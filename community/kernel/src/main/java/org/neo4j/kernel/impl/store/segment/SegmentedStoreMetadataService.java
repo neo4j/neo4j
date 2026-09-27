@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.segment;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.neo4j.kernel.impl.store.segment.SegmentsMetadata.EMPTY_SEGMENTS_METADATA;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.ReadAheadChannel;
@@ -88,6 +85,11 @@ public class SegmentedStoreMetadataService implements SegmentMetadataService {
         return load();
     }
 
+    @Override
+    public boolean trackedSegmentedStore() {
+        return true;
+    }
+
     private SegmentsMetadata load() {
         Path metadataFile = databaseLayout.segmentsMetadata();
         if (!fs.fileExists(metadataFile)) {
@@ -109,22 +111,9 @@ public class SegmentedStoreMetadataService implements SegmentMetadataService {
                 throw new IOException(
                         "Segments metadata store id " + metadataStoreId + " does not match store id " + storeId);
             }
-            long lastCheckpointAppendIndex = channel.getLong();
-            int fileCount = channel.getInt();
-            List<FileSegmentsMetadata> fileStates = new ArrayList<>(fileCount);
-            for (int i = 0; i < fileCount; i++) {
-                int pathLength = channel.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                channel.get(pathBytes, pathLength);
-                int segmentCount = channel.getInt();
-                long[] segmentAppendIndexes = new long[segmentCount];
-                for (int segment = 0; segment < segmentCount; segment++) {
-                    segmentAppendIndexes[segment] = channel.getLong();
-                }
-                fileStates.add(new FileSegmentsMetadata(new String(pathBytes, UTF_8), segmentAppendIndexes));
-            }
+            SegmentsMetadata metadata = SegmentsMetadataCodec.read(channel);
             channel.endChecksumAndValidate();
-            return new SegmentsMetadata(lastCheckpointAppendIndex, fileStates);
+            return metadata;
         } catch (Exception e) {
             log.warn(
                     "Error on loading of segments metadata file: " + metadataFile + ". Empty metadata will be used.",
@@ -149,19 +138,7 @@ public class SegmentedStoreMetadataService implements SegmentMetadataService {
                 channel.putLong(MAGIC);
                 channel.putInt(FORMAT_VERSION);
                 storeId.serialize(channel);
-                channel.putLong(metadata.lastCheckpointAppendIndex());
-                var fileStates = metadata.filesMetadata();
-                channel.putInt(fileStates.size());
-                for (var fileState : fileStates) {
-                    byte[] pathBytes = fileState.name().getBytes(UTF_8);
-                    channel.putInt(pathBytes.length);
-                    channel.put(pathBytes, pathBytes.length);
-                    long[] segmentAppendIndexes = fileState.segmentAppendIndexes();
-                    channel.putInt(segmentAppendIndexes.length);
-                    for (long appendIndex : segmentAppendIndexes) {
-                        channel.putLong(appendIndex);
-                    }
-                }
+                SegmentsMetadataCodec.write(channel, metadata);
                 channel.putChecksum();
                 channel.prepareForFlush().flush();
                 storeChannel.force(false);

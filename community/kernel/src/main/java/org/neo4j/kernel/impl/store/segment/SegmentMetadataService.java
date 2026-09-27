@@ -35,9 +35,16 @@ public interface SegmentMetadataService {
         public SegmentsMetadata segmentsMetadata() {
             return SegmentsMetadata.EMPTY_SEGMENTS_METADATA;
         }
+
+        @Override
+        public boolean trackedSegmentedStore() {
+            return false;
+        }
     };
 
     void storeMetadata(long checkpointAppendIndex);
 
     SegmentsMetadata segmentsMetadata();
+
+    boolean trackedSegmentedStore();
 }

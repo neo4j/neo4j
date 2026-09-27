@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.neo4j.kernel.impl.store.segment.SegmentsMetadata.EMPTY_SEGMENTS_METADATA;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -27,7 +29,10 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.store.segment.SegmentMetadataService;
+import org.neo4j.kernel.impl.store.segment.SegmentsMetadata;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.storageengine.api.SegmentsFilter;
 import org.neo4j.storageengine.api.StoreResource;
 import org.neo4j.storageengine.api.StoreSnapshot;
 import org.neo4j.wal.LogFiles;
@@ -38,16 +43,27 @@ import org.neo4j.wal.entry.LogFormat;
 public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
     private final Database database;
     private final FileSystemAbstraction fs;
+    private final SegmentMetadataService segmentMetadataService;
     private final InternalLog log;
 
     public DefaultStoreSnapshotFactory(Database database, FileSystemAbstraction fs) {
+        this(database, fs, SegmentMetadataService.EMPTY_METADATA_SERVICE);
+    }
+
+    public DefaultStoreSnapshotFactory(
+            Database database, FileSystemAbstraction fs, SegmentMetadataService segmentMetadataService) {
         this.database = database;
         this.fs = fs;
+        this.segmentMetadataService = segmentMetadataService;
         this.log = database.getInternalLogProvider().getLog(getClass());
     }
 
     @Override
     public Optional<StoreSnapshot> createStoreSnapshot() throws IOException {
+        return createStoreSnapshot(EMPTY_SEGMENTS_METADATA);
+    }
+
+    public Optional<StoreSnapshot> createStoreSnapshot(SegmentsMetadata requestedSegmentState) throws IOException {
         log.debug("Starting creating store snapshot");
         if (!database.getDatabaseAvailabilityGuard().isAvailable()) {
             log.warn("Unable to prepare a store snapshot because database '"
@@ -75,7 +91,7 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
                     .getLogFormatVersion();
 
             unrecoverableFiles = unrecoverableFiles(database);
-            var recoverableFiles = recoverableFiles(database);
+            var recoverableFiles = recoverableFiles(database, requestedSegmentState);
             var snapshot = new StoreSnapshot(
                     unrecoverableFiles,
                     recoverableFiles,
@@ -125,14 +141,20 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
      * {@link StoreSnapshot}. Instead, a {@code Path[]} is returned, so that subsequent requests may fetch each
      * store file, regardless of what state they may be in.
      */
-    private Path[] recoverableFiles(Database database) throws IOException {
+    private Path[] recoverableFiles(Database database, SegmentsMetadata requestedSegmentState) throws IOException {
         try (var recoverableFiles = database.getStoreFileListing()
                 .builder()
                 .excludeAll()
-                .includeReplayableStorageFiles()
+                .includeReplayableStorageFiles(segmentsFilter(requestedSegmentState))
                 .build()) {
             return recoverableFiles.stream().toArray(Path[]::new);
         }
+    }
+
+    private SegmentsFilter segmentsFilter(SegmentsMetadata requestedSegmentState) {
+        return segmentMetadataService
+                .segmentsMetadata()
+                .differenceFilter(requestedSegmentState, database.getDatabaseLayout());
     }
 
     /**

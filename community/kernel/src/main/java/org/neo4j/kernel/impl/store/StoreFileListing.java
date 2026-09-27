@@ -36,7 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.util.MultiResource;
+import org.neo4j.storageengine.api.SegmentsFilter;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageFileSelection;
 import org.neo4j.wal.LogFiles;
@@ -100,6 +100,7 @@ public class StoreFileListing implements FileStoreProviderRegistry {
         private boolean excludeSchemaIndexStoreFiles;
         private boolean excludeAdditionalProviders;
         private boolean excludeIdFiles;
+        private SegmentsFilter replayableSegmentsFilter = SegmentsFilter.ALL;
 
         private Builder() {}
 
@@ -167,6 +168,11 @@ public class StoreFileListing implements FileStoreProviderRegistry {
             return this;
         }
 
+        public Builder includeReplayableStorageFiles(SegmentsFilter segmentsFilter) {
+            replayableSegmentsFilter = segmentsFilter;
+            return includeReplayableStorageFiles();
+        }
+
         public Builder includeSchemaIndexStoreFiles() {
             excludeSchemaIndexStoreFiles = false;
             return this;
@@ -191,7 +197,11 @@ public class StoreFileListing implements FileStoreProviderRegistry {
                 }
 
                 files.addAll(storageEngine.listStorageFiles(new StorageFileSelection(
-                        !excludeAtomicStorageFiles, !excludeReplayableStorageFiles, !excludeIdFiles)));
+                        !excludeAtomicStorageFiles,
+                        !excludeReplayableStorageFiles,
+                        !excludeIdFiles,
+                        true,
+                        replayableSegmentsFilter)));
 
                 if (!excludeSchemaIndexStoreFiles) {
                     resources.add(fileIndexListing.gatherSchemaIndexFiles(fs, files));
@@ -211,7 +221,7 @@ public class StoreFileListing implements FileStoreProviderRegistry {
                 throw e;
             }
 
-            return resourceIterator(files.iterator(), new MultiResource(resources));
+            return resourceIterator(files.iterator(), () -> IOUtils.closeAllUnchecked(resources));
         }
     }
 }

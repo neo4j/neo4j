@@ -26,14 +26,30 @@ package org.neo4j.storageengine.api;
  * @param includeIdFiles whether to include ID generator files
  * @param includeRecoverableFiles this could potentially apply to both "atomic" and "replayable" and dictates
  * whether to include files that can be recovered/rebuilt if missing.
+ * @param segmentsFilter filter applied to the segments of store files, so that a listing
+ * can be narrowed down to segments that are new or have changed relative to a store copy requester's segment state.
  */
 public record StorageFileSelection(
         boolean includeAtomicStoreFiles,
         boolean includeReplayableStoreFiles,
         boolean includeIdFiles,
-        boolean includeRecoverableFiles) {
+        boolean includeRecoverableFiles,
+        SegmentsFilter segmentsFilter) {
     public StorageFileSelection(
             boolean includeAtomicStoreFiles, boolean includeReplayableStoreFiles, boolean includeIdFiles) {
         this(includeAtomicStoreFiles, includeReplayableStoreFiles, includeIdFiles, true);
+    }
+
+    public StorageFileSelection(
+            boolean includeAtomicStoreFiles,
+            boolean includeReplayableStoreFiles,
+            boolean includeIdFiles,
+            boolean includeRecoverableFiles) {
+        this(
+                includeAtomicStoreFiles,
+                includeReplayableStoreFiles,
+                includeIdFiles,
+                includeRecoverableFiles,
+                SegmentsFilter.ALL);
     }
 }
