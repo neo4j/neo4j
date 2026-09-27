@@ -49,12 +49,14 @@ import org.neo4j.lock.ResourceType.INDEX_ENTRY
 import org.neo4j.lock.ResourceType.LABEL
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.ValueCategory
 import org.neo4j.values.storable.ValueType
 import org.neo4j.values.storable.ValueType.BOOLEAN
 import org.neo4j.values.storable.Values
 import org.neo4j.values.utils.ValueBooleanLogic
+import org.neo4j.values.virtual.VirtualNodeValue
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -1608,6 +1610,122 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(rowCount(limit))
   }
 
+  // NOTE: keep as test() not testWithIndex()
+  //       The test targets index seek argument-cancellation - index-type makes little difference to that logic.
+  test("should produce correct rows with LIMIT on RHS of nested Apply over index seek") {
+    val outerRows = 10
+    val innerRowsPerOuter = 5
+    val matchesPerValue = 4
+    nodeIndex("Honey", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraphFunctional(
+        outerRows * matchesPerValue,
+        i => Map[String, Any]("prop" -> (i % outerRows)),
+        _ => Seq("Honey")
+      )
+    }
+    val matchesByValue = indexMatchesByValue(nodes, outerRows)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("value", "i", "x")
+      .apply()
+      .|.apply()
+      .|.|.limit(1)
+      .|.|.nodeIndexOperator(
+        "x:Honey(prop = ???)",
+        paramExpr = Some(varFor("value")),
+        argumentIds = Set("value", "i")
+      )
+      .|.unwind(s"range(1, $innerRowsPerOuter) AS i")
+      .|.argument("value")
+      .input(variables = Seq("value"))
+      .build()
+
+    val input = inputValues((0 until outerRows).map(v => Array[Any](v)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    runtimeResult should beColumns("value", "i", "x").withRows(matching {
+      case rows: Seq[_] if rows.size == outerRows * innerRowsPerOuter && {
+          val prefixes = rows.map { case Array(value, i, x) =>
+            val v = value.asInstanceOf[NumberValue].longValue()
+            val nodeId = x.asInstanceOf[VirtualNodeValue].id()
+            withClue(s"node $nodeId is not an index match for value $v --") {
+              val matches = matchesByValue.getOrElse(v, fail(s"no index matches for value $v"))
+              matches should contain(nodeId)
+            }
+            (v, i.asInstanceOf[NumberValue].longValue())
+          }
+          // LIMIT 1 per innermost argument: every (value, i) prefix appears exactly once
+          prefixes.distinct.size == prefixes.size
+        } =>
+    })
+  }
+
+  // NOTE: keep as test() not testWithIndex()
+  //       The test targets index seek argument-cancellation - index-type makes little difference to that logic.
+  test("should not corrupt rows when LIMIT cancels mid-argument") {
+    val morselSize = 4
+    val numValues = 10
+    // Pipelined: per-arg row count is larger than morsel (forces continuation inside one argument) and a
+    // multiple of the morsel size (so LIMIT lands on an output-morsel boundary).
+    val matchesPerValue = math.max(morselSize * 2, sizeHint / numValues / morselSize * morselSize)
+    nodeIndex("Honey", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraphFunctional(
+        numValues * matchesPerValue,
+        i => Map[String, Any]("prop" -> (i % numValues)),
+        _ => Seq("Honey")
+      )
+    }
+    val matchesByValue = indexMatchesByValue(nodes, numValues)
+
+    // Pipelined: one LIMIT mid-arg and one at an arg boundary (continuation resumes on an arg with no rows left).
+    for (limit <- Seq(2 * matchesPerValue + matchesPerValue / 2, 2 * matchesPerValue)) {
+      withClue(s"LIMIT $limit:") {
+        val logicalQuery = new LogicalQueryBuilder(this)
+          .produceResults("value", "x")
+          .limit(limit)
+          .apply()
+          .|.nodeIndexOperator(
+            "x:Honey(prop = ???)",
+            paramExpr = Some(varFor("value")),
+            argumentIds = Set("value")
+          )
+          .input(variables = Seq("value"))
+          .withMorselSize(morselSize)
+          .build()
+
+        val input = inputValues((0 until numValues).map(v => Array[Any](v)): _*)
+        val runtimeResult = execute(logicalQuery, runtime, input)
+
+        runtimeResult should beColumns("value", "x").withRows(matching {
+          case rows: Seq[_] if rows.size == limit && {
+              val pairs = rows.map { case Array(value, x) =>
+                val v = value.asInstanceOf[NumberValue].longValue()
+                val nodeId = x.asInstanceOf[VirtualNodeValue].id()
+                withClue(s"node $nodeId is not an index match for value $v --") {
+                  val matches = matchesByValue.getOrElse(v, fail(s"no index matches for value $v"))
+                  matches should contain(nodeId)
+                }
+                (v, nodeId)
+              }
+              pairs.distinct.size == pairs.size && {
+                // Deterministic runtimes emit whole arguments in input order up to the limit.
+                runtimeUsed == Parallel || {
+                  val countsByValue = pairs.groupBy(_._1).view.mapValues(_.size).toMap
+                  val expectedCounts = (0 until numValues)
+                    .map(v => v.toLong -> math.min(matchesPerValue, limit - v * matchesPerValue))
+                    .filter { case (_, count) => count > 0 }
+                    .toMap
+                  countsByValue == expectedCounts
+                }
+              }
+            } =>
+        })
+      }
+    }
+  }
+
   testWithIndex(
     _.supportsOrderDesc(RANGE),
     "should seek nodes of an index with a property in ascending order"
@@ -2611,6 +2729,12 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     }
     if (existing.contains(candidate.asObject())) None else Some(candidate)
   }
+
+  /** Node ids grouped by seek value, for graphs generated with `prop -> (i % numValues)`. */
+  private def indexMatchesByValue(nodes: Seq[Node], numValues: Int): Map[Long, Set[Long]] =
+    nodes.zipWithIndex
+      .groupMap { case (_, i) => (i % numValues).toLong } { case (n, _) => n.getId }
+      .view.mapValues(_.toSet).toMap
 }
 
 // Supported by interpreted, slotted, pipelined, not by parallel

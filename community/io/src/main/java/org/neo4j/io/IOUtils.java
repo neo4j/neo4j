@@ -94,6 +94,18 @@ public final class IOUtils {
      */
     public static <T extends AutoCloseable, E extends Throwable> void closeAllSuppressingInto(
             E primary, Iterable<T> closeables) throws E {
+        closeAllAddingSuppressed(primary, closeables);
+        throw primary;
+    }
+
+    /**
+     * Close all of the given closeables, attaching any close-time failures to {@code primary} as suppressed exceptions.
+     *
+     * @param primary the exception close-time failures are attached to as suppressed exceptions.
+     * @param closeables to call close on.
+     * @param <T> the type of closeable.
+     */
+    public static <T extends AutoCloseable> void closeAllAddingSuppressed(Throwable primary, Iterable<T> closeables) {
         for (T closeable : closeables) {
             try {
                 if (closeable != null) {
@@ -103,7 +115,6 @@ public final class IOUtils {
                 primary.addSuppressed(t);
             }
         }
-        throw primary;
     }
 
     /**

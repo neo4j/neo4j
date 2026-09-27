@@ -81,4 +81,20 @@ class IOUtilsTest {
         assertThat(primary.getSuppressed()).containsExactly(closeFailure);
         assertThat(laterRan[0]).isTrue();
     }
+
+    @Test
+    void closeAllAddingSuppressedAttachesFailuresAndReturnsNormally() {
+        var primary = new AssertionError("primary");
+        var closeFailure = new IOException("close fail");
+        var laterRan = new boolean[1];
+        AutoCloseable failing = () -> {
+            throw closeFailure;
+        };
+        AutoCloseable later = () -> laterRan[0] = true;
+
+        IOUtils.closeAllAddingSuppressed(primary, Arrays.asList(failing, later));
+
+        assertThat(primary.getSuppressed()).containsExactly(closeFailure);
+        assertThat(laterRan[0]).isTrue();
+    }
 }
