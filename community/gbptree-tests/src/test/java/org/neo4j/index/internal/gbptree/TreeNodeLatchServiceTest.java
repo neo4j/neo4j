@@ -177,13 +177,15 @@ class TreeNodeLatchServiceTest extends LatchTestBase {
         // given
         var service = new TreeNodeLatchService();
         var treeNodeId = 99;
-        var race = new Race().withMaxDuration(1, TimeUnit.SECONDS);
-        // READ
         var reads = new AtomicInteger();
         var upgrades = new AtomicInteger();
         var writes = new AtomicInteger();
+        var race = new Race()
+                .withMaxDuration(5, TimeUnit.SECONDS)
+                .withEndCondition(() -> reads.get() > 200_000 && writes.get() > 200_000 && upgrades.get() > 2_000);
         var numCurrentWriteOwners = new AtomicInteger();
         var numCurrentReadOwners = new AtomicInteger();
+        // READ
         race.addContestants(2, () -> {
             var latch = service.latch(treeNodeId);
             latch.acquireRead();
@@ -223,12 +225,7 @@ class TreeNodeLatchServiceTest extends LatchTestBase {
             writes.incrementAndGet();
         });
 
-        // when
+        // when/then
         race.goUnchecked();
-
-        // then
-        assertTrue(reads.get() > 0);
-        assertTrue(upgrades.get() > 0);
-        assertTrue(writes.get() > 0);
     }
 }
