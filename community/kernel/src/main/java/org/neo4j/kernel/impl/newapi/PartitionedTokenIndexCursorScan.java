@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.kernel.api.ExecutionContext;
-import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 
 public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
@@ -48,8 +48,9 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
                 executionContext.txStateHolder(),
                 executionContext.accessModeProvider(),
                 true);
-        IndexProgressor indexProgressor = tokenScan.reservePartition(indexCursor, executionContext.cursorContext());
-        if (indexProgressor == IndexProgressor.EMPTY) {
+        TokenIndexProgressor indexProgressor =
+                tokenScan.reservePartition(indexCursor, executionContext.cursorContext());
+        if (indexProgressor == TokenIndexProgressor.EMPTY) {
             return false;
         }
         indexCursor.initializeQuery(indexProgressor, query.tokenId(), null, null);

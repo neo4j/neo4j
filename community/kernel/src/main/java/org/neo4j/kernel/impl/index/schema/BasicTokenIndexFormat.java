@@ -32,6 +32,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 /**
@@ -73,7 +74,7 @@ public final class BasicTokenIndexFormat implements TokenIndexFormat<TokenScanVa
     }
 
     @Override
-    public IndexProgressor newProgressor(
+    public TokenIndexProgressor newProgressor(
             Seeker<TokenScanKey, TokenScanValue> seeker,
             IndexProgressor.EntityTokenClient client,
             IndexOrder indexOrder,

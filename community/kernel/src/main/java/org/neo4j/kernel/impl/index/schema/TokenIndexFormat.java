@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 /**
@@ -48,7 +49,7 @@ public interface TokenIndexFormat<VALUE> {
     Updater openParallelUpdater(GBPTree<TokenScanKey, VALUE> tree, int writerFlags, CursorContext cursorContext)
             throws IOException;
 
-    IndexProgressor newProgressor(
+    TokenIndexProgressor newProgressor(
             Seeker<TokenScanKey, VALUE> seeker,
             IndexProgressor.EntityTokenClient client,
             IndexOrder indexOrder,

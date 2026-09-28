@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.util.Preconditions;
 
@@ -152,11 +153,12 @@ public class DefaultTokenIndexReader<VALUE> implements TokenIndexReader {
         }
 
         @Override
-        public IndexProgressor reservePartition(IndexProgressor.EntityTokenClient client, CursorContext cursorContext) {
+        public TokenIndexProgressor reservePartition(
+                IndexProgressor.EntityTokenClient client, CursorContext cursorContext) {
             int from = nextFrom.getAndIncrement();
             int to = from + 1;
             if (to >= partitionEdges.size()) {
-                return IndexProgressor.EMPTY;
+                return TokenIndexProgressor.EMPTY;
             }
             try {
                 TokenScanKey fromInclusive = copyKey(partitionEdges.get(from));

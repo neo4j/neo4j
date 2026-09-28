@@ -75,6 +75,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
@@ -518,13 +519,13 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         }
 
         @Override
-        public void initializeQuery(IndexProgressor progressor, int token, IndexOrder order) {
+        public void initializeQuery(TokenIndexProgressor progressor, int token, IndexOrder order) {
             assertThat(token).isEqualTo(expectedToken);
             this.progressor = progressor;
         }
 
         @Override
-        public void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
+        public void initializeQuery(TokenIndexProgressor progressor, int token, LongIterator added, LongSet removed) {
             throw new UnsupportedOperationException("Did not expect to use this method");
         }
 

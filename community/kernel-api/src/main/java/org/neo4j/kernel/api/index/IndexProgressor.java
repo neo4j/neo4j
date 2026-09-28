@@ -117,7 +117,7 @@ public interface IndexProgressor extends AutoCloseable {
          * @param token The token id to query
          * @param order Required order the index should return entity ids in.
          */
-        void initializeQuery(IndexProgressor progressor, int token, IndexOrder order);
+        void initializeQuery(TokenIndexProgressor progressor, int token, IndexOrder order);
 
         /**
          * Setup the client for progressing using the supplied progressor. The values fed in to acceptEntity map to the
@@ -129,7 +129,7 @@ public interface IndexProgressor extends AutoCloseable {
          * @param added Added entities that should be included in the results.
          * @param removed Removed entities that should be excluded from the results.
          */
-        void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed);
+        void initializeQuery(TokenIndexProgressor progressor, int token, LongIterator added, LongSet removed);
 
         /**
          * Accept the entity id and token of a candidate index entry. Return true if the entry

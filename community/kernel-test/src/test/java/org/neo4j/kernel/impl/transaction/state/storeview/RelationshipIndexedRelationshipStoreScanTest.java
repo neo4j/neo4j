@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
@@ -91,7 +92,7 @@ class RelationshipIndexedRelationshipStoreScanTest {
                     IndexProgressor.EntityTokenClient client = invocation.getArgument(0);
                     TokenPredicate token = invocation.getArgument(2);
                     client.initializeQuery(
-                            new IndexProgressor() {
+                            new TokenIndexProgressor() {
                                 private final PrimitiveIterator.OfLong relationshipsWithType1 =
                                         Arrays.stream(new long[] {1, 2, 4, 8}).iterator();
                                 private final PrimitiveIterator.OfLong relationshipsWithType2 =
@@ -109,6 +110,11 @@ class RelationshipIndexedRelationshipStoreScanTest {
                                         return true;
                                     }
                                     return false;
+                                }
+
+                                @Override
+                                public void skipUntil(long id) {
+                                    throw new UnsupportedOperationException();
                                 }
 
                                 @Override

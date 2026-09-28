@@ -31,17 +31,16 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.AccessModeProvider;
-import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.index.schema.TokenScanValueIndexProgressor;
 import org.neo4j.storageengine.api.LongReference;
 
 /**
  * Base for index cursors that can handle scans with IndexOrder.
  */
 abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenIndexCursor<SELF>>
-        extends IndexCursor<IndexProgressor, SELF> implements InternalTokenIndexCursor {
+        extends IndexCursor<TokenIndexProgressor, SELF> implements InternalTokenIndexCursor {
     protected Read read;
     protected TxStateHolder txStateHolder;
     protected AccessModeProvider accessModeProvider;
@@ -93,7 +92,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     @Override
-    public void initializeQuery(IndexProgressor progressor, int token, IndexOrder order) {
+    public void initializeQuery(TokenIndexProgressor progressor, int token, IndexOrder order) {
         initialize(progressor);
         if (txStateHolder.hasTxStateWithChanges()) {
             added = peekable(createAddedInTxState(txStateHolder.txState(), token, order));
@@ -115,7 +114,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     @Override
-    public void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
+    public void initializeQuery(TokenIndexProgressor progressor, int token, LongIterator added, LongSet removed) {
         initialize(progressor);
         useMergeSort = false;
         this.added = peekable(added);
@@ -269,8 +268,6 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     public void skipUntil(long id) {
-        TokenScanValueIndexProgressor indexProgressor = (TokenScanValueIndexProgressor) progressor;
-
         if (order == IndexOrder.NONE) {
             throw new IllegalStateException("IndexOrder " + order + " not supported for skipUntil");
         }
@@ -287,8 +284,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
             }
         }
 
-        // Move progressor to correct spot
-        indexProgressor.skipUntil(id);
+        progressor.skipUntil(id);
     }
 
     private static class PeekableLongIterator extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator {

@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
@@ -110,10 +111,10 @@ public class TokenScanValueIndexProgressorTest {
         final List<Long> observedIds = new ArrayList<>();
 
         @Override
-        public void initializeQuery(IndexProgressor progressor, int token, IndexOrder order) {}
+        public void initializeQuery(TokenIndexProgressor progressor, int token, IndexOrder order) {}
 
         @Override
-        public void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {}
+        public void initializeQuery(TokenIndexProgressor progressor, int token, LongIterator added, LongSet removed) {}
 
         @Override
         public boolean acceptEntity(long reference, int tokenId) {

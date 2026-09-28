@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 
 public interface PartitionedTokenScan {
     /**
@@ -31,8 +32,8 @@ public interface PartitionedTokenScan {
     /**
      * @param client the client used for consuming data.
      * @param cursorContext the underlying page cursor context for the thread doing the seek.
-     * @return An {@link IndexProgressor} used for reading the data of one partition
-     * or {@link IndexProgressor#EMPTY} if there are no more partitions.
+     * @return A {@link TokenIndexProgressor} used for reading the data of one partition
+     * or {@link TokenIndexProgressor#EMPTY} if there are no more partitions.
      */
-    IndexProgressor reservePartition(IndexProgressor.EntityTokenClient client, CursorContext cursorContext);
+    TokenIndexProgressor reservePartition(IndexProgressor.EntityTokenClient client, CursorContext cursorContext);
 }

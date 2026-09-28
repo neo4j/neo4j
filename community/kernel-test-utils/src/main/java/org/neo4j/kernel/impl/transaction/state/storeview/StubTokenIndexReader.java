@@ -30,6 +30,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 import org.neo4j.token.api.TokenConstants;
@@ -76,7 +77,7 @@ public class StubTokenIndexReader implements TokenIndexReader {
         throw new UnsupportedOperationException("Stub implementation does not support this method.");
     }
 
-    private static class StubIndexProgressor implements IndexProgressor {
+    private static class StubIndexProgressor implements TokenIndexProgressor {
         private final IndexProgressor.EntityTokenClient client;
         private final Iterator<Long> entities;
 
@@ -92,6 +93,11 @@ public class StubTokenIndexReader implements TokenIndexReader {
                 return true;
             }
             return false;
+        }
+
+        @Override
+        public void skipUntil(long id) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

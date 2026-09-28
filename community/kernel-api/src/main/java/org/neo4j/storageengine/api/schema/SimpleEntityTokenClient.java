@@ -23,15 +23,16 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 
 public class SimpleEntityTokenClient extends SimpleEntityClient implements IndexProgressor.EntityTokenClient {
     @Override
-    public void initializeQuery(IndexProgressor progressor, int token, IndexOrder order) {
+    public void initializeQuery(TokenIndexProgressor progressor, int token, IndexOrder order) {
         super.initialize(progressor);
     }
 
     @Override
-    public void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
+    public void initializeQuery(TokenIndexProgressor progressor, int token, LongIterator added, LongSet removed) {
         super.initialize(progressor);
     }
 

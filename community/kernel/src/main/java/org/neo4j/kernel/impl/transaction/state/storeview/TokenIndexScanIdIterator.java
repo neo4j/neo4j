@@ -30,6 +30,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.index.schema.CompositeTokenScanValueIterator;
 import org.neo4j.kernel.impl.index.schema.TokenScanValueIterator;
@@ -117,13 +118,13 @@ public class TokenIndexScanIdIterator implements EntityIdIterator {
         private boolean hasNext;
 
         @Override
-        public void initializeQuery(IndexProgressor progressor, int token, IndexOrder order) {
+        public void initializeQuery(TokenIndexProgressor progressor, int token, IndexOrder order) {
             // seek
             this.progressor = progressor;
         }
 
         @Override
-        public void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
+        public void initializeQuery(TokenIndexProgressor progressor, int token, LongIterator added, LongSet removed) {
             // used for scan
             throw new UnsupportedOperationException();
         }

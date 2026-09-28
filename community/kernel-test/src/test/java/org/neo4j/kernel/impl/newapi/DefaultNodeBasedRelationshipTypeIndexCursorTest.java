@@ -34,7 +34,7 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.StaticAccessMode;
 import org.neo4j.kernel.api.AssertOpen;
-import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.logging.NullLogProvider;
@@ -136,8 +136,9 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
         }
     }
 
-    private IndexProgressor progressor(DefaultNodeBasedRelationshipTypeIndexCursor cursor, int type, long... nodeIds) {
-        return new IndexProgressor() {
+    private TokenIndexProgressor progressor(
+            DefaultNodeBasedRelationshipTypeIndexCursor cursor, int type, long... nodeIds) {
+        return new TokenIndexProgressor() {
             private int index = -1;
 
             @Override
@@ -149,6 +150,11 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
                 boolean accepted = cursor.acceptEntity(nodeId, type);
                 assertThat(accepted).isTrue();
                 return true;
+            }
+
+            @Override
+            public void skipUntil(long id) {
+                throw new UnsupportedOperationException();
             }
 
             @Override

@@ -30,6 +30,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
@@ -70,7 +71,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
     }
 
     @Override
-    public void initializeQuery(IndexProgressor progressor, int type, IndexOrder order) {
+    public void initializeQuery(TokenIndexProgressor progressor, int type, IndexOrder order) {
         LongIterator addedRelationships = null;
         LongSet removedNodes = null;
         if (txStateHolder.hasTxStateWithChanges()) {
@@ -88,7 +89,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
 
     @Override
     public void initializeQuery(
-            IndexProgressor progressor, int type, LongIterator addedRelationships, LongSet removedNodes) {
+            TokenIndexProgressor progressor, int type, LongIterator addedRelationships, LongSet removedNodes) {
         super.initialize(progressor);
         this.type = type;
         this.selection = RelationshipSelection.selection(type, Direction.OUTGOING);

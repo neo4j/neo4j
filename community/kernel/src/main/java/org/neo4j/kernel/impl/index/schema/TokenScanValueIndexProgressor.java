@@ -26,13 +26,14 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.TokenIndexProgressor;
 
 /**
  * {@link IndexProgressor} which steps over multiple {@link TokenScanValue} and for each
  * iterate over each set bit, returning actual entity ids, i.e. {@code entityIdRange+bitOffset}.
  *
  */
-public abstract sealed class TokenScanValueIndexProgressor implements IndexProgressor, Resource {
+public abstract sealed class TokenScanValueIndexProgressor implements TokenIndexProgressor, Resource {
 
     public static final int RANGE_SIZE = Long.SIZE;
     /**
@@ -160,6 +161,7 @@ public abstract sealed class TokenScanValueIndexProgressor implements IndexProgr
      *
      * @param id id to progress to
      */
+    @Override
     public void skipUntil(long id) {
         if (id - baseEntityId > RANGE_SIZE * 10) {
             // if we need to take a long stride in tree
