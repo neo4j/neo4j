@@ -183,6 +183,92 @@ class CsvInputTest {
         }
     }
 
+    @ParameterizedTest(name = "trimStrings={0} id=<{1}> valid={2}")
+    @MethodSource("quotedIntegerIdsWithSpaces")
+    void shouldParseQuotedIntegerIdWithSpaces(boolean trimStrings, String id, boolean valid, long expectedId)
+            throws Exception {
+        Input input = new CsvInput(
+                dataIterable(data(id + ",Bob")),
+                header(
+                        entry(null, Type.ID, CsvInput.idExtractor(INTEGER, extractors)),
+                        entry("name", Type.PROPERTY, extractors.string())),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                INTEGER,
+                COMMAS.toBuilder().withTrimStrings(trimStrings).build(),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        try (Collector collector = badCollector(false, true);
+                InputIterator nodes = input.nodes(collector).iterator()) {
+            if (valid) {
+                assertNextNode(nodes, expectedId, properties("name", "Bob"), labels());
+                assertThat(readNext(nodes)).isFalse();
+            } else {
+                readAll(nodes);
+            }
+            assertThat(collector.badEntries()).isEqualTo(valid ? 0 : 1);
+        }
+    }
+
+    /**
+     * Reference behaviour of the classic importer for quotes mixed with whitespace, so the block importer's
+     * byte-level numeric parsing can be held to it. With trimming, whitespace around the value is dropped before the
+     * quotes are recognised; without trimming, a quote must be the very first character and nothing may follow the
+     * closing quote. Whitespace inside the quotes is always tolerated by the numeric extractor.
+     */
+    private static Stream<Arguments> quotedIntegerIdsWithSpaces() {
+        return Stream.of(
+                Arguments.of(true, "\"2\"", true, 2L),
+                Arguments.of(true, " \"2\"", true, 2L),
+                Arguments.of(true, "\"2\" ", true, 2L),
+                Arguments.of(true, "\" 2 \"", true, 2L),
+                Arguments.of(true, " \" 2 \" ", true, 2L),
+                Arguments.of(true, " 2 ", true, 2L),
+                Arguments.of(false, "\"2\"", true, 2L),
+                Arguments.of(false, "\" 2 \"", true, 2L),
+                Arguments.of(false, " 2 ", true, 2L),
+                Arguments.of(false, " \"2\"", false, 0L),
+                Arguments.of(false, " \" 2 \" ", false, 0L),
+                Arguments.of(false, " \"2\" ", false, 0L));
+    }
+
+    @ParameterizedTest(name = "trimStrings={0} age=<{1}>")
+    @MethodSource("quotedIntegerValuesWithSpaces")
+    void shouldParseQuotedIntPropertyWithSpaces(boolean trimStrings, String age) throws Exception {
+        Input input = new CsvInput(
+                dataIterable(data(":ID,name,age:int\n2,Alice," + age + "\n")),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                INTEGER,
+                COMMAS.toBuilder().withTrimStrings(trimStrings).build(),
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE);
+        input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 2L, properties("name", "Alice", "age", 30), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    private static Stream<Arguments> quotedIntegerValuesWithSpaces() {
+        return Stream.of(
+                Arguments.of(true, "\"30\""),
+                Arguments.of(true, " \"30\""),
+                Arguments.of(true, "\"30\" "),
+                Arguments.of(true, "\" 30 \""),
+                Arguments.of(true, " \" 30 \" "),
+                Arguments.of(true, " 30 "),
+                Arguments.of(false, "\"30\""),
+                Arguments.of(false, "\" 30 \""),
+                Arguments.of(false, " 30 "));
+    }
+
     @ParameterizedTest
     @EnumSource(MultilineSetting.class)
     void shouldProvideRelationshipsFromCsvInput(MultilineSetting setting) throws Exception {
