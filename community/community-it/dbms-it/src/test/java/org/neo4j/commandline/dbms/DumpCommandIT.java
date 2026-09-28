@@ -90,8 +90,8 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.TransactionLogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntryWriter;
 import org.neo4j.wal.files.LogFilesBuilder;
 import picocli.CommandLine;
@@ -242,15 +242,15 @@ class DumpCommandIT {
 
     @Test
     void databaseThatRequireRecoveryIsNotDumpable() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         testDirectory.getFileSystem(),
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                         LatestVersions.LATEST_LOG_FORMAT_PROVIDER)
                 .withStoreId(new StoreId(1, 1, "engine-1", "format-1", 1, 1))
                 .build();
-        try (Lifespan ignored = new Lifespan(logFiles)) {
-            LogFile logFile = logFiles.getLogFile();
+        try (Lifespan ignored = new Lifespan(walService)) {
+            LogFile logFile = walService.getLogFile();
             LogEntryWriter<?> writer = ((TransactionLogWriter) logFile.getTransactionLogWriter()).getWriter();
             writer.writeStartEntry(
                     LatestVersions.LATEST_KERNEL_VERSION,

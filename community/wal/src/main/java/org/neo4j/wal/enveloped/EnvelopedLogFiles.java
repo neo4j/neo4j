@@ -23,35 +23,51 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.function.LongSupplier;
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.ChannelNativeAccessor;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
+import org.neo4j.wal.LogFile;
+import org.neo4j.wal.LogForceEvents;
+import org.neo4j.wal.LogFormatVersionProvider;
+import org.neo4j.wal.LogHeaderVisitor;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.LogTermProvider;
 import org.neo4j.wal.LogTracers;
 import org.neo4j.wal.LogVersionBridge;
 import org.neo4j.wal.LogVersionedStoreChannel;
+import org.neo4j.wal.LogWriter;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
+import org.neo4j.wal.ReadableLogChannel;
 import org.neo4j.wal.UnclosableChannel;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.IncompleteLogHeaderException;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
 import org.neo4j.wal.entry.LogEnvelopeHeader.EnvelopeType;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.entry.LogHeader;
 import org.neo4j.wal.entry.LogHeaderReader;
+import org.neo4j.wal.files.LogRangeInfo;
+import org.neo4j.wal.files.LogVersionVisitor;
 import org.neo4j.wal.pruning.LogPruneThreshold;
 import org.neo4j.wal.rotation.LogRotateEvents;
 import org.neo4j.wal.rotation.LogRotation;
 
-public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoCloseable {
-    public static final int MINIMUM_SEGMENTS = 2;
+class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoCloseable {
     private final int segmentBlockSize;
     private final int writerBufferedBlocks;
     private final MemoryTracker memoryTracker;
@@ -65,10 +81,11 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     private final ChannelNativeAccessor channelNativeAccessor;
     private final InternalLog log;
     private final InternalLogProvider logProvider;
+    private final EnvelopeLogFile logFile = new EnvelopeLogFile();
     private LogChannelContext<StoreChannel> currentWriteChannel;
     private EnvelopeWriteChannel appendingChannel;
 
-    public EnvelopedLogFiles(
+    EnvelopedLogFiles(
             LogsRepository logsRepository,
             LogHeaderFactory logHeaderFactory,
             int segmentBlockSize,
@@ -93,7 +110,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 new EnvelopedLogHeaderCacheImpl());
     }
 
-    public EnvelopedLogFiles(
+    EnvelopedLogFiles(
             LogsRepository logsRepository,
             LogHeaderFactory logHeaderFactory,
             int segmentBlockSize,
@@ -105,9 +122,9 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             InternalLogProvider logProvider,
             LogTracers logTracers,
             EnvelopedLogHeaderCache logHeaderCache) {
-        if (totalSegments < MINIMUM_SEGMENTS) {
-            throw new IllegalArgumentException(
-                    String.format("Must have at least %d segments. Got %d", MINIMUM_SEGMENTS, totalSegments));
+        if (totalSegments < WALService.MINIMUM_SEGMENTS) {
+            throw new IllegalArgumentException(String.format(
+                    "Must have at least %d segments. Got %d", WALService.MINIMUM_SEGMENTS, totalSegments));
         }
         this.channelNativeAccessor = channelNativeAccessor;
         this.logHeaderFactory = logHeaderFactory;
@@ -122,37 +139,6 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         this.logProvider = logProvider;
         this.log = logProvider.getLog(EnvelopedLogFiles.class);
         this.logTracers = logTracers;
-    }
-
-    public EnvelopedLogFiles(
-            LogsRepository logsRepository,
-            LogHeaderFactory logHeaderFactory,
-            int segmentBlockSize,
-            int writerBufferedBlocks,
-            int totalSegments,
-            MemoryTracker memoryTracker,
-            LogPruneThreshold pruneThreshold,
-            ChannelNativeAccessor channelNativeAccessor,
-            InternalLogProvider logProvider) {
-        this(
-                logsRepository,
-                logHeaderFactory,
-                segmentBlockSize,
-                writerBufferedBlocks,
-                totalSegments,
-                memoryTracker,
-                pruneThreshold,
-                channelNativeAccessor,
-                logProvider,
-                LogTracers.NULL, // TODO MERGELOGS LogTracers currently only used in tests
-                new EnvelopedLogHeaderCacheImpl());
-    }
-
-    public EnvelopeWriteChannel currentWriteChannel() {
-        if (appendingChannel == null) {
-            throw new IllegalStateException("Writer channel has not been initialised");
-        }
-        return appendingChannel;
     }
 
     public void setPruneThreshold(LogPruneThreshold threshold) {
@@ -177,10 +163,6 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         return null;
     }
 
-    public long getMaxFileSize() {
-        return maxFileSize;
-    }
-
     private long getFileVersion(long entryIndex) throws IOException {
         if (logHeaderCache.isEmpty()) {
             var longRange = logsRepository.logVersionsRange();
@@ -201,6 +183,10 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         return recoverLogTail(0, true);
     }
 
+    public void forceRotate() throws IOException {
+        logFile.forceRotate();
+    }
+
     public void populateCache() throws IOException {
         try (var metadata = new LogFilesMetadata(logsRepository)) {
             while (metadata.next()) {
@@ -213,24 +199,6 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     public void clearCache() {
         logHeaderCache.clear();
         log.info("Log header cache cleared");
-    }
-
-    /**
-     * Can be used to reset the write channel to the end of the log, for example, after all the
-     * log files have been replaced by a store copy. This method should not be used if there's a
-     * chance that the log is corrupt.
-     */
-    public long resetWriteChannelToLatestIndex(boolean allowStoreIdentifierChange) throws IOException {
-        if (allowStoreIdentifierChange) {
-            // TODO MERGELOG: It would be nicer if we didn't have to make the header factory mutable. The alternative
-            //                is to create a completely different EnvelopedLogFiles object when there's a need to
-            //                replace the store with a different one. However, this requires replacing references to
-            //                EnvelopedLogFiles with some sort of holder/manager in many places, so is left to a
-            //                followup.
-            logHeaderFactory.allowStoreIdentifierChange();
-        }
-        long latestVersion = logsRepository.latestVersion();
-        return latestVersion >= 0 ? recoverLogTail(latestVersion, false) : -1;
     }
 
     private long recoverLogTail(long fromVersion, boolean populateCache) throws IOException {
@@ -326,19 +294,8 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         }
     }
 
-    public void updateWriteChannel(long index, int checksum, long prevIndex, long prevTerm) throws IOException {
-        LogPosition position;
-        try (var reader = this.openReadChannel(index)) {
-            while (reader.entryIndex() != index) {
-                reader.goToNextEntry();
-            }
-
-            position = reader.goToEndOfEntry();
-        }
-
-        this.closeCurrentWriteChannel();
-        this.currentWriteChannel = this.openWriteChannel(position.getLogVersion(), position.getByteOffset());
-        this.appendingChannel = this.envelopedWriteChannel(currentWriteChannel, checksum, prevIndex, prevTerm);
+    public LogFile getLogFile() {
+        return logFile;
     }
 
     /**
@@ -406,49 +363,6 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     }
 
     /**
-     * Truncates the envelope log files after the last written entry.
-     * No written entries are truncated, this should be called only
-     * when we want to free the pre-allocated data in the log.
-     */
-    public void forceRotate() throws IOException {
-        appendingChannel.prepareForFlush().flush();
-        appendingChannel.truncateToPosition(
-                appendingChannel.position(),
-                appendingChannel.currentChecksum(),
-                appendingChannel.currentIndex(),
-                appendingChannel.currentTerm());
-    }
-
-    /**
-     * Skip in the log to the desired index. This will delete all log files and create a new empty file with a header
-     * pointing to the provided index and checksum.
-     * <p>
-     * This method only makes sense if the log is distributed as it is effectively creating a new log starting at
-     * some higher entry. Henece only the "other log" can provide the correct context for the initial state of
-     * the new log.
-     *
-     * @param index    the index to skip to. This will be the log header index and the next written entry will be index+1
-     * @param checksum the checksum for the provided index.
-     * @param offset   the offset for the provided index.
-     * @param term     the term for the provided index
-     */
-    public void skip(long index, int checksum, int offset, long term) throws IOException {
-        if (index > appendingChannel.currentIndex()) {
-            var prunedVersion = logsRepository.logVersionsRange().to();
-            deleteLogFilesTo(prunedVersion);
-            long nextVersion = prunedVersion + 1;
-            var newStoreChannel = createNewStoreChannel(
-                    nextVersion,
-                    logHeaderFactory.createLogHeader(nextVersion, index, checksum, segmentBlockSize, term));
-            updateState(newStoreChannel, checksum, index, term);
-            if (offset > 0) {
-                currentWriteChannel().insertStartOffset(offset);
-                currentWriteChannel().prepareForFlush().flush();
-            }
-        }
-    }
-
-    /**
      * Prunes the envelope files. Only entire files can be removed by prune.
      *
      * @param index the desired index to prune up to (exclusive)
@@ -463,7 +377,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         if (!logsRepository.logVersionsRange().isWithinRange(versionToPrune)) {
             return -1;
         }
-        var envelopeWriteChannel = currentWriteChannel();
+        var envelopeWriteChannel = logFile.currentWriteChannel();
         var prunedVersion = logFilesPruner.pruneUpTo(versionToPrune, envelopeWriteChannel.currentIndex());
         if (prunedVersion == -1) {
             return -1;
@@ -530,35 +444,6 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         appendingChannel.recoverState(tail.checksum(), tail.index(), tail.term());
     }
 
-    /**
-     * Verifies that the write channel's tracked state matches the on-disk tail, without mutating it — the
-     * read-only twin of {@link #recalibrateWriteChannel()}. Raw appends mirror channel state from the shipped
-     * envelopes they parse; a divergence here means that mirroring broke, and the next rotation or local append
-     * would seed from bad state.
-     *
-     * @throws IllegalStateException if the tracked state does not match the on-disk tail
-     * @throws InvalidLogEnvelopeReadException if incomplete entries are found at the end of the log
-     * @throws IOException if an I/O error occurs while reading the tail
-     */
-    public void verifyWriteChannelCalibration() throws IOException {
-        var tail = readFlushedTailState();
-        if (tail == null) {
-            return;
-        }
-        if (tail.checksum() != appendingChannel.currentChecksum()
-                || tail.index() != appendingChannel.currentIndex()
-                || tail.term() != appendingChannel.currentTerm()) {
-            var tracked = new TailState(
-                    appendingChannel.currentIndex(),
-                    appendingChannel.currentChecksum(),
-                    appendingChannel.currentTerm());
-            throw new IllegalStateException(
-                    ("The write channel's tracked state has diverged from the on-disk tail (fileVersion=%d, "
-                                    + "position=%d): %s vs tracked %s")
-                            .formatted(currentWriteChannel.version(), appendingChannel.position(), tail, tracked));
-        }
-    }
-
     private record TailState(long index, int checksum, long term) {}
 
     /**
@@ -618,19 +503,6 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     @VisibleForTesting
     public LogPosition currentWriteLogPosition() throws IOException {
         return new LogPosition(currentWriteChannel.version(), appendingChannel.position());
-    }
-
-    /**
-     * Truncates to the last safe entry position when log pulling fails unexpectedly.
-     * Finds the last complete entry that ends at or before the last segment boundary
-     * and truncates to that entry.
-     *
-     * @param knownSafeIndex the position to start searching from, 0 if there is none
-     * @throws IOException if an I/O error occurs during truncation
-     */
-    public void truncateToLastSafeEntry(long knownSafeIndex) throws IOException {
-        closeCurrentWriteChannel();
-        recoverLogTail(getFileVersion(knownSafeIndex), false);
     }
 
     private void updateState(
@@ -853,6 +725,395 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
 
     public LogHeaderFactory headerFactory() {
         return this.logHeaderFactory;
+    }
+
+    private class EnvelopeLogFile implements LogFile {
+
+        @Override
+        public long getMaxFileSize() {
+            return maxFileSize;
+        }
+
+        @Override
+        public EnvelopeWriteChannel currentWriteChannel() {
+            if (appendingChannel == null) {
+                throw new IllegalStateException("Writer channel has not been initialised");
+            }
+            return appendingChannel;
+        }
+
+        @Override
+        public void recalibrateWriteChannel() throws IOException {
+            if (appendingChannel == null) {
+                throw new IllegalStateException("Writer channel has not been initialised");
+            }
+
+            long currentPosition = appendingChannel.position();
+
+            // If we're at the start (just the header), no recovery needed
+            if (currentPosition <= segmentBlockSize) {
+                return;
+            }
+
+            // Calculate the segment boundary to start reading from
+            // If we're precisely aligned with a segment boundary, we need to start from the previous segment
+            // to ensure we have entries to read for state recovery
+            long segmentBoundary = (currentPosition / segmentBlockSize) * segmentBlockSize;
+            if (segmentBoundary == currentPosition) {
+                // We're aligned with a segment boundary, go back one segment
+                segmentBoundary -= segmentBlockSize;
+            }
+
+            // Open a read channel on the current log file version directly
+            long currentVersion = currentWriteChannel.version();
+            log.info(
+                    "Recalibrating write-channel checksum-chain mirrors from on-disk tail (fileVersion=%d, segmentBoundary=%d, currentPosition=%d).",
+                    currentVersion, segmentBoundary, currentPosition);
+            try (var readChannel = envelopedReadChannel(logsRepository.openReadChannel(currentVersion), false)) {
+                // Position the read channel at the segment boundary
+                readChannel.position(segmentBoundary);
+
+                // Read through all entries to validate the checksum chain and recover state
+                while (true) {
+                    // Try to read the next entry (complete entry, not just envelope)
+                    try {
+                        readChannel.goToNextEntry();
+                    } catch (ReadPastEndException ignored) {
+                        break;
+                    }
+                }
+                long lastValidPosition = readChannel.position();
+                long recoveredIndex = readChannel.entryIndex();
+                int recoveredChecksum = readChannel.getChecksum();
+                long recoveredTerm = readChannel.getTerm();
+
+                // Check if there's incomplete data after the last valid position
+                if (lastValidPosition < currentPosition) {
+                    // We have data written beyond the last valid entry - this is incomplete
+                    throw new InvalidLogEnvelopeReadException(
+                            "Incomplete entry found at the end of the log. Last valid position: " + lastValidPosition
+                                    + ", current write position: " + currentPosition);
+                }
+                // Update the write channel's state with the recovered values
+                appendingChannel.recoverState(recoveredChecksum, recoveredIndex, recoveredTerm);
+            }
+        }
+
+        @Override
+        public void forceRotate() throws IOException {
+            appendingChannel.prepareForFlush().flush();
+            appendingChannel.truncateToPosition(
+                    appendingChannel.position(),
+                    appendingChannel.currentChecksum(),
+                    appendingChannel.currentIndex(),
+                    appendingChannel.currentTerm());
+        }
+
+        @Override
+        public void skip(long index, int checksum, int offset, long term) throws IOException {
+            if (index > appendingChannel.currentIndex()) {
+                var prunedVersion = logsRepository.logVersionsRange().to();
+                deleteLogFilesTo(prunedVersion);
+                long nextVersion = prunedVersion + 1;
+                var newStoreChannel = createNewStoreChannel(
+                        nextVersion,
+                        logHeaderFactory.createLogHeader(nextVersion, index, checksum, segmentBlockSize, term));
+                updateState(newStoreChannel, checksum, index, term);
+                if (offset > 0) {
+                    logFile.currentWriteChannel().insertStartOffset(offset);
+                    logFile.currentWriteChannel().prepareForFlush().flush();
+                }
+            }
+        }
+
+        @Override
+        public void updateWriteChannel(long index, int checksum, long prevIndex, long prevTerm) throws IOException {
+            LogPosition position;
+            try (var reader = openReadChannel(index)) {
+                while (reader.entryIndex() != index) {
+                    reader.goToNextEntry();
+                }
+
+                position = reader.goToEndOfEntry();
+            }
+
+            closeCurrentWriteChannel();
+            currentWriteChannel = openWriteChannel(position.getLogVersion(), position.getByteOffset());
+            appendingChannel = envelopedWriteChannel(currentWriteChannel, checksum, prevIndex, prevTerm);
+        }
+
+        @Override
+        public void truncateToLastSafeEntry(long knownSafeIndex) throws IOException {
+            closeCurrentWriteChannel();
+            recoverLogTail(getFileVersion(knownSafeIndex), false);
+        }
+
+        /**
+         * Can be used to reset the write channel to the end of the log, for example, after all the
+         * log files have been replaced by a store copy. This method should not be used if there's a
+         * chance that the log is corrupt.
+         */
+        public long resetWriteChannelToLatestIndex(boolean allowStoreIdentifierChange) throws IOException {
+            if (allowStoreIdentifierChange) {
+                // TODO MERGELOG: It would be nicer if we didn't have to make the header factory mutable. The
+                // alternative
+                //                is to create a completely different EnvelopedLogFiles object when there's a need to
+                //                replace the store with a different one. However, this requires replacing references to
+                //                EnvelopedLogFiles with some sort of holder/manager in many places, so is left to a
+                //                followup.
+                logHeaderFactory.allowStoreIdentifierChange();
+            }
+            long latestVersion = logsRepository.latestVersion();
+            return latestVersion >= 0 ? recoverLogTail(latestVersion, false) : -1;
+        }
+
+        @Override
+        public LogPosition currentWriteLogPosition() throws IOException {
+            return new LogPosition(currentWriteChannel.version(), appendingChannel.position());
+        }
+
+        @Override
+        public void verifyWriteChannelCalibration() throws IOException {
+            var tail = readFlushedTailState();
+            if (tail == null) {
+                return;
+            }
+            if (tail.checksum() != appendingChannel.currentChecksum()
+                    || tail.index() != appendingChannel.currentIndex()
+                    || tail.term() != appendingChannel.currentTerm()) {
+                var tracked = new TailState(
+                        appendingChannel.currentIndex(),
+                        appendingChannel.currentChecksum(),
+                        appendingChannel.currentTerm());
+                throw new IllegalStateException(
+                        ("The write channel's tracked state has diverged from the on-disk tail (fileVersion=%d, "
+                                        + "position=%d): %s vs tracked %s")
+                                .formatted(currentWriteChannel.version(), appendingChannel.position(), tail, tracked));
+            }
+        }
+
+        @Override
+        public LogWriter getTransactionLogWriter() {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public LogRotation getLogRotation() {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public ReadableLogChannel getReader(LogPosition position) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public ReadableLogChannel getRawReader(LogPosition position) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void accept(LogFileVisitor visitor, LogPosition startingFromPosition) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public NativeScopedBuffer createScopedBuffer() {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public PhysicalLogVersionedStoreChannel openForVersion(long version, boolean raw) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public PhysicalLogVersionedStoreChannel createLogChannelForVersion(
+                long version,
+                LongSupplier lastAppendIndexSupplier,
+                KernelVersionProvider kernelVersionProvider,
+                int previousLogFileChecksum,
+                LogFormatVersionProvider logFormatVersionProvider,
+                LogTermProvider logTermProvider)
+                throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public PhysicalLogVersionedStoreChannel createLogChannelForExistingVersion(long version) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public boolean versionExists(long version) {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public boolean hasAnyEntries(long version) {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void accept(LogVersionVisitor visitor) {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void accept(LogHeaderVisitor visitor) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void combine(Path additionalSource, long overLappingAppendIndex) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public boolean forceAfterAppend(LogForceEvents logForceEvents) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void locklessForce(LogForceEvents logAppendEvents) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void flush() throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void initializeMissingLogFile() throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void truncate() throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void truncate(LogPosition position) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public LogPosition append(
+                ByteBuffer byteBuffer,
+                OptionalLong appendIndex,
+                Optional<Byte> kernelVersionByte,
+                int checksum,
+                long offset,
+                Optional<Byte> logFormatVersion)
+                throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void registerExternalReaders(LongObjectMap<StoreChannel> internalChannels) {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void unregisterExternalReader(long version, StoreChannel channel) {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void terminateExternalReaders(long maxDeletedVersion) {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public void delete(Long version) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public PositionWithPrevAppendIndex findSafeTruncationPointInPreviousFile(
+                PositionWithPrevAppendIndex basePosition) {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public long getLastEntryAppendIndexInLogFiles() {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public boolean rotationNeeded() throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public RotationInfo rotate() throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public RotationInfo rotate(KernelVersion kernelVersion) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public RotationInfo rotate(
+                KernelVersion kernelVersion, long lastAppendIndex, int checksum, long lastTerm, LogFormat logFormat)
+                throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public RotationInfo rotate(KernelVersion kernelVersion, long lastAppendIndex, int checksum) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public long rotationSize() {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public PhysicalLogVersionedStoreChannel openForVersion(long version) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public Path[] getMatchedFiles() throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public long getLogVersion(Path file) {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public Path getLogFileForVersion(long version) {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public long getCurrentLogVersion() {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public LogRangeInfo getLogRangeInfo() {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public LogHeader extractHeader(long version) throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
+
+        @Override
+        public ReadableLogChannel getReader(LogPosition position, LogVersionBridge logVersionBridge)
+                throws IOException {
+            throw new UnsupportedOperationException("Not for enveloped log files");
+        }
     }
 
     private static class EnvelopedLogRotation implements LogRotation {

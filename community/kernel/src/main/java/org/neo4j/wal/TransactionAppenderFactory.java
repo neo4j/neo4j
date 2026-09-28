@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TransactionAppenderFactory {
     public static TransactionAppender createTransactionAppender(
-            LogFiles logFiles,
+            WALService walService,
             TransactionIdStore transactionIdStore,
             AppendIndexProvider appendIndexProvider,
             DatabaseConfig databaseConfig,
@@ -47,7 +47,7 @@ public class TransactionAppenderFactory {
 
         if (databaseConfig.get(dedicated_transaction_appender) || multiVersioned) {
             var queue = new TransactionLogQueue(
-                    logFiles,
+                    walService,
                     transactionIdStore,
                     databasePanic,
                     appendIndexProvider,
@@ -59,6 +59,6 @@ public class TransactionAppenderFactory {
         }
 
         return new BatchingTransactionAppender(
-                logFiles, transactionIdStore, databasePanic, appendIndexProvider, metadataCache);
+                walService, transactionIdStore, databasePanic, appendIndexProvider, metadataCache);
     }
 }

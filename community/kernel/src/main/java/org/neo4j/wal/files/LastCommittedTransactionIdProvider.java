@@ -19,9 +19,9 @@
  */
 package org.neo4j.wal.files;
 
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 @FunctionalInterface
 public interface LastCommittedTransactionIdProvider {
-    long getLastCommittedTransactionId(LogFiles logFiles);
+    long getLastCommittedTransactionId(WALService walService);
 }

@@ -29,16 +29,22 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.LogMetadataProvider;
 import org.neo4j.storageengine.api.LogMetadataProviderImpl;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogTailMetadata;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
+import org.neo4j.wal.enveloped.EnvelopeReadChannel;
+import org.neo4j.wal.enveloped.EnvelopeWriteChannel;
+import org.neo4j.wal.enveloped.LogFilesMetadata;
+import org.neo4j.wal.enveloped.LogHeaderFactory;
+import org.neo4j.wal.enveloped.StoreChannelsForTransfer;
 import org.neo4j.wal.files.checkpoint.CheckpointLogFile;
+import org.neo4j.wal.pruning.LogPruneThreshold;
 
 /**
  * Used to figure out what logical log file to open when the database
  * starts up.
  */
-public class TransactionLogFiles extends LifecycleAdapter implements LogFiles {
+public class TransactionLogFiles extends LifecycleAdapter implements WALService {
     public static final DirectoryStream.Filter<Path> DEFAULT_FILENAME_FILTER =
             TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
 
@@ -123,6 +129,76 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles {
     @Override
     public LogTailMetadata getTailMetadata() {
         return checkpointLogFile.getTailMetadata();
+    }
+
+    @Override
+    public EnvelopeWriteChannel truncate(long fromIndex) {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public long prune(long safeIndex) {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void clearCache() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void populateCache() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public LogFilesMetadata logFilesMetadata() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public LogFilesMetadata logFilesMetadata(boolean b) {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public EnvelopeReadChannel openReadChannel() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public EnvelopeReadChannel openReadChannel(long fileWithIndex) {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void remove() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void setPruneThreshold(LogPruneThreshold logPruneThreshold) {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public StoreChannelsForTransfer entryStreamChannels(long fromIndex, long toIndex) {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public long initialise() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void forceRotate() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public LogHeaderFactory headerFactory() {
+        throw new UnsupportedOperationException("Not for transaction log files");
     }
 
     @Override

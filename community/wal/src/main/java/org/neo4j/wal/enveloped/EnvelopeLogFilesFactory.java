@@ -25,6 +25,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.wal.LogTracers;
 import org.neo4j.wal.StoreChannelNativeAccessor;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.pruning.LogPruneThreshold;
 
 public class EnvelopeLogFilesFactory {
@@ -59,20 +60,19 @@ public class EnvelopeLogFilesFactory {
         this.logTracers = logTracers;
     }
 
-    public EnvelopedLogFiles createWithoutCache(
-            SequentialFileNameHelper fileNameHelper, LogHeaderFactory logHeaderFactory) {
+    public WALService createWithoutCache(SequentialFileNameHelper fileNameHelper, LogHeaderFactory logHeaderFactory) {
         return instantiateEnvelopedLogFiles(fileNameHelper, logHeaderFactory, EnvelopedLogHeaderCache.NULL);
     }
 
-    public EnvelopedLogFiles create(SequentialFileNameHelper fileNameHelper, LogHeaderFactory logHeaderFactory) {
+    public WALService create(SequentialFileNameHelper fileNameHelper, LogHeaderFactory logHeaderFactory) {
         return instantiateEnvelopedLogFiles(fileNameHelper, logHeaderFactory, new EnvelopedLogHeaderCacheImpl());
     }
 
-    private EnvelopedLogFiles instantiateEnvelopedLogFiles(
+    private WALService instantiateEnvelopedLogFiles(
             SequentialFileNameHelper fileNameHelper,
             LogHeaderFactory logHeaderFactory,
             EnvelopedLogHeaderCache headerCache) {
-        return new EnvelopedLogFiles(
+        return new EnvelopedWALService(
                 new LogsRepository(fileSystem, fileNameHelper),
                 logHeaderFactory,
                 defaultLogSegmentSize,

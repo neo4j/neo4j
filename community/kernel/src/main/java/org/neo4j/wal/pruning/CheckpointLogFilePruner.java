@@ -28,7 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 /**
  * Prunes checkpoint log files down to {@code checkpoint_logical_log_keep_threshold} files. Checkpoint logs are a
@@ -37,20 +37,20 @@ import org.neo4j.wal.LogFiles;
  */
 class CheckpointLogFilePruner {
     private final FileSystemAbstraction fs;
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final InternalLog log;
     private final int filesToKeep;
 
     CheckpointLogFilePruner(
-            FileSystemAbstraction fs, LogFiles logFiles, InternalLogProvider logProvider, Config config) {
+            FileSystemAbstraction fs, WALService walService, InternalLogProvider logProvider, Config config) {
         this.fs = fs;
-        this.logFiles = logFiles;
+        this.walService = walService;
         this.log = logProvider.getLog(getClass());
         this.filesToKeep = config.get(checkpoint_logical_log_keep_threshold);
     }
 
     void prune() throws IOException {
-        var checkpointFile = logFiles.getCheckpointFile();
+        var checkpointFile = walService.getCheckpointFile();
         var checkpointFiles = checkpointFile.getMatchedFiles();
         if (isNotEmpty(checkpointFiles) && checkpointFiles.length > filesToKeep) {
             long highestVersionToRemove = checkpointFile.getCurrentLogVersion() - filesToKeep;

@@ -55,12 +55,12 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.CommandBatchCursor;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogicalTransactionStore;
 import org.neo4j.wal.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.ReadableLogChannel;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntryReader;
 import org.neo4j.wal.entry.LogEntryWriter;
 import org.neo4j.wal.entry.LogHeader;
@@ -134,10 +134,10 @@ class RecoverIndexDropIT {
             CommittedCommandBatchRepresentation dropBatch,
             StorageEngineFactory storageEngineFactory)
             throws IOException {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(transactionLogsDirectory, fs)
+        WALService walService = LogFilesBuilder.logFilesBasedOnlyBuilder(transactionLogsDirectory, fs)
                 .withStorageEngineFactory(storageEngineFactory)
                 .build();
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
 
         LogHeader logHeader = logFile.extractHeader(0);
         try (ReadableLogChannel reader = logFile.getReader(logHeader.getStartPosition())) {

@@ -77,7 +77,6 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.wal.LogEntryCursor;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogForceEvent;
 import org.neo4j.wal.LogForceEvents;
 import org.neo4j.wal.LogForceWaitEvent;
@@ -98,6 +97,7 @@ import org.neo4j.wal.ReaderLogVersionBridge;
 import org.neo4j.wal.StoreChannelNativeAccessor;
 import org.neo4j.wal.TransactionLogWriter;
 import org.neo4j.wal.UnclosableChannel;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntry;
 import org.neo4j.wal.entry.LogEntryCommit;
 import org.neo4j.wal.entry.LogEntryStart;
@@ -137,13 +137,13 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     private LogWriter transactionLogWriter;
     private volatile boolean initCalled;
 
-    TransactionLogFile(LogFiles logFiles, TransactionLogFilesContext context) {
+    TransactionLogFile(WALService walService, TransactionLogFilesContext context) {
         this.context = context;
         this.rotateAtSize = context.rotationThreshold();
         this.fileSystem = context.fileSystem();
         this.databaseHealth = context.databaseHealth();
         this.versionTracker = context.versionTracker();
-        this.fileHelper = TransactionLogFilesHelper.forTransactions(logFiles.logFilesDirectory());
+        this.fileHelper = TransactionLogFilesHelper.forTransactions(walService.logFilesDirectory());
         this.logHeaderCache = new LogHeaderCache(1000);
         this.channelAllocator = new TransactionLogChannelAllocator(context, fileHelper, logHeaderCache, rotateAtSize);
         this.readerLogVersionBridge = ReaderLogVersionBridge.forFile(this);
@@ -484,6 +484,56 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     public LogRotation getLogRotation() {
         assert initCalled : "LogRotation only available after init";
         return logRotation;
+    }
+
+    @Override
+    public long getMaxFileSize() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public EnvelopeWriteChannel currentWriteChannel() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void recalibrateWriteChannel() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void forceRotate() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void skip(long index, int checksum, int offset, long term) {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void updateWriteChannel(long index, int checksum, long index1, long term) {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void truncateToLastSafeEntry(long lastSafeIndex) {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public long resetWriteChannelToLatestIndex(boolean b) {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public LogPosition currentWriteLogPosition() {
+        throw new UnsupportedOperationException("Not for transaction log files");
+    }
+
+    @Override
+    public void verifyWriteChannelCalibration() throws IOException {
+        throw new UnsupportedOperationException("Not for transaction log files");
     }
 
     @Override

@@ -41,11 +41,11 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.wal.CommandBatchCursor;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogFormatVersionProvider;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogicalTransactionStore;
 import org.neo4j.wal.RecoveryOutcome;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 
 public class DefaultRecoveryService implements RecoveryService {
@@ -54,7 +54,7 @@ public class DefaultRecoveryService implements RecoveryService {
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private final LogVersionRepository logVersionRepository;
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final KernelVersionProvider versionProvider;
     private final LogFormatVersionProvider logFormatVersionProvider;
     private final InternalLog log;
@@ -67,7 +67,7 @@ public class DefaultRecoveryService implements RecoveryService {
             TransactionIdStore transactionIdStore,
             LogicalTransactionStore logicalTransactionStore,
             LogVersionRepository logVersionRepository,
-            LogFiles logFiles,
+            WALService walService,
             KernelVersionProvider versionProvider,
             LogFormatVersionProvider logFormatVersionProvider,
             Monitor monitor,
@@ -80,14 +80,14 @@ public class DefaultRecoveryService implements RecoveryService {
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
         this.logVersionRepository = logVersionRepository;
-        this.logFiles = logFiles;
+        this.walService = walService;
         this.versionProvider = versionProvider;
         this.logFormatVersionProvider = logFormatVersionProvider;
         this.log = log;
         this.doParallelRecovery = doParallelRecovery;
         this.contextFactory = contextFactory;
         this.storeFileChecker = storeFileChecker;
-        this.recoveryStartInformationProvider = new RecoveryStartInformationProvider(logFiles, monitor, config);
+        this.recoveryStartInformationProvider = new RecoveryStartInformationProvider(walService, monitor, config);
     }
 
     @Override
@@ -156,7 +156,7 @@ public class DefaultRecoveryService implements RecoveryService {
         // cleanup checkpoint log files
         logVersionRepository.setCheckpointLogVersion(Math.max(
                 INITIAL_LOG_VERSION,
-                logFiles.getCheckpointFile().getLogRangeInfo().highestVersion()));
+                walService.getCheckpointFile().getLogRangeInfo().highestVersion()));
         tryRemoveLegacyCheckpointFiles();
     }
 
@@ -238,7 +238,7 @@ public class DefaultRecoveryService implements RecoveryService {
 
     private void tryRemoveLegacyCheckpointFiles() {
         try {
-            CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+            CheckpointFile checkpointFile = walService.getCheckpointFile();
             Path[] detachedCheckpointFiles = checkpointFile.getMatchedFiles();
             for (Path obsoleteCheckpointFile : detachedCheckpointFiles) {
                 FileUtils.deleteFile(obsoleteCheckpointFile);

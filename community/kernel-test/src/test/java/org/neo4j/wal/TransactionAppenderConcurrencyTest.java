@@ -106,7 +106,7 @@ public class TransactionAppenderConcurrencyTest {
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private final LogFiles logFiles = mock(TransactionLogFiles.class);
+    private final WALService walService = mock(TransactionLogFiles.class);
     private final LogFile logFile = mock(LogFile.class);
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
     private final AppendIndexProvider appendIndexProvider = new SimpleAppendIndexProvider();
@@ -126,7 +126,7 @@ public class TransactionAppenderConcurrencyTest {
 
     @BeforeEach
     void setUp() {
-        when(logFiles.getLogFile()).thenReturn(logFile);
+        when(walService.getLogFile()).thenReturn(logFile);
         jobScheduler = new ThreadPoolJobScheduler();
     }
 
@@ -147,7 +147,7 @@ public class TransactionAppenderConcurrencyTest {
         life.add(new FileSystemLifecycleAdapter(fs));
         DatabaseHealth databaseHealth =
                 new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fs,
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
@@ -158,8 +158,8 @@ public class TransactionAppenderConcurrencyTest {
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(STORE_ID)
                 .build();
-        life.add(logFiles);
-        var appender = life.add(createTransactionAppender(databaseHealth, logFiles, jobScheduler));
+        life.add(walService);
+        var appender = life.add(createTransactionAppender(databaseHealth, walService, jobScheduler));
         life.start();
 
         // WHEN
@@ -193,7 +193,7 @@ public class TransactionAppenderConcurrencyTest {
         DatabaseHealth databaseHealth =
                 new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
         life.add(new FileSystemLifecycleAdapter(fs));
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fs,
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
@@ -204,8 +204,8 @@ public class TransactionAppenderConcurrencyTest {
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(STORE_ID)
                 .build();
-        life.add(logFiles);
-        var appender = life.add(createTransactionAppender(databaseHealth, logFiles, jobScheduler));
+        life.add(walService);
+        var appender = life.add(createTransactionAppender(databaseHealth, walService, jobScheduler));
         life.start();
 
         // Commit initial transaction
@@ -231,7 +231,7 @@ public class TransactionAppenderConcurrencyTest {
         LogEntryReader logEntryReader = new VersionAwareLogEntryReader(
                 TestCommandReaderFactory.INSTANCE, LatestVersions.BINARY_VERSIONS, INSTANCE);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         LogRangeInfo logRangeInfo = logFile.getLogRangeInfo();
         long highestVersion = logRangeInfo.highestVersion();
         assertThat(logRangeInfo.lowestVersion()).isEqualTo(highestVersion);
@@ -251,9 +251,9 @@ public class TransactionAppenderConcurrencyTest {
     }
 
     private TransactionAppender createTransactionAppender(
-            DatabaseHealth databaseHealth, LogFiles logFiles, JobScheduler scheduler) {
+            DatabaseHealth databaseHealth, WALService walService, JobScheduler scheduler) {
         return TransactionAppenderFactory.createTransactionAppender(
-                logFiles,
+                walService,
                 transactionIdStore,
                 appendIndexProvider,
                 new DatabaseConfig(Config.defaults()),

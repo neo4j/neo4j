@@ -69,7 +69,6 @@ import org.neo4j.wal.CompleteCommandBatch;
 import org.neo4j.wal.FlushableLogPositionAwareChannel;
 import org.neo4j.wal.LogAppendEvent;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogVersionBridge;
 import org.neo4j.wal.LogWriter;
@@ -77,6 +76,7 @@ import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.ReadAheadLogChannel;
 import org.neo4j.wal.ReaderLogVersionBridge;
 import org.neo4j.wal.TransactionLogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntryWriter;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.files.LogFilesBuilder;
@@ -102,12 +102,12 @@ class ReversedSingleFileCommandBatchCursorTest {
     private final ReverseTransactionCursorLoggingMonitor monitor =
             new ReverseTransactionCursorLoggingMonitor(logProvider.getLog(ReversedSingleFileCommandBatchCursor.class));
     private LogFile logFile;
-    private LogFiles logFiles;
+    private WALService walService;
 
     @BeforeEach
     void setUp() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        logFiles = LogFilesBuilder.writeableBuilder(
+        walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fs,
                         fixed(LATEST_KERNEL_VERSION_WITHOUT_ENVELOPES),
@@ -116,8 +116,8 @@ class ReversedSingleFileCommandBatchCursorTest {
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
-        life.add(logFiles);
-        logFile = logFiles.getLogFile();
+        life.add(walService);
+        logFile = walService.getLogFile();
     }
 
     @Test
@@ -193,7 +193,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         // when
         PhysicalLogVersionedStoreChannel logChannel = logFile.openForVersion(0);
         logChannel.position(
-                logFiles.getLogFile().extractHeader(0).getStartPosition().getByteOffset());
+                walService.getLogFile().extractHeader(0).getStartPosition().getByteOffset());
         try (ReadAheadLogChannel channel = new ReadAheadLogChannel(
                 logChannel, ReaderLogVersionBridge.forFile(logFile), EmptyMemoryTracker.INSTANCE)) {
             assertThatThrownBy(() -> ReversedSingleFileCommandBatchCursor.create(
@@ -334,7 +334,9 @@ class ReversedSingleFileCommandBatchCursorTest {
     private ReversedSingleFileCommandBatchCursor txCursor(boolean failOnCorruptedLogFiles, LogPosition maxPosition)
             throws IOException {
         return txCursor(
-                failOnCorruptedLogFiles, logFiles.getLogFile().extractHeader(0).getStartPosition(), maxPosition);
+                failOnCorruptedLogFiles,
+                walService.getLogFile().extractHeader(0).getStartPosition(),
+                maxPosition);
     }
 
     private ReversedSingleFileCommandBatchCursor txCursor(

@@ -48,10 +48,10 @@ import org.neo4j.storageengine.api.StoreIdentifier;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogVersionedStoreChannel;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.ReaderLogVersionBridge;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogHeader;
 import org.neo4j.wal.files.LogFilesBuilder;
 
@@ -64,18 +64,18 @@ class ReaderLogVersionBridgeTest {
     private final LogVersionedStoreChannel channel = mock(LogVersionedStoreChannel.class);
 
     private final long version = 10L;
-    private LogFiles logFiles;
+    private WALService walService;
 
     @BeforeEach
     void setUp() throws Exception {
-        logFiles = prepareLogFiles();
+        walService = prepareLogFiles();
     }
 
     @Test
     void shouldOpenTheNextChannelWhenItExists() throws IOException {
         // given
         final var newStoreChannel = mock(LogVersionedStoreChannel.class);
-        final var bridge = ReaderLogVersionBridge.forFile(logFiles.getLogFile());
+        final var bridge = ReaderLogVersionBridge.forFile(walService.getLogFile());
 
         when(channel.getLogVersion()).thenReturn(version);
         when(channel.getLogFormatVersion()).thenReturn(LATEST_LOG_FORMAT);
@@ -124,7 +124,7 @@ class ReaderLogVersionBridgeTest {
     @Test
     void shouldReturnOldChannelWhenThereIsNoNextChannel() throws IOException {
         // given
-        final var bridge = ReaderLogVersionBridge.forFile(logFiles.getLogFile());
+        final var bridge = ReaderLogVersionBridge.forFile(walService.getLogFile());
 
         when(channel.getLogVersion()).thenReturn(version);
         when(fs.read(any(Path.class))).thenThrow(new NoSuchFileException("mock"));
@@ -140,7 +140,7 @@ class ReaderLogVersionBridgeTest {
     @Test
     void shouldReturnOldChannelWhenNextChannelHasNotGottenCompleteHeaderYet() throws Exception {
         // given
-        final var bridge = ReaderLogVersionBridge.forFile(logFiles.getLogFile());
+        final var bridge = ReaderLogVersionBridge.forFile(walService.getLogFile());
         final var nextVersionWithIncompleteHeader = mock(LogVersionedStoreChannel.class);
         when(nextVersionWithIncompleteHeader.read(any(ByteBuffer.class)))
                 .thenReturn(LATEST_LOG_FORMAT.getHeaderSize() / 2);
@@ -157,7 +157,7 @@ class ReaderLogVersionBridgeTest {
         verify(channel, never()).close();
     }
 
-    private LogFiles prepareLogFiles() throws IOException {
+    private WALService prepareLogFiles() throws IOException {
         return LogFilesBuilder.logFilesBasedOnlyBuilder(testDirectory.homePath(), fs)
                 .build();
     }

@@ -40,7 +40,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.LogTestUtils.CountingLogHook;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntry;
 
 /**
@@ -52,7 +52,7 @@ class ReadTransactionLogWritingTest {
     private GraphDatabaseAPI db;
 
     @Inject
-    private LogFiles logFiles;
+    private WALService walService;
 
     @Inject
     private FileSystemAbstraction fileSystem;
@@ -97,14 +97,14 @@ class ReadTransactionLogWritingTest {
         try {
             CountingLogHook<LogEntry> logicalLogCounter = new CountingLogHook<>();
             filterNeostoreLogicalLog(
-                    logFiles,
+                    walService,
                     fileSystem,
                     logicalLogCounter,
                     db.getDependencyResolver()
                             .resolveDependency(StorageEngineFactory.class)
                             .commandReaderFactory());
 
-            long txLogRecordCount = logFiles.getLogFile().getLastEntryAppendIndexInLogFiles();
+            long txLogRecordCount = walService.getLogFile().getLastEntryAppendIndexInLogFiles();
 
             return logicalLogCounter.getCount() + txLogRecordCount;
         } catch (IOException e) {

@@ -50,9 +50,9 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.util.concurrent.Futures;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.TransactionAppender;
 import org.neo4j.wal.TransactionMetadataCache;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.files.LogFilesBuilder;
 
 public class Runner implements Callable<Long> {
@@ -73,11 +73,11 @@ public class Runner implements Callable<Long> {
         try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 var jobScheduler = new ThreadPoolJobScheduler();
                 Lifespan life = new Lifespan()) {
-            LogFiles logFiles = life.add(createLogFiles(fileSystem));
-            LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
+            WALService walService = life.add(createLogFiles(fileSystem));
+            LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
 
             TransactionAppender transactionAppender = life.add(createBatchingTransactionAppender(
-                    logFiles,
+                    walService,
                     logMetadataProvider,
                     logMetadataProvider,
                     new DatabaseConfig(Config.defaults()),
@@ -102,7 +102,7 @@ public class Runner implements Callable<Long> {
     }
 
     private static TransactionAppender createBatchingTransactionAppender(
-            LogFiles logFiles,
+            WALService walService,
             TransactionIdStore transactionIdStore,
             AppendIndexProvider appendIndexProvider,
             DatabaseConfig databaseConfig,
@@ -110,7 +110,7 @@ public class Runner implements Callable<Long> {
         InternalLog log = NullLog.getInstance();
         DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, log);
         return createTransactionAppender(
-                logFiles,
+                walService,
                 transactionIdStore,
                 appendIndexProvider,
                 databaseConfig,
@@ -123,7 +123,7 @@ public class Runner implements Callable<Long> {
                 false);
     }
 
-    private LogFiles createLogFiles(FileSystemAbstraction fileSystemAbstraction) throws IOException {
+    private WALService createLogFiles(FileSystemAbstraction fileSystemAbstraction) throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout,

@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.LogMetadataProvider;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 
@@ -43,7 +43,7 @@ public class DatabaseAppendIndexIT {
     private CheckPointer checkPointer;
 
     @Inject
-    private LogFiles logFiles;
+    private WALService walService;
 
     @Inject
     private GraphDatabaseAPI databaseAPI;
@@ -83,7 +83,8 @@ public class DatabaseAppendIndexIT {
 
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("test trigger"));
 
-        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        var checkpointInfo =
+                walService.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertEquals(metadataProvider.getLastAppendIndex(), checkpointInfo.appendIndex());
         assertEquals(
                 metadataProvider.getHighestGapFreeClosedTransactionId(),

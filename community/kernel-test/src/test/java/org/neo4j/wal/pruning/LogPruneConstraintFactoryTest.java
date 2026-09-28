@@ -34,7 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.pruning.ThresholdConfigParser.ThresholdConfigValue;
 
 class LogPruneConstraintFactoryTest {
@@ -122,7 +122,7 @@ class LogPruneConstraintFactoryTest {
         LogPruneStrategy strategy = new LogPruneStrategyFactory()
                 .strategyFromConfigValue(
                         fsa,
-                        mock(LogFiles.class),
+                        mock(WALService.class),
                         logProvider,
                         clock,
                         configValue,

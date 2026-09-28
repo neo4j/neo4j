@@ -126,7 +126,7 @@ import org.neo4j.wal.rotation.LogRotation;
 class BatchingTransactionAppenderTest {
     private final Panic databasePanic = mock(DatabaseHealth.class);
     private final LogFile logFile = mock(LogFile.class);
-    private final LogFiles logFiles = mock(TransactionLogFiles.class);
+    private final WALService walService = mock(TransactionLogFiles.class);
     private final TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
     private final TransactionMetadataCache positionCache = new TransactionMetadataCache();
     private final TransactionIdGenerator transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
@@ -145,7 +145,7 @@ class BatchingTransactionAppenderTest {
     @BeforeEach
     void setUp() {
         path = testDirectory.file("transactions");
-        when(logFiles.getLogFile()).thenReturn(logFile);
+        when(walService.getLogFile()).thenReturn(logFile);
         when(transactionIdStore.getLastCommittedTransaction())
                 .thenReturn(new TransactionId(
                         BASE_TX_ID, BASE_APPEND_INDEX, DEFAULT_BOOTSTRAP_VERSION, BASE_TX_CHECKSUM, 1, 2));
@@ -279,7 +279,7 @@ class BatchingTransactionAppenderTest {
                     .when(transactionIdStore)
                     .getLastCommittedTransaction();
             TransactionAppender appender = life.add(new BatchingTransactionAppender(
-                    logFiles, transactionIdStore, databasePanic, new SimpleAppendIndexProvider(), positionCache));
+                    walService, transactionIdStore, databasePanic, new SimpleAppendIndexProvider(), positionCache));
 
             appender.register(
                     new CompleteTransaction(
@@ -458,7 +458,7 @@ class BatchingTransactionAppenderTest {
                         BASE_TX_COMMIT_TIMESTAMP,
                         UNKNOWN_CONSENSUS_INDEX));
         TransactionAppender appender = life.add(new BatchingTransactionAppender(
-                logFiles, transactionIdStore, databasePanic, new SimpleAppendIndexProvider(), metadataCache));
+                walService, transactionIdStore, databasePanic, new SimpleAppendIndexProvider(), metadataCache));
 
         // WHEN
         CommandBatch commandBatch = mock(CommandBatch.class);
@@ -591,7 +591,7 @@ class BatchingTransactionAppenderTest {
 
     private BatchingTransactionAppender createTransactionAppender() {
         return new BatchingTransactionAppender(
-                logFiles,
+                walService,
                 transactionIdStore,
                 databasePanic,
                 new SimpleAppendIndexProvider(),

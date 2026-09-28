@@ -95,11 +95,11 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void sequentialProcessingOfTransaction() throws IOException, ExecutionException, InterruptedException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        QueueTransactionAppender transactionAppender = createAppender(walService);
         life.add(transactionAppender);
 
         long txId = logMetadataProvider.getLastCommittedTransactionId();
@@ -111,11 +111,11 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void failToProcessTransactionOnShutdownAppender() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        QueueTransactionAppender transactionAppender = createAppender(walService);
         life.add(transactionAppender);
 
         CompleteTransaction completeTransaction = createTransaction(logMetadataProvider);
@@ -129,11 +129,11 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void failToProcessTransactionOnNotStartedAppender() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        QueueTransactionAppender transactionAppender = createAppender(walService);
 
         CompleteTransaction completeTransaction = createTransaction(logMetadataProvider);
         assertThatThrownBy(() -> transactionAppender.register(completeTransaction, LogAppendEvent.NULL))
@@ -142,11 +142,11 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void registerTransactionAsCommittedOnProcessing() throws IOException, ExecutionException, InterruptedException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        QueueTransactionAppender transactionAppender = createAppender(walService);
         life.add(transactionAppender);
 
         long initialLastCommittedTxId = logMetadataProvider.getLastCommittedTransactionId();
@@ -164,11 +164,11 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void failToProcessTransactionOnNonHealthyDatabase() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        QueueTransactionAppender transactionAppender = createAppender(walService);
         life.add(transactionAppender);
 
         RuntimeException panicException = new RuntimeException("Don't panic, the answer is known!");
@@ -181,11 +181,11 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void processTransactionWithProperEvents() throws IOException, ExecutionException, InterruptedException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        QueueTransactionAppender transactionAppender = createAppender(walService);
         life.add(transactionAppender);
 
         CompleteTransaction completeTransaction = createTransaction(logMetadataProvider);
@@ -202,11 +202,11 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void failureOnProcessingUpdatesDatabaseHealth() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        QueueTransactionAppender transactionAppender = createAppender(walService);
         life.add(transactionAppender);
 
         RuntimeException criticalException = new RuntimeException("The greatest teacher, failure is.");
@@ -228,12 +228,12 @@ class QueueTransactionAppenderTestIT {
                 .hasMessageContaining("failure is.");
     }
 
-    private QueueTransactionAppender createAppender(LogFiles logFiles) {
+    private QueueTransactionAppender createAppender(WALService walService) {
         var logQueue = new TransactionLogQueue(
-                logFiles,
-                logFiles.logMetadataProvider(),
+                walService,
+                walService.logMetadataProvider(),
                 databaseHealth,
-                logFiles.logMetadataProvider(),
+                walService.logMetadataProvider(),
                 metadataCache,
                 jobScheduler,
                 logProvider,
@@ -261,7 +261,7 @@ class QueueTransactionAppenderTestIT {
                 new IdStoreTransactionIdGenerator(transactionIdStore));
     }
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout,

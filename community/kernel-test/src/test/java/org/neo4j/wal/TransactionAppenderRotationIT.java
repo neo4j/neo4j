@@ -106,21 +106,21 @@ class TransactionAppenderRotationIT {
     @Test
     void correctLastAppliedToPreviousLogTransactionInHeaderOnLogFileRotation()
             throws IOException, ExecutionException, InterruptedException {
-        LogFiles logFiles = getLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
-        life.add(logFiles);
+        WALService walService = getLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
+        life.add(walService);
         Panic databasePanic = getDatabaseHealth();
 
         TransactionAppender transactionAppender = createTransactionAppender(
-                logFiles, databasePanic, transactionIdStore, jobScheduler, appendIndexProvider);
+                walService, databasePanic, transactionIdStore, jobScheduler, appendIndexProvider);
 
         life.add(transactionAppender);
 
         LogAppendEvent logAppendEvent =
-                new RotationLogAppendEvent(logFiles.getLogFile().getLogRotation());
+                new RotationLogAppendEvent(walService.getLogFile().getLogRotation());
         CompleteTransaction completeTransaction = prepareTransaction(LatestVersions.LATEST_KERNEL_VERSION);
         transactionAppender.register(completeTransaction, logAppendEvent);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         LogRangeInfo logRangeInfo = logFile.getLogRangeInfo();
         assertEquals(1, logRangeInfo.highestVersion());
         LogHeader logHeader = LogHeaderReader.readLogHeader(fileSystem, logRangeInfo.highestFile(), INSTANCE);
@@ -130,16 +130,16 @@ class TransactionAppenderRotationIT {
     @Test
     void appendIndexOnEnvelopedRotationsIsCorrectDespitePreIncrementInBatchAppender()
             throws IOException, ExecutionException, InterruptedException {
-        LogFiles logFiles = getEnvelopedLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
-        life.add(logFiles);
+        WALService walService = getEnvelopedLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
+        life.add(walService);
         Panic databasePanic = getDatabaseHealth();
 
         TransactionAppender transactionAppender = createTransactionAppender(
-                logFiles, databasePanic, transactionIdStore, jobScheduler, appendIndexProvider);
+                walService, databasePanic, transactionIdStore, jobScheduler, appendIndexProvider);
 
         life.add(transactionAppender);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
 
         long prevLogVersion = -1L;
         while (logFile.getCurrentLogVersion() < 5) {
@@ -171,13 +171,13 @@ class TransactionAppenderRotationIT {
     }
 
     private static TransactionAppender createTransactionAppender(
-            LogFiles logFiles,
+            WALService walService,
             Panic databasePanic,
             TransactionIdStore transactionIdStore,
             JobScheduler scheduler,
             AppendIndexProvider appendIndexProvider) {
         return TransactionAppenderFactory.createTransactionAppender(
-                logFiles,
+                walService,
                 transactionIdStore,
                 appendIndexProvider,
                 new DatabaseConfig(Config.defaults()),
@@ -207,7 +207,7 @@ class TransactionAppenderRotationIT {
         return singletonList(new TestCommand(kernelVersion));
     }
 
-    private LogFiles getLogFiles(
+    private WALService getLogFiles(
             SimpleLogVersionRepository logVersionRepository,
             SimpleTransactionIdStore transactionIdStore,
             AppendIndexProvider appendIndexProvider)
@@ -227,7 +227,7 @@ class TransactionAppenderRotationIT {
                 .build();
     }
 
-    private LogFiles getEnvelopedLogFiles(
+    private WALService getEnvelopedLogFiles(
             SimpleLogVersionRepository logVersionRepository,
             SimpleTransactionIdStore transactionIdStore,
             AppendIndexProvider appendIndexProvider)

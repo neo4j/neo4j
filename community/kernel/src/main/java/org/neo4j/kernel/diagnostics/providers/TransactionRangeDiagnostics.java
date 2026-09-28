@@ -37,7 +37,7 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.entry.LogHeader;
 import org.neo4j.wal.files.LogRangeInfo;
@@ -56,7 +56,7 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
         final var deviceMapper = dependencyResolver.resolveDependency(DeviceMapper.class);
         final var kernelVersionProvider = dependencyResolver.resolveDependency(KernelVersionProvider.class);
         final var txIdStore = dependencyResolver.resolveDependency(TransactionIdStore.class);
-        final var logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+        final var logFiles = dependencyResolver.resolveDependency(WALService.class);
         final var fileSystem = dependencyResolver.resolveDependency(FileSystemAbstraction.class);
 
         try {

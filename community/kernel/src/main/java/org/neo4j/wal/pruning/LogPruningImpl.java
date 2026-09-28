@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 /**
  * This class listens for rotations and does log pruning.
@@ -45,7 +45,7 @@ public class LogPruningImpl implements LogPruning {
     private final Lock pruneLock;
     private final TransactionIdStore transactionIdStore;
     private final FileSystemAbstraction fs;
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final InternalLog log;
     private final LogPruneStrategyFactory strategyFactory;
     private final Clock clock;
@@ -56,7 +56,7 @@ public class LogPruningImpl implements LogPruning {
 
     public LogPruningImpl(
             FileSystemAbstraction fs,
-            LogFiles logFiles,
+            WALService walService,
             InternalLogProvider logProvider,
             LogPruneStrategyFactory strategyFactory,
             Clock clock,
@@ -67,7 +67,7 @@ public class LogPruningImpl implements LogPruning {
             BinarySupportedKernelVersions binarySupportedKernelVersions,
             MemoryTracker memoryTracker) {
         this.fs = fs;
-        this.logFiles = logFiles;
+        this.walService = walService;
         this.logProvider = logProvider;
         this.log = logProvider.getLog(getClass());
         this.strategyFactory = strategyFactory;
@@ -75,10 +75,10 @@ public class LogPruningImpl implements LogPruning {
         this.pruneLock = pruneLock;
         this.transactionIdStore = transactionIdStore;
         this.logFileInformation = new TransactionLogFileInformation(
-                logFiles, commandReaderFactory, binarySupportedKernelVersions, memoryTracker);
+                walService, commandReaderFactory, binarySupportedKernelVersions, memoryTracker);
         this.pruneStrategy = strategyFactory.strategyFromConfigValue(
-                fs, logFiles, logProvider, clock, config.get(keep_logical_logs), logFileInformation);
-        this.checkpointLogFilePruner = new CheckpointLogFilePruner(fs, logFiles, logProvider, config);
+                fs, walService, logProvider, clock, config.get(keep_logical_logs), logFileInformation);
+        this.checkpointLogFilePruner = new CheckpointLogFilePruner(fs, walService, logProvider, config);
 
         // Register listener for updates
         config.addListener(keep_logical_logs, (prev, update) -> updateConfiguration(update));
@@ -86,7 +86,7 @@ public class LogPruningImpl implements LogPruning {
 
     private void updateConfiguration(String pruningConf) {
         LogPruneStrategy strategy = strategyFactory.strategyFromConfigValue(
-                fs, logFiles, logProvider, clock, pruningConf, logFileInformation);
+                fs, walService, logProvider, clock, pruningConf, logFileInformation);
         this.pruneStrategy = strategy;
         log.info("Retention policy updated to '" + strategy
                 + "', which will take effect next time a checkpoint completes.");
@@ -96,7 +96,7 @@ public class LogPruningImpl implements LogPruning {
     public void pruneLogs(long upToVersion) throws IOException {
         pruneLock.lock();
         try {
-            LogFile logFile = logFiles.getLogFile();
+            LogFile logFile = walService.getLogFile();
             LogPruneStrategy strategy = this.pruneStrategy;
 
             CountingDeleter deleter = new CountingDeleter(logFile, logFileInformation);

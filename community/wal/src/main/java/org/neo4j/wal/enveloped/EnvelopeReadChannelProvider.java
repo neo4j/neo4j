@@ -20,6 +20,7 @@
 package org.neo4j.wal.enveloped;
 
 import java.io.IOException;
+import org.neo4j.wal.WALService;
 
 public interface EnvelopeReadChannelProvider {
 
@@ -40,4 +41,23 @@ public interface EnvelopeReadChannelProvider {
      * provided parameter.
      */
     EnvelopeReadChannel openReadChannel(long fileWithIndex) throws IOException;
+
+    class DefaultEnvelopeReadChannelProvider implements EnvelopeReadChannelProvider {
+
+        private final WALService walService;
+
+        public DefaultEnvelopeReadChannelProvider(WALService walService) {
+            this.walService = walService;
+        }
+
+        @Override
+        public EnvelopeReadChannel openReadChannel() throws IOException {
+            return walService.openReadChannel();
+        }
+
+        @Override
+        public EnvelopeReadChannel openReadChannel(long fileWithIndex) throws IOException {
+            return walService.openReadChannel(fileWithIndex);
+        }
+    }
 }

@@ -59,7 +59,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.wal.CheckpointInfo;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.files.LogFilesBuilder;
 
 @DbmsExtension
@@ -307,12 +307,12 @@ class RelationshipTypeIndexIT {
 
     private void removeLastCheckpointRecordFromLastLogFile() {
         try {
-            LogFiles logFiles = buildLogFiles();
+            WALService walService = buildLogFiles();
             Optional<CheckpointInfo> latestCheckpoint =
-                    logFiles.getCheckpointFile().findLatestCheckpoint();
+                    walService.getCheckpointFile().findLatestCheckpoint();
             if (latestCheckpoint.isPresent()) {
                 try (StoreChannel storeChannel =
-                        fs.write(logFiles.getCheckpointFile().getCurrentFile())) {
+                        fs.write(walService.getCheckpointFile().getCurrentFile())) {
                     storeChannel.truncate(
                             latestCheckpoint.get().checkpointEntryPosition().getByteOffset());
                 }
@@ -322,7 +322,7 @@ class RelationshipTypeIndexIT {
         }
     }
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         final var databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
         return LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)
                 .build();

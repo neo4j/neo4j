@@ -25,15 +25,16 @@ import java.nio.file.NoSuchFileException;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.wal.WALService;
 
 public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
     private static final int MAX_RETRIES = 2;
 
-    private final EnvelopedLogFiles envelopedLogFiles;
+    private final WALService walService;
     private final InternalLog log;
 
-    public EnvelopeLogFilesRangeReader(EnvelopedLogFiles envelopedLogFiles, InternalLogProvider logProvider) {
-        this.envelopedLogFiles = envelopedLogFiles;
+    public EnvelopeLogFilesRangeReader(WALService walService, InternalLogProvider logProvider) {
+        this.walService = walService;
         this.log = logProvider.getLog(getClass());
     }
 
@@ -56,11 +57,11 @@ public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
         if (toIndex < fromIndex) {
             return StoreChannelsForTransfer.nothingToTransfer(fromIndex, toIndex);
         }
-        return envelopedLogFiles.entryStreamChannels(fromIndex, toIndex);
+        return walService.entryStreamChannels(fromIndex, toIndex);
     }
 
     protected long availableFromIndex() throws IOException {
-        var logFilesMetadata = envelopedLogFiles.logFilesMetadata(false);
+        var logFilesMetadata = walService.logFilesMetadata(false);
         logFilesMetadata.next();
         return logFilesMetadata.get().logHeader().getLastAppendIndex() + 1;
     }
@@ -89,13 +90,13 @@ public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
         if (index == -1) {
             return -1;
         }
-        try (var readChannel = envelopedLogFiles.openReadChannel(index)) {
+        try (var readChannel = walService.openReadChannel(index)) {
             if (readChannel != null) {
                 readChannel.goToEntry(index);
                 return readChannel.getTerm();
             }
         }
-        var logFilesMetadata = envelopedLogFiles.logFilesMetadata();
+        var logFilesMetadata = walService.logFilesMetadata();
         logFilesMetadata.next();
         var logFileMetadata = logFilesMetadata.get();
         if (logFileMetadata.logHeader().getLastAppendIndex() == index) {
@@ -111,6 +112,6 @@ public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
 
     @Override
     public long highestReadableIndex() {
-        return envelopedLogFiles.currentWriteChannel().currentIndex();
+        return walService.getLogFile().currentWriteChannel().currentIndex();
     }
 }

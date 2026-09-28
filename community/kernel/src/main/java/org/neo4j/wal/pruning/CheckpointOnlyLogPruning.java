@@ -24,7 +24,7 @@ import java.util.concurrent.locks.Lock;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 /**
  * {@link LogPruning} implementation used when transaction log retention is owned by a different subsystem
@@ -38,11 +38,11 @@ public class CheckpointOnlyLogPruning implements LogPruning {
 
     public CheckpointOnlyLogPruning(
             FileSystemAbstraction fs,
-            LogFiles logFiles,
+            WALService walService,
             InternalLogProvider logProvider,
             Config config,
             Lock pruneLock) {
-        this.checkpointLogFilePruner = new CheckpointLogFilePruner(fs, logFiles, logProvider, config);
+        this.checkpointLogFilePruner = new CheckpointLogFilePruner(fs, walService, logProvider, config);
         this.pruneLock = pruneLock;
     }
 

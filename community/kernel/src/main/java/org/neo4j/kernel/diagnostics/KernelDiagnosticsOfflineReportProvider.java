@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.device.DeviceMapperService;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.files.LogFilesBuilder;
 
 @ServiceProvider
@@ -191,10 +191,10 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     private void getTransactionLogFiles(List<DiagnosticsReportSource> sources, String databaseName) {
         try {
             DatabaseLayout databaseLayout = DatabaseLayout.of(neo4jLayout, databaseName);
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(
+            WALService walService = LogFilesBuilder.logFilesBasedOnlyBuilder(
                             databaseLayout.getTransactionLogsDirectory(), fs)
                     .build();
-            for (Path file : logFiles.logFiles()) {
+            for (Path file : walService.logFiles()) {
                 sources.add(DiagnosticsReportSources.newDiagnosticsFile(
                         String.join(
                                 "/",

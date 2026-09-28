@@ -58,7 +58,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.files.TransactionLogFiles;
 
 @DbmsExtension
@@ -91,10 +91,10 @@ class StoreFileListingTest {
         DatabaseLayout databaseLayout = mock(DatabaseLayout.class);
         StoreFile storeFile = mock(StoreFile.class, RETURNS_MOCKS);
         when(databaseLayout.pathForStore(eq(CommonDatabaseStores.METADATA))).thenReturn(storeFile);
-        LogFiles logFiles = mock(LogFiles.class);
+        WALService walService = mock(WALService.class);
         StorageEngine storageEngine = mock(StorageEngine.class);
         StoreFileListing fileListing = new StoreFileListing(
-                databaseLayout, testDirectory.getFileSystem(), logFiles, indexingService, storageEngine);
+                databaseLayout, testDirectory.getFileSystem(), walService, indexingService, storageEngine);
 
         ResourceIterator<Path> indexSnapshot = indexFilesAre(
                 testDirectory.getFileSystem(), indexingService, new String[] {indexDir + "/mock/my.index"});

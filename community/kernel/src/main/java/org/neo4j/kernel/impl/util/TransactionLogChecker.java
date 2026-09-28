@@ -37,13 +37,13 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogFormatVersionProvider;
 import org.neo4j.wal.LogVersionBridge;
 import org.neo4j.wal.LogVersionedStoreChannel;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.ReadableLogChannel;
 import org.neo4j.wal.VersionedFile;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.AbstractDetachedCheckpointLogEntry;
 import org.neo4j.wal.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.wal.entry.LogEntry;
@@ -71,7 +71,7 @@ public class TransactionLogChecker {
     public static void verifyCorrectTransactionLogUpgrades(
             FileSystemAbstraction fs, DatabaseLayout layout, Config config)
             throws IOException, InconsistentTransactionLogException {
-        LogFiles logFiles = LogFilesBuilder.readableBuilder(
+        WALService walService = LogFilesBuilder.readableBuilder(
                         layout, fs, KernelVersionProvider.THROWING_PROVIDER, LogFormatVersionProvider.THROWING_PROVIDER)
                 .build();
 
@@ -81,16 +81,16 @@ public class TransactionLogChecker {
                 .commandReaderFactory();
 
         MultipleVersionInOneLogFileAcceptanceChecker txLogFileAcceptanceChecker =
-                upgradeTxId -> logFiles.getCheckpointFile().reachableCheckpoints().stream()
+                upgradeTxId -> walService.getCheckpointFile().reachableCheckpoints().stream()
                         .map(c -> c.transactionId().id())
                         .anyMatch(id -> id == upgradeTxId);
         MultipleVersionInOneLogFileAcceptanceChecker checkpointFileAcceptanceChecker = ignored -> false;
 
-        verifyLogFiles(fs, config, logFiles.getLogFile(), commandReaderFactory, TX_LOG, txLogFileAcceptanceChecker);
+        verifyLogFiles(fs, config, walService.getLogFile(), commandReaderFactory, TX_LOG, txLogFileAcceptanceChecker);
         verifyLogFiles(
                 fs,
                 config,
-                logFiles.getCheckpointFile(),
+                walService.getCheckpointFile(),
                 commandReaderFactory,
                 CHECKPOINT_LOG,
                 checkpointFileAcceptanceChecker);

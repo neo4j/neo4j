@@ -51,8 +51,8 @@ import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.files.LogFilesBuilder;
 
@@ -76,10 +76,10 @@ class CheckpointLogFileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        life.add(walService);
         life.start();
-        checkpointFile = logFiles.getCheckpointFile();
+        checkpointFile = walService.getCheckpointFile();
     }
 
     @Test
@@ -324,7 +324,7 @@ class CheckpointLogFileTest {
         assertThat(checkpointFile.reachableCheckpoints()).hasSize(3);
     }
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout,

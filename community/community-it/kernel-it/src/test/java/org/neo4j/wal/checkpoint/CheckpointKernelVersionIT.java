@@ -41,7 +41,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SkipOnSpd;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 @SkipOnSpd(reason = "SPD doesn't support these older versions")
 @Neo4jLayoutExtension
@@ -51,7 +51,7 @@ public class CheckpointKernelVersionIT {
 
     private CheckPointer checkPointer;
 
-    private LogFiles logFiles;
+    private WALService walService;
 
     private DatabaseManagementService dbms;
 
@@ -66,7 +66,7 @@ public class CheckpointKernelVersionIT {
         DependencyResolver dependencyResolver =
                 ((GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME)).getDependencyResolver();
         checkPointer = dependencyResolver.resolveDependency(CheckPointer.class);
-        logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+        walService = dependencyResolver.resolveDependency(WALService.class);
     }
 
     @AfterEach
@@ -86,7 +86,7 @@ public class CheckpointKernelVersionIT {
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("Forced " + version.kernelVersion()));
 
         final var checkpoint =
-                logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+                walService.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertThat(checkpoint.kernelVersion())
                 .as("kernel version from last checkpoint")
                 .isEqualTo(version.kernelVersion());
@@ -99,7 +99,7 @@ public class CheckpointKernelVersionIT {
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("Forced " + version.kernelVersion()));
 
         final var checkpoint =
-                logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+                walService.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertThat(checkpoint.appendIndex())
                 .as("Append index should be positive number")
                 .isGreaterThan(AppendIndexProvider.BASE_APPEND_INDEX);
@@ -112,7 +112,7 @@ public class CheckpointKernelVersionIT {
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("Legacy format."));
 
         final var checkpoint =
-                logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+                walService.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertEquals(KernelVersion.V5_0, checkpoint.kernelVersion());
         assertEquals(UNKNOWN_CONSENSUS_INDEX, checkpoint.transactionId().consensusIndex());
     }

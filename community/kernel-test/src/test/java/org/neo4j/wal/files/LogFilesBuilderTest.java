@@ -56,8 +56,8 @@ import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogSegments;
 
 @Neo4jLayoutExtension
@@ -228,7 +228,7 @@ class LogFilesBuilderTest {
                 .set(transaction_logs_root_path, customLogDirectory.toAbsolutePath())
                 .build();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        LogFiles logFiles = writeableBuilder(
+        WALService walService = writeableBuilder(
                         DatabaseLayout.of(config),
                         fileSystem,
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
@@ -240,13 +240,13 @@ class LogFilesBuilderTest {
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
                 .withStoreId(storeId)
                 .build();
-        logFiles.init();
-        logFiles.start();
+        walService.init();
+        walService.start();
 
         assertEquals(
                 customLogDirectory.resolve(databaseLayout.getDatabaseName()),
-                logFiles.getLogFile().getLogRangeInfo().highestFile().getParent());
-        logFiles.shutdown();
+                walService.getLogFile().getLogRangeInfo().highestFile().getParent());
+        walService.shutdown();
     }
 
     @Test

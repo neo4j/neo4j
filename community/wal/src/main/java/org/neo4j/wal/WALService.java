@@ -24,13 +24,21 @@ import java.nio.file.Path;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.LogMetadataProvider;
 import org.neo4j.wal.checkpoint.CheckpointFile;
+import org.neo4j.wal.enveloped.EnvelopeReadChannel;
+import org.neo4j.wal.enveloped.EnvelopeWriteChannel;
+import org.neo4j.wal.enveloped.LogFilesMetadata;
+import org.neo4j.wal.enveloped.LogHeaderFactory;
+import org.neo4j.wal.enveloped.StoreChannelsForTransfer;
+import org.neo4j.wal.pruning.LogPruneThreshold;
 
 /**
- * Main point of access to database transactional logs.
+ * Main point of access to write-ahead logs.
  * Provide access to low level file based operations, log file headers, {@link LogFile}
  * and {@link PhysicalLogVersionedStoreChannel}
  */
-public interface LogFiles extends Lifecycle {
+public interface WALService extends Lifecycle {
+    int MINIMUM_SEGMENTS = 2;
+
     CheckpointFile getCheckpointFile();
 
     LogFile getLogFile();
@@ -45,4 +53,32 @@ public interface LogFiles extends Lifecycle {
     boolean isLogFile(Path path);
 
     LogTailMetadata getTailMetadata();
+
+    EnvelopeWriteChannel truncate(long fromIndex) throws IOException;
+
+    long prune(long safeIndex) throws IOException;
+
+    void clearCache();
+
+    void populateCache() throws IOException;
+
+    LogFilesMetadata logFilesMetadata() throws IOException;
+
+    LogFilesMetadata logFilesMetadata(boolean reversed) throws IOException;
+
+    EnvelopeReadChannel openReadChannel() throws IOException;
+
+    EnvelopeReadChannel openReadChannel(long fileWithIndex) throws IOException;
+
+    void remove() throws IOException; // ???
+
+    void setPruneThreshold(LogPruneThreshold logPruneThreshold);
+
+    StoreChannelsForTransfer entryStreamChannels(long fromIndex, long toIndex) throws IOException;
+
+    long initialise() throws IOException;
+
+    void forceRotate() throws IOException;
+
+    LogHeaderFactory headerFactory();
 }

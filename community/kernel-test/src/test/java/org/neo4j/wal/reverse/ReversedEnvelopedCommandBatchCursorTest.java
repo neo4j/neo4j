@@ -77,7 +77,6 @@ import org.neo4j.wal.CompleteCommandBatch;
 import org.neo4j.wal.FlushableLogPositionAwareChannel;
 import org.neo4j.wal.LogAppendEvent;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogVersionBridge;
 import org.neo4j.wal.LogWriter;
@@ -85,6 +84,7 @@ import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.ReadableLogChannel;
 import org.neo4j.wal.ReaderLogVersionBridge;
 import org.neo4j.wal.TransactionLogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntryWriter;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.enveloped.EnvelopeReadChannel;
@@ -145,15 +145,15 @@ class ReversedEnvelopedCommandBatchCursorTest {
     void setUp() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         config = Config.defaults(latest_kernel_version, kernelVersion.version());
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout, fs, fixed(kernelVersion), () -> LogFormat.fromKernelVersion(kernelVersion))
                 .withRotationThreshold(ROTATION_THRESHOLD)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .withConfig(config)
                 .build();
-        life.add(logFiles);
-        logFile = logFiles.getLogFile();
+        life.add(walService);
+        logFile = walService.getLogFile();
     }
 
     @Test

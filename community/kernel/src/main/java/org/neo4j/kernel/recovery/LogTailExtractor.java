@@ -28,10 +28,10 @@ import org.neo4j.kernel.KernelVersionProviders;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogFormatVersionProvider;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogTailMetadata;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.files.LogFilesBuilder;
 
@@ -84,7 +84,7 @@ public class LogTailExtractor {
                 .getTailMetadata();
     }
 
-    private LogFiles buildLogFiles(
+    private WALService buildLogFiles(
             DatabaseLayout databaseLayout, MemoryTracker memoryTracker, KernelVersionProvider kernelVersionProvider)
             throws IOException {
         LogFormatVersionProvider emptyLogsFormatProvider =

@@ -62,7 +62,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
     private volatile boolean stopped;
 
     public TransactionLogQueue(
-            LogFiles logFiles,
+            WALService walService,
             TransactionIdStore transactionIdStore,
             Panic databasePanic,
             AppendIndexProvider appendIndexProvider,
@@ -70,7 +70,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
             JobScheduler jobScheduler,
             InternalLogProvider logProvider,
             String databaseName) {
-        this.logFile = logFiles.getLogFile();
+        this.logFile = walService.getLogFile();
         this.transactionIdStore = transactionIdStore;
         this.databasePanic = databasePanic;
         this.appendIndexProvider = appendIndexProvider;

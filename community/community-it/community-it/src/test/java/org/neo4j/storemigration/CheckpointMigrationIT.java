@@ -37,7 +37,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 
@@ -67,7 +67,7 @@ public class CheckpointMigrationIT {
             forceCheckpoint(database);
 
             var latestCheckpoint = database.getDependencyResolver()
-                    .resolveDependency(LogFiles.class)
+                    .resolveDependency(WALService.class)
                     .getCheckpointFile()
                     .findLatestCheckpoint()
                     .orElseThrow();

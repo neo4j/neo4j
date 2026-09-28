@@ -48,7 +48,6 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.wal.CheckpointInfo;
 import org.neo4j.wal.LogEntryCursor;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogTailMetadata;
 import org.neo4j.wal.LogVersionBridge;
@@ -56,6 +55,7 @@ import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.ReadAheadUtils;
 import org.neo4j.wal.ReadableLogChannel;
 import org.neo4j.wal.ReaderLogVersionBridge;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointAppender;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.checkpoint.DetachedCheckpointAppender;
@@ -80,7 +80,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     private final DetachedLogTailScanner logTailScanner;
     private final SequentialFileNameHelper fileHelper;
     private final TransactionLogChannelAllocator channelAllocator;
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final TransactionLogFilesContext context;
     private final InternalLog log;
     private final long rotationsSize;
@@ -91,18 +91,18 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     private volatile TransactionLogFilesProviders transactionLogFilesProviders;
 
     public CheckpointLogFile(
-            LogFiles logFiles,
+            WALService walService,
             TransactionLogFilesContext context,
             LogTailMetadata externalLogTail,
             LogPosition tailReadingMaxPosition) {
         this.context = context;
-        this.logFiles = logFiles;
+        this.walService = walService;
         this.rotationsSize = context.checkpointRotationThreshold();
-        this.fileHelper = TransactionLogFilesHelper.forCheckpoints(logFiles.logFilesDirectory());
+        this.fileHelper = TransactionLogFilesHelper.forCheckpoints(walService.logFilesDirectory());
         this.channelAllocator = new CheckpointLogChannelAllocator(context, fileHelper);
         this.monitor = context.monitors().newMonitor(LogTailScannerMonitor.class);
         this.logTailScanner =
-                new DetachedLogTailScanner(logFiles, context, this, monitor, externalLogTail, tailReadingMaxPosition);
+                new DetachedLogTailScanner(walService, context, this, monitor, externalLogTail, tailReadingMaxPosition);
         this.log = context.logProvider().getLog(getClass());
         this.binarySupportedKernelVersions = context.binarySupportedKernelVersions();
     }
@@ -116,13 +116,13 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     public void start() throws Exception {
         var checkpointRotation = checkpointLogRotation(
                 this,
-                logFiles.getLogFile(),
+                walService.getLogFile(),
                 context.clock(),
                 context.databaseHealth(),
                 context.monitors().newMonitor(LogRotationMonitor.class),
                 transactionLogFilesProviders.getKernelVersionProvider());
         checkpointAppender = new DetachedCheckpointAppender(
-                logFiles,
+                walService,
                 channelAllocator,
                 context,
                 this,
@@ -262,7 +262,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                 checkpointEntry.channelPositionAfterCheckpoint,
                 reader.getCurrentLogPosition(),
                 context,
-                logFiles.getLogFile());
+                walService.getLogFile());
     }
 
     @Override
@@ -298,7 +298,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
             checkpoint = logEntryCursor.get();
             lastLocation = reader.getCurrentLogPosition();
             checkpoints.add(ofLogEntry(
-                    checkpoint, lastCheckpointLocation, lastLocation, lastLocation, context, logFiles.getLogFile()));
+                    checkpoint, lastCheckpointLocation, lastLocation, lastLocation, context, walService.getLogFile()));
         }
     }
 

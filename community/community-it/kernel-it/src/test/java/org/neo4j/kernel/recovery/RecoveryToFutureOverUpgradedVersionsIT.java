@@ -66,7 +66,7 @@ import org.neo4j.test.UpgradeTestUtil;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SkipOnSpd;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 import org.neo4j.wal.files.LogFilesBuilder;
@@ -389,11 +389,12 @@ class RecoveryToFutureOverUpgradedVersionsIT {
     }
 
     private void removeTransactionLogs(DatabaseLayout dbLayout) throws IOException {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(dbLayout.getTransactionLogsDirectory(), fileSystem)
+        WALService walService = LogFilesBuilder.logFilesBasedOnlyBuilder(
+                        dbLayout.getTransactionLogsDirectory(), fileSystem)
                 .withCommandReaderFactory(StorageEngineFactory.selectStorageEngine(fileSystem, dbLayout, null)
                         .commandReaderFactory())
                 .build();
-        for (Path logFile : fileSystem.listFiles(logFiles.logFilesDirectory())) {
+        for (Path logFile : fileSystem.listFiles(walService.logFilesDirectory())) {
             fileSystem.deleteFile(logFile);
         }
     }

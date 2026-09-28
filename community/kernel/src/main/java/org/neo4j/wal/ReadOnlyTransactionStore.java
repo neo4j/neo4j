@@ -65,9 +65,9 @@ public class ReadOnlyTransactionStore implements LogicalTransactionStore {
         if (failOnUnsupportedLogVersion) {
             logFilesBuilder = logFilesBuilder.withFailOnUnsupportedLogVersion();
         }
-        LogFiles logFiles = logFilesBuilder.build();
+        WALService walService = logFilesBuilder.build();
         physicalStore = new PhysicalLogicalTransactionStore(
-                logFiles,
+                walService,
                 transactionMetadataCache,
                 commandReaderFactory,
                 monitors,

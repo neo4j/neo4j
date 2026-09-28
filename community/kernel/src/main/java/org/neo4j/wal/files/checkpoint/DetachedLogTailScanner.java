@@ -55,7 +55,6 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.wal.CheckpointInfo;
 import org.neo4j.wal.LogEntryCursor;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogFormatVersionProvider;
 import org.neo4j.wal.LogIndexEncoding;
 import org.neo4j.wal.LogPosition;
@@ -64,6 +63,7 @@ import org.neo4j.wal.LogTermProvider;
 import org.neo4j.wal.LogVersionedStoreChannel;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.ReaderLogVersionBridge;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.wal.entry.LogEntry;
@@ -86,7 +86,7 @@ public class DetachedLogTailScanner {
     public static final byte NO_ENTRY = 0;
     private static final String TRANSACTION_LOG_NAME = "Transaction";
     private static final String CHECKPOINT_LOG_NAME = "Checkpoint";
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final CommandReaderFactory commandReaderFactory;
     private final LogTailScannerMonitor monitor;
     private final MemoryTracker memoryTracker;
@@ -103,13 +103,13 @@ public class DetachedLogTailScanner {
     private LogTailMetadata logTail;
 
     public DetachedLogTailScanner(
-            LogFiles logFiles,
+            WALService walService,
             TransactionLogFilesContext context,
             CheckpointFile checkpointFile,
             LogTailScannerMonitor monitor,
             LogTailMetadata externalLogTail,
             LogPosition tailReadingMaxPosition) {
-        this.logFiles = logFiles;
+        this.walService = walService;
         this.commandReaderFactory = context.commandReaderFactory();
         this.memoryTracker = context.memoryTracker();
         this.checkpointFile = checkpointFile;
@@ -126,7 +126,7 @@ public class DetachedLogTailScanner {
     }
 
     public LogTailInformation findLogTail() {
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         LogRangeInfo logRangeInfo = logFile.getLogRangeInfo();
         long highestLogVersion = logRangeInfo.highestVersion();
         long lowestLogVersion = logRangeInfo.lowestVersion();
@@ -196,7 +196,7 @@ public class DetachedLogTailScanner {
                 new DetachedLogTailAppendIndexProvider(
                         commandReaderFactory,
                         binarySupportedKernelVersions,
-                        logFiles.getLogFile(),
+                        walService.getLogFile(),
                         checkpoint.kernelVersion(),
                         checkpoint.appendIndex(),
                         checkpoint.consensusIndex(),
@@ -254,7 +254,7 @@ public class DetachedLogTailScanner {
                 new DetachedLogTailAppendIndexProvider(
                         commandReaderFactory,
                         binarySupportedKernelVersions,
-                        logFiles.getLogFile(),
+                        walService.getLogFile(),
                         logFileVersion,
                         UNKNOWN_APPEND_INDEX,
                         UNKNOWN_CONSENSUS_INDEX,
@@ -533,7 +533,7 @@ public class DetachedLogTailScanner {
     }
 
     private void verifyReaderPosition(long version, LogPosition logPosition) throws IOException {
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         long highestLogVersion = logFile.getLogRangeInfo().highestVersion();
         try (PhysicalLogVersionedStoreChannel channel = logFile.openForVersion(version)) {
             verifyLogChannel(channel, logPosition, version, highestLogVersion, true, TRANSACTION_LOG_NAME);
@@ -542,7 +542,7 @@ public class DetachedLogTailScanner {
 
     private void verifyCheckpointPosition(LogPosition lastCheckpointPosition) throws IOException {
         long checkpointLogVersion = lastCheckpointPosition.getLogVersion();
-        var checkpointFile = logFiles.getCheckpointFile();
+        var checkpointFile = walService.getCheckpointFile();
         long highestLogVersion = checkpointFile.getLogRangeInfo().highestVersion();
         try (PhysicalLogVersionedStoreChannel channel = checkpointFile.openForVersion(checkpointLogVersion)) {
             channel.position(lastCheckpointPosition.getByteOffset());
@@ -592,7 +592,7 @@ public class DetachedLogTailScanner {
                             + "version %d while reading %s.",
                     version,
                     logPosition.getLogVersion(),
-                    getCanonicalFile(logFiles.getLogFile().getLogFileForVersion(version))));
+                    getCanonicalFile(walService.getLogFile().getLogFileForVersion(version))));
         }
     }
 

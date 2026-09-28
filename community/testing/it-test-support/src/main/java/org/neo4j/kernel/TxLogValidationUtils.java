@@ -38,11 +38,11 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogVersionBridge;
 import org.neo4j.wal.ReadAheadUtils;
 import org.neo4j.wal.ReadableLogChannel;
 import org.neo4j.wal.ReaderLogVersionBridge;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.entry.LogEntry;
 import org.neo4j.wal.entry.LogEntryCommand;
@@ -61,51 +61,55 @@ public class TxLogValidationUtils {
     private TxLogValidationUtils() {}
 
     public static LogHeader assertLogHeaderExpectedVersion(
-            FileSystemAbstraction fs, LogFiles logFiles, long logVersion, KernelVersion expectedVersion)
+            FileSystemAbstraction fs, WALService walService, long logVersion, KernelVersion expectedVersion)
             throws IOException {
         LogHeader logHeader = LogHeaderReader.readLogHeader(
-                fs, logFiles.getLogFile().getLogFileForVersion(logVersion), EmptyMemoryTracker.INSTANCE);
+                fs, walService.getLogFile().getLogFileForVersion(logVersion), EmptyMemoryTracker.INSTANCE);
         assertThat(logHeader.getKernelVersion()).isEqualTo(expectedVersion);
         return logHeader;
     }
 
     public static LogHeader assertLogHeaderExpectedVersion(
             FileSystemAbstraction fs,
-            LogFiles logFiles,
+            WALService walService,
             long logVersion,
             KernelVersion expectedVersion,
             long lastExpectedAppendIndex)
             throws IOException {
-        LogHeader logHeader = assertLogHeaderExpectedVersion(fs, logFiles, logVersion, expectedVersion);
+        LogHeader logHeader = assertLogHeaderExpectedVersion(fs, walService, logVersion, expectedVersion);
         assertThat(logHeader.getLastAppendIndex()).isEqualTo(lastExpectedAppendIndex);
         return logHeader;
     }
 
     public static void assertLogHeaderExpectedVersion(
             FileSystemAbstraction fs,
-            LogFiles logFiles,
+            WALService walService,
             long logVersion,
             KernelVersion expectedVersion,
             long lastExpectedAppendIndex,
             int checksum)
             throws IOException {
         LogHeader logHeader =
-                assertLogHeaderExpectedVersion(fs, logFiles, logVersion, expectedVersion, lastExpectedAppendIndex);
+                assertLogHeaderExpectedVersion(fs, walService, logVersion, expectedVersion, lastExpectedAppendIndex);
         assertThat(logHeader.getPreviousLogFileChecksum()).isEqualTo(checksum);
     }
 
     public static void assertCheckpointLogHeaderExpectedVersion(
-            FileSystemAbstraction fs, LogFiles logFiles, long logVersion, KernelVersion expectedVersion, int checksum)
+            FileSystemAbstraction fs,
+            WALService walService,
+            long logVersion,
+            KernelVersion expectedVersion,
+            int checksum)
             throws IOException {
-        LogHeader logHeader = assertCheckpointLogHeaderExpectedVersion(fs, logFiles, logVersion, expectedVersion);
+        LogHeader logHeader = assertCheckpointLogHeaderExpectedVersion(fs, walService, logVersion, expectedVersion);
         assertThat(logHeader.getPreviousLogFileChecksum()).isEqualTo(checksum);
     }
 
     public static LogHeader assertCheckpointLogHeaderExpectedVersion(
-            FileSystemAbstraction fs, LogFiles logFiles, long logVersion, KernelVersion expectedVersion)
+            FileSystemAbstraction fs, WALService walService, long logVersion, KernelVersion expectedVersion)
             throws IOException {
         LogHeader logHeader = LogHeaderReader.readLogHeader(
-                fs, logFiles.getCheckpointFile().getLogFileForVersion(logVersion), EmptyMemoryTracker.INSTANCE);
+                fs, walService.getCheckpointFile().getLogFileForVersion(logVersion), EmptyMemoryTracker.INSTANCE);
         assertThat(logHeader.getKernelVersion()).isEqualTo(expectedVersion);
         assertThat(logHeader.getLastAppendIndex()).isEqualTo(AppendIndexProvider.UNKNOWN_APPEND_INDEX);
         return logHeader;

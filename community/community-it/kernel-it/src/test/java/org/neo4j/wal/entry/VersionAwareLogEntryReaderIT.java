@@ -47,9 +47,9 @@ import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SkipOnSpd;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.ReadableLogChannel;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.files.LogFilesBuilder;
 
 @DbmsExtension
@@ -92,7 +92,7 @@ class VersionAwareLogEntryReaderIT {
     @Test
     @EnabledOnOs(OS.LINUX)
     void readOnlyLogFilesWhileCommandsAreAvailable() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fs,
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
@@ -100,11 +100,11 @@ class VersionAwareLogEntryReaderIT {
                 .withStorageEngineFactory(storageEngineFactory)
                 .withStoreId(STORE_ID)
                 .build();
-        try (Lifespan lifespan = new Lifespan(logFiles)) {
-            getLastReadablePosition(logFiles);
+        try (Lifespan lifespan = new Lifespan(walService)) {
+            getLastReadablePosition(walService);
             assertEquals(
                     kibiBytes(256),
-                    Files.size(logFiles.getLogFile().getLogRangeInfo().highestFile()));
+                    Files.size(walService.getLogFile().getLogRangeInfo().highestFile()));
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals(0L, logPosition.getLogVersion());
             // this position in a log file before 0's are actually starting
@@ -115,15 +115,15 @@ class VersionAwareLogEntryReaderIT {
 
     @Test
     void correctlyResetPositionWhenEndOfCommandsReached() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER, LATEST_LOG_FORMAT_PROVIDER)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withStoreId(STORE_ID)
                 .build();
-        try (Lifespan lifespan = new Lifespan(logFiles)) {
+        try (Lifespan lifespan = new Lifespan(walService)) {
             long offset = 0;
             for (int i = 0; i < 10; i++) {
-                var lastReadablePosition = getLastReadablePosition(logFiles);
+                var lastReadablePosition = getLastReadablePosition(walService);
                 assertThat(lastReadablePosition).isGreaterThanOrEqualTo(300);
                 assertThat(lastReadablePosition).isLessThan(AT_MOST_END_OF_DATA_OFFSET);
                 if (i > 0) {
@@ -137,22 +137,22 @@ class VersionAwareLogEntryReaderIT {
     @Test
     @DisabledOnOs(OS.LINUX)
     void readTillTheEndOfNotPreallocatedFile() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER, LATEST_LOG_FORMAT_PROVIDER)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withStoreId(STORE_ID)
                 .build();
-        try (Lifespan lifespan = new Lifespan(logFiles)) {
-            getLastReadablePosition(logFiles);
+        try (Lifespan lifespan = new Lifespan(walService)) {
+            getLastReadablePosition(walService);
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals(0L, logPosition.getLogVersion());
             assertEquals(
-                    Files.size(logFiles.getLogFile().getLogRangeInfo().highestFile()), logPosition.getByteOffset());
+                    Files.size(walService.getLogFile().getLogRangeInfo().highestFile()), logPosition.getByteOffset());
         }
     }
 
-    private long getLastReadablePosition(LogFiles logFiles) throws IOException {
-        var logFile = logFiles.getLogFile();
+    private long getLastReadablePosition(WALService walService) throws IOException {
+        var logFile = walService.getLogFile();
         try (ReadableLogChannel logChannel =
                 logFile.getReader(logFile.extractHeader(0).getStartPosition())) {
             while (entryReader.readLogEntry(logChannel) != null) {

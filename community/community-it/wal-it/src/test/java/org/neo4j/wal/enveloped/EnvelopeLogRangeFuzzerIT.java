@@ -17,15 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.wal.enveloped;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.concurrent.ThreadLocalRandom;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
@@ -51,6 +52,7 @@ import org.neo4j.wal.LogVersionBridge;
 import org.neo4j.wal.LogVersionedStoreChannel;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.StoreChannelNativeAccessor;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.entry.LogHeaderReader;
@@ -71,19 +73,19 @@ class EnvelopeLogRangeFuzzerIT {
     @Inject
     RandomSupport randomSupport;
 
-    private EnvelopedLogFiles envelopedLogFiles;
+    private WALService walService;
     private EnvelopeLogFilesRangeReader envelopeLogFilesRangeReader;
 
     @BeforeEach
     void setUp() throws IOException {
-        envelopedLogFiles = envelopedLogFiles();
-        envelopedLogFiles.initialise();
-        envelopeLogFilesRangeReader = new EnvelopeLogFilesRangeReader(envelopedLogFiles, NullLogProvider.getInstance());
+        walService = logFiles();
+        walService.initialise();
+        envelopeLogFilesRangeReader = new EnvelopeLogFilesRangeReader(walService, NullLogProvider.getInstance());
     }
 
     @AfterEach
-    void tearDown() throws IOException {
-        envelopedLogFiles.close();
+    void tearDown() throws Exception {
+        walService.shutdown();
     }
 
     @RepeatedTest(10)
@@ -97,9 +99,9 @@ class EnvelopeLogRangeFuzzerIT {
     }
 
     void getRangeAndCompare(int[] dataSizes) throws IOException {
-        writeData(envelopedLogFiles, randomSupport, dataSizes);
+        writeData(walService, randomSupport, dataSizes);
         var lowestIndex = getLowestIndex();
-        var highestIndex = envelopedLogFiles.currentWriteChannel().currentIndex();
+        var highestIndex = walService.getLogFile().currentWriteChannel().currentIndex();
 
         var from = randomSupport.nextLong(lowestIndex, highestIndex);
         var to = randomSupport.nextLong(from, highestIndex);
@@ -109,7 +111,7 @@ class EnvelopeLogRangeFuzzerIT {
         var storeChannelsQueue = new LinkedList<>(storeChannels.storeChannels());
         var storeChannel = storeChannelsQueue.poll();
         var versionedChannel = createChannel(storeChannel);
-        try (var originalReadChannel = envelopedLogFiles.openReadChannel(storeChannels.fromIndex());
+        try (var originalReadChannel = walService.openReadChannel(storeChannels.fromIndex());
                 var readChannel = new EnvelopeReadChannel(
                         versionedChannel,
                         SEGMENT_BLOCK_SIZE,
@@ -126,10 +128,10 @@ class EnvelopeLogRangeFuzzerIT {
             originalReadChannel.goToEntry(storeChannels.fromIndex());
             readChannel.goToNextEnvelope(); // positioning does not pre-read next envelope so we need to do this
             while (!storeChannelsQueue.isEmpty() || readChannel.position() < storeChannels.toPosition()) {
-                assertThat(readChannel.position()).isEqualTo(originalReadChannel.position());
-                assertThat(readChannel.entryIndex()).isEqualTo(originalReadChannel.entryIndex());
-                assertThat(readChannel.getTerm()).isEqualTo(originalReadChannel.getTerm());
-                assertThat(readChannel.getChecksum()).isEqualTo(originalReadChannel.getChecksum());
+                Assertions.assertThat(readChannel.position()).isEqualTo(originalReadChannel.position());
+                Assertions.assertThat(readChannel.entryIndex()).isEqualTo(originalReadChannel.entryIndex());
+                Assertions.assertThat(readChannel.getTerm()).isEqualTo(originalReadChannel.getTerm());
+                Assertions.assertThat(readChannel.getChecksum()).isEqualTo(originalReadChannel.getChecksum());
                 try {
                     readChannel.goToNextEntry();
                 } catch (ReadPastEndException ignore) {
@@ -152,13 +154,13 @@ class EnvelopeLogRangeFuzzerIT {
     }
 
     private long getLowestIndex() throws IOException {
-        try (var envelopeLog = envelopedLogFiles.openReadChannel()) {
+        try (var envelopeLog = walService.openReadChannel()) {
             envelopeLog.alignWithStartEntry();
             return envelopeLog.entryIndex();
         }
     }
 
-    private static void writeData(EnvelopedLogFiles envelopedLogFiles, RandomSupport randomSupport, int[] dataSizes)
+    private static void writeData(WALService walService, RandomSupport randomSupport, int[] dataSizes)
             throws IOException {
         var shouldTruncate = randomSupport.nextBoolean();
         var shouldPrune = randomSupport.nextBoolean();
@@ -166,7 +168,7 @@ class EnvelopeLogRangeFuzzerIT {
 
         long currentTerm = 1;
 
-        var logOperation = new ArrayList<ThrowingConsumer<EnvelopedLogFiles, IOException>>();
+        var logOperation = new ArrayList<ThrowingConsumer<WALService, IOException>>();
 
         while (leftToWrite > 0) {
             var data = randomSupport.nextBytes(randomSupport.among(dataSizes));
@@ -174,7 +176,7 @@ class EnvelopeLogRangeFuzzerIT {
                 currentTerm++;
             }
             long termToWrite = currentTerm;
-            logOperation.add(e -> writeData(envelopedLogFiles.currentWriteChannel(), data, termToWrite));
+            logOperation.add(e -> writeData(walService.getLogFile().currentWriteChannel(), data, termToWrite));
             leftToWrite -= data.length;
         }
 
@@ -183,20 +185,20 @@ class EnvelopeLogRangeFuzzerIT {
         var truncateIndex = randomSupport.nextLong(pruneIndex + 1, currentEndIndex - 2);
         if (shouldPrune) {
             logOperation.add(randomSupport.nextInt((int) (pruneIndex + 1), currentEndIndex), e -> {
-                e.currentWriteChannel().prepareForFlush().flush();
+                e.getLogFile().currentWriteChannel().prepareForFlush().flush();
                 e.prune(pruneIndex);
             });
         }
         if (shouldTruncate) {
             logOperation.add(randomSupport.nextInt((int) (truncateIndex + 2), currentEndIndex), e -> {
-                e.currentWriteChannel().prepareForFlush().flush();
+                e.getLogFile().currentWriteChannel().prepareForFlush().flush();
                 e.truncate(truncateIndex);
             });
         }
         for (var op : logOperation) {
-            op.accept(envelopedLogFiles);
+            op.accept(walService);
         }
-        envelopedLogFiles.currentWriteChannel().prepareForFlush().flush();
+        walService.getLogFile().currentWriteChannel().prepareForFlush().flush();
     }
 
     private static void writeData(EnvelopeWriteChannel writeChannel, byte[] data, long term) throws IOException {
@@ -210,10 +212,10 @@ class EnvelopeLogRangeFuzzerIT {
         writeChannel.endCurrentEntry();
     }
 
-    EnvelopedLogFiles envelopedLogFiles() {
+    WALService logFiles() throws IOException {
         var baseFileName = "raft.log";
         var baseFolder = testDirectory.directory("logsFolder");
-        return new EnvelopedLogFiles(
+        return new EnvelopedWALService(
                 new LogsRepository(fs, new SequentialFileNameHelper(baseFolder, baseFileName)),
                 (fileVersion, preFileIndex, preFileChecksum, segmentSize, lastTerm) -> LogFormat.fromKernelVersion(
                                 KernelVersion.GLORIOUS_FUTURE)

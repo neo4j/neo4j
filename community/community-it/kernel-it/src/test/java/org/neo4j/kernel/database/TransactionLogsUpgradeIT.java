@@ -67,8 +67,8 @@ import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 
 @Neo4jLayoutExtension
 class TransactionLogsUpgradeIT {
@@ -139,36 +139,36 @@ class TransactionLogsUpgradeIT {
         long firstNewTransaction = testDb.getDependencyResolver()
                 .resolveDependency(TransactionIdStore.class)
                 .getHighestGapFreeClosedTransactionId();
-        LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = testDb.getDependencyResolver().resolveDependency(WALService.class);
         assertLogHeaderExpectedVersion(
                 fileSystem,
-                logFiles,
+                walService,
                 INITIAL_LOG_VERSION,
                 headerVersionForStartingVersion(),
                 TransactionIdStore.BASE_TX_ID);
         AtomicInteger latestChecksum = new AtomicInteger();
         assertWholeTransactionsIn(
-                logFiles.getLogFile(),
+                walService.getLogFile(),
                 INITIAL_LOG_VERSION,
                 (startEntry) -> {},
                 (commitEntry) -> latestChecksum.set(commitEntry.getChecksum()),
                 commandReaderFactory);
         assertLogHeaderExpectedVersion(
                 fileSystem,
-                logFiles,
-                logFiles.getLogFile().getLogRangeInfo().highestVersion(),
+                walService,
+                walService.getLogFile().getLogRangeInfo().highestVersion(),
                 GLORIOUS_FUTURE,
                 firstNewTransaction - 1 /* should point at the upgrade tx */,
                 latestChecksum.get());
 
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(),
+                walService.getLogFile(),
                 INITIAL_LOG_VERSION,
                 startingKernelVersion(),
                 (int) (firstNewTransaction - 1 - TransactionIdStore.BASE_TX_ID),
                 commandReaderFactory);
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 1, commandReaderFactory);
+                walService.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 1, commandReaderFactory);
     }
 
     @ParameterizedTest
@@ -230,33 +230,33 @@ class TransactionLogsUpgradeIT {
 
         createWriteTransaction(testDb);
 
-        LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = testDb.getDependencyResolver().resolveDependency(WALService.class);
 
         assertLogHeaderExpectedVersion(
                 fileSystem,
-                logFiles,
+                walService,
                 INITIAL_LOG_VERSION,
                 headerVersionForStartingVersion(),
                 TransactionIdStore.BASE_TX_ID);
         AtomicInteger latestChecksum = new AtomicInteger();
         int nbrTxs = assertWholeTransactionsIn(
-                logFiles.getLogFile(),
+                walService.getLogFile(),
                 INITIAL_LOG_VERSION,
                 (startEntry) -> assertThat(startEntry.kernelVersion()).isEqualTo(startingKernelVersion()),
                 (commitEntry) -> latestChecksum.set(commitEntry.getChecksum()),
                 commandReaderFactory);
         assertThat(nbrTxs).isEqualTo((int) (lastClosedTransactionIdBeforeUpgrade - TransactionIdStore.BASE_TX_ID + 1));
-        assertThat(fileSystem.getFileSize(logFiles.getLogFile().getLogFileForVersion(INITIAL_LOG_VERSION)))
+        assertThat(fileSystem.getFileSize(walService.getLogFile().getLogFileForVersion(INITIAL_LOG_VERSION)))
                 .isEqualTo(positionAfterUpgrade.getByteOffset());
         assertLogHeaderExpectedVersion(
                 fileSystem,
-                logFiles,
+                walService,
                 INITIAL_LOG_VERSION + 1,
                 GLORIOUS_FUTURE,
                 lastClosedTransactionIdBeforeUpgrade + 1,
                 latestChecksum.get());
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 1, commandReaderFactory);
+                walService.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 1, commandReaderFactory);
     }
 
     @ParameterizedTest
@@ -301,21 +301,24 @@ class TransactionLogsUpgradeIT {
 
         race.go();
 
-        LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = testDb.getDependencyResolver().resolveDependency(WALService.class);
         assertLogHeaderExpectedVersion(
                 fileSystem,
-                logFiles,
+                walService,
                 INITIAL_LOG_VERSION,
                 headerVersionForStartingVersion(),
                 TransactionIdStore.BASE_TX_ID);
         assertLogHeaderExpectedVersion(
-                fileSystem, logFiles, logFiles.getLogFile().getLogRangeInfo().highestVersion(), GLORIOUS_FUTURE);
+                fileSystem,
+                walService,
+                walService.getLogFile().getLogRangeInfo().highestVersion(),
+                GLORIOUS_FUTURE);
 
         int nbrTxsIn0 = assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION, startingKernelVersion(), commandReaderFactory);
+                walService.getLogFile(), INITIAL_LOG_VERSION, startingKernelVersion(), commandReaderFactory);
         assertThat(nbrTxsIn0).isGreaterThanOrEqualTo(2); // At least upgrade and one before
         int nbrTxsIn1 = assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, commandReaderFactory);
+                walService.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, commandReaderFactory);
         assertThat(nbrTxsIn1).isGreaterThanOrEqualTo(1); // At least the one waiting for the barrier
         assertThat(nbrTxsIn0 + nbrTxsIn1)
                 .isEqualTo(nbrContestants * nbrTxsPerContestant

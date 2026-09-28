@@ -79,14 +79,14 @@ class EagerlyReversedCommandBatchCursorTest {
 
     private long txId = BASE_TX_ID;
     private LogFile logFile;
-    private LogFiles logFiles;
+    private WALService walService;
 
     private static final byte[] LARGE_TX_PADDING = new byte[2 * DEFAULT_LOG_SEGMENT_SIZE];
 
     @BeforeEach
     void setUp() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        logFiles = LogFilesBuilder.writeableBuilder(
+        walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fs,
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
@@ -95,8 +95,8 @@ class EagerlyReversedCommandBatchCursorTest {
                 .withRotationThreshold(ByteUnit.kibiBytes(512L))
                 .withStoreId(storeId)
                 .build();
-        life.add(logFiles);
-        logFile = logFiles.getLogFile();
+        life.add(walService);
+        logFile = walService.getLogFile();
     }
 
     @Test
@@ -106,7 +106,7 @@ class EagerlyReversedCommandBatchCursorTest {
 
         int observedTransaction = 0;
         try (ReadableLogChannel reader =
-                logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition())) {
+                logFile.getReader(walService.getLogFile().extractHeader(0).getStartPosition())) {
             var source = new CommittedCommandBatchCursor(reader, logEntryReader());
             CommandBatchCursor cursor = eagerlyReverse(source);
 
@@ -129,7 +129,7 @@ class EagerlyReversedCommandBatchCursorTest {
         int observedTransaction = 0;
         int transaction = 0;
         try (ReadableLogChannel reader =
-                logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition())) {
+                logFile.getReader(walService.getLogFile().extractHeader(0).getStartPosition())) {
             var source = new CommittedCommandBatchCursor(reader, logEntryReader());
             CommandBatchCursor cursor = eagerlyReverse(source);
 
@@ -170,7 +170,7 @@ class EagerlyReversedCommandBatchCursorTest {
         int observedTransaction = 0;
         int transaction = 0;
         try (ReadableLogChannel reader =
-                logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition())) {
+                logFile.getReader(walService.getLogFile().extractHeader(0).getStartPosition())) {
             var source = new CommittedCommandBatchCursor(reader, logEntryReader());
             CommandBatchCursor cursor = eagerlyReverse(source);
 

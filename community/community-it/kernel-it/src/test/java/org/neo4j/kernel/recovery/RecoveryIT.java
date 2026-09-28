@@ -180,11 +180,11 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.wal.CheckpointInfo;
 import org.neo4j.wal.FlushableLogPositionAwareChannel;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogTailMetadata;
 import org.neo4j.wal.LoggingLogFileMonitor;
 import org.neo4j.wal.TransactionLogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.CheckPointerImpl;
 import org.neo4j.wal.checkpoint.CheckpointFile;
@@ -285,7 +285,7 @@ class RecoveryIT {
     @Test
     void isRecoveryRequiredCheckKeepsEmptyLastCheckpointFile() throws Exception {
         var database = createDatabase();
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
 
         generateSomeData(database);
@@ -315,7 +315,7 @@ class RecoveryIT {
     @Test
     void recoverDatabaseWithEmptyLastCheckpointFileAndRemoveThatFileAfterRecovery() throws Exception {
         var database = createDatabase();
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
 
         generateSomeData(database);
@@ -346,7 +346,7 @@ class RecoveryIT {
     @EnabledOnOs(OS.LINUX)
     void recoverDatabaseWithEmptyPreallocatedLastCheckpointFileAndRemoveThatFileAfterRecovery() throws Exception {
         var database = createDatabase();
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
 
         generateSomeData(database);
@@ -378,7 +378,7 @@ class RecoveryIT {
         var database = createDatabase();
         assumeRecordStorageEngine(database);
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
         var logFileToManipulate = logFiles.getLogFile().getLogRangeInfo().highestFile();
 
@@ -423,7 +423,7 @@ class RecoveryIT {
         var database = createDatabase();
         assumeRecordStorageEngine(database);
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
         var logFileToManipulate = logFiles.getLogFile().getLogRangeInfo().highestFile();
 
@@ -485,7 +485,7 @@ class RecoveryIT {
     void boundedRecoveryFailsOnCorruptTailDespiteFailOnCorruptedLogFilesFalse() throws Exception {
         var database = createNonEnvelopedDatabase();
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
         var logFileToManipulate = logFiles.getLogFile().getLogRangeInfo().highestFile();
 
@@ -551,7 +551,7 @@ class RecoveryIT {
     void recoverTxLogsWithBrokenFirstEntryInFirstTransactionAfterCheckpoint() throws Exception {
         var database = createDatabase();
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
         var logFileToManipulate = logFiles.getLogFile().getLogRangeInfo().highestFile();
         var positionForCorruption =
@@ -570,10 +570,11 @@ class RecoveryIT {
 
         var recoveredDatabase = createDatabase();
         // we truncate broken bits and bytes as part of recovery
-        LogFiles recoveredDbLogFiles = recoveredDatabase.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService recoveredDbWALService =
+                recoveredDatabase.getDependencyResolver().resolveDependency(WALService.class);
         assertEquals(
                 positionForCorruption,
-                getTransactionLogWriter(recoveredDbLogFiles.getLogFile()).getCurrentPosition());
+                getTransactionLogWriter(recoveredDbWALService.getLogFile()).getCurrentPosition());
         //
         try (var tx = recoveredDatabase.beginTx()) {
             tx.createNode();
@@ -587,7 +588,7 @@ class RecoveryIT {
     @EnabledOnOs(OS.LINUX)
     void failToRecoverDatabaseWithCorruptedLastCheckpointFile() throws Exception {
         var database = createDatabase();
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
 
         generateSomeData(database);
@@ -619,7 +620,7 @@ class RecoveryIT {
         var database = createDatabase();
         generateSomeData(database);
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         logFiles.getLogFile().rotate();
         generateSomeData(database);
 
@@ -647,7 +648,7 @@ class RecoveryIT {
         var database = createDatabase();
         generateSomeData(database);
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         logFiles.getLogFile().rotate();
         generateSomeData(database);
 
@@ -676,7 +677,7 @@ class RecoveryIT {
         var database = createDatabase();
         generateSomeData(database);
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         logFiles.getLogFile().rotate();
         generateSomeData(database);
 
@@ -702,7 +703,7 @@ class RecoveryIT {
     void recoverDatabaseWithEmptyLastLogFileWithCorrectNumberOfNodesAndRelationships() throws Exception {
         var database = createDatabase();
         var relationshipType = withName("marker");
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
 
         // file 0
         try (var tx = database.beginTx()) {
@@ -759,7 +760,7 @@ class RecoveryIT {
         var database = createDatabase();
         generateSomeData(database);
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var logFile = logFiles.getLogFile();
         var currentPosition = getTransactionLogWriter(logFile).getCurrentPosition();
         var logFileToMutate = logFile.getLogFileForVersion(currentPosition.getLogVersion());
@@ -779,7 +780,7 @@ class RecoveryIT {
         var database = createDatabase();
         generateSomeData(database);
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var logFile = logFiles.getLogFile();
         var currentPosition = getTransactionLogWriter(logFile).getCurrentPosition();
         var logFileToMutate = logFile.getLogFileForVersion(currentPosition.getLogVersion());
@@ -809,7 +810,7 @@ class RecoveryIT {
         var database = createDatabase();
         generateSomeData(database);
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var logFile = logFiles.getLogFile();
         var currentPosition = getTransactionLogWriter(logFile).getCurrentPosition();
         long fileSizeBeforeMutation = currentPosition.getByteOffset();
@@ -834,7 +835,7 @@ class RecoveryIT {
         var database = createDatabase();
         generateSomeData(database);
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var logFile = logFiles.getLogFile();
         var currentPosition = getTransactionLogWriter(logFile).getCurrentPosition();
         long fileSizeBeforeMutation = currentPosition.getByteOffset();
@@ -863,7 +864,7 @@ class RecoveryIT {
         var database = createDatabase();
         generateSomeData(database);
 
-        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFiles = database.getDependencyResolver().resolveDependency(WALService.class);
         var logFile = logFiles.getLogFile();
         var currentPosition = getTransactionLogWriter(logFile).getCurrentPosition();
         var logFileToMutate = logFile.getLogFileForVersion(currentPosition.getLogVersion());
@@ -916,7 +917,7 @@ class RecoveryIT {
         assertEquals(
                 0,
                 db.getDependencyResolver()
-                        .resolveDependency(LogFiles.class)
+                        .resolveDependency(WALService.class)
                         .getCheckpointFile()
                         .getCurrentLogVersion());
     }
@@ -958,7 +959,7 @@ class RecoveryIT {
         assertEquals(
                 0,
                 db.getDependencyResolver()
-                        .resolveDependency(LogFiles.class)
+                        .resolveDependency(WALService.class)
                         .getCheckpointFile()
                         .getCurrentLogVersion());
     }
@@ -969,9 +970,9 @@ class RecoveryIT {
         generateSomeData(database);
 
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        LogFiles logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+        WALService walService = dependencyResolver.resolveDependency(WALService.class);
         CheckPointer checkPointer = dependencyResolver.resolveDependency(CheckPointer.class);
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
         for (int i = 0; i < 12; i++) {
             checkPointer.forceCheckPoint(new SimpleTriggerInfo("test"));
             checkpointFile.rotate();
@@ -1013,7 +1014,7 @@ class RecoveryIT {
 
         // we have only one checkpoint file now with the highest version
         var restoredCheckpoint =
-                db.getDependencyResolver().resolveDependency(LogFiles.class).getCheckpointFile();
+                db.getDependencyResolver().resolveDependency(WALService.class).getCheckpointFile();
         assertEquals(12, restoredCheckpoint.getCurrentLogVersion());
         assertEquals(1, restoredCheckpoint.getMatchedFiles().length);
     }
@@ -2112,8 +2113,8 @@ class RecoveryIT {
         generateSomeData(db);
         DatabaseLayout layout = db.databaseLayout();
         DependencyResolver resolver = db.getDependencyResolver();
-        LogFiles logFiles = resolver.resolveDependency(LogFiles.class);
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        WALService walService = resolver.resolveDependency(WALService.class);
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
         for (int i = 0; i < 10; i++) {
             checkpointFile.rotate();
         }
@@ -2142,7 +2143,7 @@ class RecoveryIT {
         generateSomeData(db);
 
         var checkpointFile =
-                db.getDependencyResolver().resolveDependency(LogFiles.class).getCheckpointFile();
+                db.getDependencyResolver().resolveDependency(WALService.class).getCheckpointFile();
         var appender = (DetachedCheckpointAppender) checkpointFile.getCheckpointAppender();
         var transactionId = new TransactionId(100, 101, LATEST_KERNEL_VERSION, 101, 102, 103);
         appender.rotate();
@@ -2657,11 +2658,11 @@ class RecoveryIT {
         Config config = Config.newBuilder().build();
         additionalConfiguration(config);
 
-        LogFiles logFiles = LogFilesBuilder.readableBuilder(
+        WALService walService = LogFilesBuilder.readableBuilder(
                         layout, fileSystem, LATEST_KERNEL_VERSION_PROVIDER, LATEST_LOG_FORMAT_PROVIDER)
                 .withTailReadingMaxPosition(latestCheckpointInfo.checkpointedLogPosition())
                 .build();
-        LogTailMetadata tailMetadata = logFiles.getTailMetadata();
+        LogTailMetadata tailMetadata = walService.getTailMetadata();
         assertThat(tailMetadata.lastBatch().appendIndex()).isEqualTo(latestCheckpointInfo.appendIndex());
         assertThat(tailMetadata.lastBatch().logPositionAfter())
                 .isEqualTo(latestCheckpointInfo.checkpointedLogPosition());
@@ -2764,7 +2765,7 @@ class RecoveryIT {
 
     private static TransactionLogWriter getTransactionLogWriter(GraphDatabaseAPI db) {
         return getTransactionLogWriter(
-                db.getDependencyResolver().resolveDependency(LogFiles.class).getLogFile());
+                db.getDependencyResolver().resolveDependency(WALService.class).getLogFile());
     }
 
     private static TransactionLogWriter getTransactionLogWriter(LogFile logFile) {
@@ -2937,12 +2938,12 @@ class RecoveryIT {
     }
 
     private int countCheckPointsInTransactionLogs() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        var checkpoints = logFiles.getCheckpointFile().reachableCheckpoints();
+        WALService walService = buildLogFiles();
+        var checkpoints = walService.getCheckpointFile().reachableCheckpoints();
         return checkpoints.size();
     }
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         return LogFilesBuilder.readableBuilder(
                         databaseLayout,
                         fileSystem,
@@ -2955,29 +2956,29 @@ class RecoveryIT {
     }
 
     private void removeTransactionLogs() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        for (Path logFile : fileSystem.listFiles(logFiles.logFilesDirectory())) {
+        WALService walService = buildLogFiles();
+        for (Path logFile : fileSystem.listFiles(walService.logFilesDirectory())) {
             fileSystem.deleteFile(logFile);
         }
     }
 
     private void removeFileWithCheckpoint() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        fileSystem.deleteFileOrThrow(logFiles.getCheckpointFile().getCurrentFile());
+        WALService walService = buildLogFiles();
+        fileSystem.deleteFileOrThrow(walService.getCheckpointFile().getCurrentFile());
     }
 
     private int countTransactionLogFiles() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        return logFiles.logFiles().length;
+        WALService walService = buildLogFiles();
+        return walService.logFiles().length;
     }
 
     private int countCheckpointFiles() throws IOException {
         // Don't build active files here since that will trigger logTail reading and
         // potentially clean up empty checkpoint files
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(
+        WALService walService = LogFilesBuilder.logFilesBasedOnlyBuilder(
                         databaseLayout.getTransactionLogsDirectory(), fileSystem)
                 .build();
-        return logFiles.getCheckpointFile().getMatchedFiles().length;
+        return walService.getCheckpointFile().getMatchedFiles().length;
     }
 
     private static void generateSomeData(GraphDatabaseService database) {
@@ -3050,9 +3051,9 @@ class RecoveryIT {
     private void verifyRecoveryMissingLogs() throws IOException {
         GraphDatabaseAPI restartedDatabase = createDatabase();
         try {
-            LogFiles logFiles = restartedDatabase.getDependencyResolver().resolveDependency(LogFiles.class);
+            WALService walService = restartedDatabase.getDependencyResolver().resolveDependency(WALService.class);
             CheckpointInfo checkpointInfo =
-                    logFiles.getCheckpointFile().reachableCheckpoints().get(0);
+                    walService.getCheckpointFile().reachableCheckpoints().get(0);
             assertThat(checkpointInfo.reason()).contains("missing logs");
         } finally {
             managementService.shutdown();

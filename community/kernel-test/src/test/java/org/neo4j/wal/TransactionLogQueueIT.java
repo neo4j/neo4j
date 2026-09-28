@@ -91,13 +91,13 @@ class TransactionLogQueueIT {
 
     @Test
     void processMessagesByTheTransactionQueue() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        life.add(walService);
 
-        TransactionLogQueue logQueue = createLogQueue(logFiles);
+        TransactionLogQueue logQueue = createLogQueue(walService);
         life.add(logQueue);
 
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
         long committedTransactionId = logMetadataProvider.getLastCommittedTransactionId();
         for (int i = 0; i < 100; i++) {
             CompleteTransaction transaction = createTransaction(logMetadataProvider);
@@ -109,11 +109,11 @@ class TransactionLogQueueIT {
 
     @Test
     void doNotProcessMessagesAfterShutdown() throws IOException, ExecutionException, InterruptedException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        TransactionLogQueue logQueue = createLogQueue(logFiles);
+        TransactionLogQueue logQueue = createLogQueue(walService);
         life.add(logQueue);
 
         assertDoesNotThrow(() -> logQueue.submit(createTransaction(logMetadataProvider), LogAppendEvent.NULL)
@@ -128,11 +128,11 @@ class TransactionLogQueueIT {
 
     @Test
     void stillProcessMessagesAfterStop() throws Exception {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        TransactionLogQueue logQueue = createLogQueue(logFiles);
+        TransactionLogQueue logQueue = createLogQueue(walService);
         life.add(logQueue);
 
         assertDoesNotThrow(() -> logQueue.submit(createTransaction(logMetadataProvider), LogAppendEvent.NULL)
@@ -164,10 +164,10 @@ class TransactionLogQueueIT {
                 new IdStoreTransactionIdGenerator(transactionIdStore));
     }
 
-    private TransactionLogQueue createLogQueue(LogFiles logFiles) {
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
+    private TransactionLogQueue createLogQueue(WALService walService) {
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
         return new TransactionLogQueue(
-                logFiles,
+                walService,
                 logMetadataProvider,
                 databaseHealth,
                 logMetadataProvider,
@@ -177,7 +177,7 @@ class TransactionLogQueueIT {
                 "le db");
     }
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout,

@@ -57,8 +57,8 @@ import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.files.LogFilesBuilder;
 import org.neo4j.wal.files.TransactionLogChannelAllocator;
@@ -84,7 +84,7 @@ class DetachedCheckpointAppenderTest {
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore(
             2L, 3L, LATEST_KERNEL_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
     private CheckpointAppender checkpointAppender;
-    private LogFiles logFiles;
+    private WALService walService;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -92,11 +92,11 @@ class DetachedCheckpointAppenderTest {
     }
 
     void setUp(KernelVersion kernelVersion) throws IOException {
-        logFiles = buildLogFiles(kernelVersion);
-        life.add(logFiles);
+        walService = buildLogFiles(kernelVersion);
+        life.add(walService);
         life.start();
 
-        checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
+        checkpointAppender = walService.getCheckpointFile().getCheckpointAppender();
     }
 
     @Test
@@ -126,10 +126,10 @@ class DetachedCheckpointAppenderTest {
     @Test
     void skipCheckpointOnAttemptToAppendCheckpointWhenNotStarted() {
         DetachedCheckpointAppender appender = new DetachedCheckpointAppender(
-                mock(LogFiles.class),
+                mock(WALService.class),
                 mock(TransactionLogChannelAllocator.class),
                 mock(TransactionLogFilesContext.class, RETURNS_MOCKS),
-                logFiles.getCheckpointFile(),
+                walService.getCheckpointFile(),
                 NO_ROTATION,
                 mock(DetachedLogTailScanner.class),
                 LatestVersions.BINARY_VERSIONS,
@@ -148,7 +148,7 @@ class DetachedCheckpointAppenderTest {
 
     @Test
     void appendedCheckpointsCanBeLookedUpFromCheckpointFile() throws IOException {
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
 
         var logPosition1 = new LogPosition(0, 10);
         var logPosition2 = new LogPosition(0, 20);
@@ -199,7 +199,7 @@ class DetachedCheckpointAppenderTest {
         fileSystem.deleteRecursively(databaseLayout.getTransactionLogsDirectory());
         setUp(KernelVersion.V5_22);
 
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
 
         var logPosition1 = new LogPosition(0, 10);
         var logPosition2 = new LogPosition(0, 20);
@@ -241,7 +241,7 @@ class DetachedCheckpointAppenderTest {
         fileSystem.deleteRecursively(databaseLayout.getTransactionLogsDirectory());
         setUp(KernelVersion.V5_22);
 
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
 
         var logPosition1 = new LogPosition(0, 10);
         var logPosition2 = new LogPosition(0, 20);
@@ -278,7 +278,7 @@ class DetachedCheckpointAppenderTest {
                 .isEqualTo(positionAfterCheckpoint);
     }
 
-    private LogFiles buildLogFiles(KernelVersion initialKernelVersion) throws IOException {
+    private WALService buildLogFiles(KernelVersion initialKernelVersion) throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout,

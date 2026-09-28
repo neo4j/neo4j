@@ -108,7 +108,6 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 import org.neo4j.wal.FlushableLogPositionAwareChannel;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogPositionAwareChannel;
 import org.neo4j.wal.LogPositionMarker;
@@ -117,6 +116,7 @@ import org.neo4j.wal.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.PhysicalLogicalTransactionStore;
 import org.neo4j.wal.TransactionMetadataCache;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.wal.checkpoint.LogCheckPointEvent;
 import org.neo4j.wal.entry.LogEntry;
@@ -146,7 +146,7 @@ class TransactionLogsRecoveryTest {
     private LogEntry expectedCommitEntry;
     private final Monitors monitors = new Monitors();
     private final SimpleLogVersionRepository versionRepository = new SimpleLogVersionRepository();
-    private LogFiles logFiles;
+    private WALService walService;
     private Path storeDir;
     private Lifecycle schemaLife;
     private LifeSupport life;
@@ -154,9 +154,9 @@ class TransactionLogsRecoveryTest {
     @BeforeEach
     void setUp() throws Exception {
         storeDir = testDirectory.homePath();
-        logFiles = buildLogFiles();
+        walService = buildLogFiles();
         life = new LifeSupport();
-        life.add(logFiles);
+        life.add(walService);
         life.start();
         schemaLife = new LifecycleAdapter();
     }
@@ -169,7 +169,7 @@ class TransactionLogsRecoveryTest {
     @Test
     void shouldRecoverExistingData() throws Exception {
         var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         Path file = logFile.getLogFileForVersion(logVersion);
 
         writeSomeData(file, dataWriters -> {
@@ -190,7 +190,7 @@ class TransactionLogsRecoveryTest {
             lastCommittedTxCommitEntry = newCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L, previousChecksum);
 
             // checkpoint pointing to the previously committed transaction
-            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointFile = walService.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
@@ -238,7 +238,7 @@ class TransactionLogsRecoveryTest {
                     new CorruptedLogsTruncator(storeDir, recoveryLogFiles, fileSystem, INSTANCE);
             monitors.addMonitorListener(monitor);
             life.add(new TransactionLogsRecovery(
-                    logFiles,
+                    walService,
                     LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     LatestVersions.LATEST_LOG_FORMAT_PROVIDER,
                     new DefaultRecoveryService(
@@ -322,7 +322,7 @@ class TransactionLogsRecoveryTest {
 
     @Test
     void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception {
-        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        Path file = walService.getLogFile().getLogFileForVersion(logVersion);
         var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
 
         LogPositionMarker marker = new LogPositionMarker();
@@ -339,7 +339,7 @@ class TransactionLogsRecoveryTest {
 
             // check point
             channel.getCurrentLogPosition(marker);
-            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointFile = walService.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
@@ -365,8 +365,8 @@ class TransactionLogsRecoveryTest {
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
-                    logFiles, metadataCache, TestCommandReaderFactory.INSTANCE, monitors, false, config, INSTANCE);
-            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, logFiles, fileSystem, INSTANCE);
+                    walService, metadataCache, TestCommandReaderFactory.INSTANCE, monitors, false, config, INSTANCE);
+            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, walService, fileSystem, INSTANCE);
             monitors.addMonitorListener(new RecoveryMonitor() {
                 @Override
                 public void recoveryRequired(RecoveryStartInformation recoveryStartInfo) {
@@ -374,7 +374,7 @@ class TransactionLogsRecoveryTest {
                 }
             });
             life.add(new TransactionLogsRecovery(
-                    logFiles,
+                    walService,
                     LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     LatestVersions.LATEST_LOG_FORMAT_PROVIDER,
                     new DefaultRecoveryService(
@@ -382,7 +382,7 @@ class TransactionLogsRecoveryTest {
                             transactionIdStore,
                             txStore,
                             versionRepository,
-                            logFiles,
+                            walService,
                             LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                             LatestVersions.LATEST_LOG_FORMAT_PROVIDER,
                             NO_MONITOR,
@@ -418,7 +418,7 @@ class TransactionLogsRecoveryTest {
     @Test
     void shouldSeeThatMissingStoreFilesBeforeForwardRecoveryShouldBeUnrecoverable() throws Exception {
         var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         Path file = logFile.getLogFileForVersion(logVersion);
 
         writeSomeData(file, dataWriters -> {
@@ -439,7 +439,7 @@ class TransactionLogsRecoveryTest {
             lastCommittedTxCommitEntry = newCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L, previousChecksum);
 
             // checkpoint pointing to the previously committed transaction
-            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointFile = walService.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
@@ -487,7 +487,7 @@ class TransactionLogsRecoveryTest {
                     new CorruptedLogsTruncator(storeDir, recoveryLogFiles, fileSystem, INSTANCE);
             monitors.addMonitorListener(monitor);
             life.add(new TransactionLogsRecovery(
-                    logFiles,
+                    walService,
                     LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     LatestVersions.LATEST_LOG_FORMAT_PROVIDER,
                     new DefaultRecoveryService(
@@ -538,7 +538,7 @@ class TransactionLogsRecoveryTest {
 
     @Test
     void shouldSeeThatMissingStoreFilesShouldBeUnrecoverableWithNoLogChanges() throws Exception {
-        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        Path file = walService.getLogFile().getLogFileForVersion(logVersion);
         var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
 
         LogPositionMarker marker = new LogPositionMarker();
@@ -555,7 +555,7 @@ class TransactionLogsRecoveryTest {
 
             // check point
             channel.getCurrentLogPosition(marker);
-            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointFile = walService.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
@@ -578,11 +578,11 @@ class TransactionLogsRecoveryTest {
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
-                    logFiles, metadataCache, TestCommandReaderFactory.INSTANCE, monitors, false, config, INSTANCE);
-            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, logFiles, fileSystem, INSTANCE);
+                    walService, metadataCache, TestCommandReaderFactory.INSTANCE, monitors, false, config, INSTANCE);
+            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, walService, fileSystem, INSTANCE);
             monitors.addMonitorListener(monitor);
             life.add(new TransactionLogsRecovery(
-                    logFiles,
+                    walService,
                     LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     LatestVersions.LATEST_LOG_FORMAT_PROVIDER,
                     new DefaultRecoveryService(
@@ -590,7 +590,7 @@ class TransactionLogsRecoveryTest {
                             transactionIdStore,
                             txStore,
                             versionRepository,
-                            logFiles,
+                            walService,
                             LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                             LatestVersions.LATEST_LOG_FORMAT_PROVIDER,
                             NO_MONITOR,
@@ -630,7 +630,7 @@ class TransactionLogsRecoveryTest {
     @Test
     void shouldTruncateLogAfterSinglePartialTransaction() throws Exception {
         // GIVEN
-        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        Path file = walService.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
         writeSomeData(file, dataWriters -> {
@@ -655,7 +655,7 @@ class TransactionLogsRecoveryTest {
 
     @Test
     void doNotTruncateCheckpointsAfterLastTransaction() throws IOException {
-        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        Path file = walService.getLogFile().getLogFileForVersion(logVersion);
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
@@ -666,7 +666,7 @@ class TransactionLogsRecoveryTest {
 
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, 1L, 2L);
             channel.getCurrentLogPosition(marker);
-            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointFile = walService.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
@@ -689,23 +689,23 @@ class TransactionLogsRecoveryTest {
         assertThat(file).hasSize(marker.getByteOffset());
         assertEquals(
                 getExpectedPositionAfterOneCheckpoint() /* one checkpoint */,
-                ((DetachedCheckpointAppender) logFiles.getCheckpointFile().getCheckpointAppender())
+                ((DetachedCheckpointAppender) walService.getCheckpointFile().getCheckpointAppender())
                         .getCurrentPosition());
 
         if (NativeAccessProvider.getNativeAccess().isAvailable()) {
             assertEquals(
                     ByteUnit.mebiBytes(1),
-                    Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+                    Files.size(walService.getCheckpointFile().getCurrentFile()));
         } else {
             assertEquals(
                     getExpectedPositionAfterOneCheckpoint() /* one checkpoint */,
-                    Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+                    Files.size(walService.getCheckpointFile().getCurrentFile()));
         }
     }
 
     @Test
     void shouldTruncateInvalidCheckpointAndAllCorruptTransactions() throws IOException {
-        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        Path file = walService.getLogFile().getLogFileForVersion(logVersion);
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
@@ -716,7 +716,7 @@ class TransactionLogsRecoveryTest {
             TransactionId transactionId = new TransactionId(1L, 4L, LATEST_KERNEL_VERSION, BASE_TX_CHECKSUM, 2L, 3L);
 
             channel.getCurrentLogPosition(marker);
-            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointFile = walService.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
@@ -749,13 +749,13 @@ class TransactionLogsRecoveryTest {
         assertEquals(marker.getByteOffset(), Files.size(file));
         assertEquals(
                 getExpectedPositionAfterOneCheckpoint() /* one checkpoint */,
-                Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+                Files.size(walService.getCheckpointFile().getCurrentFile()));
     }
 
     @Test
     void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfulRecovery() throws Exception {
         // GIVEN
-        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        Path file = walService.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
         writeSomeData(file, dataWriters -> {
@@ -788,7 +788,7 @@ class TransactionLogsRecoveryTest {
     @Test
     void shouldTellTransactionIdStoreAfterSuccessfulRecovery() throws Exception {
         // GIVEN
-        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        Path file = walService.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
         final byte[] additionalHeaderData = EMPTY_BYTE_ARRAY;
@@ -836,11 +836,11 @@ class TransactionLogsRecoveryTest {
         RecoveryService recoveryService = mock(RecoveryService.class);
         when(recoveryService.getRecoveryStartInformation()).thenReturn(NO_RECOVERY_REQUIRED);
 
-        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, logFiles, fileSystem, INSTANCE);
+        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, walService, fileSystem, INSTANCE);
         RecoveryMonitor monitor = mock(RecoveryMonitor.class);
 
         TransactionLogsRecovery logsRecovery = new TransactionLogsRecovery(
-                logFiles,
+                walService,
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 LatestVersions.LATEST_LOG_FORMAT_PROVIDER,
                 recoveryService,
@@ -868,7 +868,7 @@ class TransactionLogsRecoveryTest {
 
     @Test
     void shouldFailRecoveryWhenCanceled() throws Exception {
-        Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        Path file = walService.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
         final long transactionId = 4;
@@ -992,7 +992,7 @@ class TransactionLogsRecoveryTest {
 
     private record DataWriters(LogEntryWriter<?> writer, FlushableLogPositionAwareChannel channel) {}
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fileSystem,

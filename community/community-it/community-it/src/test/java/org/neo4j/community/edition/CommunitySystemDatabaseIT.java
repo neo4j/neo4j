@@ -55,8 +55,8 @@ import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.CommandBatchCursor;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogicalTransactionStore;
+import org.neo4j.wal.WALService;
 
 @TestDirectoryExtension
 class CommunitySystemDatabaseIT {
@@ -157,9 +157,9 @@ class CommunitySystemDatabaseIT {
 
     @Test
     void differentDatabaseHaveDifferentTxLogsDirectories() {
-        LogFiles systemLogFiles = systemDb.getDependencyResolver().resolveDependency(LogFiles.class);
-        LogFiles defaultLogFiles = defaultDb.getDependencyResolver().resolveDependency(LogFiles.class);
-        assertNotEquals(defaultLogFiles.logFilesDirectory(), systemLogFiles.logFilesDirectory());
+        WALService systemWALService = systemDb.getDependencyResolver().resolveDependency(WALService.class);
+        WALService defaultWALService = defaultDb.getDependencyResolver().resolveDependency(WALService.class);
+        assertNotEquals(defaultWALService.logFilesDirectory(), systemWALService.logFilesDirectory());
     }
 
     @Test
@@ -218,8 +218,9 @@ class CommunitySystemDatabaseIT {
     private static int countTransactionInLogicalStore(GraphDatabaseAPI facade) throws IOException {
         LogicalTransactionStore transactionStore =
                 facade.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
-        var logFile =
-                facade.getDependencyResolver().resolveDependency(LogFiles.class).getLogFile();
+        var logFile = facade.getDependencyResolver()
+                .resolveDependency(WALService.class)
+                .getLogFile();
         var lowestVersion = logFile.getLogRangeInfo().lowestVersion();
         var baseTxId = logFile.extractHeader(lowestVersion).getLastAppendIndex(); // First one in file is this +1
         try (CommandBatchCursor cursor = transactionStore.getCommandBatches(baseTxId + 1)) {

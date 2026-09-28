@@ -41,12 +41,12 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 @DbmsExtension(configurationCallback = "configure")
 public class CheckpointLogFileRotationIT {
     @Inject
-    LogFiles logFiles;
+    WALService walService;
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
@@ -57,7 +57,7 @@ public class CheckpointLogFileRotationIT {
 
     @Test
     void rotateCheckpointLogFiles() throws IOException {
-        var checkpointFile = logFiles.getCheckpointFile();
+        var checkpointFile = walService.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         fillWithCheckpoints(5, checkpointAppender);
         var matchedFiles = checkpointFile.getMatchedFiles();
@@ -70,7 +70,7 @@ public class CheckpointLogFileRotationIT {
 
     @Test
     void doNotRotateWhileCheckpointsAreFitting() throws IOException {
-        var checkpointFile = logFiles.getCheckpointFile();
+        var checkpointFile = walService.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         fillWithCheckpoints(1, checkpointAppender);
         assertThat(checkpointFile.getMatchedFiles()).hasSize(1);
@@ -84,7 +84,7 @@ public class CheckpointLogFileRotationIT {
 
     @Test
     void afterRotationNewFileHaveHeader() throws IOException {
-        var checkpointFile = logFiles.getCheckpointFile();
+        var checkpointFile = walService.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         fillWithCheckpoints(1, checkpointAppender);
         // Rotation happens on first checkpoint seen after the threshold is passed

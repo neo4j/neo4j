@@ -54,7 +54,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.entry.LogHeader;
 import org.neo4j.wal.files.LogRangeInfo;
@@ -62,7 +62,7 @@ import org.neo4j.wal.files.LogRangeInfo;
 class LogPruningTest {
     private final Config config = Config.defaults();
     private FileSystemAbstraction fs;
-    private LogFiles logFiles;
+    private WALService walService;
     private LogFile logFile;
     private AssertableLogProvider logProvider;
     private SystemNanoClock clock;
@@ -76,9 +76,9 @@ class LogPruningTest {
         logFile = mock(LogFile.class);
         doNothing().when(logFile).delete(anyLong());
 
-        logFiles = mock(LogFiles.class);
-        when(logFiles.getLogFile()).thenReturn(logFile);
-        when(logFiles.getCheckpointFile()).thenReturn(mock(CheckpointFile.class));
+        walService = mock(WALService.class);
+        when(walService.getLogFile()).thenReturn(logFile);
+        when(walService.getCheckpointFile()).thenReturn(mock(CheckpointFile.class));
         doAnswer(inv -> Path.of(String.valueOf(inv.getArguments()[0])))
                 .when(logFile)
                 .getLogFileForVersion(anyLong());
@@ -90,11 +90,11 @@ class LogPruningTest {
 
     @Test
     void mustDeleteLogFilesThatCanBePruned() throws IOException {
-        when(factory.strategyFromConfigValue(eq(fs), eq(logFiles), eq(logProvider), eq(clock), anyString(), any()))
+        when(factory.strategyFromConfigValue(eq(fs), eq(walService), eq(logProvider), eq(clock), anyString(), any()))
                 .thenReturn(upTo -> new LogPruneStrategy.VersionRange(3, upTo));
         LogPruning pruning = new LogPruningImpl(
                 fs,
-                logFiles,
+                walService,
                 logProvider,
                 factory,
                 clock,
@@ -107,7 +107,7 @@ class LogPruningTest {
         long highestDeletedTxId = 123L;
         LogHeader header = mock(LogHeader.class);
         when(header.getLastAppendIndex()).thenReturn(highestDeletedTxId);
-        when(logFiles.getLogFile().extractHeader(5L)).thenReturn(header);
+        when(walService.getLogFile().extractHeader(5L)).thenReturn(header);
         pruning.pruneLogs(5);
 
         verify(logFile, times(2)).delete(anyLong());
@@ -119,12 +119,12 @@ class LogPruningTest {
 
     @Test
     void mustHaveLogFilesToPruneIfStrategyFindsFiles() {
-        when(factory.strategyFromConfigValue(eq(fs), eq(logFiles), eq(logProvider), eq(clock), anyString(), any()))
+        when(factory.strategyFromConfigValue(eq(fs), eq(walService), eq(logProvider), eq(clock), anyString(), any()))
                 .thenReturn(upTo -> new LogPruneStrategy.VersionRange(3, upTo + 1));
-        when(logFiles.getLogFile().getLogRangeInfo()).thenReturn(new LogRangeInfo(-1L, null, 4L, null));
+        when(walService.getLogFile().getLogRangeInfo()).thenReturn(new LogRangeInfo(-1L, null, 4L, null));
         LogPruning pruning = new LogPruningImpl(
                 fs,
-                logFiles,
+                walService,
                 logProvider,
                 factory,
                 clock,
@@ -135,16 +135,16 @@ class LogPruningTest {
                 LatestVersions.BINARY_VERSIONS,
                 EmptyMemoryTracker.INSTANCE);
         assertTrue(pruning.mightHaveLogsToPrune(
-                logFiles.getLogFile().getLogRangeInfo().highestVersion()));
+                walService.getLogFile().getLogRangeInfo().highestVersion()));
     }
 
     @Test
     void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles() {
-        when(factory.strategyFromConfigValue(eq(fs), eq(logFiles), eq(logProvider), eq(clock), anyString(), any()))
+        when(factory.strategyFromConfigValue(eq(fs), eq(walService), eq(logProvider), eq(clock), anyString(), any()))
                 .thenReturn(x -> LogPruneStrategy.EMPTY_RANGE);
         LogPruning pruning = new LogPruningImpl(
                 fs,
-                logFiles,
+                walService,
                 logProvider,
                 factory,
                 clock,
@@ -154,9 +154,9 @@ class LogPruningTest {
                 mock(CommandReaderFactory.class),
                 LatestVersions.BINARY_VERSIONS,
                 EmptyMemoryTracker.INSTANCE);
-        when(logFiles.getLogFile().getLogRangeInfo()).thenReturn(new LogRangeInfo(-1L, null, 4L, null));
+        when(walService.getLogFile().getLogRangeInfo()).thenReturn(new LogRangeInfo(-1L, null, 4L, null));
         assertFalse(pruning.mightHaveLogsToPrune(
-                logFiles.getLogFile().getLogRangeInfo().highestVersion()));
+                walService.getLogFile().getLogRangeInfo().highestVersion()));
     }
 
     @Test
@@ -165,7 +165,7 @@ class LogPruningTest {
         config.setDynamic(GraphDatabaseSettings.keep_logical_logs, "keep_all", "");
         LogPruning pruning = new LogPruningImpl(
                 fs,
-                logFiles,
+                walService,
                 logProvider,
                 factory,
                 clock,
@@ -183,7 +183,7 @@ class LogPruningTest {
     @Test
     void mustLogLatestPreservedCheckpointVersion() throws IOException {
         // given
-        when(factory.strategyFromConfigValue(eq(fs), eq(logFiles), eq(logProvider), eq(clock), anyString(), any()))
+        when(factory.strategyFromConfigValue(eq(fs), eq(walService), eq(logProvider), eq(clock), anyString(), any()))
                 .thenReturn(x -> LogPruneStrategy.EMPTY_RANGE);
         int checkpointLogFilesToKeep = config.get(checkpoint_logical_log_keep_threshold);
         CheckpointFile checkpointFile = mock(CheckpointFile.class);
@@ -197,12 +197,12 @@ class LogPruningTest {
             return Long.parseLong(file.getFileName().toString());
         });
         when(checkpointFile.getCurrentLogVersion()).thenReturn((long) checkpointFiles.length - 1);
-        when(logFiles.getCheckpointFile()).thenReturn(checkpointFile);
+        when(walService.getCheckpointFile()).thenReturn(checkpointFile);
 
         // when
         LogPruning pruning = new LogPruningImpl(
                 fs,
-                logFiles,
+                walService,
                 logProvider,
                 factory,
                 clock,

@@ -102,11 +102,11 @@ class QueueTransactionAppenderConcurrencyIT {
 
     @Test
     void multiThreadedTransactionProcessing() throws IOException, ExecutionException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        QueueTransactionAppender transactionAppender = createAppender(walService);
         life.add(transactionAppender);
 
         int numberOfTransactions = 10_000;
@@ -124,11 +124,11 @@ class QueueTransactionAppenderConcurrencyIT {
 
     @Test
     void multiThreadedTransactionWithStop() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        QueueTransactionAppender transactionAppender = createAppender(walService);
         life.add(transactionAppender);
 
         int numberOfTransactions = 100_000;
@@ -156,11 +156,11 @@ class QueueTransactionAppenderConcurrencyIT {
 
     @Test
     void multiThreadedTransactionWithPanic() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
-        QueueTransactionAppender transactionAppender = createAppender(logFiles);
+        QueueTransactionAppender transactionAppender = createAppender(walService);
         life.add(transactionAppender);
 
         int numberOfTransactions = 100_000;
@@ -187,10 +187,10 @@ class QueueTransactionAppenderConcurrencyIT {
                 .isEqualTo(numberOfTransactions);
     }
 
-    private QueueTransactionAppender createAppender(LogFiles logFiles) {
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
+    private QueueTransactionAppender createAppender(WALService walService) {
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
         TransactionLogQueue logQueue = new TransactionLogQueue(
-                logFiles,
+                walService,
                 logMetadataProvider,
                 databaseHealth,
                 logMetadataProvider,
@@ -221,7 +221,7 @@ class QueueTransactionAppenderConcurrencyIT {
                 new IdStoreTransactionIdGenerator(transactionIdStore));
     }
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout,

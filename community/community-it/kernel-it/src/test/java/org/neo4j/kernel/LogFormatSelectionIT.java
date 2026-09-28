@@ -70,8 +70,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogFormatVersionProvider;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.files.LogFilesBuilder;
 import picocli.CommandLine;
@@ -120,9 +120,9 @@ class LogFormatSelectionIT {
         UpgradeTestUtil.upgradeDatabase(
                 managementService, db, KernelVersion.V5_0, LatestVersions.LATEST_KERNEL_VERSION);
         assertKernelVersionAndLogFormat(db, LatestVersions.LATEST_KERNEL_VERSION);
-        LogFiles logFiles = db.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = db.getDependencyResolver().resolveDependency(WALService.class);
         shutdown();
-        checkLogFormatOfLatestFiles(logFiles, LatestVersions.LATEST_KERNEL_VERSION);
+        checkLogFormatOfLatestFiles(walService, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     @ParameterizedTest
@@ -156,9 +156,9 @@ class LogFormatSelectionIT {
         assertKernelVersion(db, KernelVersion.GLORIOUS_FUTURE);
         assertLogFormat(db, expectedFormat);
 
-        LogFiles logFiles = db.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = db.getDependencyResolver().resolveDependency(WALService.class);
         shutdown();
-        checkLogFormatOfLatestFiles(logFiles, expectedFormat);
+        checkLogFormatOfLatestFiles(walService, expectedFormat);
     }
 
     @ParameterizedTest
@@ -183,9 +183,9 @@ class LogFormatSelectionIT {
 
         assertKernelVersion(db, KernelVersion.GLORIOUS_FUTURE);
         assertLogFormat(db, expectedFormat);
-        LogFiles logFiles = db.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = db.getDependencyResolver().resolveDependency(WALService.class);
         shutdown();
-        checkLogFormatOfLatestFiles(logFiles, expectedFormat);
+        checkLogFormatOfLatestFiles(walService, expectedFormat);
     }
 
     @SkipOnSpd(
@@ -230,9 +230,9 @@ class LogFormatSelectionIT {
         assertKernelVersion(db, KernelVersion.GLORIOUS_FUTURE);
         assertLogFormat(db, expectedFormat);
 
-        LogFiles logFiles = db.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = db.getDependencyResolver().resolveDependency(WALService.class);
         shutdown();
-        checkLogFormatOfLatestFiles(logFiles, expectedFormat);
+        checkLogFormatOfLatestFiles(walService, expectedFormat);
     }
 
     @ParameterizedTest
@@ -268,10 +268,10 @@ class LogFormatSelectionIT {
                         GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create, true)
                 .build();
         db = (GraphDatabaseAPI) managementService.database(dbName);
-        LogFiles logFiles = db.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = db.getDependencyResolver().resolveDependency(WALService.class);
 
         shutdown();
-        checkLogFormatOfLatestFiles(logFiles, expectedFormat);
+        checkLogFormatOfLatestFiles(walService, expectedFormat);
     }
 
     @ParameterizedTest
@@ -287,7 +287,7 @@ class LogFormatSelectionIT {
         managementService = builder.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
 
-        LogFiles logFiles = db.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = db.getDependencyResolver().resolveDependency(WALService.class);
         shutdown();
 
         Path config = neo4jLayout.homeDirectory().resolve("migration-config.conf");
@@ -303,7 +303,7 @@ class LogFormatSelectionIT {
         StoreMigrationTestUtils.Result result = runStoreMigrationCommandFromSameJvm(neo4jLayout, args);
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
 
-        checkLogFormatOfLatestFiles(logFiles, expectedFormat);
+        checkLogFormatOfLatestFiles(walService, expectedFormat);
     }
 
     @ParameterizedTest
@@ -345,13 +345,13 @@ class LogFormatSelectionIT {
 
         // THEN
         assertTrue(ctx.outAsString().contains("IMPORT DONE"));
-        LogFiles logFiles = LogFilesBuilder.readableBuilder(
+        WALService walService = LogFilesBuilder.readableBuilder(
                         neo4jLayout.databaseLayout(DEFAULT_DATABASE_NAME),
                         fs,
                         KernelVersionProvider.THROWING_PROVIDER,
                         LogFormatVersionProvider.THROWING_PROVIDER)
                 .build();
-        checkLogFormatOfLatestFiles(logFiles, expectedFormat);
+        checkLogFormatOfLatestFiles(walService, expectedFormat);
     }
 
     private static LogFormat newFormatExpected(boolean allowFormatSwitchOnUpgrade) {
@@ -380,18 +380,22 @@ class LogFormatSelectionIT {
         writer.println("id:" + Type.ID.name() + COMMAS.delimiter() + "name" + COMMAS.delimiter() + "labels:LABEL");
     }
 
-    private static void checkLogFormatOfLatestFiles(LogFiles logFiles, KernelVersion kernelVersion) throws IOException {
-        checkLogFormatOfLatestFiles(logFiles, LogFormat.fromKernelVersion(kernelVersion));
+    private static void checkLogFormatOfLatestFiles(WALService walService, KernelVersion kernelVersion)
+            throws IOException {
+        checkLogFormatOfLatestFiles(walService, LogFormat.fromKernelVersion(kernelVersion));
     }
 
-    private static void checkLogFormatOfLatestFiles(LogFiles logFiles, LogFormat expectedFormat) throws IOException {
-        assertThat(logFiles.getLogFile()
-                        .extractHeader(logFiles.getLogFile().getLogRangeInfo().highestVersion())
+    private static void checkLogFormatOfLatestFiles(WALService walService, LogFormat expectedFormat)
+            throws IOException {
+        assertThat(walService
+                        .getLogFile()
+                        .extractHeader(walService.getLogFile().getLogRangeInfo().highestVersion())
                         .getLogFormatVersion())
                 .isEqualTo(expectedFormat);
-        assertThat(logFiles.getCheckpointFile()
+        assertThat(walService
+                        .getCheckpointFile()
                         .extractHeader(
-                                logFiles.getCheckpointFile().getLogRangeInfo().highestVersion())
+                                walService.getCheckpointFile().getLogRangeInfo().highestVersion())
                         .getLogFormatVersion())
                 .isEqualTo(expectedFormat);
     }

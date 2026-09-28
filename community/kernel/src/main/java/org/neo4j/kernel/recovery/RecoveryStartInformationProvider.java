@@ -31,8 +31,8 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.wal.CheckpointInfo;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogHeader;
 import org.neo4j.wal.files.LogTailInformation;
 
@@ -74,19 +74,19 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
 
     public static final Monitor NO_MONITOR = new Monitor() {};
 
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final Monitor monitor;
     private final DatabaseConfig config;
 
-    RecoveryStartInformationProvider(LogFiles logFiles, Monitor monitor, DatabaseConfig config) {
-        this.logFiles = logFiles;
+    RecoveryStartInformationProvider(WALService walService, Monitor monitor, DatabaseConfig config) {
+        this.walService = walService;
         this.monitor = monitor;
         this.config = config;
     }
 
     @Override
     public RecoveryStartInformation get() {
-        var logTailInformation = (LogTailInformation) logFiles.getTailMetadata();
+        var logTailInformation = (LogTailInformation) walService.getTailMetadata();
         CheckpointInfo lastCheckPoint = logTailInformation.lastCheckPoint;
         long appendIndexAfterLastCheckPoint = logTailInformation.firstAppendIndexAfterLastCheckPoint;
 
@@ -130,7 +130,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
     }
 
     private RecoveryStartInformation noCheckpointRecordRecoveryInfo(long appendIndexAfterLastCheckPoint) {
-        long lowestLogVersion = logFiles.getLogFile().getLogRangeInfo().lowestVersion();
+        long lowestLogVersion = walService.getLogFile().getLogRangeInfo().lowestVersion();
         if (lowestLogVersion != INITIAL_LOG_VERSION && !mergedLogWithCompleteHistory(lowestLogVersion)) {
             throw new UnderlyingStorageException("No check point found in any log file and transaction log "
                     + "files do not exist from expected version " + INITIAL_LOG_VERSION
@@ -155,7 +155,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
 
     private LogHeader tryExtractHeader(long logVersion) {
         try {
-            return logFiles.getLogFile().extractHeader(logVersion);
+            return walService.getLogFile().extractHeader(logVersion);
         } catch (IOException e) {
             monitor.failToExtractInitialFileHeader(e);
             throw new UnderlyingStorageException("Unable to read header from log file with version " + logVersion, e);

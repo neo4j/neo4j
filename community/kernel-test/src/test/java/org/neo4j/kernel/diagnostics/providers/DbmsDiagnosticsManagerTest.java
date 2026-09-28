@@ -71,7 +71,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.scheduler.CallingThreadJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 @TestDirectoryExtension
 class DbmsDiagnosticsManagerTest {
@@ -396,7 +396,7 @@ class DbmsDiagnosticsManagerTest {
         databaseDependencies.satisfyDependency(new DefaultFileSystemAbstraction());
         databaseDependencies.satisfyDependency(DeviceMapper.UNKNOWN_MAPPER);
         DatabaseLayout layout = DatabaseLayout.ofFlat(directory.homePath());
-        LogFiles logFiles = databaseDependencies.satisfyDependency(readableBuilder(
+        WALService walService = databaseDependencies.satisfyDependency(readableBuilder(
                         layout,
                         directory.getFileSystem(),
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
@@ -404,7 +404,7 @@ class DbmsDiagnosticsManagerTest {
                 .withStorageEngineFactory(storageEngineFactory)
                 .withInitializeProviders()
                 .build());
-        databaseDependencies.satisfyDependency(logFiles.logMetadataProvider());
+        databaseDependencies.satisfyDependency(walService.logMetadataProvider());
         when(database.getDependencyResolver()).thenReturn(databaseDependencies);
         when(database.getNamedDatabaseId()).thenReturn(databaseId);
         when(database.isStarted()).thenReturn(true);

@@ -54,9 +54,9 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogTracers;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.enveloped.EnvelopeWriteChannel;
@@ -73,7 +73,7 @@ class TransactionLogFilesTest {
     @Test
     void shouldGetTheFileNameForAGivenVersion() throws Exception {
         // given
-        final LogFiles files = createLogFiles();
+        final WALService files = createLogFiles();
         final int version = 12;
 
         // when
@@ -87,7 +87,7 @@ class TransactionLogFilesTest {
     @Test
     void shouldVisitEachLofFile() throws Throwable {
         // given
-        LogFiles files = createLogFiles();
+        WALService files = createLogFiles();
 
         fileSystem
                 .write(createTransactionLogFile(databaseLayout, getVersionedLogFileName("1")))
@@ -121,7 +121,7 @@ class TransactionLogFilesTest {
     @Test
     void shouldBeAbleToRetrieveTheHighestLogVersion() throws Throwable {
         // given
-        LogFiles files = createLogFiles();
+        WALService files = createLogFiles();
 
         fileSystem
                 .write(createTransactionLogFile(databaseLayout, getVersionedLogFileName("1")))
@@ -144,7 +144,7 @@ class TransactionLogFilesTest {
 
     @Test
     void checkpointAndLogFilesAreIncludedInTheListOfFiles() throws Exception {
-        LogFiles files = createLogFiles();
+        WALService files = createLogFiles();
 
         fileSystem
                 .write(createTransactionLogFile(databaseLayout, getVersionedLogFileName(1)))
@@ -166,7 +166,7 @@ class TransactionLogFilesTest {
     @Test
     void shouldReturnANegativeValueIfThereAreNoLogFiles() throws Throwable {
         // given
-        LogFiles files = createLogFiles();
+        WALService files = createLogFiles();
 
         fileSystem
                 .write(databaseLayout.file(getVersionedLogFileName("some", "4")).baseSegment())
@@ -184,24 +184,24 @@ class TransactionLogFilesTest {
     @Test
     void shouldFindTheVersionBasedOnTheFilename() throws Throwable {
         // given
-        LogFiles logFiles = createLogFiles();
+        WALService walService = createLogFiles();
         final Path file = Path.of("v....2");
 
         // when
-        long logVersion = logFiles.getLogFile().getLogVersion(file);
+        long logVersion = walService.getLogFile().getLogVersion(file);
 
         // then
         assertEquals(2, logVersion);
-        logFiles.shutdown();
+        walService.shutdown();
     }
 
     @Test
     void shouldThrowIfThereIsNoVersionInTheFileName() throws Exception {
-        LogFiles logFiles = createLogFiles();
+        WALService walService = createLogFiles();
         final Path file = Path.of("wrong");
 
         // when
-        assertThatCode(() -> logFiles.getLogFile().getLogVersion(file))
+        assertThatCode(() -> walService.getLogFile().getLogVersion(file))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid sequential file 'wrong'");
     }
@@ -209,31 +209,31 @@ class TransactionLogFilesTest {
     @Test
     void shouldThrowIfVersionIsNotANumber() throws Exception {
         // given
-        LogFiles logFiles = createLogFiles();
+        WALService walService = createLogFiles();
         final Path file = Path.of(getVersionedLogFileName("aa", "A"));
 
         // when
-        assertThatCode(() -> logFiles.getLogFile().getLogVersion(file))
+        assertThatCode(() -> walService.getLogFile().getLogVersion(file))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("does not have a valid version suffix");
     }
 
     @Test
     void isLogFile() throws Exception {
-        LogFiles logFiles = createLogFiles();
-        assertFalse(logFiles.isLogFile(Path.of("aaa.tx.log")));
-        assertTrue(logFiles.isLogFile(Path.of(DEFAULT_NAME + ".0")));
-        assertTrue(logFiles.isLogFile(Path.of(DEFAULT_NAME + ".17")));
-        assertTrue(logFiles.isLogFile(Path.of("checkpoint.17")));
-        assertFalse(logFiles.isLogFile(Path.of("thecheckpoint.17")));
+        WALService walService = createLogFiles();
+        assertFalse(walService.isLogFile(Path.of("aaa.tx.log")));
+        assertTrue(walService.isLogFile(Path.of(DEFAULT_NAME + ".0")));
+        assertTrue(walService.isLogFile(Path.of(DEFAULT_NAME + ".17")));
+        assertTrue(walService.isLogFile(Path.of("checkpoint.17")));
+        assertFalse(walService.isLogFile(Path.of("thecheckpoint.17")));
     }
 
     @Test
     void emptyFileWithoutEntriesDoesNotHaveThem() throws Exception {
-        LogFiles logFiles = createLogFiles();
+        WALService walService = createLogFiles();
         String file = getVersionedLogFileName("1");
         fileSystem.write(createTransactionLogFile(databaseLayout, file)).close();
-        assertFalse(logFiles.getLogFile().hasAnyEntries(1));
+        assertFalse(walService.getLogFile().hasAnyEntries(1));
     }
 
     @Test
@@ -295,11 +295,11 @@ class TransactionLogFilesTest {
         return transactionLogsDirectory.resolve(fileName);
     }
 
-    private LogFiles createLogFiles() throws Exception {
+    private WALService createLogFiles() throws Exception {
         return createLogFiles(LATEST_KERNEL_VERSION_PROVIDER);
     }
 
-    private LogFiles createLogFiles(KernelVersionProvider kvp) throws Exception {
+    private WALService createLogFiles(KernelVersionProvider kvp) throws Exception {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         var files = LogFilesBuilder.writeableBuilder(
                         databaseLayout, fileSystem, kvp, () -> LogFormat.fromKernelVersion(kvp.kernelVersion()))

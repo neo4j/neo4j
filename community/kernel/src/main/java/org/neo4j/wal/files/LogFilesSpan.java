@@ -20,19 +20,19 @@
 package org.neo4j.wal.files;
 
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 public class LogFilesSpan implements AutoCloseable {
     private final Lifespan lifespan;
-    private final LogFiles logFiles;
+    private final WALService walService;
 
-    public LogFilesSpan(Lifespan lifespan, LogFiles logFiles) {
+    public LogFilesSpan(Lifespan lifespan, WALService walService) {
         this.lifespan = lifespan;
-        this.logFiles = logFiles;
+        this.walService = walService;
     }
 
-    public LogFiles getLogFiles() {
-        return logFiles;
+    public WALService getLogFiles() {
+        return walService;
     }
 
     @Override

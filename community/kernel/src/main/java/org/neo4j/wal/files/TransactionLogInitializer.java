@@ -49,9 +49,9 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.wal.CompleteCommandBatch;
 import org.neo4j.wal.LogAppendEvent;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.checkpoint.LogCheckPointEvent;
 
@@ -138,8 +138,8 @@ public class TransactionLogInitializer {
             DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason, Config config)
             throws IOException {
         try (LogFilesSpan span = buildLogFiles(layout, transactionLogsDirectory, config)) {
-            LogFiles logFiles = span.getLogFiles();
-            return appendEmptyTransactionAndCheckPoint(logFiles, checkpointReason);
+            WALService walService = span.getLogFiles();
+            return appendEmptyTransactionAndCheckPoint(walService, checkpointReason);
         }
     }
 
@@ -147,13 +147,13 @@ public class TransactionLogInitializer {
             DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason, Config config)
             throws Exception {
         try (LogFilesSpan span = buildLogFiles(layout, transactionLogsDirectory, config)) {
-            LogFiles logFiles = span.getLogFiles();
-            LogFile logFile = logFiles.getLogFile();
+            WALService walService = span.getLogFiles();
+            LogFile logFile = walService.getLogFile();
             LogRangeInfo logRangeInfo = logFile.getLogRangeInfo();
             for (long version = logRangeInfo.lowestVersion(); version <= logRangeInfo.highestVersion(); version++) {
                 fs.deleteFile(logFile.getLogFileForVersion(version));
             }
-            CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+            CheckpointFile checkpointFile = walService.getCheckpointFile();
             LogRangeInfo checkpointLogVersionRange = checkpointFile.getLogRangeInfo();
             for (long version = checkpointLogVersionRange.lowestVersion();
                     version <= checkpointLogVersionRange.highestVersion();
@@ -162,7 +162,7 @@ public class TransactionLogInitializer {
             }
             logFile.rotate();
             checkpointFile.rotate();
-            return appendEmptyTransactionAndCheckPoint(logFiles, checkpointReason);
+            return appendEmptyTransactionAndCheckPoint(walService, checkpointReason);
         }
     }
 
@@ -185,18 +185,18 @@ public class TransactionLogInitializer {
                     GraphDatabaseInternalSettings.latest_kernel_version,
                     logMetadataProvider.kernelVersion().version()));
         }
-        LogFiles logFiles = builder.build();
-        return new LogFilesSpan(new Lifespan(logFiles), logFiles);
+        WALService walService = builder.build();
+        return new LogFilesSpan(new Lifespan(walService), walService);
     }
 
-    private long appendEmptyTransactionAndCheckPoint(LogFiles logFiles, String reason) throws IOException {
+    private long appendEmptyTransactionAndCheckPoint(WALService walService, String reason) throws IOException {
         TransactionId committedTx = logMetadataProvider.getLastCommittedTransaction();
         long consensusIndex = UNKNOWN_CONSENSUS_INDEX;
         long timestamp = committedTx.commitTimestamp();
         long upgradeTransactionId = logMetadataProvider.nextCommittingTransactionId();
         long appendIndex = logMetadataProvider.nextAppendIndex();
         KernelVersion kernelVersion = logMetadataProvider.kernelVersion();
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         LogWriter transactionLogWriter = logFile.getTransactionLogWriter();
         CompleteCommandBatch emptyTx = emptyTransaction(timestamp, upgradeTransactionId, kernelVersion, consensusIndex);
         int checksum = transactionLogWriter.append(
@@ -210,7 +210,7 @@ public class TransactionLogInitializer {
         logFile.forceAfterAppend(LogAppendEvent.NULL);
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint(
-                logFiles,
+                walService,
                 reason,
                 position,
                 new TransactionId(
@@ -238,7 +238,7 @@ public class TransactionLogInitializer {
     }
 
     private static void appendCheckpoint(
-            LogFiles logFiles,
+            WALService walService,
             String reason,
             LogPosition position,
             TransactionId transactionId,
@@ -246,7 +246,7 @@ public class TransactionLogInitializer {
             long consensusIndex,
             KernelVersion version)
             throws IOException {
-        var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
+        var checkpointAppender = walService.getCheckpointFile().getCheckpointAppender();
         checkpointAppender.checkPoint(
                 LogCheckPointEvent.NULL,
                 transactionId,

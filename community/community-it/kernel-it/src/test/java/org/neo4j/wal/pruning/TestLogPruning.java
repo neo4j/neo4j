@@ -45,9 +45,9 @@ import org.neo4j.time.FakeClock;
 import org.neo4j.wal.CommittedCommandBatchCursor;
 import org.neo4j.wal.LogAppendEvent;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.ReadAheadUtils;
 import org.neo4j.wal.ReadableLogChannel;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 import org.neo4j.wal.checkpoint.TriggerInfo;
@@ -57,7 +57,7 @@ class TestLogPruning {
     private DatabaseManagementService managementService;
     private GraphDatabaseAPI db;
     private FileSystemAbstraction fs;
-    private LogFiles logFiles;
+    private WALService walService;
     private FakeClock fakeClock;
     private int rotateEveryNTransactions;
     private int performedTransactions;
@@ -78,7 +78,7 @@ class TestLogPruning {
             doTransaction();
         }
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         long currentVersion = logFile.getLogRangeInfo().highestVersion();
         for (long version = 0; version < currentVersion; version++) {
             assertTrue(
@@ -315,7 +315,7 @@ class TestLogPruning {
                 .setConfig(keep_logical_logs, logPruning)
                 .build();
         this.db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = db.getDependencyResolver().resolveDependency(LogFiles.class);
+        walService = db.getDependencyResolver().resolveDependency(WALService.class);
         return db;
     }
 
@@ -334,7 +334,7 @@ class TestLogPruning {
     }
 
     private void rotate() throws IOException {
-        logFiles.getLogFile().getLogRotation().rotateLogFile(LogAppendEvent.NULL);
+        walService.getLogFile().getLogRotation().rotateLogFile(LogAppendEvent.NULL);
     }
 
     private void checkPoint() throws IOException {
@@ -346,12 +346,12 @@ class TestLogPruning {
         db = newDb("true", 5);
         doTransaction();
         managementService.shutdown();
-        return (int) fs.getFileSize(logFiles.getLogFile().getLogFileForVersion(0));
+        return (int) fs.getFileSize(walService.getLogFile().getLogFileForVersion(0));
     }
 
     private int aggregateLogData(Extractor extractor) throws IOException {
         int total = 0;
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         for (long i = logFile.getLogRangeInfo().highestVersion(); i >= 0; i--) {
             if (logFile.versionExists(i)) {
                 total += extractor.extract(i);
@@ -368,13 +368,13 @@ class TestLogPruning {
 
     private int logFileSize() throws IOException {
         return aggregateLogData(
-                from -> (int) fs.getFileSize(logFiles.getLogFile().getLogFileForVersion(from)));
+                from -> (int) fs.getFileSize(walService.getLogFile().getLogFileForVersion(from)));
     }
 
     private int transactionCount() throws IOException {
         return aggregateLogData(version -> {
             int counter = 0;
-            LogFile logFile = logFiles.getLogFile();
+            LogFile logFile = walService.getLogFile();
             StorageEngineFactory storageEngineFactory =
                     db.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
             try (ReadableLogChannel channel = ReadAheadUtils.newChannel(logFile, version, INSTANCE)) {

@@ -53,8 +53,8 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.wal.CheckpointInfo;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.entry.LogHeader;
 import org.neo4j.wal.files.LogRangeInfo;
@@ -63,7 +63,7 @@ import org.neo4j.wal.files.LogTailInformation;
 class RecoveryStartInformationProviderTest {
     private static final long NO_APPEND_INDEX = -1;
     private final long currentLogVersion = 2L;
-    private final LogFiles logFiles = mock(LogFiles.class);
+    private final WALService walService = mock(WALService.class);
     private final LogFile logFile = mock(LogFile.class);
     private final Monitor monitor = mock(Monitor.class);
     private final KernelVersionProvider kernelProv = mock(KernelVersionProvider.class);
@@ -80,13 +80,13 @@ class RecoveryStartInformationProviderTest {
                 LATEST_KERNEL_VERSION,
                 UNSPECIFIED_CREATION_TIME);
         when(logFile.extractHeader(0)).thenReturn(logHeader);
-        when(logFiles.getLogFile()).thenReturn(logFile);
+        when(walService.getLogFile()).thenReturn(logFile);
     }
 
     @Test
     void shouldReturnUnspecifiedIfThereIsNoNeedForRecovery() {
         // given
-        when(logFiles.getTailMetadata())
+        when(walService.getTailMetadata())
                 .thenReturn(new LogTailInformation(
                         false,
                         NO_APPEND_INDEX,
@@ -101,7 +101,7 @@ class RecoveryStartInformationProviderTest {
 
         // when
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults())).get();
+                new RecoveryStartInformationProvider(walService, monitor, new DatabaseConfig(Config.defaults())).get();
 
         // then
         verify(monitor).recoveryNotRequired(null);
@@ -119,7 +119,7 @@ class RecoveryStartInformationProviderTest {
         LogPosition afterCheckpointPosition = new LogPosition(4, 8);
         LogPosition readerPostPosition = new LogPosition(5, 9);
         TransactionId transactionId = new TransactionId(4L, 7L, LATEST_KERNEL_VERSION, 2, 5L, 6L);
-        when(logFiles.getTailMetadata())
+        when(walService.getTailMetadata())
                 .thenReturn(new LogTailInformation(
                         new CheckpointInfo(
                                 txPosition,
@@ -146,7 +146,7 @@ class RecoveryStartInformationProviderTest {
 
         // when
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults())).get();
+                new RecoveryStartInformationProvider(walService, monitor, new DatabaseConfig(Config.defaults())).get();
 
         // then
         verify(monitor).recoveryRequiredAfterLastCheckPoint(txPosition, txPosition, 10L);
@@ -164,7 +164,7 @@ class RecoveryStartInformationProviderTest {
         LogPosition afterCheckpointPosition = new LogPosition(4, 8);
         LogPosition readerPostPosition = new LogPosition(5, 9);
         TransactionId transactionId = new TransactionId(4L, 7L, LATEST_KERNEL_VERSION, 2, 5L, 6L);
-        when(logFiles.getTailMetadata())
+        when(walService.getTailMetadata())
                 .thenReturn(new LogTailInformation(
                         new CheckpointInfo(
                                 oldestNotVisibleTransactionPosition,
@@ -190,7 +190,7 @@ class RecoveryStartInformationProviderTest {
                         EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER));
 
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults())).get();
+                new RecoveryStartInformationProvider(walService, monitor, new DatabaseConfig(Config.defaults())).get();
 
         verify(monitor).recoveryRequiredAfterLastCheckPoint(txPosition, oldestNotVisibleTransactionPosition, 10L);
         assertEquals(txPosition, recoveryStartInformation.transactionLogPosition());
@@ -205,7 +205,7 @@ class RecoveryStartInformationProviderTest {
     void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero() {
         // given
         KernelVersion kernelVersion = LatestVersions.LATEST_KERNEL_VERSION;
-        when(logFiles.getTailMetadata())
+        when(walService.getTailMetadata())
                 .thenReturn(new LogTailInformation(
                         true,
                         10L,
@@ -217,11 +217,11 @@ class RecoveryStartInformationProviderTest {
                         UNKNOWN_TERM_PROVIDER,
                         EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER,
                         null));
-        when(logFiles.getLogFile().getLogRangeInfo()).thenReturn(new LogRangeInfo(0, null, 0, null));
+        when(walService.getLogFile().getLogRangeInfo()).thenReturn(new LogRangeInfo(0, null, 0, null));
 
         // when
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults())).get();
+                new RecoveryStartInformationProvider(walService, monitor, new DatabaseConfig(Config.defaults())).get();
 
         // then
         verify(monitor).noCheckPointFound();
@@ -234,7 +234,7 @@ class RecoveryStartInformationProviderTest {
 
     @Test
     void detectMissingTransactionLogsInformation() {
-        when(logFiles.getTailMetadata())
+        when(walService.getTailMetadata())
                 .thenReturn(new LogTailInformation(
                         false,
                         -1,
@@ -248,7 +248,7 @@ class RecoveryStartInformationProviderTest {
                         null));
 
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults())).get();
+                new RecoveryStartInformationProvider(walService, monitor, new DatabaseConfig(Config.defaults())).get();
 
         assertSame(MISSING_LOGS, recoveryStartInformation);
     }
@@ -258,7 +258,7 @@ class RecoveryStartInformationProviderTest {
         // given
         long oldestLogVersionFound = 1L;
         when(logFile.getLogRangeInfo()).thenReturn(new LogRangeInfo(oldestLogVersionFound, null, 100, null));
-        when(logFiles.getTailMetadata())
+        when(walService.getTailMetadata())
                 .thenReturn(new LogTailInformation(
                         true,
                         10L,
@@ -275,7 +275,7 @@ class RecoveryStartInformationProviderTest {
         final String expectedMessage = "No check point found in any log file and transaction log "
                 + "files do not exist from expected version 0. Lowest found log file is 1.";
         RecoveryStartInformationProvider provider =
-                new RecoveryStartInformationProvider(logFiles, monitor, new DatabaseConfig(Config.defaults()));
+                new RecoveryStartInformationProvider(walService, monitor, new DatabaseConfig(Config.defaults()));
         assertThatThrownBy(provider::get)
                 .isInstanceOf(UnderlyingStorageException.class)
                 .hasMessage(expectedMessage);
@@ -288,11 +288,11 @@ class RecoveryStartInformationProviderTest {
         var header = mergedLogHeader(1, 0);
         when(logFile.extractHeader(1)).thenReturn(header);
         when(logFile.getLogRangeInfo()).thenReturn(new LogRangeInfo(1, null, 100, null));
-        when(logFiles.getTailMetadata()).thenReturn(recoveryRequiredTailWithoutCheckpoint());
+        when(walService.getTailMetadata()).thenReturn(recoveryRequiredTailWithoutCheckpoint());
 
         // when
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, mergedLogConfig()).get();
+                new RecoveryStartInformationProvider(walService, monitor, mergedLogConfig()).get();
 
         // then
         verify(monitor).noCheckPointFound();
@@ -306,10 +306,10 @@ class RecoveryStartInformationProviderTest {
         // recovering without a checkpoint would silently start mid-history
         when(logFile.extractHeader(1)).thenReturn(mergedLogHeader(1, 5));
         when(logFile.getLogRangeInfo()).thenReturn(new LogRangeInfo(1, null, 100, null));
-        when(logFiles.getTailMetadata()).thenReturn(recoveryRequiredTailWithoutCheckpoint());
+        when(walService.getTailMetadata()).thenReturn(recoveryRequiredTailWithoutCheckpoint());
 
         RecoveryStartInformationProvider provider =
-                new RecoveryStartInformationProvider(logFiles, monitor, mergedLogConfig());
+                new RecoveryStartInformationProvider(walService, monitor, mergedLogConfig());
         assertThatThrownBy(provider::get)
                 .isInstanceOf(UnderlyingStorageException.class)
                 .hasMessageContaining("Lowest found log file is 1");
@@ -320,10 +320,10 @@ class RecoveryStartInformationProviderTest {
         var header = mergedLogHeader(5, 0);
         when(logFile.extractHeader(5)).thenReturn(header);
         when(logFile.getLogRangeInfo()).thenReturn(new LogRangeInfo(5, null, 100, null));
-        when(logFiles.getTailMetadata()).thenReturn(recoveryRequiredTailWithoutCheckpoint());
+        when(walService.getTailMetadata()).thenReturn(recoveryRequiredTailWithoutCheckpoint());
 
         RecoveryStartInformation recoveryStartInformation =
-                new RecoveryStartInformationProvider(logFiles, monitor, mergedLogConfig()).get();
+                new RecoveryStartInformationProvider(walService, monitor, mergedLogConfig()).get();
 
         verify(monitor).noCheckPointFound();
         assertEquals(header.getStartPosition(), recoveryStartInformation.transactionLogPosition());

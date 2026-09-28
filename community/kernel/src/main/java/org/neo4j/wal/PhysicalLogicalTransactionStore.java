@@ -44,14 +44,14 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
     private final MemoryTracker memoryTracker;
 
     public PhysicalLogicalTransactionStore(
-            LogFiles logFiles,
+            WALService walService,
             TransactionMetadataCache transactionMetadataCache,
             CommandReaderFactory commandReaderFactory,
             Monitors monitors,
             boolean failOnCorruptedLogFiles,
             Config config,
             MemoryTracker memoryTracker) {
-        this.logFile = logFiles.getLogFile();
+        this.logFile = walService.getLogFile();
         this.transactionMetadataCache = transactionMetadataCache;
         this.commandReaderFactory = commandReaderFactory;
         this.monitors = monitors;

@@ -30,7 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.files.LogFilesMatcher;
 
 @DbmsExtension
@@ -39,7 +39,7 @@ public class LogFileMatcherIT {
     private GraphDatabaseAPI database;
 
     @Inject
-    private LogFiles logFiles;
+    private WALService walService;
 
     @Inject
     private FileSystemAbstraction fs;
@@ -50,8 +50,8 @@ public class LogFileMatcherIT {
 
         LogFilesMatcher logFilesMatcher = new LogFilesMatcher(fs, logsDirectory);
         assertTrue(logFilesMatcher.hasAnyLogFiles());
-        assertThat(logFiles.getCheckpointFile().getMatchedFiles()).isEqualTo(logFilesMatcher.getCheckpointLogFiles());
-        assertThat(logFiles.getLogFile().getMatchedFiles()).isEqualTo(logFilesMatcher.getTransactionLogFiles());
+        assertThat(walService.getCheckpointFile().getMatchedFiles()).isEqualTo(logFilesMatcher.getCheckpointLogFiles());
+        assertThat(walService.getLogFile().getMatchedFiles()).isEqualTo(logFilesMatcher.getTransactionLogFiles());
     }
 
     @Test
@@ -60,9 +60,9 @@ public class LogFileMatcherIT {
 
         LogFilesMatcher logFilesMatcher = new LogFilesMatcher(fs, logsDirectory);
         assertFalse(logFilesMatcher.hasAnyLogFiles());
-        assertThat(logFiles.getCheckpointFile().getMatchedFiles())
+        assertThat(walService.getCheckpointFile().getMatchedFiles())
                 .isNotEqualTo(logFilesMatcher.getCheckpointLogFiles());
-        assertThat(logFiles.getLogFile().getMatchedFiles()).isNotEqualTo(logFilesMatcher.getTransactionLogFiles());
+        assertThat(walService.getLogFile().getMatchedFiles()).isNotEqualTo(logFilesMatcher.getTransactionLogFiles());
     }
 
     @Test
@@ -72,8 +72,8 @@ public class LogFileMatcherIT {
 
         assertFalse(logFilesMatcher.isLogFile(Path.of("foo")));
         assertFalse(logFilesMatcher.isLogFile(logsDirectory));
-        assertTrue(logFilesMatcher.isLogFile(logFiles.getCheckpointFile().getCurrentFile()));
+        assertTrue(logFilesMatcher.isLogFile(walService.getCheckpointFile().getCurrentFile()));
         assertTrue(logFilesMatcher.isLogFile(
-                logFiles.getLogFile().getLogRangeInfo().highestFile()));
+                walService.getLogFile().getLogRangeInfo().highestFile()));
     }
 }

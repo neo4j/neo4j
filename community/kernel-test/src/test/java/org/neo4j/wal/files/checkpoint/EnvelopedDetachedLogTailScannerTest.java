@@ -51,9 +51,9 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.wal.CompleteCommandBatch;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.TransactionLogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.LogCheckPointEvent;
 import org.neo4j.wal.entry.LogEntryWriter;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
@@ -77,11 +77,11 @@ public class EnvelopedDetachedLogTailScannerTest {
         setupLogFiles();
     }
 
-    private LogFiles setupLogFiles() throws IOException {
+    private WALService setupLogFiles() throws IOException {
         return setupLogFiles(4096L);
     }
 
-    private LogFiles setupLogFiles(long rotationThreshold) throws IOException {
+    private WALService setupLogFiles(long rotationThreshold) throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         var config = Config.newBuilder()
                 .set(

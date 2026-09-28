@@ -39,8 +39,8 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.wal.CheckpointInfo;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.files.LogFilesBuilder;
 
 public final class RecoveryHelpers {
@@ -55,8 +55,8 @@ public final class RecoveryHelpers {
     public static void removeLastCheckpointRecordFromLogFile(
             DatabaseLayout dbLayout, FileSystemAbstraction fs, Config config, boolean throwOnNoCheckpoint)
             throws IOException {
-        LogFiles logFiles = buildLogFiles(dbLayout, fs, config);
-        var checkpointFile = logFiles.getCheckpointFile();
+        WALService walService = buildLogFiles(dbLayout, fs, config);
+        var checkpointFile = walService.getCheckpointFile();
         Optional<CheckpointInfo> latestCheckpoint = checkpointFile.findLatestCheckpoint();
         latestCheckpoint.ifPresentOrElse(
                 checkpointInfo -> {
@@ -129,12 +129,12 @@ public final class RecoveryHelpers {
 
     private static Optional<CheckpointInfo> getLatestCheckpointInfo(
             DatabaseLayout dbLayout, FileSystemAbstraction fs, Config config) throws IOException {
-        LogFiles logFiles = buildLogFiles(dbLayout, fs, config);
-        var checkpointFile = logFiles.getCheckpointFile();
+        WALService walService = buildLogFiles(dbLayout, fs, config);
+        var checkpointFile = walService.getCheckpointFile();
         return checkpointFile.findLatestCheckpoint();
     }
 
-    private static LogFiles buildLogFiles(DatabaseLayout dbLayout, FileSystemAbstraction fs, Config config)
+    private static WALService buildLogFiles(DatabaseLayout dbLayout, FileSystemAbstraction fs, Config config)
             throws IOException {
         return LogFilesBuilder.logFilesBasedOnlyBuilder(dbLayout.getTransactionLogsDirectory(), fs)
                 .withConfig(config)

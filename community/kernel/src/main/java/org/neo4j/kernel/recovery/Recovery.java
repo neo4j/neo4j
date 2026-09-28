@@ -148,7 +148,6 @@ import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.DefaultElementIdMapperV1;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogFormatVersionProvider;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogTailMetadata;
@@ -156,6 +155,7 @@ import org.neo4j.wal.LogicalTransactionStore;
 import org.neo4j.wal.PhysicalLogicalTransactionStore;
 import org.neo4j.wal.RecoveryOutcome;
 import org.neo4j.wal.TransactionMetadataCache;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointerImpl;
 import org.neo4j.wal.checkpoint.RecoveryThreshold;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
@@ -686,7 +686,7 @@ public final class Recovery {
                 cursorContextFactory,
                 logService);
 
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(databaseLayout, fs, logTailMetadata, logTailMetadata)
+        WALService walService = LogFilesBuilder.writeableBuilder(databaseLayout, fs, logTailMetadata, logTailMetadata)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withConfig(config)
                 .withDatabaseTracers(tracers)
@@ -696,7 +696,7 @@ public final class Recovery {
                 .withLogTermProvider(logTailMetadata)
                 .build();
 
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
         boolean doParallelRecovery = config.get(GraphDatabaseInternalSettings.do_parallel_recovery);
 
         var indexProviderMap = recoveryLife.add(StaticIndexProviderMapFactory.create(
@@ -798,7 +798,7 @@ public final class Recovery {
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore(
-                logFiles,
+                walService,
                 metadataCache,
                 storageEngineFactory.commandReaderFactory(),
                 monitors,
@@ -818,7 +818,7 @@ public final class Recovery {
                 logMetadataProvider,
                 recoveryMonitor,
                 monitors.newMonitor(RecoveryStartInformationProvider.Monitor.class),
-                logFiles,
+                walService,
                 storageEngine,
                 logTailMetadata,
                 logTailMetadata,
@@ -848,7 +848,7 @@ public final class Recovery {
         LogPruning logPruning = recoveryBehavior.runLogPruningOnCompletion(storageEngine)
                 ? new LogPruningImpl(
                         fs,
-                        logFiles,
+                        walService,
                         logProvider,
                         new LogPruneStrategyFactory(),
                         clock,
@@ -864,7 +864,7 @@ public final class Recovery {
                 RecoveryThreshold.INSTANCE,
                 forceOperation,
                 logPruning,
-                logFiles.getCheckpointFile(),
+                walService.getCheckpointFile(),
                 databaseHealth,
                 logProvider,
                 tracers,
@@ -882,7 +882,7 @@ public final class Recovery {
         // Not starting the transaction log file since it requires a fully recovered state, which
         // is not guaranteed after TransactionLogsRecovery. For example seen with partial recovery
         // if chunks from incomplete transactions were encountered.
-        recoveryLife.add(logFiles.getCheckpointFile());
+        recoveryLife.add(walService.getCheckpointFile());
         recoveryLife.add(transactionLogsRecovery);
         recoveryLife.add(checkPointer);
         try {
@@ -990,7 +990,7 @@ public final class Recovery {
             TransactionIdStore transactionIdStore,
             RecoveryMonitor recoveryMonitor,
             RecoveryStartInformationProvider.Monitor positionMonitor,
-            LogFiles logFiles,
+            WALService walService,
             StorageEngine storageEngine,
             KernelVersionProvider versionProvider,
             LogFormatVersionProvider logFormatVersionProvider,
@@ -1018,7 +1018,7 @@ public final class Recovery {
                 transactionIdStore,
                 logicalTransactionStore,
                 logVersionRepository,
-                logFiles,
+                walService,
                 versionProvider,
                 logFormatVersionProvider,
                 positionMonitor,
@@ -1028,10 +1028,10 @@ public final class Recovery {
                 storageFilesState,
                 config);
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator(
-                databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker);
+                databaseLayout.databaseDirectory(), walService, fileSystemAbstraction, memoryTracker);
         var loggerPrintWriterAdaptor = new LoggerPrintWriterAdaptor(log, Level.INFO);
         return new TransactionLogsRecovery(
-                logFiles,
+                walService,
                 versionProvider,
                 logFormatVersionProvider,
                 recoveryService,

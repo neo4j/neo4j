@@ -200,11 +200,11 @@ class TransactionLogAppendAndRotateIT {
         assertThat(setup.monitoring.numberOfRotations()).isEqualTo(2);
 
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                setup.logFiles.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION, V5_11, 1);
+                setup.walService.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION, V5_11, 1);
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                setup.logFiles.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION + 1, V5_12, 3);
+                setup.walService.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION + 1, V5_12, 3);
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                setup.logFiles.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION + 2, V5_13, 3);
+                setup.walService.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION + 2, V5_13, 3);
     }
 
     @ParameterizedTest
@@ -223,10 +223,10 @@ class TransactionLogAppendAndRotateIT {
         assertThat(setup.monitoring.numberOfRotations()).isEqualTo(1);
 
         int txsInFirstFile = assertWholeTransactionsIn(
-                setup.logFiles.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION, (v) -> {}, true);
+                setup.walService.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION, (v) -> {}, true);
         assertThat(txsInFirstFile).isZero();
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                setup.logFiles.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION + 1, V5_12, 1);
+                setup.walService.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION + 1, V5_12, 1);
     }
 
     @ParameterizedTest
@@ -302,9 +302,9 @@ class TransactionLogAppendAndRotateIT {
         assertThat(setup.monitoring.numberOfRotations()).isEqualTo(1);
 
         // Null because the format for V5_11 doesn't contain the kernelVersion
-        assertLogHeaderExpectedVersion(setup.logFiles, LogVersionRepository.INITIAL_LOG_VERSION, null);
+        assertLogHeaderExpectedVersion(setup.walService, LogVersionRepository.INITIAL_LOG_VERSION, null);
         // Null because the log format only changes on upgrade tx, not directly connected to the kernel version
-        assertLogHeaderExpectedVersion(setup.logFiles, LogVersionRepository.INITIAL_LOG_VERSION + 1, null);
+        assertLogHeaderExpectedVersion(setup.walService, LogVersionRepository.INITIAL_LOG_VERSION + 1, null);
     }
 
     @ParameterizedTest
@@ -327,19 +327,19 @@ class TransactionLogAppendAndRotateIT {
         assertThat(setup.monitoring.numberOfRotations()).isEqualTo(1);
 
         // Null because the format for V5_11 doesn't contain the kernelVersion
-        assertLogHeaderExpectedVersion(setup.logFiles, LogVersionRepository.INITIAL_LOG_VERSION, null);
+        assertLogHeaderExpectedVersion(setup.walService, LogVersionRepository.INITIAL_LOG_VERSION, null);
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                setup.logFiles.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION, V5_11, 2);
+                setup.walService.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION, V5_11, 2);
         // Null because the log format only changes on upgrade tx, not directly connected to the kernel version
-        assertLogHeaderExpectedVersion(setup.logFiles, LogVersionRepository.INITIAL_LOG_VERSION + 1, null);
+        assertLogHeaderExpectedVersion(setup.walService, LogVersionRepository.INITIAL_LOG_VERSION + 1, null);
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                setup.logFiles.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 2);
+                setup.walService.getLogFile(), LogVersionRepository.INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 2);
     }
 
-    private void assertLogHeaderExpectedVersion(LogFiles logFiles, long logVersion, KernelVersion expectedVersion)
+    private void assertLogHeaderExpectedVersion(WALService walService, long logVersion, KernelVersion expectedVersion)
             throws IOException {
         LogHeader logHeader = LogHeaderReader.readLogHeader(
-                fileSystem, logFiles.getLogFile().getLogFileForVersion(logVersion), EmptyMemoryTracker.INSTANCE);
+                fileSystem, walService.getLogFile().getLogFileForVersion(logVersion), EmptyMemoryTracker.INSTANCE);
         assertThat(logHeader.getKernelVersion()).isEqualTo(expectedVersion);
     }
 
@@ -353,7 +353,7 @@ class TransactionLogAppendAndRotateIT {
                 GLORIOUS_FUTURE.version(),
                 GraphDatabaseInternalSettings.latest_runtime_version,
                 DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion())));
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fileSystem,
                         versionProvider,
@@ -364,35 +364,35 @@ class TransactionLogAppendAndRotateIT {
                 .withStoreId(storeId)
                 .withConfig(databaseConfig)
                 .build();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
         final AtomicBoolean end = new AtomicBoolean();
-        TestLogFileMonitor monitoring = new TestLogFileMonitor(end, 100, logFiles.getLogFile());
+        TestLogFileMonitor monitoring = new TestLogFileMonitor(end, 100, walService.getLogFile());
         monitors.addMonitorListener(monitoring);
 
         Panic panic = new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         final TransactionAppender appender = life.add(createBatchAppender(
-                logFiles,
+                walService,
                 logMetadataProvider,
                 panic,
                 jobScheduler,
                 databaseConfig,
                 metadataCache,
                 logMetadataProvider));
-        return new Setup(end, monitoring, appender, logFiles, metadataCache, logMetadataProvider);
+        return new Setup(end, monitoring, appender, walService, metadataCache, logMetadataProvider);
     }
 
     private record Setup(
             AtomicBoolean end,
             TestLogFileMonitor monitoring,
             TransactionAppender appender,
-            LogFiles logFiles,
+            WALService walService,
             TransactionMetadataCache metadataCache,
             AppendIndexProvider appendIndexProvider) {}
 
     private TransactionAppender createBatchAppender(
-            LogFiles logFiles,
+            WALService walService,
             TransactionIdStore txIdStore,
             Panic panic,
             JobScheduler jobScheduler,
@@ -400,7 +400,7 @@ class TransactionLogAppendAndRotateIT {
             TransactionMetadataCache metadataCache,
             AppendIndexProvider appendIndexProvider) {
         return createTransactionAppender(
-                logFiles,
+                walService,
                 txIdStore,
                 appendIndexProvider,
                 databaseConfig,

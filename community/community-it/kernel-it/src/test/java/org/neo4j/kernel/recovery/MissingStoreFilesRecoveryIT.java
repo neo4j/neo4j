@@ -51,7 +51,7 @@ import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 
@@ -120,9 +120,9 @@ class MissingStoreFilesRecoveryIT {
 
     @Test
     void failToStartOnMissingFilesAndPartialTransactionLogs() throws IOException {
-        LogFiles logFiles = prepareDatabaseWithTwoTxLogFiles();
+        WALService walService = prepareDatabaseWithTwoTxLogFiles();
 
-        fileSystem.deleteFile(logFiles.getLogFile().getLogFileForVersion(0));
+        fileSystem.deleteFile(walService.getLogFile().getLogFileForVersion(0));
         Path[] storeFiles = getStoreFiles(databaseLayout);
         for (Path storeFile : storeFiles) {
             fileSystem.deleteFile(storeFile);
@@ -143,14 +143,14 @@ class MissingStoreFilesRecoveryIT {
                 .toArray(Path[]::new);
     }
 
-    private LogFiles prepareDatabaseWithTwoTxLogFiles() throws IOException {
+    private WALService prepareDatabaseWithTwoTxLogFiles() throws IOException {
         managementService = serviceBuilder.build();
         var databaseApi = defaultDatabase(managementService);
-        LogFiles logFiles = rotateTransactionLogs(databaseApi);
-        assertNotNull(logFiles.getLogFile().getLogFileForVersion(1));
+        WALService walService = rotateTransactionLogs(databaseApi);
+        assertNotNull(walService.getLogFile().getLogFileForVersion(1));
         createSomeData(databaseApi);
         managementService.shutdown();
-        return logFiles;
+        return walService;
     }
 
     private DatabaseContextProvider<?> getDatabaseContextProvider() {
@@ -167,11 +167,11 @@ class MissingStoreFilesRecoveryIT {
         return (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private static LogFiles rotateTransactionLogs(GraphDatabaseAPI databaseApi) throws IOException {
-        LogFiles logFiles = databaseApi.getDependencyResolver().resolveDependency(LogFiles.class);
-        LogFile logFile = logFiles.getLogFile();
+    private static WALService rotateTransactionLogs(GraphDatabaseAPI databaseApi) throws IOException {
+        WALService walService = databaseApi.getDependencyResolver().resolveDependency(WALService.class);
+        LogFile logFile = walService.getLogFile();
         logFile.rotate();
-        return logFiles;
+        return walService;
     }
 
     private static void createSomeData(GraphDatabaseAPI databaseApi) throws IOException {

@@ -49,8 +49,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.time.Clocks;
 import org.neo4j.wal.CommandBatchCursor;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 
 class RecoveryProgressIndicatorTest {
 
@@ -97,7 +97,7 @@ class RecoveryProgressIndicatorTest {
         AssertableProgressMonitorFactory factory = new AssertableProgressMonitorFactory(expectedMax);
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         TransactionLogsRecovery recovery = new TransactionLogsRecovery(
-                Mockito.mock(LogFiles.class),
+                Mockito.mock(WALService.class),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 LatestVersions.LATEST_LOG_FORMAT_PROVIDER,
                 recoveryService,

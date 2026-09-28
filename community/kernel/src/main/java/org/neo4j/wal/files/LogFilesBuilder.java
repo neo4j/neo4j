@@ -58,12 +58,12 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogFormatVersionProvider;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogTailMetadata;
 import org.neo4j.wal.LogTermProvider;
 import org.neo4j.wal.RecoveryOutcome;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogSegments;
 
 /**
@@ -324,7 +324,7 @@ public class LogFilesBuilder {
         return this;
     }
 
-    public LogFiles build() throws IOException {
+    public WALService build() throws IOException {
         TransactionLogFilesContext filesContext = buildContext();
         TransactionLogFilesOverrides overrides = buildOverrides();
 
@@ -490,7 +490,7 @@ public class LogFilesBuilder {
         AtomicBoolean tryToPreallocate = new AtomicBoolean(config.get(preallocate_logical_logs));
         config.addListener(preallocate_logical_logs, (prev, update) -> {
             String logMessage = "Updating " + preallocate_logical_logs.name() + " from " + prev + " to " + update;
-            logProvider.getLog(LogFiles.class).debug(logMessage);
+            logProvider.getLog(WALService.class).debug(logMessage);
             tryToPreallocate.set(update);
         });
         return tryToPreallocate;

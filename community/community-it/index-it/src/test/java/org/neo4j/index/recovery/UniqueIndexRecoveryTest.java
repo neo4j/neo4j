@@ -46,7 +46,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.LogAppendEvent;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.CheckPointerImpl;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
@@ -197,7 +197,10 @@ public class UniqueIndexRecoveryTest {
 
     private void rotateLogAndCheckPoint() throws IOException {
         DependencyResolver resolver = db.getDependencyResolver();
-        resolver.resolveDependency(LogFiles.class).getLogFile().getLogRotation().rotateLogFile(LogAppendEvent.NULL);
+        resolver.resolveDependency(WALService.class)
+                .getLogFile()
+                .getLogRotation()
+                .rotateLogFile(LogAppendEvent.NULL);
         resolver.resolveDependency(CheckPointer.class).forceCheckPoint(new SimpleTriggerInfo("test"));
     }
 

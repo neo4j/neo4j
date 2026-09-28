@@ -39,12 +39,12 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.SegmentsFilter;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageFileSelection;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 public class StoreFileListing implements FileStoreProviderRegistry {
     private final DatabaseLayout databaseLayout;
     private final FileSystemAbstraction fs;
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final StorageEngine storageEngine;
     private final SchemaAndIndexingFileIndexListing fileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
@@ -52,12 +52,12 @@ public class StoreFileListing implements FileStoreProviderRegistry {
     public StoreFileListing(
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fs,
-            LogFiles logFiles,
+            WALService walService,
             IndexingService indexingService,
             StorageEngine storageEngine) {
         this.databaseLayout = databaseLayout;
         this.fs = fs;
-        this.logFiles = logFiles;
+        this.walService = walService;
         this.storageEngine = storageEngine;
         this.fileIndexListing = new SchemaAndIndexingFileIndexListing(indexingService);
         this.additionalProviders = new CopyOnWriteArraySet<>();
@@ -90,7 +90,7 @@ public class StoreFileListing implements FileStoreProviderRegistry {
     }
 
     private void gatherLogFiles(Collection<Path> files) throws IOException {
-        Collections.addAll(files, logFiles.logFiles());
+        Collections.addAll(files, walService.logFiles());
     }
 
     public class Builder {

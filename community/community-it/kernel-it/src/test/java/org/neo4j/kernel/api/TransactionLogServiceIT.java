@@ -106,11 +106,11 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.wal.LogAppendEvent;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogicalTransactionStore;
 import org.neo4j.wal.ReadableLogChannel;
 import org.neo4j.wal.TransactionMetadataCache;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 import org.neo4j.wal.entry.LogFormat;
@@ -136,7 +136,7 @@ class TransactionLogServiceIT {
     private TransactionLogService logService;
 
     @Inject
-    private LogFiles logFiles;
+    private WALService walService;
 
     @Inject
     private CheckPointer checkPointer;
@@ -189,13 +189,13 @@ class TransactionLogServiceIT {
                     ? 3
                     : 1;
             assertThat(logFileChannels).hasSize(expectedLogChannelsSize);
-            assertThat(logFiles.logFiles()).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
+            assertThat(walService.logFiles()).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
 
             checkPointer.forceCheckPoint(new SimpleTriggerInfo("Test checkpoint"));
 
             // 2 desired non-empty tx log files + 1 newly rotated empty, 1 checkpoint log
             // or in the case of envelopes: 3 non-empty files to get at least one whole chunk, and 1 checkpoint log
-            assertThat(logFiles.logFiles()).hasSize(4);
+            assertThat(walService.logFiles()).hasSize(4);
 
             for (LogChannel logChannel : logFileChannels) {
                 StoreChannel channel = logChannel.channel();
@@ -217,7 +217,7 @@ class TransactionLogServiceIT {
         try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
             assertThat(logFileChannels).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
-            assertThat(logFiles.logFiles()).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
+            assertThat(walService.logFiles()).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
 
             checkPointer.forceCheckPoint(new SimpleTriggerInfo("Test checkpoint"));
 
@@ -232,7 +232,7 @@ class TransactionLogServiceIT {
                             : txLogsAfterCheckpoint - 1;
             int checkpointLogs = 1;
 
-            assertThat(logFiles.logFiles()).hasSize(txLogsAfterCheckpoint + checkpointLogs);
+            assertThat(walService.logFiles()).hasSize(txLogsAfterCheckpoint + checkpointLogs);
 
             var closedChannels = logFileChannels.subList(0, logFileChannels.size() - visibleTxLogsAfterCheckpoints);
             var openChannels = logFileChannels.subList(
@@ -264,13 +264,13 @@ class TransactionLogServiceIT {
         try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
             assertThat(logFileChannels).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
-            assertThat(logFiles.logFiles()).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
+            assertThat(walService.logFiles()).hasSizeGreaterThanOrEqualTo(numberOfTransactions);
 
-            assertThat(((TransactionLogFile) logFiles.getLogFile()).getExternalFileReaders())
+            assertThat(((TransactionLogFile) walService.getLogFile()).getExternalFileReaders())
                     .isNotEmpty();
         }
 
-        assertThat(((TransactionLogFile) logFiles.getLogFile()).getExternalFileReaders())
+        assertThat(((TransactionLogFile) walService.getLogFile()).getExternalFileReaders())
                 .isEmpty();
     }
 
@@ -360,7 +360,7 @@ class TransactionLogServiceIT {
         assertEquals(metadataBefore, metadataProvider.getHighestGapFreeClosedTransaction());
 
         // pruning is also not here since metadata store is not upgraded
-        Path[] matchedFiles = logFiles.getLogFile().getMatchedFiles();
+        Path[] matchedFiles = walService.getLogFile().getMatchedFiles();
         assertThat(matchedFiles).hasSize((int) (logVersionBefore + appendIterations));
     }
 
@@ -419,7 +419,7 @@ class TransactionLogServiceIT {
             ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         for (int version = (int) logVersionBefore + 1; version < logVersionBefore + appendIterations; version++) {
             assertEquals(
                     indexShift - 1 + version, logFile.extractHeader(version).getLastAppendIndex());
@@ -433,7 +433,7 @@ class TransactionLogServiceIT {
         // Currently calls with append index represent first append or new file
         availabilityGuard.require(new AvailabilityRequirement("Database unavailable"));
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         LogPosition startPosition = logFile.getTransactionLogWriter().getCurrentPosition();
 
         int dataSize = DEFAULT_LOG_SEGMENT_SIZE / 2;
@@ -476,7 +476,7 @@ class TransactionLogServiceIT {
         // Currently calls with append index represent first append or new file
         availabilityGuard.require(new AvailabilityRequirement("Database unavailable"));
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         logFile.rotate();
 
         LogRangeInfo logRangeInfo = logFile.getLogRangeInfo();
@@ -596,7 +596,7 @@ class TransactionLogServiceIT {
             ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
 
-        assertEquals(logVersionBefore, logFiles.getLogFile().getLogRangeInfo().highestVersion());
+        assertEquals(logVersionBefore, walService.getLogFile().getLogRangeInfo().highestVersion());
     }
 
     @Test
@@ -622,7 +622,7 @@ class TransactionLogServiceIT {
                 }
                 appendData.rewind();
             }
-            assertThat(logFiles.getLogFile().getLogRangeInfo().highestVersion())
+            assertThat(walService.getLogFile().getLogRangeInfo().highestVersion())
                     .isGreaterThanOrEqualTo(firstPosition.getLogVersion());
             logService.restore(firstPosition);
 
@@ -636,7 +636,7 @@ class TransactionLogServiceIT {
                             UNKNOWN_LOG_OFFSET,
                             Optional.of(LATEST_LOG_FORMAT.getVersionByte())));
             assertEquals(
-                    logVersionBefore, logFiles.getLogFile().getLogRangeInfo().highestVersion());
+                    logVersionBefore, walService.getLogFile().getLogRangeInfo().highestVersion());
         } finally {
             ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
@@ -853,7 +853,7 @@ class TransactionLogServiceIT {
 
             TransactionLogService logService =
                     database.getDependencyResolver().resolveDependency(TransactionLogService.class);
-            LogFiles logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+            WALService walService = database.getDependencyResolver().resolveDependency(WALService.class);
             TransactionMetadataCache metadataCache =
                     database.getDependencyResolver().resolveDependency(TransactionMetadataCache.class);
             int initialAppendIndex = 17;
@@ -868,10 +868,10 @@ class TransactionLogServiceIT {
                 assertThat(logFileChannels).hasSize(4);
 
                 for (LogChannel logChannel : logFileChannels) {
-                    LogHeader logHeader = logFiles.getLogFile().extractHeader(logVersion);
+                    LogHeader logHeader = walService.getLogFile().extractHeader(logVersion);
                     int expectedChecksum = logVersion != logPosition.getLogVersion()
                             ? logHeader.getPreviousLogFileChecksum()
-                            : getPrevChecksumFromPosition(logPosition, logFiles);
+                            : getPrevChecksumFromPosition(logPosition, walService);
                     assertThat(logChannel.previousChecksum()).isEqualTo(expectedChecksum);
                     assertThat(logChannel.kernelVersion()).isEqualTo(logHeader.getKernelVersion());
                     logVersion++;
@@ -929,8 +929,8 @@ class TransactionLogServiceIT {
         }
     }
 
-    int getPrevChecksumFromPosition(LogPosition logPosition, LogFiles logFiles) throws IOException {
-        try (ReadableLogChannel reader = logFiles.getLogFile().getReader(logPosition)) {
+    int getPrevChecksumFromPosition(LogPosition logPosition, WALService walService) throws IOException {
+        try (ReadableLogChannel reader = walService.getLogFile().getReader(logPosition)) {
             return reader.getChecksum();
         }
     }
@@ -955,7 +955,7 @@ class TransactionLogServiceIT {
     void failToRestoreWithLogPositionInCommittedFile() throws IOException {
         availabilityGuard.require(new AvailabilityRequirement("Database unavailable"));
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         logFile.rotate();
 
         assertThatThrownBy(() -> logService.restore(new LogPosition(metadataProvider.getCurrentLogVersion() - 1, 100)))
@@ -984,7 +984,8 @@ class TransactionLogServiceIT {
 
         logService.appendCheckpoint(lastTransactionId, lastTransactionId.appendIndex(), testReason);
 
-        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        var checkpointInfo =
+                walService.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertThat(checkpointInfo.reason()).contains(testReason);
 
         LogTailInformation freshTail = getFreshLogTail();
@@ -1010,7 +1011,8 @@ class TransactionLogServiceIT {
         String testReason = "My unique last checkpoint2.";
         logService.appendCheckpoint(lastTransactionId, lastTransactionId.appendIndex(), testReason);
 
-        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        var checkpointInfo =
+                walService.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertThat(checkpointInfo.reason()).contains(testReason);
 
         LogTailInformation freshTail = getFreshLogTail();
@@ -1034,7 +1036,7 @@ class TransactionLogServiceIT {
         }
         // we have some transaction that actually generated tx id
         TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         long logVersion = logFile.getCurrentLogVersion();
         logFile.rotate();
 
@@ -1073,7 +1075,7 @@ class TransactionLogServiceIT {
         }
         // we have some transaction that actually generated tx id
         TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         long logVersion = logFile.getCurrentLogVersion();
         logFile.rotate();
         logFile.rotate();
@@ -1095,7 +1097,8 @@ class TransactionLogServiceIT {
         String testReason = "Checkpoint at EOF when tx is rotated out";
         logService.appendCheckpoint(lastTransactionId, lastTransactionId.appendIndex(), testReason);
 
-        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        var checkpointInfo =
+                walService.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertThat(checkpointInfo.reason()).contains(testReason);
 
         LogTailInformation freshTail = getFreshLogTail();
@@ -1113,7 +1116,7 @@ class TransactionLogServiceIT {
         // we have some transaction that actually generated tx id
         TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         logFile.rotate();
 
         for (int i = 0; i < 10; i++) {
@@ -1128,7 +1131,8 @@ class TransactionLogServiceIT {
         String testReason = "Find position for tx even when it has been rotated";
         logService.appendCheckpoint(lastTransactionId, lastTransactionId.appendIndex(), testReason);
 
-        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        var checkpointInfo =
+                walService.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertThat(checkpointInfo.reason()).contains(testReason);
 
         LogTailInformation freshTail = getFreshLogTail();
@@ -1150,7 +1154,8 @@ class TransactionLogServiceIT {
         var transactionId = new TransactionId(789, 798, LATEST_KERNEL_VERSION, 7, 8, 9);
         logService.appendCheckpoint(transactionId, transactionId.appendIndex(), testReason);
 
-        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        var checkpointInfo =
+                walService.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertThat(checkpointInfo.reason()).contains(testReason);
 
         LogTailInformation freshTail = getFreshLogTail();
@@ -1201,7 +1206,7 @@ class TransactionLogServiceIT {
     }
 
     private LogTailInformation getFreshLogTail() {
-        return ((CheckpointLogFile) logFiles.getCheckpointFile())
+        return ((CheckpointLogFile) walService.getCheckpointFile())
                 .getLogTailScanner()
                 .findLogTail();
     }

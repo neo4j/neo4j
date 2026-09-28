@@ -37,10 +37,10 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.ReadAheadUtils;
 import org.neo4j.wal.ReadableLogChannel;
 import org.neo4j.wal.ReaderLogVersionBridge;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntry;
 import org.neo4j.wal.entry.LogEntryCommit;
 import org.neo4j.wal.entry.LogEntryReader;
@@ -120,10 +120,10 @@ public class TransactionAppenderStressTest {
         }
 
         private ReadableLogChannel openLogFile(FileSystemAbstraction fs) throws IOException {
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(workingDirectory, fs)
+            WALService walService = LogFilesBuilder.logFilesBasedOnlyBuilder(workingDirectory, fs)
                     .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                     .build();
-            final var logFile = logFiles.getLogFile();
+            final var logFile = walService.getLogFile();
             return ReadAheadUtils.newChannel(logFile, 0, ReaderLogVersionBridge.forFile(logFile), INSTANCE);
         }
     }

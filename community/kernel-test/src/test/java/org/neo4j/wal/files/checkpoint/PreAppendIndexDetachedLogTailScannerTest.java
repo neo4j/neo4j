@@ -66,11 +66,11 @@ import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogIndexEncoding;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogTailMetadata;
 import org.neo4j.wal.TransactionLogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.checkpoint.LogCheckPointEvent;
 import org.neo4j.wal.entry.LogEntryWriter;
@@ -86,7 +86,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
     @Inject
     protected DatabaseLayout databaseLayout;
 
-    protected LogFiles logFiles;
+    protected WALService walService;
     protected AssertableLogProvider logProvider;
     protected LogVersionRepository logVersionRepository;
 
@@ -98,14 +98,14 @@ class PreAppendIndexDetachedLogTailScannerTest {
     void setUp() throws IOException {
         logVersionRepository = new SimpleLogVersionRepository();
         logProvider = new AssertableLogProvider();
-        logFiles = createLogFiles();
+        walService = createLogFiles();
     }
 
-    LogFiles createLogFiles() throws IOException {
+    WALService createLogFiles() throws IOException {
         return createLogFiles(KernelVersion.V5_19);
     }
 
-    LogFiles createLogFiles(KernelVersion kernelVersion) throws IOException {
+    WALService createLogFiles(KernelVersion kernelVersion) throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout, fs, fixed(kernelVersion), () -> LogFormat.fromKernelVersion(kernelVersion))
@@ -148,7 +148,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
                 logFile(start(), commit(txId)));
 
         // remove all tx log files
-        Path[] matchedFiles = logFiles.getLogFile().getMatchedFiles();
+        Path[] matchedFiles = walService.getLogFile().getMatchedFiles();
         for (Path matchedFile : matchedFiles) {
             fs.delete(matchedFile);
         }
@@ -170,7 +170,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
 
     @Test
     void detectMissingLogFiles() {
-        LogTailMetadata tailInformation = logFiles.getTailMetadata();
+        LogTailMetadata tailInformation = walService.getTailMetadata();
         assertTrue(tailInformation.logsMissing());
         assertTrue(tailInformation.isRecoveryRequired());
     }
@@ -182,7 +182,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion);
 
         // when
-        LogTailMetadata logTailInformation = logFiles.getTailMetadata();
+        LogTailMetadata logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(false, false, NO_TRANSACTION_ID, true, logTailInformation);
@@ -195,7 +195,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile());
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(false, false, NO_TRANSACTION_ID, false, logTailInformation);
@@ -210,7 +210,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(start(), commit(txId)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(false, true, txId, false, logTailInformation);
@@ -223,7 +223,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(), logFile());
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(false, false, NO_TRANSACTION_ID, false, logTailInformation);
@@ -237,7 +237,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(), logFile(start(), commit(txId)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(false, true, txId, false, logTailInformation);
@@ -250,7 +250,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(), logFile(start()));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(false, true, BASE_APPEND_INDEX, false, logTailInformation);
@@ -264,7 +264,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(), logFile(start(), commit(txId), start(), commit(txId + 1)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(false, true, txId, false, logTailInformation);
@@ -283,7 +283,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
                 logFile(checkPoint(position)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, true, txId, false, logTailInformation);
@@ -297,7 +297,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(start()), logFile(commit(txId)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(false, true, 6, false, logTailInformation);
@@ -310,7 +310,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(checkPoint()));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, false, NO_TRANSACTION_ID, false, logTailInformation);
@@ -323,7 +323,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(start(), commit(1), checkPoint()));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, false, NO_TRANSACTION_ID, false, logTailInformation);
@@ -334,7 +334,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
     void twoLogFilesSecondIsCorruptedBeforeCommit(int startLogVersion, int endLogVersion) throws Exception {
         setupLogFiles(endLogVersion, logFile(checkPoint()), logFile(start(), commit(2)));
 
-        Path highestLogFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+        Path highestLogFile = walService.getLogFile().getLogRangeInfo().highestFile();
         fs.truncate(highestLogFile, fs.getFileSize(highestLogFile) - 3);
 
         // when
@@ -350,11 +350,11 @@ class PreAppendIndexDetachedLogTailScannerTest {
         int firstTxId = 2;
         setupLogFiles(endLogVersion, logFile(checkPoint()), logFile(start(), commit(firstTxId), start(), commit(3)));
 
-        Path highestLogFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+        Path highestLogFile = walService.getLogFile().getLogRangeInfo().highestFile();
         fs.truncate(highestLogFile, fs.getFileSize(highestLogFile) - 3);
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, true, firstTxId, false, logTailInformation);
@@ -369,7 +369,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(start, commit(txId), checkPoint(start)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, true, txId, false, logTailInformation);
@@ -383,7 +383,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(checkPoint(), start(), commit(1), checkPoint()));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, false, NO_TRANSACTION_ID, false, logTailInformation);
@@ -398,7 +398,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(checkPoint(), checkPoint(), start(), commit(txId)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, true, txId, false, logTailInformation);
@@ -414,7 +414,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(checkPoint()), logFile(start, commit(txId)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, true, txId, false, logTailInformation);
@@ -428,7 +428,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(start, commit(1), checkPoint()), logFile());
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, false, NO_TRANSACTION_ID, false, logTailInformation);
@@ -444,7 +444,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(start, commit(txId)), logFile(checkPoint(start)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, true, txId, false, logTailInformation);
@@ -460,7 +460,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(start, position), logFile(checkPoint(position)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, false, NO_TRANSACTION_ID, false, logTailInformation);
@@ -475,7 +475,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(start(), commit(3), position), logFile(checkPoint(position)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, false, NO_TRANSACTION_ID, false, logTailInformation);
@@ -490,7 +490,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         setupLogFiles(endLogVersion, logFile(start(), commit(1), checkPoint(), start(), commit(txId)), logFile());
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         // then
         assertLatestCheckPoint(true, true, txId, false, logTailInformation);
@@ -509,7 +509,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
                 logFile(start(), commit(txId)));
 
         // when
-        logFiles.getTailMetadata();
+        walService.getTailMetadata();
 
         // then
         String message = "Scanning log file with version %d for checkpoint entries";
@@ -522,7 +522,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         // given
         long transactionId = 4;
         long consensusIndex = 999;
-        logFiles = createLogFiles(KernelVersion.V5_7);
+        walService = createLogFiles(KernelVersion.V5_7);
         setupLogFiles(
                 13,
                 logFile(
@@ -542,7 +542,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
                                 consensusIndex))));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         assertThat(logTailInformation
                         .getLastCheckPoint()
@@ -556,7 +556,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
     void doNotParseConsensusIndexFromTransactionHeaderFor57PlusCheckpoint() throws Exception {
         // given
         long transactionId = 4;
-        logFiles = createLogFiles(KernelVersion.V5_7);
+        walService = createLogFiles(KernelVersion.V5_7);
         setupLogFiles(
                 13,
                 logFile(
@@ -576,7 +576,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
                                 UNKNOWN_CONSENSUS_INDEX))));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         assertThat(logTailInformation
                         .getLastCheckPoint()
@@ -591,7 +591,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         // given
         long transactionId = 4;
         long consensusIndex = 999;
-        logFiles = createLogFiles(KernelVersion.V5_0);
+        walService = createLogFiles(KernelVersion.V5_0);
         setupLogFiles(
                 13,
                 logFile(
@@ -611,7 +611,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
                                 UNKNOWN_CONSENSUS_INDEX))));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         assertThat(logTailInformation
                         .getLastCheckPoint()
@@ -626,7 +626,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         // given
         long transactionId = 7;
         long consensusIndex = 999;
-        logFiles = createLogFiles(KernelVersion.V5_0);
+        walService = createLogFiles(KernelVersion.V5_0);
         setupLogFiles(
                 13,
                 logFile(
@@ -646,7 +646,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
                                 UNKNOWN_CONSENSUS_INDEX))));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         assertThat(logTailInformation
                         .getLastCheckPoint()
@@ -661,7 +661,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
         // given
         long transactionId = 1;
         long consensusIndex = 999;
-        logFiles = createLogFiles(KernelVersion.V5_0);
+        walService = createLogFiles(KernelVersion.V5_0);
         setupLogFiles(
                 13,
                 logFile(
@@ -679,7 +679,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
                         commit(transactionId + 1)));
 
         // when
-        var logTailInformation = logFiles.getTailMetadata();
+        var logTailInformation = walService.getTailMetadata();
 
         assertThat(logTailInformation
                         .getLastCheckPoint()
@@ -698,7 +698,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
             logFile.create(++version, positions);
         }
 
-        this.logFiles = createLogFiles();
+        this.walService = createLogFiles();
     }
 
     LogCreator logFile(Entry... entries) {
@@ -713,9 +713,9 @@ class PreAppendIndexDetachedLogTailScannerTest {
                 logVersionRepository.setCheckpointLogVersion(logVersion);
                 LifeSupport logFileLife = new LifeSupport();
                 logFileLife.start();
-                logFileLife.add(logFiles);
-                LogFile logFile = logFiles.getLogFile();
-                var checkpointFile = logFiles.getCheckpointFile();
+                logFileLife.add(walService);
+                LogFile logFile = walService.getLogFile();
+                var checkpointFile = walService.getCheckpointFile();
                 int previousChecksum = BASE_TX_CHECKSUM;
                 try {
                     TransactionLogWriter logWriter = (TransactionLogWriter) logFile.getTransactionLogWriter();

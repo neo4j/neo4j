@@ -49,10 +49,10 @@ import org.neo4j.wal.AppendedChunkLogVersionLocator;
 import org.neo4j.wal.AppendedChunkPositionLocator;
 import org.neo4j.wal.CommandBatchCursor;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogicalTransactionStore;
 import org.neo4j.wal.NoSuchLogEntryException;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 import org.neo4j.wal.entry.LogHeader;
@@ -72,7 +72,7 @@ public class TransactionLogServiceImpl implements TransactionLogService {
 
     public TransactionLogServiceImpl(
             LogMetadataProvider metadataProvider,
-            LogFiles logFiles,
+            WALService walService,
             LogicalTransactionStore transactionStore,
             Lock pruneLock,
             AvailabilityGuard availabilityGuard,
@@ -83,7 +83,7 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         this.metadataProvider = metadataProvider;
         this.transactionStore = transactionStore;
         this.pruneLock = pruneLock;
-        this.logFile = logFiles.getLogFile();
+        this.logFile = walService.getLogFile();
         this.availabilityGuard = availabilityGuard;
         this.log = logProvider.getLog(getClass());
         this.checkPointer = checkPointer;

@@ -61,7 +61,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.wal.CheckpointInfo;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 @Neo4jLayoutExtension
 class CheckPointerIntegrationTest {
@@ -439,7 +439,7 @@ class CheckPointerIntegrationTest {
 
     private static List<CheckpointInfo> checkPointsInTxLog(GraphDatabaseService db) throws IOException {
         DependencyResolver dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
-        LogFiles logFiles = dependencyResolver.resolveDependency(LogFiles.class);
-        return logFiles.getCheckpointFile().reachableCheckpoints();
+        WALService walService = dependencyResolver.resolveDependency(WALService.class);
+        return walService.getCheckpointFile().reachableCheckpoints();
     }
 }

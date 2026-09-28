@@ -57,13 +57,13 @@ import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.OpenTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogFormatVersionProvider;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.PartialRecoveryOutcome;
 import org.neo4j.wal.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.RecoveryOutcome;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntryWriter;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.rotation.LogRotateEvents;
@@ -77,7 +77,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private static final String REVERSE_RECOVERY_TAG = "restoreDatabase";
     private static final String RECOVERY_TAG = "recoverDatabase";
 
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final KernelVersionProvider versionProvider;
     private final LogFormatVersionProvider logFormatVersionProvider;
     private final RecoveryService recoveryService;
@@ -101,7 +101,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private RecoveryOutcome recoveryOutcome = RecoveryOutcome.EMPTY_OUTCOME;
 
     public TransactionLogsRecovery(
-            LogFiles logFiles,
+            WALService walService,
             KernelVersionProvider versionProvider,
             LogFormatVersionProvider logFormatVersionProvider,
             RecoveryService recoveryService,
@@ -120,7 +120,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             RecoveryMode mode,
             ChunkedTransactionTracker chunkedTransactionTracker,
             boolean parallelRecovery) {
-        this.logFiles = logFiles;
+        this.walService = walService;
         this.versionProvider = versionProvider;
         this.logFormatVersionProvider = logFormatVersionProvider;
         this.recoveryService = recoveryService;
@@ -155,7 +155,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         if (recoveryStartInformation.missingLogs()) {
             recoveryService.checkMissingStoreFiles();
             recoveryService.missingLogs();
-            logFiles.getLogFile().initializeMissingLogFile();
+            walService.getLogFile().initializeMissingLogFile();
             return;
         }
         performRecovery(recoveryStartInformation);
@@ -434,7 +434,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
 
         KernelVersion kernelVersion = versionProvider.kernelVersion();
         if (ROLLBACK == incompleteTransactionAction) {
-            LogFile logFile = logFiles.getLogFile();
+            LogFile logFile = walService.getLogFile();
             try (ChannelWithPartialLogRotationAbility channelAllocator = new ChannelWithPartialLogRotationAbility(
                     logFile, versionProvider, logFormatVersionProvider, logFile.rotationSize(), writePosition)) {
                 PhysicalFlushableLogPositionAwareChannel writerChannel = channelAllocator.getWriterChannel();

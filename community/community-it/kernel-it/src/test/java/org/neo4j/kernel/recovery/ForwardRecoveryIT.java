@@ -67,8 +67,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LoggingLogFileMonitor;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 import org.neo4j.wal.files.LogFilesBuilder;
@@ -186,8 +186,8 @@ class ForwardRecoveryIT {
 
     private void recoverDatabase() throws Exception {
         DatabaseConfig config = new DatabaseConfig(Config.defaults());
-        LogFiles logFiles = buildLogFiles(EMPTY);
-        assertTrue(isRecoveryRequired(databaseLayout, config, logFiles, EMPTY));
+        WALService walService = buildLogFiles(EMPTY);
+        assertTrue(isRecoveryRequired(databaseLayout, config, walService, EMPTY));
 
         Recovery.performRecovery(context(
                         fileSystem,
@@ -198,7 +198,7 @@ class ForwardRecoveryIT {
                         INSTANCE,
                         IOController.DISABLED,
                         logProvider,
-                        logFiles.getTailMetadata())
+                        walService.getTailMetadata())
                 .recoveryMode(RecoveryMode.FORWARD)
                 .monitors(monitors)
                 .extensionFactories(Iterables.cast(Services.loadAll(ExtensionFactory.class)))
@@ -206,17 +206,17 @@ class ForwardRecoveryIT {
         assertFalse(isRecoveryRequired(databaseLayout, config, buildLogFiles(), EMPTY));
     }
 
-    private boolean isRecoveryRequired(DatabaseLayout layout, Config config, LogFiles logFiles, DatabaseTracers tracers)
-            throws Exception {
+    private boolean isRecoveryRequired(
+            DatabaseLayout layout, Config config, WALService walService, DatabaseTracers tracers) throws Exception {
         return Recovery.isRecoveryRequired(
-                fileSystem, pageCache, layout, config, Optional.of(logFiles.getTailMetadata()), INSTANCE, tracers);
+                fileSystem, pageCache, layout, config, Optional.of(walService.getTailMetadata()), INSTANCE, tracers);
     }
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         return buildLogFiles(EMPTY);
     }
 
-    private LogFiles buildLogFiles(DatabaseTracers databaseTracers) throws IOException {
+    private WALService buildLogFiles(DatabaseTracers databaseTracers) throws IOException {
         return LogFilesBuilder.readableBuilder(
                         databaseLayout,
                         fileSystem,

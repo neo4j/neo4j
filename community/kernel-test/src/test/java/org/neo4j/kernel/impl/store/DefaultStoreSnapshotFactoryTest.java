@@ -60,8 +60,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.LatestCheckpointInfo;
 import org.neo4j.wal.checkpoint.StoreCopyCheckPointMutex;
@@ -97,13 +97,13 @@ class DefaultStoreSnapshotFactoryTest {
                         UNKNOWN_TRANSACTION_ID,
                         UNKNOWN_APPEND_INDEX,
                         new LogPosition(1, 1)));
-        LogFiles logFiles = mock(LogFiles.class);
+        WALService walService = mock(WALService.class);
         LogFile logFile = mock(LogFile.class);
         when(logFile.extractHeader(1))
                 .thenReturn(LATEST_LOG_FORMAT.newHeader(
                         1, 1, 1, StoreIdentifier.UNKNOWN, 1, 1, LATEST_KERNEL_VERSION, UNSPECIFIED_CREATION_TIME));
-        when(logFiles.getLogFile()).thenReturn(logFile);
-        when(database.getDependencyResolver()).thenReturn(dependenciesOf(checkPointer, logFiles));
+        when(walService.getLogFile()).thenReturn(logFile);
+        when(database.getDependencyResolver()).thenReturn(dependenciesOf(checkPointer, walService));
         when(database.getDatabaseAvailabilityGuard()).thenReturn(availabilityGuard);
         storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         when(database.getStoreCopyCheckPointMutex()).thenReturn(storeCopyCheckPointMutex);

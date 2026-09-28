@@ -38,6 +38,7 @@ import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.StoreChannelNativeAccessor;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.pruning.LogPruneThreshold;
@@ -59,7 +60,7 @@ class LogFileBinarySearchTest {
     @Inject
     FileSystemAbstraction fs;
 
-    private EnvelopedLogFiles envelopedLogFiles;
+    private WALService walService;
 
     private static void writeData(EnvelopeWriteChannel writeChannel, byte[] data) throws IOException {
         writeData(writeChannel, data, -1L);
@@ -89,7 +90,7 @@ class LogFileBinarySearchTest {
     private void recreateEnvelopedLogFiles() {
         var baseFileName = "raft.log";
         var baseFolder = testDirectory.directory("logsFolder");
-        envelopedLogFiles = new EnvelopedLogFiles(
+        walService = new EnvelopedWALService(
                 new LogsRepository(fs, new SequentialFileNameHelper(baseFolder, baseFileName)),
                 (fileVersion, preFileIndex, preFileChecksum, segmentSize, lastTerm) -> LogFormat.fromKernelVersion(
                                 KernelVersion.GLORIOUS_FUTURE)
@@ -118,8 +119,8 @@ class LogFileBinarySearchTest {
      */
     @Test
     void shouldFindFirstFileIfJustInitialized() throws IOException {
-        envelopedLogFiles.initialise();
-        try (var readChannel = envelopedLogFiles.openReadChannel(0)) {
+        walService.initialise();
+        try (var readChannel = walService.openReadChannel(0)) {
             var currentLogHeader = readChannel.logHeader();
             assertThat(currentLogHeader.getLogVersion()).isZero();
             assertThat(currentLogHeader.getLastAppendIndex()).isEqualTo(-1);
@@ -135,9 +136,9 @@ class LogFileBinarySearchTest {
     void shouldFindCorrectFileWithFullEnvelopes() throws IOException {
         var baseData = new byte[segmentBlockSize - HEADER_SIZE];
 
-        envelopedLogFiles.initialise();
+        walService.initialise();
 
-        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        var writeChannel = walService.getLogFile().currentWriteChannel();
 
         for (int i = 0; i < 4; i++) {
             writeData(writeChannel, baseData, i);
@@ -145,7 +146,7 @@ class LogFileBinarySearchTest {
         writeChannel.prepareForFlush().flush();
 
         for (int i = 0; i < 4; i++) {
-            try (var readChannel = envelopedLogFiles.openReadChannel(i)) {
+            try (var readChannel = walService.openReadChannel(i)) {
                 var currentLogHeader = readChannel.logHeader();
                 var readData = new byte[baseData.length];
                 while (readChannel.entryIndex() != i) {
@@ -172,9 +173,9 @@ class LogFileBinarySearchTest {
         var smallBaseData = new byte[segmentBlockSize / 3];
         var largeBaseData = new byte[segmentBlockSize * 7];
 
-        envelopedLogFiles.initialise();
+        walService.initialise();
 
-        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        var writeChannel = walService.getLogFile().currentWriteChannel();
 
         writeData(writeChannel, smallBaseData, 0);
         writeData(writeChannel, largeBaseData, 1);
@@ -182,7 +183,7 @@ class LogFileBinarySearchTest {
         writeChannel.prepareForFlush().flush();
 
         for (int i = 0; i < 2; i++) {
-            try (var readChannel = envelopedLogFiles.openReadChannel(i)) {
+            try (var readChannel = walService.openReadChannel(i)) {
                 var currentLogHeader = readChannel.logHeader();
                 var readData = new byte[8];
                 while (readChannel.entryIndex() != i) {
@@ -210,9 +211,9 @@ class LogFileBinarySearchTest {
         var smallBaseData = new byte[segmentBlockSize / 3];
         var largeBaseData = new byte[segmentBlockSize * 7];
 
-        envelopedLogFiles.initialise();
+        walService.initialise();
 
-        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        var writeChannel = walService.getLogFile().currentWriteChannel();
 
         writeData(writeChannel, largeBaseData, 0);
         writeData(writeChannel, smallBaseData, 1);
@@ -220,7 +221,7 @@ class LogFileBinarySearchTest {
         writeChannel.prepareForFlush().flush();
 
         for (int i = 0; i < 2; i++) {
-            try (var readChannel = envelopedLogFiles.openReadChannel(i)) {
+            try (var readChannel = walService.openReadChannel(i)) {
                 var currentLogHeader = readChannel.logHeader();
                 var readData = new byte[8];
                 while (readChannel.entryIndex() != i) {
@@ -248,9 +249,9 @@ class LogFileBinarySearchTest {
     void shouldFindCorrectFileWhenThereMiddleEnvelopes() throws IOException {
         var largeBaseData = new byte[segmentBlockSize * 5];
 
-        envelopedLogFiles.initialise();
+        walService.initialise();
 
-        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        var writeChannel = walService.getLogFile().currentWriteChannel();
 
         writeData(writeChannel, largeBaseData, 0);
         writeData(writeChannel, largeBaseData, 1);
@@ -258,7 +259,7 @@ class LogFileBinarySearchTest {
         writeChannel.prepareForFlush().flush();
 
         for (int i = 0; i < 2; i++) {
-            try (var readChannel = envelopedLogFiles.openReadChannel(i)) {
+            try (var readChannel = walService.openReadChannel(i)) {
                 var currentLogHeader = readChannel.logHeader();
                 var readData = new byte[8];
                 while (readChannel.entryIndex() != i) {
@@ -289,9 +290,9 @@ class LogFileBinarySearchTest {
         var largeBaseData = new byte[segmentBlockSize * 3];
         var verLargeBaseData = new byte[segmentBlockSize * 5];
 
-        envelopedLogFiles.initialise();
+        walService.initialise();
 
-        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        var writeChannel = walService.getLogFile().currentWriteChannel();
 
         writeData(writeChannel, smallBaseData, 0);
         writeData(writeChannel, verLargeBaseData, 1);
@@ -302,7 +303,7 @@ class LogFileBinarySearchTest {
         writeChannel.prepareForFlush().flush();
 
         for (int i = 0; i < 5; i++) {
-            try (var readChannel = envelopedLogFiles.openReadChannel(i)) {
+            try (var readChannel = walService.openReadChannel(i)) {
                 var currentLogHeader = readChannel.logHeader();
                 var readData = new byte[8];
                 while (readChannel.entryIndex() != i) {
@@ -327,9 +328,9 @@ class LogFileBinarySearchTest {
     void shouldFindFileCorrectlyEvenAfterPrune() throws IOException {
         var baseData = new byte[segmentBlockSize / 2];
 
-        envelopedLogFiles.initialise();
+        walService.initialise();
 
-        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        var writeChannel = walService.getLogFile().currentWriteChannel();
 
         for (int i = 0; i < 40; i++) {
             baseData[0] = (byte) i; // set unique data index
@@ -337,10 +338,10 @@ class LogFileBinarySearchTest {
         }
         writeChannel.prepareForFlush().flush();
 
-        long prunedIndex = envelopedLogFiles.prune(20);
+        long prunedIndex = walService.prune(20);
 
         for (int i = (int) (prunedIndex + 1); i < 40; i++) {
-            try (var readChannel = envelopedLogFiles.openReadChannel(i)) {
+            try (var readChannel = walService.openReadChannel(i)) {
                 var currentLogHeader = readChannel.logHeader();
                 var readData = new byte[8];
                 while (readChannel.entryIndex() != i) {
@@ -361,26 +362,26 @@ class LogFileBinarySearchTest {
      */
     @Test
     void shouldReturnNullIfIndexHasPruned() throws IOException {
-        envelopedLogFiles.initialise();
+        walService.initialise();
 
         var data = EIGHT_BYTES_MESSAGE.getBytes();
         var totalFileDataSize = segmentBlockSize * (totalSegments - 1);
         var largeData = new byte[totalFileDataSize / 2];
-        writeData(envelopedLogFiles.currentWriteChannel(), largeData);
-        writeData(envelopedLogFiles.currentWriteChannel(), largeData); // spills over to next file
-        writeData(envelopedLogFiles.currentWriteChannel(), data);
-        writeData(envelopedLogFiles.currentWriteChannel(), data);
-        envelopedLogFiles.currentWriteChannel().prepareForFlush().flush();
+        writeData(walService.getLogFile().currentWriteChannel(), largeData);
+        writeData(walService.getLogFile().currentWriteChannel(), largeData); // spills over to next file
+        writeData(walService.getLogFile().currentWriteChannel(), data);
+        writeData(walService.getLogFile().currentWriteChannel(), data);
+        walService.getLogFile().currentWriteChannel().prepareForFlush().flush();
 
         // 1 is completed in first file, so we expect it to be removed
-        assertThat(envelopedLogFiles.prune(2)).isOne();
+        assertThat(walService.prune(2)).isOne();
 
         // 0 has been pruned entirley
-        assertThat(envelopedLogFiles.openReadChannel(0)).isNull();
+        assertThat(walService.openReadChannel(0)).isNull();
         // 1 spills over but should still be considered pruned
-        assertThat(envelopedLogFiles.openReadChannel(1)).isNull();
+        assertThat(walService.openReadChannel(1)).isNull();
         // 2 has not been pruned and should open a file
-        try (var envelopeReadChannel = envelopedLogFiles.openReadChannel(2)) {
+        try (var envelopeReadChannel = walService.openReadChannel(2)) {
             envelopeReadChannel.alignWithStartEntry();
             assertThat(envelopeReadChannel.entryIndex()).isEqualTo(2);
         }

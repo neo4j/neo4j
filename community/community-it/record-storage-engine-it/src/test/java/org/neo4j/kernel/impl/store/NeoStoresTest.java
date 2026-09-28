@@ -124,8 +124,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.wal.CompleteCommandBatch;
 import org.neo4j.wal.EmptyLogTailMetadata;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogTailMetadata;
+import org.neo4j.wal.WALService;
 
 @EphemeralNeo4jLayoutExtension
 @EphemeralPageCacheExtension
@@ -316,9 +316,9 @@ class NeoStoresTest {
             var database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
             var logVersionRepository = database.getDependencyResolver().resolveDependency(LogVersionRepository.class);
             assertEquals(0, logVersionRepository.getCurrentLogVersion());
-            LogFiles logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+            WALService walService = database.getDependencyResolver().resolveDependency(WALService.class);
             for (int i = 0; i < 12; i++) {
-                logFiles.getLogFile().rotate();
+                walService.getLogFile().rotate();
                 assertEquals(i + 1, logVersionRepository.getCurrentLogVersion());
             }
         }

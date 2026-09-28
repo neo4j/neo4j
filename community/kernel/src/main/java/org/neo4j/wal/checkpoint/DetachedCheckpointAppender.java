@@ -44,7 +44,6 @@ import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogForceEvent;
 import org.neo4j.wal.LogFormatVersionProvider;
 import org.neo4j.wal.LogPosition;
@@ -52,6 +51,7 @@ import org.neo4j.wal.LogTailMetadata;
 import org.neo4j.wal.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.RotatableFile;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.wal.entry.LogEntryTypeCodes;
 import org.neo4j.wal.entry.LogHeader;
@@ -68,7 +68,7 @@ import org.neo4j.wal.rotation.LogRotation;
 import org.neo4j.wal.rotation.monitor.LogRotationMonitor;
 
 public class DetachedCheckpointAppender extends LifecycleAdapter implements CheckpointAppender {
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final CheckpointFile checkpointFile;
     private final TransactionLogChannelAllocator channelAllocator;
     private final TransactionLogFilesContext context;
@@ -87,7 +87,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private KernelVersion previousKernelVersion;
 
     public DetachedCheckpointAppender(
-            LogFiles logFiles,
+            WALService walService,
             TransactionLogChannelAllocator channelAllocator,
             TransactionLogFilesContext context,
             CheckpointFile checkpointFile,
@@ -95,7 +95,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             DetachedLogTailScanner logTailScanner,
             BinarySupportedKernelVersions binarySupportedKernelVersions,
             TransactionLogFilesProviders transactionLogFilesProviders) {
-        this.logFiles = logFiles;
+        this.walService = walService;
         this.checkpointFile = requireNonNull(checkpointFile);
         this.context = requireNonNull(context);
         this.channelAllocator = requireNonNull(channelAllocator);

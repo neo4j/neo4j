@@ -47,7 +47,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 
@@ -118,7 +118,7 @@ public class RecoveryAppendIndexIT {
                 .resolveDependency(LogMetadataProvider.class)
                 .getLastAppendIndex();
         Path[] checkpointFiles = db.getDependencyResolver()
-                .resolveDependency(LogFiles.class)
+                .resolveDependency(WALService.class)
                 .getCheckpointFile()
                 .getMatchedFiles();
 

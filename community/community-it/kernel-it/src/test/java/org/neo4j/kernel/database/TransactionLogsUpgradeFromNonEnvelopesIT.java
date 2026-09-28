@@ -54,8 +54,8 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.ReaderLogVersionBridge;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.entry.LogHeader;
 
@@ -132,37 +132,37 @@ class TransactionLogsUpgradeFromNonEnvelopesIT extends TransactionLogsUpgradeIT 
         // We managed to read all the way past the empty log file and saw the tx in the last logfile.
         assertThat(getNodeCount(testDb)).isEqualTo(nodeCountBeforeTxTriggeringUpgrade + 1);
 
-        LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = testDb.getDependencyResolver().resolveDependency(WALService.class);
         assertLogHeaderExpectedVersion(
                 fileSystem,
-                logFiles,
+                walService,
                 INITIAL_LOG_VERSION,
                 headerVersionForStartingVersion(),
                 TransactionIdStore.BASE_TX_ID);
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(),
+                walService.getLogFile(),
                 INITIAL_LOG_VERSION,
                 startingKernelVersion(),
                 (int) (lastClosedTransactionIdBeforeUpgrade + 1 - TransactionIdStore.BASE_TX_ID),
                 commandReaderFactory);
         assertLogHeaderExpectedVersion(
                 fileSystem,
-                logFiles,
+                walService,
                 INITIAL_LOG_VERSION + 1,
                 headerVersionForStartingVersion(),
                 lastClosedTransactionIdBeforeUpgrade + 1);
-        assertThat(fileSystem.getFileSize(logFiles.getLogFile().getLogFileForVersion(INITIAL_LOG_VERSION + 1)))
+        assertThat(fileSystem.getFileSize(walService.getLogFile().getLogFileForVersion(INITIAL_LOG_VERSION + 1)))
                 .isEqualTo(LogFormat.fromKernelVersion(startingKernelVersion()).getHeaderSize());
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, startingKernelVersion(), 0, commandReaderFactory);
+                walService.getLogFile(), INITIAL_LOG_VERSION + 1, startingKernelVersion(), 0, commandReaderFactory);
         assertLogHeaderExpectedVersion(
                 fileSystem,
-                logFiles,
+                walService,
                 INITIAL_LOG_VERSION + 2,
                 GLORIOUS_FUTURE,
                 lastClosedTransactionIdBeforeUpgrade + 1);
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION + 2, GLORIOUS_FUTURE, 1, commandReaderFactory);
+                walService.getLogFile(), INITIAL_LOG_VERSION + 2, GLORIOUS_FUTURE, 1, commandReaderFactory);
     }
 
     @Test
@@ -176,24 +176,24 @@ class TransactionLogsUpgradeFromNonEnvelopesIT extends TransactionLogsUpgradeIT 
         upgradeDatabase(managementService, testDb, startingKernelVersion(), GLORIOUS_FUTURE);
         createWriteTransaction(testDb);
 
-        LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
+        WALService walService = testDb.getDependencyResolver().resolveDependency(WALService.class);
 
         assertThat(assertWholeTransactionsIn(
-                        logFiles.getLogFile(),
+                        walService.getLogFile(),
                         INITIAL_LOG_VERSION,
                         (startEntry) -> {},
                         (commitEntry) -> {},
                         commandReaderFactory,
-                        ReaderLogVersionBridge.forFile(logFiles.getLogFile())))
+                        ReaderLogVersionBridge.forFile(walService.getLogFile())))
                 .isBetween(5, 6); // One extra token tx on record
     }
 
     @Test
     void shouldMaintainValidTermOnFormatSwitch() throws Exception {
         // Confirm that pre-envelope term information reports consistently as BASE_TERM
-        LogFiles logFilesOld = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
-        LogFile logFileOld = logFilesOld.getLogFile();
-        LogMetadataProvider metadataProviderOld = logFilesOld.logMetadataProvider();
+        WALService walServiceOld = testDb.getDependencyResolver().resolveDependency(WALService.class);
+        LogFile logFileOld = walServiceOld.getLogFile();
+        LogMetadataProvider metadataProviderOld = walServiceOld.logMetadataProvider();
         long oldTerm = metadataProviderOld.getCurrentTerm();
         assertThat(oldTerm).isEqualTo(BASE_TERM);
         LogHeader oldLogHeader = logFileOld.extractHeader(logFileOld.getCurrentLogVersion());
@@ -207,9 +207,9 @@ class TransactionLogsUpgradeFromNonEnvelopesIT extends TransactionLogsUpgradeIT 
         upgradeDatabase(managementService, testDb, startingKernelVersion(), GLORIOUS_FUTURE);
         createWriteTransaction(testDb);
 
-        LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
-        LogFile logFile = logFiles.getLogFile();
-        LogMetadataProvider metadataProvider = logFiles.logMetadataProvider();
+        WALService walService = testDb.getDependencyResolver().resolveDependency(WALService.class);
+        LogFile logFile = walService.getLogFile();
+        LogMetadataProvider metadataProvider = walService.logMetadataProvider();
         long term = metadataProvider.getCurrentTerm();
         assertThat(term).isEqualTo(BASE_TERM);
         LogHeader logHeader = logFile.extractHeader(logFile.getCurrentLogVersion());

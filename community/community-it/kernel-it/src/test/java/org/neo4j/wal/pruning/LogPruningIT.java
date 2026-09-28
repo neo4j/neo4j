@@ -41,8 +41,8 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.wal.LogAppendEvent;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 import org.neo4j.wal.files.LogFileVersionTracker;
@@ -56,7 +56,7 @@ class LogPruningIT {
     private GraphDatabaseAPI db;
 
     @Inject
-    private LogFiles logFiles;
+    private WALService walService;
 
     @Inject
     private CheckPointer checkPointer;
@@ -81,7 +81,7 @@ class LogPruningIT {
 
         // Make sure file is still there since we have disabled pruning.
         // 2 transaction logs and 1 separate checkpoint file.
-        assertThat(countTransactionLogs(logFiles)).isEqualTo(4);
+        assertThat(countTransactionLogs(walService)).isEqualTo(4);
 
         // Change pruning to true
         config.setDynamic(keep_logical_logs, FALSE, "LogPruningIT");
@@ -90,7 +90,7 @@ class LogPruningIT {
         checkPointer.forceCheckPoint(triggerInfo);
 
         // Make sure file is removed
-        assertThat(countTransactionLogs(logFiles)).isEqualTo(2);
+        assertThat(countTransactionLogs(walService)).isEqualTo(2);
 
         assertThat(versionTracker.rotations.toArray())
                 .as("should have tracked the 2 log rotations")
@@ -117,7 +117,7 @@ class LogPruningIT {
         checkPointer.forceCheckPoint(triggerInfo);
 
         // Make sure files are removed - there are exactly 6 txs in the last 3 files
-        assertThat(logFiles.getLogFile().getMatchedFiles().length).isEqualTo(3);
+        assertThat(walService.getLogFile().getMatchedFiles().length).isEqualTo(3);
 
         assertThat(versionTracker.rotations.toArray())
                 .as("should have tracked the 4 log rotations")
@@ -133,12 +133,12 @@ class LogPruningIT {
             tx.createNode();
             tx.commit();
         }
-        logFiles.getLogFile().getLogRotation().rotateLogFile(LogAppendEvent.NULL);
+        walService.getLogFile().getLogRotation().rotateLogFile(LogAppendEvent.NULL);
         try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
-        logFiles.getLogFile().getLogRotation().rotateLogFile(LogAppendEvent.NULL);
+        walService.getLogFile().getLogRotation().rotateLogFile(LogAppendEvent.NULL);
         try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
@@ -149,8 +149,8 @@ class LogPruningIT {
         }
     }
 
-    private static int countTransactionLogs(LogFiles logFiles) throws IOException {
-        return logFiles.logFiles().length;
+    private static int countTransactionLogs(WALService walService) throws IOException {
+        return walService.logFiles().length;
     }
 
     private static class TestVersionTrackerExtensionFactory

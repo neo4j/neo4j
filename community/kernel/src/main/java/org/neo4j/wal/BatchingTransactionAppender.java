@@ -42,12 +42,12 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
     private int previousChecksum;
 
     BatchingTransactionAppender(
-            LogFiles logFiles,
+            WALService walService,
             TransactionIdStore transactionIdStore,
             Panic databasePanic,
             AppendIndexProvider appendIndexProvider,
             TransactionMetadataCache metadataCache) {
-        this.logFile = logFiles.getLogFile();
+        this.logFile = walService.getLogFile();
         this.appendIndexProvider = appendIndexProvider;
         this.metadataCache = metadataCache;
         this.databasePanic = databasePanic;

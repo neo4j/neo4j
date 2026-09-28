@@ -118,12 +118,12 @@ import org.neo4j.wal.FlushableLogPositionAwareChannel;
 import org.neo4j.wal.InMemoryVersionableReadableClosablePositionAwareChannel;
 import org.neo4j.wal.LogAppendEvent;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogPositionMarker;
 import org.neo4j.wal.ReadAheadUtils;
 import org.neo4j.wal.ReadableLogChannel;
 import org.neo4j.wal.TransactionLogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.CheckPointerImpl;
 import org.neo4j.wal.checkpoint.CheckpointFile;
@@ -167,7 +167,7 @@ class RecoveryCorruptedTransactionLogIT {
     final RecoveryMonitor recoveryMonitor = new RecoveryMonitor();
     private final CorruptedCheckpointMonitor corruptedFilesMonitor = new CorruptedCheckpointMonitor();
     private final Monitors monitors = new Monitors();
-    LogFiles logFiles;
+    WALService walService;
     TestDatabaseManagementServiceBuilder databaseFactory;
     private StorageEngineFactory storageEngineFactory;
     // Some transactions can have been run on start-up, so this is the offset the first transaction of a test will have.
@@ -217,7 +217,7 @@ class RecoveryCorruptedTransactionLogIT {
 
             DatabaseManagementService managementService = databaseFactory.build();
             GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-            logFiles = buildDefaultLogFiles(getStoreId(database));
+            walService = buildDefaultLogFiles(getStoreId(database));
 
             TransactionIdStore transactionIdStore = getTransactionIdStore(database);
             LogPosition logOffsetBeforeTestTransactions =
@@ -251,7 +251,7 @@ class RecoveryCorruptedTransactionLogIT {
             startStopDbRecoveryOfCorruptedLogs();
 
             assertEquals(numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
-            assertThat(logFiles.getCheckpointFile().getMatchedFiles()).hasSize(1);
+            assertThat(walService.getCheckpointFile().getMatchedFiles()).hasSize(1);
             assertEquals(0, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles());
 
             removeDatabaseDirectories();
@@ -269,7 +269,7 @@ class RecoveryCorruptedTransactionLogIT {
 
             DatabaseManagementService managementService = databaseFactory.build();
             GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-            logFiles = buildDefaultLogFiles(getStoreId(database));
+            walService = buildDefaultLogFiles(getStoreId(database));
 
             TransactionIdStore transactionIdStore = getTransactionIdStore(database);
             LogPosition logOffsetBeforeTestTransactions =
@@ -306,7 +306,7 @@ class RecoveryCorruptedTransactionLogIT {
             assertEquals(numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
             assertEquals(iteration + 1, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles());
 
-            assertThat(logFiles.getCheckpointFile().getMatchedFiles()).hasSize(1);
+            assertThat(walService.getCheckpointFile().getMatchedFiles()).hasSize(1);
 
             removeDatabaseDirectories();
         }
@@ -317,7 +317,7 @@ class RecoveryCorruptedTransactionLogIT {
         long numberOfClosedTransactions;
         try (DatabaseManagementService managementService = databaseFactory.build()) {
             GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-            logFiles = buildDefaultLogFiles(getStoreId(database));
+            walService = buildDefaultLogFiles(getStoreId(database));
 
             TransactionIdStore transactionIdStore = getTransactionIdStore(database);
             LogPosition logOffsetBeforeTestTransactions =
@@ -353,7 +353,7 @@ class RecoveryCorruptedTransactionLogIT {
         assertEquals(numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(0, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles());
 
-        assertThat(logFiles.getCheckpointFile().getMatchedFiles()).hasSize(1);
+        assertThat(walService.getCheckpointFile().getMatchedFiles()).hasSize(1);
 
         removeDatabaseDirectories();
     }
@@ -363,7 +363,7 @@ class RecoveryCorruptedTransactionLogIT {
         long numberOfClosedTransactions;
         try (DatabaseManagementService managementService = databaseFactory.build()) {
             GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-            logFiles = buildDefaultLogFiles(getStoreId(database));
+            walService = buildDefaultLogFiles(getStoreId(database));
 
             TransactionIdStore transactionIdStore = getTransactionIdStore(database);
             for (int i = 0; i < 10; i++) {
@@ -379,8 +379,8 @@ class RecoveryCorruptedTransactionLogIT {
         assertEquals(numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(0, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles());
 
-        assertThat(logFiles.getCheckpointFile().getMatchedFiles()).hasSize(1);
-        assertThat(logFiles.getCheckpointFile().reachableCheckpoints()).hasSize(2); // Recovery completed and shutdown
+        assertThat(walService.getCheckpointFile().getMatchedFiles()).hasSize(1);
+        assertThat(walService.getCheckpointFile().reachableCheckpoints()).hasSize(2); // Recovery completed and shutdown
 
         removeDatabaseDirectories();
     }
@@ -389,7 +389,7 @@ class RecoveryCorruptedTransactionLogIT {
     void recoverWithNoCheckpointFile() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
 
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         for (int i = 0; i < 10; i++) {
@@ -399,14 +399,14 @@ class RecoveryCorruptedTransactionLogIT {
                 transactionIdStore.getHighestGapFreeClosedTransactionId() - TransactionIdStore.BASE_TX_ID;
         managementService.shutdown();
 
-        fileSystem.deleteFile(logFiles.getCheckpointFile().getCurrentFile());
+        fileSystem.deleteFile(walService.getCheckpointFile().getCurrentFile());
         startStopDbRecoveryOfCorruptedLogs();
 
         assertEquals(numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(0, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles());
 
-        assertThat(logFiles.getCheckpointFile().getMatchedFiles()).hasSize(1);
-        assertThat(logFiles.getCheckpointFile().reachableCheckpoints()).hasSize(2); // Recovery completed and shutdown
+        assertThat(walService.getCheckpointFile().getMatchedFiles()).hasSize(1);
+        assertThat(walService.getCheckpointFile().reachableCheckpoints()).hasSize(2); // Recovery completed and shutdown
 
         removeDatabaseDirectories();
     }
@@ -416,7 +416,7 @@ class RecoveryCorruptedTransactionLogIT {
         // This only works if the header is incomplete, for a corrupted header it would throw
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
 
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         for (int i = 0; i < 10; i++) {
@@ -426,7 +426,7 @@ class RecoveryCorruptedTransactionLogIT {
                 transactionIdStore.getHighestGapFreeClosedTransactionId() - TransactionIdStore.BASE_TX_ID;
         managementService.shutdown();
 
-        Path currentCheckpointFile = logFiles.getCheckpointFile().getLogFileForVersion(0);
+        Path currentCheckpointFile = walService.getCheckpointFile().getLogFileForVersion(0);
         fileSystem.truncate(currentCheckpointFile, 12);
 
         startStopDbRecoveryOfCorruptedLogs();
@@ -434,8 +434,8 @@ class RecoveryCorruptedTransactionLogIT {
         assertEquals(numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(0, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles());
 
-        assertThat(logFiles.getCheckpointFile().getMatchedFiles()).hasSize(1);
-        assertThat(logFiles.getCheckpointFile().reachableCheckpoints()).hasSize(2); // Recovery completed and shutdown
+        assertThat(walService.getCheckpointFile().getMatchedFiles()).hasSize(1);
+        assertThat(walService.getCheckpointFile().reachableCheckpoints()).hasSize(2); // Recovery completed and shutdown
 
         removeDatabaseDirectories();
     }
@@ -444,7 +444,7 @@ class RecoveryCorruptedTransactionLogIT {
     void doNotRotateIfRecoveryIsRequiredButThereAreNoUnreadableData() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
 
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         LogPosition logOffsetBeforeTestTransactions =
@@ -479,14 +479,14 @@ class RecoveryCorruptedTransactionLogIT {
         assertEquals(numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(0, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles());
 
-        assertThat(logFiles.getCheckpointFile().getMatchedFiles()).hasSize(1);
+        assertThat(walService.getCheckpointFile().getMatchedFiles()).hasSize(1);
     }
 
     @Test
     void evenTruncateNewerTransactionLogFile() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         long lastClosedTransactionBeforeStart = transactionIdStore.getHighestGapFreeClosedTransactionId();
         for (int i = 0; i < 10; i++) {
@@ -507,7 +507,7 @@ class RecoveryCorruptedTransactionLogIT {
     void doNotTruncateNewerTransactionLogFileWhenFailOnError() throws IOException {
         DatabaseManagementService managementService1 = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         for (int i = 0; i < 10; i++) {
             generateTransaction(database);
         }
@@ -536,7 +536,7 @@ class RecoveryCorruptedTransactionLogIT {
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         long numberOfClosedTransactionsAfterStartup = transactionIdStore.getHighestGapFreeClosedTransactionId();
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         long lastTxSize = 0;
         long totalTxSize = 0;
         for (int i = 0; i < 10; i++) {
@@ -585,17 +585,17 @@ class RecoveryCorruptedTransactionLogIT {
                         "Fail to recover database. Any transactional logs after position LogPosition{logVersion=0, "
                                 + "byteOffset=" + txOffsetAfterStart + "} can not be recovered and will be truncated.");
 
-        logFiles = buildDefaultLogFiles(new StoreId(4, 5, "engine-1", "format-1", 1, 2));
-        assertEquals(0, logFiles.getLogFile().getLogRangeInfo().highestVersion());
+        walService = buildDefaultLogFiles(new StoreId(4, 5, "engine-1", "format-1", 1, 2));
+        assertEquals(0, walService.getLogFile().getLogRangeInfo().highestVersion());
         if (NativeAccessProvider.getNativeAccess().isAvailable()) {
             assertEquals(
                     ByteUnit.mebiBytes(1),
-                    Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+                    Files.size(walService.getCheckpointFile().getCurrentFile()));
         } else {
             assertEquals(
-                    getLastFileStartPosition(logFiles.getLogFile()).getByteOffset()
+                    getLastFileStartPosition(walService.getLogFile()).getByteOffset()
                             + CHECKPOINT_RECORD_SIZE * 4 /* checkpoint for setup, start and stop */,
-                    Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+                    Files.size(walService.getCheckpointFile().getCurrentFile()));
         }
     }
 
@@ -603,7 +603,7 @@ class RecoveryCorruptedTransactionLogIT {
     void failToStartWithTransactionLogsWithDataAfterLastEntry() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         long txSize = generateTransaction(database);
         managementService.shutdown();
 
@@ -626,8 +626,8 @@ class RecoveryCorruptedTransactionLogIT {
         long initialTransactionOffset = txOffsetAfterStart + txSize;
         assertEquals(initialTransactionOffset, getLastClosedTransactionOffset(database));
 
-        logFiles = buildDefaultLogFiles(database);
-        final var transactionLogFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+        walService = buildDefaultLogFiles(database);
+        final var transactionLogFile = walService.getLogFile().getLogRangeInfo().highestFile();
         final var position = getLastReadablePosition(transactionLogFile).lastReadable;
 
         managementService.shutdown();
@@ -658,13 +658,13 @@ class RecoveryCorruptedTransactionLogIT {
     void failToStartWithNotLastTransactionLogHavingZerosInTheEnd() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         generateTransaction(database);
         managementService.shutdown();
 
-        try (Lifespan lifespan = new Lifespan(logFiles)) {
-            Path originalFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
-            logFiles.getLogFile().rotate();
+        try (Lifespan lifespan = new Lifespan(walService)) {
+            Path originalFile = walService.getLogFile().getLogRangeInfo().highestFile();
+            walService.getLogFile().rotate();
 
             // append zeros in the end of previous file causing illegal suffix
             try (StoreFileChannel writeChannel = fileSystem.write(originalFile)) {
@@ -685,16 +685,16 @@ class RecoveryCorruptedTransactionLogIT {
     void startWithNotLastTransactionLogHavingZerosInTheEndAndCorruptedLogRecoveryEnabled() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         long txSize = generateTransaction(database);
         managementService.shutdown();
 
         long originalLogDataLength;
         Path firstLogFile;
-        try (Lifespan lifespan = new Lifespan(logFiles)) {
-            LogFile logFile = logFiles.getLogFile();
+        try (Lifespan lifespan = new Lifespan(walService)) {
+            LogFile logFile = walService.getLogFile();
             LogPosition readablePosition = getLastReadablePosition(logFile);
-            firstLogFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+            firstLogFile = walService.getLogFile().getLogRangeInfo().highestFile();
             originalLogDataLength = readablePosition.getByteOffset();
             logFile.rotate();
 
@@ -725,13 +725,13 @@ class RecoveryCorruptedTransactionLogIT {
     void restoreCheckpointLogVersionFromFileVersion() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         generateTransaction(database);
         managementService.shutdown();
 
         int rotations = 10;
-        try (Lifespan lifespan = new Lifespan(logFiles)) {
-            CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        try (Lifespan lifespan = new Lifespan(walService)) {
+            CheckpointFile checkpointFile = walService.getCheckpointFile();
             DetachedCheckpointAppender checkpointAppender =
                     (DetachedCheckpointAppender) checkpointFile.getCheckpointAppender();
 
@@ -771,12 +771,12 @@ class RecoveryCorruptedTransactionLogIT {
     void startWithoutProblemsIfRotationForcedBeforeFileEnd() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         generateTransaction(database);
         managementService.shutdown();
 
-        try (Lifespan lifespan = new Lifespan(logFiles)) {
-            Path originalFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+        try (Lifespan lifespan = new Lifespan(walService)) {
+            Path originalFile = walService.getLogFile().getLogRangeInfo().highestFile();
             // append zeros in the end of file before rotation should not be problematic since rotation will prepare tx
             // log file and truncate
             // in it its current position.
@@ -786,7 +786,7 @@ class RecoveryCorruptedTransactionLogIT {
                     writeChannel.writeAll(ByteBuffer.wrap(new byte[] {0, 0, 0, 0, 0}));
                 }
             }
-            logFiles.getLogFile().rotate();
+            walService.getLogFile().rotate();
         }
 
         startStopDatabase();
@@ -797,7 +797,7 @@ class RecoveryCorruptedTransactionLogIT {
     void detectCorruptedCheckpointFileWithDataAfterLastRecord() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         generateTransaction(database);
         managementService.shutdown();
 
@@ -821,7 +821,7 @@ class RecoveryCorruptedTransactionLogIT {
     void detectAndStartWithCorruptedCheckpointFileWithDataAfterLastRecord() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         generateTransaction(database);
         managementService.shutdown();
 
@@ -833,7 +833,7 @@ class RecoveryCorruptedTransactionLogIT {
             assertTrue(context.database().isStarted());
 
             // The appended garbage should have been truncated and a new checkpoint made
-            assertThat(Files.size(logFiles.getCheckpointFile().getLogFileForVersion(logPosition.getLogVersion())))
+            assertThat(Files.size(walService.getCheckpointFile().getLogFileForVersion(logPosition.getLogVersion())))
                     .isEqualTo(logPosition.getByteOffset() + CHECKPOINT_RECORD_SIZE);
         } finally {
             dbms.shutdown();
@@ -844,12 +844,12 @@ class RecoveryCorruptedTransactionLogIT {
     void startWithoutProblemsIfRotationForcedBeforeFileEndAndCorruptedLogFilesRecoveryEnabled() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         generateTransaction(database);
         managementService.shutdown();
 
-        try (Lifespan lifespan = new Lifespan(logFiles)) {
-            Path originalFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+        try (Lifespan lifespan = new Lifespan(walService)) {
+            Path originalFile = walService.getLogFile().getLogRangeInfo().highestFile();
             // append zeros in the end of file before rotation should not be problematic since rotation will prepare tx
             // log file and truncate
             // in it its current position.
@@ -859,7 +859,7 @@ class RecoveryCorruptedTransactionLogIT {
                     writeChannel.writeAll(ByteBuffer.wrap(new byte[] {0, 0, 0, 0, 0}));
                 }
             }
-            logFiles.getLogFile().rotate();
+            walService.getLogFile().rotate();
         }
 
         startStopDbRecoveryOfCorruptedLogs();
@@ -911,7 +911,7 @@ class RecoveryCorruptedTransactionLogIT {
             String testName, LogEntryWriterWrapper logEntryWriterWrapper) throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         long lastClosedTransactionBeforeStart = transactionIdStore.getHighestGapFreeClosedTransactionId();
         long txSizes = 0;
@@ -922,7 +922,7 @@ class RecoveryCorruptedTransactionLogIT {
                 transactionIdStore.getHighestGapFreeClosedTransactionId() - lastClosedTransactionBeforeStart;
         managementService.shutdown();
 
-        Path highestLogFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+        Path highestLogFile = walService.getLogFile().getLogRangeInfo().highestFile();
         Positions positions = getLastReadablePosition(highestLogFile);
         long originalFileLength = positions.lastReadable.getByteOffset();
         removeLastCheckpointRecordFromLastLogFile();
@@ -943,14 +943,14 @@ class RecoveryCorruptedTransactionLogIT {
                         "Any transactional logs after position LogPosition{logVersion=0, byteOffset="
                                 + (txSizes + txOffsetAfterStart) + "} can not be recovered and will be truncated.");
 
-        assertEquals(0, logFiles.getLogFile().getLogRangeInfo().highestVersion());
+        assertEquals(0, walService.getLogFile().getLogRangeInfo().highestVersion());
         assertEquals(numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(originalFileLength, fileSystem.getFileSize(highestLogFile));
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test, plus checkpoints on creation
         assertEquals(
                 positions.startPosition.getByteOffset() + 4 * CHECKPOINT_RECORD_SIZE,
-                Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+                Files.size(walService.getCheckpointFile().getCurrentFile()));
     }
 
     @ParameterizedTest(name = "[{index}] ({0})")
@@ -959,7 +959,7 @@ class RecoveryCorruptedTransactionLogIT {
             String testName, LogEntryWriterWrapper logEntryWriterWrapper) throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         long lastClosedTransactionBeforeStart = transactionIdStore.getHighestGapFreeClosedTransactionId();
         long txSize = generateTransactionsAndRotate(database, 3);
@@ -971,7 +971,7 @@ class RecoveryCorruptedTransactionLogIT {
                 transactionIdStore.getHighestGapFreeClosedTransactionId() - lastClosedTransactionBeforeStart;
         managementService.shutdown();
 
-        Path highestLogFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+        Path highestLogFile = walService.getLogFile().getLogRangeInfo().highestFile();
         Positions positions = getLastReadablePosition(highestLogFile);
         long originalFileLength = positions.lastReadable.getByteOffset();
         removeLastCheckpointRecordFromLastLogFile();
@@ -993,14 +993,14 @@ class RecoveryCorruptedTransactionLogIT {
                                 + (txSize + additionalTxSizes + positions.startPosition.getByteOffset())
                                 + "} can not be recovered and will be truncated.");
 
-        assertEquals(3, logFiles.getLogFile().getLogRangeInfo().highestVersion());
+        assertEquals(3, walService.getLogFile().getLogRangeInfo().highestVersion());
         assertEquals(numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(originalFileLength, fileSystem.getFileSize(highestLogFile));
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
         assertEquals(
                 positions.startPosition.getByteOffset() + 4 * CHECKPOINT_RECORD_SIZE,
-                Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+                Files.size(walService.getCheckpointFile().getCurrentFile()));
     }
 
     @ParameterizedTest(name = "[{index}] ({0})")
@@ -1009,7 +1009,7 @@ class RecoveryCorruptedTransactionLogIT {
             String testName, LogEntryWriterWrapper logEntryWriterWrapper) throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         long transactionsToRecover = 7;
         long txSize = generateTransactionsAndRotateWithCheckpoint(database, 3);
         long additionalTxSizes = 0;
@@ -1018,7 +1018,7 @@ class RecoveryCorruptedTransactionLogIT {
         }
         managementService.shutdown();
 
-        Path highestLogFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+        Path highestLogFile = walService.getLogFile().getLogRangeInfo().highestFile();
         Positions positions = getLastReadablePosition(highestLogFile);
         long originalFileLength = positions.lastReadable.getByteOffset();
         removeLastCheckpointRecordFromLastLogFile();
@@ -1040,12 +1040,12 @@ class RecoveryCorruptedTransactionLogIT {
                                 + (txSize + additionalTxSizes + positions.startPosition.getByteOffset())
                                 + "} can not be recovered and will be truncated.");
 
-        assertEquals(3, logFiles.getLogFile().getLogRangeInfo().highestVersion());
+        assertEquals(3, walService.getLogFile().getLogRangeInfo().highestVersion());
         assertEquals(transactionsToRecover, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(originalFileLength, fileSystem.getFileSize(highestLogFile));
         assertEquals(
                 positions.startPosition.getByteOffset() + 7 * CHECKPOINT_RECORD_SIZE,
-                Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+                Files.size(walService.getCheckpointFile().getCurrentFile()));
     }
 
     @ParameterizedTest(name = "[{index}] ({0})")
@@ -1054,11 +1054,11 @@ class RecoveryCorruptedTransactionLogIT {
             String testName, LogEntryWriterWrapper logEntryWriterWrapper) throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         long txSize = generateTransactionsAndRotate(database, 5);
         managementService.shutdown();
 
-        Path highestLogFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+        Path highestLogFile = walService.getLogFile().getLogRangeInfo().highestFile();
         Positions positions = getLastReadablePosition(highestLogFile);
         long originalFileLength = positions.lastReadable.getByteOffset();
         addCorruptedCommandsToLastLogFile(logEntryWriterWrapper);
@@ -1077,18 +1077,18 @@ class RecoveryCorruptedTransactionLogIT {
                                 + (txSize + positions.startPosition.getByteOffset())
                                 + "} can not be recovered and will be truncated.");
 
-        assertEquals(5, logFiles.getLogFile().getLogRangeInfo().highestVersion());
+        assertEquals(5, walService.getLogFile().getLogRangeInfo().highestVersion());
         assertEquals(originalFileLength, fileSystem.getFileSize(highestLogFile));
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
         if (NativeAccessProvider.getNativeAccess().isAvailable()) {
             assertEquals(
                     ByteUnit.mebiBytes(1),
-                    Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+                    Files.size(walService.getCheckpointFile().getCurrentFile()));
         } else {
             assertEquals(
                     positions.startPosition.getByteOffset() + 5 * CHECKPOINT_RECORD_SIZE,
-                    Files.size(logFiles.getCheckpointFile().getCurrentFile()));
+                    Files.size(walService.getCheckpointFile().getCurrentFile()));
         }
     }
 
@@ -1096,7 +1096,7 @@ class RecoveryCorruptedTransactionLogIT {
     void repetitiveRecoveryOfCorruptedLogs() throws IOException {
         DatabaseManagementService service = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) service.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
         generateTransactionsAndRotate(database, 4, false);
         service.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
@@ -1125,7 +1125,7 @@ class RecoveryCorruptedTransactionLogIT {
         // truncate would happen.
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
 
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         for (int i = 0; i < 10; i++) {
@@ -1139,9 +1139,9 @@ class RecoveryCorruptedTransactionLogIT {
 
         // Destroy the tx log a bit so we can only recover the first 10 transactions
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        LogFiles logFiles1 = dependencyResolver.resolveDependency(LogFiles.class);
+        WALService walService1 = dependencyResolver.resolveDependency(WALService.class);
         TransactionLogWriter transactionLogWriter =
-                (TransactionLogWriter) logFiles1.getLogFile().getTransactionLogWriter();
+                (TransactionLogWriter) walService1.getLogFile().getTransactionLogWriter();
         FlushableLogPositionAwareChannel channel = transactionLogWriter.getChannel();
         LogPositionMarker logPositionMarker = new LogPositionMarker();
         logPositionMarker.mark(
@@ -1181,7 +1181,7 @@ class RecoveryCorruptedTransactionLogIT {
         // truncate would happen.
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
 
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         LogPosition logOffsetBeforeTestTransactions =
@@ -1200,9 +1200,9 @@ class RecoveryCorruptedTransactionLogIT {
 
         // Destroy the tx log a bit so we can only recover the first 10 transactions
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        LogFiles logFiles1 = dependencyResolver.resolveDependency(LogFiles.class);
+        WALService walService1 = dependencyResolver.resolveDependency(WALService.class);
         TransactionLogWriter transactionLogWriter =
-                (TransactionLogWriter) logFiles1.getLogFile().getTransactionLogWriter();
+                (TransactionLogWriter) walService1.getLogFile().getTransactionLogWriter();
         FlushableLogPositionAwareChannel channel = transactionLogWriter.getChannel();
         LogPositionMarker logPositionMarker = new LogPositionMarker();
         logPositionMarker.mark(
@@ -1254,7 +1254,7 @@ class RecoveryCorruptedTransactionLogIT {
                 node.setProperty(name, "Lisa");
                 tx.commit();
             }
-            logFiles = buildDefaultLogFiles(getStoreId(database));
+            walService = buildDefaultLogFiles(getStoreId(database));
         }
         // When
         removeLastCheckpointRecordFromLastLogFile();
@@ -1307,7 +1307,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     void removeLastCheckpointRecordFromLastLogFile() throws IOException {
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
         var checkpoint = checkpointFile.findLatestCheckpoint();
         if (checkpoint.isPresent()) {
             LogPosition logPosition = checkpoint.get().checkpointEntryPosition();
@@ -1319,7 +1319,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private void replacePartOfCheckpointWithZeroes() throws IOException {
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
         var checkpoint = checkpointFile.findLatestCheckpoint();
         if (checkpoint.isPresent()) {
             LogPosition logPosition = checkpoint.get().checkpointEntryPosition();
@@ -1332,7 +1332,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private void replacePartOfFirstCheckpointAndRestOfFileWithZeroes() throws IOException {
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
         var checkpoints = checkpointFile.reachableCheckpoints();
         if (!checkpoints.isEmpty()) {
             LogPosition logPosition = checkpoints.get(0).checkpointEntryPosition();
@@ -1352,7 +1352,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private LogPosition appendDataAfterLastCheckpointRecordFromLastLogFile() throws IOException {
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
         var checkpoint = checkpointFile.findLatestCheckpoint();
         if (checkpoint.isPresent()) {
             LogPosition logPosition = checkpoint.get().channelPositionAfterCheckpoint();
@@ -1367,7 +1367,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private void appendRandomBytesAfterLastCheckpointRecordFromLastLogFile(int bytesToAdd) throws IOException {
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
         var checkpoint = checkpointFile.findLatestCheckpoint();
         if (checkpoint.isPresent()) {
             LogPosition logPosition = checkpoint.get().channelPositionAfterCheckpoint();
@@ -1399,7 +1399,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private void truncateBytesFromLastCheckpointLogFile(long bytesToTrim) throws IOException {
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
         var checkpoint = checkpointFile.findLatestCheckpoint();
         if (checkpoint.isPresent()) {
             LogPosition logPosition = checkpoint.get().channelPositionAfterCheckpoint();
@@ -1411,13 +1411,13 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private void truncateBytesFromLastLogFile(long bytesToTrim) throws IOException {
-        if (logFiles.getLogFile().getLogRangeInfo().highestVersion() > 0) {
-            Path highestLogFile = logFiles.getLogFile().getLogRangeInfo().highestFile();
+        if (walService.getLogFile().getLogRangeInfo().highestVersion() > 0) {
+            Path highestLogFile = walService.getLogFile().getLogRangeInfo().highestFile();
             long readableOffset =
                     getLastReadablePosition(highestLogFile).lastReadable.getByteOffset();
             if (bytesToTrim > readableOffset) {
                 fileSystem.deleteFile(highestLogFile);
-                if (logFiles.logFiles().length > 0) {
+                if (walService.logFiles().length > 0) {
                     truncateBytesFromLastLogFile(bytesToTrim); // start truncating from next file
                 }
             } else {
@@ -1433,8 +1433,8 @@ class RecoveryCorruptedTransactionLogIT {
     private void writeRandomBytesAfterLastCommandInLastLogFile(Supplier<ByteBuffer> source, int bytesToAdd)
             throws IOException {
         try (Lifespan lifespan = new Lifespan()) {
-            LogFile transactionLogFile = logFiles.getLogFile();
-            lifespan.add(logFiles);
+            LogFile transactionLogFile = walService.getLogFile();
+            lifespan.add(walService);
 
             LogPosition position = getLastReadablePosition(transactionLogFile);
 
@@ -1464,7 +1464,7 @@ class RecoveryCorruptedTransactionLogIT {
     private Positions getLastReadablePosition(Path logFile) throws IOException {
         VersionAwareLogEntryReader entryReader =
                 new VersionAwareLogEntryReader(storageEngineFactory.commandReaderFactory(), BINARY_VERSIONS, INSTANCE);
-        LogFile txLogFile = logFiles.getLogFile();
+        LogFile txLogFile = walService.getLogFile();
         long logVersion = txLogFile.getLogVersion(logFile);
         LogPosition startPosition = txLogFile.extractHeader(logVersion).getStartPosition();
         try (ReadableLogChannel reader = openTransactionFileChannel(logVersion, startPosition)) {
@@ -1478,13 +1478,13 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private LogPosition getLastFileStartPosition(LogFile logFile) throws IOException {
-        return logFile.extractHeader(logFiles.getLogFile().getLogRangeInfo().highestVersion())
+        return logFile.extractHeader(walService.getLogFile().getLogRangeInfo().highestVersion())
                 .getStartPosition();
     }
 
     private ReadableLogChannel openTransactionFileChannel(long logVersion, LogPosition startPosition)
             throws IOException {
-        final var logFile = logFiles.getLogFile();
+        final var logFile = walService.getLogFile();
         final var channel = ReadAheadUtils.newChannel(logFile, logVersion, INSTANCE);
         channel.position(startPosition.getByteOffset());
         return channel;
@@ -1494,7 +1494,7 @@ class RecoveryCorruptedTransactionLogIT {
         VersionAwareLogEntryReader entryReader =
                 new VersionAwareLogEntryReader(storageEngineFactory.commandReaderFactory(), BINARY_VERSIONS, INSTANCE);
         LogPosition startPosition = logFile.extractHeader(
-                        logFiles.getLogFile().getLogRangeInfo().highestVersion())
+                        walService.getLogFile().getLogRangeInfo().highestVersion())
                 .getStartPosition();
         try (ReadableLogChannel reader = logFile.getReader(startPosition)) {
             while (entryReader.readLogEntry(reader) != null) {
@@ -1534,8 +1534,8 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private void addCorruptedCommandsToLastLogFile(LogEntryWriterWrapper logEntryWriterWrapper) throws IOException {
-        var versionRepository = new SimpleLogVersionRepository(getInitialVersion(logFiles), 0);
-        LogFiles internalLogFiles = LogFilesBuilder.writeableBuilder(
+        var versionRepository = new SimpleLogVersionRepository(getInitialVersion(walService), 0);
+        WALService internalWALService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fileSystem,
                         this::kernelVersion,
@@ -1545,8 +1545,8 @@ class RecoveryCorruptedTransactionLogIT {
                 .withStorageEngineFactory(StorageEngineFactory.selectStorageEngine(config))
                 .withConfig(config)
                 .build();
-        try (Lifespan lifespan = new Lifespan(internalLogFiles)) {
-            LogFile transactionLogFile = internalLogFiles.getLogFile();
+        try (Lifespan lifespan = new Lifespan(internalWALService)) {
+            LogFile transactionLogFile = internalWALService.getLogFile();
             LogEntryWriter<FlushableLogPositionAwareChannel> realLogEntryWriter =
                     ((TransactionLogWriter) transactionLogFile.getTransactionLogWriter()).getWriter();
             LogEntryWriter<FlushableLogPositionAwareChannel> wrappedLogEntryWriter =
@@ -1574,8 +1574,10 @@ class RecoveryCorruptedTransactionLogIT {
         }
     }
 
-    private static long getInitialVersion(LogFiles logFiles) {
-        return logFiles == null ? 0 : logFiles.getLogFile().getLogRangeInfo().highestVersion();
+    private static long getInitialVersion(WALService walService) {
+        return walService == null
+                ? 0
+                : walService.getLogFile().getLogRangeInfo().highestVersion();
     }
 
     private static long getLastClosedTransactionOffset(GraphDatabaseAPI database) {
@@ -1588,7 +1590,7 @@ class RecoveryCorruptedTransactionLogIT {
         return logMetadataProvider.getHighestGapFreeClosedTransaction().logPosition();
     }
 
-    LogFiles buildDefaultLogFiles(StoreId storeId) throws IOException {
+    WALService buildDefaultLogFiles(StoreId storeId) throws IOException {
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fileSystem,
@@ -1601,7 +1603,7 @@ class RecoveryCorruptedTransactionLogIT {
                 .build();
     }
 
-    private LogFiles buildDefaultLogFiles(GraphDatabaseAPI database) throws IOException {
+    private WALService buildDefaultLogFiles(GraphDatabaseAPI database) throws IOException {
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fileSystem,
@@ -1626,11 +1628,11 @@ class RecoveryCorruptedTransactionLogIT {
     private static long generateTransactionsAndRotate(
             GraphDatabaseAPI database, int logFilesToGenerate, boolean checkpoint) throws IOException {
         DependencyResolver resolver = database.getDependencyResolver();
-        LogFiles logFiles = resolver.resolveDependency(LogFiles.class);
+        WALService walService = resolver.resolveDependency(WALService.class);
         CheckPointer checkpointer = resolver.resolveDependency(CheckPointer.class);
         long lastTxSize = -1;
-        while (logFiles.getLogFile().getLogRangeInfo().highestVersion() < logFilesToGenerate) {
-            logFiles.getLogFile().rotate();
+        while (walService.getLogFile().getLogRangeInfo().highestVersion() < logFilesToGenerate) {
+            walService.getLogFile().rotate();
             lastTxSize = generateTransaction(database);
             if (checkpoint) {
                 checkpointer.forceCheckPoint(new SimpleTriggerInfo("testForcedCheckpoint"));
@@ -1641,8 +1643,8 @@ class RecoveryCorruptedTransactionLogIT {
 
     static long generateTransaction(GraphDatabaseAPI database) throws IOException {
         LogPosition lastTx = getLastClosedTransaction(database);
-        LogFiles logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
-        LogFile logFile = logFiles.getLogFile();
+        WALService walService = database.getDependencyResolver().resolveDependency(WALService.class);
+        LogFile logFile = walService.getLogFile();
         long initialOffset = logFile.getCurrentLogVersion() > lastTx.getLogVersion()
                 ? logFile.extractHeader(logFile.getCurrentLogVersion())
                         .getStartPosition()

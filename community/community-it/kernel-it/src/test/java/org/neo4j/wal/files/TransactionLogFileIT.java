@@ -56,7 +56,7 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.wal.CompleteCommandBatch;
 import org.neo4j.wal.LogAppendEvent;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.rotation.FileLogRotation;
 import org.neo4j.wal.rotation.LogRotation;
 import org.neo4j.wal.rotation.monitor.LogRotationMonitorAdapter;
@@ -86,7 +86,7 @@ class TransactionLogFileIT {
     @EnabledOnOs(OS.LINUX)
     @SkipOnSpd(notes = incompatible, reason = "Deleting tx logs manually may cause property shard tx pulling to fail.")
     void doNotScanDirectoryOnRotate() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fileSystem,
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
@@ -96,12 +96,12 @@ class TransactionLogFileIT {
                 .withLogVersionRepository(logVersionRepository)
                 .withStoreId(STORE_ID)
                 .build();
-        life.add(logFiles);
+        life.add(walService);
         life.start();
 
         MutableLong rotationObservedVersion = new MutableLong();
         LogRotation logRotation = FileLogRotation.transactionLogRotation(
-                logFiles.getLogFile(),
+                walService.getLogFile(),
                 Clock.systemUTC(),
                 new DatabaseHealth(NO_OP, NullLog.getInstance()),
                 new LogRotationMonitorAdapter() {
@@ -113,19 +113,19 @@ class TransactionLogFileIT {
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER);
 
         for (int i = 0; i < 6; i++) {
-            for (Path path : logFiles.logFiles()) {
+            for (Path path : walService.logFiles()) {
                 FileUtils.deleteFile(path);
             }
             logRotation.rotateLogFile(LogAppendEvent.NULL);
         }
 
         assertEquals(5, rotationObservedVersion.getValue());
-        assertEquals(6, logFiles.getLogFile().getCurrentLogVersion());
+        assertEquals(6, walService.getLogFile().getCurrentLogVersion());
     }
 
     @Test
     void rotateUsesCorrectAppendIndexAndChecksum() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fileSystem,
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
@@ -135,11 +135,11 @@ class TransactionLogFileIT {
                 .withLogVersionRepository(logVersionRepository)
                 .withStoreId(STORE_ID)
                 .build();
-        life.add(logFiles);
+        life.add(walService);
         life.start();
 
         var appendIndex = metadataProvider.nextAppendIndex();
-        var writer = logFiles.getLogFile().getTransactionLogWriter();
+        var writer = walService.getLogFile().getTransactionLogWriter();
         var simpleTransaction = new CompleteCommandBatch(
                 singletonList(new TestCommand(LatestVersions.LATEST_KERNEL_VERSION)),
                 UNKNOWN_CONSENSUS_INDEX,
@@ -161,7 +161,7 @@ class TransactionLogFileIT {
 
         MutableLong rotationObservedVersion = new MutableLong();
         LogRotation logRotation = FileLogRotation.transactionLogRotation(
-                logFiles.getLogFile(),
+                walService.getLogFile(),
                 Clock.systemUTC(),
                 new DatabaseHealth(NO_OP, NullLog.getInstance()),
                 new LogRotationMonitorAdapter() {
@@ -174,7 +174,8 @@ class TransactionLogFileIT {
         // rotate without explicit appendIndex should use metadataProvider for lastAppendIndex
         // and also match on checksum if available
         logRotation.rotateLogFile(LogAppendEvent.NULL);
-        var header = logFiles.getLogFile().extractHeader(logFiles.getLogFile().getCurrentLogVersion());
+        var header =
+                walService.getLogFile().extractHeader(walService.getLogFile().getCurrentLogVersion());
         assertEquals(metadataProvider.getLastAppendIndex(), header.getLastAppendIndex());
         if (header.getLogFormatVersion().usesSegments()) { // no checksum before envelopes
             assertEquals(checksum, header.getPreviousLogFileChecksum());
@@ -183,7 +184,8 @@ class TransactionLogFileIT {
         int testCRC = 789;
         // rotate with explicit appendIndex should respect passed in value
         logRotation.locklessRotateLogFile(LogAppendEvent.NULL, testAppendIndex, testCRC, -1);
-        var header2 = logFiles.getLogFile().extractHeader(logFiles.getLogFile().getCurrentLogVersion());
+        var header2 =
+                walService.getLogFile().extractHeader(walService.getLogFile().getCurrentLogVersion());
         assertEquals(testAppendIndex, header2.getLastAppendIndex());
         if (header2.getLogFormatVersion().usesSegments()) { // no checksum before envelopes
             assertEquals(testCRC, header2.getPreviousLogFileChecksum());
@@ -194,7 +196,7 @@ class TransactionLogFileIT {
     void trackTransactionLogFileMemory() throws IOException {
         var memoryTracker = new LocalMemoryTracker();
         var life = new LifeSupport();
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fileSystem,
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
@@ -206,7 +208,7 @@ class TransactionLogFileIT {
                 .withMemoryTracker(memoryTracker)
                 .build();
 
-        life.add(logFiles);
+        life.add(walService);
         try {
             life.start();
 

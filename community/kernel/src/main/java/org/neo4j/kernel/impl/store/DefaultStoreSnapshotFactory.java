@@ -35,7 +35,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.SegmentsFilter;
 import org.neo4j.storageengine.api.StoreResource;
 import org.neo4j.storageengine.api.StoreSnapshot;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 import org.neo4j.wal.entry.LogFormat;
@@ -84,8 +84,9 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
             var lastCommittedTransactionId = latestCheckpointInfo.highestObservedClosedTransactionId();
             long appendIndex = latestCheckpointInfo.appendIndex();
 
-            LogFiles logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
-            LogFormat logFormatAtCheckpoint = logFiles.getLogFile()
+            WALService walService = database.getDependencyResolver().resolveDependency(WALService.class);
+            LogFormat logFormatAtCheckpoint = walService
+                    .getLogFile()
                     .extractHeader(
                             latestCheckpointInfo.checkpointedLogPosition().getLogVersion())
                     .getLogFormatVersion();

@@ -126,15 +126,15 @@ class PhysicalLogicalTransactionStoreTest {
         long timeCommitted = timeStarted + 10;
 
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
+        final WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
         long initialAppendIndex = logMetadataProvider.getLastAppendIndex();
-        life.add(logFiles);
+        life.add(walService);
         life.start();
         try {
             addATransactionAndRewind(
                     life,
-                    logFiles,
+                    walService,
                     positionCache,
                     logMetadataProvider,
                     consensusIndex,
@@ -147,14 +147,14 @@ class PhysicalLogicalTransactionStoreTest {
         }
 
         // create empty transaction log file and clear transaction cache to force re-read
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         fileSystem
                 .write(logFile.getLogFileForVersion(logFile.getLogRangeInfo().highestVersion() + 1))
                 .close();
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore(
-                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config, INSTANCE);
+                walService, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config, INSTANCE);
         verifyTransaction(
                 positionCache,
                 consensusIndex,
@@ -169,13 +169,13 @@ class PhysicalLogicalTransactionStoreTest {
     void shouldOpenCleanStore() throws Exception {
         // GIVEN
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
-        life.add(logFiles);
+        final WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
+        life.add(walService);
 
         life.add(createTransactionAppender(
                 logMetadataProvider,
-                logFiles,
+                walService,
                 new DatabaseConfig(Config.defaults()),
                 jobScheduler,
                 new TransactionMetadataCache()));
@@ -199,15 +199,15 @@ class PhysicalLogicalTransactionStoreTest {
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
+        final WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
 
         life.start();
-        life.add(logFiles);
+        life.add(walService);
         try {
             addATransactionAndRewind(
                     life,
-                    logFiles,
+                    walService,
                     positionCache,
                     logMetadataProvider,
                     consensusIndex,
@@ -220,23 +220,23 @@ class PhysicalLogicalTransactionStoreTest {
         }
 
         life = new LifeSupport();
-        life.add(logFiles);
+        life.add(walService);
         final AtomicBoolean recoveryPerformed = new AtomicBoolean();
         FakeRecoveryVisitor visitor =
                 new FakeRecoveryVisitor(consensusIndex, timeStarted, timeCommitted, latestCommittedTxWhenStarted);
 
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
-                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config, INSTANCE);
+                walService, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config, INSTANCE);
 
         life.add(createTransactionAppender(
-                logMetadataProvider, logFiles, new DatabaseConfig(Config.defaults()), jobScheduler, positionCache));
+                logMetadataProvider, walService, new DatabaseConfig(Config.defaults()), jobScheduler, positionCache));
         CorruptedLogsTruncator logPruner =
-                new CorruptedLogsTruncator(databaseDirectory, logFiles, fileSystem, INSTANCE);
+                new CorruptedLogsTruncator(databaseDirectory, walService, fileSystem, INSTANCE);
         life.add(new TransactionLogsRecovery(
-                logFiles,
+                walService,
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 LatestVersions.LATEST_LOG_FORMAT_PROVIDER,
-                new TestRecoveryService(visitor, logFiles, txStore, recoveryPerformed),
+                new TestRecoveryService(visitor, walService, txStore, recoveryPerformed),
                 logPruner,
                 new LifecycleAdapter(),
                 mock(RecoveryMonitor.class),
@@ -276,15 +276,15 @@ class PhysicalLogicalTransactionStoreTest {
         long timeCommitted = timeStarted + 10;
 
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = buildLogFiles();
-        LogMetadataProvider logMetadataProvider = logFiles.logMetadataProvider();
+        final WALService walService = buildLogFiles();
+        LogMetadataProvider logMetadataProvider = walService.logMetadataProvider();
         long initialAppendIndex = logMetadataProvider.getLastAppendIndex();
         life.start();
-        life.add(logFiles);
+        life.add(walService);
         try {
             addATransactionAndRewind(
                     life,
-                    logFiles,
+                    walService,
                     positionCache,
                     logMetadataProvider,
                     consensusIndex,
@@ -297,9 +297,9 @@ class PhysicalLogicalTransactionStoreTest {
         }
 
         life = new LifeSupport();
-        life.add(logFiles);
+        life.add(walService);
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore(
-                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config, INSTANCE);
+                walService, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config, INSTANCE);
 
         // WHEN
         life.start();
@@ -322,9 +322,9 @@ class PhysicalLogicalTransactionStoreTest {
         // GIVEN
         Config config = Config.defaults();
         LogFile logFile = mock(LogFile.class);
-        LogFiles logFiles = mock(LogFiles.class);
+        WALService walService = mock(WALService.class);
         // a missing file
-        when(logFiles.getLogFile()).thenReturn(logFile);
+        when(walService.getLogFile()).thenReturn(logFile);
         when(logFile.getReader(any(LogPosition.class))).thenThrow(new NoSuchFileException("mock"));
         // Which is nevertheless in the metadata cache
         TransactionMetadataCache cache = new TransactionMetadataCache();
@@ -333,7 +333,7 @@ class PhysicalLogicalTransactionStoreTest {
         LifeSupport life = new LifeSupport();
 
         final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
-                logFiles, cache, TestCommandReaderFactory.INSTANCE, monitors, true, config, INSTANCE);
+                walService, cache, TestCommandReaderFactory.INSTANCE, monitors, true, config, INSTANCE);
 
         try {
             life.start();
@@ -346,7 +346,7 @@ class PhysicalLogicalTransactionStoreTest {
         }
     }
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout,
@@ -362,7 +362,7 @@ class PhysicalLogicalTransactionStoreTest {
 
     private static void addATransactionAndRewind(
             LifeSupport life,
-            LogFiles logFiles,
+            WALService walService,
             TransactionMetadataCache positionCache,
             LogMetadataProvider logMetadataProvider,
             long consensusIndex,
@@ -372,7 +372,7 @@ class PhysicalLogicalTransactionStoreTest {
             JobScheduler jobScheduler)
             throws Exception {
         TransactionAppender appender = life.add(createTransactionAppender(
-                logMetadataProvider, logFiles, new DatabaseConfig(Config.defaults()), jobScheduler, positionCache));
+                logMetadataProvider, walService, new DatabaseConfig(Config.defaults()), jobScheduler, positionCache));
         CompleteCommandBatch transaction = new CompleteCommandBatch(
                 singleTestCommand(),
                 consensusIndex,
@@ -423,12 +423,12 @@ class PhysicalLogicalTransactionStoreTest {
 
     private static TransactionAppender createTransactionAppender(
             LogMetadataProvider logMetadataProvider,
-            LogFiles logFiles,
+            WALService walService,
             DatabaseConfig databaseConfig,
             JobScheduler jobScheduler,
             TransactionMetadataCache positionCache) {
         return TransactionAppenderFactory.createTransactionAppender(
-                logFiles,
+                walService,
                 logMetadataProvider,
                 logMetadataProvider,
                 databaseConfig,
@@ -477,17 +477,17 @@ class PhysicalLogicalTransactionStoreTest {
 
     private static class TestRecoveryService implements RecoveryService {
         private final FakeRecoveryVisitor visitor;
-        private final LogFiles logFiles;
+        private final WALService walService;
         private final LogicalTransactionStore txStore;
         private final AtomicBoolean recoveryPerformed;
 
         TestRecoveryService(
                 FakeRecoveryVisitor visitor,
-                LogFiles logFiles,
+                WALService walService,
                 LogicalTransactionStore txStore,
                 AtomicBoolean recoveryPerformed) {
             this.visitor = visitor;
-            this.logFiles = logFiles;
+            this.walService = walService;
             this.txStore = txStore;
             this.recoveryPerformed = recoveryPerformed;
         }
@@ -500,7 +500,7 @@ class PhysicalLogicalTransactionStoreTest {
 
         @Override
         public RecoveryStartInformation getRecoveryStartInformation() throws IOException {
-            LogPosition startPosition = logFiles.getLogFile().extractHeader(0).getStartPosition();
+            LogPosition startPosition = walService.getLogFile().extractHeader(0).getStartPosition();
             return new RecoveryStartInformation(startPosition, startPosition, null, 1);
         }
 

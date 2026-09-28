@@ -25,7 +25,7 @@ import java.time.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.util.VisibleForTesting;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.pruning.ThresholdConfigParser.ThresholdConfigValue;
 
 public class LogPruneStrategyFactory {
@@ -59,7 +59,7 @@ public class LogPruneStrategyFactory {
      */
     LogPruneStrategy strategyFromConfigValue(
             FileSystemAbstraction fileSystem,
-            LogFiles logFiles,
+            WALService walService,
             InternalLogProvider logProvider,
             Clock clock,
             String configValue,
@@ -68,18 +68,18 @@ public class LogPruneStrategyFactory {
         if (value == ThresholdConfigValue.NO_PRUNING) {
             return NO_PRUNING;
         }
-        return createStrategy(logFiles, fileSystem, logProvider, clock, value, transactionLogFileInformation);
+        return createStrategy(walService, fileSystem, logProvider, clock, value, transactionLogFileInformation);
     }
 
     protected LogPruneStrategy createStrategy(
-            LogFiles logFiles,
+            WALService walService,
             FileSystemAbstraction fileSystem,
             InternalLogProvider logProvider,
             Clock clock,
             ThresholdConfigValue value,
             TransactionLogFileInformation transactionLogFileInformation) {
         var threshold = getThresholdByType(fileSystem, logProvider, clock, value);
-        return new ThresholdBasedPruneStrategy(logFiles.getLogFile(), threshold, transactionLogFileInformation);
+        return new ThresholdBasedPruneStrategy(walService.getLogFile(), threshold, transactionLogFileInformation);
     }
 
     @VisibleForTesting

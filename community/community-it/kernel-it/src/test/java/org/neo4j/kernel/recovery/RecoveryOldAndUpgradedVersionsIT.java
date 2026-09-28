@@ -50,8 +50,8 @@ import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogFormatVersionProvider;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.files.LogFilesBuilder;
 
@@ -226,11 +226,12 @@ class RecoveryOldAndUpgradedVersionsIT {
     }
 
     private void removeTransactionLogs(DatabaseLayout dbLayout) throws IOException {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(dbLayout.getTransactionLogsDirectory(), fileSystem)
+        WALService walService = LogFilesBuilder.logFilesBasedOnlyBuilder(
+                        dbLayout.getTransactionLogsDirectory(), fileSystem)
                 .withCommandReaderFactory(StorageEngineFactory.selectStorageEngine(fileSystem, dbLayout, null)
                         .commandReaderFactory())
                 .build();
-        for (Path logFile : fileSystem.listFiles(logFiles.logFilesDirectory())) {
+        for (Path logFile : fileSystem.listFiles(walService.logFilesDirectory())) {
             fileSystem.deleteFile(logFile);
         }
     }

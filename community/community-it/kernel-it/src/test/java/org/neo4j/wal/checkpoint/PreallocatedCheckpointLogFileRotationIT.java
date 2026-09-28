@@ -52,7 +52,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
 
     @Test
     void writeCheckpointsIntoPreallocatedFile() throws IOException {
-        var checkpointFile = logFiles.getCheckpointFile();
+        var checkpointFile = walService.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition(1000, 12345);
         var transactionId = new TransactionId(100, 101, LATEST_KERNEL_VERSION, 101, 102, 103);
@@ -75,7 +75,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
 
     @Test
     void writeCheckpointsIntoSeveralPreallocatedFiles() throws IOException {
-        var checkpointFile = logFiles.getCheckpointFile();
+        var checkpointFile = walService.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
 
         checkpointFile.rotate();

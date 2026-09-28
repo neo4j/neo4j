@@ -30,10 +30,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.ReadAheadUtils;
 import org.neo4j.wal.ReadableLogChannel;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntry;
 import org.neo4j.wal.entry.LogEntryReader;
 import org.neo4j.wal.entry.LogHeader;
@@ -76,12 +76,12 @@ public final class LogTestUtils {
     }
 
     public static Path[] filterNeostoreLogicalLog(
-            LogFiles logFiles,
+            WALService walService,
             FileSystemAbstraction fileSystem,
             LogHook<LogEntry> filter,
             CommandReaderFactory commandReaderFactory)
             throws IOException {
-        Path[] files = logFiles.logFiles();
+        Path[] files = walService.logFiles();
         for (Path file : files) {
             filterTransactionLogFile(fileSystem, file, filter, commandReaderFactory);
         }

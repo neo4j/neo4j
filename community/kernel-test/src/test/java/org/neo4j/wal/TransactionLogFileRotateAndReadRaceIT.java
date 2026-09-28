@@ -96,7 +96,7 @@ class TransactionLogFileRotateAndReadRaceIT {
                 .build();
 
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fs,
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
@@ -105,8 +105,8 @@ class TransactionLogFileRotateAndReadRaceIT {
                 .withConfig(cfg)
                 .withStoreId(storeId)
                 .build();
-        life.add(logFiles);
-        LogFile logFile = logFiles.getLogFile();
+        life.add(walService);
+        LogFile logFile = walService.getLogFile();
         var writer = (TransactionLogWriter) logFile.getTransactionLogWriter();
         LogPositionMarker startPosition = new LogPositionMarker();
         writer.getCurrentPosition(startPosition);

@@ -59,8 +59,8 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.CheckpointInfo;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 
@@ -196,7 +196,7 @@ class RecoveryRequiredCheckerTest {
             databaseLayout = db.databaseLayout();
             var dependencyResolver = db.getDependencyResolver();
             storageEngineFactory = dependencyResolver.resolveDependency(StorageEngineFactory.class);
-            var logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+            var logFiles = dependencyResolver.resolveDependency(WALService.class);
             var checkPointer = dependencyResolver.resolveDependency(CheckPointer.class);
 
             try (Transaction tx = db.beginTx()) {
@@ -322,7 +322,7 @@ class RecoveryRequiredCheckerTest {
             databaseLayout = db.databaseLayout();
             var dependencyResolver = db.getDependencyResolver();
             storageEngineFactory = dependencyResolver.resolveDependency(StorageEngineFactory.class);
-            var logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+            var logFiles = dependencyResolver.resolveDependency(WALService.class);
             var checkPointer = dependencyResolver.resolveDependency(CheckPointer.class);
 
             checkPointer.forceCheckPoint(new SimpleTriggerInfo("Test"));
@@ -360,7 +360,7 @@ class RecoveryRequiredCheckerTest {
             databaseLayout = db.databaseLayout();
             var dependencyResolver = db.getDependencyResolver();
             storageEngineFactory = dependencyResolver.resolveDependency(StorageEngineFactory.class);
-            var logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+            var logFiles = dependencyResolver.resolveDependency(WALService.class);
             var checkPointer = dependencyResolver.resolveDependency(CheckPointer.class);
 
             try (Transaction tx = db.beginTx()) {
@@ -402,7 +402,7 @@ class RecoveryRequiredCheckerTest {
             databaseLayout = db.databaseLayout();
             var dependencyResolver = db.getDependencyResolver();
             storageEngineFactory = dependencyResolver.resolveDependency(StorageEngineFactory.class);
-            var logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+            var logFiles = dependencyResolver.resolveDependency(WALService.class);
             var checkPointer = dependencyResolver.resolveDependency(CheckPointer.class);
 
             try (Transaction tx = db.beginTx()) {

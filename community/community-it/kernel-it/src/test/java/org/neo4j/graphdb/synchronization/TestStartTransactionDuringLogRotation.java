@@ -44,7 +44,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.wal.LogAppendEvent;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.rotation.monitor.LogRotationMonitor;
 import org.neo4j.wal.rotation.monitor.LogRotationMonitorAdapter;
 
@@ -113,7 +113,7 @@ public class TestStartTransactionDuringLogRotation {
             }
 
             db.getDependencyResolver()
-                    .resolveDependency(LogFiles.class)
+                    .resolveDependency(WALService.class)
                     .getLogFile()
                     .getLogRotation()
                     .rotateLogFile(LogAppendEvent.NULL);

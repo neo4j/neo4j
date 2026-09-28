@@ -50,8 +50,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.wal.AppendBatchInfo;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointer;
 import org.neo4j.wal.checkpoint.SimpleTriggerInfo;
 import org.neo4j.wal.files.LogFilesBuilder;
@@ -84,8 +84,8 @@ public class LogTailAppendIndexIT {
 
         fileSystem.delete(layout.getTransactionLogsDirectory());
 
-        LogFiles logFiles = buildDefaultLogFiles(layout);
-        var lastBatch = logFiles.getTailMetadata().lastBatch();
+        WALService walService = buildDefaultLogFiles(layout);
+        var lastBatch = walService.getTailMetadata().lastBatch();
         assertEquals(BASE_APPEND_INDEX, lastBatch.appendIndex());
         assertEquals(new LogPosition(0, 64), lastBatch.logPositionAfter());
     }
@@ -104,7 +104,7 @@ public class LogTailAppendIndexIT {
                 dependencyResolver.resolveDependency(TransactionIdStore.class).getLastCommittedBatch();
 
         var layout = dependencyResolver.resolveDependency(DatabaseLayout.class);
-        var originalLogFiles = dependencyResolver.resolveDependency(LogFiles.class);
+        var originalLogFiles = dependencyResolver.resolveDependency(WALService.class);
         Path[] checkpointFiles = originalLogFiles.getCheckpointFile().getMatchedFiles();
         dbms.shutdown();
 
@@ -112,8 +112,8 @@ public class LogTailAppendIndexIT {
             fileSystem.delete(checkpointFile);
         }
 
-        LogFiles logFiles = buildDefaultLogFiles(layout);
-        assertEquals(lastBatchBeforeRestart, logFiles.getTailMetadata().lastBatch());
+        WALService walService = buildDefaultLogFiles(layout);
+        assertEquals(lastBatchBeforeRestart, walService.getTailMetadata().lastBatch());
     }
 
     @Test
@@ -122,7 +122,7 @@ public class LogTailAppendIndexIT {
         var db = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         var marker = RelationshipType.withName("marker");
         var dependencyResolver = db.getDependencyResolver();
-        var originalLogFiles = dependencyResolver.resolveDependency(LogFiles.class);
+        var originalLogFiles = dependencyResolver.resolveDependency(WALService.class);
         for (int j = 0; j < 12; j++) {
             for (int i = 0; i < 10; i++) {
                 createNodesWithRelationship(db, marker);
@@ -140,8 +140,8 @@ public class LogTailAppendIndexIT {
             fileSystem.delete(checkpointFile);
         }
 
-        LogFiles logFiles = buildDefaultLogFiles(layout);
-        assertEquals(lastBatchBeforeRestart, logFiles.getTailMetadata().lastBatch());
+        WALService walService = buildDefaultLogFiles(layout);
+        assertEquals(lastBatchBeforeRestart, walService.getTailMetadata().lastBatch());
     }
 
     @Test
@@ -160,8 +160,8 @@ public class LogTailAppendIndexIT {
         var layout = dependencyResolver.resolveDependency(DatabaseLayout.class);
         dbms.shutdown();
 
-        LogFiles logFiles = buildDefaultLogFiles(layout);
-        assertEquals(lastBatchBeforeRestart, logFiles.getTailMetadata().lastBatch());
+        WALService walService = buildDefaultLogFiles(layout);
+        assertEquals(lastBatchBeforeRestart, walService.getTailMetadata().lastBatch());
     }
 
     @Test
@@ -170,7 +170,7 @@ public class LogTailAppendIndexIT {
         var db = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         var marker = RelationshipType.withName("marker");
         var dependencyResolver = db.getDependencyResolver();
-        var originalLogFiles = dependencyResolver.resolveDependency(LogFiles.class);
+        var originalLogFiles = dependencyResolver.resolveDependency(WALService.class);
         for (int j = 0; j < 12; j++) {
             for (int i = 0; i < 10; i++) {
                 createNodesWithRelationship(db, marker);
@@ -183,8 +183,8 @@ public class LogTailAppendIndexIT {
         var layout = dependencyResolver.resolveDependency(DatabaseLayout.class);
         dbms.shutdown();
 
-        LogFiles logFiles = buildDefaultLogFiles(layout);
-        assertEquals(lastBatchBeforeRestart, logFiles.getTailMetadata().lastBatch());
+        WALService walService = buildDefaultLogFiles(layout);
+        assertEquals(lastBatchBeforeRestart, walService.getTailMetadata().lastBatch());
     }
 
     @Test
@@ -211,8 +211,8 @@ public class LogTailAppendIndexIT {
 
         removeLastCheckpointRecordFromLogFile(layout, fileSystem);
 
-        LogFiles logFiles = buildDefaultLogFiles(layout);
-        assertEquals(lastBatchBeforeRestart, logFiles.getTailMetadata().lastBatch());
+        WALService walService = buildDefaultLogFiles(layout);
+        assertEquals(lastBatchBeforeRestart, walService.getTailMetadata().lastBatch());
     }
 
     @Test
@@ -221,7 +221,7 @@ public class LogTailAppendIndexIT {
         var db = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         var marker = RelationshipType.withName("marker");
         var dependencyResolver = db.getDependencyResolver();
-        var originalLogFiles = dependencyResolver.resolveDependency(LogFiles.class);
+        var originalLogFiles = dependencyResolver.resolveDependency(WALService.class);
         AppendBatchInfo lastBatchBeforeRestart = null;
         Path fileToManipulate = null;
         for (int j = 0; j < 12; j++) {
@@ -260,8 +260,8 @@ public class LogTailAppendIndexIT {
                 .build();
 
         var restartedDb = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
-        LogFiles logFiles = restartedDb.getDependencyResolver().resolveDependency(LogFiles.class);
-        assertEquals(lastBatchBeforeRestart, logFiles.getTailMetadata().lastBatch());
+        WALService walService = restartedDb.getDependencyResolver().resolveDependency(WALService.class);
+        assertEquals(lastBatchBeforeRestart, walService.getTailMetadata().lastBatch());
     }
 
     private static void createNodesWithRelationship(GraphDatabaseService db, RelationshipType marker) {
@@ -279,7 +279,7 @@ public class LogTailAppendIndexIT {
                 .build();
     }
 
-    private LogFiles buildDefaultLogFiles(DatabaseLayout databaseLayout) throws IOException {
+    private WALService buildDefaultLogFiles(DatabaseLayout databaseLayout) throws IOException {
         var storageEngine = StorageEngineFactory.selectStorageEngine(new DefaultFileSystemAbstraction(), databaseLayout)
                 .get();
         return LogFilesBuilder.readableBuilder(

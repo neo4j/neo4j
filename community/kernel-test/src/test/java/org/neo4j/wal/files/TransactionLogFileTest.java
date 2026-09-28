@@ -103,9 +103,9 @@ import org.neo4j.util.concurrent.Futures;
 import org.neo4j.wal.AppendedChunkLogVersionLocator;
 import org.neo4j.wal.LogAppendEvent;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.TransactionLogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.IncompleteLogHeaderException;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
 import org.neo4j.wal.entry.LogFormat;
@@ -149,11 +149,11 @@ class TransactionLogFileTest {
     @KernelVersionSource(atLeast = "5.0")
     @EnabledOnOs(OS.LINUX)
     void truncateCurrentLogFile(KernelVersion kernelVersion) throws IOException {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
-        life.add(logFiles);
+        WALService walService = buildLogFiles(kernelVersion);
+        life.add(walService);
         life.start();
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         long sizeBefore = fileSystem.getFileSize(logFile.getLogFileForVersion(logFile.getCurrentLogVersion()));
 
         logFile.truncate();
@@ -168,8 +168,8 @@ class TransactionLogFileTest {
     @ParameterizedTest
     @KernelVersionSource(atLeast = "5.0")
     void skipLogFileWithoutHeader(KernelVersion kernelVersion) throws IOException {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
-        life.add(logFiles);
+        WALService walService = buildLogFiles(kernelVersion);
+        life.add(walService);
         life.start();
 
         // set append index to be the same as for our test transaction
@@ -177,12 +177,12 @@ class TransactionLogFileTest {
         // simulate new file without header presence
         logVersionRepository.incrementAndGetVersion();
         fileSystem
-                .write(logFiles.getLogFile().getLogFileForVersion(logVersionRepository.getCurrentLogVersion()))
+                .write(walService.getLogFile().getLogFileForVersion(logVersionRepository.getCurrentLogVersion()))
                 .close();
         transactionIdStore.transactionCommitted(5L, 6L, DEFAULT_BOOTSTRAP_VERSION, 5, 5L, 6L);
 
         var versionLocator = new AppendedChunkLogVersionLocator(4L);
-        logFiles.getLogFile().accept(versionLocator);
+        walService.getLogFile().accept(versionLocator);
 
         LogPosition logPosition = versionLocator.getLogPositionOrThrow();
         assertEquals(1, logPosition.getLogVersion());
@@ -233,11 +233,11 @@ class TransactionLogFileTest {
     @KernelVersionSource(atLeast = "5.0")
     void shouldOpenInFreshDirectoryAndFinallyAddHeader(KernelVersion kernelVersion) throws Exception {
         // GIVEN
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
 
         // WHEN
         life.start();
-        life.add(logFiles);
+        life.add(walService);
         life.shutdown();
 
         // THEN
@@ -255,12 +255,12 @@ class TransactionLogFileTest {
     @KernelVersionSource(atLeast = "5.0")
     void shouldWriteSomeDataIntoTheLog(KernelVersion kernelVersion) throws Exception {
         // GIVEN
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
         // WHEN
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         TransactionLogWriter transactionLogWriter = (TransactionLogWriter) logFile.getTransactionLogWriter();
         var channel = transactionLogWriter.getChannel();
         LogPosition currentPosition = transactionLogWriter.getCurrentPosition();
@@ -286,12 +286,12 @@ class TransactionLogFileTest {
     @KernelVersionSource(atLeast = "5.0")
     void shouldReadOlderLogs(KernelVersion kernelVersion) throws Exception {
         // GIVEN
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
         // WHEN
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         TransactionLogWriter logWriter = (TransactionLogWriter) logFile.getTransactionLogWriter();
         var writer = logWriter.getChannel();
         LogPosition position1 = logWriter.getCurrentPosition();
@@ -337,11 +337,11 @@ class TransactionLogFileTest {
     @KernelVersionSource(atLeast = "5.0")
     void shouldVisitLogFile(KernelVersion kernelVersion) throws Exception {
         // GIVEN
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         var transactionLogWriter = (TransactionLogWriter) logFile.getTransactionLogWriter();
         var writer = transactionLogWriter.getChannel();
         LogPosition position = transactionLogWriter.getCurrentPosition();
@@ -373,13 +373,14 @@ class TransactionLogFileTest {
     void shouldCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception {
         // GIVEN a file which returns 1/2 log header size worth of bytes
         FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)
+        WALService walService = LogFilesBuilder.logFilesBasedOnlyBuilder(
+                        databaseLayout.getTransactionLogsDirectory(), fs)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .build();
         int logVersion = 0;
-        Path logFile = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        Path logFile = walService.getLogFile().getLogFileForVersion(logVersion);
         StoreChannel channel = mock(StoreChannel.class);
         when(channel.read(any(ByteBuffer.class))).thenAnswer((Answer<Integer>) invocation -> {
             Object[] args = invocation.getArguments();
@@ -391,7 +392,8 @@ class TransactionLogFileTest {
 
         // WHEN
         final var exception = assertThrows(
-                IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion(logVersion));
+                IncompleteLogHeaderException.class,
+                () -> walService.getLogFile().openForVersion(logVersion));
         verify(channel).close();
         assertEquals(0, exception.getSuppressed().length);
     }
@@ -400,13 +402,14 @@ class TransactionLogFileTest {
     void shouldSuppressFailureToCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception {
         // GIVEN a file which returns 1/2 log header size worth of bytes
         FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)
+        WALService walService = LogFilesBuilder.logFilesBasedOnlyBuilder(
+                        databaseLayout.getTransactionLogsDirectory(), fs)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .build();
         int logVersion = 0;
-        Path logFile = logFiles.getLogFile().getLogFileForVersion(logVersion);
+        Path logFile = walService.getLogFile().getLogFileForVersion(logVersion);
         StoreChannel channel = mock(StoreChannel.class);
         when(channel.read(any(ByteBuffer.class))).thenAnswer((Answer<Integer>) invocation -> {
             Object[] args = invocation.getArguments();
@@ -419,7 +422,8 @@ class TransactionLogFileTest {
 
         // WHEN
         final var exception = assertThrows(
-                IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion(logVersion));
+                IncompleteLogHeaderException.class,
+                () -> walService.getLogFile().openForVersion(logVersion));
         verify(channel).close();
         assertEquals(1, exception.getSuppressed().length);
         assertInstanceOf(IOException.class, exception.getSuppressed()[0]);
@@ -429,11 +433,11 @@ class TransactionLogFileTest {
     @KernelVersionSource(atLeast = "5.0")
     void closeChannelThrowExceptionOnAttemptToAppendTransactionLogRecords(KernelVersion kernelVersion)
             throws IOException {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         var channel = ((TransactionLogWriter) logFile.getTransactionLogWriter()).getChannel();
 
         life.shutdown();
@@ -451,11 +455,11 @@ class TransactionLogFileTest {
     @ParameterizedTest
     @KernelVersionSource(atLeast = "5.0")
     void shouldForceLogChannel(KernelVersion kernelVersion) throws Throwable {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         var capturingChannel = wrappingFileSystem.getCapturingChannel();
 
         var flushesBefore = capturingChannel.getFlushCounter().get();
@@ -470,16 +474,16 @@ class TransactionLogFileTest {
     @ParameterizedTest
     @KernelVersionSource(atLeast = "5.0")
     void combineLogFilesFromMultipleLocationsNonOverlappingFiles(KernelVersion kernelVersion) throws IOException {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
         Path additionalSource = testDirectory.directory("another");
         createFile(additionalSource, 2, kernelVersion);
         createFile(additionalSource, 3, kernelVersion);
         createFile(additionalSource, 4, kernelVersion);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         assertEquals(1, logFile.getLogRangeInfo().highestVersion());
 
         logFile.combine(additionalSource, AppendIndexProvider.UNKNOWN_APPEND_INDEX);
@@ -496,16 +500,16 @@ class TransactionLogFileTest {
     @ParameterizedTest
     @KernelVersionSource(atLeast = "5.0")
     void combineLogFilesFromMultipleLocationsOverlappingFiles(KernelVersion kernelVersion) throws IOException {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
         Path additionalSource = testDirectory.directory("another");
         createFile(additionalSource, 0, kernelVersion);
         createFile(additionalSource, 1, kernelVersion);
         createFile(additionalSource, 2, kernelVersion);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         assertEquals(1, logFile.getLogRangeInfo().highestVersion());
 
         logFile.combine(additionalSource, AppendIndexProvider.UNKNOWN_APPEND_INDEX);
@@ -522,9 +526,9 @@ class TransactionLogFileTest {
     @ParameterizedTest
     @KernelVersionSource(atLeast = "5.0")
     void combineShouldPreserveOrder(KernelVersion kernelVersion) throws IOException {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
         Path additionalSource = testDirectory.directory("another");
 
@@ -534,7 +538,7 @@ class TransactionLogFileTest {
             createFile(additionalSource, i, i, kernelVersion);
         }
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         assertEquals(1, logFile.getLogRangeInfo().highestVersion());
 
         logFile.combine(additionalSource, AppendIndexProvider.UNKNOWN_APPEND_INDEX);
@@ -556,9 +560,9 @@ class TransactionLogFileTest {
     @ParameterizedTest
     @KernelVersionSource(atLeast = "5.0")
     void combineLogFilesFromMultipleLocationsNonSequentialFiles(KernelVersion kernelVersion) throws IOException {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
         Path additionalSource1 = testDirectory.directory("another");
         createFile(additionalSource1, 0, kernelVersion);
@@ -570,7 +574,7 @@ class TransactionLogFileTest {
         createFile(additionalSource2, 26, kernelVersion);
         createFile(additionalSource2, 38, kernelVersion);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         assertEquals(1, logFile.getLogRangeInfo().highestVersion());
 
         logFile.combine(additionalSource1, AppendIndexProvider.UNKNOWN_APPEND_INDEX);
@@ -592,11 +596,11 @@ class TransactionLogFileTest {
     @ParameterizedTest
     @KernelVersionSource(atLeast = "5.0")
     void logFilesExternalReadersRegistration(KernelVersion kernelVersion) throws IOException, ExecutionException {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         logFile.rotate();
         logFile.rotate();
         logFile.rotate();
@@ -636,11 +640,11 @@ class TransactionLogFileTest {
     @ParameterizedTest
     @KernelVersionSource(atLeast = "5.0")
     void terminateLogFilesExternalReaders(KernelVersion kernelVersion) throws IOException, ExecutionException {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         logFile.rotate();
         logFile.rotate();
         logFile.rotate();
@@ -684,11 +688,11 @@ class TransactionLogFileTest {
     @ParameterizedTest
     @KernelVersionSource(atLeast = "5.0")
     void registerUnregisterLogFilesExternalReaders(KernelVersion kernelVersion) throws IOException, ExecutionException {
-        LogFiles logFiles = buildLogFiles(kernelVersion);
+        WALService walService = buildLogFiles(kernelVersion);
         life.start();
-        life.add(logFiles);
+        life.add(walService);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         logFile.rotate();
         logFile.rotate();
         logFile.rotate();
@@ -905,7 +909,7 @@ class TransactionLogFileTest {
         return result;
     }
 
-    private LogFiles buildLogFiles(KernelVersion kernelVersion) throws IOException {
+    private WALService buildLogFiles(KernelVersion kernelVersion) throws IOException {
         var builder = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         wrappingFileSystem,
@@ -941,7 +945,7 @@ class TransactionLogFileTest {
     private void startStop(
             CapturingNativeAccess capturingNativeAccess, LifeSupport lifeSupport, KernelVersion kernelVersion)
             throws IOException {
-        LogFiles logFiles = LogFilesBuilder.writeableBuilder(
+        WALService walService = LogFilesBuilder.writeableBuilder(
                         databaseLayout,
                         fileSystem,
                         fixed(kernelVersion),
@@ -954,7 +958,7 @@ class TransactionLogFileTest {
                 .withDependencies(dependenciesOf(capturingNativeAccess))
                 .build();
 
-        lifeSupport.add(logFiles);
+        lifeSupport.add(walService);
         lifeSupport.start();
 
         lifeSupport.shutdown();

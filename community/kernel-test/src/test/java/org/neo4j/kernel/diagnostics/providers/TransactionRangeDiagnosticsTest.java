@@ -54,10 +54,10 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.CheckpointInfo;
 import org.neo4j.wal.EmptyLogTailMetadata;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogTailMetadata;
 import org.neo4j.wal.VersionedFile;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.wal.files.LogRangeInfo;
@@ -217,7 +217,7 @@ class TransactionRangeDiagnosticsTest {
                         "total size of files: 372B");
     }
 
-    private Database databaseWithLogFilesContainingLowestTxId(LogFiles files) {
+    private Database databaseWithLogFilesContainingLowestTxId(WALService files) {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency(DeviceMapper.UNKNOWN_MAPPER);
         LogTailMetadata logTailMetadata = dependencies.satisfyDependency(files.getTailMetadata());
@@ -232,9 +232,9 @@ class TransactionRangeDiagnosticsTest {
         return database;
     }
 
-    private LogFiles logWithTransactionsInNextToOldestLog(long logVersion, long prevLogLastAppendIndex)
+    private WALService logWithTransactionsInNextToOldestLog(long logVersion, long prevLogLastAppendIndex)
             throws IOException {
-        LogFiles files = logWithTransactions(logVersion, logVersion + 1, prevLogLastAppendIndex);
+        WALService files = logWithTransactions(logVersion, logVersion + 1, prevLogLastAppendIndex);
         var logFile = files.getLogFile();
         when(logFile.hasAnyEntries(logVersion)).thenReturn(false);
         return files;
@@ -252,7 +252,8 @@ class TransactionRangeDiagnosticsTest {
         when(file.getLogRangeInfo()).thenReturn(new LogRangeInfo(-1, null, -1, null));
     }
 
-    private LogFiles logWithTransactions(long lowVersion, long highVersion, long headerAppendIndex) throws IOException {
+    private WALService logWithTransactions(long lowVersion, long highVersion, long headerAppendIndex)
+            throws IOException {
         return logs(transactionLogsWithTransaction(lowVersion, highVersion, headerAppendIndex), this::noFiles);
     }
 
@@ -285,7 +286,7 @@ class TransactionRangeDiagnosticsTest {
         };
     }
 
-    private LogFiles noLogs() throws IOException {
+    private WALService noLogs() throws IOException {
         return logs(
                 transactionLogs -> {
                     when(transactionLogs.getMatchedFiles()).thenReturn(new Path[0]);
@@ -294,11 +295,11 @@ class TransactionRangeDiagnosticsTest {
                 this::noFiles);
     }
 
-    private LogFiles logs(
+    private WALService logs(
             ThrowingConsumer<LogFile, IOException> transactionLogs,
             ThrowingConsumer<CheckpointFile, IOException> checkpointLogs)
             throws IOException {
-        LogFiles files = mock(TransactionLogFiles.class);
+        WALService files = mock(TransactionLogFiles.class);
         when(files.logFilesDirectory()).thenReturn(directory.homePath());
 
         LogFile transactionFiles = mock(LogFile.class);

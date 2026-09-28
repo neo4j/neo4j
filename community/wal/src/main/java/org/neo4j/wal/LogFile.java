@@ -30,6 +30,8 @@ import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.wal.enveloped.EnvelopeWriteChannel;
+import org.neo4j.wal.enveloped.InvalidLogEnvelopeReadException;
 import org.neo4j.wal.files.LogVersionVisitor;
 import org.neo4j.wal.rotation.LogRotation;
 
@@ -161,4 +163,75 @@ public interface LogFile extends VersionedFile, RotatableFile {
     PositionWithPrevAppendIndex findSafeTruncationPointInPreviousFile(PositionWithPrevAppendIndex basePosition);
 
     long getLastEntryAppendIndexInLogFiles();
+
+    long getMaxFileSize();
+
+    EnvelopeWriteChannel currentWriteChannel();
+
+    /**
+     * Recalibrates the write channel state after directPutAll operations have detached it from its state.
+     * This method reads through the entries from the last segment boundary to validate the checksum chain.
+     * If the last entry is incomplete, this method will fail.
+     *
+     * @throws InvalidLogEnvelopeReadException if incomplete entries are found at the end of the log
+     * @throws IOException if an I/O error occurs during recovery
+     */
+    void recalibrateWriteChannel() throws IOException;
+
+    /**
+     * Truncates the envelope log files after the last written entry.
+     * No written entries are truncated, this should be called only
+     * when we want to free the pre-allocated data in the log.
+     */
+    void forceRotate() throws IOException;
+
+    /**
+     * Skip in the log to the desired index. This will delete all log files and create a new empty file with a header
+     * pointing to the provided index and checksum.
+     * <p>
+     * This method only makes sense if the log is distributed as it is effectively creating a new log starting at
+     * some higher entry. Henece only the "other log" can provide the correct context for the initial state of
+     * the new log.
+     *
+     * @param index    the index to skip to. This will be the log header index and the next written entry will be index+1
+     * @param checksum the checksum for the provided index.
+     * @param offset   the offset for the provided index.
+     * @param term     the term for the provided index
+     */
+    void skip(long index, int checksum, int offset, long term) throws IOException;
+
+    void updateWriteChannel(long index, int checksum, long index1, long term) throws IOException;
+
+    /**
+     * Truncates to the last safe entry position when log pulling fails unexpectedly.
+     * Finds the last complete entry that ends at or before the last segment boundary
+     * and truncates to that entry.
+     *
+     * @param knownSafeIndex the position to start searching from, 0 if there is none
+     * @throws IOException if an I/O error occurs during truncation
+     */
+    void truncateToLastSafeEntry(long knownSafeIndex) throws IOException;
+
+    /**
+     * Can be used to reset the write channel to the end of the log, for example, after all the
+     * log files have been replaced by a store copy. This method should not be used if there's a
+     * chance that the log is corrupt.
+     *
+     * @return
+     */
+    long resetWriteChannelToLatestIndex(boolean allowStoreIdentifierChange) throws IOException;
+
+    LogPosition currentWriteLogPosition() throws IOException;
+
+    /**
+     * Verifies that the write channel's tracked state matches the on-disk tail, without mutating it — the
+     * read-only twin of {@link #recalibrateWriteChannel()}. Raw appends mirror channel state from the shipped
+     * envelopes they parse; a divergence here means that mirroring broke, and the next rotation or local append
+     * would seed from bad state.
+     *
+     * @throws IllegalStateException if the tracked state does not match the on-disk tail
+     * @throws InvalidLogEnvelopeReadException if incomplete entries are found at the end of the log
+     * @throws IOException if an I/O error occurs while reading the tail
+     */
+    void verifyWriteChannelCalibration() throws IOException;
 }

@@ -46,8 +46,8 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
 import org.neo4j.wal.entry.LogFormat;
@@ -80,10 +80,10 @@ class EnvelopedCheckpointLogFileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        LogFiles logFiles = buildLogFiles();
-        life.add(logFiles);
+        WALService walService = buildLogFiles();
+        life.add(walService);
         life.start();
-        checkpointFile = logFiles.getCheckpointFile();
+        checkpointFile = walService.getCheckpointFile();
     }
 
     @Test
@@ -174,7 +174,7 @@ class EnvelopedCheckpointLogFileTest {
                 .isZero();
     }
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         final var futureEnabledConf = Config.newBuilder()
                 .set(GraphDatabaseInternalSettings.latest_runtime_version, DbmsRuntimeVersion.V2026_07.getVersion())

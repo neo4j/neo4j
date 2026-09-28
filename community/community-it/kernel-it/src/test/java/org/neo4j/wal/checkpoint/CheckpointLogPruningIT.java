@@ -34,12 +34,12 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 @DbmsExtension(configurationCallback = "configure")
 public class CheckpointLogPruningIT {
     @Inject
-    private LogFiles logFiles;
+    private WALService walService;
 
     // We need to use CheckPointer for this test because it is the one responsible for pruning old logs.
     @Inject
@@ -53,7 +53,7 @@ public class CheckpointLogPruningIT {
 
     @Test
     void pruneObsoleteCheckpointLogFiles() throws IOException {
-        var checkpointFile = logFiles.getCheckpointFile();
+        var checkpointFile = walService.getCheckpointFile();
         fillWithCheckpoints(4, checkpointFile.getCheckpointAppender());
         checkPointer.forceCheckPoint(new SimpleTriggerInfo(CHECKPOINT_REASON));
         var matchedFiles = checkpointFile.getMatchedFiles();
@@ -65,7 +65,7 @@ public class CheckpointLogPruningIT {
 
     @Test
     void doNotPruneFilesUntilConfigured() throws IOException {
-        var checkpointFile = logFiles.getCheckpointFile();
+        var checkpointFile = walService.getCheckpointFile();
         fillWithCheckpoints(1, checkpointFile.getCheckpointAppender());
         checkPointer.forceCheckPoint(new SimpleTriggerInfo(CHECKPOINT_REASON));
         var matchedFiles = checkpointFile.getMatchedFiles();
@@ -77,7 +77,7 @@ public class CheckpointLogPruningIT {
 
     @Test
     void pruneAsSoonAsHaveAnyEligibleFiles() throws IOException {
-        var checkpointFile = logFiles.getCheckpointFile();
+        var checkpointFile = walService.getCheckpointFile();
         fillWithCheckpoints(2, checkpointFile.getCheckpointAppender());
         checkPointer.forceCheckPoint(new SimpleTriggerInfo(CHECKPOINT_REASON));
         var matchedFiles = checkpointFile.getMatchedFiles();

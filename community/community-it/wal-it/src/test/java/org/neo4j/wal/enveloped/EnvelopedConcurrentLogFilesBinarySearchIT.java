@@ -17,10 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.wal.enveloped;
+package org.neo4j.wal.enveloped; /*
+                                  * Copyright (c) "Neo4j"
+                                  * Neo4j Sweden AB [https://neo4j.com]
+                                  *
+                                  * This file is part of Neo4j.
+                                  *
+                                  * Neo4j is free software: you can redistribute it and/or modify
+                                  * it under the terms of the GNU General Public License as published by
+                                  * the Free Software Foundation, either version 3 of the License, or
+                                  * (at your option) any later version.
+                                  *
+                                  * This program is distributed in the hope that it will be useful,
+                                  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+                                  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+                                  * GNU General Public License for more details.
+                                  *
+                                  * You should have received a copy of the GNU General Public License
+                                  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+                                  */
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.io.IOException;
@@ -34,6 +51,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,12 +69,13 @@ import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.StoreChannelNativeAccessor;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.pruning.ThresholdFactory;
 
 /**
- * Stress test that exercises {@link EnvelopedLogFiles#entryStreamChannels} concurrently with appends. The
+ * Stress test that exercises {@link EnvelopedWALService#entryStreamChannels} concurrently with appends. The
  * log files are sized so that they rotate frequently and the index range spans multiple files, which
  * means the binary search in {@link LogBinarySearch} will run at the same time as new log files are
  * being created and old ones pruned. Any safety issue with binary search for log files during file
@@ -83,19 +102,19 @@ public class EnvelopedConcurrentLogFilesBinarySearchIT {
     private RandomSupport randomSupport;
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
-    private EnvelopedLogFiles envelopedLogFiles;
+    private WALService walService;
 
     @BeforeEach
     void setUp() throws IOException {
-        envelopedLogFiles = createEnvelopedLogFiles();
-        envelopedLogFiles.initialise();
+        walService = createLogFiles();
+        walService.initialise();
     }
 
     @AfterEach
     void tearDown() throws Exception {
         executor.shutdownNow();
-        assertThat(executor.awaitTermination(1, MINUTES)).isTrue();
-        envelopedLogFiles.close();
+        Assertions.assertThat(executor.awaitTermination(1, MINUTES)).isTrue();
+        walService.shutdown();
     }
 
     @Test
@@ -114,13 +133,15 @@ public class EnvelopedConcurrentLogFilesBinarySearchIT {
         long writtenCount = writerFuture.get();
         writerCompleted.set(true);
 
-        assertThat(writtenCount).as("writer should have appended entries").isGreaterThan(0);
+        Assertions.assertThat(writtenCount)
+                .as("writer should have appended entries")
+                .isGreaterThan(0);
 
         long totalReads = 0;
         for (var f : readerFutures) {
             totalReads += f.get(); // main purpose is to rethrow any exception from the reader
         }
-        assertThat(totalReads)
+        Assertions.assertThat(totalReads)
                 .as("readers should have called entryStreamChannels at least once")
                 .isGreaterThan(0);
     }
@@ -138,7 +159,7 @@ public class EnvelopedConcurrentLogFilesBinarySearchIT {
 
         @Override
         public Long call() throws IOException {
-            var writer = envelopedLogFiles.currentWriteChannel();
+            var writer = walService.getLogFile().currentWriteChannel();
             var endTime = System.currentTimeMillis() + duration.toMillis();
             long count = 0;
             long term = 1;
@@ -154,7 +175,7 @@ public class EnvelopedConcurrentLogFilesBinarySearchIT {
                     term++;
                 }
                 if (count > 2 && randomSupport.nextInt(10) == 0) {
-                    envelopedLogFiles.prune(randomSupport.nextLong(1, count - 1));
+                    walService.prune(randomSupport.nextLong(1, count - 1));
                 }
                 // Flush every few entries; the flush publishes the new index to readers via
                 // lastFlushedIndex. Without the flush, readers could legitimately fail to locate
@@ -183,7 +204,7 @@ public class EnvelopedConcurrentLogFilesBinarySearchIT {
         public Long call() throws IOException, InterruptedException {
             long calls = 0;
             EnvelopeLogFilesRangeReader rangeReader =
-                    new EnvelopeLogFilesRangeReader(envelopedLogFiles, NullLogProvider.getInstance());
+                    new EnvelopeLogFilesRangeReader(walService, NullLogProvider.getInstance());
             while (!writerCompleted.get()) {
                 long toIndex = lastFlushedIndex.get();
                 if (toIndex < 0) {
@@ -215,10 +236,10 @@ public class EnvelopedConcurrentLogFilesBinarySearchIT {
         writeChannel.endCurrentEntry();
     }
 
-    private EnvelopedLogFiles createEnvelopedLogFiles() {
+    private WALService createLogFiles() {
         var baseFolder = testDirectory.directory("logsFolder");
         var filesHelper = new SequentialFileNameHelper(baseFolder, "raft.log");
-        return new EnvelopedLogFiles(
+        return new EnvelopedWALService(
                 new LogsRepository(fs, filesHelper),
                 (fileVersion, preFileIndex, preFileChecksum, segmentSize, lastTerm) -> LogFormat.fromKernelVersion(
                                 KernelVersion.GLORIOUS_FUTURE)

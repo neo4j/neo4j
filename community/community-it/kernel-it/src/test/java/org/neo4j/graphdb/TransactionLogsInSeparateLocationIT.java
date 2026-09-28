@@ -39,8 +39,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.files.LogFilesBuilder;
 
 @TestDirectoryExtension
@@ -85,11 +85,11 @@ class TransactionLogsInSeparateLocationIT {
 
     private void verifyTransactionLogs(Path txDirectory, Path storeDir, StorageEngineFactory storageEngineFactory)
             throws IOException {
-        LogFiles storeDirLogs =
+        WALService storeDirLogs =
                 LogFilesBuilder.logFilesBasedOnlyBuilder(storeDir, fileSystem).build();
         assertFalse(storeDirLogs.getLogFile().versionExists(0));
 
-        LogFiles txDirectoryLogs = LogFilesBuilder.logFilesBasedOnlyBuilder(txDirectory, fileSystem)
+        WALService txDirectoryLogs = LogFilesBuilder.logFilesBasedOnlyBuilder(txDirectory, fileSystem)
                 .build();
         assertTrue(txDirectoryLogs.getLogFile().versionExists(0));
         try (PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel =

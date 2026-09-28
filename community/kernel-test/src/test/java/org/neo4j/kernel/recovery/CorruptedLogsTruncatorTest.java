@@ -70,9 +70,9 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.wal.FlushableLogPositionAwareChannel;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.TransactionLogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.checkpoint.LogCheckPointEvent;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
@@ -102,7 +102,7 @@ class CorruptedLogsTruncatorTest {
     private final LifeSupport life = new LifeSupport();
 
     private Path databaseDirectory;
-    private LogFiles logFiles;
+    private WALService walService;
     private CorruptedLogsTruncator logPruner;
     private SimpleLogVersionRepository logVersionRepository;
 
@@ -111,7 +111,7 @@ class CorruptedLogsTruncatorTest {
         databaseDirectory = testDirectory.homePath();
         logVersionRepository = new SimpleLogVersionRepository();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        logFiles = LogFilesBuilder.writeableBuilder(
+        walService = LogFilesBuilder.writeableBuilder(
                         DatabaseLayout.ofFlat(databaseDirectory),
                         fs,
                         LATEST_KERNEL_VERSION_PROVIDER,
@@ -129,8 +129,8 @@ class CorruptedLogsTruncatorTest {
                                 ROTATION_THRESHOLD)
                         .build())
                 .build();
-        life.add(logFiles);
-        logPruner = new CorruptedLogsTruncator(databaseDirectory, logFiles, fs, INSTANCE);
+        life.add(walService);
+        logPruner = new CorruptedLogsTruncator(databaseDirectory, walService, fs, INSTANCE);
     }
 
     @AfterEach
@@ -147,9 +147,9 @@ class CorruptedLogsTruncatorTest {
     @Test
     void doNotPruneNonCorruptedLogs() throws IOException {
         life.start();
-        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(logFiles);
+        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(walService);
 
-        var logFile = logFiles.getLogFile();
+        var logFile = walService.getLogFile();
         LogRangeInfo logRangeInfo = logFile.getLogRangeInfo();
         long highestLogVersion = logRangeInfo.highestVersion();
         long expectedFileSizeAfterTruncate = Files.size(logRangeInfo.highestFile());
@@ -157,7 +157,7 @@ class CorruptedLogsTruncatorTest {
 
         logPruner.truncate(logPosAfterGeneratingLogs, null);
 
-        assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
+        assertEquals(TOTAL_NUMBER_OF_LOG_FILES, walService.logFiles().length);
         assertEquals(
                 expectedFileSizeAfterTruncate,
                 Files.size(logFile.getLogRangeInfo().highestFile()));
@@ -167,9 +167,9 @@ class CorruptedLogsTruncatorTest {
     @Test
     void doNotTruncateLogWithPreAllocatedZeros() throws IOException {
         life.start();
-        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(logFiles);
+        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(walService);
 
-        var logFile = logFiles.getLogFile();
+        var logFile = walService.getLogFile();
         try (StoreChannel raw = fs.open(
                 logFile.getLogFileForVersion(logPosAfterGeneratingLogs.getLogVersion()),
                 Set.of(StandardOpenOption.APPEND, StandardOpenOption.WRITE))) {
@@ -182,7 +182,7 @@ class CorruptedLogsTruncatorTest {
                 Files.size(logFile.getLogRangeInfo().highestFile());
         logPruner.truncate(logPosAfterGeneratingLogs, null);
 
-        assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
+        assertEquals(TOTAL_NUMBER_OF_LOG_FILES, walService.logFiles().length);
         assertEquals(
                 expectedFileSizeAfterTruncate,
                 Files.size(logFile.getLogRangeInfo().highestFile()));
@@ -192,10 +192,10 @@ class CorruptedLogsTruncatorTest {
     @Test
     void truncateLogWithCorruptionThatLooksLikePreAllocatedZeros() throws IOException {
         life.start();
-        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(logFiles);
+        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(walService);
         long expectedFileSizeAfterTruncate = logPosAfterGeneratingLogs.getByteOffset();
 
-        var logFile = logFiles.getLogFile();
+        var logFile = walService.getLogFile();
         FlushableLogPositionAwareChannel channel =
                 ((TransactionLogWriter) logFile.getTransactionLogWriter()).getChannel();
         // Pad with zeroes before the corrupted byte
@@ -214,7 +214,7 @@ class CorruptedLogsTruncatorTest {
 
         logPruner.truncate(logPosAfterGeneratingLogs, null);
 
-        assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
+        assertEquals(TOTAL_NUMBER_OF_LOG_FILES, walService.logFiles().length);
         assertEquals(
                 expectedFileSizeAfterTruncate,
                 Files.size(logFile.getLogRangeInfo().highestFile()));
@@ -230,9 +230,9 @@ class CorruptedLogsTruncatorTest {
     @EnabledOnOs(OS.LINUX) // based on pre-allocated files, which does not work on windows
     void pruneAndArchiveLastLog() throws IOException {
         life.start();
-        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(logFiles);
+        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(walService);
 
-        var logFile = logFiles.getLogFile();
+        var logFile = walService.getLogFile();
         LogRangeInfo logRangeInfo = logFile.getLogRangeInfo();
         long highestLogVersion = logRangeInfo.highestVersion();
         Path highestLogFile = logRangeInfo.highestFile();
@@ -242,7 +242,7 @@ class CorruptedLogsTruncatorTest {
 
         logPruner.truncate(prunePosition, null);
 
-        assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
+        assertEquals(TOTAL_NUMBER_OF_LOG_FILES, walService.logFiles().length);
         assertEquals(byteOffset, Files.size(highestLogFile));
 
         Path corruptedLogsDirectory = databaseDirectory.resolve(CORRUPTED_TX_LOGS_BASE_NAME);
@@ -262,18 +262,18 @@ class CorruptedLogsTruncatorTest {
     @Test
     void pruneAndArchiveMultipleLogs() throws IOException {
         life.start();
-        generateTransactionLogFiles(logFiles);
+        generateTransactionLogFiles(walService);
 
         long highestCorrectLogFileIndex = 5;
-        var logFile = logFiles.getLogFile();
+        var logFile = walService.getLogFile();
         Path highestCorrectLogFile = logFile.getLogFileForVersion(highestCorrectLogFileIndex);
         long fileSizeBeforePrune = Files.size(highestCorrectLogFile);
         long highestLogFileLength = Files.size(logFile.getLogRangeInfo().highestFile());
         int bytesToPrune = 7;
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
         LogPosition prunePosition = new LogPosition(highestCorrectLogFileIndex, byteOffset);
-        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
-        TransactionId transactionId = logFiles.logMetadataProvider().getLastCommittedTransaction();
+        CheckpointFile checkpointFile = walService.getCheckpointFile();
+        TransactionId transactionId = walService.logMetadataProvider().getLastCommittedTransaction();
         // Write checkpoints that should be truncated. Write enough to get them in two files.
         int checkpointsToTruncate = 0;
         while (checkpointFile.getCurrentLogVersion() == 0L) {
@@ -301,7 +301,7 @@ class CorruptedLogsTruncatorTest {
 
         // 6 transaction log files and a checkpoint file
         logVersionRepository.setCheckpointLogVersion(0);
-        assertEquals(7, logFiles.logFiles().length);
+        assertEquals(7, walService.logFiles().length);
         assertEquals(byteOffset, Files.size(highestCorrectLogFile));
         assertThat(checkpointFile.getMatchedFiles()).hasSize(1);
         // Truncate assumes that all checkpoints are broken when null is sent in as last checkpoint
@@ -369,11 +369,11 @@ class CorruptedLogsTruncatorTest {
     /**
      * Generate transaction log files and returns the {@link LogPosition} for the last file written.
      */
-    private static LogPosition generateTransactionLogFiles(LogFiles logFiles) throws IOException {
+    private static LogPosition generateTransactionLogFiles(WALService walService) throws IOException {
         byte[] payload = new byte[PAYLOAD_LENGTH];
         Arrays.fill(payload, (byte) 0xFF);
 
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         FlushableLogPositionAwareChannel writer =
                 ((TransactionLogWriter) logFile.getTransactionLogWriter()).getChannel();
         // Fill up all but the last log file

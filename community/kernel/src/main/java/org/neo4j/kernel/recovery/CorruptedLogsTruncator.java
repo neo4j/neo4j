@@ -46,9 +46,9 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.wal.CheckpointInfo;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.entry.LogHeaderReader;
 import org.neo4j.wal.files.LogRangeInfo;
@@ -67,14 +67,14 @@ public class CorruptedLogsTruncator {
     private static final String LOG_FILE_ARCHIVE_PATTERN = CORRUPTED_TX_LOGS_BASE_NAME + "-%d-%d-%d.zip";
 
     private final Path storeDir;
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final FileSystemAbstraction fs;
     private final MemoryTracker memoryTracker;
 
     public CorruptedLogsTruncator(
-            Path storeDir, LogFiles logFiles, FileSystemAbstraction fs, MemoryTracker memoryTracker) {
+            Path storeDir, WALService walService, FileSystemAbstraction fs, MemoryTracker memoryTracker) {
         this.storeDir = storeDir;
-        this.logFiles = logFiles;
+        this.walService = walService;
         this.fs = fs;
         this.memoryTracker = memoryTracker;
     }
@@ -107,7 +107,7 @@ public class CorruptedLogsTruncator {
     private void truncateLogFiles(
             long recoveredTransactionLogVersion, long recoveredTransactionOffset, CheckpointFileInfo checkpointFileInfo)
             throws IOException {
-        LogFile transactionLogFile = logFiles.getLogFile();
+        LogFile transactionLogFile = walService.getLogFile();
         truncateFilesFromVersion(
                 recoveredTransactionLogVersion,
                 recoveredTransactionOffset,
@@ -116,7 +116,7 @@ public class CorruptedLogsTruncator {
 
         if (checkpointFileInfo.needTruncation) {
             LogPosition checkpointPosition = checkpointFileInfo.place;
-            CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+            CheckpointFile checkpointFile = walService.getCheckpointFile();
 
             truncateFilesFromVersion(
                     checkpointPosition.getLogVersion(),
@@ -160,7 +160,7 @@ public class CorruptedLogsTruncator {
         try (ZipOutputStream recoveryContent = new ZipOutputStream(fs.openAsOutputStream(corruptedLogArchive, false));
                 var bufferScope =
                         new HeapScopedBuffer(toIntExact(MebiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
-            LogFile transactionLogFile = logFiles.getLogFile();
+            LogFile transactionLogFile = walService.getLogFile();
             copyLogsContent(
                     recoveredTransactionLogVersion,
                     recoveredTransactionOffset,
@@ -171,7 +171,7 @@ public class CorruptedLogsTruncator {
 
             if (checkpointFileInfo.needTruncation) {
                 LogPosition checkpointPosition = checkpointFileInfo.place;
-                CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+                CheckpointFile checkpointFile = walService.getCheckpointFile();
 
                 copyLogsContent(
                         checkpointPosition.getLogVersion(),
@@ -245,17 +245,17 @@ public class CorruptedLogsTruncator {
     }
 
     private boolean haveMoreRecentLogFiles(long recoveredTransactionLogVersion) {
-        return logFiles.getLogFile().getLogRangeInfo().highestVersion() > recoveredTransactionLogVersion;
+        return walService.getLogFile().getLogRangeInfo().highestVersion() > recoveredTransactionLogVersion;
     }
 
     private boolean haveMoreRecentCheckpointLogFiles(long recoveredTransactionLogVersion) {
-        return logFiles.getCheckpointFile().getLogRangeInfo().highestVersion() > recoveredTransactionLogVersion;
+        return walService.getCheckpointFile().getLogRangeInfo().highestVersion() > recoveredTransactionLogVersion;
     }
 
     private boolean isRecoveredLogCorrupted(long recoveredTransactionLogVersion, long recoveredTransactionOffset)
             throws IOException {
         try {
-            LogFile logFile = logFiles.getLogFile();
+            LogFile logFile = walService.getLogFile();
             if (fs.getFileSize(logFile.getLogFileForVersion(recoveredTransactionLogVersion))
                     > recoveredTransactionOffset) {
                 return checkOnlyZeroesAfterPosition(
@@ -270,7 +270,7 @@ public class CorruptedLogsTruncator {
     private boolean isRecoveredCheckpointLogCorrupted(
             long recoveredTransactionLogVersion, long recoveredTransactionOffset) throws IOException {
         try {
-            CheckpointFile logFile = logFiles.getCheckpointFile();
+            CheckpointFile logFile = walService.getCheckpointFile();
             if (fs.getFileSize(logFile.getLogFileForVersion(recoveredTransactionLogVersion))
                     > recoveredTransactionOffset) {
                 return checkOnlyZeroesAfterPosition(
@@ -315,9 +315,9 @@ public class CorruptedLogsTruncator {
         }
         // We didn't see any checkpoints, but that doesn't mean there isn't unreadable things in the log.
         // Let's do a best effort to see if there is any garbage in the file to remove.
-        if (lastCheckpoint == null && logFiles.getCheckpointFile().getCurrentLogVersion() >= INITIAL_LOG_VERSION) {
+        if (lastCheckpoint == null && walService.getCheckpointFile().getCurrentLogVersion() >= INITIAL_LOG_VERSION) {
             try {
-                LogRangeInfo logRangeInfo = logFiles.getCheckpointFile().getLogRangeInfo();
+                LogRangeInfo logRangeInfo = walService.getCheckpointFile().getLogRangeInfo();
                 LogPosition startPosition = LogHeaderReader.readLogHeader(
                                 fs, logRangeInfo.lowestFile(), EmptyMemoryTracker.INSTANCE)
                         .getStartPosition();

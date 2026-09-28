@@ -36,31 +36,31 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 
 class CheckpointOnlyLogPruningTest {
 
     private final FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
-    private final LogFiles logFiles = mock(LogFiles.class);
+    private final WALService walService = mock(WALService.class);
     private final Config config = Config.defaults();
 
     @BeforeEach
     void setUp() {
-        when(logFiles.getCheckpointFile()).thenReturn(mock(CheckpointFile.class));
+        when(walService.getCheckpointFile()).thenReturn(mock(CheckpointFile.class));
     }
 
     @Test
     void shouldNeverIndicateLogsToPrune() {
-        var pruning =
-                new CheckpointOnlyLogPruning(fs, logFiles, NullLogProvider.getInstance(), config, new ReentrantLock());
+        var pruning = new CheckpointOnlyLogPruning(
+                fs, walService, NullLogProvider.getInstance(), config, new ReentrantLock());
         assertThat(pruning.mightHaveLogsToPrune(Long.MAX_VALUE)).isFalse();
     }
 
     @Test
     void shouldDescribeItselfAsCheckpointOnly() {
-        var pruning =
-                new CheckpointOnlyLogPruning(fs, logFiles, NullLogProvider.getInstance(), config, new ReentrantLock());
+        var pruning = new CheckpointOnlyLogPruning(
+                fs, walService, NullLogProvider.getInstance(), config, new ReentrantLock());
         assertThat(pruning.describeCurrentStrategy()).contains("checkpoint-only");
     }
 
@@ -78,10 +78,10 @@ class CheckpointOnlyLogPruningTest {
             return Long.parseLong(file.getFileName().toString());
         });
         when(checkpointFile.getCurrentLogVersion()).thenReturn((long) checkpointFiles.length - 1);
-        when(logFiles.getCheckpointFile()).thenReturn(checkpointFile);
+        when(walService.getCheckpointFile()).thenReturn(checkpointFile);
 
-        var pruning =
-                new CheckpointOnlyLogPruning(fs, logFiles, NullLogProvider.getInstance(), config, new ReentrantLock());
+        var pruning = new CheckpointOnlyLogPruning(
+                fs, walService, NullLogProvider.getInstance(), config, new ReentrantLock());
         pruning.pruneLogs(0);
 
         verify(fs).deleteFile(checkpointFiles[0]);
@@ -99,10 +99,10 @@ class CheckpointOnlyLogPruningTest {
         }
         when(checkpointFile.getMatchedFiles()).thenReturn(checkpointFiles);
         when(checkpointFile.getCurrentLogVersion()).thenReturn((long) checkpointFiles.length - 1);
-        when(logFiles.getCheckpointFile()).thenReturn(checkpointFile);
+        when(walService.getCheckpointFile()).thenReturn(checkpointFile);
 
-        var pruning =
-                new CheckpointOnlyLogPruning(fs, logFiles, NullLogProvider.getInstance(), config, new ReentrantLock());
+        var pruning = new CheckpointOnlyLogPruning(
+                fs, walService, NullLogProvider.getInstance(), config, new ReentrantLock());
         pruning.pruneLogs(0);
 
         verify(fs, never()).deleteFile(any());

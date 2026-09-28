@@ -29,9 +29,9 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.wal.LogFileInformation;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.ReadableLogChannel;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntry;
 import org.neo4j.wal.entry.LogEntryReader;
 import org.neo4j.wal.entry.LogEntryStart;
@@ -40,28 +40,28 @@ import org.neo4j.wal.entry.VersionAwareLogEntryReader;
 import org.neo4j.wal.entry.v520.LogEntryChunkStart;
 
 /**
- * Builder of per-version {@link LogFileInformation} views over a {@link LogFiles}. Each {@link #forVersion} call
+ * Builder of per-version {@link LogFileInformation} views over a {@link WALService}. Each {@link #forVersion} call
  * returns a thin handle that delegates back into the shared LFU timestamp cache and the log file's header reader.
  */
 public class TransactionLogFileInformation {
-    private final LogFiles logFiles;
+    private final WALService walService;
     private final TimestampMapper timestampMapper;
 
     TransactionLogFileInformation(
-            LogFiles logFiles,
+            WALService walService,
             CommandReaderFactory commandReaderFactory,
             BinarySupportedKernelVersions binarySupportedKernelVersions,
             MemoryTracker memoryTracker) {
         this(
-                logFiles,
+                walService,
                 () -> new VersionAwareLogEntryReader(
                         commandReaderFactory, binarySupportedKernelVersions, memoryTracker));
     }
 
     @VisibleForTesting
-    TransactionLogFileInformation(LogFiles logFiles, Supplier<LogEntryReader> logEntryReaderFactory) {
-        this.logFiles = logFiles;
-        this.timestampMapper = new TimestampMapper(logFiles, logEntryReaderFactory);
+    TransactionLogFileInformation(WALService walService, Supplier<LogEntryReader> logEntryReaderFactory) {
+        this.walService = walService;
+        this.timestampMapper = new TimestampMapper(walService, logEntryReaderFactory);
     }
 
     public LogFileInformation forVersion(long version) {
@@ -82,12 +82,12 @@ public class TransactionLogFileInformation {
 
         @Override
         public Path path() {
-            return logFiles.getLogFile().getLogFileForVersion(version);
+            return walService.getLogFile().getLogFileForVersion(version);
         }
 
         @Override
         public long getPreviousAppendIndexFromHeader() throws IOException {
-            LogHeader header = logFiles.getLogFile().extractHeader(version);
+            LogHeader header = walService.getLogFile().extractHeader(version);
             return header != null ? header.getLastAppendIndex() : -1;
         }
 
@@ -99,12 +99,12 @@ public class TransactionLogFileInformation {
 
     private static class TimestampMapper {
         private static final String FIRST_TRANSACTION_TIME = "First Transaction Time";
-        private final LogFiles logFiles;
+        private final WALService walService;
         private final Supplier<LogEntryReader> logEntryReaderFactory;
         private final LfuCache<Long, Long> logFileTimeStamp = new LfuCache<>(FIRST_TRANSACTION_TIME, 10_000);
 
-        TimestampMapper(LogFiles logFiles, Supplier<LogEntryReader> logEntryReaderFactory) {
-            this.logFiles = logFiles;
+        TimestampMapper(WALService walService, Supplier<LogEntryReader> logEntryReaderFactory) {
+            this.walService = walService;
             this.logEntryReaderFactory = logEntryReaderFactory;
         }
 
@@ -113,7 +113,7 @@ public class TransactionLogFileInformation {
             if (cached != null) {
                 return cached;
             }
-            var logFile = logFiles.getLogFile();
+            var logFile = walService.getLogFile();
             if (logFile.versionExists(version)) {
                 LogHeader logHeader = logFile.extractHeader(version);
                 if (logHeader != null) {

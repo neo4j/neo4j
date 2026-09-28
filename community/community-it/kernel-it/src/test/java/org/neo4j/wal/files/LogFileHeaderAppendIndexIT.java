@@ -33,7 +33,7 @@ import org.neo4j.storageengine.api.LogMetadataProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
+import org.neo4j.wal.WALService;
 
 @DbmsExtension
 public class LogFileHeaderAppendIndexIT {
@@ -41,14 +41,14 @@ public class LogFileHeaderAppendIndexIT {
     private GraphDatabaseAPI databaseAPI;
 
     @Inject
-    private LogFiles logFiles;
+    private WALService walService;
 
     @Inject
     private LogMetadataProvider metadataProvider;
 
     @Test
     void logFileHeaderContainsLastIndex() throws IOException {
-        LogFile logFile = logFiles.getLogFile();
+        LogFile logFile = walService.getLogFile();
         assertEquals(
                 BASE_APPEND_INDEX,
                 logFile.extractHeader(logFile.getCurrentLogVersion()).getLastAppendIndex());

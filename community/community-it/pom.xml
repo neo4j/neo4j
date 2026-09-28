@@ -30,6 +30,7 @@
     <module>query-api-it</module>
     <module>cypher-it</module>
     <module>cypher-it-test-util</module>
+    <module>wal-it</module>
   </modules>
 
   <profiles>

@@ -53,8 +53,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.wal.CheckpointInfo;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.files.LogFilesBuilder;
 import org.neo4j.wal.files.LogTailInformation;
@@ -77,14 +77,14 @@ class DetachedCheckpointLogFileTest {
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore(
             2L, 3L, LATEST_KERNEL_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
     private CheckpointFile checkpointFile;
-    private LogFiles logFiles;
+    private WALService walService;
 
     @BeforeEach
     void setUp() throws IOException {
-        logFiles = buildLogFiles();
-        life.add(logFiles);
+        walService = buildLogFiles();
+        life.add(walService);
         life.start();
-        checkpointFile = logFiles.getCheckpointFile();
+        checkpointFile = walService.getCheckpointFile();
     }
 
     @Test
@@ -170,7 +170,7 @@ class DetachedCheckpointLogFileTest {
         assertThat(reachableCheckpoints.get(1).transactionLogPosition()).isEqualTo(logPosition1);
     }
 
-    private LogFiles buildLogFiles() throws IOException {
+    private WALService buildLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.writeableBuilder(
                         databaseLayout, fileSystem, LATEST_KERNEL_VERSION_PROVIDER, LATEST_LOG_FORMAT_PROVIDER)

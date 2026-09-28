@@ -54,9 +54,9 @@ import org.neo4j.storageengine.api.StoreIdentifier;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.wal.FlushableLogPositionAwareChannel;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.TransactionLogWriter;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.entry.LogHeader;
@@ -99,7 +99,7 @@ class EnvelopedRecoveryCorruptedTransactionLogIT extends RecoveryCorruptedTransa
     void allowRecoveryOnHeaderEndingInPreviousChecksum() throws IOException {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
 
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         LogPosition logOffsetBeforeTestTransactions =
@@ -119,8 +119,9 @@ class EnvelopedRecoveryCorruptedTransactionLogIT extends RecoveryCorruptedTransa
                 + (LogEnvelopeHeader.HEADER_SIZE
                         - (Long.BYTES + Byte.BYTES) // fields after checksum
                         - (Short.BYTES)); // most of checksum
-        try (StoreChannel storeChannel = fileSystem.write(
-                logFiles.getLogFile().getLogFileForVersion(logFiles.getLogFile().getCurrentLogVersion()))) {
+        try (StoreChannel storeChannel = fileSystem.write(walService
+                .getLogFile()
+                .getLogFileForVersion(walService.getLogFile().getCurrentLogVersion()))) {
             storeChannel.position(offset);
             storeChannel.writeAll(ByteBuffers.allocate(2000, ByteOrder.LITTLE_ENDIAN, INSTANCE));
         }
@@ -140,7 +141,7 @@ class EnvelopedRecoveryCorruptedTransactionLogIT extends RecoveryCorruptedTransa
         // log that are not kernel transactions.
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        logFiles = buildDefaultLogFiles(getStoreId(database));
+        walService = buildDefaultLogFiles(getStoreId(database));
 
         TransactionIdStore transactionIdStore = getTransactionIdStore(database);
         long lastClosedTransactionBeforeStart = transactionIdStore.getHighestGapFreeClosedTransactionId();
@@ -175,7 +176,7 @@ class EnvelopedRecoveryCorruptedTransactionLogIT extends RecoveryCorruptedTransa
 
     private static TransactionLogWriter getTransactionLogWriter(GraphDatabaseAPI database) {
         return (TransactionLogWriter) database.getDependencyResolver()
-                .resolveDependency(LogFiles.class)
+                .resolveDependency(WALService.class)
                 .getLogFile()
                 .getTransactionLogWriter();
     }
@@ -202,8 +203,8 @@ class EnvelopedRecoveryCorruptedTransactionLogIT extends RecoveryCorruptedTransa
             GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
             generateTransaction(database);
             DependencyResolver dependencyResolver = database.getDependencyResolver();
-            LogFiles logFiles = dependencyResolver.resolveDependency(LogFiles.class);
-            LogFile logFile = logFiles.getLogFile();
+            WALService walService = dependencyResolver.resolveDependency(WALService.class);
+            LogFile logFile = walService.getLogFile();
             currentLogPath = logFile.getLogFileForVersion(logFile.getCurrentLogVersion());
         }
         setLogHeaderToStoreId(currentLogPath, storeId);

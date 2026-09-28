@@ -58,8 +58,8 @@ import org.neo4j.test.UpgradeTestUtil;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.wal.LogFile;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogPosition;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.files.TransactionLogFilesHelper;
 
 @Neo4jLayoutExtension
@@ -274,7 +274,7 @@ public class LogFormatSwitchRecoveryIT {
         LogFile logFile = databaseAndSnapshot
                 .testDb
                 .getDependencyResolver()
-                .resolveDependency(LogFiles.class)
+                .resolveDependency(WALService.class)
                 .getLogFile();
         logFile.rotate();
         Path lastLog = logFile.getLogFileForVersion(logFile.getCurrentLogVersion());
@@ -307,7 +307,7 @@ public class LogFormatSwitchRecoveryIT {
         LogFile logFile = databaseAndSnapshot
                 .testDb
                 .getDependencyResolver()
-                .resolveDependency(LogFiles.class)
+                .resolveDependency(WALService.class)
                 .getLogFile();
         LogPosition position = logFile.getTransactionLogWriter().getCurrentPosition();
         Path currentLogFile = logFile.getLogFileForVersion(logFile.getCurrentLogVersion());

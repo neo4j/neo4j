@@ -197,7 +197,6 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.values.DefaultElementIdMapperV1;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.wal.CompleteCommandBatch;
-import org.neo4j.wal.LogFiles;
 import org.neo4j.wal.LogTailMetadata;
 import org.neo4j.wal.LoggingLogFileMonitor;
 import org.neo4j.wal.LogicalTransactionStore;
@@ -205,6 +204,7 @@ import org.neo4j.wal.PhysicalLogicalTransactionStore;
 import org.neo4j.wal.RecoveryOutcome;
 import org.neo4j.wal.TransactionCommitmentFactory;
 import org.neo4j.wal.TransactionMetadataCache;
+import org.neo4j.wal.WALService;
 import org.neo4j.wal.checkpoint.CheckPointScheduler;
 import org.neo4j.wal.checkpoint.CheckPointThreshold;
 import org.neo4j.wal.checkpoint.CheckPointerImpl;
@@ -504,8 +504,8 @@ public class Database extends AbstractDatabase {
                 databaseConfig, databasePageCache, otherDatabaseMemoryTracker);
 
         // Check the tail of transaction logs and validate version
-        LogFiles logFiles = getLogFiles(RecoveryOutcome.EMPTY_OUTCOME);
-        LogTailMetadata tailMetadata = logFiles.getTailMetadata();
+        WALService walService = getLogFiles(RecoveryOutcome.EMPTY_OUTCOME);
+        LogTailMetadata tailMetadata = walService.getTailMetadata();
         long lastClosedTxId = tailMetadata.getLastCommittedTransaction().id();
         initialiseContextFactory(() -> new TransactionIdSnapshot(lastClosedTxId), () -> lastClosedTxId);
 
@@ -532,8 +532,8 @@ public class Database extends AbstractDatabase {
         if (recoveryResult.recoveryPerformed()) {
             // recovery replayed logs and wrote some checkpoints as result we need to rescan log tail to get the
             // latest info
-            logFiles = getLogFiles(recoveryResult.outcome());
-            tailMetadata = logFiles.getTailMetadata();
+            walService = getLogFiles(recoveryResult.outcome());
+            tailMetadata = walService.getTailMetadata();
 
             RecoveryOutcome recoveryOutcome = recoveryResult.outcome();
             long recoveredTxId;
@@ -555,7 +555,7 @@ public class Database extends AbstractDatabase {
         }
 
         LogMetadataProvider logMetadataProvider =
-                databaseDependencies.satisfyDependency(logFiles.logMetadataProvider());
+                databaseDependencies.satisfyDependency(walService.logMetadataProvider());
         internalLog.info("Current KernelVersion=" + logMetadataProvider.kernelVersion() + ", LogFormat= "
                 + logMetadataProvider.getCurrentLogFormat());
 
@@ -616,8 +616,8 @@ public class Database extends AbstractDatabase {
         life.add(storageEngine);
         life.add(storageEngine.schemaAndTokensLifecycle(
                 databaseConfig.get(GraphDatabaseInternalSettings.ignore_corrupt_schema)));
-        life.add(logFiles);
-        LogFiles logfilesForLambda = logFiles;
+        life.add(walService);
+        WALService logfilesForLambda = walService;
         life.add(onStart(() -> {
             long lowestLogVersion =
                     logfilesForLambda.getLogFile().getLogRangeInfo().lowestVersion();
@@ -671,7 +671,7 @@ public class Database extends AbstractDatabase {
                 segmentTrackingFactory.createSegmentMetadataService(getStoreId(), otherDatabaseMemoryTracker);
         databaseDependencies.satisfyDependency(segmentMetadataService);
         DatabaseTransactionLogModule transactionLogModule = buildTransactionLogs(
-                logFiles,
+                walService,
                 databaseConfig,
                 internalLogProvider,
                 scheduler,
@@ -690,7 +690,7 @@ public class Database extends AbstractDatabase {
         life.add(databaseTransactionEventListeners);
         life.add(idController);
         final DatabaseKernelModule kernelModule = buildKernel(
-                logFiles,
+                walService,
                 transactionLogModule,
                 indexingService,
                 databaseSchemaState,
@@ -849,7 +849,7 @@ public class Database extends AbstractDatabase {
         tx.schemaWrite().indexCreate(prototype);
     }
 
-    private LogFiles getLogFiles(RecoveryOutcome recoveryOutcome) throws IOException {
+    private WALService getLogFiles(RecoveryOutcome recoveryOutcome) throws IOException {
         DbmsRuntimeFallbackKernelVersionProvider kernelVersionProvider = new DbmsRuntimeFallbackKernelVersionProvider(
                 databaseDependencies, databaseLayout.getDatabaseName(), databaseConfig);
         return LogFilesBuilder.writeableBuilder(databaseLayout, fs, kernelVersionProvider, kernelVersionProvider)
@@ -1079,7 +1079,7 @@ public class Database extends AbstractDatabase {
     }
 
     private DatabaseTransactionLogModule buildTransactionLogs(
-            LogFiles logFiles,
+            WALService walService,
             DatabaseConfig databaseConfig,
             InternalLogProvider logProvider,
             JobScheduler scheduler,
@@ -1098,10 +1098,10 @@ public class Database extends AbstractDatabase {
                 databaseDependencies.resolveDependency(BinarySupportedKernelVersions.class);
         Lock pruneLock = new ReentrantLock();
         final LogPruning logPruning = mergedLogs && (mode == HostedOnMode.RAFT || mode == HostedOnMode.REPLICA)
-                ? new CheckpointOnlyLogPruning(fs, logFiles, logProvider, databaseConfig, pruneLock)
+                ? new CheckpointOnlyLogPruning(fs, walService, logProvider, databaseConfig, pruneLock)
                 : new LogPruningImpl(
                         fs,
-                        logFiles,
+                        walService,
                         logProvider,
                         logPruneStrategyFactory,
                         clock,
@@ -1113,7 +1113,7 @@ public class Database extends AbstractDatabase {
                         memoryTracker);
 
         var transactionAppender = createTransactionAppender(
-                logFiles,
+                walService,
                 logMetadataProvider,
                 logMetadataProvider,
                 databaseConfig,
@@ -1127,7 +1127,7 @@ public class Database extends AbstractDatabase {
         life.add(transactionAppender);
 
         final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore(
-                logFiles,
+                walService,
                 transactionMetadataCache,
                 commandReaderFactory,
                 monitors,
@@ -1143,7 +1143,7 @@ public class Database extends AbstractDatabase {
                 threshold,
                 forceOperation,
                 logPruning,
-                logFiles.getCheckpointFile(),
+                walService.getCheckpointFile(),
                 databaseHealth,
                 logProvider,
                 tracers,
@@ -1164,7 +1164,7 @@ public class Database extends AbstractDatabase {
 
         TransactionLogServiceImpl transactionLogService = new TransactionLogServiceImpl(
                 logMetadataProvider,
-                logFiles,
+                walService,
                 logicalTransactionStore,
                 pruneLock,
                 databaseAvailabilityGuard,
@@ -1174,7 +1174,7 @@ public class Database extends AbstractDatabase {
                 binarySupportedKernelVersions);
         databaseDependencies.satisfyDependencies(
                 checkPointer,
-                logFiles,
+                walService,
                 logicalTransactionStore,
                 transactionAppender,
                 transactionLogService,
@@ -1184,7 +1184,7 @@ public class Database extends AbstractDatabase {
     }
 
     private DatabaseKernelModule buildKernel(
-            LogFiles logFiles,
+            WALService walService,
             DatabaseTransactionLogModule logsModule,
             IndexingService indexingService,
             DatabaseSchemaState databaseSchemaState,
@@ -1289,7 +1289,7 @@ public class Database extends AbstractDatabase {
                 transactionExecutionMonitor);
 
         final StoreFileListing fileListing =
-                new StoreFileListing(databaseLayout, fs, logFiles, indexingService, storageEngine);
+                new StoreFileListing(databaseLayout, fs, walService, indexingService, storageEngine);
         databaseDependencies.satisfyDependency(fileListing);
 
         return new DatabaseKernelModule(
