@@ -2375,8 +2375,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.db.block.dense_relationships_store_root_cache_size",
                     new DenseRootCacheSizeSettingValueParser(),
                     DenseRootCacheSizeSettingValueParser.clampedPercentageOfHeap(1))
-            .addConstraint(min(DenseRootCacheSizeSettingValueParser.MIN))
-            .addConstraint(max(DenseRootCacheSizeSettingValueParser.MAX))
             .build();
 
     public static HeapEstimatorCacheConfig extractCustomHeapEstimatorCacheConfig(Config config) {

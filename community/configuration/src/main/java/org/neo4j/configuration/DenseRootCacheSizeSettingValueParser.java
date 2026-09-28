@@ -22,12 +22,14 @@ package org.neo4j.configuration;
 import static java.lang.String.format;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 
 import org.neo4j.io.ByteUnit;
 
 public class DenseRootCacheSizeSettingValueParser implements SettingValueParser<Long> {
-    static final long MIN = (int) kibiBytes(10);
-    static final long MAX = Math.max(MIN, percentageOfHeap(10));
+    private static final long UNKNOWN_MAX_HEAP_DEFAULT = mebiBytes(10);
+    private static final long MIN = (int) kibiBytes(10);
+    private static final long MAX = Math.max(MIN, percentageOfHeap(10, Long.MAX_VALUE));
 
     @Override
     public Long parse(String value) {
@@ -37,7 +39,7 @@ public class DenseRootCacheSizeSettingValueParser implements SettingValueParser<
         } else if (value.endsWith("%")) {
             return clampedPercentageOfHeap(Double.parseDouble(value.substring(0, value.length() - 1)));
         }
-        return BYTES.parse(value);
+        return Math.clamp(BYTES.parse(value), MIN, MAX);
     }
 
     @Override
@@ -57,11 +59,15 @@ public class DenseRootCacheSizeSettingValueParser implements SettingValueParser<
         return BYTES.valueToString(value);
     }
 
-    private static long percentageOfHeap(double percentage) {
-        return (long) (Runtime.getRuntime().maxMemory() * percentage / 100D);
+    private static long percentageOfHeap(double percentage, long valueOnUnknownMaxHeap) {
+        long maxMemory = Runtime.getRuntime().maxMemory();
+        if (maxMemory == Long.MAX_VALUE) {
+            return valueOnUnknownMaxHeap;
+        }
+        return (long) (maxMemory * percentage / 100D);
     }
 
     static long clampedPercentageOfHeap(double percentage) {
-        return Math.clamp(percentageOfHeap(percentage), MIN, MAX);
+        return Math.clamp(percentageOfHeap(percentage, UNKNOWN_MAX_HEAP_DEFAULT), MIN, MAX);
     }
 }
