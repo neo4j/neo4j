@@ -70,6 +70,7 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertIsNotRewritten("MATCH (n) WHERE 1=null RETURN n AS r")
     assertRewrite("RETURN 0.0/0.0 = 0.0/0.0 AS r", "RETURN false AS r")
     assertIsNotRewritten("RETURN NaN = NaN AS r")
+    assertIsNotRewritten("RETURN 9007199254740993 = 9007199254740992.0 AS r")
   }
 
   test("solves not equals comparisons between literals") {
@@ -85,6 +86,10 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH (n) WHERE 1.0<>8 RETURN n AS r", "MATCH (n) WHERE NOT false RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.2<>1 RETURN n AS r", "MATCH (n) WHERE NOT false RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1+(5*4)/(3*4)<>2 RETURN n AS r", "MATCH (n) WHERE NOT true RETURN n AS r")
+    assertRewrite(
+      "RETURN 9007199254740993 <> 9007199254740992.0 AS r",
+      "RETURN NOT 9007199254740993 = 9007199254740992.0 AS r"
+    )
 
     // preserves null
     assertRewrite("MATCH (n) WHERE 1<>null RETURN n AS r", "MATCH (n) WHERE NOT (1=null) RETURN n AS r")
@@ -102,6 +107,7 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH (n) WHERE 2.0>1 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.0>7 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.2>1 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertIsNotRewritten("RETURN 9007199254740993 > 9007199254740992.0 AS r")
   }
 
   test("solve less than comparisons between literals") {
@@ -115,6 +121,7 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH (n) WHERE 2.0<1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.0<7 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.2<1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertIsNotRewritten("RETURN 9007199254740993 < 9007199254740992.0 AS r")
   }
 
   test("doesn't fail on / by zero") {

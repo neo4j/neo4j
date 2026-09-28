@@ -142,25 +142,25 @@ case object FoldConstants extends StepSequencer.Step with DefaultPostCondition w
         case e @ Equals(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value == rhs.value, e)
         case e @ Equals(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
           asAst(primitiveDoubleEquals(lhs.value, rhs.value), e)
-        case e @ Equals(lhs: IntegerLiteral, rhs: DoubleLiteral) =>
+        case e @ Equals(lhs: IntegerLiteral, rhs: DoubleLiteral) if safeToCompareToDouble(lhs.value) =>
           asAst(lhs.value.doubleValue() == rhs.value.doubleValue(), e)
-        case e @ Equals(lhs: DoubleLiteral, rhs: IntegerLiteral) =>
+        case e @ Equals(lhs: DoubleLiteral, rhs: IntegerLiteral) if safeToCompareToDouble(rhs.value) =>
           asAst(lhs.value.doubleValue() == rhs.value.doubleValue(), e)
 
         case e @ LessThan(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value < rhs.value, e)
         case e @ LessThan(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
           asAst(primitiveDoubleLessThan(lhs.value, rhs.value), e)
-        case e @ LessThan(lhs: IntegerLiteral, rhs: DoubleLiteral) =>
+        case e @ LessThan(lhs: IntegerLiteral, rhs: DoubleLiteral) if safeToCompareToDouble(lhs.value) =>
           asAst(lhs.value.doubleValue() < rhs.value.doubleValue(), e)
-        case e @ LessThan(lhs: DoubleLiteral, rhs: IntegerLiteral) =>
+        case e @ LessThan(lhs: DoubleLiteral, rhs: IntegerLiteral) if safeToCompareToDouble(rhs.value) =>
           asAst(lhs.value.doubleValue() < rhs.value.doubleValue(), e)
 
         case e @ GreaterThan(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value > rhs.value, e)
         case e @ GreaterThan(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
           asAst(primitiveDoubleGreaterThan(lhs.value, rhs.value), e)
-        case e @ GreaterThan(lhs: IntegerLiteral, rhs: DoubleLiteral) =>
+        case e @ GreaterThan(lhs: IntegerLiteral, rhs: DoubleLiteral) if safeToCompareToDouble(lhs.value) =>
           asAst(lhs.value.doubleValue() > rhs.value.doubleValue(), e)
-        case e @ GreaterThan(lhs: DoubleLiteral, rhs: IntegerLiteral) =>
+        case e @ GreaterThan(lhs: DoubleLiteral, rhs: IntegerLiteral) if safeToCompareToDouble(rhs.value) =>
           asAst(lhs.value.doubleValue() > rhs.value.doubleValue(), e)
 
         case e => e
@@ -183,4 +183,10 @@ case object FoldConstants extends StepSequencer.Step with DefaultPostCondition w
 
   private def primitiveDoubleGreaterThan(lhs: java.lang.Double, rhs: java.lang.Double): Boolean =
     lhs.doubleValue() > rhs.doubleValue()
+
+  private def safeToCompareToDouble(l: Long): Boolean = {
+    val d = l.doubleValue()
+    val ll = d.longValue()
+    l == ll
+  }
 }
