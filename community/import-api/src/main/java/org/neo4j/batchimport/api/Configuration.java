@@ -38,6 +38,8 @@ public interface Configuration {
     int DEFAULT_ENTITY_BATCH_SIZE = 500;
 
     int DEFAULT_MAX_MEMORY_PERCENT = 90;
+    long MAX_OFFHEAP_MEMORY_ON_INIT = new ToolingMemoryCalculations(NO_MONITOR)
+            .calculateMaxAvailableOffHeapMemoryFromPercent(DEFAULT_MAX_MEMORY_PERCENT);
 
     /**
      * Size of batches that are being sent through pipelines for processing.
@@ -95,13 +97,13 @@ public interface Configuration {
     /**
      * @return max memory to use for import cache data structures while importing.
      * This should exclude the memory acquired by this JVM. By default this returns total physical
-     * memory on the machine it's running on minus the max memory of this JVM.
+     * memory on the machine it's running on minus the max memory of this JVM. The value is sampled
+     * once on initialization.
      * {@value #DEFAULT_MAX_MEMORY_PERCENT}% of that figure.
      * @throws UnsupportedOperationException if available memory couldn't be determined.
      */
     default long maxOffHeapMemory() {
-        return new ToolingMemoryCalculations(NO_MONITOR)
-                .calculateMaxAvailableOffHeapMemoryFromPercent(DEFAULT_MAX_MEMORY_PERCENT);
+        return MAX_OFFHEAP_MEMORY_ON_INIT;
     }
 
     /**
