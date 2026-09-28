@@ -32,7 +32,8 @@ import org.neo4j.io.pagecache.segment.FileSegmentMetadata;
 class SegmentsMetadataTest {
     private static final long FIRST_APPEND_INDEX = 5;
     private static final long SECOND_APPEND_INDEX = 9;
-    private static final Path DB_DIR = Path.of("/data/databases/neo4j");
+    private static final DatabaseLayout DB_LAYOUT = DatabaseLayout.ofFlat(Path.of("/data/databases/neo4j"));
+    private static final Path DB_DIR = DB_LAYOUT.databaseDirectory();
     private static final long CLIENT_CHECKPOINT = 100;
     private static final long SERVER_CHECKPOINT = 200;
 
@@ -242,9 +243,7 @@ class SegmentsMetadataTest {
 
     private static Collection<Path> filterFilesToFetch(
             SegmentsMetadata clientState, SegmentsMetadata serverState, Path[] recoverableFiles) {
-        return serverState
-                .differenceFilter(clientState, DatabaseLayout.ofFlat(DB_DIR))
-                .filter(List.of(recoverableFiles));
+        return serverState.differenceFilter(clientState, DB_LAYOUT).filter(List.of(recoverableFiles));
     }
 
     private static Path[] files(String... names) {
