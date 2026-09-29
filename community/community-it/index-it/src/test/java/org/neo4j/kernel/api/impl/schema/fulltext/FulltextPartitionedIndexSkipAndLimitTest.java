@@ -36,7 +36,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.test.extension.SkipOnSpd;
 
-@SkipOnSpd(reason = "SPD full text ties are not ordered by entity id ( possibly adapt test)")
+@SkipOnSpd(
+        reason = "SPD full text ties are tested in NodePropertyFullTextIndexIT and RelationshipPropertyFullTextIndexIT",
+        notes = SkipOnSpd.Note.incompatible)
 @RandomSupportExtension
 class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSupport {
 

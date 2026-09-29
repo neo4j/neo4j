@@ -88,7 +88,10 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
 
     @MethodSource("entityTypeProvider")
     @ParameterizedTest
-    @SkipOnSpd(reason = "SPD full text ties are not ordered by entity id ( possibly adapt test)")
+    @SkipOnSpd(
+            reason =
+                    "SPD tx-state deletion with ties is tested in NodePropertyFullTextIndexIT and RelationshipPropertyFullTextIndexIT",
+            notes = SkipOnSpd.Note.incompatible)
     void queryResultsMustNotIncludeEntitiesDeletedInTheSameTransaction(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 

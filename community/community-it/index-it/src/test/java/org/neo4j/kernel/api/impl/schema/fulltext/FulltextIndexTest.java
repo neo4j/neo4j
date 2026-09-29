@@ -340,7 +340,10 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
     }
 
     @Test
-    @SkipOnSpd(reason = "SPD full text ties are not ordered by entity id ( possibly adapt test)")
+    @SkipOnSpd(
+            reason =
+                    "SPD relevance ordering is tested in NodePropertyFullTextIndexIT and RelationshipPropertyFullTextIndexIT",
+            notes = SkipOnSpd.Note.incompatible)
     void shouldOrderResultsBasedOnRelevance() throws Exception {
         try (Transaction tx = db.beginTx()) {
             tx.schema()

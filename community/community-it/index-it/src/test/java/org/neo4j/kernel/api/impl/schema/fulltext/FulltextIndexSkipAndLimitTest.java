@@ -29,7 +29,9 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.SkipOnSpd;
 
-@SkipOnSpd(reason = "SPD full text ties are not ordered by entity id ( possibly adapt test)")
+@SkipOnSpd(
+        reason = "SPD full text ties are tested in NodePropertyFullTextIndexIT and RelationshipPropertyFullTextIndexIT",
+        notes = SkipOnSpd.Note.incompatible)
 class FulltextIndexSkipAndLimitTest extends FulltextProceduresTestSupport {
     private String topEntity;
     private String middleEntity;

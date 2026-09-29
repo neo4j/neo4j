@@ -1283,7 +1283,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     // will get the results back ordered by the "dude-count". However, if the second
     // document ends up alone on a shard it will rank higher since Lucene considers
     // inverse document frequency as well as "dude-count".
-    @SkipOnSpd
+    @SkipOnSpd(
+            reason =
+                    "SPD relevance ordering is tested in NodePropertyFullTextIndexIT and RelationshipPropertyFullTextIndexIT",
+            notes = SkipOnSpd.Note.incompatible)
     @MethodSource("entityTypeProvider")
     @ParameterizedTest
     void queryResultsMustBeOrderedByScore(EntityUtil entityUtil) {
