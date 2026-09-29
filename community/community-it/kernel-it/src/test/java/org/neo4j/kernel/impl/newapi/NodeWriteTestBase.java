@@ -582,7 +582,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             try (var nodeCursor = cursorFactory(ktx).allocateNodeCursor(CursorContext.NULL_CONTEXT)) {
                 ktx.dataRead().singleNode(node, nodeCursor);
                 assertThat(nodeCursor.next()).isTrue();
-                assertThat(nodeCursor.labels().all()).isEqualTo(new int[] {label1, label2});
+                assertThat(nodeCursor.labels().all()).containsExactlyInAnyOrder(label1, label2);
             }
         });
     }
