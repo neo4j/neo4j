@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
@@ -612,13 +614,16 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         // have. Hence, we defer the initialisation of the schema life until after we've done the reverse recovery.
         schemaLife.init();
 
-        reverseIncompleteBatches(transactionIdTracker.notCompletedTransactionAppendIndexes());
+        reverseIncompleteBatches(
+                transactionIdTracker.notCompletedTransactionAppendIndexes(), getOngoingAppendIndexesToReverse());
 
         monitor.reverseStoreRecoveryCompleted(lowestRecoveredAppendIndex);
     }
 
-    private void reverseIncompleteBatches(long[] incompleteAppendIndexes) throws Exception {
-        if (incompleteAppendIndexes == null || incompleteAppendIndexes.length == 0) {
+    private void reverseIncompleteBatches(long[] incompleteAppendIndexes, Set<Long> ongoingAppendIndexesToReverse)
+            throws Exception {
+        if ((incompleteAppendIndexes == null || incompleteAppendIndexes.length == 0)
+                && ongoingAppendIndexesToReverse.isEmpty()) {
             return;
         }
         // Incomplete batches especially one before the last checkpoint position must also undo indexes and id
@@ -626,12 +631,27 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         try (var recoveryVisitor = recoveryService.getRecoveryApplier(
                 MVCC_INCOMPLETE_REVERSE_RECOVERY, contextFactory, REVERSE_RECOVERY_TAG)) {
             for (long appendIndex : incompleteAppendIndexes) {
-                long nextIndexToReverse = appendIndex;
-                while (nextIndexToReverse != UNKNOWN_APPEND_INDEX) {
-                    nextIndexToReverse = reverseChunk(nextIndexToReverse, recoveryVisitor);
-                }
+                ongoingAppendIndexesToReverse.remove(appendIndex);
+                reverseChain(appendIndex, recoveryVisitor);
+            }
+
+            // we may already have partially applied transactions before this run so we undo those (cluster pool)
+            for (Long appendIndex : ongoingAppendIndexesToReverse) {
+                reverseChain(appendIndex, recoveryVisitor);
             }
         }
+    }
+
+    private void reverseChain(long nextIndexToReverse, RecoveryApplier recoveryVisitor) throws Exception {
+        while (nextIndexToReverse != UNKNOWN_APPEND_INDEX) {
+            nextIndexToReverse = reverseChunk(nextIndexToReverse, recoveryVisitor);
+        }
+    }
+
+    private Set<Long> getOngoingAppendIndexesToReverse() {
+        return chunkedTransactionTracker.incompleteTransactions().stream()
+                .map(ChunkedTransactionTracker.TransactionInfo::lastBatchAppendIndex)
+                .collect(Collectors.toSet());
     }
 
     private long reverseChunk(long appendIndex, RecoveryApplier recoveryVisitor) throws Exception {
