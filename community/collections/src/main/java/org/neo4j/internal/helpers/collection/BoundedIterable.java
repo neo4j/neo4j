@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import java.util.Collections;
+import static java.util.Collections.emptyIterator;
+
 import java.util.Iterator;
 
 public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable {
@@ -27,21 +28,9 @@ public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable
 
     long maxCount();
 
+    @SuppressWarnings("unchecked")
     static <T> BoundedIterable<T> empty() {
-        return new BoundedIterable<>() {
-            @Override
-            public long maxCount() {
-                return 0;
-            }
-
-            @Override
-            public void close() {}
-
-            @Override
-            public Iterator<T> iterator() {
-                return Collections.emptyIterator();
-            }
-        };
+        return (BoundedIterable<T>) EmptyBoundedIterable.INSTANCE;
     }
 
     static <T> BoundedIterable<T> concat(Iterable<BoundedIterable<T>> iterables) {
@@ -73,5 +62,25 @@ public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable
                 return Iterables.concat(iterables).iterator();
             }
         };
+    }
+
+    final class EmptyBoundedIterable<T> implements BoundedIterable<T> {
+
+        static final EmptyBoundedIterable<?> INSTANCE = new EmptyBoundedIterable<>();
+
+        private EmptyBoundedIterable() {}
+
+        @Override
+        public long maxCount() {
+            return 0;
+        }
+
+        @Override
+        public void close() {}
+
+        @Override
+        public Iterator<T> iterator() {
+            return emptyIterator();
+        }
     }
 }
