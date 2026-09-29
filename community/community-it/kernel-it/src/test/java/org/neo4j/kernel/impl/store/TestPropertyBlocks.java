@@ -449,11 +449,12 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
     void testMessWithMiddleRecordDeletes() {
         String node = createNode();
         long recordsInUseAtStart = propertyRecordsInUse();
-        long offset = lastUsedRecordId(propertyStore()) + 1; // expected first record id that will be used for this test
 
+        long nodeId;
         int stuffedShortStrings = 0;
         try (Transaction transaction = getGraphDb().beginTx()) {
             var txNode = transaction.getNodeByElementId(node);
+            nodeId = txNode.getId();
             for (; stuffedShortStrings < 3 * PropertyType.getPayloadSizeLongs(); stuffedShortStrings++) {
                 txNode.setProperty("shortString" + stuffedShortStrings, String.valueOf(stuffedShortStrings));
             }
@@ -461,7 +462,9 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
         }
         assertEquals(recordsInUseAtStart + 3, propertyRecordsInUse());
 
-        final List<Pair<String, Object>> middleRecordProps = getPropertiesFromRecord(offset + 1);
+        final List<Pair<String, Object>> headRecordProps = getPropertiesFromNode(nodeId, 0);
+        final List<Pair<String, Object>> middleRecordProps = getPropertiesFromNode(nodeId, 1);
+        final List<Pair<String, Object>> tailRecordProps = getPropertiesFromNode(nodeId, 2);
         final Pair<String, Object> secondBlockInMiddleRecord = middleRecordProps.get(1);
         final Pair<String, Object> thirdBlockInMiddleRecord = middleRecordProps.get(2);
 
@@ -504,12 +507,12 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
         try (Transaction transaction = getGraphDb().beginTx()) {
             var txNode = transaction.getNodeByElementId(node);
             middleRecordProps.forEach(nameAndValue -> assertFalse(txNode.hasProperty(nameAndValue.getOne())));
-            getPropertiesFromRecord(offset).forEach(nameAndValue -> {
+            headRecordProps.forEach(nameAndValue -> {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
                 assertEquals(value, txNode.removeProperty(name));
             });
-            getPropertiesFromRecord(offset + 2).forEach(nameAndValue -> {
+            tailRecordProps.forEach(nameAndValue -> {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
                 assertEquals(value, txNode.removeProperty(name));

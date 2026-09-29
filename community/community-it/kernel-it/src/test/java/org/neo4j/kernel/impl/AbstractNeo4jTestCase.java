@@ -105,20 +105,6 @@ public abstract class AbstractNeo4jTestCase {
         return inUse;
     }
 
-    protected static <RECORD extends AbstractBaseRecord> long lastUsedRecordId(RecordStore<RECORD> store) {
-        long usedIds = store.getIdGenerator().getHighId();
-        try (var cursor = store.openPageCursorForReading(usedIds, NULL_CONTEXT)) {
-            for (long id = usedIds; id > store.getNumberOfReservedLowIds(); id--) {
-                RECORD record = store.getRecordByCursor(
-                        id, store.newRecord(), RecordLoad.FORCE, cursor, EmptyMemoryTracker.INSTANCE);
-                if (record.inUse()) {
-                    return id;
-                }
-            }
-        }
-        return 0;
-    }
-
     protected long dynamicStringRecordsInUse() {
         return numberOfRecordsInUse(propertyStore().getStringStore());
     }
