@@ -68,6 +68,11 @@ public interface TxStateVisitor extends AutoCloseable {
 
     void visitCreateVectorStore(VectorStoreIdType vectorStoreToCreate);
 
+    /**
+     * @param after the new ontology, or {@code null} if it was cleared.
+     */
+    void visitOntologyChange(String after);
+
     void finishVisit() throws KernelException;
 
     @Override
@@ -121,6 +126,9 @@ public interface TxStateVisitor extends AutoCloseable {
 
         @Override
         public void visitCreateVectorStore(VectorStoreIdType vectorStoreToCreate) {}
+
+        @Override
+        public void visitOntologyChange(String after) {}
 
         @Override
         public void finishVisit() {}
@@ -215,6 +223,11 @@ public interface TxStateVisitor extends AutoCloseable {
         @Override
         public void visitCreateVectorStore(VectorStoreIdType vectorStoreToCreate) {
             actual.visitCreateVectorStore(vectorStoreToCreate);
+        }
+
+        @Override
+        public void visitOntologyChange(String after) {
+            actual.visitOntologyChange(after);
         }
 
         @Override

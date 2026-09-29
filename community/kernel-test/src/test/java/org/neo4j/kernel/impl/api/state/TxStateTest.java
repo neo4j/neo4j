@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -90,6 +91,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.chunk.ChunkSink;
 import org.neo4j.kernel.impl.api.chunk.ChunkedTransactionSink;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.memory.LocalMemoryTracker;
@@ -731,6 +733,45 @@ class TxStateTest {
     }
 
     @Test
+    void shouldVisitLastOntologyValueSet() throws Exception {
+        state.setOntology("first");
+        state.setOntology("second");
+
+        assertThat(visitedOntologyChanges()).containsExactly("second");
+        assertThat(state.hasChanges()).isTrue();
+        assertThat(state.hasDataChanges()).isFalse();
+    }
+
+    @Test
+    void shouldTreatEmptyOntologyAsClear() throws Exception {
+        state.setOntology("value");
+        state.setOntology("");
+
+        assertThat(state.hasOntologyChange()).isTrue();
+        assertThat(state.ontologyChange()).isNull();
+        assertThat(visitedOntologyChanges()).containsExactly((String) null);
+    }
+
+    @Test
+    void shouldNotVisitOntologyWhenUntouched() throws Exception {
+        state.nodeDoCreate(1);
+
+        assertThat(state.hasOntologyChange()).isFalse();
+        assertThat(visitedOntologyChanges()).isEmpty();
+    }
+
+    private List<String> visitedOntologyChanges() throws Exception {
+        var visited = new ArrayList<String>();
+        state.accept(new TxStateVisitor.Adapter() {
+            @Override
+            public void visitOntologyChange(String after) {
+                visited.add(after);
+            }
+        });
+        return visited;
+    }
+
+    @Test
     void shouldReportDeletedNodeIfItWasCreatedAndDeletedInSameTx() {
         // Given
         long nodeId = 42;
@@ -1300,6 +1341,36 @@ class TxStateTest {
 
         assertTrue(state.hasDataChanges());
         assertTrue(state.hasChanges());
+    }
+
+    @Test
+    void shouldNotOfferChunkWhileOntologyChangeIsPending() {
+        var chunkWriter = mock(ChunkSink.class);
+        var chunkedState = new TxState(
+                collectionsFactory,
+                memoryTracker,
+                TransactionStateBehaviour.DEFAULT_BEHAVIOUR,
+                ApplyEnrichmentStrategy.NO_ENRICHMENT,
+                chunkWriter,
+                TxStateMemoryConsumer.EMPTY_CONSUMER,
+                TransactionEvent.NULL);
+
+        chunkedState.nodeDoCreate(1);
+        verify(chunkWriter).write(chunkedState, TransactionEvent.NULL);
+
+        chunkedState.setOntology("value");
+        chunkedState.nodeDoCreate(2);
+        chunkedState.nodeDoDelete(1);
+        verifyNoMoreInteractions(chunkWriter);
+    }
+
+    @Test
+    void shouldNotRevisitOntologyAfterReset() throws Exception {
+        state.setOntology("value");
+        state.reset();
+
+        assertThat(state.hasOntologyChange()).isFalse();
+        assertThat(visitedOntologyChanges()).isEmpty();
     }
 
     @Test

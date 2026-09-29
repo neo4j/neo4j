@@ -242,4 +242,9 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
     public void visitCreateVectorStore(VectorStoreIdType vectorStoreToCreate) {
         throw FeatureUnsupportedOnStoreFormatException.vectorsUnsupportedInStoreFormat(storeFormat);
     }
+
+    @Override
+    public void visitOntologyChange(String after) {
+        throw new UnsupportedOperationException("The ontology is not supported by the record format");
+    }
 }

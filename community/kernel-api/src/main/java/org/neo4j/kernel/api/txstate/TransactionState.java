@@ -138,5 +138,18 @@ public interface TransactionState extends ReadableTransactionState {
      */
     void createVectorStore(Vector.CoordinateType coordinateType, int dimensions);
 
+    /**
+     * Set the ontology, replacing any value set earlier in this transaction. {@code null} or empty clears it.
+     */
+    void setOntology(String value);
+
+    boolean hasOntologyChange();
+
+    /**
+     * @return the ontology set in this transaction, or {@code null} if it was cleared.
+     * Only meaningful when {@link #hasOntologyChange()} is {@code true}.
+     */
+    String ontologyChange();
+
     EnrichmentMode enrichmentMode();
 }

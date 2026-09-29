@@ -438,6 +438,11 @@ public interface Read {
     long relationshipsGetCount();
 
     /**
+     * @return the ontology, including a change made in the current transaction, or {@code null} if none is set.
+     */
+    String ontology();
+
+    /**
      * @param reference
      *         a reference from {@link RelationshipCursor#relationshipReference()}.
      * @param cursor

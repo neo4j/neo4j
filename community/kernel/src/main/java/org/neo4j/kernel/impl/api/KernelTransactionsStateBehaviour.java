@@ -43,4 +43,9 @@ class KernelTransactionsStateBehaviour implements TransactionStateBehaviour {
     public boolean useIndexCommands() {
         return storageEngine.transactionStateBehaviour().useIndexCommands();
     }
+
+    @Override
+    public boolean supportsOntology() {
+        return storageEngine.transactionStateBehaviour().supportsOntology();
+    }
 }

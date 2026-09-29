@@ -134,6 +134,7 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_CHECKPOINT_POWER_OF_2_IN_ENVELOPES = V2026_08;
     public static final KernelVersion VERSION_VECTOR_ARRAY_VALUE_INTRODUCED = GLORIOUS_FUTURE;
     public static final KernelVersion VERSION_VECTOR_BINARY_DEFAULT = V2026_08;
+    public static final KernelVersion VERSION_ONTOLOGY_STORE = GLORIOUS_FUTURE;
     public static final KernelVersion VERSION_CHECKPOINT_CONSENSUS_INDEX_INTRODUCED = V2026_10;
     public static final KernelVersion VERSION_TYPE_CONSTRAINT_DEFAULT_VALUE_INTRODUCED = GLORIOUS_FUTURE;
 

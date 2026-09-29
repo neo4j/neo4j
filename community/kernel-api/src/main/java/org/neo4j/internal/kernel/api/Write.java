@@ -227,4 +227,10 @@ public interface Write {
      * a transaction will throw an Exception.
      */
     void createVectorStore(Vector.CoordinateType coordinateType, int dimensions);
+
+    /**
+     * Replace the ontology of this database. {@code null} or an empty string clears it.
+     * Requires schema write privilege and a storage engine that supports it.
+     */
+    void setOntology(String value);
 }

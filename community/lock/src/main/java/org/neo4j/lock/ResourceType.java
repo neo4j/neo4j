@@ -75,6 +75,9 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  *
  *     <dt>{@link #DENSE_VALIDATION} - unique identifier of relationship in dense store</dt>
  *     <dd>Lock the dense relationships for transaction validation in block format. Only used in block mvcc</dd>
+ *
+ *     <dt>{@link #ONTOLOGY} - Always id 0</dt>
+ *     <dd>Serialises writers of the block format ontology so the before value in its command stays correct.</dd>
  * </dl>
  */
 public enum ResourceType {
@@ -91,7 +94,8 @@ public enum ResourceType {
     PAGE(10),
     NODE_RELATIONSHIPS(11),
     NODE_LOCAL_IDS(12),
-    DENSE_VALIDATION(13);
+    DENSE_VALIDATION(13),
+    ONTOLOGY(14);
 
     private static final ImmutableIntObjectMap<ResourceType> idToType;
 

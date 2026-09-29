@@ -115,6 +115,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.internal.kernel.api.security.StaticAccessMode;
 import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
@@ -3073,6 +3074,22 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         ktx.assertOpen();
         assertSupportedInVersion(KernelVersion.VERSION_VECTOR_TYPE_INTRODUCED, "Creating a vector property store");
         ktx.txState().createVectorStore(coordinateType, dimensions);
+    }
+
+    @Override
+    public void setOntology(String value) {
+        ktx.assertOpen();
+        ktx.securityAuthorizationHandler().assertSchemaWrites(ktx.securityContext(), PrivilegeAction.CREATE_INDEX);
+        assertSupportedInVersion(KernelVersion.VERSION_ONTOLOGY_STORE, "Setting the ontology");
+        if (!transactionStateBehaviour.supportsOntology()) {
+            throw new UnsupportedOperationException("The ontology is not supported by this storage engine");
+        }
+        if (ktx.txState().isMultiChunk()) {
+            throw new UnsupportedOperationException(
+                    "The ontology can not be set in a transaction that has already committed a chunk");
+        }
+        exclusiveLock(ResourceType.ONTOLOGY, new long[] {0});
+        ktx.txState().setOntology(value);
     }
 
     private void exclusiveLock(ResourceType resource, long[] resourceIds) {

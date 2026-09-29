@@ -186,4 +186,11 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader {
      * @return a token name lookup instance.
      */
     TokenNameLookup tokenNameLookup();
+
+    /**
+     * @return the committed ontology, or {@code null} if none is set or the engine does not support it.
+     */
+    default String ontology() {
+        return null;
+    }
 }

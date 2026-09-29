@@ -134,6 +134,8 @@ public class TxState implements TransactionState {
     private MutableMap<IndexDescriptor, IndexUpdate> indexUpdates;
     private Upgrade.KernelUpgrade upgrade;
     private TxStateVisitor.VectorStoreIdType vectorStoreToCreate;
+    private boolean ontologyChanged;
+    private String ontology;
 
     private final ScopedMemoryTracker stateMemoryTracker;
     private final TransactionStateBehaviour behaviour;
@@ -272,6 +274,10 @@ public class TxState implements TransactionState {
             visitor.visitCreateVectorStore(vectorStoreToCreate);
         }
 
+        if (ontologyChanged) {
+            visitor.visitOntologyChange(ontology);
+        }
+
         if (upgrade != null) {
             visitor.visitKernelUpgrade(upgrade);
         }
@@ -381,6 +387,9 @@ public class TxState implements TransactionState {
         createdConstraintIndexesByConstraint = null;
         indexUpdates = null;
 
+        ontologyChanged = false;
+        ontology = null;
+
         collectionsFactory.release();
         stateMemoryTracker.reset();
     }
@@ -450,7 +459,10 @@ public class TxState implements TransactionState {
     }
 
     private void checkChunk() {
-        chunkWriter.write(this, transactionEvent);
+        // A chunk commit releases the locks, and the exclusive ontology lock must be held until the real commit.
+        if (!ontologyChanged) {
+            chunkWriter.write(this, transactionEvent);
+        }
     }
 
     @Override
@@ -941,6 +953,23 @@ public class TxState implements TransactionState {
         assert vectorStoreToCreate == null;
         vectorStoreToCreate = new TxStateVisitor.VectorStoreIdType(coordinateType, dimensions);
         changed();
+    }
+
+    @Override
+    public void setOntology(String value) {
+        ontologyChanged = true;
+        ontology = value == null || value.isEmpty() ? null : value;
+        changed();
+    }
+
+    @Override
+    public boolean hasOntologyChange() {
+        return ontologyChanged;
+    }
+
+    @Override
+    public String ontologyChange() {
+        return ontology;
     }
 
     @Override

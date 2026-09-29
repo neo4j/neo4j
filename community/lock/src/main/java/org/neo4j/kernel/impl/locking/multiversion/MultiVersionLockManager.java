@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.locking.multiversion;
 
 import static org.neo4j.lock.ResourceType.DENSE_VALIDATION;
+import static org.neo4j.lock.ResourceType.ONTOLOGY;
 import static org.neo4j.lock.ResourceType.PAGE;
 
 import java.util.Collection;
@@ -116,7 +117,7 @@ public class MultiVersionLockManager implements LockManager {
         @Override
         public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
             switch (resourceType) {
-                case PAGE, RELATIONSHIP_TYPE, LABEL, SCHEMA_NAME, INDEX_ENTRY, DENSE_VALIDATION ->
+                case PAGE, RELATIONSHIP_TYPE, LABEL, SCHEMA_NAME, INDEX_ENTRY, DENSE_VALIDATION, ONTOLOGY ->
                     delegate.acquireExclusive(tracer, resourceType, resourceIds);
             }
         }
@@ -124,7 +125,7 @@ public class MultiVersionLockManager implements LockManager {
         @Override
         public void releaseExclusive(ResourceType resourceType, long... resourceIds) {
             switch (resourceType) {
-                case PAGE, RELATIONSHIP_TYPE, LABEL, SCHEMA_NAME, INDEX_ENTRY, DENSE_VALIDATION ->
+                case PAGE, RELATIONSHIP_TYPE, LABEL, SCHEMA_NAME, INDEX_ENTRY, DENSE_VALIDATION, ONTOLOGY ->
                     delegate.releaseExclusive(resourceType, resourceIds);
             }
         }

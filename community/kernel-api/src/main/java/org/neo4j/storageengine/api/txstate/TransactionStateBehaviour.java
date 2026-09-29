@@ -43,4 +43,11 @@ public interface TransactionStateBehaviour {
      * @return whether or not transaction state use index commands
      */
     boolean useIndexCommands();
+
+    /**
+     * @return whether the storage engine persists an ontology set via {@code Write#setOntology}.
+     */
+    default boolean supportsOntology() {
+        return false;
+    }
 }

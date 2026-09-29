@@ -61,6 +61,7 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.IndexReaderCache;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -998,6 +999,18 @@ public class KernelRead implements Read {
     public long relationshipsGetCount() {
         return countsForRelationship(
                 TokenConstants.ANY_LABEL, TokenConstants.ANY_RELATIONSHIP_TYPE, TokenConstants.ANY_LABEL);
+    }
+
+    @Override
+    public String ontology() {
+        performCheckBeforeOperation();
+        if (txStateHolder.hasTxStateWithChanges()) {
+            TransactionState txState = txStateHolder.txState();
+            if (txState.hasOntologyChange()) {
+                return txState.ontologyChange();
+            }
+        }
+        return storageReader.ontology();
     }
 
     @Override

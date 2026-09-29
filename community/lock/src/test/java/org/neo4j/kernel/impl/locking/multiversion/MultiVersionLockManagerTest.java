@@ -85,6 +85,7 @@ class MultiVersionLockManagerTest {
         verify(deletageLockClient).releaseExclusive(eq(ResourceType.INDEX_ENTRY), anyLong());
         verify(deletageLockClient).releaseExclusive(eq(ResourceType.SCHEMA_NAME), anyLong());
         verify(deletageLockClient).releaseExclusive(eq(ResourceType.DENSE_VALIDATION), anyLong());
+        verify(deletageLockClient).releaseExclusive(eq(ResourceType.ONTOLOGY), anyLong());
         verifyNoMoreInteractions(deletageLockClient);
     }
 
@@ -103,6 +104,7 @@ class MultiVersionLockManagerTest {
         verify(deletageLockClient).acquireExclusive(eq(LockTracer.NONE), eq(ResourceType.INDEX_ENTRY), anyLong());
         verify(deletageLockClient).acquireExclusive(eq(LockTracer.NONE), eq(ResourceType.SCHEMA_NAME), anyLong());
         verify(deletageLockClient).acquireExclusive(eq(LockTracer.NONE), eq(ResourceType.DENSE_VALIDATION), anyLong());
+        verify(deletageLockClient).acquireExclusive(eq(LockTracer.NONE), eq(ResourceType.ONTOLOGY), anyLong());
         verifyNoMoreInteractions(deletageLockClient);
 
         for (int i = 0; i < resourceTypes.length; i++) {
@@ -115,6 +117,7 @@ class MultiVersionLockManagerTest {
         verify(deletageLockClient).releaseExclusive(eq(ResourceType.INDEX_ENTRY), anyLong());
         verify(deletageLockClient).releaseExclusive(eq(ResourceType.SCHEMA_NAME), anyLong());
         verify(deletageLockClient).releaseExclusive(eq(ResourceType.DENSE_VALIDATION), anyLong());
+        verify(deletageLockClient).releaseExclusive(eq(ResourceType.ONTOLOGY), anyLong());
         verifyNoMoreInteractions(deletageLockClient);
     }
 

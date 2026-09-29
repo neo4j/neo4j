@@ -239,6 +239,11 @@ public class StubRead implements Read {
     }
 
     @Override
+    public String ontology() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void singleRelationship(long reference, RelationshipScanCursor cursor) {
         throw new UnsupportedOperationException();
     }

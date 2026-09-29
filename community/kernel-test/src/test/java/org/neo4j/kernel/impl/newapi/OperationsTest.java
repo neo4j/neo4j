@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.function.Suppliers.singleton;
@@ -144,6 +145,8 @@ abstract class OperationsTest {
     protected StorageLocks storageLocks;
     protected static final String DB_NAME = "db.test";
     private StoreCursors storeCursors;
+    private KernelVersion kernelVersion = LatestVersions.LATEST_KERNEL_VERSION_PROVIDER.kernelVersion();
+    private boolean supportsOntology;
 
     abstract FormattedLogFormat getFormat();
 
@@ -247,7 +250,7 @@ abstract class OperationsTest {
                 mock(IndexTxStateUpdater.class),
                 creationContext,
                 mock(DbmsRuntimeVersionProvider.class),
-                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
+                () -> kernelVersion,
                 storageLocks,
                 transaction,
                 kernelSchemaRead,
@@ -259,7 +262,22 @@ abstract class OperationsTest {
                 Config.defaults(),
                 INSTANCE,
                 () -> StaticAccessMode.FULL,
-                TransactionStateBehaviour.DEFAULT_BEHAVIOUR);
+                new TransactionStateBehaviour() {
+                    @Override
+                    public boolean keepMetaDataForDeletedRelationship() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean useIndexCommands() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean supportsOntology() {
+                        return supportsOntology;
+                    }
+                });
         operations.initialize(NULL_CONTEXT);
 
         this.order = inOrder(locks, txState, storageReader, storageReaderSnapshot, creationContext, storageLocks);
@@ -355,6 +373,49 @@ abstract class OperationsTest {
         verify(locks).acquireShared(any(), eq(ResourceType.LABEL), eq(1L), eq(2L));
         verify(storageLocks).acquireNodeLabelChangeLock(any(), eq(node), eq(1));
         verify(storageLocks).acquireNodeLabelChangeLock(any(), eq(node), eq(3));
+    }
+
+    @Test
+    void setOntologyShouldRequireSchemaWritePrivilege() {
+        when(transaction.securityContext())
+                .thenReturn(SecurityContext.authDisabled(
+                        StaticAccessMode.WRITE, ClientConnectionInfo.EMBEDDED_CONNECTION, DB_NAME));
+
+        assertThatThrownBy(() -> operations.setOntology("x")).isInstanceOf(AuthorizationViolationException.class);
+        verify(txState, never()).setOntology(any());
+    }
+
+    @Test
+    void setOntologyShouldFailWhenStorageEngineDoesNotSupportIt() {
+        kernelVersion = KernelVersion.VERSION_ONTOLOGY_STORE;
+
+        assertThatThrownBy(() -> operations.setOntology("x")).isInstanceOf(UnsupportedOperationException.class);
+        verify(txState, never()).setOntology(any());
+        verify(locks, never()).acquireExclusive(any(), eq(ResourceType.ONTOLOGY), any(long[].class));
+    }
+
+    @Test
+    void setOntologyShouldLockAndRecordValue() {
+        kernelVersion = KernelVersion.VERSION_ONTOLOGY_STORE;
+        supportsOntology = true;
+
+        operations.setOntology("x");
+
+        verify(locks).acquireExclusive(any(), eq(ResourceType.ONTOLOGY), eq(0L));
+        verify(txState).setOntology("x");
+    }
+
+    @Test
+    void setOntologyShouldFailWhenTransactionHasCommittedAChunk() {
+        kernelVersion = KernelVersion.VERSION_ONTOLOGY_STORE;
+        supportsOntology = true;
+        ((TxState) txState).markAsMultiChunk();
+
+        assertThatThrownBy(() -> operations.setOntology("x"))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("chunk");
+        verify(txState, never()).setOntology(any());
+        verify(locks, never()).acquireExclusive(any(), eq(ResourceType.ONTOLOGY), any(long[].class));
     }
 
     @Test
