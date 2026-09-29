@@ -2967,6 +2967,13 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             "Unexpected error has occurred. See debug log for details.",
             "unexpected error",
             ErrorClassification.UNKNOWN),
+    STATUS_50NG0(
+            "The query failed in the remote database: { %s }{ %s }",
+            new GqlParams.GqlParam[] {
+                GqlParams.StringParam.msg, new NonSensitiveGqlParam(GqlParams.StringParam.cause, List.of(FIXED_TEXT))
+            },
+            "remote query execution error",
+            ErrorClassification.UNKNOWN),
     STATUS_51N00(
             "Failed to register procedure/function.", "procedure registration error", ErrorClassification.CLIENT_ERROR),
     STATUS_51N01(
