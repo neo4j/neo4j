@@ -112,7 +112,7 @@
     <ge-bigquery-jdbc.version>1.4.1</ge-bigquery-jdbc.version>
     <ge-databricks-jdbc.version>3.4.2</ge-databricks-jdbc.version>
     <ge-datasource-proxy.version>1.11.0</ge-datasource-proxy.version>
-    <ge-duckdb_jdbc.version>1.5.5.1</ge-duckdb_jdbc.version>
+    <ge-duckdb_jdbc.version>1.5.6.0</ge-duckdb_jdbc.version>
     <ge-flyway-core.version>13.6.0</ge-flyway-core.version>
     <ge-flyway-database-duckdb.version>10.24.0</ge-flyway-database-duckdb.version>
     <ge-ojdbc17.version>23.26.3.0.0</ge-ojdbc17.version>
