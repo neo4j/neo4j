@@ -60,7 +60,7 @@ import org.neo4j.server.queryapi.versioning.QueryVersion;
     QueryMimeTypes.TYPED_JSON_V1x2,
 })
 public class QueryResource {
-    public static final QueryVersion VERSION = new QueryVersion(2, 0);
+    public static final QueryVersion VERSION = new QueryVersion(2, 1);
     // Legacy Discovery Address
     public static final String NAME_V2 = "query";
 

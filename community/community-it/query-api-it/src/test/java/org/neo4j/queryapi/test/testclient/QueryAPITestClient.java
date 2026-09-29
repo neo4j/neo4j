@@ -42,6 +42,7 @@ public class QueryAPITestClient {
     private final HttpClient client;
     private final String endpoint;
     private final String credentials;
+    private final String realm;
     private final ObjectMapper objectMapper;
     private final QueryContentType contentType;
     private final List<QueryContentType> acceptedContentTypes;
@@ -73,18 +74,49 @@ public class QueryAPITestClient {
             String password,
             QueryContentType contentType,
             List<QueryContentType> acceptedContentTypes) {
+        this(endpoint, username, password, null, contentType, acceptedContentTypes);
+    }
+
+    public QueryAPITestClient(
+            String endpoint,
+            String username,
+            String password,
+            String realm,
+            QueryContentType contentType,
+            List<QueryContentType> acceptedContentTypes) {
+        this(
+                endpoint,
+                username != null && password != null ? encodedCredentials(username, password) : null,
+                realm,
+                contentType,
+                acceptedContentTypes,
+                false);
+    }
+
+    public QueryAPITestClient(
+            String endpoint,
+            String credentials,
+            String realm,
+            QueryContentType contentType,
+            List<QueryContentType> acceptedContentTypes,
+            boolean ignored) {
         this.endpoint = endpoint;
-        if (username != null && password != null) {
-            this.credentials = encodedCredentials(username, password);
-        } else {
-            this.credentials = null;
-        }
+        this.credentials = credentials;
+        this.realm = realm;
         this.client = HttpClient.newHttpClient();
         this.contentType = contentType;
         this.acceptedContentTypes = acceptedContentTypes;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.setDefaultPropertyInclusion(
                 JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
+    }
+
+    public QueryAPITestClient withRealm(String realm) {
+        return new QueryAPITestClient(endpoint, credentials, realm, contentType, acceptedContentTypes, false);
+    }
+
+    public QueryAPITestClient withCredentials(String credentials) {
+        return new QueryAPITestClient(endpoint, credentials, realm, contentType, acceptedContentTypes, false);
     }
 
     public String getEndpoint() {
@@ -319,6 +351,10 @@ public class QueryAPITestClient {
 
         if (credentials != null) {
             reqBuilder.header("Authorization", credentials);
+        }
+
+        if (realm != null) {
+            reqBuilder.header("Neo4j-Realm", realm);
         }
 
         var builtRequest = reqBuilder.build();

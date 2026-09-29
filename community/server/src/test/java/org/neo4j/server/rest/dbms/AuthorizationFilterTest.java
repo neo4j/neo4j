@@ -291,6 +291,73 @@ class AuthorizationFilterTest {
     }
 
     @Test
+    void shouldAuthorizeWhenValidCredentialsSuppliedInADefinedRealm() throws Exception {
+        // Given
+        final AuthorizationEnabledFilter filter = newFilter();
+        final String realm = "SomeWhereOverTheRainbow";
+        String credentials = Base64.encodeBase64String("foo:bar".getBytes(UTF_8));
+        BasicLoginContext loginContext = mock(BasicLoginContext.class);
+        AuthSubject authSubject = mock(AuthSubject.class);
+        when(servletRequest.getRemoteAddr()).thenReturn("client");
+        when(servletRequest.getRemotePort()).thenReturn(1337);
+        when(servletRequest.getServerName()).thenReturn("server");
+        when(servletRequest.getServerPort()).thenReturn(42);
+        when(servletRequest.getMethod()).thenReturn("GET");
+        when(servletRequest.getContextPath()).thenReturn("/db/data");
+        when(servletRequest.getHeader("Neo4j-Realm")).thenReturn(realm);
+        when(servletRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("BASIC " + credentials);
+        when(authManager.login(argThat(new AuthTokenMatcher(authToken("foo", "bar", realm))), any()))
+                .thenReturn(loginContext);
+        when(loginContext.subject()).thenReturn(authSubject);
+        when(authSubject.getAuthenticationResult()).thenReturn(AuthenticationResult.SUCCESS);
+        when(authSubject.authenticatedUser()).thenReturn("foo");
+
+        // When
+        filter.doFilter(servletRequest, servletResponse, filterChain);
+
+        // Then
+        verify(filterChain)
+                .doFilter(
+                        eq(new AuthorizedRequestWrapper(BASIC_AUTH, "foo", servletRequest, AUTH_DISABLED)),
+                        same(servletResponse));
+    }
+
+    @Test
+    void shouldAuthorizeWithBearerTokenInADefinedRealm() throws Exception {
+        // Given
+        final AuthorizationEnabledFilter filter = newFilter();
+        final String realm = "SomeWhereOverTheRainbow";
+        String credentials = "atokenwithabunchofstuff";
+        BasicLoginContext loginContext = mock(BasicLoginContext.class);
+        AuthSubject authSubject = mock(AuthSubject.class);
+        when(servletRequest.getRemoteAddr()).thenReturn("client");
+        when(servletRequest.getRemotePort()).thenReturn(1337);
+        when(servletRequest.getServerName()).thenReturn("server");
+        when(servletRequest.getServerPort()).thenReturn(42);
+        when(servletRequest.getMethod()).thenReturn("GET");
+        when(servletRequest.getContextPath()).thenReturn("/db/data");
+        when(servletRequest.getHeader("Neo4j-Realm")).thenReturn(realm);
+        when(servletRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("BEARER " + credentials);
+        when(authManager.login(
+                        argThat(new AuthTokenMatcher(
+                                Map.of("scheme", "bearer", "credentials", credentials, "realm", realm))),
+                        any()))
+                .thenReturn(loginContext);
+        when(loginContext.subject()).thenReturn(authSubject);
+        when(authSubject.getAuthenticationResult()).thenReturn(AuthenticationResult.SUCCESS);
+        when(authSubject.authenticatedUser()).thenReturn("foo");
+
+        // When
+        filter.doFilter(servletRequest, servletResponse, filterChain);
+
+        // Then
+        verify(filterChain)
+                .doFilter(
+                        eq(new AuthorizedRequestWrapper(BASIC_AUTH, "foo", servletRequest, AUTH_DISABLED)),
+                        same(servletResponse));
+    }
+
+    @Test
     void shouldAuthorizeWithBearerToken() throws Exception {
         // Given
         final AuthorizationEnabledFilter filter = newFilter();

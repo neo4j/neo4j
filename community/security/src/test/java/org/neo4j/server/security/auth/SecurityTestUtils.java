@@ -33,6 +33,12 @@ public class SecurityTestUtils {
         return newBasicAuthToken(username, password);
     }
 
+    public static Map<String, Object> authToken(String username, String password, String realm) {
+        var basic = newBasicAuthToken(username, password);
+        basic.put("realm", realm);
+        return basic;
+    }
+
     public static byte[] password(String passwordString) {
         return passwordString != null ? passwordString.getBytes(StandardCharsets.UTF_8) : null;
     }

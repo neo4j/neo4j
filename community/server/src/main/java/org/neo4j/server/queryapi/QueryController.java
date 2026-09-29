@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
@@ -56,6 +57,8 @@ import org.neo4j.server.queryapi.tx.WrongUserException;
 import org.neo4j.server.rest.dbms.AuthorizationHeaders;
 
 public class QueryController {
+    private static final String REALM_HEADER = "Neo4j-Realm";
+    public static final String BEARER_SCHEME = "Bearer";
 
     private final Driver driver;
     private final InternalLog log;
@@ -253,7 +256,7 @@ public class QueryController {
 
     private static AuthToken extractAuthToken(HttpServletRequest request) {
         // Auth has already passed through AuthorizationEnabledFilter, so we know we have formatted credential
-        var authHeader = request.getHeader("Authorization");
+        var authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         if (authHeader == null) {
             return AuthTokens.none();
@@ -264,9 +267,10 @@ public class QueryController {
             return AuthTokens.none();
         }
 
+        var realm = request.getHeader(REALM_HEADER);
         return switch (decoded.scheme()) {
-            case BEARER -> AuthTokens.bearer(decoded.values()[0]);
-            case BASIC -> AuthTokens.basic(decoded.values()[0], decoded.values()[1]);
+            case BEARER -> AuthTokens.custom("", decoded.values()[0], realm, BEARER_SCHEME);
+            case BASIC -> AuthTokens.basic(decoded.values()[0], decoded.values()[1], realm);
             default -> AuthTokens.none();
         };
     }

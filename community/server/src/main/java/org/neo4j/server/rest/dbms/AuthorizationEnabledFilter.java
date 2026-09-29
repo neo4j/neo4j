@@ -56,6 +56,7 @@ import org.neo4j.string.UTF8;
 
 public class AuthorizationEnabledFilter extends AuthorizationFilter {
     public static final String WWW_AUTH_HEADER = "Basic realm=\"Neo4j\", Bearer realm=\"Neo4j\"";
+    private static final String REALM_HEADER = "Neo4j-Realm";
     private final Supplier<AuthManager> authManagerSupplier;
     private final InternalLog log;
     private final List<Pattern> uriWhitelist;
@@ -90,6 +91,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
         }
 
         final String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+        final String realm = request.getHeader(REALM_HEADER);
         if (header == null) {
             requestAuthentication(request, noHeader).accept(response);
             return;
@@ -97,7 +99,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
 
         try {
             ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create(request);
-            LoginContext securityContext = authenticate(header, connectionInfo);
+            LoginContext securityContext = authenticate(header, connectionInfo, realm);
 
             if (securityContext == null) {
                 badHeader.accept(response);
@@ -143,7 +145,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
         }
     }
 
-    private LoginContext authenticate(String rawHeader, ClientConnectionInfo connectionInfo)
+    private LoginContext authenticate(String rawHeader, ClientConnectionInfo connectionInfo, String realm)
             throws InvalidAuthTokenException {
         final AuthorizationHeaders.ParsedHeader parsedHeader = extractCredential(rawHeader);
         AuthManager authManager = authManagerSupplier.get();
@@ -165,6 +167,10 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
                                 ? UTF8.encode(parsedHeader.values()[1])
                                 : null));
             }
+        }
+
+        if (realm != null) {
+            authToken.put(AuthToken.REALM_KEY, realm);
         }
 
         return authManager.login(authToken, connectionInfo);

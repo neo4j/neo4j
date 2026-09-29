@@ -30,6 +30,7 @@ public class BoltFields {
     static final String BOOKMARKS_KEY = "bookmarks";
     static final String SCHEME_KEY = "scheme";
     static final String CREDENTIALS_KEY = "credentials";
+    static final String REALM_KEY = "realm";
     static final String PRINCIPAL_KEY = "principal";
     static final String TX_TYPE_KEY = "tx_type";
     static final String NUMBER_OF_RECORDS_KEY = "n";

@@ -106,6 +106,23 @@ class OutboundMessageEncoderTest {
                                 "credentials",
                                 "bla bla".getBytes(StandardCharsets.UTF_8)))),
                 Arguments.of(
+                        new LogonMessage(
+                                Map.of(
+                                        "scheme", new StringValue("basic"),
+                                        "principal", new StringValue("bla"),
+                                        "credentials", new StringValue("bla bla"),
+                                        "realm", new StringValue("bla bla bla")),
+                                BoltValueFactory.getInstance()),
+                        new org.neo4j.boltmessages.request.authentication.LogonMessage(Map.of(
+                                "scheme",
+                                "basic",
+                                "principal",
+                                "bla",
+                                "credentials",
+                                "bla bla".getBytes(StandardCharsets.UTF_8),
+                                "realm",
+                                "bla bla bla"))),
+                Arguments.of(
                         LogoffMessage.INSTANCE,
                         org.neo4j.boltmessages.request.authentication.LogoffMessage.getInstance()),
                 Arguments.of(

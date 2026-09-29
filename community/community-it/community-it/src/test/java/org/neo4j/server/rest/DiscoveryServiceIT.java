@@ -149,7 +149,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase {
                 .isInstanceOf(List.class)
                 .asInstanceOf(InstanceOfAssertFactories.LIST)
                 .hasSize(1)
-                .contains("2.0");
+                .contains("2.1");
     }
 
     @Test

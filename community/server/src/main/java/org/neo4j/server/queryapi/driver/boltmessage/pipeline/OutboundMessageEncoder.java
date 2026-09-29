@@ -36,6 +36,7 @@ import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.P
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.PRINCIPAL_KEY;
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.QUERY_ID_KEY;
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.READ_ACCESS_MODE_VALUE;
+import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.REALM_KEY;
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.ROUTING_KEY;
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.SCHEME_KEY;
 import static org.neo4j.server.queryapi.driver.boltmessage.pipeline.BoltFields.TX_METADATA_KEY;
@@ -175,6 +176,9 @@ public class OutboundMessageEncoder extends MessageToMessageEncoder<RequestMessa
             convertedMap.put(
                     CREDENTIALS_KEY,
                     ((StringValue) metadata.get(CREDENTIALS_KEY)).asString().getBytes(StandardCharsets.UTF_8));
+        }
+        if (metadata.containsKey(BoltFields.REALM_KEY)) {
+            convertedMap.put(REALM_KEY, ((StringValue) metadata.get(BoltFields.REALM_KEY)).asString());
         }
         return convertedMap;
     }
