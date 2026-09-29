@@ -31,8 +31,10 @@ import static org.neo4j.values.storable.Values.utf8Value;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -51,6 +53,30 @@ class TextValueTest {
         assertThat(value.apply("hello").replace("a", "x")).isEqualTo(value.apply("hello"));
         assertThat(value.apply("hello").replace("e", "")).isEqualTo(value.apply("hllo"));
         assertThat(value.apply("").replace("", "⁻")).isEqualTo(value.apply("⁻"));
+        assertThat(value.apply("𐀀").replace("", "-")).isEqualTo(value.apply("-𐀀-"));
+        assertThat(value.apply("a𐀀b").replace("", "-")).isEqualTo(value.apply("-a-𐀀-b-"));
+        assertThat(value.apply("𐀀A").replace("A", "BB")).isEqualTo(value.apply("𐀀BB"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("functions")
+    void replaceWithLimit(Function<String, TextValue> value) {
+        assertThat(value.apply("").replaceWithLimit("", "X", 0)).isEqualTo(value.apply(""));
+        assertThat(value.apply("").replaceWithLimit("", "X", 1)).isEqualTo(value.apply("X"));
+        assertThat(value.apply("A").replaceWithLimit("", "X", 0)).isEqualTo(value.apply("A"));
+        assertThat(value.apply("𐀀A").replaceWithLimit("A", "BB", 10)).isEqualTo(value.apply("𐀀BB"));
+        assertThat(value.apply("𐀀AA").replaceWithLimit("A", "B", 1)).isEqualTo(value.apply("𐀀BA"));
+        assertThat(value.apply("𐀀A").replaceWithLimit("", "-", 1)).isEqualTo(value.apply("-𐀀A"));
+        assertThat(value.apply("𐀀A").replaceWithLimit("", "-", 2)).isEqualTo(value.apply("-𐀀-A"));
+        assertThat(value.apply("𐀀A").replaceWithLimit("", "-", 10)).isEqualTo(value.apply("-𐀀-A-"));
+        assertThat(value.apply("aaa").replaceWithLimit("", "b", 2)).isEqualTo(value.apply("babaa"));
+    }
+
+    @Test
+    void charValueReplaceWithEmptySearch() {
+        assertThat(charValue('A').replace("", "X")).isEqualTo(Values.stringValue("XAX"));
+        assertThat(charValue('A').replaceWithLimit("", "X", 1)).isEqualTo(Values.stringValue("XA"));
+        assertThat(charValue('A').replaceWithLimit("", "X", 0)).isEqualTo(charValue('A'));
     }
 
     @ParameterizedTest
@@ -171,6 +197,11 @@ class TextValueTest {
         assertThat(helloSplitOnEmptyStorable).isInstanceOf(StringArray.class); // is not CharArray
         assertThat(helloSplitOnEmptyStorable.asObject())
                 .isEqualTo(new String[] {"H", "E", "L", "L", "O"}); // is not char[]
+
+        assertThat(value.apply("a𐀀").split("")).isEqualTo(stringArray("a", "𐀀"));
+        assertThat(value.apply("a𐀀b").split(List.of("b", ""))).isEqualTo(stringArray("a", "𐀀"));
+        assertThat(value.apply("HELLO").split(List.of("L", "")).toStorableArray())
+                .isInstanceOf(StringArray.class);
     }
 
     public static Stream<Arguments> prettyPrintTextArray() {

@@ -190,7 +190,9 @@ public final class CharValue extends TextValue {
     public TextValue replace(String find, String replace) {
         assert find != null;
         assert replace != null;
-        if (stringValue().equals(find)) {
+        if (find.isEmpty()) {
+            return Values.stringValue(stringValue()).replace(find, replace);
+        } else if (stringValue().equals(find)) {
             return Values.stringValue(replace);
         } else {
             return this;
@@ -203,6 +205,8 @@ public final class CharValue extends TextValue {
         assert replace != null;
         if (limit < 1) {
             return this;
+        } else if (find.isEmpty()) {
+            return Values.stringValue(stringValue()).replaceWithLimit(find, replace, limit);
         } else if (stringValue().equals(find)) {
             return Values.stringValue(replace);
         } else {

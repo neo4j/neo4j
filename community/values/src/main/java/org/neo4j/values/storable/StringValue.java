@@ -83,12 +83,8 @@ public abstract class StringValue extends TextValue {
         return splitNonRegex(asString, separator);
     }
 
-    private ListValue splitOnEmptySeparator(String asString) {
-        char[] charArray = asString.toCharArray();
-        String[] strArray = new String[charArray.length];
-        for (int i = 0; i < charArray.length; i++) {
-            strArray[i] = String.valueOf(charArray[i]);
-        }
+    private static ListValue splitOnEmptySeparator(String asString) {
+        String[] strArray = asString.codePoints().mapToObj(Character::toString).toArray(String[]::new);
         return VirtualValues.fromArray(Values.stringArray(strArray));
     }
 
@@ -109,7 +105,7 @@ public abstract class StringValue extends TextValue {
                 }
                 reduced = reduced.replace(sep, "");
             }
-            return VirtualValues.fromArray(Values.charArray(reduced.toCharArray()));
+            return splitOnEmptySeparator(reduced);
         }
 
         return splitNonRegex(asString, separators);
@@ -194,6 +190,9 @@ public abstract class StringValue extends TextValue {
         assert find != null;
         assert replace != null;
 
+        if (find.isEmpty()) {
+            return replaceWithLimit(find, replace, Integer.MAX_VALUE);
+        }
         return Values.stringValue(value().replace(find, replace));
     }
 
@@ -210,7 +209,8 @@ public abstract class StringValue extends TextValue {
     }
 
     private String replaceStringWithLimit(String target, String replacement, int limit) {
-        int thisLen = length();
+        // UTF-16 length, not length(), which counts code points
+        int thisLen = value().length();
         int trgtLen = target.length();
         int replLen = replacement.length();
 
@@ -252,14 +252,18 @@ public abstract class StringValue extends TextValue {
                 throw new OutOfMemoryError("Required length exceeds implementation limit");
             }
 
+            String str = value();
             StringBuilder sb = new StringBuilder(resultLen);
             sb.append(replacement);
-            for (int i = 0; i < Math.min(limit - 1, thisLen); ++i) {
-                sb.append(this.value().charAt(i)).append(replacement);
+            int count = 1;
+            int i = 0;
+            while (i < thisLen && count < limit) {
+                int codePoint = str.codePointAt(i);
+                sb.appendCodePoint(codePoint).append(replacement);
+                i += Character.charCount(codePoint);
+                count++;
             }
-            if (limit <= thisLen) {
-                sb.append(this.value(), limit - 1, thisLen);
-            }
+            sb.append(str, i, thisLen);
 
             return sb.toString();
         }
@@ -415,7 +419,7 @@ public abstract class StringValue extends TextValue {
 
         @Override
         public TextValue replaceWithLimit(String find, String replace, int limit) {
-            if (find.isEmpty()) {
+            if (find.isEmpty() && limit >= 1) {
                 return Values.stringValue(replace);
             } else {
                 return this;
