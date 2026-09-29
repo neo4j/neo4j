@@ -2723,6 +2723,288 @@ class EnvelopeReadChannelTest {
         }
     }
 
+    @Test
+    void rereadsGrownTailOnNonPreallocatedFile() throws Exception {
+        int segmentSize = 256;
+        var bytes1 = bytes(random, TEST_DATA_SIZE);
+        var bytes2 = bytes(random, TEST_DATA_SIZE);
+        var checksums = new int[1];
+
+        // Non-preallocated: the file ends exactly at entry N's last byte, so the segment loads short.
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+        });
+
+        var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            var bytesRead = new byte[TEST_DATA_SIZE];
+            channel.get(bytesRead, TEST_DATA_SIZE);
+            assertThat(bytesRead).isEqualTo(bytes1);
+
+            long entry1Offset = channel.position();
+            var entry1Checksum = appendFullEnvelope(entry1Offset, checksums[0], bytes2, START_INDEX + 1);
+
+            channel.get(bytesRead, TEST_DATA_SIZE);
+            assertThat(bytesRead).isEqualTo(bytes2);
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX + 1);
+            assertThat(channel.getChecksum()).isEqualTo(entry1Checksum);
+        }
+    }
+
+    @Test
+    void resumeInPlaceReadsEntryAppendedAfterSegmentBuffered() throws Exception {
+        int segmentSize = 256;
+        var bytes1 = bytes(random, TEST_DATA_SIZE);
+        var bytes2 = bytes(random, TEST_DATA_SIZE);
+        var checksums = new int[2];
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+            buffer.put(new byte[segmentSize - TEST_ENTRY_SIZE]); // preallocated zero tail of segment 1
+        });
+
+        var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            var bytesRead = new byte[TEST_DATA_SIZE];
+            channel.get(bytesRead, TEST_DATA_SIZE);
+            assertThat(bytesRead).isEqualTo(bytes1);
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX);
+            assertThat(channel.getChecksum()).isEqualTo(checksums[0]);
+
+            long entry1Offset = channel.position();
+            checksums[1] = appendFullEnvelope(entry1Offset, checksums[0], bytes2, START_INDEX + 1);
+            // Only a re-walk from the segment start would re-read entry N, so corrupting it on disk makes the
+            // fallback fail and leaves the tail-only re-read as the one path that can pass.
+            overwriteByte(segmentSize + HEADER_SIZE, (byte) ~bytes1[0]);
+
+            channel.resumeInPlace(entry1Offset);
+
+            channel.get(bytesRead, TEST_DATA_SIZE);
+            assertThat(bytesRead).isEqualTo(bytes2);
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX + 1);
+            assertThat(channel.getChecksum()).isEqualTo(checksums[1]);
+        }
+    }
+
+    @Test
+    void resumeInPlaceFallsBackWhenTornHeaderWasParsed() throws Exception {
+        int segmentSize = 256;
+        var bytes1 = bytes(random, TEST_DATA_SIZE);
+        var bytes2 = bytes(random, TEST_DATA_SIZE);
+        var checksums = new int[1];
+
+        // Non-preallocated, with entry N+1's header complete but its payload cut short: the header parses, then
+        // fails its checksum without checkTail moving the segment, so only payloadEndOffset shows the torn state.
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+            writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[0], bytes2, START_INDEX + 1);
+            buffer.position(buffer.position() - TEST_DATA_SIZE / 2);
+        });
+
+        var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            var bytesRead = new byte[TEST_DATA_SIZE];
+            channel.get(bytesRead, TEST_DATA_SIZE);
+            assertThat(bytesRead).isEqualTo(bytes1);
+            long entry1Offset = channel.position();
+
+            assertThatThrownBy(() -> channel.get(new byte[TEST_DATA_SIZE], TEST_DATA_SIZE))
+                    .isInstanceOf(IncompleteEnvelopeReadException.class);
+
+            var entry1Checksum = appendFullEnvelope(entry1Offset, checksums[0], bytes2, START_INDEX + 1);
+            channel.resumeInPlace(entry1Offset);
+
+            channel.get(bytesRead, TEST_DATA_SIZE);
+            assertThat(bytesRead).isEqualTo(bytes2);
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX + 1);
+            assertThat(channel.getChecksum()).isEqualTo(entry1Checksum);
+        }
+    }
+
+    @Test
+    void resumeInPlaceFallsBackToRepositionWhenSegmentMoved() throws Exception {
+        int segmentSize = 256;
+        var bytes1 = bytes(random, TEST_DATA_SIZE);
+        var bytes2 = bytes(random, TEST_DATA_SIZE);
+        var checksums = new int[2];
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+            buffer.put(new byte[segmentSize - TEST_ENTRY_SIZE]); // zero-fill the rest of segment 1
+            checksums[1] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[0], bytes2, START_INDEX + 1);
+        });
+
+        var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            channel.get(new byte[TEST_DATA_SIZE], TEST_DATA_SIZE); // read N; currentSegment == 1
+
+            channel.resumeInPlace(2L * segmentSize); // resume point in segment 2 → fall back, not fast path
+
+            var bytesRead = new byte[TEST_DATA_SIZE];
+            channel.get(bytesRead, TEST_DATA_SIZE);
+            assertThat(bytesRead).isEqualTo(bytes2);
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX + 1);
+            assertThat(channel.getChecksum()).isEqualTo(checksums[1]);
+        }
+    }
+
+    @Test
+    void resumeInPlaceFallsBackWhenFailedReadLeftTheNextSegmentLoaded() throws Exception {
+        int segmentSize = 256;
+        int chunkSize = segmentSize - HEADER_SIZE;
+        var bytes1 = bytes(random, chunkSize);
+        var bytes2 = bytes(random, 2 * chunkSize);
+        var checksums = new int[2];
+
+        // N fills segment 1 exactly; N+1's BEGIN fills segment 2 while its END is still preallocated zeros in
+        // segment 3. The failed read leaves segment 3 loaded with payloadEndOffset 0, which matches the resume
+        // point's segment offset, so only the segment check keeps the fast path from resuming at the END envelope.
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+            checksums[1] = writeHeaderAndPayload(
+                    buffer, EnvelopeType.BEGIN, checksums[0], copyOfRange(bytes2, 0, chunkSize), START_INDEX + 1);
+            buffer.put(new byte[segmentSize]);
+        });
+
+        var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            var bytesRead = new byte[bytes2.length];
+            channel.get(bytesRead, chunkSize);
+            long entry1Offset = channel.position();
+            assertThat(entry1Offset).isEqualTo(2L * segmentSize);
+
+            assertThatThrownBy(() -> channel.get(new byte[bytes2.length], bytes2.length))
+                    .isInstanceOf(ReadPastEndException.class);
+
+            appendEnvelope(
+                    EnvelopeType.END,
+                    3L * segmentSize,
+                    checksums[1],
+                    copyOfRange(bytes2, chunkSize, bytes2.length),
+                    START_INDEX + 1);
+            channel.resumeInPlace(entry1Offset);
+
+            channel.get(bytesRead, bytes2.length);
+            assertThat(bytesRead).isEqualTo(bytes2);
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX + 1);
+        }
+    }
+
+    @Test
+    void resumeInPlaceAtSegmentBoundaryKeepsChecksumChain() throws Exception {
+        int segmentSize = 256;
+        var bytes1 = bytes(random, segmentSize - HEADER_SIZE);
+        var bytes2 = bytes(random, TEST_DATA_SIZE);
+        var checksums = new int[1];
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+            buffer.put(new byte[segmentSize]);
+        });
+
+        var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            channel.get(new byte[bytes1.length], bytes1.length);
+            long entry1Offset = channel.position();
+            assertThat(entry1Offset).isEqualTo(2L * segmentSize);
+
+            assertThatThrownBy(() -> channel.get(new byte[TEST_DATA_SIZE], TEST_DATA_SIZE))
+                    .isInstanceOf(ReadPastEndException.class);
+
+            // A fallback reposition to a segment start cannot know the previous checksum and skips the first
+            // chain check, so only the fast path catches this broken link.
+            appendFullEnvelope(entry1Offset, checksums[0] + 1, bytes2, START_INDEX + 1);
+            channel.resumeInPlace(entry1Offset);
+
+            assertThatThrownBy(() -> channel.get(new byte[TEST_DATA_SIZE], TEST_DATA_SIZE))
+                    .isInstanceOf(ChecksumMismatchException.class);
+        }
+    }
+
+    @Test
+    void resumeInPlaceStillValidatesChecksumChain() throws Exception {
+        int segmentSize = 256;
+        var bytes1 = bytes(random, TEST_DATA_SIZE);
+        var bytes2 = bytes(random, TEST_DATA_SIZE);
+        var checksums = new int[1];
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+            buffer.put(new byte[segmentSize - TEST_ENTRY_SIZE]);
+        });
+
+        var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            channel.get(new byte[TEST_DATA_SIZE], TEST_DATA_SIZE);
+
+            long entry1Offset = channel.position();
+            appendFullEnvelope(entry1Offset, checksums[0] + 1, bytes2, START_INDEX + 1); // broken chain link
+
+            channel.resumeInPlace(entry1Offset);
+
+            assertThatThrownBy(() -> channel.get(new byte[TEST_DATA_SIZE], TEST_DATA_SIZE))
+                    .isInstanceOf(ChecksumMismatchException.class);
+        }
+    }
+
+    private int appendFullEnvelope(long offset, int previousChecksum, byte[] payload, long index) throws IOException {
+        return appendEnvelope(EnvelopeType.FULL, offset, previousChecksum, payload, index);
+    }
+
+    private int appendEnvelope(EnvelopeType type, long offset, int previousChecksum, byte[] payload, long index)
+            throws IOException {
+        var envelopeChecksum = buildChecksum(
+                checksum,
+                type,
+                previousChecksum,
+                LatestVersions.LATEST_KERNEL_VERSION.version(),
+                payload,
+                index,
+                CONTENT_TYPE,
+                TERM);
+        var buffer = ByteBuffer.allocate(HEADER_SIZE + payload.length).order(LITTLE_ENDIAN);
+        writeLogEnvelopeHeader(
+                buffer,
+                envelopeChecksum,
+                type,
+                payload.length,
+                LatestVersions.LATEST_KERNEL_VERSION.version(),
+                previousChecksum,
+                index,
+                CONTENT_TYPE,
+                TERM);
+        buffer.put(payload);
+        buffer.flip();
+        try (var writer = fileSystem.write(file(0))) {
+            writer.position(offset);
+            writer.writeAll(buffer);
+            writer.flush();
+        }
+        return envelopeChecksum;
+    }
+
+    private void overwriteByte(long offset, byte value) throws IOException {
+        try (var writer = fileSystem.write(file(0))) {
+            writer.position(offset);
+            writer.writeAll(ByteBuffer.wrap(new byte[] {value}));
+            writer.flush();
+        }
+    }
+
     private Path file(int index) {
         return directory.homePath().resolve(String.valueOf(index));
     }

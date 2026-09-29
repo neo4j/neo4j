@@ -232,6 +232,26 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         position(byteOffset);
     }
 
+    /**
+     * Resumes reading after a stale buffered segment by re-reading only the tail of the current segment,
+     * leaving the header-chain state in place so the next {@link #readEnvelopeHeader()} revalidates the
+     * join through the checksum chain itself. Falls back to {@link #resetToPosition(long)} when the buffered
+     * state no longer ends at {@code byteOffset}. The caller must ensure the log version has not changed.
+     */
+    public void resumeInPlace(long byteOffset) throws IOException {
+        long newSegment = byteOffset >> segmentShift;
+        int bufferOffset = getSegmentOffset(byteOffset);
+        // read state has moved past byteOffset: a partly read multi-envelope entry, a torn header committed
+        // before its checks, or checkTail's look-ahead loading later segments
+        if (newSegment != currentSegment || bufferOffset != payloadEndOffset) {
+            resetToPosition(byteOffset);
+            return;
+        }
+
+        fillSegmentFrom(bufferOffset);
+        buffer.position(bufferOffset);
+    }
+
     @Override
     public void position(long byteOffset) throws IOException {
         requireNonNegative(byteOffset);
@@ -929,8 +949,11 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         // Loop until we find the next header, or throws read past end exception
         while (true) {
 
-            // Must be padding
+            // Out of loaded bytes: either a short segment load the writer has since grown, or padding
             if (buffer.remaining() <= HEADER_SIZE) {
+                if (rereadGrownSegmentTail()) {
+                    continue;
+                }
                 // Or could be broken last entry if we technically had room for the header
                 if (buffer.capacity() - buffer.position() > HEADER_SIZE) {
                     checkIfIncompleteEnvelopeHeader();
@@ -1180,27 +1203,50 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     }
 
     private int loadSegmentIntoBuffer(long newSegment) throws IOException {
-        buffer.clear();
-        channel.position(newSegment * segmentBlockSize);
+        currentSegment = newSegment;
+        int totalRead = fillSegmentFrom(0);
+        buffer.position(0);
+
+        // Update state
+        payloadStartOffset = 0;
+        payloadEndOffset = 0;
+
+        return totalRead == 0 ? -1 : totalRead;
+    }
+
+    /**
+     * A short (non-preallocated) segment load is stale once the writer appends into the same segment; re-read
+     * the bytes past the loaded extent so they are seen instead of being taken for the next segment.
+     */
+    private boolean rereadGrownSegmentTail() throws IOException {
+        int loadedEnd = buffer.limit();
+        long loadedEndPosition = currentSegment * segmentBlockSize + loadedEnd;
+        if (loadedEnd == segmentBlockSize || channel.size() <= loadedEndPosition) {
+            return false;
+        }
+        int resumeOffset = buffer.position();
+        int newBytes = fillSegmentFrom(loadedEnd);
+        buffer.position(resumeOffset);
+        return newBytes > 0;
+    }
+
+    /**
+     * Reads the current segment from {@code segmentOffset} to its end, or to EOF, into the buffer at the same
+     * offset. Leaves the buffer limit at the end of what was read and the position unspecified.
+     */
+    private int fillSegmentFrom(int segmentOffset) throws IOException {
+        buffer.limit(segmentBlockSize);
+        buffer.position(segmentOffset);
+        channel.position(currentSegment * segmentBlockSize + segmentOffset);
         int totalRead = 0;
         while (buffer.hasRemaining()) {
             int read = channel.read(buffer);
             if (read == -1) {
-                // We reached the end
-                if (totalRead == 0) {
-                    totalRead = -1; // Failed to load any data
-                }
                 break;
             }
             totalRead += read;
         }
-        buffer.flip();
-
-        // Update state
-        currentSegment = newSegment;
-        payloadStartOffset = 0;
-        payloadEndOffset = 0;
-
+        buffer.limit(segmentOffset + totalRead);
         return totalRead;
     }
 
