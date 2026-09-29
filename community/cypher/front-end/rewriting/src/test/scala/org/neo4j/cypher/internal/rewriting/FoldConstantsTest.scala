@@ -56,6 +56,9 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH (n) WHERE 1.2=1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1+(5*4)/(3*4)=2 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
     assertIsNotRewritten("MATCH (n) WHERE 1=null RETURN n AS r")
+    assertRewrite("RETURN 0.0/0.0 = 0.0/0.0 AS r", "RETURN false AS r")
+    assertIsNotRewritten("RETURN NaN = NaN AS r")
+    assertIsNotRewritten("RETURN 9007199254740993 = 9007199254740992.0 AS r")
   }
 
   test("solve greater than comparisons between literals") {
@@ -69,6 +72,7 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH (n) WHERE 2.0>1 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.0>7 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.2>1 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertIsNotRewritten("RETURN 9007199254740993 > 9007199254740992.0 AS r")
   }
 
   test("solve less than comparisons between literals") {
@@ -82,6 +86,7 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH (n) WHERE 2.0<1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.0<7 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.2<1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertIsNotRewritten("RETURN 9007199254740993 < 9007199254740992.0 AS r")
   }
 
   test("doesn't fail on / by zero") {

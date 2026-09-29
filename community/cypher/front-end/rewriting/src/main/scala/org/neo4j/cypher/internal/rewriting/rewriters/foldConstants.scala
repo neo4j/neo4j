@@ -142,18 +142,24 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
 
         case e @ Equals(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value == rhs.value, e)
         case e @ Equals(lhs: DoubleLiteral, rhs: DoubleLiteral)   => asAst(lhs.value == rhs.value, e)
-        case e @ Equals(lhs: IntegerLiteral, rhs: DoubleLiteral)  => asAst(lhs.value.doubleValue() == rhs.value, e)
-        case e @ Equals(lhs: DoubleLiteral, rhs: IntegerLiteral)  => asAst(lhs.value == rhs.value.doubleValue(), e)
+        case e @ Equals(lhs: IntegerLiteral, rhs: DoubleLiteral) if safeToCompareToDouble(lhs.value) =>
+          asAst(lhs.value.doubleValue() == rhs.value, e)
+        case e @ Equals(lhs: DoubleLiteral, rhs: IntegerLiteral) if safeToCompareToDouble(rhs.value) =>
+          asAst(lhs.value == rhs.value.doubleValue(), e)
 
         case e @ LessThan(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value < rhs.value, e)
         case e @ LessThan(lhs: DoubleLiteral, rhs: DoubleLiteral)   => asAst(lhs.value < rhs.value, e)
-        case e @ LessThan(lhs: IntegerLiteral, rhs: DoubleLiteral)  => asAst(lhs.value.doubleValue() < rhs.value, e)
-        case e @ LessThan(lhs: DoubleLiteral, rhs: IntegerLiteral)  => asAst(lhs.value < rhs.value.doubleValue(), e)
+        case e @ LessThan(lhs: IntegerLiteral, rhs: DoubleLiteral) if safeToCompareToDouble(lhs.value) =>
+          asAst(lhs.value.doubleValue() < rhs.value, e)
+        case e @ LessThan(lhs: DoubleLiteral, rhs: IntegerLiteral) if safeToCompareToDouble(rhs.value) =>
+          asAst(lhs.value < rhs.value.doubleValue(), e)
 
         case e @ GreaterThan(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value > rhs.value, e)
         case e @ GreaterThan(lhs: DoubleLiteral, rhs: DoubleLiteral)   => asAst(lhs.value > rhs.value, e)
-        case e @ GreaterThan(lhs: IntegerLiteral, rhs: DoubleLiteral)  => asAst(lhs.value.doubleValue() > rhs.value, e)
-        case e @ GreaterThan(lhs: DoubleLiteral, rhs: IntegerLiteral)  => asAst(lhs.value > rhs.value.doubleValue(), e)
+        case e @ GreaterThan(lhs: IntegerLiteral, rhs: DoubleLiteral) if safeToCompareToDouble(lhs.value) =>
+          asAst(lhs.value.doubleValue() > rhs.value, e)
+        case e @ GreaterThan(lhs: DoubleLiteral, rhs: IntegerLiteral) if safeToCompareToDouble(rhs.value) =>
+          asAst(lhs.value > rhs.value.doubleValue(), e)
 
         case e => e
       }
@@ -164,6 +170,12 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
     }
 
   private def asAst(b: Boolean, e: Expression) = if (b) True()(e.position) else False()(e.position)
+
+  private def safeToCompareToDouble(l: Long): Boolean = {
+    val d = l.doubleValue()
+    val ll = d.longValue()
+    l == ll
+  }
 }
 
 case object foldConstants extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
