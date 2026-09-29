@@ -190,7 +190,7 @@
     <protobuf.version>4.36.1</protobuf.version>
     <required.maven.version>3.9.11</required.maven.version>
     <s3mock.version>5.2.0</s3mock.version>
-    <scala-maven-plugin.version>4.9.9</scala-maven-plugin.version>
+    <scala-maven-plugin.version>4.10.0</scala-maven-plugin.version>
     <scala.binary.version>3</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <scala.target.vm>${vm.target.version}</scala.target.vm>
