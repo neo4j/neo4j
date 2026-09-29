@@ -192,11 +192,17 @@ object SortPlanner {
       projections: Map[LogicalVariable, Expression],
       updateSolved: Boolean
     ): LogicalPlan = {
-      val projectionDeps = projections.flatMap(e => e._2.dependencies)
-      val projectionsToPlan = projections.filter(_._2 match {
-        case IsAggregate(_) => false
-        case _              => true
-      })
+      val projectionsToPlan = projections.filter {
+        // Already computed by an earlier plan (e.g. a path variable materialized by a preceding
+        // WITH DISTINCT/aggregation): skip it, so its dependencies don't block other projections in
+        // this batch that are still needed and satisfiable.
+        case (variable, _) if plan.availableSymbols.contains(variable) => false
+        case (_, IsAggregate(_))                                       => false
+        case _                                                         => true
+      }
+      val projectionDeps = projectionsToPlan.flatMap(e => e._2.dependencies)
+      // Only safe to plan these projections here if everything they need is already available,
+      // e.g. not yet true when this is a push-down attempt earlier than where the values are computed.
       if (projectionsToPlan.nonEmpty && projectionDeps.forall(e => plan.availableSymbols.contains(e))) {
         val projectionsToMarkSolved =
           if (updateSolved) MaybeReportedProjections(Some(projectionsToPlan)) else MaybeReportedProjections.empty

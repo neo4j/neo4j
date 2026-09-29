@@ -1323,6 +1323,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def distinct(projectExpressions: Map[String, ToExpression]): IMPL = {
+    val expressions = projectExpressions.view.mapValues(toExpression(_)).toMap
+    appendAtCurrentIndent(UnaryOperator(lp => Distinct(lp, toVarMap(expressions))(_)))
+    self
+  }
+
   def orderedDistinct(orderToLeverage: Seq[String], projectionStrings: String*): IMPL = {
     val order = orderToLeverage.map(parseExpression)
     val projections = parser.parseProjections(projectionStrings: _*)
@@ -4551,6 +4557,9 @@ object AbstractLogicalPlanBuilder {
 
     implicit def optionConverter[A: Converter](opt: Option[A]): Option[ToExpression] =
       opt.map(Converter[A].toExpression)
+
+    implicit def mapConverter[A: Converter](map: Map[String, A]): Map[String, ToExpression] =
+      map.view.mapValues(Converter[A].toExpression).toMap
   }
 
 }
