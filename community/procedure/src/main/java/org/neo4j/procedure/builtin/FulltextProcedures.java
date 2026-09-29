@@ -49,7 +49,9 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.QueryLanguage;
 import org.neo4j.kernel.api.impl.schema.fulltext.FulltextIndexProvider;
+import org.neo4j.kernel.api.procedure.QueryLanguageScope;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -121,6 +123,34 @@ public class FulltextProcedures {
             An example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`
             """)
     @Procedure(name = "db.index.fulltext.queryNodes", mode = READ)
+    @QueryLanguageScope(scope = {QueryLanguage.CYPHER_5})
+    public Stream<NodeOutput> queryFulltextForNodesCypher5(
+            @Name(value = "indexName", description = "The name of the full-text index.") String name,
+            @Name(value = "queryString", description = "The string to find approximate matches for.") String query,
+            @Name(
+                            value = "options",
+                            defaultValue = "{}",
+                            description = "{skip :: INTEGER, limit :: INTEGER, analyzer :: STRING}")
+                    Map<String, Object> options)
+            throws Exception {
+        return queryFulltextForNodesImpl(name, query, options);
+    }
+
+    @SystemProcedure
+    @Deprecated(since = "2026.10", forRemoval = true)
+    @Description("""
+            Query the given full-text index. Returns the matching nodes and their Lucene query score, ordered by score.
+            Valid _key: value_ pairs for the `options` map are:
+
+            * 'skip' -- to skip the top N results.
+            * 'limit' -- to limit the number of results returned.
+            * 'analyzer' -- to use the specified analyzer as a search analyzer for this query.
+
+            The `options` map and any of the keys are optional.
+            An example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`
+            """)
+    @Procedure(name = "db.index.fulltext.queryNodes", mode = READ, deprecatedBy = "SEARCH")
+    @QueryLanguageScope(scope = {QueryLanguage.CYPHER_25})
     public Stream<NodeOutput> queryFulltextForNodes(
             @Name(value = "indexName", description = "The name of the full-text index.") String name,
             @Name(value = "queryString", description = "The string to find approximate matches for.") String query,
@@ -129,6 +159,11 @@ public class FulltextProcedures {
                             defaultValue = "{}",
                             description = "{skip :: INTEGER, limit :: INTEGER, analyzer :: STRING}")
                     Map<String, Object> options)
+            throws Exception {
+        return queryFulltextForNodesImpl(name, query, options);
+    }
+
+    private Stream<NodeOutput> queryFulltextForNodesImpl(String name, String query, Map<String, Object> options)
             throws Exception {
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
@@ -211,6 +246,34 @@ public class FulltextProcedures {
             An example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`
             """)
     @Procedure(name = "db.index.fulltext.queryRelationships", mode = READ)
+    @QueryLanguageScope(scope = {QueryLanguage.CYPHER_5})
+    public Stream<RelationshipOutput> queryFulltextForRelationshipsCypher5(
+            @Name(value = "indexName", description = "The name of the full-text index.") String name,
+            @Name(value = "queryString", description = "The string to find approximate matches for.") String query,
+            @Name(
+                            value = "options",
+                            defaultValue = "{}",
+                            description = "{skip :: INTEGER, limit :: INTEGER, analyzer :: STRING}")
+                    Map<String, Object> options)
+            throws Exception {
+        return queryFulltextForRelationshipsImpl(name, query, options);
+    }
+
+    @SystemProcedure
+    @Deprecated(since = "2026.10", forRemoval = true)
+    @Description("""
+            Query the given full-text index. Returns the matching relationships and their Lucene query score, ordered by score.
+            Valid _key: value_ pairs for the `options` map are:
+
+            * 'skip' -- to skip the top N results.
+            * 'limit' -- to limit the number of results returned.
+            * 'analyzer' -- to use the specified analyzer as a search analyzer for this query.
+
+            The `options` map and any of the keys are optional.
+            An example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`
+            """)
+    @Procedure(name = "db.index.fulltext.queryRelationships", mode = READ, deprecatedBy = "SEARCH")
+    @QueryLanguageScope(scope = {QueryLanguage.CYPHER_25})
     public Stream<RelationshipOutput> queryFulltextForRelationships(
             @Name(value = "indexName", description = "The name of the full-text index.") String name,
             @Name(value = "queryString", description = "The string to find approximate matches for.") String query,
@@ -220,6 +283,11 @@ public class FulltextProcedures {
                             description = "{skip :: INTEGER, limit :: INTEGER, analyzer :: STRING}")
                     Map<String, Object> options)
             throws Exception {
+        return queryFulltextForRelationshipsImpl(name, query, options);
+    }
+
+    private Stream<RelationshipOutput> queryFulltextForRelationshipsImpl(
+            String name, String query, Map<String, Object> options) throws Exception {
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }

@@ -1892,4 +1892,96 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
       Set(CypherVersionOption.cypher25)
     )
   }
+
+  test("db.index.fulltext.queryNodes should not be deprecated in Cypher 5") {
+    // create a fulltext index and wait until it is online to avoid procedure failure
+    val transaction1 = dbms.begin()
+    transaction1.execute("CREATE FULLTEXT INDEX nodeFulltextIdx IF NOT EXISTS FOR (n:Label) ON EACH [n.prop]")
+    transaction1.commit()
+    val transaction2 = dbms.begin()
+    transaction2.execute("CALL db.awaitIndexes()")
+    transaction2.commit()
+
+    val query = "CALL db.index.fulltext.queryNodes('nodeFulltextIdx', 'foo')"
+    assertNoDeprecations(Seq(query), Set(CypherVersionOption.cypher5))
+  }
+
+  test("db.index.fulltext.queryNodes should be deprecated in Cypher 25") {
+    // create a fulltext index and wait until it is online to avoid procedure failure
+    val transaction1 = dbms.begin()
+    transaction1.execute("CREATE FULLTEXT INDEX nodeFulltextIdx IF NOT EXISTS FOR (n:Label) ON EACH [n.prop]")
+    transaction1.commit()
+    val transaction2 = dbms.begin()
+    transaction2.execute("CALL db.awaitIndexes()")
+    transaction2.commit()
+
+    assertNotification(
+      Seq("CALL db.index.fulltext.queryNodes('nodeFulltextIdx', 'foo')"),
+      shouldContainNotification = true,
+      startPosition,
+      deprecatedProcedureWithReplacement(
+        _,
+        deprecatedName("db.index.fulltext.queryNodes", "SEARCH"),
+        "db.index.fulltext.queryNodes",
+        "SEARCH"
+      ),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. db.index.fulltext.queryNodes is deprecated. It is replaced by SEARCH.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION,
+          startPosition
+        ),
+        testOmittedResult
+      ),
+      Set(CypherVersionOption.cypher25)
+    )
+  }
+
+  test("db.index.fulltext.queryRelationships should not be deprecated in Cypher 5") {
+    // create a fulltext index and wait until it is online to avoid procedure failure
+    val transaction1 = dbms.begin()
+    transaction1.execute("CREATE FULLTEXT INDEX relFulltextIdx IF NOT EXISTS FOR ()-[r:REL]-() ON EACH [r.prop]")
+    transaction1.commit()
+    val transaction2 = dbms.begin()
+    transaction2.execute("CALL db.awaitIndexes()")
+    transaction2.commit()
+
+    val query = "CALL db.index.fulltext.queryRelationships('relFulltextIdx', 'foo')"
+    assertNoDeprecations(Seq(query), Set(CypherVersionOption.cypher5))
+  }
+
+  test("db.index.fulltext.queryRelationships should be deprecated in Cypher 25") {
+    // create a fulltext index and wait until it is online to avoid procedure failure
+    val transaction1 = dbms.begin()
+    transaction1.execute("CREATE FULLTEXT INDEX relFulltextIdx IF NOT EXISTS FOR ()-[r:REL]-() ON EACH [r.prop]")
+    transaction1.commit()
+    val transaction2 = dbms.begin()
+    transaction2.execute("CALL db.awaitIndexes()")
+    transaction2.commit()
+
+    assertNotification(
+      Seq("CALL db.index.fulltext.queryRelationships('relFulltextIdx', 'foo')"),
+      shouldContainNotification = true,
+      startPosition,
+      deprecatedProcedureWithReplacement(
+        _,
+        deprecatedName("db.index.fulltext.queryRelationships", "SEARCH"),
+        "db.index.fulltext.queryRelationships",
+        "SEARCH"
+      ),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. db.index.fulltext.queryRelationships is deprecated. It is replaced by SEARCH.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION,
+          startPosition
+        ),
+        testOmittedResult
+      ),
+      Set(CypherVersionOption.cypher25)
+    )
+  }
 }
