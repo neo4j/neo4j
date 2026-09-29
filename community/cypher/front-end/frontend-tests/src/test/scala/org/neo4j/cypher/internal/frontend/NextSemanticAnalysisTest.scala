@@ -41,4 +41,57 @@ class NextSemanticAnalysisTest
         )
     }
   }
+
+  test("A NEXT part cannot be a procedure call with YIELD") {
+    val query = """RETURN 1 AS a
+                  |
+                  |NEXT
+                  |
+                  |CALL proc() YIELD x
+                  |
+                  |NEXT
+                  |
+                  |RETURN 1 AS b
+                  |""".stripMargin
+    run(query).hasErrors(SemanticError.queryCannotConcludeWithCall("CALL", p(21, 5, 1)))
+  }
+
+  test("The last NEXT part cannot be a procedure call with YIELD") {
+    val query = """RETURN 1 AS a
+                  |
+                  |NEXT
+                  |
+                  |CALL proc() YIELD x
+                  |""".stripMargin
+    run(query).hasErrors(SemanticError.queryCannotConcludeWithCall("CALL", p(21, 5, 1)))
+  }
+
+  test("A NEXT part can be a procedure call without YIELD") {
+    val query = """RETURN 1 AS a
+                  |
+                  |NEXT
+                  |
+                  |CALL proc()
+                  |
+                  |NEXT
+                  |
+                  |RETURN 1 AS b
+                  |""".stripMargin
+    run(query).hasNoErrors
+  }
+
+  test("A NEXT part can contain a procedure call with YIELD followed by other clauses") {
+    val query = """RETURN 1 AS a
+                  |
+                  |NEXT
+                  |
+                  |CALL proc() YIELD x
+                  |RETURN x
+                  |
+                  |NEXT
+                  |
+                  |RETURN x AS b
+                  |""".stripMargin
+    run(query).hasNoErrors
+  }
 }

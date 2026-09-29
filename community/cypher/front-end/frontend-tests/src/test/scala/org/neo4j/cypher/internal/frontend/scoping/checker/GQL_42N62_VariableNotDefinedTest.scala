@@ -192,6 +192,19 @@ class GQL_42N62_VariableNotDefinedTest extends VariableCheckingWithLocalCallable
       Seq("b")
     ),
     TestQuery(
+      """RETURN 1 AS a
+        |
+        |NEXT
+        |
+        |CALL proc()
+        |
+        |NEXT
+        |
+        |RETURN a + 1 AS b""".stripMargin,
+      ignoreBeforeCypher25(E42N62("a")),
+      Seq("b")
+    ),
+    TestQuery(
       """RETURN 1 AS x
         |
         |NEXT

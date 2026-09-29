@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AddedInRewriteGeneral
 import org.neo4j.cypher.internal.ast.AddedWithOrigin
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
 import org.neo4j.cypher.internal.ast.ExplicitGroupingElements
@@ -307,8 +308,14 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
           case (LastInNextCtx, c)                                => Seq(c)
           case (FirstInNextCtx | BodyInNextCtx, f: Finish)       => Seq(drivingTableReset(f.position))
           case (FirstInNextCtx | BodyInNextCtx, u: UpdateClause) => Seq(u, drivingTableReset(u.position))
-          case (FirstInNextCtx | BodyInNextCtx, r: Return)       => Seq(r.convertToWith())
-          case (_, c)                                            => Seq(c)
+          case (FirstInNextCtx | BodyInNextCtx, c: SubqueryCall)
+            if !c.innerQuery.isReturning =>
+            Seq(c, drivingTableReset(c.position))
+          case (FirstInNextCtx | BodyInNextCtx, c: CallClause)
+            if c.returnVariables.explicitVariables.isEmpty && !c.yieldAll =>
+            Seq(c, drivingTableReset(c.position))
+          case (FirstInNextCtx | BodyInNextCtx, r: Return) => Seq(r.convertToWith())
+          case (_, c)                                      => Seq(c)
         }
         clauses.dropRight(1) ++ lastClause
       }
@@ -624,7 +631,8 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
         val getExpandedAST: Seq[Clause] = rewrittenQuery match {
           case sq: SingleQuery if !willBeWrapped => preface ++ updatedLayout.adaptPartEnding(sq.clauses) ++ postface
           case q: Query =>
-            preface ++ Seq(ScopeClauseSubqueryCall(q, imports.toSeq)(q.position)) ++ postface
+            val wrapped = ScopeClauseSubqueryCall(q, imports.toSeq)(q.position)
+            preface ++ updatedLayout.adaptPartEnding(Seq(wrapped)) ++ postface
         }
 
         val resultingLayout =

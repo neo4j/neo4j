@@ -6223,6 +6223,67 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
     )
   }
 
+  test("wrapped unit NEXT part in the middle hands on a single row") {
+    assertRewritten(
+      "UNWIND range(1, 3) AS i RETURN i NEXT USE g { WHEN i > 1 THEN CREATE (:A) } NEXT RETURN count(*) AS c",
+      """UNWIND range(1, 3) AS i
+        |WITH i AS i
+        |CALL (i) {
+        |  USE `g`
+        |  CALL (i) {
+        |    WITH i AS i, CASE
+        |    WHEN i > 1 THEN 0
+        |    ELSE 1
+        |  END AS `  UNNAMED0`
+        |    CALL (i, `  UNNAMED0`) {
+        |      WITH `  UNNAMED0` AS `  UNNAMED0`
+        |        WHERE `  UNNAMED0` = 0
+        |      CALL () {
+        |        CREATE (:A)
+        |      }
+        |      FINISH
+        |    }
+        |    FINISH
+        |  }
+        |  FINISH
+        |}
+        |WITH count(null) AS `  UNNAMED1`
+        |RETURN count(*) AS c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
+    )
+  }
+
+  test("NEXT part ending in a unit CALL hands on a single row") {
+    assertRewritten(
+      "UNWIND range(1, 3) AS i RETURN i NEXT CALL (i) { CREATE (:A) } NEXT RETURN count(*) AS c",
+      """UNWIND range(1, 3) AS i
+        |WITH i AS i
+        |CALL (i) {
+        |  CREATE (:A)
+        |}
+        |WITH count(null) AS `  UNNAMED0`
+        |RETURN count(*) AS c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("NEXT part ending in a void procedure call hands on a single row") {
+    assertRewritten(
+      "UNWIND range(1, 3) AS i RETURN i NEXT CALL db.void() NEXT RETURN count(*) AS c",
+      """UNWIND range(1, 3) AS i
+        |WITH i AS i
+        |CALL db.void()
+        |WITH count(null) AS `  UNNAMED0`
+        |RETURN count(*) AS c""".stripMargin,
+      additionalExpectedAstUpdates = withUpdate(),
+      additionalActualAstCleanup = withUpdate(),
+      invalidSemantics = true
+    )
+  }
+
   test("top-level NEXT: ambient-first, then focused operand (a->default, b->comp2)") {
     assertRewritten(
       "RETURN 1 AS a NEXT USE comp2 RETURN a AS b",

@@ -673,8 +673,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
         val concludeError = clauses match {
           // standalone procedure call
-          case Seq(_: CallClause)                    => None
-          case Seq(_: GraphSelection, _: CallClause) => None
+          case Seq(_: CallClause) if context != NextStatement                    => None
+          case Seq(_: GraphSelection, _: CallClause) if context != NextStatement => None
 
           case Seq() => Some(SemanticError.queryMustConcludeWithClause(this.position))
 
