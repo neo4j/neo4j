@@ -66,6 +66,7 @@ class BlockStorage<KEY, VALUE> implements Closeable {
     private final MemoryTracker memoryTracker;
     private final ByteBufferFactory bufferFactory;
     private final Path blockFile;
+    private final boolean legacyMerge;
     private long numberOfBlocksInCurrentFile;
     private int currentBufferSize;
     private boolean doneAdding;
@@ -77,9 +78,11 @@ class BlockStorage<KEY, VALUE> implements Closeable {
             FileSystemAbstraction fs,
             Path blockFile,
             Monitor monitor,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            boolean legacyMerge)
             throws IOException {
         this.layout = layout;
+        this.legacyMerge = legacyMerge;
         this.fs = fs;
         this.blockFile = blockFile;
         this.monitor = monitor;
@@ -270,7 +273,7 @@ class BlockStorage<KEY, VALUE> implements Closeable {
             ScopedBuffer[] readBuffers,
             ByteBuffer writeBuffer)
             throws IOException {
-        try (MergingBlockEntryReader<KEY, VALUE> merger = new MergingBlockEntryReader<>(layout)) {
+        try (BlockEntryMerger<KEY, VALUE> merger = newBlockEntryMerger()) {
             long blockSize = 0;
             long entryCount = 0;
             int blocksMerged = 0;
@@ -292,6 +295,10 @@ class BlockStorage<KEY, VALUE> implements Closeable {
             monitor.mergedBlocks(blockSize, entryCount, blocksMerged);
             return blocksMerged;
         }
+    }
+
+    private BlockEntryMerger<KEY, VALUE> newBlockEntryMerger() {
+        return legacyMerge ? new LegacyMergingBlockEntryReader<>(layout) : new MergingBlockEntryReader<>(layout);
     }
 
     private void writeBlock(

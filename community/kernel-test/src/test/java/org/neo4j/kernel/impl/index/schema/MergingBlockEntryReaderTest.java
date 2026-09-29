@@ -23,6 +23,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -75,6 +76,15 @@ class MergingBlockEntryReaderTest {
     }
 
     @Test
+    void shouldThrowOnNextWhenNoSourcesAdded() {
+        // given
+        MergingBlockEntryReader<MutableLong, MutableLong> merger = new MergingBlockEntryReader<>(layout);
+
+        // when/then
+        assertThrows(IllegalStateException.class, merger::next);
+    }
+
+    @Test
     void shouldMergeMultipleReaders() throws IOException {
         // given
         MergingBlockEntryReader<MutableLong, MutableLong> merger = new MergingBlockEntryReader<>(layout);
@@ -91,6 +101,47 @@ class MergingBlockEntryReaderTest {
         // then
         List<BlockEntry<MutableLong, MutableLong>> expected = sortAll(datas);
         verifyMerged(expected, merger);
+    }
+
+    @Test
+    void shouldMergeManyReadersWithDuplicatesAndEmptyReaders() throws IOException {
+        // given
+        MergingBlockEntryReader<MutableLong, MutableLong> merger = new MergingBlockEntryReader<>(layout);
+        int nbrOfReaders = rnd.nextInt(1, 100);
+        int totalEntries = 0;
+        for (int reader = 0; reader < nbrOfReaders; reader++) {
+            List<BlockEntry<MutableLong, MutableLong>> data = new ArrayList<>();
+            int size = rnd.nextInt(4) == 0 ? 0 : rnd.nextInt(200);
+            for (int i = 0; i < size; i++) {
+                // Small key space so that there are plenty of duplicate keys, both within and across readers.
+                // Value is the reader index so that tie-breaking can be verified.
+                data.add(new BlockEntry<>(layout.key(rnd.nextLong(50)), layout.value(reader)));
+            }
+            data.sort(blockEntryComparator);
+            merger.addSource(newReader(data));
+            totalEntries += size;
+        }
+
+        // when/then
+        MutableLong prevKey = null;
+        long prevReader = -1;
+        int count = 0;
+        while (merger.next()) {
+            MutableLong key = merger.key();
+            long reader = merger.value().longValue();
+            if (prevKey != null) {
+                int comparison = layout.compare(prevKey, key);
+                assertTrue(comparison <= 0, "Keys out of order: " + prevKey + " before " + key);
+                if (comparison == 0) {
+                    assertTrue(prevReader <= reader, "Ties should be broken towards the earlier reader");
+                }
+            }
+            prevKey = layout.copyKey(key, layout.newKey());
+            prevReader = reader;
+            count++;
+        }
+        assertEquals(totalEntries, count);
+        assertFalse(merger.next());
     }
 
     @Test

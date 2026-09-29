@@ -33,7 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -61,8 +61,22 @@ class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorT
             MemoryTracker memoryTracker,
             IndexPopulator.Configuration configuration)
             throws IOException {
+        return instantiatePopulator(
+                monitor,
+                bufferFactory,
+                memoryTracker,
+                configuration,
+                Config.defaults(GraphDatabaseInternalSettings.index_populator_merge_factor, 2));
+    }
+
+    private BlockBasedIndexPopulator<RangeKey> instantiatePopulator(
+            BlockBasedIndexPopulator.Monitor monitor,
+            ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker,
+            IndexPopulator.Configuration configuration,
+            Config config)
+            throws IOException {
         RangeLayout layout = layout();
-        Config config = Config.defaults(GraphDatabaseInternalSettings.index_populator_merge_factor, 2);
         RangeBlockBasedIndexPopulator populator = new RangeBlockBasedIndexPopulator(
                 databaseIndexContext,
                 indexFiles,
@@ -88,8 +102,9 @@ class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorT
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 2, 4})
-    void shouldLetMultipleThreadsAddData(int threadSharingFactor) throws IOException, IndexEntryConflictException {
+    @CsvSource({"1,false", "2,false", "4,false", "1,true", "2,true", "4,true"})
+    void shouldLetMultipleThreadsAddData(int threadSharingFactor, boolean legacyPartMerge)
+            throws IOException, IndexEntryConflictException {
         AtomicLong entriesMerged = new AtomicLong();
         var monitor = new BlockBasedIndexPopulator.Monitor.Adapter() {
             @Override
@@ -97,11 +112,16 @@ class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorT
                 entriesMerged.addAndGet(entries);
             }
         };
+        Config config = Config.newBuilder()
+                .set(GraphDatabaseInternalSettings.index_populator_merge_factor, 2)
+                .set(GraphDatabaseInternalSettings.index_populator_legacy_part_merge, legacyPartMerge)
+                .build();
         BlockBasedIndexPopulator<RangeKey> populator = instantiatePopulator(
                 monitor,
                 SchemaTestUtil.defaultHeapBufferFactory(),
                 INSTANCE,
-                new IndexPopulator.Configuration(threadSharingFactor));
+                new IndexPopulator.Configuration(threadSharingFactor),
+                config);
         try {
             // given
             int numThreads = 8;

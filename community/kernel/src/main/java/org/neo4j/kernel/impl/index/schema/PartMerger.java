@@ -23,7 +23,6 @@ import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.kernel.impl.index.schema.BlockEntryStreamMerger.QUEUE_SIZE;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -32,22 +31,17 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobHandles;
 
 /**
- * The idea is to merge multiple (already individually sorted) parts of {@link BlockEntry block entries} into one stream.
- * Input is the parts. One or more threads will be spawned to merge these parts with the given merge factor, making the number
- * of threads by roughly log4(numberOfParts). Output is a {@link BlockEntryCursor} which is a stream which gets populated over time.
+ * Merges multiple (already individually sorted) parts of {@link BlockEntry block entries} into one stream.
+ * A single merger thread is spawned which merges all parts with a tournament tree, see {@link MergingBlockEntryReader},
+ * and hands over batches of merged entries to the consuming thread through {@link BlockEntryStreamMerger}.
+ * Output is a {@link BlockEntryCursor} which is a stream which gets populated over time.
  *
- * The part merging will look something like this:
- * <pre>
- *   (1) (2) (3) (4) (5) (6) (7) (8) (9) (10)
- *    \  |   |  /     \  |   |  /   /   /
- *    (---A---)       (---B---)   /   /
- *          \           |       /   /
- *         (----------C-------------)
- * </pre>
+ * One merger thread keeps up with the single-threaded consumer regardless of the number of parts since selecting
+ * the next entry only costs {@code log2(parts)} comparisons, whereas splitting the merge over several threads
+ * mostly adds queue hand-offs and allocation between them.
  */
 class PartMerger<KEY, VALUE> implements AutoCloseable {
-    static final int DEFAULT_BATCH_SIZE = 100;
-    private static final int MERGE_FACTOR = 4;
+    static final int DEFAULT_BATCH_SIZE = 1_000;
 
     private final PopulationWorkScheduler populationWorkScheduler;
     private final List<BlockEntryCursor<KEY, VALUE>> parts;
@@ -55,8 +49,8 @@ class PartMerger<KEY, VALUE> implements AutoCloseable {
     private final BlockStorage.Cancellation cancellation;
     private final int batchSize;
     private final Comparator<KEY> samplingComparator;
-    private final List<BlockEntryStreamMerger<KEY, VALUE>> allMergers = new ArrayList<>();
-    private final List<JobHandle<Void>> mergeHandles = new ArrayList<>();
+    private BlockEntryStreamMerger<KEY, VALUE> merger;
+    private JobHandle<Void> mergeHandle;
 
     PartMerger(
             PopulationWorkScheduler populationWorkScheduler,
@@ -74,40 +68,23 @@ class PartMerger<KEY, VALUE> implements AutoCloseable {
     }
 
     BlockEntryStreamMerger<KEY, VALUE> startMerge() {
-        List<BlockEntryCursor<KEY, VALUE>> remainingParts = new ArrayList<>(parts);
-        while (remainingParts.size() > MERGE_FACTOR) {
-            // Build one "level" of mergers, each merger in this level merging "merge factor" number of streams
-            List<BlockEntryCursor<KEY, VALUE>> current = new ArrayList<>();
-            List<BlockEntryCursor<KEY, VALUE>> levelParts = new ArrayList<>();
-            for (BlockEntryCursor<KEY, VALUE> remainingPart : remainingParts) {
-                current.add(remainingPart);
-                if (current.size() == MERGE_FACTOR) {
-                    BlockEntryStreamMerger<KEY, VALUE> merger =
-                            new BlockEntryStreamMerger<>(current, layout, null, cancellation, batchSize, QUEUE_SIZE);
-                    allMergers.add(merger);
-                    levelParts.add(merger);
-                    current = new ArrayList<>();
-                }
-            }
-            levelParts.addAll(current);
-            remainingParts = levelParts;
-        }
-
-        BlockEntryStreamMerger<KEY, VALUE> merger = new BlockEntryStreamMerger<>(
-                remainingParts, layout, samplingComparator, cancellation, batchSize, QUEUE_SIZE);
-        allMergers.add(merger);
-        allMergers.forEach(merge -> mergeHandles.add(populationWorkScheduler.schedule(
-                indexName -> "Part merger while writing scan update for " + indexName, merge)));
+        merger = new BlockEntryStreamMerger<>(parts, layout, samplingComparator, cancellation, batchSize, QUEUE_SIZE);
+        mergeHandle = populationWorkScheduler.schedule(
+                indexName -> "Part merger while writing scan update for " + indexName, merger);
         return merger;
     }
 
     @Override
     public void close() throws IOException {
-        allMergers.forEach(BlockEntryStreamMerger::halt);
+        if (merger == null) {
+            closeAll(parts);
+            return;
+        }
+        merger.halt();
         try {
-            JobHandles.getAllResults(mergeHandles, IOException.class, IOException::new);
+            JobHandles.getAllResults(List.of(mergeHandle), IOException.class, IOException::new);
         } finally {
-            closeAll(() -> closeAll(allMergers), () -> closeAll(parts));
+            closeAll(merger, () -> closeAll(parts));
         }
     }
 }

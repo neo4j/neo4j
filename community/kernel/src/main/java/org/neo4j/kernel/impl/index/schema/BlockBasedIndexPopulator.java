@@ -41,6 +41,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
@@ -113,6 +114,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
      */
     private final int mergeFactor;
 
+    private final boolean legacyPartMerge;
     private final Monitor monitor;
     // written to in a synchronized method when creating new thread-local instances, read from when population completes
     private final List<ThreadLocalBlockStorage> allScanUpdates = new CopyOnWriteArrayList<>();
@@ -164,6 +166,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         this.archiveFailedIndex = archiveFailedIndex;
         this.memoryTracker = memoryTracker;
         this.mergeFactor = config.get(GraphDatabaseInternalSettings.index_populator_merge_factor);
+        this.legacyPartMerge = config.get(GraphDatabaseInternalSettings.index_populator_legacy_part_merge);
         this.monitor = monitor;
         this.threadSharingFactor = configuration.threadSharingFactor();
         this.scanUpdates = ThreadLocal.withInitial(this::newThreadLocalBlockStorage);
@@ -460,7 +463,9 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             for (ThreadLocalBlockStorage part : allScanUpdates) {
                 ScopedBuffer readScopedBuffer = allocator.allocate(bufferSize, memoryTracker);
                 readBuffers.addBuffer(readScopedBuffer);
-                try (BlockReader<KEY, NullValue> reader = part.blockStorage.reader(true)) {
+                // The legacy merger holds on to the keys it is handed so they have to be new instances, whereas
+                // PartMerger copies them into its recycled batches
+                try (BlockReader<KEY, NullValue> reader = part.blockStorage.reader(legacyPartMerge)) {
                     // reader has a channel open, but only for the purpose of traversing the blocks.
                     // nextBlock will open its own channel so it's OK to close the reader after getting that block
                     parts.add(reader.nextBlock(readScopedBuffer));
@@ -471,6 +476,19 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             }
 
             Comparator<KEY> samplingComparator = descriptor.isUnique() ? null : layout::compareValue;
+            if (legacyPartMerge) {
+                try (LegacyPartMerger<KEY, NullValue> merger = new LegacyPartMerger<>(
+                                populationWorkScheduler,
+                                parts,
+                                layout,
+                                samplingComparator,
+                                cancellation,
+                                LegacyPartMerger.DEFAULT_BATCH_SIZE);
+                        LegacyBlockEntryStreamMerger<KEY, NullValue> allEntries = merger.startMerge()) {
+                    return writeMergedEntriesToTree(
+                            allEntries, allEntries::buildIndexSample, recordingConflictDetector, cursorContext);
+                }
+            }
             try (PartMerger<KEY, NullValue> merger = new PartMerger<>(
                             populationWorkScheduler,
                             parts,
@@ -478,15 +496,26 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                             samplingComparator,
                             cancellation,
                             PartMerger.DEFAULT_BATCH_SIZE);
-                    BlockEntryStreamMerger<KEY, NullValue> allEntries = merger.startMerge();
-                    Writer<KEY, NullValue> writer =
-                            tree.writer(W_BATCHED_SINGLE_THREADED | W_SPLIT_KEEP_ALL_LEFT, cursorContext)) {
-                while (allEntries.next() && !cancellation.cancelled()) {
-                    writeToTree(writer, recordingConflictDetector, allEntries.key());
-                    numberOfAppliedScanUpdates.incrementAndGet();
-                }
-                return descriptor.isUnique() ? null : allEntries.buildIndexSample();
+                    BlockEntryStreamMerger<KEY, NullValue> allEntries = merger.startMerge()) {
+                return writeMergedEntriesToTree(
+                        allEntries, allEntries::buildIndexSample, recordingConflictDetector, cursorContext);
             }
+        }
+    }
+
+    private IndexSample writeMergedEntriesToTree(
+            BlockEntryCursor<KEY, NullValue> allEntries,
+            Supplier<IndexSample> sampleBuilder,
+            RecordingConflictDetector<KEY> recordingConflictDetector,
+            CursorContext cursorContext)
+            throws IOException, IndexEntryConflictException {
+        try (Writer<KEY, NullValue> writer =
+                tree.writer(W_BATCHED_SINGLE_THREADED | W_SPLIT_KEEP_ALL_LEFT, cursorContext)) {
+            while (allEntries.next() && !cancellation.cancelled()) {
+                writeToTree(writer, recordingConflictDetector, allEntries.key());
+                numberOfAppliedScanUpdates.incrementAndGet();
+            }
+            return descriptor.isUnique() ? null : sampleBuilder.get();
         }
     }
 
@@ -664,7 +693,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             super(monitor);
             Path storeFile = indexFiles.getStoreFile().baseSegment();
             Path blockFile = storeFile.resolveSibling(storeFile.getFileName() + ".scan-" + id);
-            this.blockStorage = new BlockStorage<>(layout, bufferFactory, fileSystem, blockFile, this, memoryTracker);
+            this.blockStorage = new BlockStorage<>(
+                    layout, bufferFactory, fileSystem, blockFile, this, memoryTracker, legacyPartMerge);
         }
 
         @Override

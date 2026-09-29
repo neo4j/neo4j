@@ -77,11 +77,11 @@ class PartMergerTest {
         Layout<RawBytes, RawBytes> layout = new SimpleByteArrayLayout();
         List<BlockEntry<RawBytes, RawBytes>> allData = new ArrayList<>();
         List<BlockEntryCursor<RawBytes, RawBytes>> parts = buildParts(random, layout, allData);
-        PartMerger<RawBytes, RawBytes> merger =
-                new PartMerger<>(populationWorkScheduler, parts, layout, null, NOT_CANCELLABLE, 10);
 
         // when
-        try (BlockEntryCursor<RawBytes, RawBytes> stream = merger.startMerge()) {
+        try (PartMerger<RawBytes, RawBytes> merger =
+                        new PartMerger<>(populationWorkScheduler, parts, layout, null, NOT_CANCELLABLE, 10);
+                BlockEntryCursor<RawBytes, RawBytes> stream = merger.startMerge()) {
             // then
             assertMergedPartStream(allData, stream);
         }
@@ -91,11 +91,11 @@ class PartMergerTest {
     void shouldMergeZeroParts() throws IOException {
         // given
         Layout<RawBytes, RawBytes> layout = new SimpleByteArrayLayout();
-        PartMerger<RawBytes, RawBytes> merger =
-                new PartMerger<>(populationWorkScheduler, emptyList(), layout, null, NOT_CANCELLABLE, 10);
 
         // when
-        try (BlockEntryCursor<RawBytes, RawBytes> stream = merger.startMerge()) {
+        try (PartMerger<RawBytes, RawBytes> merger =
+                        new PartMerger<>(populationWorkScheduler, emptyList(), layout, null, NOT_CANCELLABLE, 10);
+                BlockEntryCursor<RawBytes, RawBytes> stream = merger.startMerge()) {
             // then
             assertThat(stream.next()).isFalse();
         }

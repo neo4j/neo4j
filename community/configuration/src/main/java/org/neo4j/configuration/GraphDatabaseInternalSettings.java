@@ -1234,6 +1234,16 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.index.populator_merge_factor", INT, 8).build();
 
     @Internal
+    @Description("Fall back to the previous implementation of merging sorted entries during index population: "
+            + "streams are merged by scanning them for the lowest entry, the sorted parts of the scan are merged "
+            + "into the index by a tree of threads merging four streams each, and a new entry is allocated for "
+            + "every merged entry. By default all parts are merged by a single thread using a tournament tree "
+            + "which recycles its batches.")
+    public static final Setting<Boolean> index_populator_legacy_part_merge = newBuilder(
+                    "internal.dbms.index.populator_legacy_part_merge", BOOL, false)
+            .build();
+
+    @Internal
     @Description("Enable/disable logging for the id generator")
     public static final Setting<Boolean> id_generator_log_enabled =
             newBuilder("internal.dbms.idgenerator.log.enabled", BOOL, false).build();

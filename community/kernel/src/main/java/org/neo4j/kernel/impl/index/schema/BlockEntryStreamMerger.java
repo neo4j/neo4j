@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -38,6 +37,12 @@ import org.neo4j.util.Preconditions;
  * and on the fly adds batches of merged results to its output, which is consumable by either other {@link BlockEntryStreamMerger}
  * or a final consumer.
  *
+ * Batches are recycled: once the consuming thread has read past a batch it is handed back to the merging thread, so the merge
+ * runs with a fixed set of {@code queueSize + 2} batches and no per-entry allocation. Keys are copied into the batches since
+ * the input cursors are free to reuse their key instances between calls to {@link BlockEntryCursor#next()}. Values are
+ * stored by reference, which relies on the input cursors handing out value instances that stay valid, e.g. the singleton
+ * {@link NullValue} that index population uses.
+ *
  * For convenience instances are themselves valid as input into another {@link BlockEntryStreamMerger}.
  */
 class BlockEntryStreamMerger<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE>, Callable<Void> {
@@ -47,15 +52,20 @@ class BlockEntryStreamMerger<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE>
     private final List<BlockEntryCursor<KEY, VALUE>> input;
     private final Layout<KEY, VALUE> layout;
     private final BlockStorage.Cancellation cancellation;
-    private final ArrayBlockingQueue<BlockEntryCursor<KEY, VALUE>> mergedOutput;
+    private final ArrayBlockingQueue<Batch<KEY, VALUE>> mergedOutput;
+    // Batches the consumer has finished reading, ready to be filled again by the merging thread
+    private final ArrayBlockingQueue<Batch<KEY, VALUE>> freeBatches;
     private final int batchSize;
+    private final int maxBatches;
     private final Comparator<KEY> samplingComparator;
-    private KEY prevKey;
+    private final KEY prevKey;
+    private boolean hasPrevKey;
     private long sampledValues;
     private long uniqueValues;
+    private int allocatedBatches;
     private volatile boolean halted;
     // This cursor will be used by the single thread reading from this merged stream
-    private BlockEntryCursor<KEY, VALUE> currentOutput;
+    private Batch<KEY, VALUE> currentOutput;
 
     BlockEntryStreamMerger(
             List<BlockEntryCursor<KEY, VALUE>> input,
@@ -68,13 +78,20 @@ class BlockEntryStreamMerger<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE>
         this.layout = layout;
         this.cancellation = cancellation;
         this.batchSize = batchSize;
+        // One batch being filled, queueSize batches in the queue and one being consumed
+        this.maxBatches = queueSize + 2;
         this.mergedOutput = new ArrayBlockingQueue<>(queueSize);
+        this.freeBatches = new ArrayBlockingQueue<>(maxBatches);
         this.samplingComparator = samplingComparator;
+        this.prevKey = samplingComparator != null ? layout.newKey() : null;
     }
 
     @Override
     public Void call() throws IOException {
         try {
+            if (input.isEmpty()) {
+                return null;
+            }
             MergingBlockEntryReader<KEY, VALUE> mergingReader = new MergingBlockEntryReader<>(layout);
             input.forEach(mergingReader::addSource);
             //noinspection StatementWithEmptyBody
@@ -91,15 +108,18 @@ class BlockEntryStreamMerger<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE>
      */
     private boolean mergeChunk(MergingBlockEntryReader<KEY, VALUE> mergingReader) throws IOException {
         for (int batch = 0; batch < BATCHES_PER_CHUNK; batch++) {
-            List<BlockEntry<KEY, VALUE>> merged = new ArrayList<>(batchSize);
-            while (merged.size() < batchSize) {
+            Batch<KEY, VALUE> merged = acquireBatch();
+            if (merged == null) {
+                return false;
+            }
+            while (!merged.isFull()) {
                 if (!alive() || !mergingReader.next()) {
                     if (!merged.isEmpty()) {
                         offer(merged);
                     }
                     return false;
                 }
-                merged.add(new BlockEntry<>(mergingReader.key(), mergingReader.value()));
+                merged.add(mergingReader.key(), mergingReader.value());
             }
             offer(merged);
         }
@@ -114,8 +134,13 @@ class BlockEntryStreamMerger<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE>
     @Override
     public boolean next() throws IOException {
         do {
-            if (currentOutput != null && currentOutput.next()) {
-                return true;
+            if (currentOutput != null) {
+                if (currentOutput.next()) {
+                    return true;
+                }
+                if (!freeBatches.offer(currentOutput)) {
+                    throw new IllegalStateException("More batches allocated than recycling slots.");
+                }
             }
             currentOutput = nextOutputBatchOrNull();
         } while (currentOutput != null);
@@ -141,12 +166,35 @@ class BlockEntryStreamMerger<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE>
         return !halted && !cancellation.cancelled();
     }
 
-    private void offer(List<BlockEntry<KEY, VALUE>> entries) {
+    /**
+     * @return an empty batch to fill, or {@code null} if this merger was halted or cancelled while waiting for one.
+     */
+    private Batch<KEY, VALUE> acquireBatch() {
+        Batch<KEY, VALUE> batch = freeBatches.poll();
+        if (batch == null && allocatedBatches < maxBatches) {
+            allocatedBatches++;
+            return new Batch<>(layout, batchSize);
+        }
+        try {
+            while (batch == null && alive()) {
+                batch = freeBatches.poll(10, MILLISECONDS);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            halted = true;
+            return null;
+        }
+        if (batch != null) {
+            batch.reset();
+        }
+        return batch;
+    }
+
+    private void offer(Batch<KEY, VALUE> batch) {
         if (samplingComparator != null) {
-            includeInSample(entries);
+            includeInSample(batch);
         }
 
-        ListBasedBlockEntryCursor<KEY, VALUE> batch = new ListBasedBlockEntryCursor<>(entries);
         try {
             while (alive() && !mergedOutput.offer(batch, 10, MILLISECONDS)) { // Then just stay here and try
                 Thread.onSpinWait();
@@ -161,29 +209,35 @@ class BlockEntryStreamMerger<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE>
         halted = true;
     }
 
-    private void includeInSample(List<BlockEntry<KEY, VALUE>> entries) {
-        for (BlockEntry<KEY, VALUE> entry : entries) {
-            KEY key = entry.key();
-            if (prevKey == null || samplingComparator.compare(key, prevKey) != 0) {
-                prevKey = key;
+    private void includeInSample(Batch<KEY, VALUE> batch) {
+        KEY prev = hasPrevKey ? prevKey : null;
+        for (int i = 0; i < batch.size; i++) {
+            KEY key = batch.keys[i];
+            if (prev == null || samplingComparator.compare(key, prev) != 0) {
                 uniqueValues++;
             }
             sampledValues++;
+            prev = key;
+        }
+        if (batch.size > 0) {
+            // The batch will be recycled so keep a copy of its last key to compare the next batch against
+            layout.copyKey(batch.keys[batch.size - 1], prevKey);
+            hasPrevKey = true;
         }
     }
 
     IndexSample buildIndexSample() {
-        Preconditions.checkState(samplingComparator != null, "I haven't been sampling at all");
+        Preconditions.checkState(samplingComparator != null, "I haven't been sampling at all.");
         return new IndexSample(sampledValues, uniqueValues, sampledValues);
     }
 
-    private BlockEntryCursor<KEY, VALUE> nextOutputBatchOrNull() {
+    private Batch<KEY, VALUE> nextOutputBatchOrNull() {
         // Keep polling the output if:
         // - output isn't empty
         // - output is empty but this merger is still going
         while (alive() || !mergedOutput.isEmpty()) {
             try {
-                BlockEntryCursor<KEY, VALUE> result = mergedOutput.poll(10, TimeUnit.MILLISECONDS);
+                Batch<KEY, VALUE> result = mergedOutput.poll(10, TimeUnit.MILLISECONDS);
                 if (result != null) {
                     return result;
                 }
@@ -192,5 +246,70 @@ class BlockEntryStreamMerger<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE>
             }
         }
         return null;
+    }
+
+    /**
+     * A fixed-capacity batch of entries which owns its key instances so that it can be filled, read and filled again
+     * without allocating.
+     */
+    private static class Batch<KEY, VALUE> implements BlockEntryCursor<KEY, VALUE> {
+        private final Layout<KEY, VALUE> layout;
+        private final KEY[] keys;
+        private final VALUE[] values;
+        private int size;
+        private int position = -1;
+
+        @SuppressWarnings("unchecked")
+        Batch(Layout<KEY, VALUE> layout, int capacity) {
+            this.layout = layout;
+            this.keys = (KEY[]) new Object[capacity];
+            this.values = (VALUE[]) new Object[capacity];
+
+            for (int i = 0; i < keys.length; i++) {
+                keys[i] = layout.newKey();
+            }
+        }
+
+        void add(KEY key, VALUE value) {
+            layout.copyKey(key, keys[size]);
+            values[size] = value;
+            size++;
+        }
+
+        boolean isFull() {
+            return size == keys.length;
+        }
+
+        boolean isEmpty() {
+            return size == 0;
+        }
+
+        void reset() {
+            size = 0;
+            position = -1;
+        }
+
+        @Override
+        public boolean next() {
+            if (position + 1 < size) {
+                position++;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public KEY key() {
+            return keys[position];
+        }
+
+        @Override
+        public VALUE value() {
+            return values[position];
+        }
+
+        @Override
+        public void close() { // no-op
+        }
     }
 }
