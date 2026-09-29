@@ -112,6 +112,8 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
 class BuiltInProceduresTest {
+    private static final QueryLanguage DEFAULT_QUERY_LANGUAGE = QueryLanguage.CYPHER_25;
+
     private final Map<Integer, String> labels = new HashMap<>();
     private final Map<Integer, String> propKeys = new HashMap<>();
     private final Map<Integer, String> relTypes = new HashMap<>();
@@ -404,13 +406,14 @@ class BuiltInProceduresTest {
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
         when(callContext.isSystemDatabase()).thenReturn(false);
 
-        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> call("dbms.upgradeStatus"))
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> call("dbms.upgradeStatus", QueryLanguage.CYPHER_5))
                 .isInstanceOf(ProcedureException.class)
-                .hasMessage(
-                        "This is an administration command and it should be executed against the system database: dbms.upgradeStatus")
+                .hasMessage("This is an administration command and it should be executed against the system database:"
+                        + " dbms.upgradeStatus")
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_51N28)
                 .hasStatusDescription(
-                        "error: system configuration or operation exception - not supported by this database. This Cypher command must be executed against the database `system`.");
+                        "error: system configuration or operation exception - not supported by this database. This"
+                                + " Cypher command must be executed against the database `system`.");
     }
 
     @Test
@@ -421,7 +424,7 @@ class BuiltInProceduresTest {
         when(resolver.resolveDependency(UpgradeChecker.class)).thenReturn(UPGRADE_ALWAYS_ALLOWED);
         when(callContext.isSystemDatabase()).thenReturn(true);
 
-        var r = call("dbms.upgradeStatus").iterator();
+        var r = call("dbms.upgradeStatus", QueryLanguage.CYPHER_5).iterator();
         assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
         Object[] row = r.next();
         String status = resultAsString(row, 0);
@@ -443,7 +446,7 @@ class BuiltInProceduresTest {
         when(resolver.resolveDependency(UpgradeChecker.class)).thenReturn(() -> upgradeNotAllowed(message));
         when(callContext.isSystemDatabase()).thenReturn(true);
 
-        var r = call("dbms.upgradeStatus").iterator();
+        var r = call("dbms.upgradeStatus", QueryLanguage.CYPHER_5).iterator();
         assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
         Object[] row = r.next();
         String status = resultAsString(row, 0);
@@ -463,13 +466,14 @@ class BuiltInProceduresTest {
 
         when(callContext.isSystemDatabase()).thenReturn(false);
 
-        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> call("dbms.upgrade"))
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> call("dbms.upgrade", QueryLanguage.CYPHER_5))
                 .isInstanceOf(ProcedureException.class)
-                .hasMessage(
-                        "This is an administration command and it should be executed against the system database: dbms.upgrade")
+                .hasMessage("This is an administration command and it should be executed against the system database:"
+                        + " dbms.upgrade")
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_51N28)
                 .hasStatusDescription(
-                        "error: system configuration or operation exception - not supported by this database. This Cypher command must be executed against the database `system`.");
+                        "error: system configuration or operation exception - not supported by this database. This"
+                                + " Cypher command must be executed against the database `system`.");
     }
 
     @Test
@@ -483,7 +487,7 @@ class BuiltInProceduresTest {
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
-        var r = call("dbms.upgrade").iterator();
+        var r = call("dbms.upgrade", QueryLanguage.CYPHER_5).iterator();
         assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
         Object[] row = r.next();
         String status = resultAsString(row, 0);
@@ -504,7 +508,7 @@ class BuiltInProceduresTest {
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
-        var r = call("dbms.upgrade").iterator();
+        var r = call("dbms.upgrade", QueryLanguage.CYPHER_5).iterator();
         assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
         Object[] row = r.next();
         String status = resultAsString(row, 0);
@@ -526,7 +530,7 @@ class BuiltInProceduresTest {
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
-        var r = call("dbms.upgrade").iterator();
+        var r = call("dbms.upgrade", QueryLanguage.CYPHER_5).iterator();
         assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
         Object[] row = r.next();
         String status = resultAsString(row, 0);
@@ -546,7 +550,7 @@ class BuiltInProceduresTest {
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
-        var r = call("dbms.upgrade").iterator();
+        var r = call("dbms.upgrade", QueryLanguage.CYPHER_5).iterator();
         assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
         Object[] row = r.next();
         String status = resultAsString(row, 0);
@@ -565,7 +569,7 @@ class BuiltInProceduresTest {
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
-        var r = call("dbms.upgrade").iterator();
+        var r = call("dbms.upgrade", QueryLanguage.CYPHER_5).iterator();
         assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
         Object[] row = r.next();
         String status = resultAsString(row, 0);
@@ -584,6 +588,35 @@ class BuiltInProceduresTest {
                 .isEmpty();
         assertThat(view.getAllAggregatingFunctions(QueryLanguage.CYPHER_5).filter(f -> !f.isBuiltIn()))
                 .isEmpty();
+    }
+
+    @Test
+    void shouldCheckIfContextIsSystemDBOnCypher5() throws ProcedureException, IndexNotFoundKernelException {
+        // When
+        when(callContext.isSystemDatabase()).thenReturn(true);
+
+        // Then
+        assertThat(call("db.schema.visualization", QueryLanguage.CYPHER_5)).isEmpty();
+    }
+
+    @Test
+    void shouldCheckIfContextIsSystemDBOnCypher25() throws ProcedureException, IndexNotFoundKernelException {
+        // When
+        when(callContext.isSystemDatabase()).thenReturn(true);
+
+        // Then
+        assertThat(call("db.schema.visualization", QueryLanguage.CYPHER_25, true))
+                .isEmpty();
+    }
+
+    @Test
+    void shouldCheckIfEstimateIsNull() throws ProcedureException, IndexNotFoundKernelException {
+        // When
+        when(callContext.isSystemDatabase()).thenReturn(false);
+
+        // Then
+        assertThat(call("db.schema.visualization", QueryLanguage.CYPHER_25, (Object) null))
+                .containsExactly(record(null, null));
     }
 
     private static Object[] record(Object... fields) {
@@ -628,6 +661,11 @@ class BuiltInProceduresTest {
     }
 
     private List<Object[]> call(String name, Object... args) throws ProcedureException, IndexNotFoundKernelException {
+        return call(name, DEFAULT_QUERY_LANGUAGE, args);
+    }
+
+    private List<Object[]> call(String name, QueryLanguage queryLanguage, Object... args)
+            throws ProcedureException, IndexNotFoundKernelException {
         DefaultValueMapper valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
         Context ctx = buildContext(resolver, valueMapper)
                 .withKernelTransaction(tx)
@@ -651,7 +689,7 @@ class BuiltInProceduresTest {
                     case 3 -> new QualifiedName(split[0], split[1], split[2]);
                     default -> throw new IllegalArgumentException("Oops, naughty test");
                 };
-        int procId = view.procedure(qn, QueryLanguage.CYPHER_5).id();
+        int procId = view.procedure(qn, queryLanguage).id();
         List<AnyValue[]> anyValues = Iterators.asList(view.callProcedure(ctx, procId, input, EMPTY_RESOURCE_TRACKER));
         List<Object[]> toReturn = new ArrayList<>(anyValues.size());
         for (AnyValue[] anyValue : anyValues) {

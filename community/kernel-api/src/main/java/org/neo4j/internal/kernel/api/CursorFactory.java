@@ -24,7 +24,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 
 /**
- * Allocates Cursors. To read data from the Kernel, Cursors are needed. A Cursor factory let's the Kernel consumer
+ * Allocates Cursors. To read data from the Kernel, Cursors are needed. A Cursor factory lets the Kernel consumer
  * allocate all types of cursors, which can then be reused for multiple read operations.
  */
 public interface CursorFactory {

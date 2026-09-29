@@ -249,8 +249,9 @@ public class BuiltInProcedures {
     @SystemProcedure
     @NotThreadSafe
     @Description(
-            "Triggers an index resample and waits for its completion. If the wait time is 0, it skips waiting."
-                    + " After that, the procedure clears query caches. Once the process is complete, queries are planned using the latest database statistics.")
+            "Triggers an index resample and waits for its completion. If the wait time is 0, it skips waiting. After"
+                    + " that, the procedure clears query caches. Once the process is complete, queries are planned using"
+                    + " the latest database statistics.")
     @Procedure(name = "db.prepareForReplanning", mode = READ)
     public void prepareForReplanning(
             @Name(value = "timeOutSeconds", defaultValue = "300", description = "The maximum time to wait in seconds.")
@@ -351,13 +352,14 @@ public class BuiltInProcedures {
 
     @SystemProcedure
     @NotThreadSafe
-    @Description("Visualizes the schema of the data based on available statistics. "
-            + "A new node is returned for each label. The properties represented on the node include: "
-            + "`name` (label name), `indexes` (list of indexes), and `constraints` (list of constraints). "
-            + "A relationship of a given type is returned for all possible combinations of start and end nodes. "
-            + "The properties represented on the relationship include: `name` (type name). "
-            + "Note that this may include additional relationships that do not exist in the data due to the "
-            + "information available in the count store. ")
+    @QueryLanguageScope(scope = {QueryLanguage.CYPHER_5})
+    @Description(
+            "Visualizes the schema of the data based on available statistics. A new node is returned for each label."
+                    + " The properties represented on the node include: `name` (label name), `indexes` (list of indexes),"
+                    + " and `constraints` (list of constraints). A relationship of a given type is returned for all"
+                    + " possible combinations of start and end nodes. The properties represented on the relationship"
+                    + " include: `name` (type name). Note that this may include additional relationships that do not exist"
+                    + " in the data due to the information available in the count store. ")
     @Procedure(name = "db.schema.visualization", mode = READ)
     public Stream<SchemaProcedure.GraphResult> schemaVisualization() {
         if (callContext.isSystemDatabase()) {
@@ -365,17 +367,47 @@ public class BuiltInProcedures {
         }
         final var tracker = procedureMemory.newTracker();
         return Stream.of(new SchemaProcedure((InternalTransaction) transaction, procedureMemory, tracker)
-                        .buildSchemaGraph())
+                        .buildSchemaGraph(true))
+                .onClose(tracker::close);
+    }
+
+    @SystemProcedure
+    @NotThreadSafe
+    @QueryLanguageScope(scope = {QueryLanguage.CYPHER_25})
+    @Description(
+            "Visualizes the schema of the data based on available statistics. A new node is returned for each label."
+                    + " The properties represented on the node include: `name` (label name), `indexes` (list of indexes),"
+                    + " and `constraints` (list of constraints). A relationship of a given type is returned for all"
+                    + " possible combinations of start and end nodes. The properties represented on the relationship"
+                    + " include: `name` (type name). Note that this may include additional relationships that do not exist"
+                    + " in the data due to the information available in the count store. Set the flag to false to get more"
+                    + " accurate results. Setting the flag to false could affect performance.")
+    @Procedure(name = "db.schema.visualization", mode = READ)
+    public Stream<SchemaProcedure.GraphResult> schemaVisualization(
+            @Name(
+                            value = "estimate",
+                            defaultValue = "true",
+                            description =
+                                    "Toggles a scan of the database for a more correct schema, can affect performance")
+                    Boolean estimate) {
+        if (callContext.isSystemDatabase()) {
+            return Stream.empty();
+        }
+        if (estimate == null) {
+            return Stream.of(new SchemaProcedure.GraphResult(null, null));
+        }
+        final var tracker = procedureMemory.newTracker();
+        return Stream.of(new SchemaProcedure((InternalTransaction) transaction, procedureMemory, tracker)
+                        .buildSchemaGraph(estimate))
                 .onClose(tracker::close);
     }
 
     @SystemProcedure(allowExpiredCredentials = true)
     @NotThreadSafe
     @Procedure(name = "db.ping", mode = READ)
-    @Description(
-            "This procedure can be used by client side tooling to test whether they are correctly connected to a database. "
-                    + "The procedure is available in all databases and always returns true. A faulty connection can be detected by not being able to call this "
-                    + "procedure.")
+    @Description("This procedure can be used by client side tooling to test whether they are correctly connected to a"
+            + " database. The procedure is available in all databases and always returns true. A faulty connection"
+            + " can be detected by not being able to call this procedure.")
     public Stream<BooleanResult> ping() {
         return Stream.of(new BooleanResult(Boolean.TRUE));
     }

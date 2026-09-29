@@ -30,19 +30,32 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.collection.trackable.HeapTracking;
+import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenReadSession;
+import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.AbstractVirtualNode;
 import org.neo4j.kernel.impl.core.AbstractVirtualRelationship;
@@ -52,6 +65,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.memory.ProcedureMemory;
 import org.neo4j.procedure.memory.ProcedureMemory.HeapTrackingCollectionFactory;
 import org.neo4j.procedure.memory.ProcedureMemoryTracker;
+import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.token.api.TokenConstants;
 
 public class SchemaProcedure {
@@ -74,14 +88,20 @@ public class SchemaProcedure {
         tracker.allocateHeap(memory.heapEstimator().shallowSizeOfInstance(SchemaProcedure.class));
     }
 
-    public GraphResult buildSchemaGraph() {
+    public GraphResult buildSchemaGraph(boolean estimate) {
+        if (estimate) {
+            return buildEstimatedSchemaGraph();
+        }
+        return buildValidatedSchemaGraph();
+    }
+
+    private GraphResult buildEstimatedSchemaGraph() {
         HeapTrackingCollectionFactory collections = memory.collections();
         HeapTracking.Map<String, VirtualNodeHack> nodes = collections.newHeapTrackingUnifiedMap();
         HeapTracking.Map<String, Map<VirtualRelationshipHack, Object>> relationships =
                 collections.newHeapTrackingUnifiedMap();
         KernelTransaction kernelTransaction = internalTransaction.kernelTransaction();
         AccessMode mode = kernelTransaction.securityContext().mode();
-
         try (KernelTransaction.Revertable ignore = kernelTransaction.overrideWith(SecurityContext.AUTH_DISABLED)) {
             Read dataRead = kernelTransaction.dataRead();
             TokenRead tokenRead = kernelTransaction.tokenRead();
@@ -106,38 +126,8 @@ public class SchemaProcedure {
                 if (mode.allowsTraverseNode(labelId) && dataRead.estimateCountsForNode(labelId) > 0) {
                     labelNamesAndIds.add(new LabelNameId(labelName, labelId));
 
-                    HeapTracking.Map<String, Object> properties = collections.newHeapTrackingUnifiedMap();
-
-                    Iterator<IndexDescriptor> indexReferences = schemaRead.indexesGetForLabel(labelId);
-                    List<String> indexes = new ArrayList<>();
-                    while (indexReferences.hasNext()) {
-                        IndexDescriptor index = indexReferences.next();
-                        if (!index.isUnique()) {
-                            tracker.allocateHeap(memory.heapEstimator()
-                                    .shallowSizeOfObjectArray(index.schema().getPropertyIds().length));
-                            String[] propertyNames = PropertyNameUtils.getPropertyKeys(
-                                    tokenRead, index.schema().getPropertyIds());
-                            String indexDescription = String.join(",", propertyNames);
-                            tracker.allocateHeap(
-                                    memory.heapEstimator().sizeOfByteArray(indexDescription.getBytes().length));
-                            indexes.add(indexDescription);
-                        }
-                    }
-                    properties.put("indexes", indexes);
-
-                    Iterator<ConstraintDescriptor> nodePropertyConstraintIterator =
-                            schemaRead.constraintsGetForLabel(labelId);
-                    List<String> constraints = new ArrayList<>();
-                    while (nodePropertyConstraintIterator.hasNext()) {
-                        ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
-                        String constraintDescription = constraint.userDescription(tokenRead);
-                        tracker.allocateHeap(
-                                memory.heapEstimator().sizeOfByteArray(constraintDescription.getBytes().length));
-                        constraints.add(constraintDescription);
-                    }
-                    properties.put("constraints", constraints);
-
-                    getOrCreateLabel(label.name(), properties, nodes);
+                    Map<String, Object> buildProperties = buildProperties(labelId, tokenRead, schemaRead);
+                    getOrCreateLabel(label.name(), buildProperties, nodes);
                 }
             }
 
@@ -190,6 +180,254 @@ public class SchemaProcedure {
         return getGraphResult(nodes, relationships);
     }
 
+    private GraphResult buildValidatedSchemaGraph() {
+        GraphResult estimated = buildEstimatedSchemaGraph();
+
+        KernelTransaction tx = internalTransaction.kernelTransaction();
+        Read dataRead = tx.dataRead();
+        TokenRead tokenRead = tx.tokenRead();
+        SchemaRead schemaRead = tx.schemaRead();
+
+        try {
+            Iterator<IndexDescriptor> nodeTokenIndexes =
+                    schemaRead.index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE));
+            Iterator<IndexDescriptor> relTypeTokenIndexes =
+                    schemaRead.index(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP));
+
+            if (!nodeTokenIndexes.hasNext() || !relTypeTokenIndexes.hasNext()) {
+                return fullScanVerifiedGraph(estimated, tx, dataRead, tokenRead);
+            }
+
+            TokenReadSession nodeLabelSession = dataRead.tokenReadSession(nodeTokenIndexes.next());
+            TokenReadSession relTypeSession = dataRead.tokenReadSession(relTypeTokenIndexes.next());
+
+            HeapTrackingCollectionFactory collections = memory.collections();
+            try (HeapTracking.List<VirtualRelationshipHack> validatedRelationships =
+                            collections.newHeapTrackingArrayList();
+                    NodeCursor nodeCursor = tx.cursors().allocateNodeCursor(tx.cursorContext(), tx.memoryTracker());
+                    RelationshipTraversalCursor traversalCursor =
+                            tx.cursors().allocateRelationshipTraversalCursor(tx.cursorContext(), tx.memoryTracker())) {
+
+                for (Relationship relationship : estimated.relationships()) {
+                    String startLabel = relationship
+                            .getStartNode()
+                            .getLabels()
+                            .iterator()
+                            .next()
+                            .name();
+                    String endLabel = relationship
+                            .getEndNode()
+                            .getLabels()
+                            .iterator()
+                            .next()
+                            .name();
+                    String relType = relationship.getType().name();
+
+                    if (tripleExists(
+                            tx,
+                            dataRead,
+                            tokenRead,
+                            nodeLabelSession,
+                            relTypeSession,
+                            nodeCursor,
+                            traversalCursor,
+                            startLabel,
+                            relType,
+                            endLabel)) {
+                        validatedRelationships.add((VirtualRelationshipHack) relationship);
+                    }
+                }
+
+                return new GraphResult(estimated.nodes(), new ArrayList<>(validatedRelationships));
+            }
+        } catch (KernelException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static boolean tripleExists(
+            KernelTransaction tx,
+            Read dataRead,
+            TokenRead tokenRead,
+            TokenReadSession nodeLabelSession,
+            TokenReadSession relTypeSession,
+            NodeCursor nodeCursor,
+            RelationshipTraversalCursor traversalCursor,
+            String startLabel,
+            String relType,
+            String endLabel)
+            throws KernelException {
+        int startLabelId = tokenRead.nodeLabel(startLabel);
+        int endLabelId = tokenRead.nodeLabel(endLabel);
+        int relTypeId = tokenRead.relationshipType(relType);
+
+        long relCount =
+                dataRead.estimateCountsForRelationships(TokenConstants.ANY_LABEL, relTypeId, TokenConstants.ANY_LABEL);
+        long startCount = dataRead.estimateCountsForNode(startLabelId);
+        long endCount = dataRead.estimateCountsForNode(endLabelId);
+
+        if (relCount < Math.min(startCount, endCount)) {
+            return checkByRelationshipTypeScan(
+                    tx, dataRead, relTypeSession, nodeCursor, relTypeId, startLabelId, endLabelId);
+        }
+
+        long startRelCount = dataRead.estimateCountsForRelationships(startLabelId, relTypeId, TokenConstants.ANY_LABEL);
+        long relEndCount = dataRead.estimateCountsForRelationships(TokenConstants.ANY_LABEL, relTypeId, endLabelId);
+        if (startCount * startRelCount < relEndCount * endCount) {
+            return checkByNodeLabelScan(
+                    tx,
+                    dataRead,
+                    nodeLabelSession,
+                    nodeCursor,
+                    traversalCursor,
+                    startLabelId,
+                    relTypeId,
+                    endLabelId,
+                    Direction.OUTGOING);
+        }
+
+        return checkByNodeLabelScan(
+                tx,
+                dataRead,
+                nodeLabelSession,
+                nodeCursor,
+                traversalCursor,
+                endLabelId,
+                relTypeId,
+                startLabelId,
+                Direction.INCOMING);
+    }
+
+    private static boolean checkByRelationshipTypeScan(
+            KernelTransaction tx,
+            Read dataRead,
+            TokenReadSession relTypeSession,
+            NodeCursor nodeCursor,
+            int relTypeId,
+            int startLabelId,
+            int endLabelId)
+            throws KernelException {
+        try (RelationshipTypeIndexCursor cursor =
+                tx.cursors().allocateRelationshipTypeIndexCursor(tx.cursorContext(), tx.memoryTracker())) {
+            dataRead.relationshipTypeIndexScan(
+                    relTypeSession,
+                    cursor,
+                    IndexQueryConstraints.unconstrained(),
+                    new TokenPredicate(relTypeId),
+                    tx.cursorContext(),
+                    true);
+            while (cursor.next()) {
+                if (hasLabel(dataRead, nodeCursor, cursor.sourceNodeReference(), startLabelId)
+                        && hasLabel(dataRead, nodeCursor, cursor.targetNodeReference(), endLabelId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean checkByNodeLabelScan(
+            KernelTransaction tx,
+            Read dataRead,
+            TokenReadSession nodeLabelSession,
+            NodeCursor nodeCursor,
+            RelationshipTraversalCursor traversalCursor,
+            int scanLabelId,
+            int relTypeId,
+            int checkLabelId,
+            Direction direction)
+            throws KernelException {
+        try (NodeLabelIndexCursor cursor =
+                tx.cursors().allocateNodeLabelIndexCursor(tx.cursorContext(), tx.memoryTracker())) {
+            dataRead.nodeLabelIndexScan(
+                    nodeLabelSession,
+                    cursor,
+                    IndexQueryConstraints.unconstrained(),
+                    new TokenPredicate(scanLabelId),
+                    tx.cursorContext(),
+                    true);
+            while (cursor.next()) {
+                dataRead.singleNode(cursor.nodeReference(), nodeCursor);
+                if (!nodeCursor.next()) {
+                    continue;
+                }
+                nodeCursor.relationships(traversalCursor, RelationshipSelection.selection(relTypeId, direction));
+                while (traversalCursor.next()) {
+                    if (hasLabel(dataRead, nodeCursor, traversalCursor.otherNodeReference(), checkLabelId)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasLabel(Read dataRead, NodeCursor nodeCursor, long nodeId, int labelId) {
+        dataRead.singleNode(nodeId, nodeCursor);
+        return nodeCursor.next() && nodeCursor.hasLabel(labelId);
+    }
+
+    private GraphResult fullScanVerifiedGraph(
+            GraphResult estimated, KernelTransaction tx, Read dataRead, TokenRead tokenRead) {
+        Map<LabelTriple, Object> actualTriples = new HashMap<>();
+        try (RelationshipScanCursor relationshipCursor =
+                        tx.cursors().allocateRelationshipScanCursor(tx.cursorContext(), tx.memoryTracker());
+                NodeCursor nodeCursor = tx.cursors().allocateNodeCursor(tx.cursorContext(), tx.memoryTracker())) {
+            dataRead.allRelationshipsScan(relationshipCursor);
+            while (relationshipCursor.next()) {
+                String typeName = tokenRead.relationshipTypeName(relationshipCursor.type());
+                List<String> startLabels =
+                        getNodeLabels(nodeCursor, dataRead, tokenRead, relationshipCursor.sourceNodeReference());
+                List<String> endLabels =
+                        getNodeLabels(nodeCursor, dataRead, tokenRead, relationshipCursor.targetNodeReference());
+
+                if (startLabels.isEmpty() || endLabels.isEmpty()) {
+                    continue;
+                }
+                for (String startLabel : startLabels) {
+                    for (String endLabel : endLabels) {
+                        actualTriples.put(new LabelTriple(startLabel, typeName, endLabel), PRESENT);
+                    }
+                }
+            }
+        } catch (KernelException e) {
+            throw new RuntimeException(e);
+        }
+
+        List<Relationship> verified = new ArrayList<>();
+        for (Relationship relationship : estimated.relationships()) {
+            String startLabel =
+                    relationship.getStartNode().getLabels().iterator().next().name();
+            String endLabel =
+                    relationship.getEndNode().getLabels().iterator().next().name();
+            String relType = relationship.getType().name();
+            if (actualTriples.containsKey(new LabelTriple(startLabel, relType, endLabel))) {
+                verified.add(relationship);
+            }
+        }
+        return new GraphResult(estimated.nodes(), verified);
+    }
+
+    private record LabelTriple(String startLabel, String type, String endLabel) {}
+
+    private List<String> getNodeLabels(NodeCursor nodeCursor, Read dataRead, TokenRead tokenRead, long nodeId) {
+        dataRead.singleNode(nodeId, nodeCursor);
+        if (nodeCursor.next()) {
+            TokenSet labels = nodeCursor.labels();
+            List<String> labelNames = new ArrayList<>();
+            for (int i = 0; i < labels.numberOfTokens(); i++) {
+                try {
+                    labelNames.add(tokenRead.nodeLabelName(labels.token(i)));
+                } catch (LabelNotFoundKernelException exception) {
+                    return List.of();
+                }
+            }
+            return labelNames;
+        }
+
+        return List.of();
+    }
+
     private record LabelNameId(String name, int id) {}
 
     public record GraphResult(
@@ -211,6 +449,38 @@ public class SchemaProcedure {
         VirtualNodeHack node = new VirtualNodeHack(label, properties);
         nodeMap.put(label, node);
         return node;
+    }
+
+    private Map<String, Object> buildProperties(int labelId, TokenRead tokenRead, SchemaRead schemaRead) {
+        HeapTrackingCollectionFactory collections = memory.collections();
+        HeapTracking.Map<String, Object> properties = collections.newHeapTrackingUnifiedMap();
+
+        Iterator<IndexDescriptor> indexReferences = schemaRead.indexesGetForLabel(labelId);
+        List<String> indexes = new ArrayList<>();
+        while (indexReferences.hasNext()) {
+            IndexDescriptor index = indexReferences.next();
+            if (!index.isUnique()) {
+                tracker.allocateHeap(memory.heapEstimator()
+                        .shallowSizeOfObjectArray(index.schema().getPropertyIds().length));
+                String[] propertyNames = PropertyNameUtils.getPropertyKeys(
+                        tokenRead, index.schema().getPropertyIds());
+                String indexDescription = String.join(",", propertyNames);
+                tracker.allocateHeap(memory.heapEstimator().sizeOfByteArray(indexDescription.getBytes().length));
+                indexes.add(indexDescription);
+            }
+        }
+        properties.put("indexes", indexes);
+
+        Iterator<ConstraintDescriptor> nodePropertyConstraintIterator = schemaRead.constraintsGetForLabel(labelId);
+        List<String> constraints = new ArrayList<>();
+        while (nodePropertyConstraintIterator.hasNext()) {
+            ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
+            String constraintDescription = constraint.userDescription(tokenRead);
+            tracker.allocateHeap(memory.heapEstimator().sizeOfByteArray(constraintDescription.getBytes().length));
+            constraints.add(constraintDescription);
+        }
+        properties.put("constraints", constraints);
+        return properties;
     }
 
     private void addRelationship(

@@ -1601,7 +1601,56 @@
       "deprecated": false
     },
     "enterpriseOnly": false,
-    "cypherVersionScope": [5, 25]
+    "cypherVersionScope": [
+      5
+    ]
+  },
+  {
+    "name": "db.schema.visualization",
+    "description": "Visualizes the schema of the data based on available statistics. A new node is returned for each label. The properties represented on the node include: `name` (label name), `indexes` (list of indexes), and `constraints` (list of constraints). A relationship of a given type is returned for all possible combinations of start and end nodes. The properties represented on the relationship include: `name` (type name). Note that this may include additional relationships that do not exist in the data due to the information available in the count store. Set the flag to false to get more accurate results. Setting the flag to false could affect performance.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.schema.visualization(estimate = true :: BOOLEAN) :: (nodes :: LIST<NODE>, relationships :: LIST<RELATIONSHIP>)",
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=true, type=BOOLEAN}",
+        "name": "estimate",
+        "description": "Toggles a scan of the database for a more correct schema, can affect performance",
+        "type": "BOOLEAN",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "nodes",
+        "description": "A list of virtual nodes representing each label in the database.",
+        "type": "LIST<NODE>",
+        "isDeprecated": false
+      },
+      {
+        "name": "relationships",
+        "description": "A list of virtual relationships representing all combinations between start and end nodes in the database.",
+        "type": "LIST<RELATIONSHIP>",
+        "isDeprecated": false
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false,
+    "cypherVersionScope": [
+      25
+    ]
   },
   {
     "name": "db.stats.clear",
