@@ -1777,11 +1777,7 @@
               <!-- Silence Scala 3 syntax deprecation warnings -->
               <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
             </args>
-            <jvmArgs>
-              <jvmArg>-Xms256m</jvmArg>
-              <jvmArg>-Xmx1024m</jvmArg>
-              <jvmArg>-Xss4M</jvmArg>
-            </jvmArgs>
+            <fork>false</fork>
             <secondaryCacheDir>${java.io.tmpdir}</secondaryCacheDir>
           </configuration>
 
@@ -2463,6 +2459,31 @@
       <properties>
         <scala.wunused.conf>${scala.wunused.conf.strict}</scala.wunused.conf>
       </properties>
+    </profile>
+
+    <profile>
+      <id>scala-forked-build</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>net.alchim31.maven</groupId>
+              <artifactId>scala-maven-plugin</artifactId>
+              <configuration>
+                <fork>true</fork>
+                <jvmArgs>
+                  <jvmArg>-Xms256m</jvmArg>
+                  <jvmArg>-Xmx1024m</jvmArg>
+                  <jvmArg>-Xss4M</jvmArg>
+                </jvmArgs>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
     </profile>
   </profiles>
 </project>
