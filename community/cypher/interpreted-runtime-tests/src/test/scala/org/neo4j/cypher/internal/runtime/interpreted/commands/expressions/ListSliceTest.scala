@@ -63,11 +63,27 @@ class ListSliceTest extends InterpretedRuntimeTestSuite {
     slice(from = -10, to = -1) should equal(list(longValue(1), longValue(2), longValue(3)))
   }
 
+  test("should_handle_bounds_outside_int_range") {
+    val fullSeq = Seq(1, 2, 3, 4)
+    implicit val collection = literal(fullSeq)
+    val full = list(longValue(1), longValue(2), longValue(3), longValue(4))
+    val aboveMaxInt = Int.MaxValue.toLong + 1
+
+    slice(from = 0, to = Int.MaxValue.toLong) should equal(full)
+    slice(from = 0, to = aboveMaxInt) should equal(full)
+    slice(to = aboveMaxInt) should equal(full)
+    slice(from = aboveMaxInt) should equal(EMPTY_LIST)
+    slice(from = aboveMaxInt, to = aboveMaxInt + 1) should equal(EMPTY_LIST)
+    slice(from = -aboveMaxInt - 1) should equal(full)
+    slice(to = -aboveMaxInt - 1) should equal(EMPTY_LIST)
+    slice(from = -aboveMaxInt - 1, to = aboveMaxInt) should equal(full)
+  }
+
   private val ctx = CypherRow.empty
   implicit private val state: QueryState = QueryStateHelper.empty
-  private val NO_VALUE = -666
+  private val NO_VALUE = -666L
 
-  private def slice(from: Int = NO_VALUE, to: Int = NO_VALUE)(implicit collection: Expression) = {
+  private def slice(from: Long = NO_VALUE, to: Long = NO_VALUE)(implicit collection: Expression) = {
     val f = if (from == NO_VALUE) None else Some(literal(from))
     val t = if (to == NO_VALUE) None else Some(literal(to))
     ListSlice(collection, f, t)(ctx, state)

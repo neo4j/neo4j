@@ -417,7 +417,12 @@ public final class CypherFunctions {
 
         if (in instanceof NumberValue inNumber && precisionValue instanceof NumberValue) {
             int precision = asIntExact(
-                    precisionValue, () -> "Invalid input for precision value in function 'round()'", "round");
+                    precisionValue,
+                    () -> "Invalid input for precision value in function 'round()'",
+                    "round",
+                    true,
+                    Integer.MIN_VALUE,
+                    "precision");
             boolean explicitMode = ((BooleanValue) explicitModeValue).booleanValue();
             if (precision < 0) {
                 throw InvalidArgumentException.negRoundPrecision(precision);
@@ -1171,8 +1176,8 @@ public final class CypherFunctions {
         if (in == NO_VALUE || endPos == NO_VALUE) {
             return NO_VALUE;
         } else if (in instanceof TextValue text) {
-            final int len =
-                    asIntExact(endPos, () -> "Invalid input for length value in function 'left()'", "left", true, 0);
+            final int len = asIntExact(
+                    endPos, () -> "Invalid input for length value in function 'left()'", "left", true, 0, "length");
             if (len < 0) {
                 throw InvalidArgumentException.argumentOutOfRange("left", "length", 0, Integer.MAX_VALUE, len);
             }
@@ -1336,7 +1341,12 @@ public final class CypherFunctions {
             return NO_VALUE;
         } else if (list instanceof SequenceValue sequence) {
             int maxDepth = asIntExact(
-                    depth, () -> "Invalid input for depth value in function 'coll.flatten()'", "coll.flatten", false);
+                    depth,
+                    () -> "Invalid input for depth value in function 'coll.flatten()'",
+                    "coll.flatten",
+                    false,
+                    Integer.MIN_VALUE,
+                    "depth");
             if (maxDepth < 0) {
                 throw InvalidArgumentException.argumentOutOfRange(
                         "coll.flatten", "depth", 0, Integer.MAX_VALUE, maxDepth);
@@ -1358,7 +1368,12 @@ public final class CypherFunctions {
             return NO_VALUE;
         } else if (list instanceof SequenceValue sequence) {
             int givenIndex = asIntExact(
-                    index, () -> "Invalid input for index value in function 'coll.insert()'", "coll.insert", false);
+                    index,
+                    () -> "Invalid input for index value in function 'coll.insert()'",
+                    "coll.insert",
+                    false,
+                    Integer.MIN_VALUE,
+                    "index");
             if (givenIndex < 0 || givenIndex > sequence.intSize()) {
                 throw InvalidArgumentException.argumentOutOfRange(
                         "coll.insert", "index", 0, sequence.intSize(), givenIndex);
@@ -1386,7 +1401,12 @@ public final class CypherFunctions {
                         "The argument `list` in the `coll.remove()` function must not be empty.");
             }
             int givenIndex = asIntExact(
-                    index, () -> "Invalid input for index value in function 'coll.remove()'", "coll.remove", false);
+                    index,
+                    () -> "Invalid input for index value in function 'coll.remove()'",
+                    "coll.remove",
+                    false,
+                    Integer.MIN_VALUE,
+                    "index");
             if (givenIndex < 0 || givenIndex >= sequence.intSize()) {
                 throw InvalidArgumentException.argumentOutOfRange(
                         "coll.remove", "index", 0, sequence.intSize() - 1, givenIndex);
@@ -1533,8 +1553,13 @@ public final class CypherFunctions {
         if (original == NO_VALUE || search == NO_VALUE || replaceWith == NO_VALUE || limit == NO_VALUE) {
             return NO_VALUE;
         } else if (original instanceof TextValue textValue) {
-            int intLimit =
-                    asIntExact(limit, () -> "Invalid input for limit value in function 'replace()'", "replace", false);
+            int intLimit = asIntExact(
+                    limit,
+                    () -> "Invalid input for limit value in function 'replace()'",
+                    "replace",
+                    false,
+                    Integer.MIN_VALUE,
+                    "limit");
             if (intLimit < 0) {
                 throw InvalidArgumentException.argumentOutOfRange("replace", "limit", 0, Long.MAX_VALUE, intLimit);
             }
@@ -1644,8 +1669,8 @@ public final class CypherFunctions {
         if (original == NO_VALUE || length == NO_VALUE) {
             return NO_VALUE;
         } else if (original instanceof TextValue asText) {
-            final int len =
-                    asIntExact(length, () -> "Invalid input for length value in function 'right()'", "right", true, 0);
+            final int len = asIntExact(
+                    length, () -> "Invalid input for length value in function 'right()'", "right", true, 0, "length");
             if (len < 0) {
                 throw InvalidArgumentException.argumentOutOfRange("right", "length", 0, Integer.MAX_VALUE, len);
             }
@@ -1750,7 +1775,12 @@ public final class CypherFunctions {
             return NO_VALUE;
         } else if (original instanceof TextValue asText) {
             final int startAsInt = asIntExact(
-                    start, () -> "Invalid input for start value in function 'substring()'", "substring", true, 0);
+                    start,
+                    () -> "Invalid input for start value in function 'substring()'",
+                    "substring",
+                    true,
+                    0,
+                    "start");
             if (startAsInt < 0) {
                 throw InvalidArgumentException.argumentOutOfRange(
                         "substring", "start", 0, Integer.MAX_VALUE, startAsInt);
@@ -1766,9 +1796,19 @@ public final class CypherFunctions {
             return NO_VALUE;
         } else if (original instanceof TextValue asText) {
             final int startAsInt = asIntExact(
-                    start, () -> "Invalid input for start value in function 'substring()'", "substring", true, 0);
+                    start,
+                    () -> "Invalid input for start value in function 'substring()'",
+                    "substring",
+                    true,
+                    0,
+                    "start");
             final int lengthAsInt = asIntExact(
-                    length, () -> "Invalid input for length value in function 'substring()'", "substring", true, 0);
+                    length,
+                    () -> "Invalid input for length value in function 'substring()'",
+                    "substring",
+                    true,
+                    0,
+                    "length");
             if (startAsInt < 0) {
                 throw InvalidArgumentException.argumentOutOfRange(
                         "substring", "start", 0, Integer.MAX_VALUE, startAsInt);
@@ -3259,7 +3299,7 @@ public final class CypherFunctions {
             return NO_VALUE;
         }
 
-        int from = asIntExact(fromValue);
+        long from = asSliceBound(fromValue);
         ListValue list = asList(collection);
         if (from >= 0) {
             return list.drop(from);
@@ -3272,12 +3312,12 @@ public final class CypherFunctions {
         if (collection == NO_VALUE || toValue == NO_VALUE) {
             return NO_VALUE;
         }
-        int from = asIntExact(toValue);
+        long from = asSliceBound(toValue);
         ListValue list = asList(collection);
         if (from >= 0) {
             return list.take(from);
         } else {
-            return list.take(list.intSize() + from);
+            return list.take(list.actualSize() + from);
         }
     }
 
@@ -3285,10 +3325,10 @@ public final class CypherFunctions {
         if (collection == NO_VALUE || fromValue == NO_VALUE || toValue == NO_VALUE) {
             return NO_VALUE;
         }
-        int from = asIntExact(fromValue);
-        int to = asIntExact(toValue);
+        long from = asSliceBound(fromValue);
+        long to = asSliceBound(toValue);
         ListValue list = asList(collection);
-        int size = list.intSize();
+        long size = list.actualSize();
         if (from >= 0 && to >= 0) {
             return list.slice(from, to);
         } else if (from >= 0) {
@@ -3527,7 +3567,7 @@ public final class CypherFunctions {
 
     public static int asIntExact(
             AnyValue value, Supplier<String> contextForErrorMessage, String functionName, Boolean allowFloats) {
-        return asIntExact(value, contextForErrorMessage, functionName, allowFloats, Integer.MIN_VALUE);
+        return asIntExact(value, contextForErrorMessage, functionName, allowFloats, Integer.MIN_VALUE, "LIMIT");
     }
 
     public static int asIntExact(
@@ -3536,6 +3576,16 @@ public final class CypherFunctions {
             String functionName,
             Boolean allowFloats,
             Integer minValue) {
+        return asIntExact(value, contextForErrorMessage, functionName, allowFloats, minValue, "LIMIT");
+    }
+
+    public static int asIntExact(
+            AnyValue value,
+            Supplier<String> contextForErrorMessage,
+            String functionName,
+            Boolean allowFloats,
+            Integer minValue,
+            String component) {
         final long longValue = asLong(value, contextForErrorMessage, functionName, allowFloats);
         final int intValue = (int) longValue;
         if (intValue != longValue) {
@@ -3545,9 +3595,13 @@ public final class CypherFunctions {
                 errorMsg = contextForErrorMessage.get() + ": " + errorMsg;
             }
             throw InvalidArgumentException.integerNonNullOutOfBounds(
-                    errorMsg, "LIMIT", 0, Integer.MAX_VALUE, value.prettyPrint());
+                    errorMsg, component, 0, Integer.MAX_VALUE, value.prettyPrint());
         }
         return intValue;
+    }
+
+    private static long asSliceBound(AnyValue value) {
+        return asLong(value, null, null, true);
     }
 
     public static long nodeId(AnyValue value) {
