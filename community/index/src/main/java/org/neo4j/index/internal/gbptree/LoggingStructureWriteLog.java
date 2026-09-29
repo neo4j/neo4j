@@ -151,7 +151,7 @@ class LoggingStructureWriteLog implements StructureWriteLog {
     }
 
     private FlushableChannel instantiateChannel() throws IOException {
-        return new OutputStreamWritableChannel(fs.openAsOutputStream(path, false));
+        return new OutputStreamWritableChannel(fs.openAsOutputStream(path, false, 512));
     }
 
     private void writeHeader(Type type, long sessionId, long generation) throws IOException {
