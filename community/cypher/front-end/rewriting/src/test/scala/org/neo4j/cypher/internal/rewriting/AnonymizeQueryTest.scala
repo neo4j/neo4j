@@ -647,7 +647,7 @@ class AnonymizeQueryTest extends AnonymizerTestBase {
     )
     assertRewrite(
       "ENABLE SERVER 'foo' OPTIONS {key: 'value'}",
-      "ENABLE SERVER 'foo' OPTIONS {key: 'string[value]'}"
+      "ENABLE SERVER 'string[foo]' OPTIONS {key: 'string[value]'}"
     )
     assertRewrite(
       "ALTER SERVER $foo SET OPTIONS {key1: 'value', key2: $param}",
@@ -655,15 +655,15 @@ class AnonymizeQueryTest extends AnonymizerTestBase {
     )
     assertRewrite(
       "RENAME SERVER 'foo' TO 'bar'",
-      "RENAME SERVER 'foo' TO 'bar'"
+      "RENAME SERVER 'string[foo]' TO 'string[bar]'"
     )
     assertRewrite(
       "DROP SERVER 'foo'",
-      "DROP SERVER 'foo'"
+      "DROP SERVER 'string[foo]'"
     )
     assertRewrite(
       "DEALLOCATE DATABASES FROM SERVERS 'foo', $bar",
-      "DEALLOCATE DATABASES FROM SERVERS 'foo', $Xbar"
+      "DEALLOCATE DATABASES FROM SERVERS 'string[foo]', $Xbar"
     )
     assertRewrite(
       "DRYRUN REALLOCATE DATABASES",

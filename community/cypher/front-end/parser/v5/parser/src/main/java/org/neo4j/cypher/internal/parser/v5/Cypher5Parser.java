@@ -18288,8 +18288,8 @@ public class Cypher5Parser extends Parser {
 	public static class EnableServerCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode ENABLE() { return getToken(Cypher5Parser.ENABLE, 0); }
 		public TerminalNode SERVER() { return getToken(Cypher5Parser.SERVER, 0); }
-		public StringOrParameterContext stringOrParameter() {
-			return getRuleContext(StringOrParameterContext.class,0);
+		public StringOrParameterExpressionContext stringOrParameterExpression() {
+			return getRuleContext(StringOrParameterExpressionContext.class,0);
 		}
 		public CommandOptionsContext commandOptions() {
 			return getRuleContext(CommandOptionsContext.class,0);
@@ -18312,7 +18312,7 @@ public class Cypher5Parser extends Parser {
 			setState(2737);
 			match(SERVER);
 			setState(2738);
-			stringOrParameter();
+			stringOrParameterExpression();
 			setState(2740);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -18339,8 +18339,8 @@ public class Cypher5Parser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class AlterServerContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode SERVER() { return getToken(Cypher5Parser.SERVER, 0); }
-		public StringOrParameterContext stringOrParameter() {
-			return getRuleContext(StringOrParameterContext.class,0);
+		public StringOrParameterExpressionContext stringOrParameterExpression() {
+			return getRuleContext(StringOrParameterExpressionContext.class,0);
 		}
 		public TerminalNode SET() { return getToken(Cypher5Parser.SET, 0); }
 		public CommandOptionsContext commandOptions() {
@@ -18361,7 +18361,7 @@ public class Cypher5Parser extends Parser {
 			setState(2742);
 			match(SERVER);
 			setState(2743);
-			stringOrParameter();
+			stringOrParameterExpression();
 			setState(2744);
 			match(SET);
 			setState(2745);
@@ -18382,11 +18382,11 @@ public class Cypher5Parser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class RenameServerContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode SERVER() { return getToken(Cypher5Parser.SERVER, 0); }
-		public List<StringOrParameterContext> stringOrParameter() {
-			return getRuleContexts(StringOrParameterContext.class);
+		public List<StringOrParameterExpressionContext> stringOrParameterExpression() {
+			return getRuleContexts(StringOrParameterExpressionContext.class);
 		}
-		public StringOrParameterContext stringOrParameter(int i) {
-			return getRuleContext(StringOrParameterContext.class,i);
+		public StringOrParameterExpressionContext stringOrParameterExpression(int i) {
+			return getRuleContext(StringOrParameterExpressionContext.class,i);
 		}
 		public TerminalNode TO() { return getToken(Cypher5Parser.TO, 0); }
 		public RenameServerContext(ParserRuleContext parent, int invokingState) {
@@ -18404,11 +18404,11 @@ public class Cypher5Parser extends Parser {
 			setState(2747);
 			match(SERVER);
 			setState(2748);
-			stringOrParameter();
+			stringOrParameterExpression();
 			setState(2749);
 			match(TO);
 			setState(2750);
-			stringOrParameter();
+			stringOrParameterExpression();
 			}
 		}
 		catch (RecognitionException re) {
@@ -18425,8 +18425,8 @@ public class Cypher5Parser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class DropServerContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode SERVER() { return getToken(Cypher5Parser.SERVER, 0); }
-		public StringOrParameterContext stringOrParameter() {
-			return getRuleContext(StringOrParameterContext.class,0);
+		public StringOrParameterExpressionContext stringOrParameterExpression() {
+			return getRuleContext(StringOrParameterExpressionContext.class,0);
 		}
 		public DropServerContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -18443,7 +18443,7 @@ public class Cypher5Parser extends Parser {
 			setState(2752);
 			match(SERVER);
 			setState(2753);
-			stringOrParameter();
+			stringOrParameterExpression();
 			}
 		}
 		catch (RecognitionException re) {
@@ -18577,11 +18577,11 @@ public class Cypher5Parser extends Parser {
 	public static class DeallocateDatabaseFromServersContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode DEALLOCATE() { return getToken(Cypher5Parser.DEALLOCATE, 0); }
 		public TerminalNode FROM() { return getToken(Cypher5Parser.FROM, 0); }
-		public List<StringOrParameterContext> stringOrParameter() {
-			return getRuleContexts(StringOrParameterContext.class);
+		public List<StringOrParameterExpressionContext> stringOrParameterExpression() {
+			return getRuleContexts(StringOrParameterExpressionContext.class);
 		}
-		public StringOrParameterContext stringOrParameter(int i) {
-			return getRuleContext(StringOrParameterContext.class,i);
+		public StringOrParameterExpressionContext stringOrParameterExpression(int i) {
+			return getRuleContext(StringOrParameterExpressionContext.class,i);
 		}
 		public TerminalNode DATABASE() { return getToken(Cypher5Parser.DATABASE, 0); }
 		public TerminalNode DATABASES() { return getToken(Cypher5Parser.DATABASES, 0); }
@@ -18629,7 +18629,7 @@ public class Cypher5Parser extends Parser {
 				consume();
 			}
 			setState(2770);
-			stringOrParameter();
+			stringOrParameterExpression();
 			setState(2775);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -18639,7 +18639,7 @@ public class Cypher5Parser extends Parser {
 				setState(2771);
 				match(COMMA);
 				setState(2772);
-				stringOrParameter();
+				stringOrParameterExpression();
 				}
 				}
 				setState(2777);
@@ -34114,15 +34114,15 @@ public class Cypher5Parser extends Parser {
 		"\u0001\u0000\u0000\u0000\u0aac\u0aad\u0003\u027e\u013f\u0000\u0aad\u019d"+
 		"\u0001\u0000\u0000\u0000\u0aae\u0aaf\u0007*\u0000\u0000\u0aaf\u019f\u0001"+
 		"\u0000\u0000\u0000\u0ab0\u0ab1\u0005^\u0000\u0000\u0ab1\u0ab2\u0005\u00fe"+
-		"\u0000\u0000\u0ab2\u0ab4\u0003\u028e\u0147\u0000\u0ab3\u0ab5\u0003\u013a"+
+		"\u0000\u0000\u0ab2\u0ab4\u0003\u028c\u0146\u0000\u0ab3\u0ab5\u0003\u013a"+
 		"\u009d\u0000\u0ab4\u0ab3\u0001\u0000\u0000\u0000\u0ab4\u0ab5\u0001\u0000"+
 		"\u0000\u0000\u0ab5\u01a1\u0001\u0000\u0000\u0000\u0ab6\u0ab7\u0005\u00fe"+
-		"\u0000\u0000\u0ab7\u0ab8\u0003\u028e\u0147\u0000\u0ab8\u0ab9\u0005\u0100"+
+		"\u0000\u0000\u0ab7\u0ab8\u0003\u028c\u0146\u0000\u0ab8\u0ab9\u0005\u0100"+
 		"\u0000\u0000\u0ab9\u0aba\u0003\u013a\u009d\u0000\u0aba\u01a3\u0001\u0000"+
-		"\u0000\u0000\u0abb\u0abc\u0005\u00fe\u0000\u0000\u0abc\u0abd\u0003\u028e"+
-		"\u0147\u0000\u0abd\u0abe\u0005\u0118\u0000\u0000\u0abe\u0abf\u0003\u028e"+
-		"\u0147\u0000\u0abf\u01a5\u0001\u0000\u0000\u0000\u0ac0\u0ac1\u0005\u00fe"+
-		"\u0000\u0000\u0ac1\u0ac2\u0003\u028e\u0147\u0000\u0ac2\u01a7\u0001\u0000"+
+		"\u0000\u0000\u0abb\u0abc\u0005\u00fe\u0000\u0000\u0abc\u0abd\u0003\u028c"+
+		"\u0146\u0000\u0abd\u0abe\u0005\u0118\u0000\u0000\u0abe\u0abf\u0003\u028c"+
+		"\u0146\u0000\u0abf\u01a5\u0001\u0000\u0000\u0000\u0ac0\u0ac1\u0005\u00fe"+
+		"\u0000\u0000\u0ac1\u0ac2\u0003\u028c\u0146\u0000\u0ac2\u01a7\u0001\u0000"+
 		"\u0000\u0000\u0ac3\u0ac5\u0007+\u0000\u0000\u0ac4\u0ac6\u0003\u0130\u0098"+
 		"\u0000\u0ac5\u0ac4\u0001\u0000\u0000\u0000\u0ac5\u0ac6\u0001\u0000\u0000"+
 		"\u0000\u0ac6\u01a9\u0001\u0000\u0000\u0000\u0ac7\u0ac9\u0005Y\u0000\u0000"+
@@ -34131,8 +34131,8 @@ public class Cypher5Parser extends Parser {
 		"\u0acb\u0acd\u0003\u01ae\u00d7\u0000\u0acc\u0aca\u0001\u0000\u0000\u0000"+
 		"\u0acc\u0acb\u0001\u0000\u0000\u0000\u0acd\u01ab\u0001\u0000\u0000\u0000"+
 		"\u0ace\u0acf\u0005G\u0000\u0000\u0acf\u0ad0\u0007,\u0000\u0000\u0ad0\u0ad1"+
-		"\u0005t\u0000\u0000\u0ad1\u0ad2\u0007+\u0000\u0000\u0ad2\u0ad7\u0003\u028e"+
-		"\u0147\u0000\u0ad3\u0ad4\u00051\u0000\u0000\u0ad4\u0ad6\u0003\u028e\u0147"+
+		"\u0005t\u0000\u0000\u0ad1\u0ad2\u0007+\u0000\u0000\u0ad2\u0ad7\u0003\u028c"+
+		"\u0146\u0000\u0ad3\u0ad4\u00051\u0000\u0000\u0ad4\u0ad6\u0003\u028c\u0146"+
 		"\u0000\u0ad5\u0ad3\u0001\u0000\u0000\u0000\u0ad6\u0ad9\u0001\u0000\u0000"+
 		"\u0000\u0ad7\u0ad5\u0001\u0000\u0000\u0000\u0ad7\u0ad8\u0001\u0000\u0000"+
 		"\u0000\u0ad8\u01ad\u0001\u0000\u0000\u0000\u0ad9\u0ad7\u0001\u0000\u0000"+

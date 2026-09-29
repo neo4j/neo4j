@@ -1035,38 +1035,18 @@ case class Prettifier(
       // Server commands
 
       case x @ EnableServer(serverName, options) =>
-        val name = serverName match {
-          case Left(s)          => expr.quote(s)
-          case Right(parameter) => expr(parameter)
-        }
         val optionString = stringifyOptions(options)(expr)
-        s"${x.name} $name$optionString"
+        s"${x.name} ${expr(serverName)}$optionString"
 
       case x @ AlterServer(serverName, options) =>
-        val name = serverName match {
-          case Left(s)          => expr.quote(s)
-          case Right(parameter) => expr(parameter)
-        }
         val optionString = stringifyOptions(options)(expr)
-        s"${x.name} $name SET$optionString"
+        s"${x.name} ${expr(serverName)} SET$optionString"
 
       case x @ RenameServer(serverName, newName) =>
-        val from = serverName match {
-          case Left(s)          => expr.quote(s)
-          case Right(parameter) => expr(parameter)
-        }
-        val to = newName match {
-          case Left(s)          => expr.quote(s)
-          case Right(parameter) => expr(parameter)
-        }
-        s"${x.name} $from TO $to"
+        s"${x.name} ${expr(serverName)} TO ${expr(newName)}"
 
       case x @ DropServer(serverName) =>
-        val name = serverName match {
-          case Left(s)          => expr.quote(s)
-          case Right(parameter) => expr(parameter)
-        }
-        s"${x.name} $name"
+        s"${x.name} ${expr(serverName)}"
 
       case x @ ShowServers(yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
@@ -1075,10 +1055,7 @@ case class Prettifier(
       case x @ DeallocateServers(dryRun, serverNames) =>
         val dryRunString = if (dryRun) "DRYRUN " else ""
         val commandString = if (serverNames.length > 1) s"${x.name}S" else x.name
-        val names = serverNames.map {
-          case Left(s)          => expr.quote(s)
-          case Right(parameter) => expr(parameter)
-        }
+        val names = serverNames.map(expr.apply)
         s"$dryRunString$commandString ${names.mkString(", ")}"
 
       case x @ ReallocateDatabases(dryRun) =>

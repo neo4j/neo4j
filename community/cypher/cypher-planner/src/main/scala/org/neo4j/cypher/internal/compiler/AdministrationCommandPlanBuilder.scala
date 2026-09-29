@@ -1902,7 +1902,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c @ DeallocateServers(dryRun, names) =>
         val checkBlocked = plans.AssertManagementActionNotBlocked(c.name, ServerManagementAction)
         val assertAllowed = plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction)
-        Some(plans.LogSystemCommand(plans.DeallocateServer(assertAllowed, dryRun, names), prettifier.asString(c)))
+        Some(plans.LogSystemCommand(
+          plans.DeallocateServer(assertAllowed, dryRun, names.map(expressionToEitherStringParam)),
+          prettifier.asString(c)
+        ))
 
       case c @ ReallocateDatabases(dryRun) =>
         val checkBlocked = plans.AssertManagementActionNotBlocked(c.name, ServerManagementAction)

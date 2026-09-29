@@ -22324,8 +22324,8 @@ public class Cypher25Parser extends Parser {
 	public static class EnableServerCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode ENABLE() { return getToken(Cypher25Parser.ENABLE, 0); }
 		public TerminalNode SERVER() { return getToken(Cypher25Parser.SERVER, 0); }
-		public StringOrParameterContext stringOrParameter() {
-			return getRuleContext(StringOrParameterContext.class,0);
+		public StringOrParameterExpressionContext stringOrParameterExpression() {
+			return getRuleContext(StringOrParameterExpressionContext.class,0);
 		}
 		public CommandOptionsContext commandOptions() {
 			return getRuleContext(CommandOptionsContext.class,0);
@@ -22348,7 +22348,7 @@ public class Cypher25Parser extends Parser {
 			setState(3461);
 			match(SERVER);
 			setState(3462);
-			stringOrParameter();
+			stringOrParameterExpression();
 			setState(3464);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -22375,8 +22375,8 @@ public class Cypher25Parser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class AlterServerContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode SERVER() { return getToken(Cypher25Parser.SERVER, 0); }
-		public StringOrParameterContext stringOrParameter() {
-			return getRuleContext(StringOrParameterContext.class,0);
+		public StringOrParameterExpressionContext stringOrParameterExpression() {
+			return getRuleContext(StringOrParameterExpressionContext.class,0);
 		}
 		public TerminalNode SET() { return getToken(Cypher25Parser.SET, 0); }
 		public CommandOptionsContext commandOptions() {
@@ -22397,7 +22397,7 @@ public class Cypher25Parser extends Parser {
 			setState(3466);
 			match(SERVER);
 			setState(3467);
-			stringOrParameter();
+			stringOrParameterExpression();
 			setState(3468);
 			match(SET);
 			setState(3469);
@@ -22418,11 +22418,11 @@ public class Cypher25Parser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class RenameServerContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode SERVER() { return getToken(Cypher25Parser.SERVER, 0); }
-		public List<StringOrParameterContext> stringOrParameter() {
-			return getRuleContexts(StringOrParameterContext.class);
+		public List<StringOrParameterExpressionContext> stringOrParameterExpression() {
+			return getRuleContexts(StringOrParameterExpressionContext.class);
 		}
-		public StringOrParameterContext stringOrParameter(int i) {
-			return getRuleContext(StringOrParameterContext.class,i);
+		public StringOrParameterExpressionContext stringOrParameterExpression(int i) {
+			return getRuleContext(StringOrParameterExpressionContext.class,i);
 		}
 		public TerminalNode TO() { return getToken(Cypher25Parser.TO, 0); }
 		public RenameServerContext(ParserRuleContext parent, int invokingState) {
@@ -22440,11 +22440,11 @@ public class Cypher25Parser extends Parser {
 			setState(3471);
 			match(SERVER);
 			setState(3472);
-			stringOrParameter();
+			stringOrParameterExpression();
 			setState(3473);
 			match(TO);
 			setState(3474);
-			stringOrParameter();
+			stringOrParameterExpression();
 			}
 		}
 		catch (RecognitionException re) {
@@ -22461,8 +22461,8 @@ public class Cypher25Parser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class DropServerContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode SERVER() { return getToken(Cypher25Parser.SERVER, 0); }
-		public StringOrParameterContext stringOrParameter() {
-			return getRuleContext(StringOrParameterContext.class,0);
+		public StringOrParameterExpressionContext stringOrParameterExpression() {
+			return getRuleContext(StringOrParameterExpressionContext.class,0);
 		}
 		public DropServerContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -22479,7 +22479,7 @@ public class Cypher25Parser extends Parser {
 			setState(3476);
 			match(SERVER);
 			setState(3477);
-			stringOrParameter();
+			stringOrParameterExpression();
 			}
 		}
 		catch (RecognitionException re) {
@@ -22613,11 +22613,11 @@ public class Cypher25Parser extends Parser {
 	public static class DeallocateDatabaseFromServersContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
 		public TerminalNode DEALLOCATE() { return getToken(Cypher25Parser.DEALLOCATE, 0); }
 		public TerminalNode FROM() { return getToken(Cypher25Parser.FROM, 0); }
-		public List<StringOrParameterContext> stringOrParameter() {
-			return getRuleContexts(StringOrParameterContext.class);
+		public List<StringOrParameterExpressionContext> stringOrParameterExpression() {
+			return getRuleContexts(StringOrParameterExpressionContext.class);
 		}
-		public StringOrParameterContext stringOrParameter(int i) {
-			return getRuleContext(StringOrParameterContext.class,i);
+		public StringOrParameterExpressionContext stringOrParameterExpression(int i) {
+			return getRuleContext(StringOrParameterExpressionContext.class,i);
 		}
 		public TerminalNode DATABASE() { return getToken(Cypher25Parser.DATABASE, 0); }
 		public TerminalNode DATABASES() { return getToken(Cypher25Parser.DATABASES, 0); }
@@ -22665,7 +22665,7 @@ public class Cypher25Parser extends Parser {
 				consume();
 			}
 			setState(3494);
-			stringOrParameter();
+			stringOrParameterExpression();
 			setState(3499);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -22675,7 +22675,7 @@ public class Cypher25Parser extends Parser {
 				setState(3495);
 				match(COMMA);
 				setState(3496);
-				stringOrParameter();
+				stringOrParameterExpression();
 				}
 				}
 				setState(3501);
@@ -40743,15 +40743,15 @@ public class Cypher25Parser extends Parser {
 		"\u0005 \u0000\u0000\u0d80\u0d81\u0007/\u0000\u0000\u0d81\u0219\u0001\u0000"+
 		"\u0000\u0000\u0d82\u0d83\u00070\u0000\u0000\u0d83\u021b\u0001\u0000\u0000"+
 		"\u0000\u0d84\u0d85\u0005f\u0000\u0000\u0d85\u0d86\u0005\u0124\u0000\u0000"+
-		"\u0d86\u0d88\u0003\u0348\u01a4\u0000\u0d87\u0d89\u0003\u017e\u00bf\u0000"+
+		"\u0d86\u0d88\u0003\u0346\u01a3\u0000\u0d87\u0d89\u0003\u017e\u00bf\u0000"+
 		"\u0d88\u0d87\u0001\u0000\u0000\u0000\u0d88\u0d89\u0001\u0000\u0000\u0000"+
 		"\u0d89\u021d\u0001\u0000\u0000\u0000\u0d8a\u0d8b\u0005\u0124\u0000\u0000"+
-		"\u0d8b\u0d8c\u0003\u0348\u01a4\u0000\u0d8c\u0d8d\u0005\u0126\u0000\u0000"+
+		"\u0d8b\u0d8c\u0003\u0346\u01a3\u0000\u0d8c\u0d8d\u0005\u0126\u0000\u0000"+
 		"\u0d8d\u0d8e\u0003\u017e\u00bf\u0000\u0d8e\u021f\u0001\u0000\u0000\u0000"+
-		"\u0d8f\u0d90\u0005\u0124\u0000\u0000\u0d90\u0d91\u0003\u0348\u01a4\u0000"+
-		"\u0d91\u0d92\u0005\u0142\u0000\u0000\u0d92\u0d93\u0003\u0348\u01a4\u0000"+
+		"\u0d8f\u0d90\u0005\u0124\u0000\u0000\u0d90\u0d91\u0003\u0346\u01a3\u0000"+
+		"\u0d91\u0d92\u0005\u0142\u0000\u0000\u0d92\u0d93\u0003\u0346\u01a3\u0000"+
 		"\u0d93\u0221\u0001\u0000\u0000\u0000\u0d94\u0d95\u0005\u0124\u0000\u0000"+
-		"\u0d95\u0d96\u0003\u0348\u01a4\u0000\u0d96\u0223\u0001\u0000\u0000\u0000"+
+		"\u0d95\u0d96\u0003\u0346\u01a3\u0000\u0d96\u0223\u0001\u0000\u0000\u0000"+
 		"\u0d97\u0d99\u00071\u0000\u0000\u0d98\u0d9a\u0003\u0172\u00b9\u0000\u0d99"+
 		"\u0d98\u0001\u0000\u0000\u0000\u0d99\u0d9a\u0001\u0000\u0000\u0000\u0d9a"+
 		"\u0225\u0001\u0000\u0000\u0000\u0d9b\u0d9d\u0005a\u0000\u0000\u0d9c\u0d9b"+
@@ -40760,8 +40760,8 @@ public class Cypher25Parser extends Parser {
 		"\u0003\u022a\u0115\u0000\u0da0\u0d9e\u0001\u0000\u0000\u0000\u0da0\u0d9f"+
 		"\u0001\u0000\u0000\u0000\u0da1\u0227\u0001\u0000\u0000\u0000\u0da2\u0da3"+
 		"\u0005L\u0000\u0000\u0da3\u0da4\u00072\u0000\u0000\u0da4\u0da5\u0005\u0083"+
-		"\u0000\u0000\u0da5\u0da6\u00071\u0000\u0000\u0da6\u0dab\u0003\u0348\u01a4"+
-		"\u0000\u0da7\u0da8\u00053\u0000\u0000\u0da8\u0daa\u0003\u0348\u01a4\u0000"+
+		"\u0000\u0000\u0da5\u0da6\u00071\u0000\u0000\u0da6\u0dab\u0003\u0346\u01a3"+
+		"\u0000\u0da7\u0da8\u00053\u0000\u0000\u0da8\u0daa\u0003\u0346\u01a3\u0000"+
 		"\u0da9\u0da7\u0001\u0000\u0000\u0000\u0daa\u0dad\u0001\u0000\u0000\u0000"+
 		"\u0dab\u0da9\u0001\u0000\u0000\u0000\u0dab\u0dac\u0001\u0000\u0000\u0000"+
 		"\u0dac\u0229\u0001\u0000\u0000\u0000\u0dad\u0dab\u0001\u0000\u0000\u0000"+

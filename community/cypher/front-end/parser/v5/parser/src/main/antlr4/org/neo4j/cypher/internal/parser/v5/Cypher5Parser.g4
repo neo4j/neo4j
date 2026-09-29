@@ -1146,19 +1146,19 @@ roleToken
 // Server commands
 
 enableServerCommand
-   : ENABLE SERVER stringOrParameter commandOptions?
+   : ENABLE SERVER stringOrParameterExpression commandOptions?
    ;
 
 alterServer
-   : SERVER stringOrParameter SET commandOptions
+   : SERVER stringOrParameterExpression SET commandOptions
    ;
 
 renameServer
-   : SERVER stringOrParameter TO stringOrParameter
+   : SERVER stringOrParameterExpression TO stringOrParameterExpression
    ;
 
 dropServer
-   : SERVER stringOrParameter
+   : SERVER stringOrParameterExpression
    ;
 
 showServers
@@ -1170,7 +1170,7 @@ allocationCommand
    ;
 
 deallocateDatabaseFromServers
-   : DEALLOCATE (DATABASE | DATABASES) FROM (SERVER | SERVERS) stringOrParameter (COMMA stringOrParameter)*
+   : DEALLOCATE (DATABASE | DATABASES) FROM (SERVER | SERVERS) stringOrParameterExpression (COMMA stringOrParameterExpression)*
    ;
 
 reallocateDatabases

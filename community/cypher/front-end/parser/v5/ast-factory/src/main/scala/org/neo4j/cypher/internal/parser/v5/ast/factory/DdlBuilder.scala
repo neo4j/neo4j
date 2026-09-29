@@ -231,14 +231,15 @@ trait DdlBuilder extends Cypher5ParserListener {
   final override def exitEnableServerCommand(
     ctx: Cypher5Parser.EnableServerCommandContext
   ): Unit = {
-    ctx.ast = EnableServer(ctx.stringOrParameter().ast(), astOpt[Options](ctx.commandOptions(), NoOptions))(pos(ctx))
+    ctx.ast =
+      EnableServer(ctx.stringOrParameterExpression().ast(), astOpt[Options](ctx.commandOptions(), NoOptions))(pos(ctx))
   }
 
   final override def exitAlterServer(
     ctx: Cypher5Parser.AlterServerContext
   ): Unit = {
     ctx.ast = AlterServer(
-      ctx.stringOrParameter().ast[Either[String, Parameter]](),
+      ctx.stringOrParameterExpression().ast(),
       ctx.commandOptions().ast()
     )(pos(ctx.getParent))
   }
@@ -246,17 +247,17 @@ trait DdlBuilder extends Cypher5ParserListener {
   final override def exitRenameServer(
     ctx: Cypher5Parser.RenameServerContext
   ): Unit = {
-    val names = ctx.stringOrParameter()
+    val names = ctx.stringOrParameterExpression()
     ctx.ast = RenameServer(
-      names.get(0).ast[Either[String, Parameter]](),
-      names.get(1).ast[Either[String, Parameter]]()
+      names.get(0).ast(),
+      names.get(1).ast()
     )(pos(ctx.getParent))
   }
 
   final override def exitDropServer(
     ctx: Cypher5Parser.DropServerContext
   ): Unit = {
-    ctx.ast = DropServer(ctx.stringOrParameter().ast[Either[String, Parameter]])(pos(ctx.getParent))
+    ctx.ast = DropServer(ctx.stringOrParameterExpression().ast())(pos(ctx.getParent))
   }
 
   final override def exitAllocationCommand(
@@ -276,7 +277,7 @@ trait DdlBuilder extends Cypher5ParserListener {
   final override def exitDeallocateDatabaseFromServers(
     ctx: Cypher5Parser.DeallocateDatabaseFromServersContext
   ): Unit = {
-    ctx.ast = astSeq[Either[String, Parameter]](ctx.stringOrParameter())
+    ctx.ast = astSeq[Expression](ctx.stringOrParameterExpression())
   }
 
   final override def exitReallocateDatabases(

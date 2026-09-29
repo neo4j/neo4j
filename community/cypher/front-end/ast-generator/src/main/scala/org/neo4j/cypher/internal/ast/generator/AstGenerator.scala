@@ -4422,18 +4422,18 @@ class AstGenerator(
   )
 
   def _enableServer: Gen[EnableServer] = for {
-    serverName <- _nameAsEither
+    serverName <- _stringLiteralOrParameter
     options <- _optionsMapAsEitherOrNone
   } yield EnableServer(serverName, options)(pos)
 
   def _alterServer: Gen[AlterServer] = for {
-    serverName <- _nameAsEither
+    serverName <- _stringLiteralOrParameter
     options <- _optionsMapAsEither
   } yield AlterServer(serverName, options)(pos)
 
   def _renameServer: Gen[RenameServer] = for {
-    serverName <- _nameAsEither
-    newName <- _nameAsEither
+    serverName <- _stringLiteralOrParameter
+    newName <- _stringLiteralOrParameter
   } yield RenameServer(serverName, newName)(pos)
 
   def _showServers: Gen[ShowServers] = for {
@@ -4441,12 +4441,12 @@ class AstGenerator(
   } yield ShowServers(yields)(pos)
 
   def _dropServer: Gen[DropServer] = for {
-    serverName <- _nameAsEither
+    serverName <- _stringLiteralOrParameter
   } yield DropServer(serverName)(pos)
 
   def _deallocateServer: Gen[DeallocateServers] = for {
     dryRun <- boolean
-    servers <- _listOfNameOfEither
+    servers <- _listOfStringLiteralOrParam
   } yield DeallocateServers(dryRun, servers)(pos)
 
   def _reallocateDatabases: Gen[ReallocateDatabases] = for {

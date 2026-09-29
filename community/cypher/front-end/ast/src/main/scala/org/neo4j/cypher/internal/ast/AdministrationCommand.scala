@@ -2012,43 +2012,48 @@ final case class RevokePrivilege(
 
 // Server commands
 
-final case class EnableServer(serverName: Either[String, Parameter], optionsMap: Options)(
+final case class EnableServer(serverName: Expression, optionsMap: Options)(
   val position: InputPosition
 ) extends WriteAdministrationCommand {
   override def name: String = "ENABLE SERVER"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      checkIsStringLiteralOrParameter("server name", serverName) chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class AlterServer(serverName: Either[String, Parameter], optionsMap: Options)(
+final case class AlterServer(serverName: Expression, optionsMap: Options)(
   val position: InputPosition
 ) extends WriteAdministrationCommand {
   override def name: String = "ALTER SERVER"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      checkIsStringLiteralOrParameter("server name", serverName) chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class RenameServer(serverName: Either[String, Parameter], newName: Either[String, Parameter])(
+final case class RenameServer(serverName: Expression, newName: Expression)(
   val position: InputPosition
 ) extends WriteAdministrationCommand {
   override def name: String = "RENAME SERVER"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      checkIsStringLiteralOrParameter("server name", serverName) chain
+      checkIsStringLiteralOrParameter("new server name", newName) chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class DropServer(serverName: Either[String, Parameter])(
+final case class DropServer(serverName: Expression)(
   val position: InputPosition
 ) extends WriteAdministrationCommand {
   override def name: String = "DROP SERVER"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      checkIsStringLiteralOrParameter("server name", serverName) chain
       SemanticState.recordCurrentScope(this)
 }
 
@@ -2098,7 +2103,7 @@ object ShowServers {
   }
 }
 
-final case class DeallocateServers(dryRun: Boolean, serverNames: Seq[Either[String, Parameter]])(
+final case class DeallocateServers(dryRun: Boolean, serverNames: Seq[Expression])(
   val position: InputPosition
 ) extends WriteAdministrationCommand {
   override def name: String = "DEALLOCATE DATABASES FROM SERVER"
@@ -2119,6 +2124,7 @@ final case class DeallocateServers(dryRun: Boolean, serverNames: Seq[Either[Stri
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      semanticCheckFold(serverNames)(serverName => checkIsStringLiteralOrParameter("server name", serverName)) chain
       SemanticState.recordCurrentScope(this)
 }
 
