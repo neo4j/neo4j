@@ -2171,6 +2171,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description("")
+    public static final Setting<Duration> spd_import_progress_log_update_interval = newBuilder(
+                    "internal.db.spd_import.progress_log_update_interval", DURATION, ofMinutes(1))
+            .build();
+
+    @Internal
+    @Description("")
     public static final Setting<Duration> spd_import_rpc_report_interval = newBuilder(
                     "internal.db.spd_import.rpc.report_interval", DURATION, ofMinutes(10))
             .build();
