@@ -37,6 +37,7 @@ import static org.neo4j.internal.helpers.collection.Pair.pair;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.DurationValue.MAX_VALUE;
+import static org.neo4j.values.storable.DurationValue.ZERO;
 import static org.neo4j.values.storable.DurationValue.between;
 import static org.neo4j.values.storable.DurationValue.duration;
 import static org.neo4j.values.storable.DurationValue.durationBetween;
@@ -896,70 +897,226 @@ class DurationValueTest {
     @Test
     void shouldThrowOnParsingYearsOverflow() {
         long years = Long.MAX_VALUE;
-        assertThatThrownBy(() -> DurationValue.parse("P" + years + "Y"))
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("P" + years + "Y"))
                 .isInstanceOf(InvalidArgumentException.class)
                 .hasMessageContaining("Invalid value for duration")
-                .hasMessageContaining("years=" + years);
+                .hasMessageContaining("years=" + years)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
     }
 
     @Test
     void shouldThrowOnParsingYearAndMonthOverflow() {
         long years = 1;
         long months = Long.MAX_VALUE;
-        assertThatThrownBy(() -> DurationValue.parse("P" + years + "Y" + months + "M"))
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("P" + years + "Y" + months + "M"))
                 .isInstanceOf(InvalidArgumentException.class)
                 .hasMessageContaining("Invalid value for duration")
                 .hasMessageContaining("years=" + years)
-                .hasMessageContaining("months=" + months);
+                .hasMessageContaining("months=" + months)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
     }
 
     @Test
     void shouldThrowOnParsingWeeksOverflow() {
         long weeks = Long.MAX_VALUE;
-        assertThatThrownBy(() -> DurationValue.parse("P" + weeks + "W"))
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("P" + weeks + "W"))
                 .isInstanceOf(InvalidArgumentException.class)
                 .hasMessageContaining("Invalid value for duration")
-                .hasMessageContaining("weeks=" + weeks);
+                .hasMessageContaining("weeks=" + weeks)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
     }
 
     @Test
     void shouldThrowOnParsingWeeksAndDaysOverflow() {
         long weeks = 1;
         long days = Long.MAX_VALUE;
-        assertThatThrownBy(() -> DurationValue.parse("P" + weeks + "W" + days + "D"))
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("P" + weeks + "W" + days + "D"))
                 .isInstanceOf(InvalidArgumentException.class)
                 .hasMessageContaining("Invalid value for duration")
                 .hasMessageContaining("weeks=" + weeks)
-                .hasMessageContaining("days=" + days);
+                .hasMessageContaining("days=" + days)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
     }
 
     @Test
     void shouldThrowOnParsingHoursOverflow() {
         long hours = Long.MAX_VALUE;
-        assertThatThrownBy(() -> DurationValue.parse("PT" + hours + "H"))
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("PT" + hours + "H"))
                 .isInstanceOf(InvalidArgumentException.class)
                 .hasMessageContaining("Invalid value for duration")
-                .hasMessageContaining("hours=" + hours);
+                .hasMessageContaining("hours=" + hours)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
     }
 
     @Test
     void shouldThrowOnParsingHoursAndSecondsOverflow() {
         long hours = 1;
         long seconds = Long.MAX_VALUE;
-        assertThatThrownBy(() -> DurationValue.parse("PT" + hours + "H" + seconds + "S"))
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("PT" + hours + "H" + seconds + "S"))
                 .isInstanceOf(InvalidArgumentException.class)
                 .hasMessageContaining("Invalid value for duration")
                 .hasMessageContaining("hours=" + hours)
-                .hasMessageContaining("seconds=" + seconds);
+                .hasMessageContaining("seconds=" + seconds)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
     }
 
     @Test
     void shouldThrowOnMinutesOverflow() {
         long minutes = Long.MAX_VALUE;
-        assertThatThrownBy(() -> DurationValue.parse("PT" + minutes + "M"))
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("PT" + minutes + "M"))
                 .isInstanceOf(InvalidArgumentException.class)
                 .hasMessageContaining("Invalid value for duration")
-                .hasMessageContaining("minutes=" + minutes);
+                .hasMessageContaining("minutes=" + minutes)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
+    }
+
+    @Test
+    void shouldThrowOnParsingComponentOutsideLongRange() {
+        String outsideLongRange = "9223372036854775808"; // Long.MAX_VALUE + 1
+        String[] oversized = {
+            "P" + outsideLongRange + "Y",
+            "P" + outsideLongRange + "M",
+            "P" + outsideLongRange + "W",
+            "P" + outsideLongRange + "D",
+            "PT" + outsideLongRange + "H",
+            "PT" + outsideLongRange + "M",
+            "PT" + outsideLongRange + "S",
+            "-P" + outsideLongRange + "M",
+            "P-" + outsideLongRange + "M",
+        };
+        for (String s : oversized) {
+            ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse(s))
+                    .isInstanceOf(InvalidArgumentException.class)
+                    .hasMessageContaining("Invalid value for duration")
+                    .hasMessageContaining(outsideLongRange)
+                    .hasMessageNotContaining("For input string")
+                    .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                    .gqlCause()
+                    .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                    .hasStatusDescription(
+                            "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
+        }
+    }
+
+    @Test
+    void shouldThrowOnParsingHoursOverflowWithFractionalMinutes() {
+        long hours = 2562047788015216L; // ceil(Long.MAX_VALUE / 3600), hours * 3600 overflows
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("PT" + hours + "H1.5M"))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessageContaining("Invalid value for duration")
+                .hasMessageContaining("hours=" + hours)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("-PT" + hours + "H1.5M"))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessageContaining("Invalid value for duration")
+                .hasMessageContaining("hours=" + hours)
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
+    }
+
+    @Test
+    void shouldParseHoursJustBelowOverflowLimitWithFractionalMinutes() {
+        long hours = 2562047788015215L; // hours * 3600 stays within the long range
+        DurationValue value = DurationValue.parse("PT" + hours + "H1.5M");
+        // the fractional-minutes path computes in double precision, so the exact seconds may be rounded,
+        // but the duration must stay positive — no wraparound into a negative duration
+        assertTrue(value.get(SECONDS) > 0);
+        assertTrue(value.compareTo(ZERO) > 0);
+    }
+
+    @Test
+    void shouldThrowOnParsingMonthsOverflow() {
+        long months = 3507324295524L; // months * AVG_SECONDS_PER_MONTH overflows
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("P" + months + "M"))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessageContaining("Invalid value for duration")
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
+    }
+
+    @Test
+    void shouldThrowOnParsingDaysOverflow() {
+        long days = 106751991167301L; // days * SECONDS_PER_DAY overflows
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("P" + days + "D"))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessageContaining("Invalid value for duration")
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
+    }
+
+    @Test
+    void shouldThrowOnParsingAccumulatedSecondsOverflow() {
+        long days = 106751991167300L; // days * SECONDS_PER_DAY stays within the long range
+        long hours = 2562047788015215L; // hours * 3600 stays within the long range
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("P" + days + "DT" + hours + "H"))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessageContaining("Invalid value for duration")
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22015)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'duration()' has caused an overflow.");
+    }
+
+    @Test
+    void shouldThrowOnParsingFractionalComponentOverflow() {
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("P99999999999999999999.5Y"))
+                .isInstanceOf(ArithmeticException.class)
+                .hasMessageContaining("long overflow")
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22003)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'Double to Long' has caused an overflow.");
+        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> DurationValue.parse("PT99999999999999999999.5H"))
+                .isInstanceOf(ArithmeticException.class)
+                .hasMessageContaining("long overflow")
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22003)
+                .gqlCause()
+                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N28)
+                .hasStatusDescription(
+                        "error: data exception - overflow error. The result of the operation 'Double to Long' has caused an overflow.");
     }
 
     @Test

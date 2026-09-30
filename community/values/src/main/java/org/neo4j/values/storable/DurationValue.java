@@ -449,7 +449,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 }
                 return approximate(months, days, parseFractional(h, pos) * 3600, 0, sign);
             }
-            long secondsFromHours = optLong(h) * 3600;
+            long secondsFromHours = safeMultiply(optLong(h), 3600, "hours=%s", h);
             if ((pos = fractionPoint(m)) >= 0) {
                 if (s != null) {
                     return null;
@@ -510,7 +510,16 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     private static long optLong(String value) {
-        return value == null ? 0 : parseLong(value);
+        if (value == null) {
+            return 0;
+        }
+        try {
+            return parseLong(value);
+        } catch (NumberFormatException e) {
+            var gql = GqlHelper.getGql22015_22N28("duration()");
+            throw new InvalidArgumentException(
+                    gql, "Invalid value for duration, will cause overflow. Value was " + value, e);
+        }
     }
 
     static DurationValue durationBetween(Temporal from, Temporal to) {
