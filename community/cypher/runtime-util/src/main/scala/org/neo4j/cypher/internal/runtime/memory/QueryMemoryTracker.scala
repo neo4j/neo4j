@@ -41,7 +41,6 @@ import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.memory.ScopedMemoryTracker
-import org.neo4j.util.VisibleForTesting
 
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -181,12 +180,28 @@ case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
 }
 
 /**
+ * Capability of [[QueryMemoryTracker]] implementations used by the parallel runtime: create
+ * per-lane memory tracker providers for the operators inside a transactional scope
+ * (CALL IN TRANSACTIONS executed by the parallel runtime).
+ */
+trait ParallelQueryMemoryTracker {
+
+  /**
+   * Create a new memory tracker provider for the operators inside one transactional scope of one
+   * lane. Each call returns a new independent provider, which is rebound to that lane's inner
+   * transactions as they are opened and closed (see
+   * [[ParallelTransactionBoundMemoryTrackerForOperatorProvider]]).
+   */
+  def newInnerTransactionMemoryTrackerForOperatorProvider(): MemoryTrackerForOperatorProvider
+}
+
+/**
  * Tracks the heap high water mark for one Cypher query running with the parallel runtime.
  */
 class ParallelTrackingQueryMemoryTracker(
   delegatingMemoryTrackerFactory: () => MemoryTracker with MemoryTrackerForOperatorProvider,
   heapEstimatorCacheConfig: HeapEstimatorCacheConfig
-) extends QueryMemoryTracker with MemoryTrackerForOperatorProvider {
+) extends QueryMemoryTracker with MemoryTrackerForOperatorProvider with ParallelQueryMemoryTracker {
 
   private[this] val delegate = delegatingMemoryTrackerFactory()
 
@@ -203,6 +218,12 @@ class ParallelTrackingQueryMemoryTracker(
     Debug.ifElse[DebugCategory.MemoryTracking] {
       debugMemoryTracker
     } {
+      // NOTE: The given transactionMemoryTracker is deliberately ignored and the shared
+      // thread-delegating tracker is returned for every call.
+      // Both slotted and parallel runtimes rely on this behavior.
+      // In parallel runtime, the inner transactions for CALL IN TRANSACTIONS do not go through this
+      // method at all, but use newInnerTransactionMemoryTrackerForOperatorProvider and the
+      // per-lane rebind path instead.
       delegate
     }
   }
@@ -221,6 +242,37 @@ class ParallelTrackingQueryMemoryTracker(
     delegate.setInitializationMemoryTracker(memoryTracker)
   }
 
+  override def initializationMemoryTracker: MemoryTracker = delegate.initializationMemoryTracker
+
+  override def rebind(newTransactionMemoryTracker: MemoryTracker): Unit = {
+    delegate.rebind(newTransactionMemoryTracker)
+  }
+
+  override def closeInner(): Unit = {
+    delegate.closeInner()
+  }
+
+  // The initialization-memory-tracker default set below is needed even though
+  // LaneState.setWorkerQueryState re-points the provider: that only runs when a worker first picks up
+  // the lane (see ParallelQueryState.acquireQueryStateForLane), but the providers are exercised before any
+  // worker exists: TheExecutionState constructs the Buffers of the extended execution graph right
+  // after wiring the providers, and tx-scoped state allocates on its memory tracker at construction
+  // (for example StandardArgumentStateMap.SHALLOW_SIZE), on the query initialization thread. Those
+  // allocations fall through to the initialization memory tracker set here. A lane that never gets
+  // a worker (early failure, or fewer batches than lanes) also never runs setWorkerQueryState, but
+  // still releases its build-phase allocations against this tracker when its buffers close during
+  // cleanup.
+  override def newInnerTransactionMemoryTrackerForOperatorProvider(): MemoryTrackerForOperatorProvider = {
+    val provider = new ParallelTransactionBoundMemoryTrackerForOperatorProvider(heapEstimatorCacheConfig)
+    // Inherit the query's initialization memory tracker as a default. The caller is expected to
+    // re-point it to a more specific tracker when one becomes available (see LaneState.setWorkerQueryState).
+    val initTracker = delegate.initializationMemoryTracker
+    if (initTracker != null) {
+      provider.setInitializationMemoryTracker(initTracker)
+    }
+    provider
+  }
+
   override def debugPrintSummary(): Unit = {
     Debug.ifEnabled[DebugCategory.MemoryTracking] {
       debugMemoryTracker.debugPrintSummary()
@@ -237,7 +289,8 @@ class ProfilingParallelTrackingQueryMemoryTracker(
   delegatingMemoryTrackerFactory: () => MemoryTracker with MemoryTrackerForOperatorProvider,
   heapEstimatorCacheConfig: HeapEstimatorCacheConfig
 ) extends QueryMemoryTracker
-    with MemoryTrackerForOperatorProvider {
+    with MemoryTrackerForOperatorProvider
+    with ParallelQueryMemoryTracker {
 
   private[this] val memoryPerOperator: HeapTrackingConcurrentLongObjectHashMap[MemoryTracker] =
     HeapTrackingConcurrentLongObjectHashMap.newMap(EmptyMemoryTracker.INSTANCE)
@@ -267,6 +320,28 @@ class ProfilingParallelTrackingQueryMemoryTracker(
 
   override def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit =
     delegate.setInitializationMemoryTracker(memoryTracker)
+
+  override def initializationMemoryTracker: MemoryTracker = delegate.initializationMemoryTracker
+
+  override def rebind(newTransactionMemoryTracker: MemoryTracker): Unit = {
+    delegate.rebind(newTransactionMemoryTracker)
+  }
+
+  override def closeInner(): Unit = {
+    delegate.closeInner()
+  }
+
+  override def newInnerTransactionMemoryTrackerForOperatorProvider(): MemoryTrackerForOperatorProvider = {
+    // NOTE: Operator trackers created through this provider do not feed the per-operator high water
+    // mark map, so PROFILE does not report per-operator memory for operators inside a transactional
+    // scope on the parallel runtime yet. Attribution and limit enforcement still work.
+    val provider = new ParallelTransactionBoundMemoryTrackerForOperatorProvider(heapEstimatorCacheConfig)
+    val initTracker = delegate.initializationMemoryTracker
+    if (initTracker != null) {
+      provider.setInitializationMemoryTracker(initTracker)
+    }
+    provider
+  }
 }
 
 /**
@@ -347,6 +422,10 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
     _initializationMemoryTracker = memoryTracker
   }
 
+  override def initializationMemoryTracker: MemoryTracker = {
+    _initializationMemoryTracker
+  }
+
   override def getHeapEstimatorCache: HeapEstimatorCache = {
     delegateMemoryTracker.getHeapEstimatorCache
   }
@@ -355,11 +434,6 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
     val newTracker = new OperatorWorkerThreadDelegatingMemoryTracker(operatorId, enableScopedHeapEstimatorCache = true)
     newTracker.setInitializationMemoryTracker(_initializationMemoryTracker)
     newTracker
-  }
-
-  @VisibleForTesting
-  def initializationMemoryTracker: MemoryTracker = {
-    _initializationMemoryTracker
   }
 }
 
@@ -452,8 +526,7 @@ class TransactionWorkerThreadDelegatingMemoryTracker extends MemoryTracker with 
     _initializationMemoryTracker = memoryTracker
   }
 
-  @VisibleForTesting
-  def initializationMemoryTracker: MemoryTracker = {
+  override def initializationMemoryTracker: MemoryTracker = {
     _initializationMemoryTracker
   }
 }
@@ -595,6 +668,14 @@ class ParallelDebugMemoryTracker(delegate: MemoryTracker with MemoryTrackerForOp
   override def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit = {
     delegate.setInitializationMemoryTracker(memoryTracker)
   }
+
+  override def initializationMemoryTracker: MemoryTracker = {
+    delegate.initializationMemoryTracker
+  }
+
+  override def rebind(newTransactionMemoryTracker: MemoryTracker): Unit = delegate.rebind(newTransactionMemoryTracker)
+
+  override def closeInner(): Unit = delegate.closeInner()
 
   def debugPrintSummary(): Unit = {
     var foundMismatch = false

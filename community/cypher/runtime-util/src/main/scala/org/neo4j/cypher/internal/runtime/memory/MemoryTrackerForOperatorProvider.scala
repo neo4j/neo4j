@@ -28,6 +28,7 @@ import org.neo4j.memory.HeapEstimatorCacheConfig
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.memory.RebindableDualScopedMemoryTracker
 
 /**
  * Gives the ability to track memory per operator.
@@ -54,6 +55,24 @@ trait MemoryTrackerForOperatorProvider {
       s"${getClass.getSimpleName} does not support setting an initialization memory tracker"
     )
   }
+
+  def initializationMemoryTracker: MemoryTracker = {
+    throw new UnsupportedOperationException(
+      s"${getClass.getSimpleName} does not support getting an initialization memory tracker"
+    )
+  }
+
+  def rebind(newTransactionMemoryTracker: MemoryTracker): Unit = {
+    throw new UnsupportedOperationException(
+      s"${getClass.getSimpleName} does not support rebinding a transaction memory tracker"
+    )
+  }
+
+  def closeInner(): Unit = {
+    throw new UnsupportedOperationException(
+      s"${getClass.getSimpleName} does not support closing the inner transaction memory tracker"
+    )
+  }
 }
 
 object MemoryTrackerForOperatorProvider {
@@ -75,6 +94,8 @@ case object NoOpMemoryTrackerForOperatorProvider extends MemoryTrackerForOperato
 
   override def memoryTrackerForOperator(operatorId: Int, enableScopedHeapEstimatorCache: Boolean): MemoryTracker =
     EmptyMemoryTracker.INSTANCE
+  override def rebind(newTransactionMemoryTracker: MemoryTracker): Unit = {}
+  override def closeInner(): Unit = {}
 }
 
 object TransactionBoundMemoryTrackerForOperatorProvider {
@@ -148,4 +169,55 @@ class TransactionBoundMemoryTrackerForOperatorProvider(
       enableScopedHeapEstimatorCache
     )
   }
+}
+
+/**
+ * Tracks memory of operators inside a transactional scope of one lane in the parallel runtime,
+ * where each lane opens and closes inner transactions while the query runs
+ * (CALL IN TRANSACTIONS executed by the parallel runtime).
+ *
+ * All operator trackers of the scope share one [[RebindableDualScopedMemoryTracker]]:
+ *
+ *  - While an inner transaction is bound (between [[rebind]] and [[closeInner]]), allocations and
+ *    releases are routed to that inner transaction's memory tracker, so the memory is attributed to
+ *    the inner transaction and counted against its memory limit.
+ *  - When no inner transaction is bound (query build, between batches, query cleanup), calls fall
+ *    through to the outer [[WorkerThreadDelegatingMemoryTracker]], which delegates to the calling
+ *    worker thread's execution context memory tracker, or to the initialization memory tracker on
+ *    non-worker threads. That attributes the memory to the outer transaction.
+ *
+ * Thread model: an instance belongs to one lane and one transactional scope. All calls while the
+ * query runs happen under the lane lock, and query build and cleanup run single threaded before
+ * workers start and after all workers have finished. The rebindable tracker is not thread safe and
+ * relies on this.
+ */
+class ParallelTransactionBoundMemoryTrackerForOperatorProvider(
+  heapEstimatorCacheConfig: HeapEstimatorCacheConfig
+) extends MemoryTrackerForOperatorProvider {
+
+  private[this] val outerDelegating: WorkerThreadDelegatingMemoryTracker =
+    new WorkerThreadDelegatingMemoryTracker
+
+  private[this] val rebindable: RebindableDualScopedMemoryTracker =
+    new RebindableDualScopedMemoryTracker(outerDelegating)
+
+  override def memoryTrackerForOperator(operatorId: Int, enableScopedHeapEstimatorCache: Boolean): MemoryTracker = {
+    // Per-operator scoped layer over the shared rebindable tracker, mirroring the layering of
+    // TransactionBoundMemoryTrackerForOperatorProvider on the serial path. It carries the operator's
+    // heap estimator cache. A lane is single threaded, so the cache needs no further isolation even
+    // when a scoped heap estimator cache is requested.
+    new DefaultScopedMemoryTracker(rebindable, heapEstimatorCacheConfig.newDefaultHeapEstimatorCache())
+  }
+
+  override def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit =
+    outerDelegating.setInitializationMemoryTracker(memoryTracker)
+
+  override def initializationMemoryTracker: MemoryTracker =
+    outerDelegating.initializationMemoryTracker
+
+  override def rebind(newTransactionMemoryTracker: MemoryTracker): Unit =
+    rebindable.setInnerDelegate(newTransactionMemoryTracker)
+
+  override def closeInner(): Unit =
+    rebindable.closeInner()
 }
