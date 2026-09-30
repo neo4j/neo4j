@@ -466,6 +466,32 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("inserts eager between property set and entity reference forwarded through a chain of WITH aliases") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("row3")
+      .projection("row2 AS row3")
+      .projection("row AS row2")
+      .projection("{n: n} AS row")
+      .setNodeProperty("m", "prop", "42")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val rewrittenPlan = eagerizePlan(planBuilder, plan)
+
+    rewrittenPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("row3")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(4), Id(0)))))
+        .projection("row2 AS row3")
+        .projection("row AS row2")
+        .projection("{n: n} AS row")
+        .setNodeProperty("m", "prop", "42")
+        .expand("(n)-[r]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   test("inserts eager when setting concrete properties from map") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("p")

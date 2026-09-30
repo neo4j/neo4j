@@ -785,8 +785,13 @@ object ReadFinder {
         projectExpressions.foldLeft(PlanReads()) {
 
           // Don't introduce new variables for aliases: WITH a AS b
-          case (acc, _ -> (_: Variable)) =>
-            acc
+          // But forward any entities `a` already carries, so a chain of aliases reusing a name
+          // (renamed to distinct variables by the Namespacer) doesn't lose the reference.
+          case (acc, b -> (a: Variable)) =>
+            variableReferenceMap.get(a) match {
+              case Some(referencedByA) => acc.withReferencedVariableMap(Map(b -> referencedByA))
+              case None                => acc
+            }
 
           case (acc, v -> nonVariableExpression) =>
             var res = acc
