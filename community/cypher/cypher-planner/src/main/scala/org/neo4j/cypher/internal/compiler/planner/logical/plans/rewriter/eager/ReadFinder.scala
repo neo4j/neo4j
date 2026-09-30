@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.R
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -60,6 +61,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Keys
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.ir.CreatePattern
@@ -1261,7 +1263,7 @@ object ReadFinder {
         acc =>
           TraverseChildren(acc.withUnknownLabelsRead(asMaybeVar(f.args.head)))
 
-      case f: FunctionInvocation if f.function == Properties =>
+      case f: FunctionInvocation if f.function == Properties || f.function == Keys =>
         acc =>
           var result = acc
           val typeGetter = semanticTable.typeFor(f.args(0))
@@ -1272,6 +1274,18 @@ object ReadFinder {
             result = result.withUnknownNodePropertiesRead(asMaybeVar(f.args.head))
           }
           TraverseChildren(result)
+
+      case dmp: DesugaredMapProjection if dmp.includeAllProps =>
+        acc =>
+          val typeGetter = semanticTable.typeFor(dmp.entity)
+          val withRelRead =
+            if (typeGetter.couldBe(CTRelationship)) acc.withUnknownRelPropertiesRead(asMaybeVar(dmp.entity))
+            else acc
+          val withNodeRead =
+            if (!typeGetter.couldBe(CTRelationship) || typeGetter.couldBe(CTNode))
+              withRelRead.withUnknownNodePropertiesRead(asMaybeVar(dmp.entity))
+            else withRelRead
+          TraverseChildren(withNodeRead)
 
       case HasLabels(expr, labels) =>
         acc =>
@@ -1309,7 +1323,14 @@ object ReadFinder {
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
         // are not accessing a property
         acc =>
-          SkipChildren(acc.withUnknownNodePropertiesRead(asMaybeVar(expr)))
+          val typeGetter = semanticTable.typeFor(expr)
+          val withRelRead =
+            if (typeGetter.couldBe(CTRelationship)) acc.withUnknownRelPropertiesRead(asMaybeVar(expr)) else acc
+          val withNodeRead =
+            if (!typeGetter.couldBe(CTRelationship) || typeGetter.couldBe(CTNode))
+              withRelRead.withUnknownNodePropertiesRead(asMaybeVar(expr))
+            else withRelRead
+          SkipChildren(withNodeRead)
 
       case VariablePredicate(v, pred) => acc =>
           val canBeNode = semanticTable.typeFor(v).couldBe(CTNode)

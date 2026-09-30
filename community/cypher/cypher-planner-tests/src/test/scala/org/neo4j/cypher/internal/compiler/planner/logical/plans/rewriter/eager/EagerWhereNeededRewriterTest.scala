@@ -483,6 +483,80 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
     )
   }
 
+  test("inserts eager between property set and keys read") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("keys")
+      .projection("keys(n) AS keys")
+      .setNodeProperty("m", "prop", "42")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val rewrittenPlan = eagerizePlan(planBuilder, plan)
+
+    rewrittenPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("keys")
+        .projection("keys(n) AS keys")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(1)))))
+        .setNodeProperty("m", "prop", "42")
+        .expand("(n)-[r]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("inserts eager between property set and all-properties map projection read") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("map")
+      .projection("n{.*} AS map")
+      .setNodeProperty("m", "prop", "42")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val rewrittenPlan = eagerizePlan(planBuilder, plan)
+
+    rewrittenPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("map")
+        .projection("n{.*} AS map")
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(0))),
+          PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(1)))
+        ))
+        .setNodeProperty("m", "prop", "42")
+        .expand("(n)-[r]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("inserts eager between relationship property set and dynamic relationship property read") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("value")
+      .projection("r2[\"prop\"] AS value")
+      .setRelationshipProperty("r", "prop", "42")
+      .expand("(m)-[r2]->(o)")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val rewrittenPlan = eagerizePlan(planBuilder, plan)
+
+    rewrittenPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("value")
+        .projection("r2[\"prop\"] AS value")
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(0))),
+          PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(1)))
+        ))
+        .setRelationshipProperty("r", "prop", "42")
+        .expand("(m)-[r2]->(o)")
+        .expand("(n)-[r]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   test("inserts eager between property set and entity reference forwarded through a chain of WITH aliases") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("row3")
