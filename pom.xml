@@ -263,8 +263,10 @@
       ${test.runner.jvm.settings.log.format}
       ${test.runner.jvm.settings.dbms.factory}
       ${test.runner.jvm.settings.raft.log}
-      ${test.runner.jvm.settings.query.language}</test.runner.jvm.settings>
+      ${test.runner.jvm.settings.query.language}
+      ${test.runner.jvm.settings.build.specific}</test.runner.jvm.settings>
     <test.runner.jvm.settings.additional />
+    <test.runner.jvm.settings.build.specific />
     <test.runner.jvm.settings.db.format />
     <test.runner.jvm.settings.dbms.factory />
     <test.runner.jvm.settings.log.format />

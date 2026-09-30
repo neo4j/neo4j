@@ -40,6 +40,7 @@ import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
 
 /**
@@ -62,6 +63,9 @@ import org.neo4j.util.VisibleForTesting;
  * </pre>
  */
 public class TestDirectory {
+    private static final boolean KEEP_FAILED_TEST_DIRECTORIES =
+            FeatureToggles.flag(TestDirectory.class, "keepFailedTestDirectories", true);
+
     /**
      * {@link TestDirectory#now}, {@link TestDirectory#DATE_TIME_FORMATTER} and hash(test_folder_name) are used to
      * construct uniquely naming test directories.
@@ -212,7 +216,7 @@ public class TestDirectory {
 
             Path directory = this.directory;
             this.directory = null;
-            if (!anyFailure && !keepDirectoryAfterSuccessfulTest) {
+            if (!KEEP_FAILED_TEST_DIRECTORIES || (!anyFailure && !keepDirectoryAfterSuccessfulTest)) {
                 fileSystem.deleteRecursively(directory);
             } else if (!fileSystem.isPersistent()) {
                 // We want to keep the files, make sure they actually exist on disk, not only in memory (like in
