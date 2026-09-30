@@ -1268,6 +1268,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def distinct(projectExpressions: Map[String, Expression]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Distinct(lp, toVarMap(projectExpressions))(_)))
+    self
+  }
+
   def orderedDistinct(orderToLeverage: Seq[String], projectionStrings: String*): IMPL = {
     val order = orderToLeverage.map(parseExpression)
     val projections = Parser.parseProjections(projectionStrings: _*)

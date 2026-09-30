@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -27,6 +28,11 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
@@ -660,6 +666,50 @@ class SubqueryCallPlanningIntegrationTest
         .argument()
         .build()
     )
+  }
+
+  test(
+    "correlated CALL () with WITH DISTINCT * over a path pattern and ORDER BY on the path and an imported variable"
+  ) {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """WITH 1 AS seed
+        |CALL (seed) {
+        |  MATCH p = ()-[]-()
+        |  MATCH (n1)
+        |  WITH DISTINCT *
+        |  RETURN p AS p1, seed AS s
+        |  ORDER BY p1 DESC, s DESC
+        |}
+        |RETURN p1, s""".stripMargin
+
+    // p = (anon_0)-[anon_1]-(anon_2), materialized by WITH DISTINCT * before the ORDER BY.
+    val pathExpr = PathExpression(
+      NodePathStep(
+        v"anon_0",
+        SingleRelationshipPathStep(v"anon_1", SemanticDirection.BOTH, Some(v"anon_2"), NilPathStep()(pos))(pos)
+      )(pos)
+    )(pos)
+
+    cfg.plan(query) should equal {
+      new LogicalPlanBuilder()
+        .produceResults("p1", "s")
+        .apply()
+        .|.sort("p1 DESC", "s DESC")
+        .|.projection("p AS p1", "seed AS s")
+        .|.distinct(Map("n1" -> v"n1", "p" -> pathExpr))
+        .|.cartesianProduct()
+        .|.|.allNodeScan("n1", "seed")
+        .|.allRelationshipsScan("(anon_0)-[anon_1]-(anon_2)", "seed")
+        .projection("1 AS seed")
+        .argument()
+        .build()
+    }
   }
 
   test("excessive aliasing should not confuse namespacer scoped") {
