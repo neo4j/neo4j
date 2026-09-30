@@ -181,6 +181,7 @@
      -->
     <netty.version>4.2.18.Final</netty.version>
     <opencypher.version>1.0.0-M23</opencypher.version>
+    <opentest4j.version>1.3.0</opentest4j.version>
     <oshi-common.version>7.6.1</oshi-common.version>
     <parallel.tests>false</parallel.tests>
     <parquet-floor.version>2.3</parquet-floor.version>
@@ -299,6 +300,14 @@
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
         <version>2025.0.7</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1153,53 +1162,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>${junit.version}</version>
-      </dependency>
-      <!--
-        org.scalatestplus:junit-5-14 brings its own JUnit Platform 1.14.3 / Jupiter 5.14.3 along
-        transitively. Pin the artifacts it pulls in to the JUnit version the rest of the build uses,
-        so a single JUnit Platform version is on every test classpath.
-      -->
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <version>${junit.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
-        <version>${junit.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.platform</groupId>
-        <artifactId>junit-platform-commons</artifactId>
-        <version>${junit.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.platform</groupId>
-        <artifactId>junit-platform-engine</artifactId>
-        <version>${junit.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.platform</groupId>
-        <artifactId>junit-platform-launcher</artifactId>
-        <version>${junit.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.platform</groupId>
-        <artifactId>junit-platform-testkit</artifactId>
-        <version>${junit.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
         <groupId>org.mockftpserver</groupId>
         <artifactId>MockFtpServer</artifactId>
         <version>3.2.0</version>
@@ -1253,6 +1215,11 @@
         <groupId>org.openjdk.jol</groupId>
         <artifactId>jol-core</artifactId>
         <version>0.17</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opentest4j</groupId>
+        <artifactId>opentest4j</artifactId>
+        <version>${opentest4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.postgresql</groupId>
