@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.api.index.IndexAccessor.UNKNOWN_NUMBER_OF_ENTRIES;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 
 import java.nio.BufferUnderflowException;
@@ -29,9 +30,11 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.neo4j.index.internal.gbptree.Header;
 
 class NativeIndexHeaderReader implements Header.Reader {
+    boolean wasRead;
     byte state;
     String failureMessage;
     private final byte failureByte;
+    long numberOfEntries = UNKNOWN_NUMBER_OF_ENTRIES;
 
     NativeIndexHeaderReader() {
         this(BYTE_FAILED);
@@ -46,10 +49,14 @@ class NativeIndexHeaderReader implements Header.Reader {
 
     @Override
     public void read(ByteBuffer headerData) {
+        wasRead = true;
         try {
             state = headerData.get();
             if (state == failureByte) {
                 failureMessage = readFailureMessage(headerData);
+            }
+            if (headerData.hasRemaining()) {
+                numberOfEntries = headerData.getLong();
             }
         } catch (BufferUnderflowException e) {
             state = failureByte;

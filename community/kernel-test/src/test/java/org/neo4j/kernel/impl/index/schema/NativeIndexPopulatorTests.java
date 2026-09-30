@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,13 +29,16 @@ import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_POPULATING;
+import static org.neo4j.test.Race.throwing;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -42,8 +46,10 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.EagerValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.test.Race;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.RandomValues.Configuration;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
@@ -169,6 +175,43 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         populator.close(true, NULL_CONTEXT);
         random.reset();
         verifyUpdates(valueCreatorUtil.randomUpdateGenerator(RandomValues.create(random.random(), cfg)), count);
+    }
+
+    @Test
+    void shouldTrackExactNumberOfEntriesInCreatedIndex() throws Exception {
+        // given
+        populator.create();
+        Race race = new Race();
+        AtomicLong nextEntityId = new AtomicLong();
+        int numThreads = 4;
+        int numBatchesPerThread = 100;
+        int batchSize = 10;
+        race.addContestants(
+                numThreads,
+                c -> throwing(() -> {
+                    long nextValueId = 0;
+                    for (int i = 0; i < numBatchesPerThread; i++) {
+                        List<EagerValueIndexEntryUpdate> batch = new ArrayList<>();
+                        for (int j = 0; j < batchSize; j++) {
+                            Value value = Values.stringValue(c + "_" + nextValueId++);
+                            batch.add(EagerValueIndexEntryUpdate.add(
+                                    nextEntityId.getAndIncrement(), indexDescriptor, value));
+                        }
+                        populator.add(batch, NULL_CONTEXT);
+                    }
+                }));
+        race.goUnchecked();
+
+        // when
+        populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
+        populator.close(true, NULL_CONTEXT);
+
+        // then
+        var header = new NativeIndexHeaderReader();
+        try (var tree = getTree(b -> b.with(header))) {
+            assertThat(header.wasRead).isTrue();
+            assertThat(header.numberOfEntries).isEqualTo(numThreads * numBatchesPerThread * batchSize);
+        }
     }
 
     private void verifyUpdates(Iterator<EagerValueIndexEntryUpdate> indexEntryUpdateIterator, int count)

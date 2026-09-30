@@ -97,6 +97,7 @@ import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.ExceptionHandlerService;
 import org.neo4j.resources.CpuClock;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -184,6 +185,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final TransactionStateBehaviour transactionStateBehaviour;
     private final Log log;
     private final DatabaseMonitors databaseMonitors;
+    private final JobScheduler jobScheduler;
     private final ScopedMemoryPool transactionMemoryPool;
 
     /**
@@ -235,7 +237,8 @@ public class KernelTransactions extends LifecycleAdapter
             InternalLogProvider internalLogProvider,
             TopologyGraphDbmsModel.HostedOnMode mode,
             DatabaseMonitors databaseMonitors,
-            RaftUpgradeBarrier raftUpgradeBarrier) {
+            RaftUpgradeBarrier raftUpgradeBarrier,
+            JobScheduler jobScheduler) {
         this.config = config;
         this.lockManager = lockManager;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -278,6 +281,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.mode = mode;
         this.log = internalLogProvider.getLog(KernelTransactions.class);
         this.databaseMonitors = databaseMonitors;
+        this.jobScheduler = jobScheduler;
         this.txPool = new MonitoredTransactionPool(
                 new GlobalKernelTransactionPool(allTransactions, new TransactionFactory(allTransactions, tracers)),
                 activeTransactionCounter,
@@ -672,7 +676,8 @@ public class KernelTransactions extends LifecycleAdapter
                             multiVersioned,
                             exceptionHandlerService,
                             mode,
-                            databaseAvailabilityGuard);
+                            databaseAvailabilityGuard,
+                            jobScheduler);
             this.transactions.add(tx);
             return tx;
         }
@@ -795,6 +800,7 @@ public class KernelTransactions extends LifecycleAdapter
                 boolean multiVersioned,
                 ExceptionHandlerService exceptionHandlerService,
                 TopologyGraphDbmsModel.HostedOnMode mode,
-                AvailabilityGuard availabilityGuard);
+                AvailabilityGuard availabilityGuard,
+                JobScheduler jobScheduler);
     }
 }

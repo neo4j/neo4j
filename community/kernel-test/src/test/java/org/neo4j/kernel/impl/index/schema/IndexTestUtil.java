@@ -25,6 +25,7 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 import java.util.concurrent.Callable;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -121,7 +122,13 @@ public abstract class IndexTestUtil<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE
     }
 
     GBPTree<KEY, VALUE> getTree() {
-        return new GBPTreeBuilder<>(pageCache, fs, indexFiles.getStoreFile().baseSegment(), layout).build();
+        return getTree(Function.identity());
+    }
+
+    GBPTree<KEY, VALUE> getTree(Function<GBPTreeBuilder<?, KEY, VALUE>, GBPTreeBuilder<?, KEY, VALUE>> builder) {
+        return builder.apply(new GBPTreeBuilder<>(
+                        pageCache, fs, indexFiles.getStoreFile().baseSegment(), layout))
+                .build();
     }
 
     void assertFilePresent() {

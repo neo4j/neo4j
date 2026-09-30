@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -31,8 +32,11 @@ final class ThrowingConflictDetector<KEY extends NativeIndexKey<KEY>>
     private final TokenNameLookup tokenNameLookup;
 
     ThrowingConflictDetector(
-            boolean compareEntityIds, SchemaDescriptor schemaDescriptor, TokenNameLookup tokenNameLookup) {
-        super(compareEntityIds);
+            boolean compareEntityIds,
+            SchemaDescriptor schemaDescriptor,
+            TokenNameLookup tokenNameLookup,
+            LongAdder numberOfEntries) {
+        super(compareEntityIds, numberOfEntries);
         this.schemaDescriptor = schemaDescriptor;
         this.tokenNameLookup = tokenNameLookup;
     }

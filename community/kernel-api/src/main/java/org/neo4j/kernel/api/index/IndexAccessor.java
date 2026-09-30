@@ -215,6 +215,14 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
     long sizeInBytes();
 
     /**
+     * @return if known, the exact number of entries in this index, or {@link #UNKNOWN_NUMBER_OF_ENTRIES}
+     * if number of entries couldn't be determined.
+     */
+    default long exactNumberOfEntries() {
+        return UNKNOWN_NUMBER_OF_ENTRIES;
+    }
+
+    /**
      * Inserts contents from another index. Any violations will be reported via the {@code conflictHandler}.
      *
      * @param other other index to validate contents from.

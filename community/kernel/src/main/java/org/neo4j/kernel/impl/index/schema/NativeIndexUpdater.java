@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -33,6 +34,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdate
     private final KEY treeKey;
     private final IndexUpdateIgnoreStrategy ignoreStrategy;
     private final ConflictDetectingValueMerger<KEY, Value[]> conflictDetectingValueMerger;
+    private final LongAdder numberOfEntries;
     private Writer<KEY, NullValue> writer;
 
     private boolean closed = true;
@@ -40,10 +42,12 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdate
     NativeIndexUpdater(
             KEY treeKey,
             IndexUpdateIgnoreStrategy ignoreStrategy,
-            ConflictDetectingValueMerger<KEY, Value[]> conflictDetectingValueMerger) {
+            ConflictDetectingValueMerger<KEY, Value[]> conflictDetectingValueMerger,
+            LongAdder numberOfEntries) {
         this.treeKey = treeKey;
         this.ignoreStrategy = ignoreStrategy;
         this.conflictDetectingValueMerger = conflictDetectingValueMerger;
+        this.numberOfEntries = numberOfEntries;
     }
 
     NativeIndexUpdater<KEY> initialize(Writer<KEY, NullValue> writer) {
@@ -60,7 +64,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdate
     public void process(IndexEntryUpdate update) throws IndexEntryConflictException {
         assertOpen();
         ValueIndexEntryUpdate valueUpdate = asValueUpdate(update);
-        processUpdate(treeKey, valueUpdate, writer, conflictDetectingValueMerger, ignoreStrategy);
+        processUpdate(treeKey, valueUpdate, writer, conflictDetectingValueMerger, ignoreStrategy, numberOfEntries);
     }
 
     @Override
@@ -85,14 +89,16 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdate
             ValueIndexEntryUpdate update,
             Writer<KEY, NullValue> writer,
             ConflictDetectingValueMerger<KEY, Value[]> conflictDetectingValueMerger,
-            IndexUpdateIgnoreStrategy ignoreStrategy)
+            IndexUpdateIgnoreStrategy ignoreStrategy,
+            LongAdder numberOfEntries)
             throws IndexEntryConflictException {
         switch (update.updateMode()) {
             case REMOVED:
-                processRemove(treeKey, update.getEntityId(), update.values(), writer, ignoreStrategy);
+                processRemove(treeKey, update.getEntityId(), update.values(), writer, ignoreStrategy, numberOfEntries);
                 break;
             case CHANGED:
-                processRemove(treeKey, update.getEntityId(), update.beforeValues(), writer, ignoreStrategy);
+                processRemove(
+                        treeKey, update.getEntityId(), update.beforeValues(), writer, ignoreStrategy, numberOfEntries);
             // fallthrough
             case ADDED:
                 processAdd(
@@ -113,14 +119,18 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdate
             long entityId,
             Value[] values,
             Writer<KEY, NullValue> writer,
-            IndexUpdateIgnoreStrategy ignoreStrategy) {
+            IndexUpdateIgnoreStrategy ignoreStrategy,
+            LongAdder numberOfEntries) {
         if (ignoreStrategy.ignore(values)) {
             return;
         }
         // todo Do we need to verify that we actually removed something at all?
         // todo Difference between online and recovery?
         initializeKeyFromUpdate(treeKey, entityId, values);
-        writer.remove(treeKey);
+        var removedValue = writer.remove(treeKey);
+        if (removedValue != null && numberOfEntries != null) {
+            numberOfEntries.add(-1);
+        }
     }
 
     private static <KEY extends NativeIndexKey<KEY>> void processAdd(

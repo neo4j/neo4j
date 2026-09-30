@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import java.util.function.BooleanSupplier;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -71,7 +72,8 @@ public interface ConstraintValidator {
             LabelSchemaDescriptor descriptor,
             TokenNameLookup tokenNameLookup,
             boolean isDependent,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            BooleanSupplier doContinue)
             throws CreateConstraintFailureException;
 
     void validateRelationshipPropertyExistenceConstraint(
@@ -89,7 +91,8 @@ public interface ConstraintValidator {
             RelationTypeSchemaDescriptor descriptor,
             TokenNameLookup tokenNameLookup,
             boolean isDependent,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            BooleanSupplier doContinue)
             throws CreateConstraintFailureException;
 
     TxStateVisitor decorateTxStateVisitor(

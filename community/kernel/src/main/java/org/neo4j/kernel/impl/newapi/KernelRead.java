@@ -26,6 +26,7 @@ import static org.neo4j.util.Preconditions.checkArgument;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalLong;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -59,6 +60,7 @@ import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -224,6 +226,11 @@ public class KernelRead implements Read {
         CursorContext cursorContext =
                 pickCursorContext(queryContext.cursorContext(), includeChangesFromThisTransaction);
         indexSession.reader().query(client, queryContext, cursorContext, constraints, query);
+    }
+
+    OptionalLong indexExactNumberOfEntries(IndexDescriptor indexDescriptor) throws IndexNotFoundKernelException {
+        long result = indexingService.getIndexProxy(indexDescriptor).exactNumberOfEntries();
+        return result == IndexAccessor.UNKNOWN_NUMBER_OF_ENTRIES ? OptionalLong.empty() : OptionalLong.of(result);
     }
 
     @Override
@@ -715,7 +722,7 @@ public class KernelRead implements Read {
                     "This index does not support partitioned scan for this query: "
                             + descriptor.userDescription(tokenRead));
         }
-        if (txStateHolder.hasTxStateWithChanges()) {
+        if (txStateHolder.hasTxStateWithChanges() && txStateHolder.txState().hasDataChanges()) {
             throw new IllegalStateException(
                     "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
         }

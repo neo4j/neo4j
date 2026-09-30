@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.PageCursor;
@@ -28,13 +29,18 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 public class NativeIndexHeaderWriter implements Consumer<PageCursor> {
     private final byte state;
+    private final LongAdder numberOfEntries;
 
-    public NativeIndexHeaderWriter(byte state) {
+    public NativeIndexHeaderWriter(byte state, LongAdder numberOfEntries) {
         this.state = state;
+        this.numberOfEntries = numberOfEntries;
     }
 
     @Override
     public void accept(PageCursor cursor) {
         cursor.putByte(state);
+        if (numberOfEntries != null) {
+            cursor.putLong(numberOfEntries.sum());
+        }
     }
 }

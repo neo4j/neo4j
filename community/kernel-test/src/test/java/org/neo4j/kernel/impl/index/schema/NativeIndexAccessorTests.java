@@ -37,6 +37,7 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 import static org.neo4j.storageengine.api.EagerValueIndexEntryUpdate.remove;
+import static org.neo4j.test.Race.throwing;
 import static org.neo4j.values.storable.Values.of;
 
 import java.util.ArrayList;
@@ -47,6 +48,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -69,6 +71,8 @@ import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.storageengine.api.EagerValueIndexEntryUpdate;
+import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.ValueType;
@@ -491,6 +495,70 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
 
         // then
         assertFalse(fs.fileExists(indexFiles.getBase()));
+    }
+
+    @Test
+    void shouldTrackNumberOfEntries() {
+        // given
+        var expectedNumberOfEntries = new AtomicLong();
+
+        // when
+        var nextEntityId = new AtomicLong();
+        for (int i = 0; i < 100; i++) {
+            var race = new Race();
+            int round = i;
+            race.addContestants(
+                    4,
+                    c -> throwing(() -> {
+                        var rng = new RandomSupport();
+                        rng.reset();
+                        var generator = valueCreatorUtil.randomUpdateGenerator(rng);
+                        Set<EagerValueIndexEntryUpdate> updates = new HashSet<>();
+
+                        // add some
+                        try (var updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, true)) {
+                            for (int j = 0; j < 20; j++) {
+                                var template = generator.next();
+                                var update = EagerValueIndexEntryUpdate.add(
+                                        nextEntityId.getAndIncrement(), indexDescriptor, template.values());
+                                updates.add(update);
+                                updater.process(update);
+                                expectedNumberOfEntries.incrementAndGet();
+                            }
+                        }
+
+                        // update some
+                        try (var updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, true)) {
+                            var toUpdate = rng.selection(
+                                    updates.toArray(new EagerValueIndexEntryUpdate[0]), 0, updates.size() / 2, false);
+                            for (var prev : toUpdate) {
+                                var template = generator.next();
+                                var update = EagerValueIndexEntryUpdate.change(
+                                        prev.getEntityId(), indexDescriptor, prev.values(), template.values());
+                                updates.remove(prev);
+                                updates.add(update);
+                                updater.process(update);
+                            }
+                        }
+
+                        // remove some
+                        try (var updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, true)) {
+                            var toRemove = rng.selection(
+                                    updates.toArray(new EagerValueIndexEntryUpdate[0]), 0, updates.size() / 2, false);
+                            for (var prev : toRemove) {
+                                var update = EagerValueIndexEntryUpdate.remove(
+                                        prev.getEntityId(), indexDescriptor, prev.values());
+                                updates.remove(prev);
+                                updater.process(update);
+                                expectedNumberOfEntries.decrementAndGet();
+                            }
+                        }
+                    }));
+            race.goUnchecked();
+
+            // then
+            assertThat(accessor.exactNumberOfEntries()).isEqualTo(expectedNumberOfEntries.get());
+        }
     }
 
     private Value generateUniqueValue(EagerValueIndexEntryUpdate[] updates) {

@@ -41,6 +41,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -306,7 +307,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                     IndexKeyStorage<KEY> indexKeyStorage = new IndexKeyStorage<>(
                             fileSystem, duplicatesFile, allocator, readBufferSize, layout, memoryTracker)) {
                 RecordingConflictDetector<KEY> recordingConflictDetector =
-                        new RecordingConflictDetector<>(!descriptor.isUnique(), indexKeyStorage);
+                        new RecordingConflictDetector<>(!descriptor.isUnique(), indexKeyStorage, numberOfEntries);
                 nonUniqueIndexSample = writeScanUpdatesToTree(
                         populationWorkScheduler, recordingConflictDetector, allocator, readBufferSize, cursorContext);
 
@@ -729,8 +730,9 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             extends ConflictDetectingValueMerger<KEY, KEY> {
         private final IndexKeyStorage<KEY> allConflictingKeys;
 
-        RecordingConflictDetector(boolean compareEntityIds, IndexKeyStorage<KEY> indexKeyStorage) {
-            super(compareEntityIds);
+        RecordingConflictDetector(
+                boolean compareEntityIds, IndexKeyStorage<KEY> indexKeyStorage, LongAdder numberOfEntries) {
+            super(compareEntityIds, numberOfEntries);
             allConflictingKeys = indexKeyStorage;
         }
 

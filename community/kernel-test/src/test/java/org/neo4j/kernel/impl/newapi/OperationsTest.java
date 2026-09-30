@@ -105,6 +105,7 @@ import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.SecurityLogHelper;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -277,7 +278,8 @@ abstract class OperationsTest {
                     public boolean supportsOntology() {
                         return supportsOntology;
                     }
-                });
+                },
+                mock(JobScheduler.class));
         operations.initialize(NULL_CONTEXT);
 
         this.order = inOrder(locks, txState, storageReader, storageReaderSnapshot, creationContext, storageLocks);

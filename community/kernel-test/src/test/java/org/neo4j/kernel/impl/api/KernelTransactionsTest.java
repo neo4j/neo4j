@@ -959,7 +959,8 @@ class KernelTransactionsTest {
                 NullLogProvider.getInstance(),
                 TopologyGraphDbmsModel.HostedOnMode.SINGLE,
                 new DatabaseMonitors(new Monitors(), DatabaseLogProvider.nullDatabaseLogProvider()),
-                RaftUpgradeBarrier.NO_OP);
+                RaftUpgradeBarrier.NO_OP,
+                mock(JobScheduler.class));
     }
 
     private static TestKernelTransactions createTestTransactions(
@@ -1107,7 +1108,8 @@ class KernelTransactionsTest {
                     NullLogProvider.getInstance(),
                     TopologyGraphDbmsModel.HostedOnMode.SINGLE,
                     new DatabaseMonitors(new Monitors(), DatabaseLogProvider.nullDatabaseLogProvider()),
-                    RaftUpgradeBarrier.NO_OP);
+                    RaftUpgradeBarrier.NO_OP,
+                    mock(JobScheduler.class));
         }
 
         @Override

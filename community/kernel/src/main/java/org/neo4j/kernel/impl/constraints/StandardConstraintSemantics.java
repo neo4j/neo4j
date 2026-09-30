@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.constraints;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.schema.GraphTypeDependence.DEPENDENT;
 
+import java.util.function.BooleanSupplier;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -109,7 +110,8 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             LabelSchemaDescriptor descriptor,
             TokenNameLookup tokenNameLookup,
             boolean isDependent,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            BooleanSupplier doContinue)
             throws CreateConstraintFailureException {
         throw propertyExistenceConstraintsNotAllowed(descriptor, tokenNameLookup, isDependent);
     }
@@ -133,7 +135,8 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             RelationTypeSchemaDescriptor descriptor,
             TokenNameLookup tokenNameLookup,
             boolean isDependent,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            BooleanSupplier doContinue)
             throws CreateConstraintFailureException {
         throw propertyExistenceConstraintsNotAllowed(descriptor, tokenNameLookup, isDependent);
     }

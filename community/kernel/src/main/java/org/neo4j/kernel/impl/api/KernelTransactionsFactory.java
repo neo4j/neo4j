@@ -51,6 +51,7 @@ import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.ExceptionHandlerService;
 import org.neo4j.resources.CpuClock;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
@@ -102,5 +103,6 @@ public interface KernelTransactionsFactory {
             InternalLogProvider internalLogProvider,
             TopologyGraphDbmsModel.HostedOnMode mode,
             DatabaseMonitors databaseMonitors,
-            RaftUpgradeBarrier raftUpgradeBarrier);
+            RaftUpgradeBarrier raftUpgradeBarrier,
+            JobScheduler jobScheduler);
 }

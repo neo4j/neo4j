@@ -107,6 +107,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -964,7 +965,8 @@ public class PlainOperationsTest extends OperationsTest {
                 Config.defaults(),
                 EmptyMemoryTracker.INSTANCE,
                 () -> StaticAccessMode.FULL,
-                TransactionStateBehaviour.DEFAULT_BEHAVIOUR);
+                TransactionStateBehaviour.DEFAULT_BEHAVIOUR,
+                mock(JobScheduler.class));
 
         // when
         operations.nodeCreate();
@@ -1012,7 +1014,8 @@ public class PlainOperationsTest extends OperationsTest {
                 Config.defaults(),
                 EmptyMemoryTracker.INSTANCE,
                 () -> StaticAccessMode.FULL,
-                TransactionStateBehaviour.DEFAULT_BEHAVIOUR);
+                TransactionStateBehaviour.DEFAULT_BEHAVIOUR,
+                mock(JobScheduler.class));
         operations.initialize(NULL_CONTEXT);
 
         // when
@@ -1057,7 +1060,8 @@ public class PlainOperationsTest extends OperationsTest {
                 Config.defaults(),
                 EmptyMemoryTracker.INSTANCE,
                 () -> StaticAccessMode.FULL,
-                TransactionStateBehaviour.DEFAULT_BEHAVIOUR);
+                TransactionStateBehaviour.DEFAULT_BEHAVIOUR,
+                mock(JobScheduler.class));
 
         // when
         operations.relationshipCreate(0, 1, 2);
@@ -1108,7 +1112,8 @@ public class PlainOperationsTest extends OperationsTest {
                 Config.defaults(),
                 EmptyMemoryTracker.INSTANCE,
                 () -> StaticAccessMode.FULL,
-                TransactionStateBehaviour.DEFAULT_BEHAVIOUR);
+                TransactionStateBehaviour.DEFAULT_BEHAVIOUR,
+                mock(JobScheduler.class));
 
         // when
         operations.indexCreate(IndexPrototype.forSchema(schema).withName("name"));

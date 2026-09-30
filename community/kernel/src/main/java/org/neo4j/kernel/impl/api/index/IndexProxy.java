@@ -84,6 +84,14 @@ public interface IndexProxy extends MinimalIndexAccessor {
     InternalIndexState getState();
 
     /**
+     * @return if known, the exact number of entries in this index, or {@link IndexAccessor#UNKNOWN_NUMBER_OF_ENTRIES}
+     * if number of entries couldn't be determined.
+     */
+    default long exactNumberOfEntries() {
+        return IndexAccessor.UNKNOWN_NUMBER_OF_ENTRIES;
+    }
+
+    /**
      * @implSpec Must be safe to call while another thread is concurrently flipping or closing this proxy, because
      * {@link FlippableIndexProxy} deliberately reads it without holding its lock. Concretely: return a constant, a
      * {@code final} field, or something read from a concurrent collection or atomic counter - never state that

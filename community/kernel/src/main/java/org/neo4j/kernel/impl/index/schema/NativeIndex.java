@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.kernel.api.index.IndexAccessor.UNKNOWN_NUMBER_OF_ENTRIES;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.LongAdder;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.DependencyResolver;
@@ -57,6 +58,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     private final boolean readOnly;
     final PageCacheTracer pageCacheTracer;
     private final DependencyResolver dependencyResolver;
+    protected LongAdder numberOfEntries;
 
     protected GBPTree<KEY, NullValue> tree;
 
@@ -87,13 +89,14 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         ensureDirectoryExist();
         MultiRootGBPTree.Monitor monitor = treeMonitor();
         var storeFile = indexFiles.getStoreFile();
+        var headerReader = new NativeIndexHeaderReader();
         tree = new GBPTree<>(
                 pageCache,
                 fileSystem,
                 storeFile,
                 layout,
                 monitor,
-                NO_HEADER_READER,
+                headerReader,
                 recoveryCleanupWorkCollector,
                 readOnly,
                 openOptions,
@@ -102,6 +105,12 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
                 contextFactory,
                 pageCacheTracer,
                 dependencyResolver);
+        if (!headerReader.wasRead || headerReader.numberOfEntries != UNKNOWN_NUMBER_OF_ENTRIES) {
+            numberOfEntries = new LongAdder();
+            if (headerReader.numberOfEntries != UNKNOWN_NUMBER_OF_ENTRIES) {
+                numberOfEntries.add(headerReader.numberOfEntries);
+            }
+        }
         afterTreeInstantiation(tree);
     }
 

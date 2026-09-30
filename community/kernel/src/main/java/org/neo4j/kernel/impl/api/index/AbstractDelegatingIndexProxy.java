@@ -68,6 +68,11 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy {
     }
 
     @Override
+    public long exactNumberOfEntries() {
+        return getDelegate().exactNumberOfEntries();
+    }
+
+    @Override
     public void force(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext)
             throws IOException {
         getDelegate().force(flushEvent, asyncBlockAccessor, cursorContext);

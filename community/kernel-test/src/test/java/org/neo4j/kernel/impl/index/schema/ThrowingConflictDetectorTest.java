@@ -34,7 +34,7 @@ import org.neo4j.values.storable.Values;
 
 class ThrowingConflictDetectorTest {
     private final ThrowingConflictDetector<RangeKey> detector = new ThrowingConflictDetector<>(
-            true, SchemaDescriptors.forLabel(1, 42), SchemaUserDescription.TOKEN_ID_NAME_LOOKUP);
+            true, SchemaDescriptors.forLabel(1, 42), SchemaUserDescription.TOKEN_ID_NAME_LOOKUP, null);
 
     @Test
     void shouldReportConflictOnSameValueAndDifferentEntityIds() {

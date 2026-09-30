@@ -1274,7 +1274,8 @@ public class Database extends AbstractDatabase {
                 internalLogProvider,
                 mode,
                 databaseMonitors,
-                raftUpgradeBarrier);
+                raftUpgradeBarrier,
+                scheduler);
 
         var transactionMonitor =
                 buildTransactionMonitor(kernelTransactions, logMetadataProvider, databaseConfig, indexingService);

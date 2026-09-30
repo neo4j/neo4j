@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.OpenOption;
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
@@ -109,11 +108,12 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
 
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
-        mainConflictDetector =
-                new ThrowingConflictDetector<>(!descriptor.isUnique(), descriptor.schema(), tokenNameLookup);
+        mainConflictDetector = new ThrowingConflictDetector<>(
+                !descriptor.isUnique(), descriptor.schema(), tokenNameLookup, numberOfEntries);
         // for updates we have to have uniqueness on (value,entityId) to allow for intermediary violating updates.
         // there are added conflict checks after updates have been applied.
-        updatesConflictDetector = new ThrowingConflictDetector<>(true, descriptor.schema(), tokenNameLookup);
+        updatesConflictDetector =
+                new ThrowingConflictDetector<>(true, descriptor.schema(), tokenNameLookup, numberOfEntries);
     }
 
     @Override
@@ -127,23 +127,6 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
         } finally {
             dropped = true;
             closed = true;
-        }
-    }
-
-    @Override
-    public void add(Collection<? extends IndexEntryUpdate> updates, CursorContext cursorContext)
-            throws IndexEntryConflictException {
-        try (Writer<KEY, NullValue> writer = tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext)) {
-            for (IndexEntryUpdate indexEntryUpdate : updates) {
-                NativeIndexUpdater.processUpdate(
-                        treeKey,
-                        (ValueIndexEntryUpdate) indexEntryUpdate,
-                        writer,
-                        mainConflictDetector,
-                        ignoreStrategy);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
     }
 
@@ -211,7 +194,8 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
 
     void flushTreeAndMarkAs(
             byte state, FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
-        tree.checkpoint(new NativeIndexHeaderWriter(state), flushEvent, asyncBlockAccessor, cursorContext);
+        tree.checkpoint(
+                new NativeIndexHeaderWriter(state, numberOfEntries), flushEvent, asyncBlockAccessor, cursorContext);
     }
 
     IndexSample buildNonUniqueIndexSample(CursorContext cursorContext) {
@@ -239,7 +223,8 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
                         (ValueIndexEntryUpdate) indexEntryUpdate.update(),
                         writer,
                         conflictDetector,
-                        ignoreStrategy);
+                        ignoreStrategy,
+                        numberOfEntries);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);

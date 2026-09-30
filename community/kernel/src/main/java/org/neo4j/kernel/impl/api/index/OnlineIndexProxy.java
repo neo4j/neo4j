@@ -135,6 +135,11 @@ public class OnlineIndexProxy implements IndexProxy {
     }
 
     @Override
+    public long exactNumberOfEntries() {
+        return accessor.exactNumberOfEntries();
+    }
+
+    @Override
     public void force(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
         accessor.force(flushEvent, asyncBlockAccessor, cursorContext);
     }

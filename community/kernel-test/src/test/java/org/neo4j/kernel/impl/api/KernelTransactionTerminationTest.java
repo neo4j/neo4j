@@ -86,6 +86,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.ExceptionHandlerService;
 import org.neo4j.resources.CpuClock;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
 import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
@@ -316,7 +317,8 @@ class KernelTransactionTerminationTest {
                     false,
                     mock(ExceptionHandlerService.class),
                     TopologyGraphDbmsModel.HostedOnMode.SINGLE,
-                    mock(AvailabilityGuard.class));
+                    mock(AvailabilityGuard.class),
+                    mock(JobScheduler.class));
 
             this.monitor = monitor;
         }

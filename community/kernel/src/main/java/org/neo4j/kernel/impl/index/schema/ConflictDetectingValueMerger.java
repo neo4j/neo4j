@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
@@ -33,13 +34,16 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 abstract class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, REPORT_TYPE>
         implements ValueMerger<KEY, NullValue> {
     private final boolean compareEntityIds;
+    private final LongAdder numberOfEntries;
 
     private boolean conflict;
     private long existingNodeId;
     private long addedNodeId;
+    private boolean added;
 
-    ConflictDetectingValueMerger(boolean compareEntityIds) {
+    ConflictDetectingValueMerger(boolean compareEntityIds, LongAdder numberOfEntries) {
         this.compareEntityIds = compareEntityIds;
+        this.numberOfEntries = numberOfEntries;
     }
 
     @Override
@@ -50,6 +54,19 @@ abstract class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, REP
             addedNodeId = newKey.getEntityId();
         }
         return MergeResult.UNCHANGED;
+    }
+
+    @Override
+    public void added(KEY newKey, NullValue newValue) {
+        added = true;
+    }
+
+    @Override
+    public void completed() {
+        if (added && numberOfEntries != null) {
+            numberOfEntries.add(1);
+            added = false;
+        }
     }
 
     /**

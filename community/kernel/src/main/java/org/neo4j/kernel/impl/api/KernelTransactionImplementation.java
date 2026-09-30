@@ -179,6 +179,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.ExceptionHandlerService;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -387,7 +388,8 @@ public class KernelTransactionImplementation
             boolean multiVersioned,
             ExceptionHandlerService exceptionHandlerService,
             TopologyGraphDbmsModel.HostedOnMode mode,
-            AvailabilityGuard availabilityGuard) {
+            AvailabilityGuard availabilityGuard,
+            JobScheduler jobScheduler) {
         this.logProvider = logProvider;
         this.exceptionHandlerService = exceptionHandlerService;
         this.availabilityGuard = availabilityGuard;
@@ -509,7 +511,8 @@ public class KernelTransactionImplementation
                 config,
                 memoryTracker,
                 accessModeProvider,
-                transactionStateBehaviour);
+                transactionStateBehaviour,
+                jobScheduler);
         this.traceProvider = getTraceProvider(config);
         this.initializationTrace = NONE;
         this.transactionHeapBytesLimit = config.get(memory_transaction_max_size);
@@ -912,7 +915,7 @@ public class KernelTransactionImplementation
 
     @Override
     public ExecutionContext createExecutionContext(HeapEstimatorCacheConfig heapEstimatorCacheConfig) {
-        if (hasTxStateWithChanges()) {
+        if (hasTxStateWithChanges() && txState.hasDataChanges()) {
             throw new IllegalStateException(
                     "Execution context cannot be used for transactions with non-empty transaction state");
         }

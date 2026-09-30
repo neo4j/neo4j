@@ -99,6 +99,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.ExceptionHandlerService;
 import org.neo4j.resources.CpuClock;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.LogMetadataProvider;
@@ -319,7 +320,8 @@ class KernelTransactionTestBase {
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED),
                 exceptionHandlerService,
                 TopologyGraphDbmsModel.HostedOnMode.SINGLE,
-                availabilityGuard);
+                availabilityGuard,
+                mock(JobScheduler.class));
     }
 
     KernelTransactionImplementation newNotInitializedTransaction(LeaseService leaseService) {

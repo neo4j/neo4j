@@ -29,6 +29,8 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.additional_lock_verification;
 import static org.neo4j.exceptions.EntityNotFoundException.createEntityNotFoundException;
+import static org.neo4j.internal.helpers.collection.Iterators.filter;
+import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
@@ -44,6 +46,7 @@ import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.R
 import static org.neo4j.lock.ResourceType.INDEX_ENTRY;
 import static org.neo4j.lock.ResourceType.SCHEMA_NAME;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -55,7 +58,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.iterator.IntIterator;
@@ -90,6 +97,7 @@ import org.neo4j.internal.kernel.api.MutationCallback;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipCursor;
@@ -151,6 +159,7 @@ import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.AccessModeProvider;
+import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction.Revertable;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -175,6 +184,7 @@ import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -182,6 +192,11 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobHandles;
+import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.NodeIdAllocator;
 import org.neo4j.storageengine.api.PropertySelection;
@@ -223,6 +238,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private final boolean alwaysUseLatestIndexProvider;
     private final boolean noPropUpdateOnSameValue;
     private final TransactionStateBehaviour transactionStateBehaviour;
+    private final JobScheduler jobScheduler;
+    private final int indexWorkers;
     private DefaultNodeCursor localNodeCursor;
     private NodeCursor restrictedNodeCursor;
     private PropertyCursor localPropertyCursor;
@@ -251,7 +268,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             Config config,
             MemoryTracker memoryTracker,
             AccessModeProvider accessModeProvider,
-            TransactionStateBehaviour transactionStateBehaviour) {
+            TransactionStateBehaviour transactionStateBehaviour,
+            JobScheduler jobScheduler) {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
         this.dbmsRuntimeVersionProvider = dbmsRuntimeVersionProvider;
@@ -273,6 +291,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         this.alwaysUseLatestIndexProvider = config.get(GraphDatabaseInternalSettings.always_use_latest_index_provider);
         this.noPropUpdateOnSameValue = config.get(GraphDatabaseInternalSettings.no_property_update_on_identical_value);
         this.transactionStateBehaviour = transactionStateBehaviour;
+        this.jobScheduler = jobScheduler;
+        int indexWorkers = config.get(GraphDatabaseInternalSettings.index_population_workers);
+        this.indexWorkers = indexWorkers == 0 ? Runtime.getRuntime().availableProcessors() : indexWorkers;
     }
 
     public void initialize(CursorContext cursorContext) {
@@ -2550,6 +2571,22 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private void enforceNodeKeyConstraint(SchemaDescriptor schema) throws KernelException {
+        if (!ktx.storageEngineCharacteristics().isMultiVersioned()) {
+            // First, check if there is a backing uniqueness index (there really should be at this point),
+            // and if so and that index has entry count tracking then use it as a way of instant verification.
+            IndexDescriptor backingUniquenessIndex =
+                    singleOrNull(filter(IndexDescriptor::isUnique, schemaRead.index(schema)));
+            if (backingUniquenessIndex != null) {
+                OptionalLong indexCount = kernelRead.indexExactNumberOfEntries(backingUniquenessIndex);
+                if (indexCount.isPresent()) {
+                    long storeCount = kernelRead.countsForNode(schema.getLabelId());
+                    if (storeCount == indexCount.getAsLong()) {
+                        return;
+                    }
+                }
+            }
+        }
+
         IndexDescriptor index = findUsableTokenIndex(NODE);
         if (index != IndexDescriptor.NO_INDEX) {
             try (DefaultNodeLabelIndexCursor cursor =
@@ -2579,6 +2616,22 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private void enforceRelKeyConstraint(SchemaDescriptor schema) throws KernelException {
+        if (!ktx.storageEngineCharacteristics().isMultiVersioned()) {
+            // First, check if there is a backing uniqueness index (there really should be at this point),
+            // and if so and that index has entry count tracking then use it as a way of instant verification.
+            IndexDescriptor backingUniquenessIndex =
+                    singleOrNull(filter(IndexDescriptor::isUnique, schemaRead.index(schema)));
+            if (backingUniquenessIndex != null) {
+                OptionalLong indexCount = kernelRead.indexExactNumberOfEntries(backingUniquenessIndex);
+                if (indexCount.isPresent()) {
+                    long storeCount = kernelRead.countsForRelationship(ANY_LABEL, schema.getRelTypeId(), ANY_LABEL);
+                    if (storeCount == indexCount.getAsLong()) {
+                        return;
+                    }
+                }
+            }
+        }
+
         IndexDescriptor index = findUsableTokenIndex(RELATIONSHIP);
         if (index != IndexDescriptor.NO_INDEX) {
             try (RelationshipTypeIndexCursor cursor =
@@ -2635,12 +2688,45 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             throws KernelException {
         IndexDescriptor index = findUsableTokenIndex(NODE);
         if (index != IndexDescriptor.NO_INDEX) {
-            try (DefaultNodeLabelIndexCursor cursor =
-                    cursors.allocateFullAccessNodeLabelIndexCursor(ktx.cursorContext())) {
-                TokenReadSession session = kernelRead.tokenReadSession(index);
-                kernelRead.nodeLabelScan(
-                        session, cursor, unconstrained(), new TokenPredicate(schema.getLabelId()), ktx.cursorContext());
-                nodeValidatorWithIndex.validate(cursor, localNodeCursor, localPropertyCursor, token);
+            TokenReadSession session = kernelRead.tokenReadSession(index);
+            PartitionedScan<NodeLabelIndexCursor> partitioning = kernelRead
+                    .nodeLabelScans(session, indexWorkers, ktx.cursorContext(), new TokenPredicate(schema.getLabelId()))
+                    .get(0);
+            try (KernelStatement ignore = ktx.acquireStatement()) {
+                AtomicBoolean doContinue = new AtomicBoolean(true);
+                List<JobHandle<Void>> parts = new ArrayList<>();
+                for (int i = 0; i < partitioning.getNumberOfPartitions(); i++) {
+                    Callable<Void> task = () -> {
+                        try (ExecutionContext ctx = ktx.createExecutionContext()) {
+                            try (NodeLabelIndexCursor cursor =
+                                            ctx.cursors().allocateFullAccessNodeLabelIndexCursor(ctx.cursorContext());
+                                    NodeCursor nodeCursor = ctx.cursors()
+                                            .allocateFullAccessNodeCursor(ctx.cursorContext(), ctx.memoryTracker());
+                                    PropertyCursor propertyCursor = ctx.cursors()
+                                            .allocateFullAccessPropertyCursor(
+                                                    ctx.cursorContext(), ctx.memoryTracker()); ) {
+                                boolean reserved = partitioning.reservePartition(cursor, ctx);
+                                assert reserved;
+                                nodeValidatorWithIndex.validate(
+                                        cursor, nodeCursor, propertyCursor, token, doContinue::get);
+                                return null;
+                            } finally {
+                                ctx.complete();
+                            }
+                        } catch (Exception e) {
+                            doContinue.set(false);
+                            throw e;
+                        }
+                    };
+                    parts.add(jobScheduler.schedule(
+                            Group.INDEX_POPULATION_WORK,
+                            new JobMonitoringParams(
+                                    ktx.securityContext().subject().userSubject(),
+                                    "db",
+                                    "Enforce node property constraint"),
+                            task));
+                }
+                JobHandles.getAllResults(parts, KernelException.class, RuntimeException::new);
             }
         } else {
             try (DefaultNodeCursor cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext(), memoryTracker)) {
@@ -2657,7 +2743,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             throws KernelException {
         enforceNodePropertyConstraint(
                 schema,
-                (allNodes, nodeCursor, propertyCursor, tokenNameLookup) ->
+                (allNodes, nodeCursor, propertyCursor, tokenNameLookup, doContinue) ->
                         constraintSemantics.validateNodePropertyExistenceConstraint(
                                 allNodes,
                                 nodeCursor,
@@ -2665,7 +2751,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                                 schema,
                                 tokenNameLookup,
                                 isDependent,
-                                memoryTracker),
+                                memoryTracker,
+                                doContinue),
                 (nodeCursor, propertyCursor, tokenNameLookup) ->
                         constraintSemantics.validateNodePropertyExistenceConstraint(
                                 nodeCursor, propertyCursor, schema, tokenNameLookup, isDependent, memoryTracker));
@@ -2674,7 +2761,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private void enforceNodePropertyTypeConstraint(TypeConstraintDescriptor descriptor) throws KernelException {
         enforceNodePropertyConstraint(
                 descriptor.schema().asLabelSchemaDescriptor(),
-                (allNodes, nodeCursor, propertyCursor, tokenNameLookup) ->
+                (allNodes, nodeCursor, propertyCursor, tokenNameLookup, doContinue) ->
                         constraintSemantics.validateNodePropertyTypeConstraint(
                                 allNodes, nodeCursor, propertyCursor, descriptor, tokenNameLookup, memoryTracker),
                 (nodeCursor, propertyCursor, tokenNameLookup) -> constraintSemantics.validateNodePropertyTypeConstraint(
@@ -2703,16 +2790,44 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             throws KernelException {
         IndexDescriptor index = findUsableTokenIndex(RELATIONSHIP);
         if (index != IndexDescriptor.NO_INDEX) {
-            try (RelationshipTypeIndexCursor fullAccessIndexCursor =
-                    cursors.allocateFullAccessRelationshipTypeIndexCursor(ktx.cursorContext(), memoryTracker)) {
-                TokenReadSession session = kernelRead.tokenReadSession(index);
-                kernelRead.relationshipTypeScan(
-                        session,
-                        fullAccessIndexCursor,
-                        unconstrained(),
-                        new TokenPredicate(schema.getRelTypeId()),
-                        ktx.cursorContext());
-                relValidatorWithIndex.validate(fullAccessIndexCursor, localPropertyCursor, token);
+            TokenReadSession session = kernelRead.tokenReadSession(index);
+            PartitionedScan<RelationshipTypeIndexCursor> partitioning = kernelRead
+                    .relationshipTypeScans(
+                            session, indexWorkers, ktx.cursorContext(), new TokenPredicate(schema.getRelTypeId()))
+                    .get(0);
+            try (KernelStatement ignore = ktx.acquireStatement()) {
+                AtomicBoolean doContinue = new AtomicBoolean(true);
+                List<JobHandle<Void>> parts = new ArrayList<>();
+                for (int i = 0; i < partitioning.getNumberOfPartitions(); i++) {
+                    Callable<Void> task = () -> {
+                        try (ExecutionContext ctx = ktx.createExecutionContext()) {
+                            try (RelationshipTypeIndexCursor cursor = ctx.cursors()
+                                            .allocateFullAccessRelationshipTypeIndexCursor(
+                                                    ctx.cursorContext(), ctx.memoryTracker());
+                                    PropertyCursor propertyCursor = ctx.cursors()
+                                            .allocateFullAccessPropertyCursor(
+                                                    ctx.cursorContext(), ctx.memoryTracker()); ) {
+                                boolean reserved = partitioning.reservePartition(cursor, ctx);
+                                assert reserved;
+                                relValidatorWithIndex.validate(cursor, propertyCursor, token, doContinue::get);
+                                return null;
+                            } finally {
+                                ctx.complete();
+                            }
+                        } catch (Exception e) {
+                            doContinue.set(false);
+                            throw e;
+                        }
+                    };
+                    parts.add(jobScheduler.schedule(
+                            Group.INDEX_POPULATION_WORK,
+                            new JobMonitoringParams(
+                                    ktx.securityContext().subject().userSubject(),
+                                    "db",
+                                    "Enforce relationship property constraint"),
+                            task));
+                }
+                JobHandles.getAllResults(parts, KernelException.class, RuntimeException::new);
             }
         } else {
             // fallback to all relationship scan
@@ -2732,9 +2847,15 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             RelationTypeSchemaDescriptor schema, boolean isDependent) throws KernelException {
         enforceRelationshipPropertyConstraint(
                 schema,
-                (relationships, propertyCursor, tokenNameLookup) ->
+                (relationships, propertyCursor, tokenNameLookup, doContinue) ->
                         constraintSemantics.validateRelationshipPropertyExistenceConstraint(
-                                relationships, propertyCursor, schema, tokenNameLookup, isDependent, memoryTracker),
+                                relationships,
+                                propertyCursor,
+                                schema,
+                                tokenNameLookup,
+                                isDependent,
+                                memoryTracker,
+                                doContinue),
                 (relationships, propertyCursor, tokenNameLookup) ->
                         constraintSemantics.validateRelationshipPropertyExistenceConstraint(
                                 relationships, propertyCursor, schema, tokenNameLookup, isDependent, memoryTracker));
@@ -2743,7 +2864,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private void enforceRelationshipPropertyTypeConstraint(TypeConstraintDescriptor descriptor) throws KernelException {
         enforceRelationshipPropertyConstraint(
                 descriptor.schema().asRelationshipTypeSchemaDescriptor(),
-                (relationships, propertyCursor, tokenNameLookup) ->
+                (relationships, propertyCursor, tokenNameLookup, doContinue) ->
                         constraintSemantics.validateRelationshipPropertyTypeConstraint(
                                 relationships, propertyCursor, descriptor, tokenNameLookup, memoryTracker),
                 (relationships, propertyCursor, tokenNameLookup) ->
@@ -3309,7 +3430,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 NodeLabelIndexCursor allNodes,
                 NodeCursor nodeCursor,
                 PropertyCursor propertyCursor,
-                TokenNameLookup tokenNameLookup)
+                TokenNameLookup tokenNameLookup,
+                BooleanSupplier doContinue)
                 throws CreateConstraintFailureException;
     }
 
@@ -3325,7 +3447,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         void validate(
                 RelationshipTypeIndexCursor relationships,
                 PropertyCursor propertyCursor,
-                TokenNameLookup tokenNameLookup)
+                TokenNameLookup tokenNameLookup,
+                BooleanSupplier doContinue)
                 throws CreateConstraintFailureException;
     }
 

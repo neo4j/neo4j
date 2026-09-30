@@ -80,6 +80,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.ExceptionHandlerService;
 import org.neo4j.resources.CpuClock;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -165,7 +166,8 @@ public final class KernelTransactionFactory {
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED),
                 exceptionHandlerService,
                 TopologyGraphDbmsModel.HostedOnMode.SINGLE,
-                mock(AvailabilityGuard.class));
+                mock(AvailabilityGuard.class),
+                mock(JobScheduler.class));
 
         DatabaseReference defaultSessionDb = Mockito.mock(DatabaseReference.class);
         Mockito.when(defaultSessionDb.fullName()).thenReturn(new NormalizedDatabaseName(DEFAULT_DATABASE_NAME));

@@ -38,6 +38,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.DataTree;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -66,8 +67,7 @@ import org.neo4j.values.storable.Value;
 
 public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> extends NativeIndex<KEY>
         implements IndexAccessor {
-    private final NativeIndexUpdater<KEY> singleUpdater;
-    private final NativeIndexHeaderWriter headerWriter;
+    private NativeIndexUpdater<KEY> singleUpdater;
     protected final LogProvider logProvider;
     protected final TokenNameLookup tokenNameLookup;
     private final int extraWriterParallelFlags;
@@ -83,14 +83,19 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
             TokenNameLookup tokenNameLookup) {
         super(databaseIndexContext, layout, indexFiles, descriptor, openOptions, readOnly);
         this.tokenNameLookup = tokenNameLookup;
-        this.singleUpdater = new NativeIndexUpdater<>(
-                layout.newKey(),
-                indexUpdateIgnoreStrategy(),
-                new ThrowingConflictDetector<>(true, descriptor.schema(), tokenNameLookup));
-        this.headerWriter = new NativeIndexHeaderWriter(BYTE_ONLINE);
         this.logProvider = logProvider;
         this.extraWriterParallelFlags =
                 openOptions.contains(PageCacheOpenOptions.MULTI_VERSIONED) ? DataTree.W_ESCALATING_COORDINATION : 0;
+    }
+
+    @Override
+    void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
+        super.instantiateTree(recoveryCleanupWorkCollector);
+        this.singleUpdater = new NativeIndexUpdater<>(
+                layout.newKey(),
+                indexUpdateIgnoreStrategy(),
+                new ThrowingConflictDetector<>(true, descriptor.schema(), tokenNameLookup, numberOfEntries),
+                numberOfEntries);
     }
 
     @Override
@@ -112,7 +117,9 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
                                 new ThrowingConflictDetector<>(
                                         !descriptor.isUnique() || mode.includeEntityIdInUniqueness(),
                                         descriptor.schema(),
-                                        tokenNameLookup))
+                                        tokenNameLookup,
+                                        numberOfEntries),
+                                numberOfEntries)
                         .initialize(tree.writer(extraWriterParallelFlags, cursorContext));
             } else {
                 assert mode.includeEntityIdInUniqueness();
@@ -145,26 +152,31 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
                         Group.INDEX_POPULATION_WORK,
                         new JobMonitoringParams(Subject.AUTH_DISABLED, databaseName, "insertFrom"),
                         () -> {
-                            var merger = new ConflictDetectingValueMerger<KEY, Value[]>(!valueUniqueness) {
-                                @Override
-                                void doReportConflict(long existingNodeId, long addedNodeId, Value[] toReport)
-                                        throws IndexEntryConflictException {
-                                    switch (conflictHandler.indexEntryConflict(existingNodeId, addedNodeId, toReport)) {
-                                        case THROW ->
-                                            throw IndexEntryConflictException.indexEntryConflict(
-                                                    descriptor.schema(),
-                                                    existingNodeId,
-                                                    addedNodeId,
-                                                    tokenNameLookup,
-                                                    toReport);
-                                        case DELETE -> {
-                                            /*then just skip it*/
+                            var merger =
+                                    new ConflictDetectingValueMerger<KEY, Value[]>(!valueUniqueness, numberOfEntries) {
+                                        @Override
+                                        void doReportConflict(long existingNodeId, long addedNodeId, Value[] toReport)
+                                                throws IndexEntryConflictException {
+                                            switch (conflictHandler.indexEntryConflict(
+                                                    existingNodeId, addedNodeId, toReport)) {
+                                                case THROW ->
+                                                    throw IndexEntryConflictException.indexEntryConflict(
+                                                            descriptor.schema(),
+                                                            existingNodeId,
+                                                            addedNodeId,
+                                                            tokenNameLookup,
+                                                            toReport);
+                                                case DELETE -> {
+                                                    /*then just skip it*/
+                                                }
+                                            }
                                         }
-                                    }
-                                }
-                            };
+                                    };
                             try (NativeIndexUpdater<KEY> updater = new NativeIndexUpdater<>(
-                                                    layout.newKey(), indexUpdateIgnoreStrategy(), merger)
+                                                    layout.newKey(),
+                                                    indexUpdateIgnoreStrategy(),
+                                                    merger,
+                                                    numberOfEntries)
                                             .initialize(tree.writer(updaterFlags, NULL_CONTEXT));
                                     ProgressListener localProgress = progress.threadLocalReporter()) {
                                 while (reader.hasNext()) {
@@ -336,7 +348,11 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
 
     @Override
     public void force(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor, CursorContext cursorContext) {
-        tree.checkpoint(headerWriter, flushEvent, asyncBlockAccessor, cursorContext);
+        tree.checkpoint(
+                new NativeIndexHeaderWriter(BYTE_ONLINE, numberOfEntries),
+                flushEvent,
+                asyncBlockAccessor,
+                cursorContext);
     }
 
     @Override
@@ -372,6 +388,11 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
         } catch (TreeInconsistencyException e) {
             return UNKNOWN_NUMBER_OF_ENTRIES;
         }
+    }
+
+    @Override
+    public long exactNumberOfEntries() {
+        return numberOfEntries != null ? numberOfEntries.sum() : UNKNOWN_NUMBER_OF_ENTRIES;
     }
 
     @Override

@@ -51,7 +51,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 public class TokenIndexAccessor<VALUE> extends TokenIndex<VALUE> implements IndexAccessor {
     private final EntityType entityType;
-    private final NativeIndexHeaderWriter headerWriter = new NativeIndexHeaderWriter(ONLINE);
+    private final NativeIndexHeaderWriter headerWriter = new NativeIndexHeaderWriter(ONLINE, null);
     private final int extraWriterParallelFlags;
 
     public TokenIndexAccessor(
