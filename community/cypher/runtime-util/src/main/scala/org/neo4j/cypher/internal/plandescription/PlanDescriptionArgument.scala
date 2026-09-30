@@ -108,6 +108,15 @@ object Arguments {
 
   case class PipelineInfo(pipelineId: Int, fused: Boolean, markAsSerial: Boolean) extends Argument
 
+  /**
+   * Lane group membership of an operator in the parallel runtime, e.g. for
+   * CALL { ... } IN CONCURRENT TRANSACTIONS.
+   *
+   * @param laneGroupId the id of the lane group (lane scope) the operator's pipeline belongs to
+   * @param concurrency pre-rendered concurrency of the lane group, e.g. "8 CONCURRENT" or "SERIAL"
+   */
+  case class LaneInfo(laneGroupId: Int, concurrency: String) extends Argument
+
   case class UsedIndexes(indexes: Map[String, Int]) extends Argument {
 
     def toSeqOfStrings: Seq[String] = indexes

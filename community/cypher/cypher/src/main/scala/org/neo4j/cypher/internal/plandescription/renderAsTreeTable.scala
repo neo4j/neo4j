@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.Distinctness
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.plandescription.Arguments.LaneInfo
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
@@ -209,6 +210,7 @@ private object Header {
   val ORDER = "Ordered by"
   val DISTINCTNESS = "Distinctness"
   val PIPELINE = "Pipeline"
+  val LANES = "Lanes"
   val INDEXES_USED = "Indexes Used"
 
   val ALL: Seq[String] =
@@ -225,6 +227,7 @@ private object Header {
       ORDER,
       DISTINCTNESS,
       PIPELINE,
+      LANES,
       INDEXES_USED
     )
 }
@@ -296,13 +299,20 @@ case class LevelledPlan(
   plan: InternalPlanDescription,
   level: Level,
   childLevel: Option[Level],
-  info: Option[PipelineInfo]
+  pipelineInfo: Option[PipelineInfo],
+  laneInfo: Option[LaneInfo]
 )
 
 object LevelledPlan {
 
   def apply(plan: InternalPlanDescription, level: Level): LevelledPlan = {
-    new LevelledPlan(plan, level, None, plan.arguments.collectFirst { case info: PipelineInfo => info })
+    new LevelledPlan(
+      plan,
+      level,
+      None,
+      plan.arguments.collectFirst { case pipelineInfo: PipelineInfo => pipelineInfo },
+      plan.arguments.collectFirst { case laneInfo: LaneInfo => laneInfo }
+    )
   }
 }
 
@@ -311,6 +321,7 @@ private object TreeTableBuilder {
   private val mergers = Seq[RowMerger](
     new MergeIfEqualFusedPipeline(Header.TIME, Header.PAGE_CACHE),
     new MergeAndEraseIfEqualPipeline(Header.PIPELINE),
+    new MergeAndEraseIfEqualLane(Header.LANES),
     new MergeEqualValues(Header.ORDER)
   )
 
@@ -319,7 +330,7 @@ private object TreeTableBuilder {
     withRawCardinalities: Boolean,
     withDistinctness: Boolean
   ): Table = {
-    inferMissingPipelineInfo(compactAndCollectPlans(rootPlan))
+    inferMissingPipelineAndLaneInfo(compactAndCollectPlans(rootPlan))
       .foldLeft(new TreeTableBuilder(withRawCardinalities, withDistinctness)) { case (builder, plan) =>
         builder.add(plan)
       }
@@ -364,27 +375,36 @@ private object TreeTableBuilder {
     CompactedPlanDescription.create(similar)
   }
 
-  private def inferMissingPipelineInfo(input: Iterator[LevelledPlan]): Iterator[LevelledPlan] =
+  private def inferMissingPipelineAndLaneInfo(input: Iterator[LevelledPlan]): Iterator[LevelledPlan] =
     new Iterator[LevelledPlan] {
       private val buffer = mutable.Queue.empty[LevelledPlan]
       private var lastSeenPipeline: Option[PipelineInfo] = None
+      private var lastSeenLane: Option[LaneInfo] = None
 
       override def hasNext: Boolean = input.hasNext || buffer.nonEmpty
 
       override def next(): LevelledPlan = {
-        if (buffer.isEmpty) fillBufferAndInferPipeline()
+        if (buffer.isEmpty) fillBufferAndInferPipelineAndLane()
         buffer.dequeue()
       }
 
-      private def fillBufferAndInferPipeline(): Unit = {
-        while (input.hasNext && (buffer.isEmpty || buffer.last.info.isEmpty)) {
+      private def fillBufferAndInferPipelineAndLane(): Unit = {
+        while (input.hasNext && (buffer.isEmpty || buffer.last.pipelineInfo.isEmpty)) {
           buffer.enqueue(input.next())
         }
-        if (buffer.size >= 2 && lastSeenPipeline.exists(_.fused) && lastSeenPipeline == buffer.last.info) {
-          checkOnlyWhenAssertionsAreEnabled(buffer.forall(p => p.info.isEmpty || p.info == lastSeenPipeline))
-          buffer.indices.foreach(_ => buffer.enqueue(buffer.dequeue().copy(info = lastSeenPipeline)))
+        if (buffer.size >= 2 && lastSeenPipeline.exists(_.fused) && lastSeenPipeline == buffer.last.pipelineInfo) {
+          checkOnlyWhenAssertionsAreEnabled(buffer.forall(p =>
+            p.pipelineInfo.isEmpty || p.pipelineInfo == lastSeenPipeline
+          ))
+          buffer.indices.foreach(_ => buffer.enqueue(buffer.dequeue().copy(pipelineInfo = lastSeenPipeline)))
         }
-        lastSeenPipeline = buffer.last.info
+        if (buffer.size >= 2 && lastSeenLane.isDefined && lastSeenLane == buffer.last.laneInfo) {
+          // Rows without pipeline info that sit between two rows of the same lane group execute
+          // inside that lane group, so backfill them to keep the lane band unbroken
+          buffer.indices.foreach(_ => buffer.enqueue(buffer.dequeue().copy(laneInfo = lastSeenLane)))
+        }
+        lastSeenPipeline = buffer.last.pipelineInfo
+        lastSeenLane = buffer.last.laneInfo
       }
     }
 }
@@ -445,6 +465,7 @@ private class TreeTableBuilder private (
       case Details(detailsList) =>
         Header.DETAILS -> Cell.left(splitDetails(detailsList.map(_.prettifiedString).toList): _*)
       case pipeline: PipelineInfo => Header.PIPELINE -> Cell.left(serialize(pipeline).toString)
+      case lane: LaneInfo         => Header.LANES -> Cell.left(serialize(lane).toString)
       case indexes: UsedIndexes =>
         Header.INDEXES_USED -> Cell.left(indexes.toSeqOfStrings: _*)
     }
@@ -481,7 +502,7 @@ abstract class PipelineRowMerger(keys: Seq[String]) extends RowMerger {
     if (shouldMerge(row, next)) doMerge(row) else row
 
   def shouldMerge(row: BuildingRow, next: BuildingRow): Boolean =
-    shouldMerge(row.levelledPlan.info, next.levelledPlan.info)
+    shouldMerge(row.levelledPlan.pipelineInfo, next.levelledPlan.pipelineInfo)
 
   def doMerge(row: BuildingRow): BuildingRow =
     row.add(keys.map(key => key -> doMerge(row.values.getOrElse(key, Cell.left("")))): _*)
@@ -500,6 +521,20 @@ class MergeAndEraseIfEqualPipeline(keys: String*) extends PipelineRowMerger(keys
   override def shouldMerge(pipeline: Option[PipelineInfo], next: Option[PipelineInfo]): Boolean =
     pipeline == next && pipeline.isDefined
   override def doMerge(cell: Cell): Cell = cell.copy(lines = Seq(""), isMerged = true)
+}
+
+class MergeAndEraseIfEqualLane(keys: String*) extends RowMerger {
+
+  override def merge(row: BuildingRow, next: BuildingRow): BuildingRow = {
+    val laneInfo = row.levelledPlan.laneInfo
+    if (laneInfo.isDefined && laneInfo == next.levelledPlan.laneInfo) {
+      row.add(keys.map(key =>
+        key -> row.values.getOrElse(key, Cell.left("")).copy(lines = Seq(""), isMerged = true)
+      ): _*)
+    } else {
+      row
+    }
+  }
 }
 
 class MergeEqualValues(key: String) extends RowMerger {

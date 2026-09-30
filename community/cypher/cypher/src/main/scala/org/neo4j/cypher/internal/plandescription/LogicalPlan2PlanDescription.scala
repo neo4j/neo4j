@@ -3619,11 +3619,7 @@ case class LogicalPlan2PlanDescription(
     maybeRetryParameters: Option[InTransactionsRetryParameters],
     disjointBy: Seq[Expression]
   ) = {
-    val concurrencyParams = concurrency match {
-      case TransactionConcurrency.Concurrent(None)              => "CONCURRENT "
-      case TransactionConcurrency.Concurrent(Some(concurrency)) => s"${asPrettyString(concurrency)} CONCURRENT "
-      case _                                                    => ""
-    }
+    val concurrencyParams = concurrencyPrefix(concurrency)
     val errorParams = onErrorBehaviour match {
       case OnErrorContinue          => (" ON ERROR CONTINUE", "")
       case OnErrorBreak             => (" ON ERROR BREAK", "")
@@ -3637,17 +3633,22 @@ case class LogicalPlan2PlanDescription(
       case Some(timeout) => s"FOR ${asPrettyString(timeout)} SECONDS "
       case _             => ""
     })
-    val prettyDisjointBy = if (disjointBy.isEmpty) pretty""
-    else {
-      disjointBy.map(asPrettyString(_)).mkPrettyString(" DISJOINT BY (", ", ", ")")
-    }
-
     Details(
       pretty"IN ${asPrettyString.raw(concurrencyParams)}TRANSACTIONS OF ${asPrettyString(
           batchSize
-        )} ROWS${prettyDisjointBy}${asPrettyString.raw(errorParams._1)}${asPrettyString.raw(retryParams)}${asPrettyString.raw(errorParams._2)}${asPrettyString.raw(reportParams)}"
+        )} ROWS${prettyDisjointBy(disjointBy)}${asPrettyString.raw(errorParams._1)}${asPrettyString.raw(retryParams)}${asPrettyString.raw(errorParams._2)}${asPrettyString.raw(reportParams)}"
     )
   }
+
+  private def concurrencyPrefix(concurrency: TransactionConcurrency): String = concurrency match {
+    case TransactionConcurrency.Concurrent(None)              => "CONCURRENT "
+    case TransactionConcurrency.Concurrent(Some(concurrency)) => s"${asPrettyString(concurrency)} CONCURRENT "
+    case _                                                    => ""
+  }
+
+  private def prettyDisjointBy(disjointBy: Seq[Expression]) =
+    if (disjointBy.isEmpty) pretty""
+    else disjointBy.map(asPrettyString(_)).mkPrettyString(" DISJOINT BY (", ", ", ")")
 
   override def onTwoChildPlan(
     plan: LogicalPlan,

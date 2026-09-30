@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFact
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.plandescription.Arguments.LaneInfo
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
@@ -2001,6 +2002,129 @@ class RenderAsTreeTableTest extends CommunityCypherTestSuite with BeforeAndAfter
     )
   }
 
+  test("render lane group as one merged band across its pipelines") {
+    val allNodesScan = planDescription(id, "ALLNODESSCAN", Seq.empty, Seq(pipelineInfo(0, fused = true)))
+    val laneSplitter = planDescription(
+      id,
+      "LANESPLITTER",
+      Seq(allNodesScan),
+      Seq(pipelineInfo(1, fused = false), laneInfo(0, "8 CONCURRENT"))
+    )
+    val create = planDescription(
+      id,
+      "CREATE",
+      Seq(laneSplitter),
+      Seq(pipelineInfo(2, fused = true), laneInfo(0, "8 CONCURRENT"))
+    )
+    val transactionApply = planDescription(
+      id,
+      "TRANSACTIONAPPLY",
+      Seq(create),
+      Seq(pipelineInfo(3, fused = false), laneInfo(0, "8 CONCURRENT"))
+    )
+    val laneMerger = planDescription(id, "LANEMERGER", Seq(transactionApply), Seq(pipelineInfo(4, fused = false)))
+    val produceResults = planDescription(id, "PRODUCERESULTS", Seq(laneMerger), Seq(pipelineInfo(5, fused = false)))
+
+    renderAsTreeTable(produceResults) should equal(
+      """+-------------------+----+---------------------+--------------------------------+
+        || Operator          | Id | Pipeline            | Lanes                          |
+        |+-------------------+----+---------------------+--------------------------------+
+        || +PRODUCERESULTS   | 42 | In Pipeline 5       |                                |
+        || |                 +----+---------------------+--------------------------------+
+        || +LANEMERGER       | 42 | In Pipeline 4       |                                |
+        || |                 +----+---------------------+--------------------------------+
+        || +TRANSACTIONAPPLY | 42 | In Pipeline 3       |                                |
+        || |                 +----+---------------------+                                |
+        || +CREATE           | 42 | Fused in Pipeline 2 |                                |
+        || |                 +----+---------------------+                                |
+        || +LANESPLITTER     | 42 | In Pipeline 1       | In Lane Group 0 (8 CONCURRENT) |
+        || |                 +----+---------------------+--------------------------------+
+        || +ALLNODESSCAN     | 42 | Fused in Pipeline 0 |                                |
+        |+-------------------+----+---------------------+--------------------------------+
+        |""".stripMargin
+    )
+  }
+
+  test("render boundary between two adjacent lane groups") {
+    val splitter1 = planDescription(
+      id,
+      "SPLITTER1",
+      Seq.empty,
+      Seq(pipelineInfo(0, fused = false), laneInfo(0, "CONCURRENT"))
+    )
+    val apply1 = planDescription(
+      id,
+      "APPLY1",
+      Seq(splitter1),
+      Seq(pipelineInfo(1, fused = false), laneInfo(0, "CONCURRENT"))
+    )
+    val splitter2 = planDescription(
+      id,
+      "SPLITTER2",
+      Seq(apply1),
+      Seq(pipelineInfo(2, fused = false), laneInfo(1, "SERIAL"))
+    )
+    val apply2 = planDescription(
+      id,
+      "APPLY2",
+      Seq(splitter2),
+      Seq(pipelineInfo(3, fused = false), laneInfo(1, "SERIAL"))
+    )
+    val root = planDescription(id, "ROOT", Seq(apply2), Seq(pipelineInfo(4, fused = false)))
+
+    renderAsTreeTable(root) should equal(
+      """+------------+----+---------------+------------------------------+
+        || Operator   | Id | Pipeline      | Lanes                        |
+        |+------------+----+---------------+------------------------------+
+        || +ROOT      | 42 | In Pipeline 4 |                              |
+        || |          +----+---------------+------------------------------+
+        || +APPLY2    | 42 | In Pipeline 3 |                              |
+        || |          +----+---------------+                              |
+        || +SPLITTER2 | 42 | In Pipeline 2 | In Lane Group 1 (SERIAL)     |
+        || |          +----+---------------+------------------------------+
+        || +APPLY1    | 42 | In Pipeline 1 |                              |
+        || |          +----+---------------+                              |
+        || +SPLITTER1 | 42 | In Pipeline 0 | In Lane Group 0 (CONCURRENT) |
+        |+------------+----+---------------+------------------------------+
+        |""".stripMargin
+    )
+  }
+
+  test("infer lane info of plan without pipeline info if it's surrounded by plans of the same lane group") {
+    val leaf = planDescription(id, "LEAF", Seq.empty, Seq(pipelineInfo(0, fused = false)))
+    val bottom = planDescription(
+      id,
+      "BOTTOM",
+      Seq(leaf),
+      Seq(pipelineInfo(1, fused = false), laneInfo(0, "4 CONCURRENT"))
+    )
+    val middle = planDescription(id, "MIDDLE", Seq(bottom), Seq.empty)
+    val top = planDescription(
+      id,
+      "TOP",
+      Seq(middle),
+      Seq(pipelineInfo(2, fused = false), laneInfo(0, "4 CONCURRENT"))
+    )
+
+    renderAsTreeTable(top) should equal(
+      """+----------+----+---------------+--------------------------------+
+        || Operator | Id | Pipeline      | Lanes                          |
+        |+----------+----+---------------+--------------------------------+
+        || +TOP     | 42 | In Pipeline 2 |                                |
+        || |        +----+---------------+                                |
+        || +MIDDLE  | 42 |               |                                |
+        || |        +----+---------------+                                |
+        || +BOTTOM  | 42 | In Pipeline 1 | In Lane Group 0 (4 CONCURRENT) |
+        || |        +----+---------------+--------------------------------+
+        || +LEAF    | 42 | In Pipeline 0 |                                |
+        |+----------+----+---------------+--------------------------------+
+        |""".stripMargin
+    )
+  }
+
   private def pipelineInfo(id: Int, fused: Boolean, markAsSerial: Boolean = false): PipelineInfo =
     PipelineInfo(id, fused, markAsSerial)
+
+  private def laneInfo(laneGroupId: Int, concurrency: String): LaneInfo =
+    LaneInfo(laneGroupId, concurrency)
 }

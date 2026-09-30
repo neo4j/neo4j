@@ -23,6 +23,7 @@ import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.plandescription.Arguments.LaneInfo
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.serialize
 
@@ -34,5 +35,11 @@ class PlanDescriptionArgumentSerializerTests extends CommunityCypherTestSuite {
     serialize(EstimatedRows(12, Some(12))) shouldBe a[java.lang.Number]
     serialize(EstimatedRows(12, None)) shouldBe a[java.lang.Number]
     serialize(BatchSize(12)) shouldBe a[java.lang.Number]
+  }
+
+  test("serialization of lane info renders lane group id and parenthesized concurrency") {
+    serialize(LaneInfo(0, "8 CONCURRENT")) shouldBe "In Lane Group 0 (8 CONCURRENT)"
+    serialize(LaneInfo(0, "CONCURRENT")) shouldBe "In Lane Group 0 (CONCURRENT)"
+    serialize(LaneInfo(1, "SERIAL")) shouldBe "In Lane Group 1 (SERIAL)"
   }
 }

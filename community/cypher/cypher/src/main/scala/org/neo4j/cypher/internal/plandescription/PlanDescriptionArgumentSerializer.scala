@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.IncomingPredicate
 import org.neo4j.cypher.internal.plandescription.Arguments.IncomingProjectionItems
 import org.neo4j.cypher.internal.plandescription.Arguments.IncomingTopology
 import org.neo4j.cypher.internal.plandescription.Arguments.IncomingVariables
+import org.neo4j.cypher.internal.plandescription.Arguments.LaneInfo
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.OutgoingCallables
@@ -96,6 +97,8 @@ object PlanDescriptionArgumentSerializer {
         val fusion = if (fused) "Fused in" else "In"
         val serialString = if (markAsSerial) " serial" else ""
         s"$fusion$serialString Pipeline $pipelineId"
+      case LaneInfo(laneGroupId, concurrency) =>
+        s"In Lane Group $laneGroupId ($concurrency)"
       case StringRepresentation(rep) => rep
       case IdArg(Id(id))             => Int.box(id)
       case arg: UsedIndexes          => arg.stringify
