@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 /**
  * A small bit set of maximum 64 bits. Used in {@link TokenScanLayout}.
  */
-public class TokenScanValue {
+public class TokenScanValue implements TokenIndexValue<TokenScanValue> {
     public static final int RANGE_SIZE = Long.SIZE;
     static final int RANGE_SIZE_BYTES = Long.BYTES;
 
@@ -42,7 +42,8 @@ public class TokenScanValue {
      *
      * @param index index into the bit set of the bit to set.
      */
-    TokenScanValue set(int index) {
+    @Override
+    public TokenScanValue set(int index) {
         long mask = 1L << index;
         bits |= mask;
         return this;
@@ -55,7 +56,8 @@ public class TokenScanValue {
      * @param other value containing bits to add.
      * @return this instance, now with added bits from {@code other}.
      */
-    TokenScanValue add(TokenScanValue other) {
+    @Override
+    public TokenScanValue add(TokenScanValue other) {
         bits |= other.bits;
         return this;
     }
@@ -68,7 +70,8 @@ public class TokenScanValue {
      * @param other value containing bits to remove.
      * @return this instance, now with removed bits from {@code other}.
      */
-    TokenScanValue remove(TokenScanValue other) {
+    @Override
+    public TokenScanValue remove(TokenScanValue other) {
         bits &= ~other.bits;
         return this;
     }
@@ -76,15 +79,22 @@ public class TokenScanValue {
     /**
      * Clears all bits in this bit set.
      */
-    void clear() {
+    @Override
+    public void clear() {
         bits = 0;
     }
 
     /**
      * @return {@code true} if no bit in this range is set, otherwise {@code false}.
      */
-    boolean isEmpty() {
+    @Override
+    public boolean isEmpty() {
         return bits == 0;
+    }
+
+    @Override
+    public TokenScanValue copy() {
+        return new TokenScanValue(bits);
     }
 
     @Override

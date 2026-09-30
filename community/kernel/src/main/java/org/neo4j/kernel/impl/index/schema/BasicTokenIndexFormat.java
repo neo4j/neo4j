@@ -39,16 +39,14 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
  * The token index format with 64 entities per tree value, using {@link TokenScanLayout}.
  */
 public final class BasicTokenIndexFormat implements TokenIndexFormat<TokenScanValue> {
-    public static final BasicTokenIndexFormat INSTANCE = new BasicTokenIndexFormat(new DefaultTokenIndexIdLayout());
+    public static final BasicTokenIndexFormat INSTANCE = new BasicTokenIndexFormat();
 
     private static final int BATCH_SIZE = 1_000;
 
-    private final TokenIndexIdLayout idLayout;
+    private final DefaultTokenIndexIdLayout idLayout = new DefaultTokenIndexIdLayout();
     private final TokenScanLayout treeLayout = new TokenScanLayout();
 
-    public BasicTokenIndexFormat(TokenIndexIdLayout idLayout) {
-        this.idLayout = idLayout;
-    }
+    private BasicTokenIndexFormat() {}
 
     @Override
     public TokenIndexIdLayout idLayout() {
