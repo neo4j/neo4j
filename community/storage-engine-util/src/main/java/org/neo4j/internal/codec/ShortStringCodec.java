@@ -21,6 +21,7 @@ package org.neo4j.internal.codec;
 
 import java.util.Arrays;
 import org.neo4j.util.BitBuffer;
+import org.neo4j.util.VisibleForTesting;
 
 public enum ShortStringCodec {
     /**
@@ -45,13 +46,13 @@ public enum ShortStringCodec {
                 case 6 -> 0xD;
                 case 7 -> 0xE;
                 case 8 -> 0xF;
-                default -> throw cannotEncode(b);
+                default -> CANNOT_ENCODE;
             };
         }
 
         @Override
         int encPunctuation(byte b) {
-            throw cannotEncode(b);
+            return CANNOT_ENCODE;
         }
 
         @Override
@@ -83,13 +84,13 @@ public enum ShortStringCodec {
                 case 5 -> 0xD;
                 case 6 -> 0xE;
                 case 7 -> 0xF;
-                default -> throw cannotEncode(b);
+                default -> CANNOT_ENCODE;
             };
         }
 
         @Override
         int encPunctuation(byte b) {
-            throw cannotEncode(b);
+            return CANNOT_ENCODE;
         }
 
         @Override
@@ -119,7 +120,7 @@ public enum ShortStringCodec {
     UPPER(3, 5, false) {
         @Override
         public int encTranslate(byte b) {
-            return super.encTranslate(b) - 0x40;
+            return shifted(super.encTranslate(b), 0x40);
         }
 
         @Override
@@ -150,7 +151,7 @@ public enum ShortStringCodec {
     LOWER(4, 5, false) {
         @Override
         public int encTranslate(byte b) {
-            return super.encTranslate(b) - 0x60;
+            return shifted(super.encTranslate(b), 0x60);
         }
 
         @Override
@@ -181,7 +182,7 @@ public enum ShortStringCodec {
     EMAIL(5, 5, false) {
         @Override
         public int encTranslate(byte b) {
-            return super.encTranslate(b) - 0x60;
+            return shifted(super.encTranslate(b), 0x60);
         }
 
         @Override
@@ -198,7 +199,7 @@ public enum ShortStringCodec {
                 case 3 -> 2 + offset;
                 case 6 -> 3 + offset;
                 case 9 -> 4 + offset;
-                default -> throw cannotEncode(b);
+                default -> CANNOT_ENCODE;
             };
         }
 
@@ -243,13 +244,13 @@ public enum ShortStringCodec {
             if (b >= 0x1 && b <= 0x16) {
                 return b + 0x29; // symbols
             }
-            throw cannotEncode(b);
+            return CANNOT_ENCODE;
         }
 
         @Override
         int encPunctuation(byte b) {
             // Handled by encTranslate
-            throw cannotEncode(b);
+            return CANNOT_ENCODE;
         }
 
         @Override
@@ -293,7 +294,7 @@ public enum ShortStringCodec {
                 return encPunctuation(b); // Punctuation
             }
             // But the rest is transposed by 0x40
-            return EUROPEAN.encTranslate(b) - 0x40;
+            return shifted(EUROPEAN.encTranslate(b), 0x40);
         }
 
         @Override
@@ -301,7 +302,7 @@ public enum ShortStringCodec {
             return switch (b) {
                 case 0 -> 0x00; // SPACE
                 case 1 -> 0x20; // UNDERSCORE
-                default -> throw cannotEncode(b);
+                default -> CANNOT_ENCODE;
             };
         }
     },
@@ -363,7 +364,7 @@ public enum ShortStringCodec {
                 case 0x9 -> 0x3E;
                 case 0xA -> 0x3F;
                 case 0xB -> 0x20;
-                default -> throw cannotEncode(b);
+                default -> CANNOT_ENCODE;
             };
         }
     },
@@ -420,7 +421,7 @@ public enum ShortStringCodec {
                 case 0x03 -> 0x37; // DASH
                 // TODO
                 case 0x07 -> 0;
-                default -> throw cannotEncode(b);
+                default -> CANNOT_ENCODE;
             };
         }
     },
@@ -442,12 +443,12 @@ public enum ShortStringCodec {
             if (b >= 'a' && b <= 'f') {
                 return b - 'a' + 10;
             }
-            throw cannotEncode(b);
+            return CANNOT_ENCODE;
         }
 
         @Override
         int encPunctuation(byte b) {
-            throw cannotEncode(b);
+            return CANNOT_ENCODE;
         }
 
         @Override
@@ -475,12 +476,12 @@ public enum ShortStringCodec {
             if (b >= 'A' && b <= 'F') {
                 return b - 'A' + 10;
             }
-            throw cannotEncode(b);
+            return CANNOT_ENCODE;
         }
 
         @Override
         int encPunctuation(byte b) {
-            throw cannotEncode(b);
+            return CANNOT_ENCODE;
         }
 
         @Override
@@ -504,10 +505,6 @@ public enum ShortStringCodec {
     };
     // translation lookup for each ascii character
     private static final int TRANSLATION_COUNT = 256;
-    // transformation for the char to byte according to the default translation table
-    private static final byte[] TRANSLATION = new byte[TRANSLATION_COUNT];
-    // mask for encoders that are not applicable for this character
-    private static final int[] REMOVE_MASK = new int[TRANSLATION_COUNT];
     // lookup table by encoding header
     // +2 because of ENCODING_LATIN1 gap and one based index
     private static final ShortStringCodec[] CODEC_BY_ID = new ShortStringCodec[CODEC_COUNT + 2];
@@ -519,17 +516,52 @@ public enum ShortStringCodec {
     private static final int HEX_CODECS_COMPATIBILITY_MASK = LOWERHEX.bitMask() | UPPERHEX.bitMask();
     private static final int HEX_CODECS_FILTER;
 
+    /** What {@link #encTranslate} would answer, precomputed for every input, per codec, indexed by codec id. */
+    private static final int[][] ENC_TABLE = new int[CODEC_COUNT + 2][];
+
+    /** What {@link #encTranslate} and {@link #ENC_TABLE} answer for an input the codec cannot encode. */
+    public static final int CANNOT_ENCODE = Integer.MIN_VALUE;
+
+    /**
+     * Per character, the byte it translates to in the low byte and the codecs that can encode it above, so
+     * that preparing a value reads one array instead of two.
+     * <p>
+     * The mask is stored already narrowed to {@link #ALL_BIT_MASK}, which changes nothing: a caller's running
+     * mask starts at {@code ALL_BIT_MASK} and only loses bits, so the bits dropped here could never have
+     * survived the {@code and} anyway.
+     */
+    private static final int[] TRANSLATION_AND_MASK = new int[TRANSLATION_COUNT];
+
+    private static final int MASK_SHIFT = Byte.SIZE;
+
+    private static final int PREPARED_CHARS_SHIFT = Short.SIZE;
+
+    @VisibleForTesting
+    static int packedFor(int character) {
+        return TRANSLATION_AND_MASK[character];
+    }
+
+    /** One {@link #TRANSLATION_AND_MASK} entry, from the codecs that <em>cannot</em> encode the character. */
+    private static int pack(int removeMask, int translation) {
+        return ((removeMask & ALL_BIT_MASK) << MASK_SHIFT) | (translation & 0xFF);
+    }
+
     private static void setUp(char pos, int value, ShortStringCodec... removeCodecs) {
-        TRANSLATION[pos] = (byte) value;
-        REMOVE_MASK[pos] = ~bitMask(removeCodecs);
-        for (ShortStringCodec codec : CODECS) {
-            CODEC_BY_ID[codec.codecId] = codec;
-        }
+        TRANSLATION_AND_MASK[pos] = pack(~bitMask(removeCodecs), value);
     }
 
     static {
-        Arrays.fill(TRANSLATION, (byte) 0xFF);
-        Arrays.fill(REMOVE_MASK, ~bitMask(CODECS));
+        if (Integer.numberOfLeadingZeros(ALL_BIT_MASK) < MASK_SHIFT) {
+            throw new AssertionError("Codec mask no longer fits above the translation byte: " + ALL_BIT_MASK);
+        }
+        if (Integer.numberOfLeadingZeros(ALL_BIT_MASK) < Integer.SIZE - PREPARED_CHARS_SHIFT) {
+            throw new AssertionError("Codec mask no longer fits below the character count: " + ALL_BIT_MASK);
+        }
+        for (ShortStringCodec codec : CODECS) {
+            CODEC_BY_ID[codec.codecId] = codec;
+        }
+        // Every character starts unencodable: translation 0xFF and, since every codec is removed, no codec.
+        Arrays.fill(TRANSLATION_AND_MASK, pack(~bitMask(CODECS), 0xFF));
         setUp(' ', 0, EMAIL, LOWERHEX, UPPERHEX);
         setUp('_', 1, NUMERICAL, DATE, LOWERHEX, UPPERHEX);
         setUp('.', 2, DATE, ALPHANUM, LOWERHEX, UPPERHEX);
@@ -584,6 +616,14 @@ public enum ShortStringCodec {
             }
         }
         HEX_CODECS_FILTER = hexCodecsFilter;
+
+        for (ShortStringCodec codec : CODECS) {
+            int[] table = new int[TRANSLATION_COUNT];
+            for (int value = 0; value < TRANSLATION_COUNT; value++) {
+                table[value] = codec.encTranslate((byte) value);
+            }
+            ENC_TABLE[codec.codecId] = table;
+        }
     }
 
     final int codecId;
@@ -598,6 +638,13 @@ public enum ShortStringCodec {
         this.step = step;
         this.needsChars = needsChars;
         this.bitMask = (1 << (codecId - 1));
+    }
+
+    /**
+     * @return {@link #encTranslate} as a table.
+     */
+    public int[] encTable() {
+        return ENC_TABLE[codecId];
     }
 
     public static ShortStringCodec lowestCodec(int compatibleCodecs) {
@@ -633,15 +680,24 @@ public enum ShortStringCodec {
         return result;
     }
 
-    final IllegalArgumentException cannotEncode(byte b) {
-        return new IllegalArgumentException("Cannot encode as " + this.name() + ": " + b);
+    /**
+     * Moves a translation from the codec it was borrowed from into this codec's range, leaving
+     * {@link #CANNOT_ENCODE} alone - shifting the sentinel would overflow into a valid-looking translation.
+     */
+    private static int shifted(int translation, int offset) {
+        return translation == CANNOT_ENCODE ? CANNOT_ENCODE : translation - offset;
     }
 
     byte decPunctuation(int code) {
         return PUNCTUATION[code];
     }
 
-    public int encTranslate(byte b) {
+    /**
+     * @return the character as this codec encodes it, or {@link #CANNOT_ENCODE} if it cannot. Callers that
+     * picked the codec from {@link #prepareEncode} never see the sentinel, and read {@link #encTable} rather
+     * than call this per character.
+     */
+    int encTranslate(byte b) {
         if (b < 0) {
             return (0xFF & b) - 0xC0; // European chars
         }
@@ -673,21 +729,104 @@ public enum ShortStringCodec {
             if (c >= TRANSLATION_COUNT) {
                 return 0;
             }
-            data[i] = TRANSLATION[c];
+            int packed = TRANSLATION_AND_MASK[c];
+            data[i] = (byte) packed;
             // remove not matching encoders
-            encodings &= REMOVE_MASK[c];
+            encodings &= packed >>> MASK_SHIFT;
             if (encodings == 0) {
                 return 0;
             }
         }
 
-        // This is hard-coded for the out-of-order UPPERHEX/LOWERHEX codecs and makes them prioritized over
-        // other (larger bits-per-character) codecs that can also encode them
+        return preferHexCodecs(encodings, additionalCodecs);
+    }
+
+    /**
+     * This is hard-coded for the out-of-order UPPERHEX/LOWERHEX codecs and makes them prioritized over
+     * other (larger bits-per-character) codecs that can also encode them.
+     */
+    private static int preferHexCodecs(int encodings, boolean additionalCodecs) {
         if (additionalCodecs && (encodings & HEX_CODECS_COMPATIBILITY_MASK) != 0) {
-            encodings &= HEX_CODECS_FILTER;
+            return encodings & HEX_CODECS_FILTER;
+        }
+        return encodings;
+    }
+
+    /**
+     * As {@link #prepareEncode(String, byte[], int, boolean)}, reading UTF-8 bytes.
+     * <p>
+     * For Latin-1: a codec refuses any character at or above 256, so an encodable value is entirely
+     * Latin-1, whose UTF-8 form is one byte below U+0080 and a {@code 0xC2} or {@code 0xC3}
+     * pair above it. Every other byte pattern decodes to something a codec would refuse anyway - three-byte
+     * sequences start at U+0800, four-byte ones become a surrogate pair, and malformed bytes become U+FFFD -
+     * so "cannot read these bytes" and "no codec can encode this" are the same answer.
+     *
+     * @param utf8 the value's bytes.
+     * @param offset where the value starts in {@code utf8}.
+     * @param length its length in bytes.
+     * @param data filled with the translated characters, as the String form fills it. At least
+     * {@code maxChars} long.
+     * @param maxChars the most characters a codec can hold; longer values answer {@link #CANNOT_ENCODE}
+     * without reading any further.
+     *
+     * @return {@link #CANNOT_ENCODE}, or the character count and the compatible codec mask packed together.
+     * Read them with {@link #charsOf} and {@link #codecsOf}.
+     */
+    public static int prepareEncodeUtf8(
+            byte[] utf8, int offset, int length, byte[] data, int maxChars, boolean additionalCodecs) {
+        int encodings = ALL_BIT_MASK;
+        int chars = 0;
+        int i = 0;
+        while (i < length) {
+            byte b = utf8[offset + i];
+            int c;
+            if (b >= 0) {
+                c = b;
+                i++;
+            } else if (b == (byte) 0xC2 || b == (byte) 0xC3) {
+                // The only two lead bytes Latin-1 uses. Anything else leads a sequence whose character is at
+                // or above 256, which no codec takes.
+                if (i + 1 == length) {
+                    // Malformed, can't end with a lead. The String form would see U+FFFD here.
+                    return CANNOT_ENCODE;
+                }
+                byte continuation = utf8[offset + i + 1];
+                if ((continuation & 0xC0) != 0x80) {
+                    return CANNOT_ENCODE; // Malformed, likewise.
+                }
+                c = ((b & 0x1F) << 6) | (continuation & 0x3F);
+                i += 2;
+            } else {
+                return CANNOT_ENCODE;
+            }
+
+            if (chars == maxChars) {
+                return CANNOT_ENCODE;
+            }
+            int packed = TRANSLATION_AND_MASK[c];
+            data[chars++] = (byte) packed;
+            encodings &= packed >>> MASK_SHIFT;
+            if (encodings == 0) {
+                return CANNOT_ENCODE;
+            }
+        }
+        if (chars == 0) {
+            // The String form answers 0 for an empty value, meaning no codec, and an empty value is written
+            // as bytes like any other unencodable one.
+            return CANNOT_ENCODE;
         }
 
-        return encodings;
+        return (chars << PREPARED_CHARS_SHIFT) | preferHexCodecs(encodings, additionalCodecs);
+    }
+
+    /** The character count from a {@link #prepareEncodeUtf8} answer. */
+    public static int charsOf(int prepared) {
+        return prepared >>> PREPARED_CHARS_SHIFT;
+    }
+
+    /** The compatible codec mask from a {@link #prepareEncodeUtf8} answer. */
+    public static int codecsOf(int prepared) {
+        return prepared & ALL_BIT_MASK;
     }
 
     public static ShortStringCodec codecById(int id) {

@@ -283,8 +283,11 @@ public class LongerShortString {
     }
 
     private static void translateData(BitBuffer bits, byte[] data, int length, final int step, ShortStringCodec codec) {
+        int[] encode = codec.encTable();
         for (int i = 0; i < length; i++) {
-            bits.put(codec.encTranslate(data[i]), step);
+            int encodedCharacter = encode[data[i] & 0xFF];
+            assert encodedCharacter != ShortStringCodec.CANNOT_ENCODE : "codec " + codec + " cannot encode " + data[i];
+            bits.put(encodedCharacter, step);
         }
     }
 
