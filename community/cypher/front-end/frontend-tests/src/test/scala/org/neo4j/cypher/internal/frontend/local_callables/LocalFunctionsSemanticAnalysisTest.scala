@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend.local_callables
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.GroupByClause
 import org.neo4j.gqlstatus.GqlHelper
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
@@ -653,6 +654,71 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
     runWithLC().hasNoErrors
   }
 
+  // one unaliased total aggregate with GROUP BY ALL
+  test(
+    s"""DEFINE FUNCTION foo.a() {
+       |  UNWIND [1, 2, 3] AS x
+       |  RETURN COUNT(x) GROUP BY ALL
+       |}
+       |
+       |RETURN foo.a()
+       |""".stripMargin
+  ) {
+    runWithLC(GroupByClause).hasNoErrors
+  }
+
+  // one unaliased total aggregate with GROUP BY ()
+  test(
+    s"""DEFINE FUNCTION foo.a() {
+       |  UNWIND [1, 2, 3] AS x
+       |  RETURN COUNT(x) GROUP BY ()
+       |}
+       |
+       |RETURN foo.a()
+       |""".stripMargin
+  ) {
+    runWithLC(GroupByClause).hasNoErrors
+  }
+
+  // grouped aggregate capped by LIMIT 1 takes precedence over the missing total aggregate
+  test(
+    s"""DEFINE FUNCTION foo.a() {
+       |  UNWIND [1, 2, 3] AS x
+       |  RETURN COUNT(x) GROUP BY x LIMIT 1
+       |}
+       |
+       |RETURN foo.a()
+       |""".stripMargin
+  ) {
+    runWithLC(GroupByClause).hasNoErrors
+  }
+
+  // conditional query
+  test(
+    s"""DEFINE FUNCTION foo.a(x) {
+       |  WHEN x = 2 THEN RETURN 1 AS x LIMIT 1
+       |  ELSE RETURN 2 AS x LIMIT 1
+       |}
+       |
+       |RETURN foo.a(1)
+       |""".stripMargin
+  ) {
+    runWithLC().hasNoErrors
+  }
+
+  // conditional query mixed
+  test(
+    s"""DEFINE FUNCTION foo.a(x) {
+       |  WHEN x = 2 THEN RETURN COUNT(1) AS x
+       |  ELSE RETURN 2 AS x LIMIT 1
+       |}
+       |
+       |RETURN foo.a(1)
+       |""".stripMargin
+  ) {
+    runWithLC().hasNoErrors
+  }
+
   /*
    * Invalid query body returns
    */
@@ -883,6 +949,144 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
   test(
     s"""DEFINE FUNCTION foo.a() {
        |  RETURN 1 SKIP 1 LIMIT 2
+       |  ^
+       |}
+       |
+       |RETURN foo.a()
+       |""".stripMargin
+  ) {
+    runWithLC().hasErrorWithMarkedPosition(
+      pos =>
+        GqlHelper.getGql42001_42NAN(
+          "foo.a",
+          pos.offset,
+          pos.line,
+          pos.column
+        ),
+      msg42NAN("foo.a")
+    )
+  }
+
+  // missing LIMIT 1 — partly missing in conditional query
+  test(
+    s"""DEFINE FUNCTION foo.a(x) {
+       |  WHEN x = 2 THEN RETURN 1 AS x
+       |                  ^
+       |  ELSE RETURN 2 AS x LIMIT 1
+       |}
+       |
+       |RETURN foo.a(1)
+       |""".stripMargin
+  ) {
+    runWithLC().hasErrorWithMarkedPosition(
+      pos =>
+        GqlHelper.getGql42001_42NAN(
+          "foo.a",
+          pos.offset,
+          pos.line,
+          pos.column
+        ),
+      msg42NAN("foo.a")
+    )
+  }
+
+  // Missing LIMIT 1 — single non-total aggregate
+  test(
+    s"""DEFINE FUNCTION foo.a() {
+       |  UNWIND [1, 2, 3] AS x
+       |  RETURN COUNT(1) GROUP BY x
+       |  ^
+       |}
+       |
+       |RETURN foo.a()
+       |""".stripMargin
+  ) {
+    runWithLC(GroupByClause).hasErrorWithMarkedPosition(
+      pos =>
+        GqlHelper.getGql42001_42NAN(
+          "foo.a",
+          pos.offset,
+          pos.line,
+          pos.column
+        ),
+      msg42NAN("foo.a")
+    )
+  }
+
+  // Missing LIMIT 1 — single non-total aggregate grouped by a non-variable expression
+  test(
+    s"""DEFINE FUNCTION foo.a() {
+       |  UNWIND [1, 2, 3] AS x
+       |  RETURN COUNT(1) GROUP BY x % 2
+       |  ^
+       |}
+       |
+       |RETURN foo.a()
+       |""".stripMargin
+  ) {
+    runWithLC(GroupByClause).hasErrorWithMarkedPosition(
+      pos =>
+        GqlHelper.getGql42001_42NAN(
+          "foo.a",
+          pos.offset,
+          pos.line,
+          pos.column
+        ),
+      msg42NAN("foo.a")
+    )
+  }
+
+  // Missing LIMIT 1 — single non-total aggregate with multiple grouping elements
+  test(
+    s"""DEFINE FUNCTION foo.a() {
+       |  UNWIND [1, 2, 3] AS x
+       |  RETURN COUNT(1) GROUP BY x, x % 2
+       |  ^
+       |}
+       |
+       |RETURN foo.a()
+       |""".stripMargin
+  ) {
+    runWithLC(GroupByClause).hasErrorWithMarkedPosition(
+      pos =>
+        GqlHelper.getGql42001_42NAN(
+          "foo.a",
+          pos.offset,
+          pos.line,
+          pos.column
+        ),
+      msg42NAN("foo.a")
+    )
+  }
+
+  // Missing LIMIT 1 — single non-total aggregate inside a conditional query body
+  test(
+    s"""DEFINE FUNCTION foo.a(x) {
+       |  WHEN x = 1 THEN RETURN COUNT(1) AS y GROUP BY x
+       |                  ^
+       |  ELSE RETURN 1 AS y LIMIT 1
+       |}
+       |
+       |RETURN foo.a(1)
+       |""".stripMargin
+  ) {
+    runWithLC(GroupByClause).hasErrorWithMarkedPosition(
+      pos =>
+        GqlHelper.getGql42001_42NAN(
+          "foo.a",
+          pos.offset,
+          pos.line,
+          pos.column
+        ),
+      msg42NAN("foo.a")
+    )
+  }
+
+  // Missing LIMIT 1 — single return item with DISINTCT
+  test(
+    s"""DEFINE FUNCTION foo.a() {
+       |  UNWIND [1, 2, 3] AS x
+       |  RETURN DISTINCT x
        |  ^
        |}
        |

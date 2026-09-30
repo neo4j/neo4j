@@ -239,8 +239,15 @@ case class LocalFunctionDefinition(
           case Limit(l: SignedDecimalIntegerLiteral) => l.value == 1
           case _                                     => false
         }
+        // A grouped return emits one row per group, so it is not a total aggregate unless it is a single item
+        // whose GROUP BY ALL has no non-aggregated projection columns to group on.
+        val hasNoEffectiveGrouping = ret.groupBy.forall {
+          case GroupBy(_: GroupingAll)  => true
+          case GroupBy(_: GroupingNone) => true
+          case _                        => false
+        }
         val hasAggregatingReturnItem =
-          items.headOption.exists(_.expression.containsAggregate)
+          hasNoEffectiveGrouping && items.headOption.exists(_.expression.containsAggregate)
         if (hasSingleItem && (hasLimit1 || hasAggregatingReturnItem)) {
           SemanticCheck.success
         } else {

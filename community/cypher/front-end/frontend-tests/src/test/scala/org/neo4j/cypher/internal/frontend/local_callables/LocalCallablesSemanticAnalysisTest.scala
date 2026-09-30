@@ -155,7 +155,7 @@ trait LocalCallablesSemanticAnalysisTest
 
   def msg42NAN(functionName: String): String =
     s"Non-scalar query result not supported in local function definitions. " +
-      s"Query in local function definitions $functionName requires a `RETURN` clause with a single column and computing a total aggregate or containing `LIMIT 1`."
+      s"Query in local function definition $functionName requires a `RETURN` clause with a single column and computing a total aggregate or containing `LIMIT 1`."
 
   def msg42I42(): String =
     s"Cannot yield value from void procedure."

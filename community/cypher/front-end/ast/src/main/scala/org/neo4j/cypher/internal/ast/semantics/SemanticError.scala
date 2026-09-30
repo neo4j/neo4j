@@ -1078,7 +1078,7 @@ object SemanticError {
   def notSupportedQueryResultInLocalFunction(functionName: FunctionName, position: InputPosition): SemanticError = {
     val msg =
       s"Non-scalar query result not supported in local function definitions. " +
-        s"Query in local function definitions ${functionName.fullName} requires a `RETURN` clause with a single column and computing a total aggregate or containing `LIMIT 1`."
+        s"Query in local function definition ${functionName.fullName} requires a `RETURN` clause with a single column and computing a total aggregate or containing `LIMIT 1`."
     val gql = GqlHelper.getGql42001_42NAN(functionName.fullName, position.offset, position.line, position.column)
     SemanticError(gql, msg, position)
   }
