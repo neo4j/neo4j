@@ -30,6 +30,13 @@ import org.neo4j.util.VisibleForTesting;
  * release calls will go back to get routed to the outer scoped memory tracker again.
  * <p>
  * This class is intended to simplify the management of recording allocations over inner transactions.
+ * <p>
+ * Allocation and release of the same memory can happen on different sides of an inner scope boundary.
+ * In particular, memory allocated while unbound can be released while an inner scope is bound, for
+ * example a buffer created at query build time and closed while an inner transaction is open. A bound
+ * release therefore goes to the inner scope only up to what the inner scope has allocated
+ * (including memory inherited from previous inner scopes), and the excess falls through to the outer
+ * scope, so that the inner scope is never driven below zero.
  */
 public class RebindableDualScopedMemoryTracker extends DefaultScopedMemoryTracker {
     // This is always scoped
@@ -80,7 +87,15 @@ public class RebindableDualScopedMemoryTracker extends DefaultScopedMemoryTracke
     @Override
     public void releaseNative(long bytes) {
         if (innerDelegate != null) {
-            innerDelegate.releaseNative(bytes);
+            long fromInner = Math.min(bytes, innerDelegate.usedNativeMemory());
+            if (fromInner > 0) {
+                innerDelegate.releaseNative(fromInner);
+            }
+            long excess = bytes - fromInner;
+            if (excess > 0) {
+                // Released memory that the inner scope never allocated, so it belongs to the outer scope
+                super.releaseNative(excess);
+            }
         } else {
             super.releaseNative(bytes);
         }
@@ -98,7 +113,15 @@ public class RebindableDualScopedMemoryTracker extends DefaultScopedMemoryTracke
     @Override
     public void releaseHeap(long bytes) {
         if (innerDelegate != null) {
-            innerDelegate.releaseHeap(bytes);
+            long fromInner = Math.min(bytes, innerDelegate.estimatedHeapMemory());
+            if (fromInner > 0) {
+                innerDelegate.releaseHeap(fromInner);
+            }
+            long excess = bytes - fromInner;
+            if (excess > 0) {
+                // Released memory that the inner scope never allocated, so it belongs to the outer scope
+                super.releaseHeap(excess);
+            }
         } else {
             super.releaseHeap(bytes);
         }
@@ -111,7 +134,9 @@ public class RebindableDualScopedMemoryTracker extends DefaultScopedMemoryTracke
 
     @Override
     public void reset() {
-        innerDelegate.reset();
+        if (innerDelegate != null) {
+            innerDelegate.reset();
+        }
         unreleasedInnerScopeNative = 0;
         unreleasedInnerScopeHeap = 0;
         super.reset();

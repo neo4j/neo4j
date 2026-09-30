@@ -276,6 +276,113 @@ class RebindableDualScopedMemoryTrackerTest {
     }
 
     @Test
+    void boundReleaseOfMemoryAllocatedOutsideInnerScopeFallsThroughToOuter() {
+        // Memory allocated while no inner scope is bound, for example buffers created at query build time
+        scopedMemoryTracker.allocateNative(100);
+        scopedMemoryTracker.allocateHeap(200);
+
+        MemoryTracker inner = new LocalMemoryTracker();
+        scopedMemoryTracker.setInnerDelegate(inner);
+
+        scopedMemoryTracker.allocateNative(10);
+        scopedMemoryTracker.allocateHeap(20);
+
+        // Release more than the inner scope has allocated, for example when the outer-allocated
+        // buffers are closed while an inner transaction is bound
+        scopedMemoryTracker.releaseNative(110);
+        scopedMemoryTracker.releaseHeap(220);
+
+        // The inner scope is released down to zero and the excess falls through to the outer scope
+        assertEquals(0, inner.usedNativeMemory());
+        assertEquals(0, inner.estimatedHeapMemory());
+        assertEquals(0, memoryTracker.usedNativeMemory());
+        assertEquals(0, memoryTracker.estimatedHeapMemory());
+
+        scopedMemoryTracker.closeInner();
+        assertEquals(0, scopedMemoryTracker.unreleasedInnerScopeNative());
+        assertEquals(0, scopedMemoryTracker.unreleasedInnerScopeHeap());
+    }
+
+    @Test
+    void boundReleaseIsCappedByInheritedCarryOverPlusInnerAllocations() {
+        MemoryTracker inner1 = new LocalMemoryTracker();
+        scopedMemoryTracker.setInnerDelegate(inner1);
+        scopedMemoryTracker.allocateHeap(6);
+        scopedMemoryTracker.closeInner();
+        assertEquals(6, scopedMemoryTracker.unreleasedInnerScopeHeap());
+
+        scopedMemoryTracker.allocateHeap(100);
+
+        MemoryTracker inner2 = new LocalMemoryTracker();
+        scopedMemoryTracker.setInnerDelegate(inner2);
+        scopedMemoryTracker.allocateHeap(4);
+
+        // The inherited carry-over of 6 plus the 4 allocated in this scope can be released from
+        // the inner scope, the excess 100 falls through to the outer scope
+        scopedMemoryTracker.releaseHeap(110);
+        assertEquals(0, inner2.estimatedHeapMemory());
+        assertEquals(0, memoryTracker.estimatedHeapMemory());
+
+        scopedMemoryTracker.closeInner();
+        assertEquals(0, scopedMemoryTracker.unreleasedInnerScopeHeap());
+    }
+
+    @Test
+    void rebindSequenceOverInnerTrackersThatAlreadyHoldMemory() {
+        final var outer = new LocalMemoryTracker();
+        final var tracker = new RebindableDualScopedMemoryTracker(outer);
+
+        // Each inner tracker already holds memory of its own, unrelated to this scope
+        final var inner1 = new LocalMemoryTracker();
+        inner1.allocateHeap(70);
+        inner1.allocateNative(7);
+        final var inner2 = new LocalMemoryTracker();
+        inner2.allocateHeap(300);
+        inner2.allocateNative(30);
+        final var inner3 = new LocalMemoryTracker();
+        inner3.allocateHeap(500);
+        inner3.allocateNative(50);
+
+        tracker.setInnerDelegate(inner1);
+        tracker.allocateHeap(10);
+        tracker.releaseHeap(4);
+        tracker.allocateNative(8);
+        tracker.releaseNative(3);
+        tracker.closeInner();
+        assertEquals(6, tracker.unreleasedInnerScopeHeap());
+        assertEquals(5, tracker.unreleasedInnerScopeNative());
+
+        // Allocated while unbound, so it belongs to the outer scope
+        tracker.allocateHeap(100);
+
+        tracker.setInnerDelegate(inner2);
+        tracker.allocateHeap(4);
+        // The 6 inherited from inner1 plus the 4 allocated here can be released from the inner
+        // scope, the excess 100 falls through to the outer scope
+        tracker.releaseHeap(110);
+        tracker.closeInner();
+        assertEquals(0, tracker.unreleasedInnerScopeHeap());
+        assertEquals(5, tracker.unreleasedInnerScopeNative());
+
+        tracker.setInnerDelegate(inner3);
+        tracker.releaseNative(5);
+        tracker.closeInner();
+        assertEquals(0, tracker.unreleasedInnerScopeNative());
+
+        // Every inner tracker is back to exactly what it held before it was bound
+        assertEquals(70, inner1.estimatedHeapMemory());
+        assertEquals(7, inner1.usedNativeMemory());
+        assertEquals(300, inner2.estimatedHeapMemory());
+        assertEquals(30, inner2.usedNativeMemory());
+        assertEquals(500, inner3.estimatedHeapMemory());
+        assertEquals(50, inner3.usedNativeMemory());
+
+        tracker.close();
+        assertEquals(0, outer.estimatedHeapMemory());
+        assertEquals(0, outer.usedNativeMemory());
+    }
+
+    @Test
     void assertNoUnreleasedInnerOnClose() {
         final var outer = new LocalMemoryTracker();
         final var tracker = new RebindableDualScopedMemoryTracker(outer);
