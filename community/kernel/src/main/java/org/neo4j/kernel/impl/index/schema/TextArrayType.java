@@ -78,7 +78,8 @@ class TextArrayType extends AbstractArrayType<String> {
         to.long1 = FALSE;
         to.long2 = from.long2;
         to.long3 = from.long3;
-        initializeArray(to, length, null);
+        initializeArray(
+                to, length, isCharValueType(from.long2) ? ValueWriter.ArrayType.CHAR : ValueWriter.ArrayType.STRING);
         System.arraycopy(from.long0Array, 0, to.long0Array, 0, length);
         for (int i = 0; i < length; i++) {
             short targetLength = (short) from.long0Array[i];

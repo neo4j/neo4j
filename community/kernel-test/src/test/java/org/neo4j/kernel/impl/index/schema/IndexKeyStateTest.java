@@ -82,6 +82,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.graphdb.Vector;
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.CursorException;
@@ -303,6 +304,12 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
 
         // Then
         assertEquals(0, from.compareValueTo(to), "states not equals after copy");
+        assertEquals(hashOf(from.asValue()), hashOf(to.asValue()), "value hash not equal after copy");
+    }
+
+    private static long hashOf(Value value) {
+        HashFunction hashFunction = HashFunction.incrementalXXH64();
+        return hashFunction.finalise(value.updateHash(hashFunction, hashFunction.initialise(0)));
     }
 
     @ParameterizedTest
