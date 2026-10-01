@@ -95,6 +95,8 @@ public interface Collector extends AutoCloseable, ResumableState {
 
     void collectOtherRelationshipViolation(String problem);
 
+    void collectMissingRelationshipType(String source, long lineNumber);
+
     long badEntries();
 
     boolean isCollectingBadRelationships();
@@ -184,6 +186,11 @@ public interface Collector extends AutoCloseable, ResumableState {
                 source,
                 row,
                 "Column content: `%s`.".formatted(value));
+    }
+
+    static String missingRelationshipTypeMessage(String source, long lineNumber) {
+        return standardisedErrorMessage(
+                "Missing relationship type.", source, lineNumber, "Every relationship must have a type.");
     }
 
     static String relationshipViolatingConstraintMessage(
@@ -298,6 +305,9 @@ public interface Collector extends AutoCloseable, ResumableState {
 
         @Override
         public void collectOtherRelationshipViolation(String problem) {}
+
+        @Override
+        public void collectMissingRelationshipType(String source, long lineNumber) {}
 
         @Override
         public void collectIdColumnMissing(String source, long row, int columnIndex) {}
@@ -436,6 +446,11 @@ public interface Collector extends AutoCloseable, ResumableState {
         }
 
         @Override
+        public void collectMissingRelationshipType(String source, long lineNumber) {
+            throw new IllegalStateException(missingRelationshipTypeMessage(source, lineNumber));
+        }
+
+        @Override
         public boolean isCollectingBadRelationships() {
             return false;
         }
@@ -507,6 +522,9 @@ public interface Collector extends AutoCloseable, ResumableState {
 
         @Override
         public void collectOtherRelationshipViolation(String problem) {}
+
+        @Override
+        public void collectMissingRelationshipType(String source, long lineNumber) {}
 
         @Override
         public void collectIdColumnMissing(String source, long row, int columnIndex) {}

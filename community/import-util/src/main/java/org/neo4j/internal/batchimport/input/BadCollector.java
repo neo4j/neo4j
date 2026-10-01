@@ -116,8 +116,9 @@ public final class BadCollector implements Collector {
     static final int MISSING_ID_COLUMN = 0x400;
     static final int INVALID_RELATIONSHIP_ID = 0x800;
     static final int BAD_PROPERTY_COLUMN = 0x1000;
+    static final int MISSING_RELATIONSHIP_TYPE = 0x2000;
     static final int BAD_NODES = DUPLICATE_NODES | VIOLATING_NODES | OTHER_NODE_VIOLATION | INVALID_NODE_ID;
-    static final int BAD_RELATIONSHIPS = BAD_RELATIONSHIP | INVALID_RELATIONSHIP_ID;
+    static final int BAD_RELATIONSHIPS = BAD_RELATIONSHIP | INVALID_RELATIONSHIP_ID | MISSING_RELATIONSHIP_TYPE;
 
     static final int ALL_SCHEMA_VIOLATIONS = VIOLATING_SCHEMA | BAD_NODES | BAD_RELATIONSHIPS;
     static final int NODE_SCHEMA_VIOLATIONS = VIOLATING_SCHEMA | BAD_NODES;
@@ -139,7 +140,8 @@ public final class BadCollector implements Collector {
             Map.entry(INVALID_NODE_ID, "InvalidNodeId"),
             Map.entry(INVALID_RELATIONSHIP_ID, "InvalidRelationshipId"),
             Map.entry(MISSING_ID_COLUMN, "MissingIdColumn"),
-            Map.entry(BAD_PROPERTY_COLUMN, "BadPropertyColumn"));
+            Map.entry(BAD_PROPERTY_COLUMN, "BadPropertyColumn"),
+            Map.entry(MISSING_RELATIONSHIP_TYPE, "MissingRelationshipType"));
 
     public static final int COLLECT_ALL = -1;
     public static final long UNLIMITED_TOLERANCE = -1;
@@ -315,6 +317,11 @@ public final class BadCollector implements Collector {
     @Override
     public void collectOtherRelationshipViolation(String problem) {
         collect(ProblemReporters.otherViolationReporter(EntityType.RELATIONSHIP, problem));
+    }
+
+    @Override
+    public void collectMissingRelationshipType(String source, long lineNumber) {
+        collect(ProblemReporters.missingRelationshipTypeReporter(source, lineNumber));
     }
 
     @Override

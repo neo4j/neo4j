@@ -30,6 +30,7 @@ import static org.neo4j.internal.batchimport.input.BadCollector.ILLEGAL_QUOTE;
 import static org.neo4j.internal.batchimport.input.BadCollector.INVALID_NODE_ID;
 import static org.neo4j.internal.batchimport.input.BadCollector.INVALID_RELATIONSHIP_ID;
 import static org.neo4j.internal.batchimport.input.BadCollector.MISSING_ID_COLUMN;
+import static org.neo4j.internal.batchimport.input.BadCollector.MISSING_RELATIONSHIP_TYPE;
 import static org.neo4j.internal.batchimport.input.BadCollector.NODE_SCHEMA_VIOLATIONS;
 import static org.neo4j.internal.batchimport.input.BadCollector.OTHER_NODE_VIOLATION;
 import static org.neo4j.internal.batchimport.input.BadCollector.OTHER_RELATIONSHIP_VIOLATION;
@@ -72,6 +73,7 @@ public class ProblemReporters {
             .addSerializer(IllegalQuoteProblemReporter.SERIALIZER)
             .addSerializer(InvalidIdProblemReporter.SERIALIZER)
             .addSerializer(IdColumnMissingProblemReporter.SERIALIZER)
+            .addSerializer(MissingRelationshipTypeProblemReporter.SERIALIZER)
             .addSerializer(BadPropertyProblemReporter.SERIALIZER);
 
     /**
@@ -248,6 +250,10 @@ public class ProblemReporters {
 
     public static ProblemReporter badPropertyReporter(String source, long row, String column, String value) {
         return new BadPropertyProblemReporter(source, row, column, value);
+    }
+
+    public static ProblemReporter missingRelationshipTypeReporter(String source, long lineNumber) {
+        return new MissingRelationshipTypeProblemReporter(source, lineNumber);
     }
 
     private static class RelationshipsProblemReporter extends ProblemReporter {
@@ -947,5 +953,42 @@ public class ProblemReporters {
             writeField(jsonGenerator, property.getKey(), property.getValue());
         }
         jsonGenerator.writeEndObject();
+    }
+
+    private static class MissingRelationshipTypeProblemReporter extends ProblemReporter {
+
+        private static final StdSerializer<MissingRelationshipTypeProblemReporter> SERIALIZER =
+                new StdSerializer<>(MissingRelationshipTypeProblemReporter.class) {
+                    @Override
+                    public void serialize(
+                            MissingRelationshipTypeProblemReporter reporter,
+                            JsonGenerator jsonGenerator,
+                            SerializerProvider serializerProvider)
+                            throws IOException {
+                        jsonGenerator.writeStartObject();
+                        startReport(jsonGenerator, reporter);
+                        writeSource(jsonGenerator, reporter.source, reporter.lineNumber);
+                        jsonGenerator.writeEndObject();
+                    }
+                };
+
+        private final String source;
+        private final long lineNumber;
+
+        public MissingRelationshipTypeProblemReporter(String source, long lineNumber) {
+            super(MISSING_RELATIONSHIP_TYPE);
+            this.source = source;
+            this.lineNumber = lineNumber;
+        }
+
+        @Override
+        String message() {
+            return Collector.missingRelationshipTypeMessage(source, lineNumber);
+        }
+
+        @Override
+        InputException exception() {
+            return new InputException(message());
+        }
     }
 }

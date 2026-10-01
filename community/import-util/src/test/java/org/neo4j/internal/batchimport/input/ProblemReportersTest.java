@@ -431,6 +431,18 @@ class ProblemReportersTest {
                         Property value is invalid for the type specified for its column in the header.
                         some.file: line 13
                         Invalid value for property `p1`: `duff`.
+                        """),
+                new Problem(ProblemReporters.missingRelationshipTypeReporter(SOURCE, LINE), formatJson("""
+                            {
+                                "problem": "MissingRelationshipType",
+                                "message": "Missing relationship type.\\nsome.file: line 13\\nEvery relationship must have a type.",
+                                "source":"some.file",
+                                "line":13
+                            }
+                            """), """
+                        Missing relationship type.
+                        some.file: line 13
+                        Every relationship must have a type.
                         """));
     }
 
