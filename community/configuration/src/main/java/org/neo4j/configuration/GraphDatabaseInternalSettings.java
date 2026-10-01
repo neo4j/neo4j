@@ -1383,6 +1383,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description(
+            "Feature flag to enable/disable adding AST predicates that (partly) implement RBAC and PBAC security rules.")
+    public static final Setting<Boolean> security_aware_planner_ast_predicate_inserter_enabled = newBuilder(
+                    "internal.cypher.security_aware_planner_ast_predicate_inserter_enabled", BOOL, false)
+            .build();
+
+    @Internal
     @Description("Maximum number of candidates for which we consider all possibilities")
     public static final Setting<Integer> planning_selector_candidates_maximum = newBuilder(
                     "internal.cypher.planning_selector_candidates_maximum", INT, 3)

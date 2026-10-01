@@ -283,6 +283,9 @@ class CypherConfiguration private (val config: Config) {
   val existsWithImplicitLimitEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.planning_exists_with_implicit_limit_enabled).booleanValue()
 
+  val securityAwarePlannerAstPredicateInserterEnabled: Boolean =
+    config.get(GraphDatabaseInternalSettings.security_aware_planner_ast_predicate_inserter_enabled).booleanValue()
+
   val selectorCandidatesMaximum: Int =
     config.get(GraphDatabaseInternalSettings.planning_selector_candidates_maximum).intValue()
 

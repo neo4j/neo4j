@@ -275,6 +275,13 @@ class CypherPlannerConfiguration(
     () => config.existsWithImplicitLimitEnabled
   }
 
+  val securityAwarePlannerAstPredicateInserterEnabled: () => Boolean = {
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.security_aware_planner_ast_predicate_inserter_enabled.dynamic()
+    )
+    () => config.securityAwarePlannerAstPredicateInserterEnabled
+  }
+
   val selectorCandidatesMaximum: () => Int = {
     AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.planning_selector_candidates_maximum.dynamic()
