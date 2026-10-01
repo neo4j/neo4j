@@ -97,6 +97,7 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.PrefixedLogProvider;
@@ -391,7 +392,9 @@ public class FileImporter {
                     new SimpleLogService(logProvider),
                     pageCacheTracer,
                     contextFactory);
+            InternalLog log = logProvider.getLog(getClass());
             if (skidbladnir) {
+                log.info("This import is running the current version.");
                 type.doSkidbladnirImport(
                         fileSystem,
                         databaseLayout,
@@ -418,6 +421,7 @@ public class FileImporter {
                         resumableStateAccessor,
                         resume);
             } else {
+                log.info("This import is running the legacy version.");
                 type.doImport(
                         fileSystem,
                         databaseLayout,
