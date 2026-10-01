@@ -274,6 +274,48 @@ class CallClauseTest extends CypherPlannerTestSuite with AstConstructionTestSupp
     ))
   }
 
+  test("should verify that null is not provided for NOT NULL arguments during semantic checking of resolved calls") {
+    val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger.withIsNullable(false)))
+    val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
+    val signature =
+      ProcedureSignature(name, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
+    val callArguments = Seq(nullLiteral)
+    val callResults = IndexedSeq(
+      ProcedureResultItem(v"x")(pos),
+      ProcedureResultItem(ProcedureOutput("y")(pos), v"z")(pos)
+    )
+    val unresolved =
+      UnresolvedCall(name, Some(callArguments), Some(ProcedureResult(callResults)(pos)), isStandalone = true)(pos)
+    val resolved = ResolvedNonLocalCall(_ => signature)(unresolved).coerceArguments
+
+    errorTexts(resolved.semanticCheck.run(
+      SemanticState.clean,
+      CypherVersionHelpers.arbitrarySemanticContext()
+    )) should equal(Seq(
+      "Type mismatch: expected INTEGER NOT NULL but was NULL (line 0, column 0 (offset: 0))"
+    ))
+  }
+
+  test("should allow values of the nullable type for NOT NULL arguments during semantic checking of resolved calls") {
+    val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger.withIsNullable(false)))
+    val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
+    val signature =
+      ProcedureSignature(name, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
+    val callArguments = Seq(literalInt(42))
+    val callResults = IndexedSeq(
+      ProcedureResultItem(v"x")(pos),
+      ProcedureResultItem(ProcedureOutput("y")(pos), v"z")(pos)
+    )
+    val unresolved =
+      UnresolvedCall(name, Some(callArguments), Some(ProcedureResult(callResults)(pos)), isStandalone = true)(pos)
+    val resolved = ResolvedNonLocalCall(_ => signature)(unresolved).coerceArguments
+
+    errorTexts(resolved.semanticCheck.run(
+      SemanticState.clean,
+      CypherVersionHelpers.arbitrarySemanticContext()
+    )) should be(empty)
+  }
+
   test("should verify that result variables are unique during semantic checking of resolved calls") {
     val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))

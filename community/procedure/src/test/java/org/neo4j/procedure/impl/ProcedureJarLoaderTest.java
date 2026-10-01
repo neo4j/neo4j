@@ -29,6 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPrimitiveInteger;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
@@ -186,7 +187,7 @@ class ProcedureJarLoaderTest {
                 procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
                 .containsExactly(procedureSignature(PROCEDURE_NAME)
-                        .in("value", NTInteger)
+                        .in("value", NTPrimitiveInteger)
                         .out("someNumber", NTInteger)
                         .build());
 

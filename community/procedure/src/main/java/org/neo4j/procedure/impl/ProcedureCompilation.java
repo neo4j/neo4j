@@ -71,6 +71,7 @@ import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.MethodDeclaration;
 import org.neo4j.collection.ResourceRawIterator;
+import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
@@ -561,6 +562,41 @@ public final class ProcedureCompilation {
             throw new IllegalArgumentException(
                     "Cannot convert " + input.getClass().getSimpleName() + " to byte[] for input to procedure");
         }
+    }
+
+    /**
+     * Primitive arguments cannot represent `null`, so unusable values fail with a proper type error
+     * instead of the class cast exception a raw cast would produce.
+     * Used by generated code. Needs to be public.
+     *
+     * @param input the argument value to convert
+     * @return the value converted to a long
+     */
+    public static long toLong(AnyValue input) {
+        if (input instanceof NumberValue number) {
+            return number.longValue();
+        }
+        throw cantCoerce(input, "Integer");
+    }
+
+    public static double toDouble(AnyValue input) {
+        if (input instanceof NumberValue number) {
+            return number.doubleValue();
+        }
+        throw cantCoerce(input, "Float");
+    }
+
+    public static boolean toBoolean(AnyValue input) {
+        if (input instanceof BooleanValue booleanValue) {
+            return booleanValue.booleanValue();
+        }
+        throw cantCoerce(input, "Boolean");
+    }
+
+    private static CypherTypeException cantCoerce(AnyValue value, String expectedType) {
+        String rendered = value == Values.NO_VALUE ? "null" : value.prettyPrint();
+        return CypherTypeException.invalidCoercion(
+                rendered, expectedType, format("Can't coerce `%s` to %s", rendered, expectedType));
     }
 
     /**
@@ -1065,7 +1101,7 @@ public final class ProcedureCompilation {
         String type = expectedType.getCanonicalName();
         if (type.equals(LONG)) {
             return invoke(
-                    cast(NumberValue.class, expression), methodReference(NumberValue.class, long.class, "longValue"));
+                    methodReference(ProcedureCompilation.class, long.class, "toLong", AnyValue.class), expression);
         } else if (type.equals(BOXED_LONG)) {
             return noValueCheck(
                     expression,
@@ -1074,8 +1110,7 @@ public final class ProcedureCompilation {
                             methodReference(NumberValue.class, long.class, "longValue"))));
         } else if (type.equals(DOUBLE)) {
             return invoke(
-                    cast(NumberValue.class, expression),
-                    methodReference(NumberValue.class, double.class, "doubleValue"));
+                    methodReference(ProcedureCompilation.class, double.class, "toDouble", AnyValue.class), expression);
         } else if (type.equals(BOXED_DOUBLE)) {
             return noValueCheck(
                     expression,
@@ -1090,8 +1125,8 @@ public final class ProcedureCompilation {
                             methodReference(NumberValue.class, Number.class, "asObjectCopy")));
         } else if (type.equals(BOOLEAN)) {
             return invoke(
-                    cast(BooleanValue.class, expression),
-                    methodReference(BooleanValue.class, boolean.class, "booleanValue"));
+                    methodReference(ProcedureCompilation.class, boolean.class, "toBoolean", AnyValue.class),
+                    expression);
         } else if (type.equals(BOXED_BOOLEAN)) {
             return noValueCheck(
                     expression,

@@ -32,8 +32,11 @@ public final class Neo4jTypes {
     public static final UUIDType NTUUID = new UUIDType();
     public static final NumberType NTNumber = new NumberType();
     public static final IntegerType NTInteger = new IntegerType();
+    public static final PrimitiveIntegerType NTPrimitiveInteger = new PrimitiveIntegerType();
     public static final FloatType NTFloat = new FloatType();
+    public static final PrimitiveFloatType NTPrimitiveFloat = new PrimitiveFloatType();
     public static final BooleanType NTBoolean = new BooleanType();
+    public static final PrimitiveBooleanType NTPrimitiveBoolean = new PrimitiveBooleanType();
     public static final MapType NTMap = new MapType();
     public static final ByteArrayType NTByteArray = new ByteArrayType();
     public static final NodeType NTNode = new NodeType();
@@ -100,14 +103,32 @@ public final class Neo4jTypes {
         }
     }
 
+    public static class PrimitiveIntegerType extends NumberType {
+        public PrimitiveIntegerType() {
+            super("INTEGER");
+        }
+    }
+
     public static class FloatType extends NumberType {
         public FloatType() {
             super("FLOAT");
         }
     }
 
+    public static class PrimitiveFloatType extends NumberType {
+        public PrimitiveFloatType() {
+            super("FLOAT");
+        }
+    }
+
     public static class BooleanType extends AnyType {
         public BooleanType() {
+            super("BOOLEAN");
+        }
+    }
+
+    public static class PrimitiveBooleanType extends AnyType {
+        public PrimitiveBooleanType() {
             super("BOOLEAN");
         }
     }

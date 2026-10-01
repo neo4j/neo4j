@@ -66,7 +66,7 @@ class ProcedureWithArgumentsTest {
         assertThat(procedures.get(0).signature())
                 .isEqualTo(procedureSignature(new QualifiedName("org", "neo4j", "procedure", "impl", "listCoolPeople"))
                         .in("name", Neo4jTypes.NTString)
-                        .in("age", Neo4jTypes.NTInteger)
+                        .in("age", Neo4jTypes.NTPrimitiveInteger)
                         .out("name", Neo4jTypes.NTString)
                         .build());
     }

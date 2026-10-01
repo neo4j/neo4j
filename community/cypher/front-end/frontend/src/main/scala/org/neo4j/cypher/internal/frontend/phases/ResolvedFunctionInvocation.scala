@@ -103,7 +103,10 @@ case class ResolvedFunctionInvocation(
           .map {
             case (arg, optField) =>
               // If type is CTAny we don't need any coercion
-              optField.map { field => if (field.typ == symbols.CTAny) arg else CoerceTo(arg, field.typ) }.getOrElse(arg)
+              optField.map { field =>
+                if (field.typ == symbols.CTAny) arg
+                else CoerceTo(arg, field.typ.withIsNullable(true))
+              }.getOrElse(arg)
           }
       copy(callArguments = coercedArguments)(position)
 
@@ -162,7 +165,7 @@ case class ResolvedFunctionInvocation(
         signature.inputSignature.zip(callArguments).map {
           case (field, arg) =>
             SemanticExpressionCheck.check(SemanticContext.Results, arg) chain
-              SemanticExpressionCheck.expectType(field.typ.covariant, arg)
+              CallableArgumentChecks.checkArgument(field.typ, arg)
         }.foldLeft(success)(_ chain _) chain
           SemanticExpressionCheck.specifyType(signature.outputType.covariant, this)
       } else {

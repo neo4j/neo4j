@@ -30,6 +30,7 @@ import java.util.Optional;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Sensitive;
@@ -44,6 +45,22 @@ class MethodSignatureCompiler {
 
     MethodSignatureCompiler(Cypher5TypeCheckers typeCheckers) {
         this.typeCheckers = typeCheckers;
+    }
+
+    /**
+     * Java primitive parameters cannot represent null, so input fields derived from them get a NOT NULL marker
+     * type.
+     */
+    private static Neo4jTypes.AnyType inputFieldType(Type javaType, Neo4jTypes.AnyType converterType) {
+        if (javaType == long.class) {
+            return Neo4jTypes.NTPrimitiveInteger;
+        } else if (javaType == double.class) {
+            return Neo4jTypes.NTPrimitiveFloat;
+        } else if (javaType == boolean.class) {
+            return Neo4jTypes.NTPrimitiveBoolean;
+        } else {
+            return converterType;
+        }
     }
 
     List<FieldSignature> signatureFor(Method method) throws ProcedureException {
@@ -68,7 +85,9 @@ class MethodSignatureCompiler {
 
             try {
                 DefaultValueConverter valueConverter = typeCheckers.converterFor(type);
-                Optional<DefaultParameterValue> defaultValue = valueConverter.defaultValue(parameter.defaultValue());
+                Neo4jTypes.AnyType fieldType = inputFieldType(type, valueConverter.type());
+                Optional<DefaultParameterValue> defaultValue =
+                        valueConverter.defaultValue(parameter.defaultValue()).map(value -> value.castAs(fieldType));
                 // it is not allowed to have holes in default values
                 if (seenDefault && !defaultValue.isPresent()) {
                     throw ProcedureException.invalidOrderingOfDefaultArguments(i, parameter.value(), method.getName());
@@ -80,10 +99,9 @@ class MethodSignatureCompiler {
                 boolean isDeprecated = param.isAnnotationPresent(Deprecated.class);
 
                 signature.add(defaultValue
-                        .map(neo4jValue -> inputField(
-                                name, valueConverter.type(), neo4jValue, isDeprecated, isSensitive, description))
-                        .orElseGet(
-                                () -> inputField(name, valueConverter.type(), isDeprecated, isSensitive, description)));
+                        .map(neo4jValue ->
+                                inputField(name, fieldType, neo4jValue, isDeprecated, isSensitive, description))
+                        .orElseGet(() -> inputField(name, fieldType, isDeprecated, isSensitive, description)));
             } catch (ProcedureException e) {
                 throw ProcedureException.argumentWithUnsupportedType(
                         name, i, method.getName(), param.getType().getSimpleName(), e);

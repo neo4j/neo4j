@@ -213,6 +213,64 @@ public class ProcedureCompilationTest {
     }
 
     @Test
+    void shouldFailNicelyWhenNullIsPassedToPrimitiveFunctionArgument() throws ProcedureException {
+        // Given
+        UserFunctionSignature signature = functionSignature(FUNC_NAME)
+                .in("l", NTInteger)
+                .in("d", NTFloat)
+                .in("b", NTBoolean)
+                .out(NTString)
+                .build();
+
+        // When
+        CallableUserFunction primitivesMethod =
+                compileFunction(signature, emptyList(), method("primitives", long.class, double.class, boolean.class));
+
+        // Then
+        assertThatThrownBy(() -> primitivesMethod.apply(ctx, new AnyValue[] {NO_VALUE, PI, TRUE}))
+                .isInstanceOf(ProcedureException.class)
+                .hasMessage("Can't coerce `null` to Integer");
+        assertThatThrownBy(() -> primitivesMethod.apply(ctx, new AnyValue[] {longValue(42), NO_VALUE, TRUE}))
+                .isInstanceOf(ProcedureException.class)
+                .hasMessage("Can't coerce `null` to Float");
+        assertThatThrownBy(() -> primitivesMethod.apply(ctx, new AnyValue[] {longValue(42), PI, NO_VALUE}))
+                .isInstanceOf(ProcedureException.class)
+                .hasMessage("Can't coerce `null` to Boolean");
+    }
+
+    @Test
+    void shouldFailNicelyWhenNullIsPassedToPrimitiveProcedureArgument() throws ProcedureException {
+        // Given
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(FUNC_NAME)
+                .in("in", NTInteger)
+                .out(singletonList(inputField("name", NTInteger)))
+                .build();
+
+        // When
+        CallableProcedure longStream = compileProcedure(signature, emptyList(), method("longStream", long.class));
+
+        // Then
+        assertThatThrownBy(() -> longStream.apply(ctx, new AnyValue[] {NO_VALUE}, RESOURCE_TRACKER))
+                .isInstanceOf(ProcedureException.class)
+                .hasMessage("Can't coerce `null` to Integer");
+    }
+
+    @Test
+    void shouldFailNicelyWhenValueOfWrongTypeIsPassedToPrimitiveArgument() throws ProcedureException {
+        // Given
+        UserFunctionSignature signature =
+                functionSignature(FUNC_NAME).in("l", NTInteger).out(NTInteger).build();
+
+        // When
+        CallableUserFunction longMethod = compileFunction(signature, emptyList(), method("testMethod", long.class));
+
+        // Then
+        assertThatThrownBy(() -> longMethod.apply(ctx, new AnyValue[] {stringValue("42")}))
+                .isInstanceOf(ProcedureException.class)
+                .hasMessage("Can't coerce `'42'` to Integer");
+    }
+
+    @Test
     void shouldCallMethodWithCompositeParameters() throws ProcedureException {
         // Given
         UserFunctionSignature signature = functionSignature(FUNC_NAME)
@@ -674,6 +732,10 @@ public class ProcedureCompilationTest {
 
     public String concat(long l, Double d, boolean b) {
         return l + d.toString() + b;
+    }
+
+    public String primitives(long l, double d, boolean b) {
+        return l + ":" + d + ":" + b;
     }
 
     public String concat(List<Object> list) {

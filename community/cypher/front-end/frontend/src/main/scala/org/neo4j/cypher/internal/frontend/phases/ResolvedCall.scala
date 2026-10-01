@@ -68,7 +68,7 @@ trait ResolvedCall[IMPL <: ResolvedCall[IMPL]] extends CallClause {
             // If type is CTAny we don't need any coercion
             optField.map { field =>
               if (field.getType == symbols.CTAny) arg
-              else CoerceTo(arg, field.getType)
+              else CoerceTo(arg, field.getType.withIsNullable(true))
             }.getOrElse(arg)
         }
     withArguments(coercedArguments)
@@ -110,7 +110,7 @@ trait ResolvedCall[IMPL <: ResolvedCall[IMPL]] extends CallClause {
         inputFieldSignatures.zip(callArguments).map {
           case (field, arg) =>
             SemanticExpressionCheck.check(SemanticContext.Results, arg) chain
-              SemanticExpressionCheck.expectType(field.getType.covariant, arg)
+              CallableArgumentChecks.checkArgument(field.getType, arg)
         }.foldLeft(success)(_ chain _)
       } else {
         val argTypes = minNumArgs match {
@@ -191,11 +191,11 @@ object ResolvedNonLocalCall {
     val UnresolvedCall(_, declaredArguments, declaredResult, _, yieldAll, optional) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(unresolved.procedureName)
-    def implicitArguments = signature.inputSignature.map(s =>
-      s.default.map(d => ImplicitProcedureArgument(s.name, s.typ, d)).getOrElse(
-        ExplicitParameter(s.name, s.typ)(position)
-      )
-    )
+    def implicitArguments = signature.inputSignature.map { s =>
+      val typ = s.typ.withIsNullable(true)
+      s.default.map(d => ImplicitProcedureArgument(s.name, typ, d))
+        .getOrElse(ExplicitParameter(s.name, typ)(position))
+    }
     val callArguments = declaredArguments.getOrElse(implicitArguments)
     val sensitiveArguments = signature.inputSignature.take(callArguments.length).map(_.sensitive)
     val callArgumentsWithSensitivityMarkers = callArguments.zipAll(sensitiveArguments, null, false).map {

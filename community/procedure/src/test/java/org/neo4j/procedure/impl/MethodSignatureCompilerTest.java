@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.procedure.Name;
@@ -46,6 +47,16 @@ class MethodSignatureCompilerTest {
 
     public static class UnmappableRecord {
         public UnmappableRecord wat;
+    }
+
+    public static class ClassWithProcedureWithPrimitiveArgs {
+        @Procedure
+        public Stream<MyOutputRecord> echo(
+                @Name(value = "in", defaultValue = "42") long in,
+                @Name(value = "f", defaultValue = "3.14") double f,
+                @Name(value = "b", defaultValue = "true") boolean b) {
+            return Stream.of(new MyOutputRecord(in + ":" + f + ":" + b));
+        }
     }
 
     public static class ClassWithProcedureWithSimpleArgs {
@@ -73,6 +84,30 @@ class MethodSignatureCompilerTest {
 
         // THen
         assertThat(signature).containsExactly(FieldSignature.inputField("name", Neo4jTypes.NTString));
+    }
+
+    @Test
+    void shouldMapPrimitiveArgumentsToNotNullableTypes() throws Throwable {
+        // When
+        Method echo =
+                ClassWithProcedureWithPrimitiveArgs.class.getMethod("echo", long.class, double.class, boolean.class);
+        List<FieldSignature> signature = new MethodSignatureCompiler(new Cypher5TypeCheckers()).signatureFor(echo);
+
+        // Then
+        assertThat(signature)
+                .containsExactly(
+                        FieldSignature.inputField(
+                                "in",
+                                Neo4jTypes.NTPrimitiveInteger,
+                                new DefaultParameterValue(42L, Neo4jTypes.NTPrimitiveInteger)),
+                        FieldSignature.inputField(
+                                "f",
+                                Neo4jTypes.NTPrimitiveFloat,
+                                new DefaultParameterValue(3.14, Neo4jTypes.NTPrimitiveFloat)),
+                        FieldSignature.inputField(
+                                "b",
+                                Neo4jTypes.NTPrimitiveBoolean,
+                                new DefaultParameterValue(true, Neo4jTypes.NTPrimitiveBoolean)));
     }
 
     @Test
