@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.frontend.local_callables
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.GroupByClause
 import org.neo4j.gqlstatus.GqlHelper
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
@@ -664,7 +663,7 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
        |RETURN foo.a()
        |""".stripMargin
   ) {
-    runWithLC(GroupByClause).hasNoErrors
+    runWithLC().hasNoErrors
   }
 
   // one unaliased total aggregate with GROUP BY ()
@@ -677,7 +676,7 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
        |RETURN foo.a()
        |""".stripMargin
   ) {
-    runWithLC(GroupByClause).hasNoErrors
+    runWithLC().hasNoErrors
   }
 
   // grouped aggregate capped by LIMIT 1 takes precedence over the missing total aggregate
@@ -690,7 +689,7 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
        |RETURN foo.a()
        |""".stripMargin
   ) {
-    runWithLC(GroupByClause).hasNoErrors
+    runWithLC().hasNoErrors
   }
 
   // conditional query
@@ -1001,7 +1000,7 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
        |RETURN foo.a()
        |""".stripMargin
   ) {
-    runWithLC(GroupByClause).hasErrorWithMarkedPosition(
+    runWithLC().hasErrorWithMarkedPosition(
       pos =>
         GqlHelper.getGql42001_42NAN(
           "foo.a",
@@ -1024,7 +1023,7 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
        |RETURN foo.a()
        |""".stripMargin
   ) {
-    runWithLC(GroupByClause).hasErrorWithMarkedPosition(
+    runWithLC().hasErrorWithMarkedPosition(
       pos =>
         GqlHelper.getGql42001_42NAN(
           "foo.a",
@@ -1047,7 +1046,7 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
        |RETURN foo.a()
        |""".stripMargin
   ) {
-    runWithLC(GroupByClause).hasErrorWithMarkedPosition(
+    runWithLC().hasErrorWithMarkedPosition(
       pos =>
         GqlHelper.getGql42001_42NAN(
           "foo.a",
@@ -1070,7 +1069,7 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
        |RETURN foo.a(1)
        |""".stripMargin
   ) {
-    runWithLC(GroupByClause).hasErrorWithMarkedPosition(
+    runWithLC().hasErrorWithMarkedPosition(
       pos =>
         GqlHelper.getGql42001_42NAN(
           "foo.a",

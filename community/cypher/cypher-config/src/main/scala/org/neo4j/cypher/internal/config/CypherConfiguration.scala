@@ -127,9 +127,6 @@ class CypherConfiguration private (val config: Config) {
 
   val labelInference: CypherInferSchemaPartsOption = CypherInferSchemaPartsOption.fromConfig(config)
 
-  val groupByClauseEnabled: Boolean =
-    config.get(GraphDatabaseInternalSettings.cypher_group_by_clause_enabled).booleanValue()
-
   val statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption =
     CypherStatefulShortestPlanningModeOption.fromConfig(config)
 

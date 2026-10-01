@@ -66,7 +66,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
 
   override val phaseTestConfig = PhaseTestConfig(
     excludedVersions = Set(CypherVersion.Cypher5),
-    semanticFeatures = Seq(SemanticFeature.UseAsMultipleGraphsSelector, SemanticFeature.GroupByClause)
+    semanticFeatures = Seq(SemanticFeature.UseAsMultipleGraphsSelector)
   )
 
   private def withUpdate() = (expectedStatement: Statement) => {

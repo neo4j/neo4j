@@ -2007,21 +2007,6 @@ object SemanticError {
     )
   }
 
-  def groupByNotSupported(position: InputPosition): SemanticError = {
-    val gql = GqlHelper.getGql42001_51N26(
-      "The `GROUP BY` clause",
-      "the `GROUP BY` clause",
-      position.offset,
-      position.line,
-      position.column
-    )
-    SemanticError(
-      gql,
-      "The GROUP BY clause is not supported.",
-      position
-    )
-  }
-
   def unsupportedPathModeWithVarLength(
     varLengthRel: String,
     pathMode: String,

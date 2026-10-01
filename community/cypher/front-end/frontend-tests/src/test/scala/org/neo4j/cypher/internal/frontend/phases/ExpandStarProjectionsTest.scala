@@ -36,7 +36,7 @@ class ExpandStarProjectionsTest extends CypherFunSuite with RewritePhaseTest wit
 
   override val phaseTestConfig = PhaseTestConfig(
     excludedVersions = Set(CypherVersion.Cypher5),
-    semanticFeatures = Seq(SemanticFeature.UseAsMultipleGraphsSelector, SemanticFeature.GroupByClause)
+    semanticFeatures = Seq(SemanticFeature.UseAsMultipleGraphsSelector)
   )
 
   test("expands RETURN * into the variables in scope") {

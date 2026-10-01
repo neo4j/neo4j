@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.AttributeBasedAcc
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.DisableTypeCheckingInSemanticAnalysis
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.EnableParsingOfObfuscatedLiterals
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExperimentalCypherVersions
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.GroupByClause
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LocalCallables
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.OidcCredentialForwarding
@@ -59,7 +58,6 @@ trait FrontEndCompilationPhases {
     RelationshipPropertyValueAccessRules.productPrefix,
     AttributeBasedAccessControl.productPrefix,
     UserTags.productPrefix,
-    GroupByClause.productPrefix,
     ValueInListProperty.productPrefix
   )
 
@@ -163,7 +161,6 @@ object FrontEndCompilationPhases extends FrontEndCompilationPhases {
       GraphDatabaseInternalSettings.oidc_credential_forwarding_enabled -> OidcCredentialForwarding.productPrefix,
       GraphDatabaseInternalSettings.enable_experimental_cypher_versions -> ExperimentalCypherVersions.productPrefix,
       GraphDatabaseInternalSettings.relationship_property_value_access_rules -> RelationshipPropertyValueAccessRules.productPrefix,
-      GraphDatabaseInternalSettings.cypher_group_by_clause_enabled -> GroupByClause.productPrefix,
       GraphDatabaseInternalSettings.cypher_enable_local_callables -> LocalCallables.productPrefix,
       GraphDatabaseInternalSettings.cypher_enable_scope_queries -> ScopeQueries.productPrefix,
       GraphDatabaseInternalSettings.cypher_enable_parsing_of_obfuscated_literals -> EnableParsingOfObfuscatedLiterals.productPrefix,

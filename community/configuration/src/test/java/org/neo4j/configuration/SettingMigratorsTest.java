@@ -383,6 +383,22 @@ class SettingMigratorsTest {
     }
 
     @Test
+    void removedCypherGroupByClauseEnabledSettingMigration() throws IOException {
+        var configuration = testDirectory.createFile("test.conf");
+        Files.write(configuration, List.of("internal.cypher.group_by_clause_enabled=false"));
+
+        var logProvider = new AssertableLogProvider();
+        var config = Config.newBuilder().fromFile(configuration).build();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertThat(logProvider)
+                .forClass(Config.class)
+                .forLevel(WARN)
+                .containsMessages(
+                        "Setting 'internal.cypher.group_by_clause_enabled' is removed. Setting is no longer used.");
+    }
+
+    @Test
     void migrateCypherSettingsIntoDbmsNamespace() throws IOException {
         Path confFile = testDirectory.createFile("test.conf");
         Files.write(

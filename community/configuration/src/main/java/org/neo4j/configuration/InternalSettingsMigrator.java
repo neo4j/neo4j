@@ -33,5 +33,6 @@ public class InternalSettingsMigrator implements SettingMigrator {
         migrateSettingRemoval(
                 values, log, "unsupported.dbms.index.sampling.async_recovery", "Setting is no longer used");
         migrateSettingRemoval(values, log, "internal.dbms.index.sampling.async_recovery", "Setting is no longer used");
+        migrateSettingRemoval(values, log, "internal.cypher.group_by_clause_enabled", "Setting is no longer used");
     }
 }

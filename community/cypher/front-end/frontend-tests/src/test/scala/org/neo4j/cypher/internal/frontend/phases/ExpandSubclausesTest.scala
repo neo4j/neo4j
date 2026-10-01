@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.*
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.GroupByClause
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExpandSubclauses
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
@@ -32,7 +31,7 @@ class ExpandSubclausesTest extends CypherFunSuite with RewritePhaseTest with Ast
 
   override val phaseTestConfig = PhaseTestConfig(
     excludedVersions = Set(CypherVersion.Cypher5),
-    semanticFeatures = Seq(UseAsMultipleGraphsSelector, GroupByClause)
+    semanticFeatures = Seq(UseAsMultipleGraphsSelector)
   )
 
   private def withUpdate() = (expectedStatement: Statement) => {

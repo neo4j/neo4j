@@ -69,10 +69,6 @@ object SemanticFeature {
     override def name: String = "vector search with complex pattern"
   }
 
-  case object GroupByClause extends SemanticFeature with FeatureToString {
-    override def name: String = "Group By clause"
-  }
-
   case object LocalCallables extends SemanticFeature with FeatureToString {
     override def name: String = "local callables"
   }
@@ -145,7 +141,6 @@ object SemanticFeature {
     AttributeBasedAccessControl,
     ExpandHints,
     UserTags,
-    GroupByClause,
     ValueInListProperty,
     UserTagsInPropertyRules,
     SecretManager
