@@ -2372,7 +2372,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n").withRows(singleColumn(nodes.slice(3, 7), listInAnyOrder = true))
   }
 
-  test("should handle composite node index seek with two row-dependent members") {
+  test("should handle composite node index seek with two row-dependent seek values") {
     // given
     nodeIndex(IndexType.RANGE, "Label", "p1", "p2")
     val nodes = givenGraph {
@@ -2399,7 +2399,62 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       .withRows(singleColumn(Seq(nodes(3), nodes(5), nodes(7)), listInAnyOrder = true))
   }
 
-  test("should handle composite node index seek with a constant and a row-dependent member") {
+  test("should handle composite node index seek with ten row-dependent seek values") {
+    // given
+    val properties = (1 to 10).map(k => s"p$k")
+    nodeIndex(IndexType.RANGE, "Label", properties: _*)
+    val nodes = givenGraph {
+      nodePropertyGraph(10, { case i => properties.zipWithIndex.map { case (p, k) => p -> (i + k) }.toMap }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        properties.map(p => s"$p = ???").mkString("n:Label(", ", ", ")"),
+        paramExpr = properties.indices.map(k => add(prop("row", "i"), literalInt(k))),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{i: 3}, {i: 5}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withRows(singleColumn(Seq(nodes(3), nodes(5)), listInAnyOrder = true))
+  }
+
+  test("should handle composite node index seek with two equal non-deterministic row-dependent seek values") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "p1", "p2")
+    val nodes = givenGraph {
+      nodePropertyGraph(10, { case i => Map("p1" -> i, "p2" -> i) }, "Label")
+    }
+    // rand() * 0 makes the expression non-deterministic without changing its value
+    val seekValue = function("toInteger", add(prop("row", "i"), multiply(function("rand"), literalInt(0))))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(p1 = ???, p2 = ???)",
+        paramExpr = Seq(seekValue, seekValue),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{i: 3}, {i: 5}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withRows(singleColumn(Seq(nodes(3), nodes(5)), listInAnyOrder = true))
+  }
+
+  test("should handle composite node index seek with a constant and a row-dependent seek value") {
     // given
     nodeIndex(IndexType.RANGE, "Label", "p1", "p2")
     val nodes = givenGraph {

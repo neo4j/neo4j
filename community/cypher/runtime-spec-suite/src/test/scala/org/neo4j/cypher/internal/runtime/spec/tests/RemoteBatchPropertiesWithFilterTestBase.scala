@@ -2011,6 +2011,42 @@ abstract class RemoteBatchPropertiesWithFilterTestBase[CONTEXT <: RuntimeContext
     result should beColumns("n.p").withRows(singleColumn(expected))
   }
 
+  test("should push down ten arguments compared with different properties") {
+    givenGraph {
+      nodePropertyGraph(10, { case i => (1 to 10).map(k => s"p$k" -> (i + k)).toMap })
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("cache[n.p1] AS p")
+      .remoteBatchPropertiesWithFilter("cache[n.p1]")((1 to 10).map(k => s"n.p$k = arg$k"): _*)
+      .projection((1 to 10).map(k => s"x + $k AS arg$k"): _*)
+      .unwind("[3, 5] AS x")
+      .allNodeScan("n")
+      .build()
+
+    val result = execute(query, runtime)
+    result should beColumns("p").withRows(singleColumn(Seq(4, 6)))
+  }
+
+  test("should push down two arguments projected from the same variable") {
+    givenGraph {
+      nodePropertyGraph(10, { case i => Map("p1" -> i, "p2" -> i) })
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("cache[n.p1] AS p")
+      .remoteBatchPropertiesWithFilter("cache[n.p1]")("n.p1 = arg1", "n.p2 = arg2")
+      .projection("x AS arg1", "x AS arg2")
+      .unwind("[3, 5] AS x")
+      .allNodeScan("n")
+      .build()
+
+    val result = execute(query, runtime)
+    result should beColumns("p").withRows(singleColumn(Seq(3, 5)))
+  }
+
   test("should push down argument on node property - on large graph") {
     val nodes = givenGraph {
       nodePropertyGraph(
