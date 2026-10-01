@@ -67,6 +67,11 @@ final class QueryObfuscationState {
         return computeSafely(() -> obfuscator.typedObfuscatedQuery(rawText, rawParameters, preparserOffset, renderer));
     }
 
+    ObfuscatedQuery typedAll(QueryObfuscator.ObfuscatedLiteralRenderer renderer) {
+        return computeSafely(
+                () -> obfuscator.typedFullyObfuscatedQuery(rawText, rawParameters, preparserOffset, renderer));
+    }
+
     private ObfuscatedQuery computeSafely(Supplier<ObfuscatedQuery> view) {
         try {
             return view.get();

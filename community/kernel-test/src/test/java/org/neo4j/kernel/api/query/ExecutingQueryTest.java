@@ -346,6 +346,12 @@ class ExecutingQueryTest {
                     String rawQueryText, MapValue rawQueryParameters, int offset, ObfuscatedLiteralRenderer renderer) {
                 return new ObfuscatedQuery("typed-view", rawQueryParameters, Function.identity());
             }
+
+            @Override
+            public ObfuscatedQuery typedFullyObfuscatedQuery(
+                    String rawQueryText, MapValue rawQueryParameters, int offset, ObfuscatedLiteralRenderer renderer) {
+                return new ObfuscatedQuery("typed-all-view", rawQueryParameters, Function.identity());
+            }
         };
 
         query.onObfuscatorReady(obfuscator, 0);
@@ -356,6 +362,7 @@ class ExecutingQueryTest {
         QuerySnapshot snapshot = query.snapshot();
         assertThat(snapshot.obfuscatedQueryText()).contains("default-view");
         assertThat(snapshot.typedObfuscatedQueryText(typeName -> typeName)).contains("typed-view");
+        assertThat(snapshot.typedFullyObfuscatedQueryText(typeName -> typeName)).contains("typed-all-view");
     }
 
     @Test
@@ -392,6 +399,15 @@ class ExecutingQueryTest {
                     ObfuscatedLiteralRenderer renderer) {
                 throw new StackOverflowError("deeply nested");
             }
+
+            @Override
+            public ObfuscatedQuery typedFullyObfuscatedQuery(
+                    String rawQueryText,
+                    MapValue rawQueryParameters,
+                    int preparserOffset,
+                    ObfuscatedLiteralRenderer renderer) {
+                throw new StackOverflowError("deeply nested");
+            }
         };
 
         query.onObfuscatorReady(throwingError, 0);
@@ -400,6 +416,8 @@ class ExecutingQueryTest {
         assertThat(query.fullyObfuscatedQueryText()).isEmpty();
         assertThat(query.snapshot().obfuscatedQueryText()).isEmpty();
         assertThat(query.snapshot().typedObfuscatedQueryText(typeName -> typeName))
+                .isEmpty();
+        assertThat(query.snapshot().typedFullyObfuscatedQueryText(typeName -> typeName))
                 .isEmpty();
     }
 

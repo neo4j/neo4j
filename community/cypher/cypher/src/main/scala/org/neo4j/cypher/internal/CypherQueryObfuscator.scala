@@ -99,8 +99,39 @@ class CypherQueryObfuscator(
     rawQueryParameters: MapValue,
     preparserOffset: Int,
     renderer: QueryObfuscator.ObfuscatedLiteralRenderer
+  ): ObfuscatedQuery =
+    typedQueryWith(
+      if (policy.fullLiteralsByDefault) state.allLiteralOffsets else state.sensitiveLiteralOffsets,
+      rawQueryText,
+      rawQueryParameters,
+      preparserOffset,
+      renderer
+    )
+
+  override def typedFullyObfuscatedQuery(
+    rawQueryText: String,
+    rawQueryParameters: MapValue,
+    preparserOffset: Int,
+    renderer: QueryObfuscator.ObfuscatedLiteralRenderer
+  ): ObfuscatedQuery =
+    if (!policy.fullLiteralsAvailable)
+      ObfuscatedQuery.absent() // Nothing is computed for a view no consumer may read.
+    else
+      typedQueryWith(
+        state.allLiteralOffsets,
+        rawQueryText,
+        rawQueryParameters,
+        preparserOffset,
+        renderer
+      )
+
+  private def typedQueryWith(
+    offsets: Vector[LiteralOffset],
+    rawQueryText: String,
+    rawQueryParameters: MapValue,
+    preparserOffset: Int,
+    renderer: QueryObfuscator.ObfuscatedLiteralRenderer
   ): ObfuscatedQuery = {
-    val offsets = if (policy.fullLiteralsByDefault) state.allLiteralOffsets else state.sensitiveLiteralOffsets
     // Tokens are rendered once and shared by the text and the position map, so their lengths always agree.
     val tokensBySourceText = mutable.Map.empty[(String, String), String]
     val replacements = offsets.map { o =>

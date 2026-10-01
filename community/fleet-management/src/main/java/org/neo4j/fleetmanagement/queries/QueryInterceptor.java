@@ -77,6 +77,9 @@ public class QueryInterceptor implements QueryExecutionMonitor {
             return;
         }
 
-        queryService.add(query, errorGqlStatusObject);
+        queryService.add(
+                query,
+                errorGqlStatusObject,
+                config.get(GraphDatabaseInternalSettings.obfuscated_query_log_literal_type_hints));
     }
 }

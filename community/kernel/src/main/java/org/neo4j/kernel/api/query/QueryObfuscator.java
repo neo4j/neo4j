@@ -91,6 +91,16 @@ public interface QueryObfuscator {
         return ObfuscatedQuery.absent();
     }
 
+    /**
+     * The typed all-literals view: every literal redacted and rendered as a typed token, independent of
+     * {@code obfuscate_literals}. The typed counterpart of {@link #fullyObfuscatedQuery}, for consumers that
+     * need both guarantees at once. Fails closed with the absent view.
+     */
+    default ObfuscatedQuery typedFullyObfuscatedQuery(
+            String rawQueryText, MapValue rawQueryParameters, int preparserOffset, ObfuscatedLiteralRenderer renderer) {
+        return ObfuscatedQuery.absent();
+    }
+
     QueryObfuscator PASSTHROUGH = new QueryObfuscator() {
 
         @Override
@@ -121,6 +131,16 @@ public interface QueryObfuscator {
                 int preparserOffset,
                 ObfuscatedLiteralRenderer renderer) {
             return defaultObfuscatedQuery(rawQueryText, rawQueryParameters, preparserOffset);
+        }
+
+        @Override
+        public ObfuscatedQuery typedFullyObfuscatedQuery(
+                String rawQueryText,
+                MapValue rawQueryParameters,
+                int preparserOffset,
+                ObfuscatedLiteralRenderer renderer) {
+            // No literals to tokenise: the raw text already is the all-literals view.
+            return fullyObfuscatedQuery(rawQueryText, rawQueryParameters, preparserOffset);
         }
     };
 }

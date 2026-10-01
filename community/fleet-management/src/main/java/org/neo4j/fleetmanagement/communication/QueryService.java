@@ -52,7 +52,7 @@ public class QueryService extends BufferedReportingService<AggregatedQueriesTime
         this.userLog = Logger.getNeo4jLogger();
     }
 
-    public void add(ExecutingQuery query, ErrorGqlStatusObject errorGqlStatusObject) {
+    public void add(ExecutingQuery query, ErrorGqlStatusObject errorGqlStatusObject, boolean literalTypeHints) {
         if (isBufferLimitReached()) {
             // drop queries until the current buffer is cleared to avoid extra memory consumption
             return;
@@ -60,7 +60,7 @@ public class QueryService extends BufferedReportingService<AggregatedQueriesTime
 
         var currentSlice = getCurrent();
         if (currentSlice.cumulativeQueryTextSize() < MAX_PAYLOAD_SIZE) {
-            currentSlice.add(query, errorGqlStatusObject);
+            currentSlice.add(query, errorGqlStatusObject, literalTypeHints);
         } else {
             // This limit normally shouldn't be reached, but it's here to print an error and cap the
             // current slice rather than rejecting the entire message on the service-side.

@@ -20,6 +20,7 @@
 package org.neo4j.fleetmanagement.queries.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -44,7 +45,7 @@ class AggregatedQueriesTimeSliceTest {
         when(query.fullyObfuscatedQueryText()).thenReturn("");
         when(query.queryLanguage()).thenReturn(QueryLanguage.CYPHER_5);
 
-        timeSlice.add(query, null);
+        timeSlice.add(query, null, false);
 
         assertThat(timeSlice.size()).isOne();
         UniqueKey key = timeSlice.getAggregations().keySet().iterator().next();
@@ -64,7 +65,27 @@ class AggregatedQueriesTimeSliceTest {
         when(query.fullyObfuscatedQueryText()).thenReturn(obfuscatedText);
         when(query.queryLanguage()).thenReturn(QueryLanguage.CYPHER_5);
 
-        timeSlice.add(query, null);
+        timeSlice.add(query, null, false);
+
+        assertThat(timeSlice.size()).isOne();
+        UniqueKey key = timeSlice.getAggregations().keySet().iterator().next();
+        assertThat(key.getQueryText()).isEqualTo(obfuscatedText);
+    }
+
+    @Test
+    void shouldUseTypedFullyObfuscatedTextWhenLiteralTypeHintsEnabled() {
+        AggregatedQueriesTimeSlice timeSlice = new AggregatedQueriesTimeSlice();
+        ExecutingQuery query = mock(ExecutingQuery.class);
+        QuerySnapshot snapshot = mock(QuerySnapshot.class);
+        when(query.snapshot()).thenReturn(snapshot);
+        when(snapshot.databaseId()).thenReturn(Optional.empty());
+        when(snapshot.transactionAnnotationData()).thenReturn(Collections.emptyMap());
+
+        String obfuscatedText = "MATCH (n) WHERE n.name = $`OBFUSCATED STRING 1` RETURN n";
+        when(snapshot.typedFullyObfuscatedQueryText(any())).thenReturn(Optional.of(obfuscatedText));
+        when(query.queryLanguage()).thenReturn(QueryLanguage.CYPHER_5);
+
+        timeSlice.add(query, null, true);
 
         assertThat(timeSlice.size()).isOne();
         UniqueKey key = timeSlice.getAggregations().keySet().iterator().next();
@@ -85,7 +106,28 @@ class AggregatedQueriesTimeSliceTest {
         when(query.fullyObfuscatedQueryText()).thenReturn("");
         when(query.queryLanguage()).thenReturn(QueryLanguage.CYPHER_5);
 
-        timeSlice.add(query, null);
+        timeSlice.add(query, null, false);
+
+        assertThat(timeSlice.size()).isOne();
+        UniqueKey key = timeSlice.getAggregations().keySet().iterator().next();
+        assertThat(key.getQueryText()).isEmpty();
+    }
+
+    @Test
+    void shouldAggregateToEmptyTextWhenTypedObfuscationFailed() {
+        AggregatedQueriesTimeSlice timeSlice = new AggregatedQueriesTimeSlice();
+        ExecutingQuery query = mock(ExecutingQuery.class);
+        QuerySnapshot snapshot = mock(QuerySnapshot.class);
+        when(query.snapshot()).thenReturn(snapshot);
+        when(snapshot.databaseId()).thenReturn(Optional.empty());
+        when(snapshot.transactionAnnotationData()).thenReturn(Collections.emptyMap());
+
+        // Obfuscation failed: typedFullyObfuscatedQueryText() surfaces that as Optional.empty() (never the raw
+        // query text), so the aggregation key must collapse to "".
+        when(snapshot.typedFullyObfuscatedQueryText(any())).thenReturn(Optional.empty());
+        when(query.queryLanguage()).thenReturn(QueryLanguage.CYPHER_5);
+
+        timeSlice.add(query, null, true);
 
         assertThat(timeSlice.size()).isOne();
         UniqueKey key = timeSlice.getAggregations().keySet().iterator().next();

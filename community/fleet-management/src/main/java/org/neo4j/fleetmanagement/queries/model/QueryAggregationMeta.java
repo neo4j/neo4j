@@ -22,7 +22,7 @@ package org.neo4j.fleetmanagement.queries.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import java.util.HashSet;
-import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.query.QuerySnapshot;
 
 public class QueryAggregationMeta {
     @JsonPropertyDescription("The number of recorded executions of the query")
@@ -58,9 +58,8 @@ public class QueryAggregationMeta {
     @JsonPropertyDescription("List of users that executed the query")
     public HashSet<String> users = new HashSet<>();
 
-    public void addFromExecutingQuery(ExecutingQuery query) {
-        var snapshot = query.snapshot();
-        long elapsedMs = query.elapsedMillis();
+    public void addFromQuerySnapshot(QuerySnapshot snapshot) {
+        long elapsedMs = snapshot.elapsedTimeMicros() / 1000;
         long pageHits = snapshot.pageHits();
         long pageFaults = snapshot.pageFaults();
         long allocatedBytes = snapshot.allocatedBytes();

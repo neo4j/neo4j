@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.options.CypherVersionOption
 import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.SecurityContext
+import org.neo4j.kernel.api.query.ParameterTokenRenderer
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.server.security.auth.AuthProcedures
@@ -175,6 +176,16 @@ class CypherQueryObfuscatorIT extends CypherITTestSuite {
     val fullyObfuscatedText = ob.fullyObfuscatedQuery(query, org.neo4j.values.virtual.MapValue.EMPTY, 0).text()
     fullyObfuscatedText should not include "Password1"
     fullyObfuscatedText should not include "'visible'" // ordinary literal redacted in the all-literals view
+    val typedFullyObfuscatedText = ob.typedFullyObfuscatedQuery(
+      query,
+      org.neo4j.values.virtual.MapValue.EMPTY,
+      0,
+      ParameterTokenRenderer.create()
+    ).text()
+    typedFullyObfuscatedText should not include "Password1"
+    typedFullyObfuscatedText should not include "'visible'" // ordinary literal redacted in the all-literals view
+    typedFullyObfuscatedText should include("$`OBFUSCATED STRING 1`") // credential url redacted in the typed view
+    typedFullyObfuscatedText should include("$`OBFUSCATED STRING 2`") // ordinary literal redacted in the typed view
   }
 
   test("structural literals stay visible while a credential URL is redacted in every view") {

@@ -333,17 +333,20 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     ob.defaultObfuscatedQuery(text, MapValue.EMPTY, 0).text should equal("RETURN ******, ******")
   }
 
-  test("with the fail-safe off, a query with no literals exposes no all-literals view") {
+  test("with the fail-safe off, a query with no literals exposes no all-literals/typed all-literals view") {
     // Empty metadata used to short-circuit to PASSTHROUGH, whose fullyObfuscatedQuery returns raw text.
-    // With the fail-safe off that raw text must not be exposed as the all-literals view.
+    // With the fail-safe off that raw text must not be exposed as the all-literals/typed all-literals view.
     val ob = CypherQueryObfuscator(
       ObfuscationMetadata.empty(),
       obfuscateLiterals = false,
       exposeFullView = false
     )
 
-    val view = ob.fullyObfuscatedQuery("MATCH (n) RETURN n", MapValue.EMPTY, 0)
-    ObfuscatedQuery.optional(view).isPresent() shouldBe false
+    val fullyObfuscatedView = ob.fullyObfuscatedQuery("MATCH (n) RETURN n", MapValue.EMPTY, 0)
+    ObfuscatedQuery.optional(fullyObfuscatedView).isPresent() shouldBe false
+
+    val typedFullyObfuscatedView = ob.typedFullyObfuscatedQuery("MATCH (n) RETURN n", MapValue.EMPTY, 0, testRenderer())
+    ObfuscatedQuery.optional(typedFullyObfuscatedView).isPresent() shouldBe false
   }
 
   test("uncollected metadata (None) never exposes a full-literals view, whatever the policy") {
@@ -361,6 +364,9 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val ob = CypherQueryObfuscator(Some(ObfuscationMetadata.empty()), ObfuscationPolicy.FullLiteralsOnDemand)
 
     ob should be theSameInstanceAs QueryObfuscator.PASSTHROUGH
+    // PASSTHROUGH's typed all-literals view override serves the raw text: no literals to tokenise.
+    val text = "MATCH (n) RETURN n"
+    ob.typedFullyObfuscatedQuery(text, MapValue.EMPTY, 0, testRenderer()).text should equal(text)
   }
 
   test("typed view renders each obfuscated literal through the renderer, in query-text order") {
@@ -489,6 +495,78 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val xOffset = text.indexOf("x")
     val mapped = view.positionMap.apply(new org.neo4j.graphdb.InputPosition(xOffset, 1, xOffset + 1))
     mapped.getOffset should equal(xOffset + (tokenLength - "42".length))
+  }
+
+  test("typed all-literals view renders every literal even when obfuscate_literals=false") {
+    val text = "RETURN 'secret', 42"
+    val secretOffset = LiteralOffset(text.indexOf("'secret'"), 0, Some(8), "STRING")
+    val intOffset = LiteralOffset(text.indexOf("42"), 0, Some(2), "INTEGER")
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata(Vector(secretOffset), Vector(secretOffset, intOffset), Set.empty),
+      obfuscateLiterals = false,
+      exposeFullView = true
+    )
+
+    // The default typed view hides only the sensitive literal; the all-literals typed view hides both.
+    ob.typedObfuscatedQuery(text, MapValue.EMPTY, 0, testRenderer()).text should equal("RETURN <1:STRING>, 42")
+    ob.typedFullyObfuscatedQuery(text, MapValue.EMPTY, 0, testRenderer()).text should equal(
+      "RETURN <1:STRING>, <2:INTEGER>"
+    )
+  }
+
+  test("typed all-literals view is absent when the full view is not exposed") {
+    val text = "RETURN 'secret', 42"
+    val secretOffset = LiteralOffset(text.indexOf("'secret'"), 0, Some(8), "STRING")
+    val intOffset = LiteralOffset(text.indexOf("42"), 0, Some(2), "INTEGER")
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata(Vector(secretOffset), Vector(secretOffset, intOffset), Set.empty),
+      obfuscateLiterals = false,
+      exposeFullView = false
+    )
+
+    ObfuscatedQuery.optional(ob.typedFullyObfuscatedQuery(
+      text,
+      MapValue.EMPTY,
+      0,
+      testRenderer()
+    )).isPresent() shouldBe false
+  }
+
+  test("typed all-literals view reuses the same token for a literal repeated verbatim in one query") {
+    val text = "RETURN 1 + 1"
+    val firstStart = text.indexOf("1")
+    val secondStart = text.indexOf("1", firstStart + 1)
+    val offsets = Vector(
+      LiteralOffset(firstStart, 0, Some(1), "INTEGER"),
+      LiteralOffset(secondStart, 0, Some(1), "INTEGER")
+    )
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata(Vector.empty, offsets, Set.empty),
+      obfuscateLiterals = false,
+      exposeFullView = true
+    )
+
+    ob.typedFullyObfuscatedQuery(text, MapValue.EMPTY, 0, testRenderer()).text should equal(
+      "RETURN <1:INTEGER> + <1:INTEGER>"
+    )
+  }
+
+  test("typed all-literals view position map uses the all-literals offsets") {
+    val text = "RETURN 'sensitive', 42 AS x"
+    val secretOffset = LiteralOffset(text.indexOf("'sensitive'"), 0, Some(11), "STRING")
+    val intOffset = LiteralOffset(text.indexOf("42"), 0, Some(2), "INTEGER")
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata(Vector(secretOffset), Vector(secretOffset, intOffset), Set.empty),
+      obfuscateLiterals = false,
+      exposeFullView = true
+    )
+
+    val view = ob.typedFullyObfuscatedQuery(text, MapValue.EMPTY, 0, testRenderer())
+    val xOffset = text.indexOf("x")
+    val secretDelta = "<1:STRING>".length - "'sensitive'".length
+    val intDelta = "<2:INTEGER>".length - "42".length
+    val mapped = view.positionMap.apply(new org.neo4j.graphdb.InputPosition(xOffset, 1, xOffset + 1))
+    mapped.getOffset should equal(xOffset + secretDelta + intDelta)
   }
 
   // Single-view convenience for the per-piece (sensitive) assertions: the given offsets are both the sensitive
