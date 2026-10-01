@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.ast.AdministrationCommand.authRuleAllowListedFu
 import org.neo4j.cypher.internal.ast.AdministrationCommand.checkIsStringLiteralOrParameter
 import org.neo4j.cypher.internal.ast.AdministrationCommand.checkIsStringOrStringListOrParameter
 import org.neo4j.cypher.internal.ast.AdministrationCommand.isUserTagsFunction
+import org.neo4j.cypher.internal.ast.AdministrationCommand.oidcUserAttributeFunctionName
+import org.neo4j.cypher.internal.ast.AdministrationCommand.pluginUserTagsFunctionName
 import org.neo4j.cypher.internal.ast.AdministrationCommand.propertyRuleAllowedTemporalFunctions
 import org.neo4j.cypher.internal.ast.AdministrationCommand.userTagsFunctionName
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -122,6 +124,8 @@ object AdministrationCommand extends SemanticAnalysisTooling {
     Seq("date", "datetime", "localdatetime", "localtime", "time", "duration", "point")
 
   val userTagsFunctionName: String = "abac.native.user_tags"
+  val pluginUserTagsFunctionName: String = "abac.plugin.user_tags"
+  val oidcUserAttributeFunctionName: String = "abac.oidc.user_attribute"
 
   def isUserTagsFunction(f: FunctionInvocationLike): Boolean =
     f.callArguments.isEmpty && !f.isUserDefined &&
@@ -151,7 +155,7 @@ object AdministrationCommand extends SemanticAnalysisTooling {
 
   val authRuleAllowListedFunctions: Seq[String] = Seq(
     // ABAC oidc user attributes function
-    "abac.oidc.user_attribute",
+    oidcUserAttributeFunctionName,
     // ABAC native user tags function
     userTagsFunctionName,
     // List functions
@@ -1149,7 +1153,7 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
     // shadowing the name). Compiler built-ins, the genuine resolved abac functions, and abac
     // names whose provider is not enabled (so they don't resolve to a signature) are all
     // accepted here; a disabled-but-genuine abac function is then rejected at evaluation time.
-    if (authRuleAllowListedFunctions.contains(name.toLowerCase) && !functionInvocation.isUserDefined)
+    if (authRuleAllowListedFunctions.exists(_.equalsIgnoreCase(name)) && !functionInvocation.isUserDefined)
       SemanticCheck.success
     else
       SemanticCheck.error(SemanticError.authRuleConditionHaveInvalidFunctionInCondition(
@@ -1168,7 +1172,7 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
     )
 
     val name = functionInvocation.functionName.fullName
-    if (temporalFunctionsThatRequireArgs.contains(name.toLowerCase)) {
+    if (temporalFunctionsThatRequireArgs.exists(_.equalsIgnoreCase(name))) {
       functionInvocation.callArguments match {
         case Seq() =>
           SemanticCheck.error(SemanticError.authRuleConditionHaveInvalidFunctionInCondition(
@@ -1198,7 +1202,7 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
   protected def checkAbacOidcUserAttributeFunction(functionInvocation: FunctionInvocationLike): SemanticCheck = {
     val name = functionInvocation.functionName.fullName
     val args = functionInvocation.callArguments
-    if (name.toLowerCase == "abac.oidc.user_attribute") {
+    if (name.equalsIgnoreCase(oidcUserAttributeFunctionName)) {
       lazy val argHeadOption = args.headOption
         .flatMap {
           case _: Parameter             => None // cannot evaluate parameter so this will pass semantic check
@@ -1240,7 +1244,7 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
   protected def checkAbacUserTagsFunctions(functionInvocation: FunctionInvocationLike): SemanticCheck = {
     val name = functionInvocation.functionName.fullName
     val args = functionInvocation.callArguments
-    if (Set("abac.native.user_tags", "abac.plugin.user_tags") contains name.toLowerCase) {
+    if (Set(userTagsFunctionName, pluginUserTagsFunctionName).exists(name.equalsIgnoreCase)) {
       if (args.nonEmpty) {
         SemanticError.functionCallWrongNumberOfArguments(
           0,

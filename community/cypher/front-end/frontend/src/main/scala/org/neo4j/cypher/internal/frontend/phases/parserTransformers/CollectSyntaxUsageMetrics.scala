@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.parserTransformers
 
+import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AlterAuthRule
 import org.neo4j.cypher.internal.ast.AlterCurrentGraphType
 import org.neo4j.cypher.internal.ast.AlterUser
@@ -36,12 +38,15 @@ import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.NextStatement
 import org.neo4j.cypher.internal.ast.ParsedAsFilter
 import org.neo4j.cypher.internal.ast.ParsedAsLet
+import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.RenameAuthRule
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.Search
 import org.neo4j.cypher.internal.ast.ShowAuthRules
 import org.neo4j.cypher.internal.ast.ShowCurrentGraphTypeClause
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocationLike
 import org.neo4j.cypher.internal.expressions.MatchMode.RepeatableElements
 import org.neo4j.cypher.internal.expressions.PathMode.Acyclic
 import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
@@ -72,10 +77,37 @@ case object CollectSyntaxUsageMetrics
     with ParsePipelineTransformerFactory
     with DefaultPostCondition {
 
+  private val abacPropertyRuleFunctions: List[(String, Int, SyntaxUsageMetricKey)] = List(
+    (AdministrationCommand.userTagsFunctionName, 0, SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE),
+    (AdministrationCommand.pluginUserTagsFunctionName, 0, SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_PROPERTY_RULE)
+  )
+
+  private val abacAuthRuleFunctions: List[(String, Int, SyntaxUsageMetricKey)] = List(
+    (AdministrationCommand.userTagsFunctionName, 0, SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE),
+    (AdministrationCommand.pluginUserTagsFunctionName, 0, SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_AUTH_RULE),
+    (AdministrationCommand.oidcUserAttributeFunctionName, 1, SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE)
+  )
+
+  private def abacKey(
+    function: FunctionInvocationLike,
+    functions: List[(String, Int, SyntaxUsageMetricKey)]
+  ): Option[SyntaxUsageMetricKey] =
+    functions.collectFirst {
+      case (name, argumentCount, key)
+        if function.functionName.fullName.equalsIgnoreCase(name) &&
+          function.callArguments.size == argumentCount =>
+        key
+    }
+
   override def visit(state: BaseState, context: BaseContext): Unit = {
     def increaseMetric(key: SyntaxUsageMetricKey): Unit = {
       context.internalUsageStats.incrementSyntaxUsageCount(key)
     }
+
+    def countAbacFunctions(expression: Expression, functions: List[(String, Int, SyntaxUsageMetricKey)]): Unit =
+      expression.folder.treeForeach {
+        case f: FunctionInvocationLike => abacKey(f, functions).foreach(increaseMetric)
+      }
 
     var isLoadCsvQuery = false
     var isCallInTxQuery = false
@@ -152,12 +184,14 @@ case object CollectSyntaxUsageMetrics
         increaseMetric(SyntaxUsageMetricKey.ALTER_CURRENT_GRAPH_TYPE)
       case _: ShowCurrentGraphTypeClause =>
         increaseMetric(SyntaxUsageMetricKey.SHOW_CURRENT_GRAPH_TYPE)
-      case _: CreateAuthRule =>
+      case ar: CreateAuthRule =>
         increaseMetric(SyntaxUsageMetricKey.CREATE_AUTH_RULE)
+        ar.condition.foreach(condition => countAbacFunctions(condition.expression, abacAuthRuleFunctions))
       case _: RenameAuthRule =>
         increaseMetric(SyntaxUsageMetricKey.RENAME_AUTH_RULE)
-      case _: AlterAuthRule =>
+      case ar: AlterAuthRule =>
         increaseMetric(SyntaxUsageMetricKey.ALTER_AUTH_RULE)
+        ar.condition.foreach(condition => countAbacFunctions(condition.expression, abacAuthRuleFunctions))
       case _: DropAuthRule =>
         increaseMetric(SyntaxUsageMetricKey.DROP_AUTH_RULE)
       case _: ShowAuthRules =>
@@ -168,6 +202,8 @@ case object CollectSyntaxUsageMetrics
         increaseMetric(SyntaxUsageMetricKey.ALTER_USER_TAGS)
       case a: AlterUsers if a.tags.nonEmpty =>
         increaseMetric(SyntaxUsageMetricKey.ALTER_USERS_TAGS)
+      case pq: PatternQualifier if context.cypherVersion.isAfter(CypherVersion.Cypher5) =>
+        countAbacFunctions(pq.expression, abacPropertyRuleFunctions)
     }
 
     if (isLoadCsvQuery) {

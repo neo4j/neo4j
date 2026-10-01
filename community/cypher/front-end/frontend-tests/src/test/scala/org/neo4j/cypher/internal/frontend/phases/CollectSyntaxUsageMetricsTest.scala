@@ -681,6 +681,344 @@ class CollectSyntaxUsageMetricsTest extends CypherFunSuite with CypherVersionTes
     stats.getSyntaxUsageCount(SyntaxUsageMetricKey.ALTER_USERS_TAGS) should be(1)
   }
 
+  testVersionsExcept5("should find native user tags in a node property rule") { version =>
+    val stats = runPipeline(
+      version,
+      "GRANT MATCH {*} ON GRAPH * FOR (n:A) WHERE n.level IN abac.native.user_tags() TO role"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE) should be(1)
+    assertSyntaxUsageCounts(
+      stats,
+      0,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_PROPERTY_RULE,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE
+    )
+  }
+
+  testVersionsExcept5("should find plugin user tags in a node property rule") { version =>
+    val stats = runPipeline(
+      version,
+      "GRANT MATCH {*} ON GRAPH * FOR (n:A) WHERE n.level IN abac.plugin.user_tags() TO role"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_PROPERTY_RULE) should be(1)
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE) should be(0)
+  }
+
+  testVersionsExcept5("should find native user tags in a relationship property rule") { version =>
+    val stats = runPipeline(
+      version,
+      "GRANT MATCH {*} ON GRAPH * FOR ()-[r:R]-() WHERE r.level IN abac.native.user_tags() TO role"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE) should be(1)
+  }
+
+  testVersionsExcept5("should find native user tags in a negated property rule, which is rejected") { version =>
+    val stats = runPipeline(
+      version,
+      "GRANT MATCH {*} ON GRAPH * FOR (n:A) WHERE NOT n.level IN abac.native.user_tags() TO role"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE) should be(1)
+  }
+
+  testVersionsExcept5("should find native user tags in a property rule compared with an operator, which is rejected") {
+    version =>
+      val stats = runPipeline(
+        version,
+        "GRANT MATCH {*} ON GRAPH * FOR (n:A) WHERE n.level = abac.native.user_tags() TO role"
+      )
+      stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE) should be(1)
+  }
+
+  testVersionsExcept5("should find native user tags in a denied property rule, which is rejected") { version =>
+    val stats = runPipeline(
+      version,
+      "DENY MATCH {*} ON GRAPH * FOR (n:A) WHERE n.level IN abac.native.user_tags() TO role"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE) should be(1)
+  }
+
+  testVersionsExcept5("should find every occurrence of user tags in one property rule, which is rejected") { version =>
+    val stats = runPipeline(
+      version,
+      "GRANT MATCH {*} ON GRAPH * FOR (n:A) WHERE n.level IN abac.native.user_tags() " +
+        "AND n.other IN abac.native.user_tags() TO role"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE) should be(2)
+  }
+
+  testVersionsExcept5("should find user tags written in upper case in a property rule") { version =>
+    val stats = runPipeline(
+      version,
+      "GRANT MATCH {*} ON GRAPH * FOR (n:A) WHERE n.level IN ABAC.NATIVE.USER_TAGS() TO role"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE) should be(1)
+  }
+
+  testVersionsExcept5("should not find user tags called with arguments in a property rule") { version =>
+    val stats = runPipeline(
+      version,
+      "GRANT MATCH {*} ON GRAPH * FOR (n:A) WHERE n.level IN abac.native.user_tags('x') TO role"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE) should be(0)
+  }
+
+  test("should not find user tags in a property rule under Cypher 5") {
+    val stats = runPipeline(
+      CypherVersion.Cypher5,
+      "GRANT MATCH {*} ON GRAPH * FOR (n:A) WHERE n.level IN abac.native.user_tags() TO role"
+    )
+    assertSyntaxUsageCounts(
+      stats,
+      0,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_PROPERTY_RULE
+    )
+  }
+
+  testVersionsExcept5("should not find user tags in a property rule without an abac function") { version =>
+    val stats = runPipeline(
+      version,
+      "GRANT MATCH {*} ON GRAPH * FOR (n:A) WHERE n.level = 'secret' TO role"
+    )
+    assertSyntaxUsageCounts(
+      stats,
+      0,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_PROPERTY_RULE
+    )
+  }
+
+  testVersionsExcept5("should not find user tags in a property rule using another function") { version =>
+    val stats = runPipeline(
+      version,
+      "GRANT MATCH {*} ON GRAPH * FOR (n:A) WHERE n.created = datetime('2020-01-01') TO role"
+    )
+    assertSyntaxUsageCounts(
+      stats,
+      0,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_PROPERTY_RULE
+    )
+  }
+
+  testVersionsExcept5("should count user tags in an auth rule as auth rule usage, not property rule usage") {
+    version =>
+      val stats = runPipeline(
+        version,
+        "CREATE AUTH RULE rule SET CONDITION 'x' IN abac.native.user_tags()"
+      )
+      assertSyntaxUsageCounts(
+        stats,
+        1,
+        SyntaxUsageMetricKey.CREATE_AUTH_RULE,
+        SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE
+      )
+      assertSyntaxUsageCounts(
+        stats,
+        0,
+        SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_AUTH_RULE,
+        SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE,
+        SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE,
+        SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_PROPERTY_RULE
+      )
+  }
+
+  testVersionsExcept5("should not find user tags in a privilege without a property rule") { version =>
+    val stats = runPipeline(
+      version,
+      "GRANT MATCH {*} ON GRAPH * TO role"
+    )
+    assertSyntaxUsageCounts(
+      stats,
+      0,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_PROPERTY_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_PROPERTY_RULE
+    )
+  }
+
+  testVersionsExcept5("should find plugin user tags in an auth rule") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE AUTH RULE rule SET CONDITION 'x' IN abac.plugin.user_tags()"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_AUTH_RULE) should be(1)
+    assertSyntaxUsageCounts(
+      stats,
+      0,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_PROPERTY_RULE
+    )
+  }
+
+  testVersionsExcept5("should find oidc user attribute in an auth rule") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE AUTH RULE rule SET CONDITION abac.oidc.user_attribute('country') = 'SE'"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE) should be(1)
+    assertSyntaxUsageCounts(
+      stats,
+      0,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_AUTH_RULE
+    )
+  }
+
+  testVersionsExcept5("should find abac functions when altering an auth rule") { version =>
+    val stats = runPipeline(
+      version,
+      "ALTER AUTH RULE rule SET CONDITION abac.oidc.user_attribute('country') = 'SE'"
+    )
+    assertSyntaxUsageCounts(
+      stats,
+      1,
+      SyntaxUsageMetricKey.ALTER_AUTH_RULE,
+      SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE
+    )
+  }
+
+  testVersionsExcept5("should not find oidc user attribute without the attribute argument in an auth rule") {
+    version =>
+      val stats = runPipeline(
+        version,
+        "CREATE AUTH RULE rule SET CONDITION abac.oidc.user_attribute() = 'SE'"
+      )
+      stats.getSyntaxUsageCount(SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE) should be(0)
+  }
+
+  testVersionsExcept5("should not find user tags called with arguments in an auth rule") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE AUTH RULE rule SET CONDITION 'x' IN abac.native.user_tags('x')"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE) should be(0)
+  }
+
+  testVersionsExcept5("should not find abac functions in an auth rule without any") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE AUTH RULE rule SET CONDITION 'x' = 'SE'"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.CREATE_AUTH_RULE) should be(1)
+    assertSyntaxUsageCounts(
+      stats,
+      0,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE
+    )
+  }
+
+  testVersionsExcept5("should find every abac function occurrence in one auth rule condition") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE AUTH RULE rule SET CONDITION 'x' IN abac.native.user_tags() AND 'y' IN abac.plugin.user_tags()"
+    )
+    assertSyntaxUsageCounts(
+      stats,
+      1,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_AUTH_RULE
+    )
+  }
+
+  testVersionsExcept5("should find the same abac function twice in one auth rule condition") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE AUTH RULE rule SET CONDITION 'x' IN abac.native.user_tags() AND 'y' IN abac.native.user_tags()"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE) should be(2)
+  }
+
+  testVersionsExcept5("should find abac functions written in upper case in an auth rule") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE AUTH RULE rule SET CONDITION ABAC.OIDC.USER_ATTRIBUTE('country') = 'SE'"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE) should be(1)
+  }
+
+  testVersionsExcept5("should find abac functions when replacing an auth rule") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE OR REPLACE AUTH RULE rule SET CONDITION 'x' IN abac.native.user_tags()"
+    )
+    assertSyntaxUsageCounts(
+      stats,
+      1,
+      SyntaxUsageMetricKey.CREATE_AUTH_RULE,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE
+    )
+  }
+
+  testVersionsExcept5("should not find abac functions when altering an auth rule without a condition") { version =>
+    val stats = runPipeline(
+      version,
+      "ALTER AUTH RULE rule SET ENABLED true"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.ALTER_AUTH_RULE) should be(1)
+    assertSyntaxUsageCounts(
+      stats,
+      0,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE
+    )
+  }
+
+  testVersionsExcept5("should find oidc user attribute with a parameter argument in an auth rule") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE AUTH RULE rule SET CONDITION abac.oidc.user_attribute($attr) = 'SE'"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE) should be(1)
+  }
+
+  testVersionsExcept5("should not find oidc user attribute with two arguments in an auth rule") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE AUTH RULE rule SET CONDITION abac.oidc.user_attribute('a', 'b') = 'SE'"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE) should be(0)
+  }
+
+  testVersionsExcept5("should find oidc user attribute with a list argument in an auth rule, which is rejected") {
+    version =>
+      val stats = runPipeline(
+        version,
+        "CREATE AUTH RULE rule SET CONDITION abac.oidc.user_attribute(['a', 'b']) = 'SE'"
+      )
+      stats.getSyntaxUsageCount(SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE) should be(1)
+  }
+
+  testVersionsExcept5("should not find abac functions in an auth rule using another function") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE AUTH RULE rule SET CONDITION toUpper('se') = 'SE'"
+    )
+    assertSyntaxUsageCounts(
+      stats,
+      0,
+      SyntaxUsageMetricKey.NATIVE_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.PLUGIN_USER_TAGS_IN_AUTH_RULE,
+      SyntaxUsageMetricKey.OIDC_USER_ATTRIBUTE_IN_AUTH_RULE
+    )
+  }
+
+  private def assertSyntaxUsageCounts(
+    stats: InternalUsageStats,
+    expected: Int,
+    keys: SyntaxUsageMetricKey*
+  ): Unit =
+    keys.foreach { metricKey =>
+      withClue(s"${metricKey.key}: ") {
+        stats.getSyntaxUsageCount(metricKey) should be(expected)
+      }
+    }
+
   private def runPipeline(
     version: CypherVersion,
     query: String,
