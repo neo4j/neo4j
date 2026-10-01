@@ -105,6 +105,11 @@ import org.neo4j.values.storable.Value;
 public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> extends NativeIndexPopulator<KEY> {
     public static final Monitor NO_MONITOR = new Monitor.Adapter();
     public static final String POPULATION_EXTERNAL_UPDATES_TAG = "BlockBasedIndexPopulator.externalUpdatesFlush";
+    // Weights of the three parts of {@link #progress()}: scan, merge and tree build, based on empirically collected
+    // values. Callers that reconstruct the same progress split (e.g. offline import) reference these.
+    public static final int SCAN_PROGRESS_WEIGHT = 4;
+    public static final int MERGE_PROGRESS_WEIGHT = 1;
+    public static final int TREE_BUILD_PROGRESS_WEIGHT = 2;
 
     private final boolean archiveFailedIndex;
     private final MemoryTracker memoryTracker;
@@ -604,7 +609,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         PopulationProgress.MultiBuilder builder = PopulationProgress.multiple();
 
         // Add scan progress (this one weights a bit heavier than the others)
-        builder.add(scanProgress, 4);
+        builder.add(scanProgress, SCAN_PROGRESS_WEIGHT);
 
         // Add merge progress
         if (!allScanUpdates.isEmpty()) {
@@ -621,7 +626,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                 completed = part.entriesMerged.get();
                 total = part.totalEntriesToMerge;
             }
-            builder.add(PopulationProgress.single(completed, total), 1);
+            builder.add(PopulationProgress.single(completed, total), MERGE_PROGRESS_WEIGHT);
         }
 
         // Add tree building incl. external updates
@@ -634,7 +639,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         } else {
             treeBuildProgress = PopulationProgress.NONE;
         }
-        builder.add(treeBuildProgress, 2);
+        builder.add(treeBuildProgress, TREE_BUILD_PROGRESS_WEIGHT);
 
         return builder.build();
     }
