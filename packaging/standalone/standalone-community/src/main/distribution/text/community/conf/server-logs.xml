@@ -62,6 +62,7 @@
             <DefaultRolloverStrategy fileIndex="min" max="5"/>
         </RollingRandomAccessFile>
 
+        <!-- Advanced notice: The current default appender format for query logs is plain format. The default for new installations will change to JSON at the next LTS release -->
         <RollingRandomAccessFile name="QueryLog" fileName="${config:server.directories.logs}/query.log"
                                  filePattern="$${config:server.directories.logs}/query.log.%02i">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
