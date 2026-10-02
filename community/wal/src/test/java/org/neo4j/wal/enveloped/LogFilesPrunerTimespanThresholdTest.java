@@ -20,6 +20,7 @@
 package org.neo4j.wal.enveloped;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.io.IOException;
@@ -115,7 +116,15 @@ class LogFilesPrunerTimespanThresholdTest {
             LogFormat.writeLogHeader(
                     channel.channel(),
                     LogFormat.V11.newHeader(
-                            version, (long) 0, 0, StoreIdentifier.UNKNOWN, 246, 1, KernelVersion.V2026_01, timestamp),
+                            version,
+                            (long) 0,
+                            0,
+                            StoreIdentifier.UNKNOWN,
+                            246,
+                            1,
+                            KernelVersion.V2026_01,
+                            timestamp,
+                            UNKNOWN_TX_ID),
                     EmptyMemoryTracker.INSTANCE);
             channel.channel().flush();
         }

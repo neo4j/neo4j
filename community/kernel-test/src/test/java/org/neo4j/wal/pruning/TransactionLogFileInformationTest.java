@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_SEQUENCE_NUMBER;
 import static org.neo4j.test.LatestVersions.BINARY_VERSIONS;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
@@ -105,7 +106,8 @@ class TransactionLogFileInformationTest {
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
                 LATEST_KERNEL_VERSION,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
         when(logFile.extractHeader(version)).thenReturn(expectedHeader);
 
         long lastAppendIndexBeforeFile = info.forVersion(version).getPreviousAppendIndexFromHeader();
@@ -135,7 +137,8 @@ class TransactionLogFileInformationTest {
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
                 LATEST_KERNEL_VERSION,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
         when(logFile.extractHeader(anyLong())).thenReturn(expectedHeader);
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
         when(logFile.versionExists(anyLong())).thenReturn(true);
@@ -164,7 +167,8 @@ class TransactionLogFileInformationTest {
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
                 LATEST_KERNEL_VERSION,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
         when(logFile.extractHeader(anyLong())).thenReturn(expectedHeader);
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
         when(logFile.versionExists(anyLong())).thenReturn(true);

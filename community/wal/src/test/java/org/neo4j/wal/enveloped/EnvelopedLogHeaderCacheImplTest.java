@@ -21,6 +21,7 @@ package org.neo4j.wal.enveloped;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.util.ArrayList;
@@ -46,7 +47,8 @@ class EnvelopedLogHeaderCacheImplTest {
                 SEGMENT_BLOCK_SIZE,
                 0,
                 KernelVersion.GLORIOUS_FUTURE,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
     }
 
     @Test

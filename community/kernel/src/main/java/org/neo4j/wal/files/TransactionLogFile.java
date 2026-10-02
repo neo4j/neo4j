@@ -21,6 +21,7 @@ package org.neo4j.wal.files;
 
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.util.Preconditions.checkArgument;
 import static org.neo4j.wal.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.wal.entry.LogFormat.writeLogHeader;
@@ -753,7 +754,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
             long segmentBlockSize = matchedFileHeader.getSegmentBlockSize();
             segmentOffset = (int) (sourceOffset % segmentBlockSize);
         }
-        var newLogHeader = new LogHeader(matchedFileHeader, nextFileVersion, fromAppendIndex - 1, previousChecksum);
+        var newLogHeader =
+                new LogHeader(matchedFileHeader, nextFileVersion, fromAppendIndex - 1, previousChecksum, UNKNOWN_TX_ID);
         long destOffset = initializeNewLogFile(newLogHeader, segmentOffset);
 
         transferData(fileHelper.getFileForVersion(nextFileVersion), matchedFile, destOffset, sourceOffset);

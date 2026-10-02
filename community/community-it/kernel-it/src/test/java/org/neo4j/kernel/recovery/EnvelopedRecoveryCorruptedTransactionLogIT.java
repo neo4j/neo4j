@@ -235,7 +235,8 @@ class EnvelopedRecoveryCorruptedTransactionLogIT extends RecoveryCorruptedTransa
                             currentHeader.getSegmentBlockSize(),
                             currentHeader.getPreviousLogFileChecksum(),
                             currentHeader.getKernelVersion(),
-                            UNSPECIFIED_CREATION_TIME);
+                            UNSPECIFIED_CREATION_TIME,
+                            currentHeader.getLastTxId());
             storeChannel.position(0L);
             LogFormat.writeLogHeader(storeChannel, newHeader, INSTANCE);
         }

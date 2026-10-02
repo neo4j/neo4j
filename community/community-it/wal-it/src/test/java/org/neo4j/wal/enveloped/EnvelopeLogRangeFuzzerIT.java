@@ -20,6 +20,7 @@
 
 package org.neo4j.wal.enveloped;
 
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
 import java.io.IOException;
@@ -228,7 +229,8 @@ class EnvelopeLogRangeFuzzerIT {
                                 segmentSize,
                                 preFileChecksum,
                                 KernelVersion.GLORIOUS_FUTURE,
-                                UNSPECIFIED_CREATION_TIME),
+                                UNSPECIFIED_CREATION_TIME,
+                                UNKNOWN_TX_ID),
                 SEGMENT_BLOCK_SIZE,
                 4,
                 8,

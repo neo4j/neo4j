@@ -39,6 +39,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.wal.entry.LogFormat.writeLogHeader;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.wal.entry.LogHeaderReader.readLogHeader;
@@ -978,7 +979,8 @@ class TransactionLogFileTest {
                     256,
                     BASE_TX_CHECKSUM,
                     kernelVersion,
-                    UNSPECIFIED_CREATION_TIME);
+                    UNSPECIFIED_CREATION_TIME,
+                    UNKNOWN_TX_ID);
             writeLogHeader(storeChannel, logHeader, INSTANCE);
         }
     }

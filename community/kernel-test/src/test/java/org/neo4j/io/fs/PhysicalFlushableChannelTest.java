@@ -34,6 +34,7 @@ import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
 import static org.neo4j.io.memory.HeapScopedBuffer.EMPTY_BUFFER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 import static org.neo4j.wal.LogChannelUtils.estimateBytesWrittenToLogChannel;
@@ -316,7 +317,8 @@ class PhysicalFlushableChannelTest {
                 1024,
                 BASE_TX_CHECKSUM,
                 LATEST_KERNEL_VERSION,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
         LogFormat.writeLogHeader(versionedStoreChannel, logHeader, INSTANCE);
         versionedStoreChannel.position(logHeader.getStartPosition().getByteOffset());
         try (var channel = new PhysicalFlushableLogPositionAwareChannel(versionedStoreChannel, logHeader, INSTANCE)) {

@@ -22,6 +22,7 @@ package org.neo4j.wal;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.wal.entry.LogFormat.writeLogHeader;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 
@@ -126,6 +127,7 @@ public final class LogChannelUtils {
                 logFormat.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
                 kernelVersion,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
     }
 }

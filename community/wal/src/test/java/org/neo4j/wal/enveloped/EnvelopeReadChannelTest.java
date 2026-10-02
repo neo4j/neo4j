@@ -29,6 +29,7 @@ import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
 import static org.neo4j.io.fs.ReadableChannel.UNSPECIFIED_CONTENT_TYPE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.wal.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.KERNEL_CONTENT_TYPE;
@@ -122,7 +123,8 @@ class EnvelopeReadChannelTest {
                             segmentSize,
                             previousLogFileChecksum,
                             LatestVersions.LATEST_KERNEL_VERSION,
-                            UNSPECIFIED_CREATION_TIME));
+                            UNSPECIFIED_CREATION_TIME,
+                            UNKNOWN_TX_ID));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

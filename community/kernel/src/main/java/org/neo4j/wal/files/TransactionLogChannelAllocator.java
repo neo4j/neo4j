@@ -22,6 +22,7 @@ package org.neo4j.wal.files;
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.wal.entry.LogFormat.writeLogHeader;
 import static org.neo4j.wal.entry.LogHeaderReader.readLogHeader;
 
@@ -155,7 +156,8 @@ public class TransactionLogChannelAllocator {
                                 logFilesContext.envelopeSegmentBlockSizeBytes(),
                                 previousLogFileChecksum,
                                 kernelVersion,
-                                logFilesContext.clock().millis());
+                                logFilesContext.clock().millis(),
+                                UNKNOWN_TX_ID);
                 writeLogHeader(storeChannel, header, logFilesContext.memoryTracker());
                 createEvent.fileCreated(header.getStartPosition().getByteOffset());
             }

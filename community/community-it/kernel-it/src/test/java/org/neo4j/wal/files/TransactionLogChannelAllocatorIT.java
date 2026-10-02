@@ -26,6 +26,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
@@ -113,7 +114,8 @@ class TransactionLogChannelAllocatorIT {
                             LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                             1,
                             LATEST_KERNEL_VERSION,
-                            UNSPECIFIED_CREATION_TIME),
+                            UNSPECIFIED_CREATION_TIME,
+                            UNKNOWN_TX_ID),
                     INSTANCE);
         }
 
@@ -141,7 +143,8 @@ class TransactionLogChannelAllocatorIT {
                             LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                             1,
                             LATEST_KERNEL_VERSION,
-                            UNSPECIFIED_CREATION_TIME),
+                            UNSPECIFIED_CREATION_TIME,
+                            UNKNOWN_TX_ID),
                     INSTANCE);
         }
 

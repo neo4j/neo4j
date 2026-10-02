@@ -33,6 +33,7 @@ import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.kernel.impl.store.segment.SegmentsMetadata.EMPTY_SEGMENTS_METADATA;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
@@ -101,7 +102,15 @@ class DefaultStoreSnapshotFactoryTest {
         LogFile logFile = mock(LogFile.class);
         when(logFile.extractHeader(1))
                 .thenReturn(LATEST_LOG_FORMAT.newHeader(
-                        1, 1, 1, StoreIdentifier.UNKNOWN, 1, 1, LATEST_KERNEL_VERSION, UNSPECIFIED_CREATION_TIME));
+                        1,
+                        1,
+                        1,
+                        StoreIdentifier.UNKNOWN,
+                        1,
+                        1,
+                        LATEST_KERNEL_VERSION,
+                        UNSPECIFIED_CREATION_TIME,
+                        UNKNOWN_TX_ID));
         when(walService.getLogFile()).thenReturn(logFile);
         when(database.getDependencyResolver()).thenReturn(dependenciesOf(checkPointer, walService));
         when(database.getDatabaseAvailabilityGuard()).thenReturn(availabilityGuard);

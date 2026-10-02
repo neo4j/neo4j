@@ -19,6 +19,8 @@
  */
 package org.neo4j.wal.enveloped;
 
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
+
 import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.configuration.DatabaseConfig;
@@ -73,7 +75,8 @@ public class BaseLogHeaderFactory implements LogHeaderFactory {
                 segmentSize,
                 lastChecksum,
                 version,
-                clock.millis());
+                clock.millis(),
+                UNKNOWN_TX_ID);
     }
 
     @Override

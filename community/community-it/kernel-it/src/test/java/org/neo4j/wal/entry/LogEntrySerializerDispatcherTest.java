@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.fs.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_SEQUENCE_NUMBER;
 import static org.neo4j.test.LatestVersions.BINARY_VERSIONS;
 import static org.neo4j.wal.LogIndexEncoding.encodeLogIndex;
@@ -89,7 +90,8 @@ class LogEntrySerializerDispatcherTest {
                 logFormat.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
                 version,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
         LogFormat.writeLogHeader(storeChannel, logHeader, INSTANCE);
         try (PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                         storeChannel, logHeader, path, EMPTY_ACCESSOR, DatabaseTracer.NULL);

@@ -54,6 +54,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_SEQUENCE_NUMBER;
 import static org.neo4j.test.LatestVersions.BINARY_VERSIONS;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
@@ -363,7 +364,8 @@ class BatchingTransactionAppenderTest {
                 512,
                 BASE_TX_CHECKSUM,
                 LATEST_KERNEL_VERSION,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
         PhysicalLogVersionedStoreChannel logChannel = mock(PhysicalLogVersionedStoreChannel.class);
         when(logChannel.getLogFormatVersion()).thenReturn(LATEST_LOG_FORMAT);
         when(logChannel.position()).thenReturn(logHeader.getStartPosition().getByteOffset());

@@ -20,6 +20,7 @@
 package org.neo4j.wal.entry;
 
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.util.Preconditions.checkArgument;
 import static org.neo4j.wal.entry.LogHeader.LOG_HEADER_VERSION_SIZE;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
@@ -64,7 +65,8 @@ public enum LogFormat {
                     UNKNOWN_LOG_SEGMENT_SIZE,
                     BASE_TX_CHECKSUM,
                     null,
-                    UNSPECIFIED_CREATION_TIME);
+                    UNSPECIFIED_CREATION_TIME,
+                    UNKNOWN_TX_ID);
         }
 
         @Override
@@ -81,7 +83,8 @@ public enum LogFormat {
                 int segmentBlockSize,
                 int previousLogFileChecksum,
                 KernelVersion kernelVersion,
-                long creationTime) {
+                long creationTime,
+                long lastTxId) {
             throw new UnsupportedOperationException("Cannot write log format V6");
         }
     },
@@ -118,7 +121,8 @@ public enum LogFormat {
                     UNKNOWN_LOG_SEGMENT_SIZE,
                     BASE_TX_CHECKSUM,
                     null,
-                    UNSPECIFIED_CREATION_TIME);
+                    UNSPECIFIED_CREATION_TIME,
+                    UNKNOWN_TX_ID);
         }
 
         @Override
@@ -135,7 +139,8 @@ public enum LogFormat {
                 int segmentBlockSize,
                 int previousLogFileChecksum,
                 KernelVersion kernelVersion,
-                long creationTime) {
+                long creationTime,
+                long lastTxId) {
             throw new UnsupportedOperationException("Cannot write log format V7");
         }
     },
@@ -169,7 +174,8 @@ public enum LogFormat {
                     UNKNOWN_LOG_SEGMENT_SIZE,
                     BASE_TX_CHECKSUM,
                     null,
-                    UNSPECIFIED_CREATION_TIME);
+                    UNSPECIFIED_CREATION_TIME,
+                    UNKNOWN_TX_ID);
         }
 
         @Override
@@ -203,7 +209,8 @@ public enum LogFormat {
                 int segmentBlockSize,
                 int previousLogFileChecksum,
                 KernelVersion kernelVersion,
-                long creationTime) {
+                long creationTime,
+                long lastTxId) {
             return new LogHeader(
                     getVersionByte(),
                     logVersion,
@@ -214,7 +221,8 @@ public enum LogFormat {
                     UNKNOWN_LOG_SEGMENT_SIZE,
                     BASE_TX_CHECKSUM,
                     null,
-                    creationTime);
+                    creationTime,
+                    UNKNOWN_TX_ID);
         }
     },
 
@@ -241,7 +249,8 @@ public enum LogFormat {
                     UNKNOWN_LOG_SEGMENT_SIZE,
                     BASE_TX_CHECKSUM,
                     null,
-                    UNSPECIFIED_CREATION_TIME);
+                    UNSPECIFIED_CREATION_TIME,
+                    UNKNOWN_TX_ID);
         }
 
         @Override
@@ -276,7 +285,8 @@ public enum LogFormat {
                 int segmentBlockSize,
                 int previousLogFileChecksum,
                 KernelVersion kernelVersion,
-                long creationTime) {
+                long creationTime,
+                long lastTxId) {
             return new LogHeader(
                     getVersionByte(),
                     logVersion,
@@ -287,7 +297,8 @@ public enum LogFormat {
                     UNKNOWN_LOG_SEGMENT_SIZE,
                     BASE_TX_CHECKSUM,
                     null,
-                    creationTime);
+                    creationTime,
+                    UNKNOWN_TX_ID);
         }
     },
 
@@ -334,7 +345,8 @@ public enum LogFormat {
                     segmentBlockSize,
                     previousChecksum,
                     KernelVersion.getForVersion(kernelVersion),
-                    UNSPECIFIED_CREATION_TIME);
+                    UNSPECIFIED_CREATION_TIME,
+                    UNKNOWN_TX_ID);
         }
 
         @Override
@@ -373,7 +385,8 @@ public enum LogFormat {
                 int segmentBlockSize,
                 int previousLogFileChecksum,
                 KernelVersion kernelVersion,
-                long creationTime) {
+                long creationTime,
+                long lastTxId) {
             return new LogHeader(
                     getVersionByte(),
                     logVersion,
@@ -384,7 +397,8 @@ public enum LogFormat {
                     segmentBlockSize,
                     previousLogFileChecksum,
                     kernelVersion,
-                    creationTime);
+                    creationTime,
+                    UNKNOWN_TX_ID);
         }
     },
     /**
@@ -397,12 +411,13 @@ public enum LogFormat {
      * - 8 bytes last term
      * - 1 byte kernel version
      * - 8 bytes creation time
-     * - 79 bytes reserved
+     * - 8 bytes last tx id, i.e. the highest tx id observed before this file
+     * - 71 bytes reserved
      * <pre>
-     *   |<-                                                        LOG_HEADER_SIZE                                                              ->|
-     *   |<-LOG_HEADER_VERSION_SIZE->|                                                                                                             |
-     *   |-----------------------------------------------------------------------------------------------------------------------------------------|
-     *   |          version          | append index | store id | block size | previous checksum | term | kernel version | creation time | reserved |
+     *   |<-                                                                 LOG_HEADER_SIZE                                                                       ->|
+     *   |<-LOG_HEADER_VERSION_SIZE->|                                                                                                                              |
+     *   |------------------------------------------------------------------------------------------------------------------------------------------------------------|
+     *   |          version          | append index | store id | block size | previous checksum | term | kernel version | creation time | last tx id | reserved |
      *  </pre>
      */
     V11(
@@ -421,6 +436,7 @@ public enum LogFormat {
             long lastTerm = buffer.getLong();
             byte kernelVersionByte = buffer.get();
             long creationTime = buffer.getLong();
+            long lastTxId = buffer.getLong();
             buffer.position(getHeaderSize()); // rest is reserved
             return new LogHeader(
                     getVersionByte(),
@@ -432,7 +448,8 @@ public enum LogFormat {
                     segmentBlockSize,
                     previousChecksum,
                     KernelVersion.getForVersion(kernelVersionByte),
-                    creationTime);
+                    creationTime,
+                    lastTxId);
         }
 
         @Override
@@ -450,6 +467,7 @@ public enum LogFormat {
                 buffer.putLong(logHeader.getLastTerm());
                 buffer.put(logHeader.getKernelVersion().version());
                 buffer.putLong(logHeader.getCreationTime());
+                buffer.putLong(logHeader.getLastTxId());
 
                 // Pad rest with zeroes
                 while (buffer.hasRemaining()
@@ -470,7 +488,8 @@ public enum LogFormat {
                 int segmentBlockSize,
                 int previousLogFileChecksum,
                 KernelVersion kernelVersion,
-                long creationTime) {
+                long creationTime,
+                long lastTxId) {
             return new LogHeader(
                     getVersionByte(),
                     logVersion,
@@ -481,7 +500,8 @@ public enum LogFormat {
                     segmentBlockSize,
                     previousLogFileChecksum,
                     kernelVersion,
-                    creationTime);
+                    creationTime,
+                    lastTxId);
         }
     };
 
@@ -542,7 +562,8 @@ public enum LogFormat {
             int segmentBlockSize,
             int previousLogFileChecksum,
             KernelVersion kernelVersion,
-            long creationTime);
+            long creationTime,
+            long lastTxId);
 
     public byte getVersionByte() {
         return versionByte;

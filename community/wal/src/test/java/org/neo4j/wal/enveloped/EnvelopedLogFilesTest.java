@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.setMaxStackTraceElementsDisplayed;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
 import static org.neo4j.wal.enveloped.LogsRepository.BASE_VERSION;
@@ -1806,7 +1807,8 @@ class EnvelopedLogFilesTest {
                             segmentBlockSize,
                             headerOfLastFile.getPreviousLogFileChecksum(),
                             headerOfLastFile.getKernelVersion(),
-                            UNSPECIFIED_CREATION_TIME);
+                            UNSPECIFIED_CREATION_TIME,
+                            headerOfLastFile.getLastTxId());
             channel.position(0);
             LogFormat.writeLogHeader(channel, newHeader, EmptyMemoryTracker.INSTANCE);
         }
@@ -1850,7 +1852,8 @@ class EnvelopedLogFilesTest {
                             segmentBlockSize,
                             headerOfLastFile.getPreviousLogFileChecksum(),
                             headerOfLastFile.getKernelVersion(),
-                            UNSPECIFIED_CREATION_TIME);
+                            UNSPECIFIED_CREATION_TIME,
+                            headerOfLastFile.getLastTxId());
             channel.position(0);
             LogFormat.writeLogHeader(channel, newHeader, EmptyMemoryTracker.INSTANCE);
         }
@@ -1873,7 +1876,8 @@ class EnvelopedLogFilesTest {
                     segmentBlockSize,
                     100,
                     KernelVersion.GLORIOUS_FUTURE,
-                    UNSPECIFIED_CREATION_TIME);
+                    UNSPECIFIED_CREATION_TIME,
+                    UNKNOWN_TX_ID);
             channel.position(0);
             LogFormat.writeLogHeader(channel, newHeader, EmptyMemoryTracker.INSTANCE);
             var zeros = new byte[segmentBlockSize];
@@ -1922,7 +1926,8 @@ class EnvelopedLogFilesTest {
                     segmentBlockSize,
                     headerOfLastFile.getPreviousLogFileChecksum(),
                     headerOfLastFile.getKernelVersion(),
-                    UNSPECIFIED_CREATION_TIME);
+                    UNSPECIFIED_CREATION_TIME,
+                    headerOfLastFile.getLastTxId());
             channel.position(0);
             LogFormat.writeLogHeader(channel, newHeader, EmptyMemoryTracker.INSTANCE);
         }

@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.io.fs.ReadableChannel.BASE_TERM;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 import static org.neo4j.wal.entry.LogFormat.LOG_VERSION_MASK;
@@ -71,6 +72,7 @@ class LogHeaderReaderTest {
     private int expectedSegmentSize;
     private int expectedChecksum;
     private long expectedTerm;
+    private long expectedLastTxId;
 
     @BeforeEach
     void setUp() {
@@ -87,6 +89,7 @@ class LogHeaderReaderTest {
         expectedSegmentSize = random.nextInt(1, 666);
         expectedChecksum = random.nextInt();
         expectedTerm = random.nextLong(0, Long.MAX_VALUE - 20);
+        expectedLastTxId = random.nextLong(0, Long.MAX_VALUE - 20);
     }
 
     @ParameterizedTest
@@ -101,7 +104,8 @@ class LogHeaderReaderTest {
                 expectedStoreId,
                 expectedSegmentSize,
                 expectedChecksum,
-                expectedTerm);
+                expectedTerm,
+                expectedLastTxId);
 
         try (var channel = new InMemoryClosableChannel(buffer.array(), true, true, ByteOrder.LITTLE_ENDIAN)) {
             assertThat(readLogHeader(channel, true, null, INSTANCE))
@@ -112,7 +116,8 @@ class LogHeaderReaderTest {
                             expectedStoreId,
                             expectedSegmentSize,
                             expectedChecksum,
-                            expectedTerm));
+                            expectedTerm,
+                            expectedLastTxId));
         }
     }
 
@@ -130,7 +135,8 @@ class LogHeaderReaderTest {
                 expectedStoreId,
                 expectedSegmentSize,
                 expectedChecksum,
-                expectedTerm);
+                expectedTerm,
+                expectedLastTxId);
 
         try (var stream = fileSystem.openAsOutputStream(file, false)) {
             stream.write(buffer.array());
@@ -142,7 +148,8 @@ class LogHeaderReaderTest {
                 expectedStoreId,
                 expectedSegmentSize,
                 expectedChecksum,
-                expectedTerm);
+                expectedTerm,
+                expectedLastTxId);
         assertThat(readLogHeader(fileSystem, file, INSTANCE)).isEqualTo(expected);
     }
 
@@ -186,7 +193,8 @@ class LogHeaderReaderTest {
                             StoreId storeId,
                             int segmentSize,
                             int checksum,
-                            long term) {
+                            long term,
+                            long lastTxId) {
                         buffer.putLong(encodeLogVersion(logVersion, versionByte()));
                         buffer.putLong(txId);
                     }
@@ -199,7 +207,8 @@ class LogHeaderReaderTest {
                             StoreId storeId,
                             int segmentSize,
                             int checksum,
-                            long term) {
+                            long term,
+                            long lastTxId) {
                         return new LogHeader(
                                 LogFormat.V6.getVersionByte(),
                                 logVersion,
@@ -210,7 +219,8 @@ class LogHeaderReaderTest {
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
                                 null,
-                                UNSPECIFIED_CREATION_TIME);
+                                UNSPECIFIED_CREATION_TIME,
+                                UNKNOWN_TX_ID);
                     }
                 },
                 new TestCase(LogFormat.V7) {
@@ -223,7 +233,8 @@ class LogHeaderReaderTest {
                             StoreId storeId,
                             int segmentSize,
                             int checksum,
-                            long term) {
+                            long term,
+                            long lastTxId) {
                         buffer.putLong(encodeLogVersion(logVersion, versionByte()));
                         buffer.putLong(txId);
                         buffer.putLong(0); // legacy creation time
@@ -242,7 +253,8 @@ class LogHeaderReaderTest {
                             StoreId storeId,
                             int segmentSize,
                             int checksum,
-                            long term) {
+                            long term,
+                            long lastTxId) {
                         return new LogHeader(
                                 LogFormat.V7.getVersionByte(),
                                 logVersion,
@@ -253,7 +265,8 @@ class LogHeaderReaderTest {
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
                                 null,
-                                UNSPECIFIED_CREATION_TIME);
+                                UNSPECIFIED_CREATION_TIME,
+                                UNKNOWN_TX_ID);
                     }
                 },
                 new TestCase(LogFormat.V8) {
@@ -266,7 +279,8 @@ class LogHeaderReaderTest {
                             StoreId storeId,
                             int segmentSize,
                             int checksum,
-                            long term)
+                            long term,
+                            long lastTxId)
                             throws IOException {
                         buffer.putLong(encodeLogVersion(logVersion, versionByte()));
                         buffer.putLong(txId);
@@ -287,7 +301,8 @@ class LogHeaderReaderTest {
                             StoreId storeId,
                             int segmentSize,
                             int checksum,
-                            long term) {
+                            long term,
+                            long lastTxId) {
                         return LogFormat.V8.newHeader(
                                 logVersion,
                                 previousCommittedTx,
@@ -296,7 +311,8 @@ class LogHeaderReaderTest {
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
                                 null,
-                                UNSPECIFIED_CREATION_TIME);
+                                UNSPECIFIED_CREATION_TIME,
+                                UNKNOWN_TX_ID);
                     }
                 },
                 new TestCase(LogFormat.V9) {
@@ -309,7 +325,8 @@ class LogHeaderReaderTest {
                             StoreId storeId,
                             int segmentSize,
                             int checksum,
-                            long term)
+                            long term,
+                            long lastTxId)
                             throws IOException {
                         buffer.putLong(encodeLogVersion(logVersion, versionByte()));
                         buffer.putLong(txId);
@@ -330,7 +347,8 @@ class LogHeaderReaderTest {
                             StoreId storeId,
                             int segmentSize,
                             int checksum,
-                            long term) {
+                            long term,
+                            long lastTxId) {
                         return LogFormat.V9.newHeader(
                                 logVersion,
                                 appendIndex,
@@ -339,7 +357,8 @@ class LogHeaderReaderTest {
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
                                 null,
-                                UNSPECIFIED_CREATION_TIME);
+                                UNSPECIFIED_CREATION_TIME,
+                                UNKNOWN_TX_ID);
                     }
                 },
                 new TestCase(LogFormat.V10) {
@@ -352,7 +371,8 @@ class LogHeaderReaderTest {
                             StoreId storeId,
                             int segmentSize,
                             int checksum,
-                            long term)
+                            long term,
+                            long lastTxId)
                             throws IOException {
                         buffer.putLong(encodeLogVersion(logVersion, versionByte()));
                         buffer.putLong(appendIndex);
@@ -372,7 +392,8 @@ class LogHeaderReaderTest {
                             StoreId storeId,
                             int segmentSize,
                             int checksum,
-                            long term) {
+                            long term,
+                            long lastTxId) {
                         return LogFormat.V10.newHeader(
                                 logVersion,
                                 appendIndex,
@@ -381,7 +402,54 @@ class LogHeaderReaderTest {
                                 segmentSize,
                                 checksum,
                                 LATEST_KERNEL_VERSION,
-                                UNSPECIFIED_CREATION_TIME);
+                                UNSPECIFIED_CREATION_TIME,
+                                UNKNOWN_TX_ID);
+                    }
+                },
+                new TestCase(LogFormat.V11) {
+                    @Override
+                    void write(
+                            ByteBuffer buffer,
+                            long logVersion,
+                            long txId,
+                            long appendIndex,
+                            StoreId storeId,
+                            int segmentSize,
+                            int checksum,
+                            long term,
+                            long lastTxId) {
+                        buffer.putLong(encodeLogVersion(logVersion, versionByte()));
+                        buffer.putLong(appendIndex);
+                        buffer.putLong(storeId.getRandom());
+                        buffer.putInt(segmentSize);
+                        buffer.putInt(checksum);
+                        buffer.putLong(term);
+                        buffer.put(LATEST_KERNEL_VERSION.version());
+                        buffer.putLong(UNSPECIFIED_CREATION_TIME);
+                        buffer.putLong(lastTxId);
+                        buffer.position(LogFormat.V11.getHeaderSize()); // Rest is reserved
+                    }
+
+                    @Override
+                    LogHeader expected(
+                            long logVersion,
+                            long previousCommittedTx,
+                            long appendIndex,
+                            StoreId storeId,
+                            int segmentSize,
+                            int checksum,
+                            long term,
+                            long lastTxId) {
+                        return LogFormat.V11.newHeader(
+                                logVersion,
+                                appendIndex,
+                                term,
+                                StoreIdentifier.newStoreIdentifier(storeId.getRandom()),
+                                segmentSize,
+                                checksum,
+                                LATEST_KERNEL_VERSION,
+                                UNSPECIFIED_CREATION_TIME,
+                                lastTxId);
                     }
                 });
     }
@@ -401,7 +469,8 @@ class LogHeaderReaderTest {
                 StoreId storeId,
                 int segmentSize,
                 int checksum,
-                long term)
+                long term,
+                long lastTxId)
                 throws IOException;
 
         abstract LogHeader expected(
@@ -411,7 +480,8 @@ class LogHeaderReaderTest {
                 StoreId storeId,
                 int segmentSize,
                 int checksum,
-                long term);
+                long term,
+                long lastTxId);
 
         byte versionByte() {
             return format.getVersionByte();

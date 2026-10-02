@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT_PROVIDER;
@@ -78,7 +79,8 @@ class RecoveryStartInformationProviderTest {
                 LATEST_LOG_FORMAT.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
                 LATEST_KERNEL_VERSION,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
         when(logFile.extractHeader(0)).thenReturn(logHeader);
         when(walService.getLogFile()).thenReturn(logFile);
     }
@@ -338,7 +340,8 @@ class RecoveryStartInformationProviderTest {
                 LogFormat.V11.getDefaultSegmentBlockSize(),
                 BASE_TX_CHECKSUM,
                 KernelVersion.GLORIOUS_FUTURE,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
     }
 
     private LogTailInformation recoveryRequiredTailWithoutCheckpoint() {

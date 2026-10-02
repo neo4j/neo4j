@@ -23,8 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.wal.entry.LogFormat.LOG_VERSION_MASK;
 import static org.neo4j.wal.entry.LogFormat.V10;
+import static org.neo4j.wal.entry.LogFormat.V11;
 import static org.neo4j.wal.entry.LogFormat.V9;
 import static org.neo4j.wal.entry.LogFormat.encodeLogVersion;
 import static org.neo4j.wal.entry.LogFormat.writeLogHeader;
@@ -36,6 +39,7 @@ import static org.neo4j.wal.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -100,7 +104,8 @@ class LogHeaderWriterTest {
                 logFormat != V10 ? UNKNOWN_LOG_SEGMENT_SIZE : expectedBlockSize,
                 expectedChecksum,
                 KernelVersion.GLORIOUS_FUTURE,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
 
         // when
         writeLogHeader(channel, logHeader, INSTANCE);
@@ -138,6 +143,45 @@ class LogHeaderWriterTest {
             assertEquals(expectedBlockSize, result.getInt());
             assertEquals(expectedChecksum, result.getInt());
             assertEquals(expectedTerm, result.getLong());
+        }
+    }
+
+    @Test
+    void shouldWriteEveryV11FieldAtItsOffset() throws IOException {
+        long creationTime = random.nextLong(1, Long.MAX_VALUE);
+        long lastTxId = random.nextLong(1, Long.MAX_VALUE);
+        final var file = testDirectory.file("WriteLogHeader");
+        LogHeader logHeader = V11.newHeader(
+                expectedLogVersion,
+                expectedAppendIndex,
+                expectedTerm,
+                expectedStoreId,
+                expectedBlockSize,
+                expectedChecksum,
+                LATEST_KERNEL_VERSION,
+                creationTime,
+                lastTxId);
+        try (var channel = fileSystem.write(file)) {
+            writeLogHeader(channel, logHeader, INSTANCE);
+        }
+
+        final var array = new byte[V11.getHeaderSize()];
+        try (var stream = fileSystem.openAsInputStream(file)) {
+            assertEquals(V11.getHeaderSize(), stream.read(array));
+        }
+        final var result = ByteBuffer.wrap(array);
+
+        assertEquals(encodeLogVersion(expectedLogVersion, V11.getVersionByte()), result.getLong());
+        assertEquals(expectedAppendIndex, result.getLong());
+        assertEquals(expectedStoreId.randomValueIdentifier(), result.getLong());
+        assertEquals(expectedBlockSize, result.getInt());
+        assertEquals(expectedChecksum, result.getInt());
+        assertEquals(expectedTerm, result.getLong());
+        assertEquals(LATEST_KERNEL_VERSION.version(), result.get());
+        assertEquals(creationTime, result.getLong());
+        assertEquals(lastTxId, result.getLong());
+        while (result.hasRemaining()) {
+            assertEquals(0, result.get());
         }
     }
 }

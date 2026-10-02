@@ -27,6 +27,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.wal.entry.LogEnvelopeHeader.UNSPECIFIED_TERM;
 import static org.neo4j.wal.entry.LogHeader.UNSPECIFIED_CREATION_TIME;
@@ -652,7 +653,8 @@ abstract class EnvelopeWriteChannelTestSupport {
                 segmentSize,
                 previousChecksum,
                 LatestVersions.LATEST_KERNEL_VERSION,
-                UNSPECIFIED_CREATION_TIME);
+                UNSPECIFIED_CREATION_TIME,
+                UNKNOWN_TX_ID);
         LogFormat.writeLogHeader(channel, header, EmptyMemoryTracker.INSTANCE);
     }
 
