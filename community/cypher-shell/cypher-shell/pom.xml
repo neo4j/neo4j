@@ -25,7 +25,6 @@
     <appassembler-maven-plugin.version>2.1.0</appassembler-maven-plugin.version>
     <assembly-suffix />
     <executable-suffix />
-    <jline.version>3.21.0</jline.version>
     <!-- Disable caching to ensure target/cypher-shell-<v>.zip is created and
          bin/cypher-shell is shipped in the tarball. -->
     <maven.build.cache.enabled>false</maven.build.cache.enabled>
@@ -75,7 +74,7 @@
     </dependency>
     <dependency>
       <groupId>org.jline</groupId>
-      <artifactId>jline-terminal-jansi</artifactId>
+      <artifactId>jline-terminal-jni</artifactId>
       <version>${jline.version}</version>
     </dependency>
     <dependency>
@@ -352,7 +351,7 @@
                 <ignoredUnusedDeclaredDependency>org.scalatestplus:junit-5-14_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-codegen</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>org.jline:jline-terminal-jansi</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.jline:jline-terminal-jni</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.hamcrest:hamcrest</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:cypher-shell-base</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>

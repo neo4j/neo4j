@@ -322,7 +322,8 @@ BSD License
   hoek
   hoist-non-react-statics
   ieee754
-  JLine JANSI Terminal
+  JLine JNI Terminal
+  JLine Native Library
   JLine Reader
   JLine Terminal
   json-schema
