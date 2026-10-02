@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation
 import org.neo4j.cypher.internal.runtime.spec.fuzz.FuzzTestGraphCreation.GraphType.GraphType
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Node
@@ -93,28 +94,72 @@ object FuzzTestGraphCreation {
           .mkString(s"Map[String, Any](\n    ", ",\n    ", "\n  )")
       }
     }
+    // The plan renderer always prints a bare .build() (readOnly = true), but the
+    // generator builds write queries with readOnly = false (PlanResult.toLogicalQuery);
+    // the replayed repro must match or the write plan replays as a read-only query.
+    val isWrite = plan.flatten(CancellationChecker.NeverCancelled).exists(_.isUpdatingPlan)
+    val planDsl = {
+      val dsl = plan.toString.trim
+      if (isWrite)
+        dsl.stripSuffix(".build()") + ".build(readOnly = false)"
+      else dsl
+    }
+    val indentedPlanDsl = planDsl.lines().toScala(Seq).mkString("  ", "\n    ", "")
 
-    s"""
-       |// Copy this test case to FuzzTestFailuresTestBase
-       |// Morsel size: $morselSize
-       |// Self-contained repro: the plan is inlined below and the graph is rebuilt from
-       |// its graph-type seed in randomGraph, so no ScalaCheck seed is needed to replay.
-       |// Plan seed (provenance only - does not reproduce on its own, as the plan and
-       |// graph-property seeds are independent): $seed
-       |test("Fuzz Test Reproduction: ${config.seed}") {
-       |  givenGraph(randomGraph(GraphType.${config.graphType}, ${config.seed}L))
-       |
-       |  val params = $params
-       |  val query = new LogicalQueryBuilder(this)
-       |  ${plan.toString.trim.lines().toScala(Seq).mkString("  ", "\n    ", "")}
-       |  val rewrittenQuery = rewriteQuery(query)
-       |
-       |  val baseRuntime = org.neo4j.cypher.internal.CommunityInterpretedRuntime // Change if necessary
-       |  val expected = execute(rewrittenQuery, baseRuntime, params).awaitAll()
-       |  execute(rewrittenQuery, runtime, params) should beColumns($columns)
-       |    .withRows(inAnyOrder(expected, listInAnyOrder = true))
-       |}
-       |""".stripMargin
+    val header =
+      s"""|// Copy this test case to FuzzTestFailuresTestBase
+          |// Morsel size: $morselSize
+          |// Self-contained repro: the plan is inlined below and the graph is rebuilt from
+          |// its graph-type seed in randomGraph, so no ScalaCheck seed is needed to replay.
+          |// Plan seed (provenance only - does not reproduce on its own, as the plan and
+          |// graph-property seeds are independent): $seed""".stripMargin
+
+    if (isWrite)
+      s"""
+         |// WRITE PLAN: reproduceWrite replays this plan the way the write fuzz suite ran it -
+         |// every runtime spec on its own freshly seeded database, committed, then query
+         |// statistics, committed graph state and rows compared in that order. The enclosing
+         |// suite's runtime is not used. Pass a longer maxTransactionTime when stepping through
+         |// with a debugger: the default is the write suite's kernel transaction timeout.
+         |$header
+         |test("Fuzz Test Reproduction: ${config.seed}") {
+         |  val graphConfig = GraphConfig(GraphType.${config.graphType}, ${config.seed}L)
+         |  givenGraph(randomGraph(graphConfig))
+         |
+         |  val query = new LogicalQueryBuilder(this)
+         |  $indentedPlanDsl
+         |
+         |  reproduceWrite(graphConfig, query)
+         |
+         |  // Single-runtime variant for debugging. Row shape only: nothing is committed, query
+         |  // statistics and committed graph state are not compared, and ids of created entities
+         |  // may differ. Replace the reproduceWrite call with:
+         |  //   val params = $params
+         |  //   val rewrittenQuery = rewriteQuery(query)
+         |  //   val baseRuntime = org.neo4j.cypher.internal.CommunityInterpretedRuntime
+         |  //   val expected = execute(rewrittenQuery, baseRuntime, params).awaitAll()
+         |  //   rollbackAndRestartTx() // discard baseRuntime's writes so runtime sees the seed graph
+         |  //   execute(rewrittenQuery, runtime, params) should beColumns($columns)
+         |  //     .withRows(inAnyOrder(expected, listInAnyOrder = true))
+         |}
+         |""".stripMargin
+    else
+      s"""
+         |$header
+         |test("Fuzz Test Reproduction: ${config.seed}") {
+         |  givenGraph(randomGraph(GraphType.${config.graphType}, ${config.seed}L))
+         |
+         |  val params = $params
+         |  val query = new LogicalQueryBuilder(this)
+         |  $indentedPlanDsl
+         |  val rewrittenQuery = rewriteQuery(query)
+         |
+         |  val baseRuntime = org.neo4j.cypher.internal.CommunityInterpretedRuntime // Change if necessary
+         |  val expected = execute(rewrittenQuery, baseRuntime, params).awaitAll()
+         |  execute(rewrittenQuery, runtime, params) should beColumns($columns)
+         |    .withRows(inAnyOrder(expected, listInAnyOrder = true))
+         |}
+         |""".stripMargin
   }
 
   private def graph[CONTEXT <: RuntimeContext](
