@@ -437,6 +437,11 @@ public final class CypherFunctions {
                  * which doesn't correspond to any of the rounding modes.
                  */
                 else if (precision == 0 && !explicitMode) {
+                    // Math.round saturates at Long.MAX_VALUE, so for already-integral values beyond the long range
+                    // (where the ULP is >= 1 and rounding is the identity anyway) we must bypass it.
+                    if (Math.ulp(value) >= 1.0) {
+                        return doubleValue(value);
+                    }
                     return doubleValue(Math.round(value));
                 } else {
                     BigDecimal bigDecimal = BigDecimal.valueOf(value);

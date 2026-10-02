@@ -244,6 +244,7 @@ class MathFunctionsTest extends InterpretedRuntimeTestSuite {
     calc(RoundFunction(literal(-1.5), literal(0), literal("HALF_UP"), literal(true))) should equal(doubleValue(-2))
     calc(RoundFunction(literal(-1.5), literal(0), literal("HALF_UP"), literal(false))) should equal(doubleValue(-1))
     calc(RoundFunction(literal(-1.5), literal(0), literal("HALF_DOWN"), literal(true))) should equal(doubleValue(-1))
+    calc(RoundFunction(literal(-0.5), literal(0), literal("HALF_UP"), literal(false))) should equal(doubleValue(0.0))
     calc(RoundFunction(literal(12.22), literal(0), literal("HALF_UP"), literal(false))) should equal(doubleValue(12))
     calc(RoundFunction(literal(12.22), literal(1), literal("HALF_UP"), literal(false))) should equal(doubleValue(12.2))
     intercept[CypherTypeException](calc(RoundFunction(literal("wut"), literal(0), literal("HALF_UP"), literal(false))))
@@ -254,6 +255,33 @@ class MathFunctionsTest extends InterpretedRuntimeTestSuite {
       literal(false)
     )))
     intercept[CypherTypeException](calc(RoundFunction(literal(1.5), literal(1), literal(42), literal(true))))
+  }
+
+  test("roundTestsWithValuesBeyondLongRange") {
+    calc(RoundFunction(literal(1.0E308), literal(0), literal("HALF_UP"), literal(false))) should equal(
+      doubleValue(1.0E308)
+    )
+    calc(RoundFunction(literal(-1.0E308), literal(0), literal("HALF_UP"), literal(false))) should equal(
+      doubleValue(-1.0E308)
+    )
+    calc(RoundFunction(
+      literal(9.3E18),
+      literal(0),
+      literal("HALF_UP"),
+      literal(false)
+    )) should equal(doubleValue(9.3E18))
+    calc(RoundFunction(literal(-9.3E18), literal(0), literal("HALF_UP"), literal(false))) should equal(
+      doubleValue(-9.3E18)
+    )
+    calc(RoundFunction(
+      literal(9.2E18),
+      literal(0),
+      literal("HALF_UP"),
+      literal(false)
+    )) should equal(doubleValue(9.2E18))
+    calc(RoundFunction(literal(1.0E308), literal(0), literal("HALF_UP"), literal(false))) should equal(calc(
+      RoundFunction(literal(1.0E308), literal(0), literal("HALF_UP"), literal(true))
+    ))
   }
 
   test("powFunction") {
