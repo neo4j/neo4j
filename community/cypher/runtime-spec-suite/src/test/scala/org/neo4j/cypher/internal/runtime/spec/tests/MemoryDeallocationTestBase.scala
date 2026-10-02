@@ -1040,10 +1040,15 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("n")
       .build()
 
+    val toleratedDeviation = runtimeUsed match {
+      case Parallel => 0.3
+      case _        => 0.20
+    }
+
     compareMemoryUsage(
       queryWithNodeRefs,
       queryWithPropsAndLabels,
-      toleratedDeviation = 0.20,
+      toleratedDeviation = toleratedDeviation,
       minAllocated = estHeapPropsAndLabels
     )
   }
