@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.storemigration;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
-import static org.neo4j.batchimport.api.Configuration.defaultConfiguration;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess;
@@ -345,12 +345,21 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         prepareBatchImportMigration(sourceDirectoryStructure, migrationDirectoryStructure, oldFormat, newFormat);
 
         try (NeoStores legacyStore = instantiateLegacyStore(oldFormat, sourceDirectoryStructure)) {
-            Configuration importConfig = new Configuration.Overridden(defaultConfiguration(), config) {
+            Configuration importConfig = new Configuration.Overridden(Configuration.DEFAULT) {
                 @Override
                 public long maxOffHeapMemory() {
                     return maxOffHeapMemory == UNSPECIFIED_MAX_OFF_HEAP_MEMORY
                             ? super.maxOffHeapMemory()
                             : maxOffHeapMemory;
+                }
+
+                @Override
+                public int maxNumberOfWorkerThreads() {
+                    Integer upgradeProcessors = config.get(upgrade_processors);
+                    if (upgradeProcessors == 0) {
+                        return super.maxNumberOfWorkerThreads();
+                    }
+                    return upgradeProcessors;
                 }
 
                 @Override

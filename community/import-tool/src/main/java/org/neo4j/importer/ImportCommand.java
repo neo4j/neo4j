@@ -1362,7 +1362,7 @@ public class ImportCommand {
         }
 
         private org.neo4j.batchimport.api.Configuration importConfiguration(Config databaseConfig, Path contextDir) {
-            return new Configuration.Overridden(Configuration.defaultConfiguration()) {
+            return new Configuration.Overridden(Configuration.DEFAULT) {
                 @Override
                 public int maxNumberOfWorkerThreads() {
                     return threads;

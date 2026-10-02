@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
@@ -83,9 +82,17 @@ class ProcessRelationshipCountsDataStepTest {
             int highLabelId, int highRelationshipTypeId, long labelCacheSize, int maxProcessors, long maxMemory) {
         StageControl control = new SimpleStageControl();
         NodeLabelsCache cache = nodeLabelsCache(labelCacheSize);
-        Configuration config = mock(Configuration.class);
-        when(config.maxNumberOfWorkerThreads()).thenReturn(maxProcessors);
-        when(config.maxOffHeapMemory()).thenReturn(maxMemory);
+        Configuration config = new Configuration.Overridden(Configuration.DEFAULT) {
+            @Override
+            public int maxNumberOfWorkerThreads() {
+                return maxProcessors;
+            }
+
+            @Override
+            public long maxOffHeapMemory() {
+                return maxMemory;
+            }
+        };
         return new ProcessRelationshipCountsDataStep(
                 control,
                 cache,

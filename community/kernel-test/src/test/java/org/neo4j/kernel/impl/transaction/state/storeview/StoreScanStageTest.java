@@ -71,7 +71,7 @@ class StoreScanStageTest {
     private static final CursorContextFactory CONTEXT_FACTORY =
             new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
-    private final Configuration config = new Configuration() {
+    private final Configuration config = new Configuration.Overridden(Configuration.DEFAULT) {
         @Override
         public int maxNumberOfWorkerThreads() {
             return WORKERS;

@@ -131,7 +131,7 @@ public class ParallelBatchImporterTest {
     private DatabaseLayout databaseLayout;
 
     private InputIdGenerator inputIdGenerator;
-    private final Configuration config = new Configuration() {
+    private final Configuration config = new Configuration.Overridden(Configuration.DEFAULT) {
         @Override
         public int batchSize() {
             // Set to extra low to exercise the internals a bit more.

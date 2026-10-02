@@ -64,11 +64,10 @@ class UpdateRecordsStepTest {
         RecordStore<NodeRecord> store = mock(RecordStore.class);
         when(store.getRecordSize()).thenReturn(Integer.MAX_VALUE / 2);
 
-        Configuration configuration = mock(Configuration.class);
         StageControl stageControl = mock(StageControl.class);
         UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>(
                 stageControl,
-                configuration,
+                Configuration.DEFAULT,
                 store,
                 new StorePrepareIdSequence(),
                 CONTEXT_FACTORY,

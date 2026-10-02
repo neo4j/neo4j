@@ -107,7 +107,7 @@ class ProcessorStepTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final int processors = 2;
         int maxProcessors = 5;
-        Configuration configuration = new Configuration() {
+        Configuration configuration = new Configuration.Overridden(Configuration.DEFAULT) {
             @Override
             public int maxNumberOfWorkerThreads() {
                 return maxProcessors;

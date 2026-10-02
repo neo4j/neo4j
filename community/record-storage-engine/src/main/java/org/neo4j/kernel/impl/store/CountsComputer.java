@@ -111,7 +111,7 @@ public class CountsComputer implements CountsBuilder {
     private void populateCountStore(CountsUpdater countsUpdater, ProgressListener progress) {
         try (NodeLabelsCache cache = new NodeLabelsCache(
                 numberArrayFactory, nodes.getIdGenerator().getHighId(), highLabelId, memoryTracker)) {
-            Configuration configuration = Configuration.defaultConfiguration();
+            Configuration configuration = Configuration.DEFAULT;
 
             // Count nodes
             Function<CursorContext, StoreCursors> storeCursorsFunction =

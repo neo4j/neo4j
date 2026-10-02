@@ -19,13 +19,11 @@
  */
 package org.neo4j.batchimport.api;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
 import static org.neo4j.configuration.ToolingMemoryCalculations.NO_MONITOR;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
 import java.nio.file.Path;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ToolingMemoryCalculations;
 import org.neo4j.io.pagecache.ExternallyManagedPageCache;
 import org.neo4j.io.pagecache.PageCache;
@@ -33,20 +31,12 @@ import org.neo4j.io.pagecache.PageCache;
 /**
  * Configuration for a an importer, mostly how and how much resources are used.
  */
-public interface Configuration {
-    int DEFAULT_BATCH_SIZE = getInteger(Configuration.class, "DEFAULT_BATCH_SIZE", 10_000);
-    int DEFAULT_ENTITY_BATCH_SIZE = 500;
-
-    int DEFAULT_MAX_MEMORY_PERCENT = 90;
-    long MAX_OFFHEAP_MEMORY_ON_INIT = new ToolingMemoryCalculations(NO_MONITOR)
-            .calculateMaxAvailableOffHeapMemoryFromPercent(DEFAULT_MAX_MEMORY_PERCENT);
+public sealed interface Configuration permits Configuration.DefaultConfiguration, Configuration.Overridden {
 
     /**
      * Size of batches that are being sent through pipelines for processing.
      */
-    default int batchSize() {
-        return DEFAULT_BATCH_SIZE;
-    }
+    int batchSize();
 
     /**
      * @return size of batches (in number of entities) to pass around in the internal data processing.
@@ -54,18 +44,14 @@ public interface Configuration {
      * on a record level (and in aligned etc. format), whereas this method is used when batching full
      * entities for processing (and in block format).
      */
-    default int entityBatchSize() {
-        return DEFAULT_ENTITY_BATCH_SIZE;
-    }
+    int entityBatchSize();
 
     /**
      * For statistics the average processing time is based on total processing time divided by
      * number of batches processed. A total average is probably not that interesting so this configuration
      * option specifies how many of the latest processed batches counts in the equation above.
      */
-    default int movingAverageSize() {
-        return 100;
-    }
+    int movingAverageSize();
 
     /**
      * Rough max number of processors (CPU cores) simultaneously used in total by importer at any given time.
@@ -78,33 +64,22 @@ public interface Configuration {
      * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
      * of a processor.
      */
-    default int maxNumberOfWorkerThreads() {
-        return allAvailableProcessors();
-    }
+    int maxNumberOfWorkerThreads();
 
     /**
      * The maximum number of batches that will be queued in processor steps. The total number of "alive" batches
      * will roughly be this value + number of processors assigned to the step that has the most processors assigned.
      */
-    default int maxQueueSize() {
-        return maxNumberOfWorkerThreads();
-    }
-
-    static int allAvailableProcessors() {
-        return Runtime.getRuntime().availableProcessors();
-    }
+    int maxQueueSize();
 
     /**
      * @return max memory to use for import cache data structures while importing.
      * This should exclude the memory acquired by this JVM. By default this returns total physical
      * memory on the machine it's running on minus the max memory of this JVM. The value is sampled
      * once on initialization.
-     * {@value #DEFAULT_MAX_MEMORY_PERCENT}% of that figure.
      * @throws UnsupportedOperationException if available memory couldn't be determined.
      */
-    default long maxOffHeapMemory() {
-        return MAX_OFFHEAP_MEMORY_ON_INIT;
-    }
+    long maxOffHeapMemory();
 
     /**
      * @return whether or not to do sequential flushing of the page cache in the during stages which
@@ -112,36 +87,30 @@ public interface Configuration {
      * writes happen in this single background thread and will greatly benefit hardware which generally
      * benefits from single sequential writer.
      */
-    default boolean sequentialBackgroundFlushing() {
-        return true;
-    }
+    boolean sequentialBackgroundFlushing();
 
     /**
      * Controls whether or not to write records in parallel. Multiple threads writing records in parallel
      * doesn't necessarily mean concurrent I/O because writing is separate from page cache eviction/flushing.
+     * <p/>
+     * This setting is set to true by default.
      */
-    default boolean parallelRecordWrites() {
-        // Defaults to true since this benefits virtually all environments
-        return true;
-    }
+    boolean parallelRecordWrites();
 
     /**
      * Controls whether or not to read records in parallel in stages where there's no record writing.
      * Enabling this may result in multiple pages being read from underlying storage concurrently.
+     * <p/>
+     * This setting is set to true by default.
      */
-    default boolean parallelRecordReads() {
-        // Defaults to true since this benefits most environments
-        return true;
-    }
+    boolean parallelRecordReads();
 
     /**
      * Controls whether or not to read records in parallel in stages where there's concurrent record writing.
      * Enabling will probably increase concurrent I/O to a point which reduces performance if underlying storage
      * isn't great at concurrent I/O, especially if also {@link #parallelRecordWrites()} is enabled.
      */
-    default boolean highIO() {
-        return true;
-    }
+    boolean highIO();
 
     /**
      * Wheter or not identity of nodes referred to by relationships should be checked strict.
@@ -149,33 +118,25 @@ public interface Configuration {
      * also by value. This will detect non-existing nodes that happen to have the same id hash
      * as an existing node during relationship import.
      */
-    default boolean strictNodeCheck() {
-        return false;
-    }
+    boolean strictNodeCheck();
 
     /**
      * @return index related configurations.
      */
-    default IndexConfig indexConfig() {
-        return IndexConfig.create();
-    }
+    IndexConfig indexConfig();
 
     /**
      * @return whether to defragment internal stores as part of the import. This type of defragmentation does not affect
      * entity IDs.
      */
-    default boolean defragmentInternalStores() {
-        return true;
-    }
+    boolean defragmentInternalStores();
 
     /**
      * In incremental import when identifying relationships, if multiple relationships are found
      * then if {@code true} then all matching relationships should be updated, otherwise if {@code false}
      * then if there are multiple matching relationships report it instead.
      */
-    default boolean updateAllMatchingRelationships() {
-        return false;
-    }
+    boolean updateAllMatchingRelationships();
 
     /**
      * For importers that can run multiple passes where each pass imports data from a range of node IDs,
@@ -184,109 +145,198 @@ public interface Configuration {
      * @return number of ranges to force the importer to run with, or {@code -1} if no specific number
      * of ranges is forcefully set.
      */
-    default int forcedNumberOfNodeIdRanges() {
-        return -1;
-    }
+    int forcedNumberOfNodeIdRanges();
 
     /**
      * @return a {@link PageCache} which, if non-null, should be used instead of creating a new one.
      */
-    default ExternallyManagedPageCache providedPageCache() {
-        return null;
-    }
+    ExternallyManagedPageCache providedPageCache();
 
-    default Path tempDirectory(Path databaseDirectory) {
-        return databaseDirectory.resolve("temp");
-    }
+    Path tempDirectory(Path databaseDirectory);
 
     /**
      * Helps calculation of memory consumption for index population. This value is an indication of number of
      * importers operating concurrently within the same import, each potentially having its own set of indexes to build.
      */
-    default int indexPopulationBufferCountAmplification() {
-        return 1;
-    }
+    int indexPopulationBufferCountAmplification();
 
     /**
      * Enables performance monitoring instrumentation, will be a NO-OP if none of {@code
      * instrumentationCaptureJFRs()} {@code instrumentationCaptureThreadDumps} are set to true
      */
-    default boolean enableInstrumentation() {
-        return true;
-    }
+    boolean enableInstrumentation();
 
     /**
      * Enables JFR captures when {@code ImportPerformanceInstrumentation} notices significant performance loss
      * Setting is ignored if {@code enableInstrumentation} is {@code false}
      */
-    default boolean instrumentationCaptureJFRs() {
-        return true;
-    }
+    boolean instrumentationCaptureJFRs();
 
     /**
      * Enables Thread dump captures when {@code ImportPerformanceInstrumentation} notices significant performance loss.
      * Setting is ignored if {@code enableInstrumentation} is {@code false}
      */
-    default boolean instrumentationCaptureThreadDumps() {
-        return false;
-    }
+    boolean instrumentationCaptureThreadDumps();
 
     /**
      * Enables JFR capture for the full duration of the import
      */
-    default boolean captureProfile() {
-        return false;
-    }
+    boolean captureProfile();
 
     /**
      * If not null, provides an overridden path to put the JFRs generated from {@link #captureProfile()};
      */
-    default Path captureProfileResultPath() {
-        return null;
-    }
+    Path captureProfileResultPath();
 
     /**
      * Directory for capturing any context information for this specific import, or {@code null} if this import has
      * no such directory.
      */
-    default Path contextDirectory() {
-        return null;
+    Path contextDirectory();
+
+    int intermediaryBufferSize();
+
+    final class DefaultConfiguration implements Configuration {
+        private static final int DEFAULT_BATCH_SIZE = getInteger(Configuration.class, "DEFAULT_BATCH_SIZE", 10_000);
+        private static final int DEFAULT_ENTITY_BATCH_SIZE = 500;
+        private static final int DEFAULT_MAX_MEMORY_PERCENT = 90;
+        private static final int NUM_AVAILABLE_PROCESSORS = Runtime.getRuntime().availableProcessors();
+        private static final long MAX_OFF_HEAP_MEMORY = new ToolingMemoryCalculations(NO_MONITOR)
+                .calculateMaxAvailableOffHeapMemoryFromPercent(DEFAULT_MAX_MEMORY_PERCENT);
+
+        private DefaultConfiguration() {}
+
+        @Override
+        public int batchSize() {
+            return DEFAULT_BATCH_SIZE;
+        }
+
+        @Override
+        public int entityBatchSize() {
+            return DEFAULT_ENTITY_BATCH_SIZE;
+        }
+
+        @Override
+        public int movingAverageSize() {
+            return 100;
+        }
+
+        public int maxNumberOfWorkerThreads() {
+            return NUM_AVAILABLE_PROCESSORS;
+        }
+
+        @Override
+        public int maxQueueSize() {
+            return maxNumberOfWorkerThreads();
+        }
+
+        public long maxOffHeapMemory() {
+            return MAX_OFF_HEAP_MEMORY;
+        }
+
+        @Override
+        public boolean sequentialBackgroundFlushing() {
+            return true;
+        }
+
+        @Override
+        public boolean parallelRecordWrites() {
+            return true;
+        }
+
+        @Override
+        public boolean parallelRecordReads() {
+            return true;
+        }
+
+        @Override
+        public boolean highIO() {
+            return true;
+        }
+
+        @Override
+        public boolean strictNodeCheck() {
+            return false;
+        }
+
+        @Override
+        public IndexConfig indexConfig() {
+            return IndexConfig.create();
+        }
+
+        @Override
+        public boolean defragmentInternalStores() {
+            return true;
+        }
+
+        @Override
+        public boolean updateAllMatchingRelationships() {
+            return false;
+        }
+
+        @Override
+        public int forcedNumberOfNodeIdRanges() {
+            return -1;
+        }
+
+        @Override
+        public ExternallyManagedPageCache providedPageCache() {
+            return null;
+        }
+
+        @Override
+        public Path tempDirectory(Path databaseDirectory) {
+            return databaseDirectory.resolve("temp");
+        }
+
+        @Override
+        public int indexPopulationBufferCountAmplification() {
+            return 1;
+        }
+
+        @Override
+        public boolean enableInstrumentation() {
+            return true;
+        }
+
+        @Override
+        public boolean instrumentationCaptureJFRs() {
+            return true;
+        }
+
+        @Override
+        public boolean instrumentationCaptureThreadDumps() {
+            return false;
+        }
+
+        @Override
+        public boolean captureProfile() {
+            return false;
+        }
+
+        @Override
+        public Path captureProfileResultPath() {
+            return null;
+        }
+
+        @Override
+        public Path contextDirectory() {
+            return null;
+        }
+
+        @Override
+        public int intermediaryBufferSize() {
+            return (int) mebiBytes(10);
+        }
     }
 
-    default int intermediaryBufferSize() {
-        return (int) mebiBytes(10);
-    }
+    Configuration DEFAULT = new DefaultConfiguration();
 
-    Configuration DEFAULT = new Configuration() {};
-
-    /**
-     * {@link #DEFAULT} configuration additionally specialized for the given {@code pathOnDevice}.
-     * @return a {@link Configuration} instance with {@link #DEFAULT defaults} and additionally further specialized for the given device.
-     */
-    static Configuration defaultConfiguration() {
-        return new Overridden(Configuration.DEFAULT) {
-            @Override
-            public boolean highIO() {
-                return true;
-            }
-        };
-    }
-
-    class Overridden implements Configuration {
+    non-sealed class Overridden implements Configuration {
         private final Configuration defaults;
-        private final Config config;
 
         public Overridden(Configuration defaults) {
-            this(defaults, Config.defaults());
-        }
-
-        public Overridden(Configuration defaults, Config config) {
             this.defaults = defaults;
-            this.config = config;
-        }
-
-        public Overridden(Config config) {
-            this(Configuration.DEFAULT, config);
         }
 
         @Override
@@ -311,11 +361,7 @@ public interface Configuration {
 
         @Override
         public int maxNumberOfWorkerThreads() {
-            Integer upgradeProcessors = config.get(upgrade_processors);
-            if (upgradeProcessors == 0) {
-                return defaults.maxNumberOfWorkerThreads();
-            }
-            return upgradeProcessors;
+            return defaults.maxNumberOfWorkerThreads();
         }
 
         @Override
@@ -370,7 +416,8 @@ public interface Configuration {
 
         @Override
         public int maxQueueSize() {
-            return defaults.maxQueueSize();
+            // Note: preserves the semantics of the default class.
+            return maxNumberOfWorkerThreads();
         }
 
         @Override

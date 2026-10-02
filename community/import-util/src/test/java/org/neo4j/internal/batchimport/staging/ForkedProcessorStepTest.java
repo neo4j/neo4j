@@ -337,7 +337,7 @@ class ForkedProcessorStepTest {
     }
 
     private static Configuration config(int processors) {
-        return new Configuration() {
+        return new Configuration.Overridden(Configuration.DEFAULT) {
             @Override
             public int maxNumberOfWorkerThreads() {
                 return processors;

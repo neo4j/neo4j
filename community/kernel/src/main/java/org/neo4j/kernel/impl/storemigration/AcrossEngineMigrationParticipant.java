@@ -165,7 +165,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 // Creating both indexes here. The existing store we are migrating doesn't necessarily
                 // have both, and we could take that into account, but it is easiest to just assume
                 // everyone wants them and create both.
-                new Configuration.Overridden(Configuration.defaultConfiguration()) {
+                new Configuration.Overridden(Configuration.DEFAULT) {
                     @Override
                     public IndexConfig indexConfig() {
                         return IndexConfig.create().withLabelIndex().withRelationshipTypeIndex();
