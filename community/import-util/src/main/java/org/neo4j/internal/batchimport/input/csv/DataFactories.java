@@ -329,6 +329,16 @@ public class DataFactories {
             for (Entry entry : entries) {
                 switch (entry.type()) {
                     case ID, PROPERTY -> {
+                        if (entry.type() == Type.PROPERTY && entry.name() == null) {
+                            // A type name is a valid property type, so this reaches here as a nameless property rather
+                            // than an unknown type. No such property can be stored: a property always has a key name.
+                            String rawEntry = entry.rawEntry();
+                            throw new HeaderException(
+                                    "Property column '%s' in '%s' has no name, so there is no property key to store it under. "
+                                                    .formatted(rawEntry, dataSeeker.sourceDescription())
+                                            + "Give the column a name (e.g. 'name%s') or mark it ':IGNORE' to skip it."
+                                                    .formatted(rawEntry));
+                        }
                         String propertyName = entry.name();
                         if (propertyName != null) {
                             if (entry.type() == Type.ID) {

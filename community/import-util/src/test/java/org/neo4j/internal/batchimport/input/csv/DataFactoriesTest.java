@@ -36,6 +36,7 @@ import java.util.function.Function;
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.batchimport.api.input.IdType;
@@ -48,6 +49,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.internal.batchimport.input.DuplicateHeaderException;
 import org.neo4j.internal.batchimport.input.Groups;
+import org.neo4j.internal.batchimport.input.HeaderException;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -358,6 +360,28 @@ class DataFactoriesTest {
             assertThatThrownBy(() -> defaultFormatRelationshipFileHeader().create(seeker, COMMAS, idType, groups))
                     .isInstanceOf(InputException.class)
                     .hasMessageContaining("LABEL");
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldFailOnNamelessPropertyColumnInHeader(EntityType entityType) throws Exception {
+        // GIVEN
+        boolean nodeHeader = entityType == EntityType.NODE;
+        String header = nodeHeader ? ":ID,name,:int" : ":START_ID,:TYPE,:END_ID,:int";
+        Header.Factory headerFactory =
+                nodeHeader ? defaultFormatNodeFileHeader() : defaultFormatRelationshipFileHeader();
+
+        try (var seeker = seeker(header)) {
+            IdType idType = IdType.ACTUAL;
+
+            // WHEN
+            assertThatThrownBy(() -> headerFactory.create(seeker, COMMAS, idType, groups))
+                    .isInstanceOf(HeaderException.class)
+                    .hasMessageContaining("Property column ':int'")
+                    .hasMessageContaining("has no name")
+                    .hasMessageContaining("Give the column a name (e.g. 'name:int')")
+                    .hasMessageContaining("mark it ':IGNORE' to skip it");
         }
     }
 
