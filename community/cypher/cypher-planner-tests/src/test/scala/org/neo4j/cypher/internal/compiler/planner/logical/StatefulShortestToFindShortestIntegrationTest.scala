@@ -1707,4 +1707,21 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherPlannerTestSui
       }
     }
   }
+
+  test("should rewrite stacked SHORTEST with simple varLength pattern into stacked legacy shortest") {
+    val query =
+      s"""MATCH (a:User), (b)
+         |MATCH ANY SHORTEST (a)-[r_ab*1..4]->(b)
+         |MATCH ANY SHORTEST (b)-[r_bc*1..8]->(a)
+         |RETURN r_ab, r_bc
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .shortestPath("(b)-[r_bc*1..8]->(a)", pathName = Some("anon_0"), sameNodeMode = AllowSameNode)
+      .shortestPath("(a)-[r_ab*1..4]->(b)", pathName = Some("anon_1"), sameNodeMode = AllowSameNode)
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .nodeByLabelScan("a", "User")
+      .build()
+  }
 }

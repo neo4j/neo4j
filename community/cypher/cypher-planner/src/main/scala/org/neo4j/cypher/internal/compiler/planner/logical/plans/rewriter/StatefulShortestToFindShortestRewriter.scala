@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.disjoinRelTypesToLabelExpression
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.AllowSameNode
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -57,8 +58,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
-
-import scala.collection.Set
 
 /**
  * Re-writes StatefulShortestPath to FindShortestPath where possible, as benchmarks have shown the latter
@@ -70,19 +69,17 @@ import scala.collection.Set
  *
  * Rule 2: Target node of the pattern is bound
  *
- * Rule 3: Exactly one selective path pattern
+ * Rule 3: Predicates must be inlineable into FindShortestPath
  *
- * Rule 4: Predicates must be inlineable into FindShortestPath
+ * Rule 4: No property access from SPD shard required
  *
- * Rule 5: No property access from SPD shard required
+ * Rule 5: Exactly one relationship pattern
  *
- * Rule 6: Exactly one relationship pattern
+ * Rule 6: Minimum length 0 or 1
  *
- * Rule 7: Minimum length 0 or 1
+ * Rule 7: Exactly one var-length relationship or one QPP
  *
- * Rule 8: Exactly one var-length relationship or one QPP
- *
- * Rule 9: No node group variables
+ * Rule 8: No node group variables
  */
 case class StatefulShortestToFindShortestRewriter(
   solveds: Solveds,
@@ -106,13 +103,15 @@ case class StatefulShortestToFindShortestRewriter(
     }
   }
 
-  // Rule 3: Exactly one selective path pattern
-  // Rule 6: Exactly one relationship pattern
-  private def singleSelectivePathPatternWithOneRelationship(ssp: StatefulShortestPath): Option[SelectivePathPattern] =
-    solveds.get(ssp.id).asSinglePlannerQuery.last.queryGraph.selectivePathPatterns.toSeq match {
+  // Rule 5: Exactly one relationship pattern
+  private def singleSelectivePathPatternWithOneRelationship(ssp: StatefulShortestPath): Option[SelectivePathPattern] = {
+    def solvedSPPs(plan: LogicalPlan): Set[SelectivePathPattern] =
+      solveds.get(plan.id).asSinglePlannerQuery.last.queryGraph.selectivePathPatterns
+    (solvedSPPs(ssp) -- solvedSPPs(ssp.source)).toSeq match {
       case Seq(spp) if spp.relationships.size == 1 => Some(spp)
       case _                                       => None
     }
+  }
 
   private def isRewriteCandidate(ssp: StatefulShortestPath): Boolean =
     hasBoundTargetEndpoint(ssp) &&
@@ -127,7 +126,7 @@ case class StatefulShortestToFindShortestRewriter(
   private def asksForShortestPathOrAllShortestPaths(ssp: StatefulShortestPath): Boolean =
     ssp.selector.k == CountInteger(1)
 
-  // Rule 9: No node group variables
+  // Rule 8: No node group variables
   private def hasNoNodeGroupVariables(ssp: StatefulShortestPath): Boolean =
     ssp.nodeVariableGroupings.isEmpty
 
@@ -138,8 +137,8 @@ case class StatefulShortestToFindShortestRewriter(
     singleVarLengthRelationshipMinLengthOneOrZero(spp.asQueryGraph.patternRelationships.toSeq)
       .flatMap(patternRelationship => sspVarLengthToFindShortest(ssp, spp, patternRelationship))
 
-  // Rule 6: Exactly one relationship pattern
-  // Rule 7: Minimum length 0 or 1
+  // Rule 5: Exactly one relationship pattern
+  // Rule 6: Minimum length 0 or 1
   private def singleVarLengthRelationshipMinLengthOneOrZero(
     patternRelationships: Seq[PatternRelationship]
   ): Option[PatternRelationship] = patternRelationships match {
@@ -185,8 +184,8 @@ case class StatefulShortestToFindShortestRewriter(
 
     val inlineablePredicates = (nodePredicates ++ relationshipPredicates).map(_.predicate)
 
-    // Rule 4: Predicates must be inlineable into FindShortestPath
-    // Rule 5: No property access from SPD shard required
+    // Rule 3: Predicates must be inlineable into FindShortestPath
+    // Rule 4: No property access from SPD shard required
     if (
       allSppPredicatesAreInlineable(spp, inlineablePredicates) &&
       !requiresPropertyAccessFromShards(inlineablePredicates)
@@ -221,8 +220,8 @@ case class StatefulShortestToFindShortestRewriter(
     spp: SelectivePathPattern,
     ssp: StatefulShortestPath
   ): Option[FindShortestPaths] = {
-    // Rule 7: Minimum length 0 or 1
-    // Rule 8: Exactly one var-length relationship or one QPP
+    // Rule 6: Minimum length 0 or 1
+    // Rule 7: Exactly one var-length relationship or one QPP
     spp.pathPattern.allQuantifiedPathPatterns.toSeq match {
       case Seq(qpp) if hasSingleRelPatternMinLengthOneOrZero(qpp) => sppQppToFindShortest(ssp, spp, qpp)
       case _                                                      => None
@@ -240,8 +239,8 @@ case class StatefulShortestToFindShortestRewriter(
     val qppPredicates = extractedPredicatesFromQpp(ssp, spp, qpp)
     val inlineablePredicates = qppPredicates.allPredicates
 
-    // Rule 4: Predicates must be inlineable into FindShortestPath
-    // Rule 5: No property access from SPD shard required
+    // Rule 3: Predicates must be inlineable into FindShortestPath
+    // Rule 4: No property access from SPD shard required
     if (
       allSppPredicatesAreInlineable(spp, inlineablePredicates) &&
       !requiresPropertyAccessFromShards(inlineablePredicates)
@@ -301,7 +300,7 @@ case class StatefulShortestToFindShortestRewriter(
       case _                                  => true
     }
 
-  // Rule 5: No property access from SPD shard required
+  // Rule 4: No property access from SPD shard required
   private def requiresPropertyAccessFromShards(predicates: Iterable[Expression]): Boolean =
     isShardedDatabase && predicates.exists(requiresPropertyAccess)
 
