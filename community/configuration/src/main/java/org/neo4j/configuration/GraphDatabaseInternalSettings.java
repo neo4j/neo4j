@@ -2174,6 +2174,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("How often the SPD import scans its stores directory for stores marked for deletion.")
+    public static final Setting<Duration> spd_import_store_gc_interval = newBuilder(
+                    "internal.db.spd_import.store_gc_interval", DURATION, ofMinutes(2))
+            .build();
+
+    @Internal
     @Description("")
     public static final Setting<Duration> spd_import_progress_collect_interval = newBuilder(
                     "internal.db.spd_import.progress_collect_interval", DURATION, ofSeconds(1))
