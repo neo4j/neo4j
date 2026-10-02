@@ -136,7 +136,8 @@ public class CsvInputParser implements Closeable {
                                 seeker.sourceDescription(), lineNumber, rawValue, invalidIdEntityType);
                     } else {
                         badProperty = true;
-                        badCollector.collectBadProperty(seeker.sourceDescription(), lineNumber, entry.name(), rawValue);
+                        badCollector.collectBadProperty(
+                                seeker.sourceDescription(), lineNumber, entry.name(), rawValue, e.getMessage());
                     }
                     // Skip rest of the row
                     doContinue = false;

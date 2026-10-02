@@ -418,7 +418,7 @@ class ProblemReportersTest {
                         some.file: line 13
                         Missing ID column index: 31.
                         """),
-                new Problem(ProblemReporters.badPropertyReporter(SOURCE, LINE, P1, DUFF), formatJson("""
+                new Problem(ProblemReporters.badPropertyReporter(SOURCE, LINE, P1, DUFF, null), formatJson("""
                             {
                                 "problem": "BadPropertyColumn",
                                 "message": "Property value is invalid for the type specified for its column in the header.\\nsome.file: line 13\\nInvalid value for property `p1`: `duff`.",
@@ -443,6 +443,24 @@ class ProblemReportersTest {
                         Missing relationship type.
                         some.file: line 13
                         Every relationship must have a type.
+                        """),
+                new Problem(
+                        ProblemReporters.badPropertyReporter(SOURCE, LINE, P1, DUFF, "Value too big"),
+                        formatJson("""
+                            {
+                                "problem": "BadPropertyColumn",
+                                "message": "Property value is invalid for the type specified for its column in the header.\\nsome.file: line 13\\nInvalid value for property `p1`: `duff`.\\nValue too big",
+                                "source":"some.file",
+                                "line":13,
+                                "column":"p1",
+                                "value":"duff"
+                            }
+                            """),
+                        """
+                        Property value is invalid for the type specified for its column in the header.
+                        some.file: line 13
+                        Invalid value for property `p1`: `duff`.
+                        Value too big
                         """));
     }
 

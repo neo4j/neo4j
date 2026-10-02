@@ -248,8 +248,9 @@ public class ProblemReporters {
         return new IdColumnMissingProblemReporter(source, row, columnIndex);
     }
 
-    public static ProblemReporter badPropertyReporter(String source, long row, String column, String value) {
-        return new BadPropertyProblemReporter(source, row, column, value);
+    public static ProblemReporter badPropertyReporter(
+            String source, long row, String column, String value, String additionalInfo) {
+        return new BadPropertyProblemReporter(source, row, column, value, additionalInfo);
     }
 
     public static ProblemReporter missingRelationshipTypeReporter(String source, long lineNumber) {
@@ -848,18 +849,21 @@ public class ProblemReporters {
         private final long row;
         private final String column;
         private final String value;
+        private final String additionalInfo;
 
-        private BadPropertyProblemReporter(String source, long row, String column, String value) {
+        private BadPropertyProblemReporter(
+                String source, long row, String column, String value, String additionalInfo) {
             super(BAD_PROPERTY_COLUMN);
             this.source = source;
             this.row = row;
             this.column = column;
             this.value = value;
+            this.additionalInfo = additionalInfo;
         }
 
         @Override
         public String message() {
-            return Collector.badPropertyMessage(source, row, column, value);
+            return Collector.badPropertyMessage(source, row, column, value, additionalInfo);
         }
 
         @Override

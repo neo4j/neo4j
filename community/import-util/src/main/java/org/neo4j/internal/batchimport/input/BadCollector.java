@@ -340,8 +340,8 @@ public final class BadCollector implements Collector {
     }
 
     @Override
-    public void collectBadProperty(String source, long row, String column, String value) {
-        collect(ProblemReporters.badPropertyReporter(source, row, column, value));
+    public void collectBadProperty(String source, long row, String column, String value, String additionalInfo) {
+        collect(ProblemReporters.badPropertyReporter(source, row, column, value, additionalInfo));
     }
 
     @Override

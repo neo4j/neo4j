@@ -74,8 +74,10 @@ public interface Collector extends AutoCloseable, ResumableState {
      * A property column whose value could not be parsed as the type declared for it in the header.
      *
      * @param column the name of the offending property column, as per the header.
+     * @param additionalInfo further detail on why the value was rejected, e.g. the message of the parse
+     *     exception, or {@code null} if none is available.
      */
-    void collectBadProperty(String source, long row, String column, String value);
+    void collectBadProperty(String source, long row, String column, String value, String additionalInfo);
 
     void collectExtraColumns(String source, long row, String value);
 
@@ -164,12 +166,16 @@ public interface Collector extends AutoCloseable, ResumableState {
                 "Invalid ID value: `%s`.".formatted(value));
     }
 
-    static String badPropertyMessage(String source, long row, String column, String value) {
+    static String badPropertyMessage(String source, long row, String column, String value, String additionalInfo) {
+        String furtherDetails = "Invalid value for property `%s`: `%s`.".formatted(column, value);
+        if (additionalInfo != null) {
+            furtherDetails += "%n%s".formatted(additionalInfo);
+        }
         return standardisedErrorMessage(
                 "Property value is invalid for the type specified for its column in the header.",
                 source,
                 row,
-                "Invalid value for property `%s`: `%s`.".formatted(column, value));
+                furtherDetails);
     }
 
     static String illegalQuoteMessage(String source, long row, String value) {
@@ -313,7 +319,7 @@ public interface Collector extends AutoCloseable, ResumableState {
         public void collectIdColumnMissing(String source, long row, int columnIndex) {}
 
         @Override
-        public void collectBadProperty(String source, long row, String column, String value) {}
+        public void collectBadProperty(String source, long row, String column, String value, String additionalInfo) {}
 
         @Override
         public boolean isCollectingBadRelationships() {
@@ -385,8 +391,8 @@ public interface Collector extends AutoCloseable, ResumableState {
         }
 
         @Override
-        public void collectBadProperty(String source, long row, String column, String value) {
-            throw new IllegalStateException(badPropertyMessage(source, row, column, value));
+        public void collectBadProperty(String source, long row, String column, String value, String additionalInfo) {
+            throw new IllegalStateException(badPropertyMessage(source, row, column, value, additionalInfo));
         }
 
         @Override
@@ -530,7 +536,7 @@ public interface Collector extends AutoCloseable, ResumableState {
         public void collectIdColumnMissing(String source, long row, int columnIndex) {}
 
         @Override
-        public void collectBadProperty(String source, long row, String column, String value) {}
+        public void collectBadProperty(String source, long row, String column, String value, String additionalInfo) {}
 
         @Override
         public long badEntries() {
