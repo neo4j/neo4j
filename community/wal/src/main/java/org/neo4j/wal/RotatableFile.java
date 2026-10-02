@@ -21,12 +21,16 @@ package org.neo4j.wal;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import org.neo4j.kernel.KernelVersion;
-import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.entry.LogHeader;
+import org.neo4j.wal.rotation.NextLogHeader;
 
 public interface RotatableFile {
-    record RotationInfo(Path file, LogHeader logHeader) {}
+    /**
+     * @param file       the file rotated to.
+     * @param logHeader  the header of the file rotated to, as read back from disk.
+     * @param nextHeader the values the rotation resolved for that header.
+     */
+    record RotationInfo(Path file, LogHeader logHeader, NextLogHeader nextHeader) {}
 
     /**
      * @return {@code true} if a rotation is needed.
@@ -34,37 +38,26 @@ public interface RotatableFile {
     boolean rotationNeeded() throws IOException;
 
     /**
-     * Rotate the active file.
-     * @return A file object representing the file name and path of the log file rotated to.
-     * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
-     */
-    RotationInfo rotate() throws IOException;
-
-    /**
-     * Rotate the active file but be explicit about what kernel version to use for the new header.
-     * This can be necessary in checkpoint log file where checkpoints are not blocked during upgrade so the
-     * kernel version repository can be updated between getting request to checkpoint and the rotation happens.
-     * Checksum and append index are guaranteed to be correct though and can use the usual providers.
+     * Rotate the active file. The header of the new file takes the values set on {@code headerBuilder}, and any unset
+     * ones from this file's live state inside the rotation critical section.
      *
      * @return A file object representing the file name and path of the log file rotated to.
      * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
      */
-    RotationInfo rotate(KernelVersion kernelVersion) throws IOException;
+    RotationInfo rotate(NextLogHeader.Builder headerBuilder) throws IOException;
 
     /**
-     * Rotate the active file but be explicit about what values to use for the new header.
-     * This can be necessary in scenarios where the kernel version repository is not
-     * updated (because apply to store hasn't happened yet), or the transaction id sequence has already been updated but
-     * this rotation takes place before writing the new transaction.
-     *
-     * @return A file object representing the file name and path of the log file rotated to.
-     * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
+     * Rotate the active file, with a header derived entirely from this file's live state.
      */
-    RotationInfo rotate(
-            KernelVersion kernelVersion, long lastAppendIndex, int checksum, long lastTerm, LogFormat logFormat)
-            throws IOException;
+    default RotationInfo rotate() throws IOException {
+        return rotate(NextLogHeader.builder());
+    }
 
-    RotationInfo rotate(KernelVersion kernelVersion, long lastAppendIndex, int checksum) throws IOException;
+    /**
+     * @return the version of the file currently being written, which a rotation moves away from. Only stable while
+     * the caller has exclusive access to the file.
+     */
+    long activeFileVersion();
 
     long rotationSize();
 }

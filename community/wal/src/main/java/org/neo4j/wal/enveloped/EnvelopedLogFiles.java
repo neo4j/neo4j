@@ -19,6 +19,8 @@
  */
 package org.neo4j.wal.enveloped;
 
+import static org.neo4j.util.Preconditions.checkArgument;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,7 +37,6 @@ import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -66,6 +67,7 @@ import org.neo4j.wal.files.LogVersionVisitor;
 import org.neo4j.wal.pruning.LogPruneThreshold;
 import org.neo4j.wal.rotation.LogRotateEvents;
 import org.neo4j.wal.rotation.LogRotation;
+import org.neo4j.wal.rotation.NextLogHeader;
 
 class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoCloseable {
     private final int segmentBlockSize;
@@ -389,13 +391,27 @@ class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoCloseable {
         return logFilesMetadata.get().logHeader().getLastAppendIndex();
     }
 
-    private void rotateCurrentFile(long lastAppendIndex, int checksum, long lastTerm) throws IOException {
+    private void rotateCurrentFile(NextLogHeader.Builder headerBuilder) throws IOException {
         if (appendingChannel == null) {
             throw new IllegalStateException("Cannot rotate if not initialised");
         } else {
             var nextVersion = currentWriteChannel.version() + 1;
             appendingChannel.prepareForFlush().flush();
             currentWriteChannel.channel().truncate(currentWriteChannel.channel().position());
+            // Kernel version and log format are left null: the LogHeaderFactory decides both for merged log files
+            NextLogHeader nextHeader = headerBuilder.build(new NextLogHeader(
+                    null,
+                    null,
+                    appendingChannel.currentIndex(),
+                    appendingChannel.currentChecksum(),
+                    appendingChannel.currentTerm()));
+            checkArgument(
+                    nextHeader.kernelVersion() == null && nextHeader.logFormat() == null,
+                    "Kernel version and log format of merged log files are decided by the LogHeaderFactory, but got: %s",
+                    nextHeader);
+            long lastAppendIndex = nextHeader.lastAppendIndex();
+            int checksum = nextHeader.previousChecksum();
+            long lastTerm = nextHeader.lastTerm();
             // create new channel after truncate, because when rotate is called within
             // EnvelopedWriteChannel.truncateToPosition
             // it may be that the envelopes being trimmed contradict the checksum put into the new header
@@ -1048,24 +1064,12 @@ class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoCloseable {
         }
 
         @Override
-        public RotationInfo rotate() throws IOException {
+        public RotationInfo rotate(NextLogHeader.Builder headerBuilder) throws IOException {
             throw new UnsupportedOperationException("Not for enveloped log files");
         }
 
         @Override
-        public RotationInfo rotate(KernelVersion kernelVersion) throws IOException {
-            throw new UnsupportedOperationException("Not for enveloped log files");
-        }
-
-        @Override
-        public RotationInfo rotate(
-                KernelVersion kernelVersion, long lastAppendIndex, int checksum, long lastTerm, LogFormat logFormat)
-                throws IOException {
-            throw new UnsupportedOperationException("Not for enveloped log files");
-        }
-
-        @Override
-        public RotationInfo rotate(KernelVersion kernelVersion, long lastAppendIndex, int checksum) throws IOException {
+        public long activeFileVersion() {
             throw new UnsupportedOperationException("Not for enveloped log files");
         }
 
@@ -1131,24 +1135,13 @@ class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoCloseable {
         }
 
         @Override
-        public boolean locklessBatchedRotateLogIfNeeded(
-                LogRotateEvents logRotateEvents,
-                long lastAppendIndex,
-                KernelVersion kernelVersion,
-                int checksum,
-                long lastTerm,
-                LogFormat logFormat) {
+        public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {
             throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
         }
 
         @Override
-        public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents) {
-            return rotateLogIfNeeded(logRotateEvents);
-        }
-
-        @Override
-        public boolean locklessRotateLogIfNeeded(
-                LogRotateEvents logRotateEvents, KernelVersion kernelVersion, boolean force) {
+        public boolean locklessBatchedRotateLogIfNeeded(
+                LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {
             throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
         }
 
@@ -1158,33 +1151,12 @@ class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoCloseable {
         }
 
         @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents, long lastAppendIndex, int previousChecksum, long lastTerm)
+        public void locklessRotateLogFile(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder)
                 throws IOException {
             try (var event = logRotateEvents.beginLogRotate()) {
-                envelopedLogFiles.rotateCurrentFile(lastAppendIndex, previousChecksum, lastTerm);
+                envelopedLogFiles.rotateCurrentFile(headerBuilder);
                 event.rotationCompleted(0); // TODO add clock
             }
-        }
-
-        @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents,
-                KernelVersion kernelVersion,
-                long lastAppendIndex,
-                int previousChecksum) {
-            throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
-        }
-
-        @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents,
-                KernelVersion kernelVersion,
-                long lastAppendIndex,
-                int previousChecksum,
-                long lastTerm,
-                LogFormat logFormat) {
-            throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
         }
 
         @Override

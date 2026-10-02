@@ -34,12 +34,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.wal.LogTracers;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
-import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.rotation.LogRotateEvents;
+import org.neo4j.wal.rotation.NextLogHeader;
 
 /**
  * Whole-log copies through {@link EnvelopeWriteChannel#appendRaw}, driven by an {@link EnvelopeReadChannel} walk
@@ -419,15 +418,21 @@ class EnvelopeWriteChannelRawCopyTest extends EnvelopeWriteChannelTestSupport {
         }
 
         @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents, long lastAppendIndex, int previousChecksum, long lastTerm)
+        public void locklessRotateLogFile(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder)
                 throws IOException {
             try (var event = logRotateEvents.beginLogRotate()) {
                 long nextVersion = currentChannel.getLogVersion() + 1;
                 writer.prepareForFlush().flush();
                 var newChannel = storeChannel(nextVersion, pathProvider.apply(nextVersion));
                 currentChannel.truncate(currentChannel.position());
-                writeV10Header(newChannel, segmentSize, lastAppendIndex, lastTerm, previousChecksum);
+                NextLogHeader nextHeader = headerBuilder.build(new NextLogHeader(
+                        null, null, writer.currentIndex(), writer.currentChecksum(), writer.currentTerm()));
+                writeV10Header(
+                        newChannel,
+                        segmentSize,
+                        nextHeader.lastAppendIndex(),
+                        nextHeader.lastTerm(),
+                        nextHeader.previousChecksum());
                 currentChannel.close();
                 currentChannel = newChannel;
                 writer.setChannel(newChannel);
@@ -446,49 +451,18 @@ class EnvelopeWriteChannelRawCopyTest extends EnvelopeWriteChannelTestSupport {
         }
 
         @Override
+        public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {
+            throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
+        }
+
+        @Override
         public boolean locklessBatchedRotateLogIfNeeded(
-                LogRotateEvents logRotateEvents,
-                long lastAppendIndex,
-                KernelVersion kernelVersion,
-                int checksum,
-                long lastTerm,
-                LogFormat logFormat) {
-            throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
-        }
-
-        @Override
-        public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents) {
-            throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
-        }
-
-        @Override
-        public boolean locklessRotateLogIfNeeded(
-                LogRotateEvents logRotateEvents, KernelVersion kernelVersion, boolean force) {
+                LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {
             throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
         }
 
         @Override
         public void rotateLogFile(LogRotateEvents logRotateEvents) {
-            throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
-        }
-
-        @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents,
-                KernelVersion kernelVersion,
-                long lastAppendIndex,
-                int previousChecksum) {
-            throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
-        }
-
-        @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents,
-                KernelVersion kernelVersion,
-                long lastAppendIndex,
-                int previousChecksum,
-                long lastTerm,
-                LogFormat logFormat) {
             throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
         }
     }

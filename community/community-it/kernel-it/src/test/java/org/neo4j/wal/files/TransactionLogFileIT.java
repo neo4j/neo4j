@@ -59,6 +59,7 @@ import org.neo4j.wal.LogAppendEvent;
 import org.neo4j.wal.WALService;
 import org.neo4j.wal.rotation.FileLogRotation;
 import org.neo4j.wal.rotation.LogRotation;
+import org.neo4j.wal.rotation.NextLogHeader;
 import org.neo4j.wal.rotation.monitor.LogRotationMonitorAdapter;
 
 @DbmsExtension
@@ -109,8 +110,7 @@ class TransactionLogFileIT {
                     public void startRotation(LogType type, long currentLogVersion) {
                         rotationObservedVersion.setValue(currentLogVersion);
                     }
-                },
-                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER);
+                });
 
         for (int i = 0; i < 6; i++) {
             for (Path path : walService.logFiles()) {
@@ -169,8 +169,7 @@ class TransactionLogFileIT {
                     public void startRotation(LogType type, long currentLogVersion) {
                         rotationObservedVersion.setValue(currentLogVersion);
                     }
-                },
-                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER);
+                });
         // rotate without explicit appendIndex should use metadataProvider for lastAppendIndex
         // and also match on checksum if available
         logRotation.rotateLogFile(LogAppendEvent.NULL);
@@ -182,13 +181,16 @@ class TransactionLogFileIT {
         }
         long testAppendIndex = metadataProvider.getLastAppendIndex() + 101;
         int testCRC = 789;
+        long testTerm = 17;
         // rotate with explicit appendIndex should respect passed in value
-        logRotation.locklessRotateLogFile(LogAppendEvent.NULL, testAppendIndex, testCRC, -1);
+        logRotation.locklessRotateLogFile(
+                LogAppendEvent.NULL, NextLogHeader.builder().withTail(testAppendIndex, testCRC, testTerm));
         var header2 =
                 walService.getLogFile().extractHeader(walService.getLogFile().getCurrentLogVersion());
         assertEquals(testAppendIndex, header2.getLastAppendIndex());
-        if (header2.getLogFormatVersion().usesSegments()) { // no checksum before envelopes
+        if (header2.getLogFormatVersion().usesSegments()) { // no checksum or term before envelopes
             assertEquals(testCRC, header2.getPreviousLogFileChecksum());
+            assertEquals(testTerm, header2.getLastTerm());
         }
     }
 

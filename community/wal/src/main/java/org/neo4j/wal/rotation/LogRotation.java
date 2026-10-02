@@ -20,14 +20,15 @@
 package org.neo4j.wal.rotation;
 
 import java.io.IOException;
-import org.neo4j.kernel.KernelVersion;
-import org.neo4j.wal.entry.LogFormat;
 
 /**
  * Used to check if a log rotation is needed, and also to execute a log rotation.
- *
+ * <p>
+ * The header of the new file is described by a {@link NextLogHeader.Builder}: values set on it are used as given,
+ * and unset ones are taken from the file's live state inside the rotation critical section. Methods prefixed {@code lockless} must only be called by a thread that
+ * already has exclusive access to the log.
+ * <p>
  * The implementation also makes sure that stores are forced to disk.
- *
  */
 public interface LogRotation {
     LogRotation NO_ROTATION = new LogRotation() {
@@ -37,24 +38,13 @@ public interface LogRotation {
         }
 
         @Override
+        public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {
+            return false;
+        }
+
+        @Override
         public boolean locklessBatchedRotateLogIfNeeded(
-                LogRotateEvents logRotateEvents,
-                long appendIndex,
-                KernelVersion kernelVersion,
-                int checksum,
-                long lastTerm,
-                LogFormat logFormat) {
-            return false;
-        }
-
-        @Override
-        public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents) {
-            return false;
-        }
-
-        @Override
-        public boolean locklessRotateLogIfNeeded(
-                LogRotateEvents logRotateEvents, KernelVersion kernelVersion, boolean force) {
+                LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {
             return false;
         }
 
@@ -62,24 +52,7 @@ public interface LogRotation {
         public void rotateLogFile(LogRotateEvents logRotateEvents) {}
 
         @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents, long lastAppendIndex, int previousChecksum, long lastTerm) {}
-
-        @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents,
-                KernelVersion kernelVersion,
-                long lastAppendIndex,
-                int previousChecksum) {}
-
-        @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents,
-                KernelVersion kernelVersion,
-                long lastAppendIndex,
-                int previousChecksum,
-                long lastTerm,
-                LogFormat logFormat) {}
+        public void locklessRotateLogFile(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {}
 
         @Override
         public long rotationSize() {
@@ -88,74 +61,44 @@ public interface LogRotation {
     };
 
     /**
-     * Rotates the underlying log if it is required. Returns true if rotation happened, false otherwise
+     * Rotates the underlying log if it is required, taking the log file lock. The new header is derived from the
+     * live state. Returns true if rotation happened, false otherwise.
      * @param logRotateEvents A trace event for the current log append operation.
      */
     boolean rotateLogIfNeeded(LogRotateEvents logRotateEvents) throws IOException;
 
     /**
-     * Rotates the underlying log if it is required for batch updates. Returns true if rotation happened, false otherwise.
-     * Batch rotation does not perform any metadata or lover version store updates and only perform log file rotations.
+     * Rotates the underlying log if it is required. Returns true if rotation happened, false otherwise.
+     * @param logRotateEvents A trace event for the current log append operation.
+     * @param headerBuilder Explicit values for the new header; unset ones are taken from the live state.
      */
-    boolean locklessBatchedRotateLogIfNeeded(
-            LogRotateEvents logRotateEvents,
-            long lastAppendIndex,
-            KernelVersion kernelVersion,
-            int checksum,
-            long lastTerm,
-            LogFormat logFormat)
+    boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder)
             throws IOException;
 
     /**
-     * Rotates the underlying log if it is required. Returns true if rotation happened, false otherwise
-     * @param logRotateEvents A trace event for the current log append operation.
+     * Rotates the underlying log if it is required for raw batch appends. Returns true if rotation happened, false
+     * otherwise. Batch rotation does not perform any metadata or lower version store updates and only performs log
+     * file rotations.
      */
-    boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents) throws IOException;
-
-    /**
-     * Rotates the underlying log if it is required. Returns true if rotation happened, false otherwise
-     * @param logRotateEvents A trace event for the current log append operation.
-     * @param force If rotation should be forced even if not needed by the threshold
-     */
-    boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents, KernelVersion kernelVersion, boolean force)
+    boolean locklessBatchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder)
             throws IOException;
 
     /**
-     * Force a log rotation. Generally should only be used in tests
+     * Force a log rotation, taking the log file lock, with a header derived from the live state. Generally should
+     * only be used in tests and tools.
      * @param logRotateEvents - A trace event for the current log append operation.
      * @throws IOException - Thrown on file system errors during rotation
      */
     void rotateLogFile(LogRotateEvents logRotateEvents) throws IOException;
 
     /**
-     * Force a log rotation with provided parameters in new header.
-     *
-     * @param logRotateEvents  - A trace event for the current log append operation.
-     * @param lastAppendIndex  - Append index of last entry in previous log file to include in file header if supported in LogFormat
-     * @param previousChecksum - Checksum of last entry in previous log file to include in fle header if supported in LogFormat
-     * @param lastTerm      - Term of last entry in previous log file to include in file header
-     * @throws IOException - Thrown on file system errors during rotation
-     */
-    void locklessRotateLogFile(
-            LogRotateEvents logRotateEvents, long lastAppendIndex, int previousChecksum, long lastTerm)
-            throws IOException;
-    /**
      * Force a log rotation without taking any additional locks.
      * Only use this if the logFile lock is already taken, or there can be no other concurrent operations.
+     * @param logRotateEvents - A trace event for the current log append operation.
+     * @param headerBuilder - Explicit values for the new header; unset ones are taken from the live state.
      * @throws IOException - Thrown on file system errors during rotation
      */
-    void locklessRotateLogFile(
-            LogRotateEvents logRotateEvents, KernelVersion kernelVersion, long lastAppendIndex, int previousChecksum)
-            throws IOException;
-
-    void locklessRotateLogFile(
-            LogRotateEvents logRotateEvents,
-            KernelVersion kernelVersion,
-            long lastAppendIndex,
-            int previousChecksum,
-            long lastTerm,
-            LogFormat logFormat)
-            throws IOException;
+    void locklessRotateLogFile(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) throws IOException;
 
     long rotationSize();
 }

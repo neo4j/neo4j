@@ -39,7 +39,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.filename.SequentialFileNameHelper;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.recovery.LogTailScannerMonitor;
 import org.neo4j.logging.InternalLog;
@@ -61,7 +60,6 @@ import org.neo4j.wal.checkpoint.CheckpointFile;
 import org.neo4j.wal.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.wal.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.wal.entry.LogEntry;
-import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.entry.LogHeader;
 import org.neo4j.wal.entry.TailUtils;
 import org.neo4j.wal.entry.UnsupportedLogVersionException;
@@ -73,6 +71,7 @@ import org.neo4j.wal.files.TransactionLogChannelAllocator;
 import org.neo4j.wal.files.TransactionLogFilesContext;
 import org.neo4j.wal.files.TransactionLogFilesHelper;
 import org.neo4j.wal.files.TransactionLogFilesProviders;
+import org.neo4j.wal.rotation.NextLogHeader;
 import org.neo4j.wal.rotation.monitor.LogRotationMonitor;
 
 public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFile {
@@ -119,8 +118,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                 walService.getLogFile(),
                 context.clock(),
                 context.databaseHealth(),
-                context.monitors().newMonitor(LogRotationMonitor.class),
-                transactionLogFilesProviders.getKernelVersionProvider());
+                context.monitors().newMonitor(LogRotationMonitor.class));
         checkpointAppender = new DetachedCheckpointAppender(
                 walService,
                 channelAllocator,
@@ -350,27 +348,17 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
 
     @Override
     public synchronized RotationInfo rotate() throws IOException {
-        return checkpointAppender.rotate();
+        return checkpointAppender.rotate(NextLogHeader.builder());
     }
 
     @Override
-    public RotationInfo rotate(
-            KernelVersion kernelVersion, long lastAppendIndex, int checksum, long lastTerm, LogFormat logFormat)
-            throws IOException {
-        // Checkpoint log handles checksums and append indexes internally, this one should not ever be needed for
-        // checkpoint log file.
-        throw new UnsupportedOperationException("Checkpoint log does not support this type of rotation");
+    public RotationInfo rotate(NextLogHeader.Builder headerBuilder) throws IOException {
+        return checkpointAppender.rotate(headerBuilder);
     }
 
     @Override
-    public RotationInfo rotate(KernelVersion kernelVersion, long lastAppendIndex, int checksum) throws IOException {
-        // Checkpoint files are written with a fixed lastAppendIndex in the file header, so this is ignored
-        return checkpointAppender.rotate(kernelVersion, checksum);
-    }
-
-    @Override
-    public RotationInfo rotate(KernelVersion kernelVersion) throws IOException {
-        return checkpointAppender.rotate(kernelVersion);
+    public long activeFileVersion() {
+        return checkpointAppender.activeFileVersion();
     }
 
     @Override

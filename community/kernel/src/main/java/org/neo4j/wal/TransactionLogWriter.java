@@ -35,6 +35,7 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.wal.entry.LogEntryWriter;
 import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.rotation.LogRotation;
+import org.neo4j.wal.rotation.NextLogHeader;
 
 public class TransactionLogWriter implements LogWriter {
     private final FlushableLogPositionAwareChannel channel;
@@ -115,7 +116,11 @@ public class TransactionLogWriter implements LogWriter {
             // The transaction appenders handle locking of the logFile to guarantee only one thread is appending at a
             // time.
             // That means we know we are the only ones using the logfile here, and don't need to lock
-            logRotation.locklessRotateLogFile(logAppendEvent, kernelVersion, appendIndex - 1, previousChecksum);
+            logRotation.locklessRotateLogFile(
+                    logAppendEvent,
+                    NextLogHeader.builder()
+                            .withKernelVersion(kernelVersion)
+                            .withTail(appendIndex - 1, previousChecksum));
             previousKernelVersion = kernelVersion;
             channel.resetAppendedBytesCounter();
         }
@@ -206,21 +211,22 @@ public class TransactionLogWriter implements LogWriter {
                     .map(LogFormat::fromByteVersion) // This one throws if non-recognized version
                     .orElse(LogFormat.fromKernelVersion(kernelVersion));
             long term = logTermProvider.getCurrentTerm();
+            NextLogHeader.Builder headerBuilder = NextLogHeader.builder()
+                    .withKernelVersion(kernelVersion)
+                    .withLogFormat(logFormat)
+                    .withTail(appendIndex.getAsLong() - 1, checksum, term);
             // In append we know we are the only ones using the logfile, don't need to lock on rotation here
             if (kernelVersion != previousKernelVersion) {
-                logRotation.locklessRotateLogFile(
-                        logAppendEvent, kernelVersion, appendIndex.getAsLong() - 1, checksum, term, logFormat);
+                logRotation.locklessRotateLogFile(logAppendEvent, headerBuilder);
                 previousKernelVersion = kernelVersion;
             } else if (logFormat.usesSegments()
                     && logFormat.getDefaultDataStartByteOffset() == offset
                     && channel.getCurrentLogPosition().getByteOffset() != offset) {
                 // This rotation is to handle the case where the sender has rotated to a new file in the middle
                 // of a segment, and we must do the same to keep txs aligned on segment boundaries.
-                logRotation.locklessRotateLogFile(
-                        logAppendEvent, kernelVersion, appendIndex.getAsLong() - 1, checksum, term, logFormat);
+                logRotation.locklessRotateLogFile(logAppendEvent, headerBuilder);
             } else {
-                logRotation.locklessBatchedRotateLogIfNeeded(
-                        logAppendEvent, appendIndex.getAsLong() - 1, kernelVersion, checksum, term, logFormat);
+                logRotation.locklessBatchedRotateLogIfNeeded(logAppendEvent, headerBuilder);
             }
         }
 

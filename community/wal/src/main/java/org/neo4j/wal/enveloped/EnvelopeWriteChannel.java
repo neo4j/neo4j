@@ -56,6 +56,7 @@ import org.neo4j.wal.LogTracers;
 import org.neo4j.wal.entry.LogEnvelopeHeader;
 import org.neo4j.wal.entry.LogEnvelopeHeader.EnvelopeType;
 import org.neo4j.wal.rotation.LogRotation;
+import org.neo4j.wal.rotation.NextLogHeader;
 
 /**
  * A channel that will write data in segments.
@@ -1009,7 +1010,8 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
     private void rotateLogFile() throws IOException {
         try (var logAppendEvent = logTracers.logAppend()) {
             // use our definition of appendIndex as appendIndexProvider may be pre-incremented
-            logRotation.locklessRotateLogFile(logAppendEvent, currentIndex, previousChecksum, currentTerm);
+            logRotation.locklessRotateLogFile(
+                    logAppendEvent, NextLogHeader.builder().withTail(currentIndex, previousChecksum, currentTerm));
             // and notify the event tracer
             logAppendEvent.setLogRotated(true);
         }

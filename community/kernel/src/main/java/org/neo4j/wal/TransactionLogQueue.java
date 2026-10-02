@@ -42,6 +42,7 @@ import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.wal.rotation.LogRotation;
+import org.neo4j.wal.rotation.NextLogHeader;
 
 public class TransactionLogQueue extends LifecycleAdapter {
     private static final int CONSUMER_MAX_BATCH = 1024;
@@ -223,7 +224,8 @@ public class TransactionLogQueue extends LifecycleAdapter {
                         txConsumer.processBatch();
 
                         LogAppendEvent logAppendEvent = txConsumer.txElements[drainedElements - 1].logAppendEvent;
-                        boolean logRotated = logRotation.locklessRotateLogIfNeeded(logAppendEvent);
+                        boolean logRotated =
+                                logRotation.locklessRotateLogIfNeeded(logAppendEvent, NextLogHeader.builder());
                         logAppendEvent.setLogRotated(logRotated);
                         if (!logRotated) {
                             logFile.locklessForce(logAppendEvent);

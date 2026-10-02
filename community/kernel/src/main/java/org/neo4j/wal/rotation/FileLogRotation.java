@@ -21,14 +21,10 @@ package org.neo4j.wal.rotation;
 
 import java.io.IOException;
 import java.time.Clock;
-import java.util.function.LongSupplier;
-import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
+import java.util.function.ToLongFunction;
 import org.neo4j.monitoring.Panic;
 import org.neo4j.wal.LogFile;
 import org.neo4j.wal.RotatableFile;
-import org.neo4j.wal.entry.LogFormat;
-import org.neo4j.wal.files.TransactionLogFile;
 import org.neo4j.wal.files.checkpoint.CheckpointLogFile;
 import org.neo4j.wal.rotation.monitor.LogRotationMonitor;
 
@@ -42,43 +38,33 @@ public class FileLogRotation implements LogRotation {
     private final Panic databasePanic;
     private final RotatableFile rotatableFile;
     private long lastRotationCompleted;
-    private final LongSupplier lastAppendIndexSupplier;
-    private final LongSupplier currentFileVersionSupplier;
-    private final KernelVersionProvider kernelVersionProvider;
+    private final ToLongFunction<RotatableFile.RotationInfo> lastAppendIndexOfRotation;
 
     public static LogRotation checkpointLogRotation(
             CheckpointLogFile checkpointLogFile,
             LogFile logFile,
             Clock clock,
             Panic databasePanic,
-            LogRotationMonitor monitor,
-            KernelVersionProvider kernelVersionProvider) {
+            LogRotationMonitor monitor) {
         return new FileLogRotation(
                 checkpointLogFile,
                 LogRotationMonitor.LogType.CHECKPOINT,
                 clock,
                 databasePanic,
                 monitor,
-                logFile::getLastEntryAppendIndexInLogFiles,
-                checkpointLogFile::getCurrentLogVersion,
-                kernelVersionProvider);
+                // Checkpoint headers carry no append index, so report the transaction log's instead
+                rotationInfo -> logFile.getLastEntryAppendIndexInLogFiles());
     }
 
     public static LogRotation transactionLogRotation(
-            LogFile logFile,
-            Clock clock,
-            Panic databasePanic,
-            LogRotationMonitor monitor,
-            KernelVersionProvider kernelVersionProvider) {
+            LogFile logFile, Clock clock, Panic databasePanic, LogRotationMonitor monitor) {
         return new FileLogRotation(
                 logFile,
                 LogRotationMonitor.LogType.TRANSACTIONS,
                 clock,
                 databasePanic,
                 monitor,
-                logFile::getLastEntryAppendIndexInLogFiles,
-                logFile::getCurrentLogVersion,
-                kernelVersionProvider);
+                rotationInfo -> rotationInfo.nextHeader().lastAppendIndex());
     }
 
     private FileLogRotation(
@@ -87,17 +73,13 @@ public class FileLogRotation implements LogRotation {
             Clock clock,
             Panic databasePanic,
             LogRotationMonitor monitor,
-            LongSupplier lastAppendIndexSupplier,
-            LongSupplier currentFileVersionSupplier,
-            KernelVersionProvider kernelVersionProvider) {
+            ToLongFunction<RotatableFile.RotationInfo> lastAppendIndexOfRotation) {
         this.clock = clock;
         this.monitor = monitor;
         this.type = type;
         this.databasePanic = databasePanic;
         this.rotatableFile = rotatableFile;
-        this.lastAppendIndexSupplier = lastAppendIndexSupplier;
-        this.currentFileVersionSupplier = currentFileVersionSupplier;
-        this.kernelVersionProvider = kernelVersionProvider;
+        this.lastAppendIndexOfRotation = lastAppendIndexOfRotation;
     }
 
     @Override
@@ -108,108 +90,39 @@ public class FileLogRotation implements LogRotation {
          */
         if (rotatableFile.rotationNeeded()) {
             synchronized (rotatableFile) {
-                return locklessRotateLogIfNeeded(logRotateEvents);
+                return locklessRotateLogIfNeeded(logRotateEvents, NextLogHeader.builder());
             }
         }
         return false;
     }
 
     @Override
-    public boolean locklessBatchedRotateLogIfNeeded(
-            LogRotateEvents logRotateEvents,
-            long lastAppendIndex,
-            KernelVersion kernelVersion,
-            int checksum,
-            long lastTerm,
-            LogFormat logFormat)
+    public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder)
             throws IOException {
         if (rotatableFile.rotationNeeded()) {
-            TransactionLogFile logFile = (TransactionLogFile) rotatableFile;
-            long version = logFile.getLogRangeInfo().highestVersion();
-            doRotate(
-                    logRotateEvents,
-                    lastAppendIndex,
-                    () -> version,
-                    () -> logFile.rotate(kernelVersion, lastAppendIndex, checksum, lastTerm, logFormat));
+            doRotate(logRotateEvents, headerBuilder);
             return true;
         }
         return false;
     }
 
     @Override
-    public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents) throws IOException {
-        if (rotatableFile.rotationNeeded()) {
-            doRotate(
-                    logRotateEvents,
-                    lastAppendIndexSupplier.getAsLong(),
-                    currentFileVersionSupplier,
-                    rotatableFile::rotate);
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public boolean locklessRotateLogIfNeeded(
-            LogRotateEvents logRotateEvents, KernelVersion kernelVersion, boolean force) throws IOException {
-        if (force || rotatableFile.rotationNeeded()) {
-            doRotate(
-                    logRotateEvents,
-                    lastAppendIndexSupplier.getAsLong(),
-                    currentFileVersionSupplier,
-                    () -> rotatableFile.rotate(kernelVersion));
-            return true;
-        }
-        return false;
+    public boolean locklessBatchedRotateLogIfNeeded(
+            LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) throws IOException {
+        return locklessRotateLogIfNeeded(logRotateEvents, headerBuilder);
     }
 
     @Override
     public void rotateLogFile(LogRotateEvents logRotateEvents) throws IOException {
         synchronized (rotatableFile) {
-            doRotate(
-                    logRotateEvents,
-                    lastAppendIndexSupplier.getAsLong(),
-                    currentFileVersionSupplier,
-                    rotatableFile::rotate);
+            doRotate(logRotateEvents, NextLogHeader.builder());
         }
     }
 
     @Override
-    public void locklessRotateLogFile(
-            LogRotateEvents logRotateEvents, long lastAppendIndex, int previousChecksum, long lastTerm)
+    public void locklessRotateLogFile(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder)
             throws IOException {
-        doRotate(
-                logRotateEvents,
-                lastAppendIndex,
-                currentFileVersionSupplier,
-                () -> rotatableFile.rotate(kernelVersionProvider.kernelVersion(), lastAppendIndex, previousChecksum));
-    }
-
-    @Override
-    public void locklessRotateLogFile(
-            LogRotateEvents logRotateEvents, KernelVersion kernelVersion, long lastAppendIndex, int previousChecksum)
-            throws IOException {
-        doRotate(
-                logRotateEvents,
-                lastAppendIndex,
-                currentFileVersionSupplier,
-                () -> rotatableFile.rotate(kernelVersion, lastAppendIndex, previousChecksum));
-    }
-
-    @Override
-    public void locklessRotateLogFile(
-            LogRotateEvents logRotateEvents,
-            KernelVersion kernelVersion,
-            long lastAppendIndex,
-            int previousChecksum,
-            long lastTerm,
-            LogFormat logFormat)
-            throws IOException {
-        doRotate(
-                logRotateEvents,
-                lastAppendIndex,
-                currentFileVersionSupplier,
-                () -> rotatableFile.rotate(kernelVersion, lastAppendIndex, previousChecksum, lastTerm, logFormat));
+        doRotate(logRotateEvents, headerBuilder);
     }
 
     @Override
@@ -217,14 +130,12 @@ public class FileLogRotation implements LogRotation {
         return rotatableFile.rotationSize();
     }
 
-    private void doRotate(
-            LogRotateEvents logRotateEvents,
-            long appendIndex,
-            LongSupplier currentFileVersionSupplier,
-            FileRotator fileRotator)
-            throws IOException {
+    /**
+     * Callers must hold exclusive access to the file, so the active file version can't move before the rotation.
+     */
+    private void doRotate(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) throws IOException {
         try (LogRotateEvent rotateEvent = logRotateEvents.beginLogRotate()) {
-            long currentVersion = currentFileVersionSupplier.getAsLong();
+            long currentVersion = rotatableFile.activeFileVersion();
             /*
              * In order to rotate the log file safely we need to assert that the kernel is still
              * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
@@ -232,7 +143,7 @@ public class FileLogRotation implements LogRotation {
             databasePanic.assertNoPanic(IOException.class);
             long startTimeMillis = clock.millis();
             monitor.startRotation(type, currentVersion);
-            RotatableFile.RotationInfo logFileInfo = fileRotator.rotate();
+            RotatableFile.RotationInfo logFileInfo = rotatableFile.rotate(headerBuilder);
             long millisSinceLastRotation = lastRotationCompleted == 0 ? 0 : startTimeMillis - lastRotationCompleted;
             lastRotationCompleted = clock.millis();
             long rotationElapsedTime = lastRotationCompleted - startTimeMillis;
@@ -242,14 +153,9 @@ public class FileLogRotation implements LogRotation {
                     type,
                     currentVersion,
                     logFileInfo.logHeader(),
-                    appendIndex,
+                    lastAppendIndexOfRotation.applyAsLong(logFileInfo),
                     rotationElapsedTime,
                     millisSinceLastRotation);
         }
-    }
-
-    @FunctionalInterface
-    private interface FileRotator {
-        RotatableFile.RotationInfo rotate() throws IOException;
     }
 }

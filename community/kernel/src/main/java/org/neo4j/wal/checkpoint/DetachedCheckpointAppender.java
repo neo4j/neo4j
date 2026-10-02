@@ -24,7 +24,6 @@ import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_CHECKPOINT_CONSENSUS_INDEX_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_CHECKPOINT_POWER_OF_2_IN_ENVELOPES;
-import static org.neo4j.kernel.KernelVersionProviders.fixed;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.wal.LogTermProvider.UNKNOWN_TERM_PROVIDER;
 import static org.neo4j.wal.entry.LogEntrySerializationSets.serializationSet;
@@ -65,6 +64,7 @@ import org.neo4j.wal.files.TransactionLogFilesContext;
 import org.neo4j.wal.files.TransactionLogFilesProviders;
 import org.neo4j.wal.files.checkpoint.DetachedLogTailScanner;
 import org.neo4j.wal.rotation.LogRotation;
+import org.neo4j.wal.rotation.NextLogHeader;
 import org.neo4j.wal.rotation.monitor.LogRotationMonitor;
 
 public class DetachedCheckpointAppender extends LifecycleAdapter implements CheckpointAppender {
@@ -251,11 +251,20 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             }
             previousKernelVersion = kernelVersion;
         }
-        logRotation.locklessRotateLogIfNeeded(logCheckPointEvent, kernelVersion, newKernelVersion);
+        NextLogHeader.Builder headerBuilder = NextLogHeader.builder().withKernelVersion(kernelVersion);
+        if (newKernelVersion) {
+            logRotation.locklessRotateLogFile(logCheckPointEvent, headerBuilder);
+        } else {
+            logRotation.locklessRotateLogIfNeeded(logCheckPointEvent, headerBuilder);
+        }
     }
 
     public long getCurrentPosition() {
         return channel.position();
+    }
+
+    public long activeFileVersion() {
+        return channel.getLogVersion();
     }
 
     private void forceAfterAppend(LogCheckPointEvent logCheckPointEvent) throws IOException {
@@ -265,46 +274,41 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     }
 
     public RotatableFile.RotationInfo rotate() throws IOException {
-        int checksum = writer.currentChecksum().orElse(BASE_TX_CHECKSUM);
-        channel = rotateChannel(channel, kernelVersionProvider, checksum);
-        LogHeader logHeader = logHeader(channel.getLogVersion());
-        writer.setChannel(channel, logHeader);
-        return new RotatableFile.RotationInfo(channel.getPath(), logHeader);
+        return rotate(NextLogHeader.builder());
     }
 
-    public RotatableFile.RotationInfo rotate(KernelVersion kernelVersion) throws IOException {
-        int checksum = writer.currentChecksum().orElse(BASE_TX_CHECKSUM);
-        channel = rotateChannel(channel, fixed(kernelVersion), checksum);
-        LogHeader logHeader = logHeader(channel.getLogVersion());
-        writer.setChannel(channel, logHeader);
-        return new RotatableFile.RotationInfo(channel.getPath(), logHeader);
-    }
-
-    public RotatableFile.RotationInfo rotate(KernelVersion kernelVersion, int checksum) throws IOException {
-        channel = rotateChannel(channel, fixed(kernelVersion), checksum);
-        LogHeader logHeader = logHeader(channel.getLogVersion());
-        writer.setChannel(channel, logHeader);
-        return new RotatableFile.RotationInfo(channel.getPath(), logHeader);
-    }
-
-    private PhysicalLogVersionedStoreChannel rotateChannel(
-            PhysicalLogVersionedStoreChannel channel, KernelVersionProvider kernelVersionProvider, int checksum)
-            throws IOException {
+    public RotatableFile.RotationInfo rotate(NextLogHeader.Builder headerBuilder) throws IOException {
         long newLogVersion = logVersionRepository.incrementAndGetCheckpointLogVersion();
         writer.prepareForFlush().flush();
 
         long endSize = channel.position();
         channel.truncate(endSize);
 
+        // Checkpoint headers always carry an unknown append index and term, so those parts of a tail supplied by
+        // the envelope channel's mid-entry rotation are ignored; only its checksum is used.
+        NextLogHeader nextHeader = headerBuilder.build(liveNextHeader());
         var newChannel = channelAllocator.createLogChannel(
                 newLogVersion,
                 AppendIndexProvider.UNKNOWN_APPEND_INDEX,
-                checksum,
-                kernelVersionProvider,
-                logFormatVersionProvider,
+                nextHeader.previousChecksum(),
+                nextHeader::kernelVersion,
+                nextHeader::logFormat,
                 UNKNOWN_TERM_PROVIDER);
         channel.close();
-        return newChannel;
+        channel = newChannel;
+
+        LogHeader logHeader = logHeader(channel.getLogVersion());
+        writer.setChannel(channel, logHeader);
+        return new RotatableFile.RotationInfo(channel.getPath(), logHeader, nextHeader);
+    }
+
+    private NextLogHeader liveNextHeader() {
+        return new NextLogHeader(
+                kernelVersionProvider.kernelVersion(),
+                logFormatVersionProvider.getCurrentLogFormat(),
+                AppendIndexProvider.UNKNOWN_APPEND_INDEX,
+                writer.currentChecksum().orElse(BASE_TX_CHECKSUM),
+                UNKNOWN_TERM_PROVIDER.getCurrentTerm());
     }
 
     private static AbstractVersionAwareLogEntry createCheckpointEntry(

@@ -19,7 +19,6 @@
  */
 package org.neo4j.wal.files;
 
-import static org.neo4j.kernel.KernelVersionProviders.fixed;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.util.Preconditions.checkArgument;
@@ -50,7 +49,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
@@ -87,7 +85,6 @@ import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogTermProvider;
 import org.neo4j.wal.LogTracers;
 import org.neo4j.wal.LogVersionBridge;
-import org.neo4j.wal.LogVersionedStoreChannel;
 import org.neo4j.wal.LogWriter;
 import org.neo4j.wal.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
@@ -108,6 +105,7 @@ import org.neo4j.wal.enveloped.EnvelopeReadChannel;
 import org.neo4j.wal.enveloped.EnvelopeWriteChannel;
 import org.neo4j.wal.enveloped.InvalidEndOfFileReadException;
 import org.neo4j.wal.rotation.LogRotation;
+import org.neo4j.wal.rotation.NextLogHeader;
 import org.neo4j.wal.rotation.monitor.LogRotationMonitor;
 
 /**
@@ -160,12 +158,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
     @Override
     public void init() throws IOException {
-        this.logRotation = transactionLogRotation(
-                this,
-                context.clock(),
-                databaseHealth,
-                rotationMonitor,
-                transactionLogFilesProviders.getKernelVersionProvider());
+        this.logRotation = transactionLogRotation(this, context.clock(), databaseHealth, rotationMonitor);
         this.logVersionRepository = transactionLogFilesProviders.getLogVersionRepository();
         initCalled = true;
     }
@@ -436,48 +429,21 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     }
 
     @Override
-    public synchronized RotationInfo rotate() throws IOException {
-        return rotate(transactionLogFilesProviders::appendIndex);
-    }
-
-    @Override
-    public synchronized RotationInfo rotate(
-            KernelVersion kernelVersion, long lastAppendIndex, int checksum, long lastTerm, LogFormat logFormat)
-            throws IOException {
-        channel = rotate(
-                channel, () -> lastAppendIndex, () -> kernelVersion, () -> checksum, () -> logFormat, () -> lastTerm);
+    public synchronized RotationInfo rotate(NextLogHeader.Builder headerBuilder) throws IOException {
+        NextLogHeader nextHeader = rotateChannel(headerBuilder);
         LogHeader logHeader = channelAllocator.readLogHeaderForVersion(channel.getLogVersion());
         writer.setChannel(channel, logHeader);
-        return new RotationInfo(channel.getPath(), logHeader);
+        return new RotationInfo(channel.getPath(), logHeader, nextHeader);
     }
 
     @Override
-    public synchronized RotationInfo rotate(KernelVersion kernelVersion, long lastAppendIndex, int checksum)
-            throws IOException {
-        channel = rotate(
-                channel,
-                () -> lastAppendIndex,
-                fixed(kernelVersion),
-                () -> checksum,
-                transactionLogFilesProviders.getLogFormatVersionProvider(),
-                transactionLogFilesProviders.getLogTermProvider());
-        LogHeader logHeader = channelAllocator.readLogHeaderForVersion(channel.getLogVersion());
-        writer.setChannel(channel, logHeader);
-        return new RotationInfo(channel.getPath(), logHeader);
-    }
-
-    @Override
-    public synchronized RotationInfo rotate(KernelVersion kernelVersion) throws IOException {
-        throw new UnsupportedOperationException("Transaction log does not support this type of rotation");
+    public long activeFileVersion() {
+        return channel.getLogVersion();
     }
 
     @Override
     public long rotationSize() {
         return rotateAtSize.get();
-    }
-
-    public synchronized RotationInfo rotate(long appendIndex) throws IOException {
-        return rotate(() -> appendIndex);
     }
 
     @Override
@@ -934,19 +900,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         return externalFileReaders;
     }
 
-    private synchronized RotationInfo rotate(LongSupplier appendIndexSupplier) throws IOException {
-        channel = rotate(
-                channel,
-                appendIndexSupplier,
-                transactionLogFilesProviders.getKernelVersionProvider(),
-                () -> writer.currentChecksum().orElse(BASE_TX_CHECKSUM),
-                transactionLogFilesProviders.getLogFormatVersionProvider(),
-                transactionLogFilesProviders.getLogTermProvider());
-        LogHeader logHeader = channelAllocator.readLogHeaderForVersion(channel.getLogVersion());
-        writer.setChannel(channel, logHeader);
-        return new RotationInfo(channel.getPath(), logHeader);
-    }
-
     /**
      * This is really only for error handling with the rawTxPull protocol, used for finding a safe truncation point
      * in enveloped logs.
@@ -1069,21 +1022,15 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
      * catches that exception, treating it the same as if the file didn't exist.</li>
      * </ol>
      *
-     * @param currentLog current {@link LogVersionedStoreChannel channel} to flush and close.
-     * @param lastAppendIndexSupplier append index supplier
-     * @param kernelVersionProvider kernel version provider
-     * @param checksumProvider latest checksum provider
-     * @return the channel of the newly opened/created log file.
+     * The current channel is flushed and closed, and replaced by the channel of the newly opened/created log file.
+     *
+     * @param headerBuilder explicit values for the new file's header; unset ones are taken from the live state once
+     *                      the current log has been flushed.
+     * @return the header values the new file was created with.
      * @throws IOException if an error regarding closing or opening log files occur.
      */
-    private PhysicalLogVersionedStoreChannel rotate(
-            LogVersionedStoreChannel currentLog,
-            LongSupplier lastAppendIndexSupplier,
-            KernelVersionProvider kernelVersionProvider,
-            IntSupplier checksumProvider,
-            LogFormatVersionProvider logFormatVersionProvider,
-            LogTermProvider logTermProvider)
-            throws IOException {
+    private NextLogHeader rotateChannel(NextLogHeader.Builder headerBuilder) throws IOException {
+        var currentLog = channel;
         /*
          * The store is now flushed. If we fail now the recovery code will open the
          * current log file and replay everything. That's unnecessary but totally ok.
@@ -1111,13 +1058,14 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
          * we can have transactions that are not yet published as committed but were already stored
          * into transaction log that was just rotated.
          */
+        NextLogHeader nextHeader = headerBuilder.build(liveNextHeader());
         PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(
                 newLogVersion,
-                lastAppendIndexSupplier,
-                kernelVersionProvider,
-                checksumProvider.getAsInt(),
-                logFormatVersionProvider,
-                logTermProvider);
+                nextHeader::lastAppendIndex,
+                nextHeader::kernelVersion,
+                nextHeader.previousChecksum(),
+                nextHeader::logFormat,
+                nextHeader::lastTerm);
         currentLog.close();
 
         try {
@@ -1126,7 +1074,20 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
             logger.error("Error occurred whilst calling logCompleted in the LogFileVersionTracker", throwable);
         }
 
-        return newLog;
+        channel = newLog;
+        return nextHeader;
+    }
+
+    /**
+     * Only valid inside the rotation critical section, where concurrent appenders can no longer move these values.
+     */
+    private NextLogHeader liveNextHeader() {
+        return new NextLogHeader(
+                transactionLogFilesProviders.getKernelVersionProvider().kernelVersion(),
+                transactionLogFilesProviders.getLogFormatVersionProvider().getCurrentLogFormat(),
+                transactionLogFilesProviders.appendIndex(),
+                writer.currentChecksum().orElse(BASE_TX_CHECKSUM),
+                transactionLogFilesProviders.getLogTermProvider().getCurrentTerm());
     }
 
     private static boolean isCoveredByCommittedTransaction(

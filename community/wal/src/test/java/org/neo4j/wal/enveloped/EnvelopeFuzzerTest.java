@@ -65,6 +65,7 @@ import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.entry.LogHeader;
 import org.neo4j.wal.rotation.LogRotateEvents;
 import org.neo4j.wal.rotation.LogRotation;
+import org.neo4j.wal.rotation.NextLogHeader;
 
 @TestDirectoryExtension
 @RandomSupportExtension
@@ -243,23 +244,23 @@ class EnvelopeFuzzerTest {
 
             @Override
             public void rotateLogFile(LogRotateEvents logRotateEvents) throws IOException {
-                locklessRotateLogFile(
-                        logRotateEvents, BASE_APPEND_INDEX, writeChannel.currentChecksum(), writeChannel.currentTerm());
+                locklessRotateLogFile(logRotateEvents, NextLogHeader.builder());
             }
 
             @Override
-            public void locklessRotateLogFile(
-                    LogRotateEvents logRotateEvents, long lastAppendIndex, int previousChecksum, long lastTerm)
+            public void locklessRotateLogFile(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder)
                     throws IOException {
+                NextLogHeader nextHeader = headerBuilder.build(new NextLogHeader(
+                        null, null, BASE_APPEND_INDEX, writeChannel.currentChecksum(), writeChannel.currentTerm()));
                 try (var event = logRotateEvents.beginLogRotate()) {
                     final var logChannel = storeChannel(currentVersion.incrementAndGet(), preAllocate, maxFileSize);
                     LogHeader logHeader = LogFormat.V10.newHeader(
                             currentVersion.intValue(),
-                            lastAppendIndex,
+                            nextHeader.lastAppendIndex(),
                             ReadableChannel.BASE_TERM,
                             StoreIdentifier.UNKNOWN,
                             segmentSize,
-                            previousChecksum,
+                            nextHeader.previousChecksum(),
                             KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED,
                             UNSPECIFIED_CREATION_TIME);
                     writeLogHeader(logChannel, logHeader, INSTANCE);
@@ -268,26 +269,6 @@ class EnvelopeFuzzerTest {
                     writeChannel.setChannel(logChannel);
                     event.rotationCompleted(ROTATION_PERIOD);
                 }
-            }
-
-            @Override
-            public void locklessRotateLogFile(
-                    LogRotateEvents logRotateEvents,
-                    KernelVersion kernelVersion,
-                    long lastAppendIndex,
-                    int previousChecksum) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void locklessRotateLogFile(
-                    LogRotateEvents logRotateEvents,
-                    KernelVersion kernelVersion,
-                    long lastAppendIndex,
-                    int previousChecksum,
-                    long lastTerm,
-                    LogFormat logFormat) {
-                throw new UnsupportedOperationException();
             }
 
             @Override
@@ -301,24 +282,14 @@ class EnvelopeFuzzerTest {
             }
 
             @Override
-            public boolean locklessBatchedRotateLogIfNeeded(
-                    LogRotateEvents logRotateEvents,
-                    long appendIndex,
-                    KernelVersion kernelVersion,
-                    int checksum,
-                    long lastTerm,
-                    LogFormat logFormat) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents) {
-                return rotateLogIfNeeded(logRotateEvents);
-            }
-
-            @Override
             public boolean locklessRotateLogIfNeeded(
-                    LogRotateEvents logRotateEvents, KernelVersion kernelVersion, boolean force) {
+                    LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {
+                throw new UnsupportedOperationException("envelope channel rotation checks are done internally");
+            }
+
+            @Override
+            public boolean locklessBatchedRotateLogIfNeeded(
+                    LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {
                 throw new UnsupportedOperationException();
             }
         };

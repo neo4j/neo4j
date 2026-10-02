@@ -28,8 +28,10 @@ import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.MVCC_INCOMPLETE_REVERSE_RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_SEQUENCE_NUMBER;
+import static org.neo4j.wal.LogTermProvider.UNKNOWN_TERM_PROVIDER;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -67,9 +69,9 @@ import org.neo4j.wal.PhysicalLogVersionedStoreChannel;
 import org.neo4j.wal.RecoveryOutcome;
 import org.neo4j.wal.WALService;
 import org.neo4j.wal.entry.LogEntryWriter;
-import org.neo4j.wal.entry.LogFormat;
 import org.neo4j.wal.rotation.LogRotateEvents;
 import org.neo4j.wal.rotation.LogRotation;
+import org.neo4j.wal.rotation.NextLogHeader;
 
 /**
  * This is the process of doing a recovery on the transaction log and store, and is executed
@@ -525,24 +527,13 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         }
 
         @Override
+        public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public boolean locklessBatchedRotateLogIfNeeded(
-                LogRotateEvents logRotateEvents,
-                long lastAppendIndex,
-                KernelVersion kernelVersion,
-                int checksum,
-                long lastTerm,
-                LogFormat logFormat) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean locklessRotateLogIfNeeded(LogRotateEvents logRotateEvents) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean locklessRotateLogIfNeeded(
-                LogRotateEvents logRotateEvents, KernelVersion kernelVersion, boolean force) {
+                LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder) {
             throw new UnsupportedOperationException();
         }
 
@@ -553,42 +544,28 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         }
 
         @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents, long lastAppendIndex, int previousChecksum, long lastTerm)
+        public void locklessRotateLogFile(LogRotateEvents logRotateEvents, NextLogHeader.Builder headerBuilder)
                 throws IOException {
             long newLogVersion = channel.getLogVersion() + 1;
             writer.prepareForFlush().flush();
             channel.truncate(channel.position());
+            // Only the envelope channel rotates here, and it always supplies the tail of the file being closed
+            NextLogHeader nextHeader = headerBuilder.build(new NextLogHeader(
+                    versionProvider.kernelVersion(),
+                    logFormatVersionProvider.getCurrentLogFormat(),
+                    UNKNOWN_APPEND_INDEX,
+                    writer.currentChecksum().orElse(BASE_TX_CHECKSUM),
+                    UNKNOWN_TERM_PROVIDER.getCurrentTerm()));
             PhysicalLogVersionedStoreChannel newLog = logFile.createLogChannelForVersion(
                     newLogVersion,
-                    () -> lastAppendIndex,
-                    versionProvider,
-                    previousChecksum,
-                    logFormatVersionProvider,
-                    () -> lastTerm);
+                    nextHeader::lastAppendIndex,
+                    nextHeader::kernelVersion,
+                    nextHeader.previousChecksum(),
+                    nextHeader::logFormat,
+                    nextHeader::lastTerm);
             channel.close();
             channel = newLog;
             writer.setChannel(channel, logFile.extractHeader(channel.getLogVersion()));
-        }
-
-        @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents,
-                KernelVersion kernelVersion,
-                long lastAppendIndex,
-                int previousChecksum) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void locklessRotateLogFile(
-                LogRotateEvents logRotateEvents,
-                KernelVersion kernelVersion,
-                long lastAppendIndex,
-                int previousChecksum,
-                long lastTerm,
-                LogFormat logFormat) {
-            throw new UnsupportedOperationException();
         }
 
         @Override
