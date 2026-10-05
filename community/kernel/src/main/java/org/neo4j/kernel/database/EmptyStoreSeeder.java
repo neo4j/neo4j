@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.ReadOnlyTransactionIdStore;
 import org.neo4j.storageengine.api.GeneratedStore;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -193,16 +194,20 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
             try (var input = initialContent.get()) {
                 batchImporter.doImport(input);
             }
+            storeAugmenter.augmentStore(tempDatabaseLayout);
+            var logTailMetadata = new LogTailMetadataFactoryImpl(fs)
+                    .getLogTailMetadata(updatedConfig, tempDatabaseLayout, storageEngineFactory);
+            long lastCommittedTransactionId =
+                    new ReadOnlyTransactionIdStore(logTailMetadata).getLastCommittedTransactionId();
             if (createForMergedLog) {
                 // when creating an initial store seed for merged log we need to make sure there are no logs in the
                 // archive as Raft will create the logs already and expanding these would overwrite the log.
                 fs.deleteRecursively(tempDatabaseLayout.getTransactionLogsDirectory());
             }
-            storeAugmenter.augmentStore(tempDatabaseLayout);
             var storeId =
                     storageEngineFactory.retrieveStoreId(fs, tempDatabaseLayout, pageCache, CursorContext.NULL_CONTEXT);
             var zip = zip(fs, tempDatabaseLayout.getNeo4jLayout().homeDirectory());
-            return new GeneratedStore(storeId, zip);
+            return new GeneratedStore(storeId, zip, lastCommittedTransactionId);
         } finally {
             fs.deleteRecursively(tempDatabaseLayout.getNeo4jLayout().homeDirectory());
         }

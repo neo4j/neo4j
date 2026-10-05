@@ -19,4 +19,4 @@
  */
 package org.neo4j.storageengine.api;
 
-public record GeneratedStore(StoreId storeId, byte[] store) {}
+public record GeneratedStore(StoreId storeId, byte[] store, long lastCommittedTransactionId) {}
