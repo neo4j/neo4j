@@ -317,7 +317,8 @@ public class SchemaProcedure {
                     tx.cursorContext(),
                     true);
             while (cursor.next()) {
-                if (hasLabel(dataRead, nodeCursor, cursor.sourceNodeReference(), startLabelId)
+                if (cursor.readFromStore()
+                        && hasLabel(dataRead, nodeCursor, cursor.sourceNodeReference(), startLabelId)
                         && hasLabel(dataRead, nodeCursor, cursor.targetNodeReference(), endLabelId)) {
                     return true;
                 }

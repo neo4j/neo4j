@@ -177,6 +177,7 @@ class SchemaProcedureTest {
         var relCursor = mock(RelationshipTypeIndexCursor.class);
         when(cursors.allocateRelationshipTypeIndexCursor(any(), any())).thenReturn(relCursor);
         when(relCursor.next()).thenReturn(true, false);
+        when(relCursor.readFromStore()).thenReturn(true);
         when(relCursor.sourceNodeReference()).thenReturn(100L);
         when(relCursor.targetNodeReference()).thenReturn(200L);
 
