@@ -160,6 +160,73 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   }
 
   test(
+    "IndexOperator: Multi property order results in provided order if property order does not match (no exact predicates)"
+  ) {
+    val properties = Seq("y", "x", "z").map { node =>
+      PropertyAndPredicateType(prop(node, "foo"), isSingleExactPredicate = false)
+    }
+    val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(xFoo).asc(yFoo).asc(zFoo))
+    indexOrder(interestingOrder, properties, BOTH) should beEmpty
+  }
+
+  test(
+    "IndexOperator: Skip exact-predicated prefix property not covered by ORDER BY"
+  ) {
+    // Index on (x.foo, y.foo) where x.foo has a single exact predicate and hence is constant.
+    // ORDER BY y.foo is satisfied by the index order, since x.foo does not vary.
+    val properties = Seq(
+      PropertyAndPredicateType(prop("x", "foo"), isSingleExactPredicate = true),
+      PropertyAndPredicateType(prop("y", "foo"), isSingleExactPredicate = false)
+    )
+    val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(yFoo))
+    indexOrder(interestingOrder, properties, BOTH) should be((
+      DefaultProvidedOrderFactory.asc(yFoo),
+      IndexOrderAscending
+    ))
+  }
+
+  test(
+    "IndexOperator: Skip multiple exact-predicated prefix properties not covered by ORDER BY"
+  ) {
+    val properties = Seq(
+      PropertyAndPredicateType(prop("x", "foo"), isSingleExactPredicate = true),
+      PropertyAndPredicateType(prop("y", "foo"), isSingleExactPredicate = true),
+      PropertyAndPredicateType(prop("z", "foo"), isSingleExactPredicate = false)
+    )
+    val interestingOrder = toInterestingOrder(orderCandidateFactory.desc(zFoo))
+    indexOrder(interestingOrder, properties, BOTH) should be((
+      DefaultProvidedOrderFactory.desc(zFoo),
+      IndexOrderDescending
+    ))
+  }
+
+  test(
+    "IndexOperator: Do not skip prefix property without exact predicate when ORDER BY does not cover it"
+  ) {
+    val properties = Seq(
+      PropertyAndPredicateType(prop("x", "foo"), isSingleExactPredicate = false),
+      PropertyAndPredicateType(prop("y", "foo"), isSingleExactPredicate = false)
+    )
+    val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(yFoo))
+    indexOrder(interestingOrder, properties, BOTH) should beEmpty
+  }
+
+  test(
+    "IndexOperator: Skip exact-predicated prefix property and cover remaining ORDER BY columns"
+  ) {
+    val properties = Seq(
+      PropertyAndPredicateType(prop("x", "foo"), isSingleExactPredicate = true),
+      PropertyAndPredicateType(prop("y", "foo"), isSingleExactPredicate = false),
+      PropertyAndPredicateType(prop("z", "foo"), isSingleExactPredicate = false)
+    )
+    val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(yFoo).asc(zFoo))
+    indexOrder(interestingOrder, properties, BOTH) should be((
+      DefaultProvidedOrderFactory.asc(yFoo).asc(zFoo),
+      IndexOrderAscending
+    ))
+  }
+
+  test(
     "IndexOperator: Multi property order results in matching provided order for compatible index capability (no exact predicates)"
   ) {
     val properties = Seq("x", "y", "z").map { node =>

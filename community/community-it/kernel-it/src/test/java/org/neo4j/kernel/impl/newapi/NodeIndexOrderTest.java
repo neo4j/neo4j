@@ -82,7 +82,7 @@ class NodeIndexOrderTest {
                 IndexReadSession index,
                 NodeValueIndexCursor cursor,
                 IndexQueryConstraints constraints,
-                PropertyIndexQuery query)
+                PropertyIndexQuery... query)
                 throws KernelException {
             tx.dataRead().nodeIndexSeek(tx.queryContext(), index, cursor, constraints, query);
         }

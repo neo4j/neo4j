@@ -234,7 +234,9 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherPlannerTestSu
       {
         case _: NodeIndexSeek => true
       },
-      D * DfooBarBazExists * cbrt(DfooBarBazUnique) * cbrt(DfooBarBazUnique)
+      // The index seek can provide order by baz (foo and bar are fixed), so the max aggregation is
+      // planned as Limit(1) on top of it. That limit reduces the effective cardinality to at most 1.
+      Math.min(1.0, D * DfooBarBazExists * cbrt(DfooBarBazUnique) * cbrt(DfooBarBazUnique))
     )
   }
 

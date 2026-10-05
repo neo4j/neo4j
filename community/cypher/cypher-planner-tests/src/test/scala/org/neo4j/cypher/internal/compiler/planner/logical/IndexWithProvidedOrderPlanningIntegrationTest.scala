@@ -3394,6 +3394,27 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     // Node property index seek
 
+    test(s"$functionName: should use provided node index order with exact predicate on composite index prefix") {
+      val planner = minMaxPlannerBuilder()
+        .addNodeIndex("Awesome", Seq("prop1", "prop2"), 1.0, 0.1)
+        .build()
+      val plan = planner
+        .plan(s"MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 IS NOT NULL RETURN $functionName(n.prop2)")
+        .stripProduceResults
+
+      plan should equal(planner.subPlanBuilder()
+        .optional()
+        .limit(1)
+        .projection(Map(s"$functionName(n.prop2)" -> cachedNodeProp("n", "prop2")))
+        .nodeIndexOperator(
+          "n:Awesome(prop1 = 42, prop2)",
+          indexOrder = plannedOrder,
+          getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
+          supportPartitionedScan = false
+        )
+        .build())
+    }
+
     test(s"$functionName: should use provided node index order with range") {
       val planner = minMaxPlannerBuilder()
         .addNodeIndex("Awesome", Seq("prop"), 1.0, 0.1)
@@ -3581,6 +3602,34 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .build()
     }
 
+    test(
+      s"$functionName: should use provided relationship index order with exact predicate on composite index prefix"
+    ) {
+      val planner = minMaxPlannerBuilder()
+        .addRelationshipIndex("REL", Seq("prop1", "prop2"), 0.1, 0.1)
+        .build()
+
+      val plan = planner
+        .plan(
+          s"MATCH (n)-[r:REL]->(m) WHERE r.prop1 = 42 AND r.prop2 IS NOT NULL RETURN $functionName(r.prop2)"
+        )
+
+      plan shouldEqual
+        planner.planBuilder()
+          .produceResults(s"`$functionName(r.prop2)`")
+          .optional()
+          .limit(1)
+          .projection(s"cacheR[r.prop2] AS `$functionName(r.prop2)`")
+          .relationshipIndexOperator(
+            "()-[r:REL(prop1 = 42, prop2)]->()",
+            getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
+            indexOrder = plannedOrder,
+            indexType = IndexType.RANGE,
+            supportPartitionedScan = false
+          )
+          .build()
+    }
+
     test(s"$functionName: should use provided relationship index order with ORDER BY") {
       val planner = minMaxPlannerBuilder()
         .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1)
@@ -3714,6 +3763,129 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .build()
     }
 
+  }
+
+  test("should not add Sort when ORDER BY is on suffix of composite index with single exact predicate on prefix") {
+    Seq("ASC" -> IndexOrderAscending, "DESC" -> IndexOrderDescending).foreach { case (direction, indexOrder) =>
+      val planner = compositeIndexPlannerBuilder()
+        .addNodeIndex("Label", Seq("prop1", "prop2"), 1.0, 0.01)
+        .build()
+
+      val query =
+        s"""MATCH (n:Label)
+           |WHERE n.prop1 = 42 AND n.prop2 IS NOT NULL
+           |RETURN n.prop1, n.prop2
+           |ORDER BY n.prop2 $direction""".stripMargin
+      val plan = planner.plan(query).stripProduceResults
+
+      val expectedPlan = planner
+        .subPlanBuilder()
+        .projection(Map(
+          "n.prop1" -> cachedNodeProp("n", "prop1"),
+          "n.prop2" -> cachedNodeProp("n", "prop2")
+        ))
+        .nodeIndexOperator(
+          "n:Label(prop1 = 42, prop2)",
+          indexOrder = indexOrder,
+          getValue = _ => GetValue,
+          supportPartitionedScan = false
+        )
+        .build()
+
+      withClue(query) {
+        plan shouldEqual expectedPlan
+      }
+    }
+  }
+
+  test(
+    "should not add Sort when ORDER BY is on suffix columns of composite index with single exact predicates on prefix"
+  ) {
+    val planner = compositeIndexPlannerBuilder()
+      .addNodeIndex("Label", Seq("prop1", "prop2", "prop3"), 1.0, 0.01)
+      .build()
+
+    val query =
+      s"""MATCH (n:Label)
+         |WHERE n.prop1 = 42 AND n.prop2 = 43 AND n.prop3 IS NOT NULL
+         |RETURN n.prop1, n.prop2, n.prop3
+         |ORDER BY n.prop3 ASC""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+
+    val expectedPlan = planner
+      .subPlanBuilder()
+      .projection(Map(
+        "n.prop1" -> cachedNodeProp("n", "prop1"),
+        "n.prop2" -> cachedNodeProp("n", "prop2"),
+        "n.prop3" -> cachedNodeProp("n", "prop3")
+      ))
+      .nodeIndexOperator(
+        "n:Label(prop1 = 42, prop2 = 43, prop3)",
+        indexOrder = IndexOrderAscending,
+        getValue = _ => GetValue,
+        supportPartitionedScan = false
+      )
+      .build()
+
+    withClue(query) {
+      plan shouldEqual expectedPlan
+    }
+  }
+
+  test("should plan partial sort when ORDER BY is on suffix followed by exact-predicated prefix of composite index") {
+    // The provided order is (n.prop2) after skipping the constant prefix column prop1. The trailing ORDER BY
+    // column n.prop1 is constant across all rows, so in principle the provided order satisfies the required
+    // order, but the planner conservatively plans a partial sort on the remaining column.
+    val planner = compositeIndexPlannerBuilder()
+      .addNodeIndex("Label", Seq("prop1", "prop2"), 1.0, 0.01)
+      .build()
+
+    val query =
+      s"""MATCH (n:Label)
+         |WHERE n.prop1 = 42 AND n.prop2 IS NOT NULL
+         |RETURN n.prop1, n.prop2
+         |ORDER BY n.prop2 ASC, n.prop1 ASC""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+
+    val expectedPlan = planner
+      .subPlanBuilder()
+      .partialSort(Seq("`n.prop2` ASC"), Seq("`n.prop1` ASC"))
+      .projection(Map(
+        "n.prop1" -> cachedNodeProp("n", "prop1"),
+        "n.prop2" -> cachedNodeProp("n", "prop2")
+      ))
+      .nodeIndexOperator(
+        "n:Label(prop1 = 42, prop2)",
+        indexOrder = IndexOrderAscending,
+        getValue = _ => GetValue,
+        supportPartitionedScan = false
+      )
+      .build()
+
+    withClue(query) {
+      plan shouldEqual expectedPlan
+    }
+  }
+
+  test("should still sort when ORDER BY is on suffix of composite index but prefix predicate is not single exact") {
+    val planner = compositeIndexPlannerBuilder()
+      .addNodeIndex("Label", Seq("prop1", "prop2"), 1.0, 0.01)
+      .build()
+
+    val query =
+      s"""MATCH (n:Label)
+         |WHERE n.prop1 >= 42 AND n.prop2 IS NOT NULL
+         |RETURN n.prop1, n.prop2
+         |ORDER BY n.prop2 ASC""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+
+    // The prefix predicate is a range predicate, so prop1 is not constant and the index order
+    // (prop1, prop2) does not satisfy ORDER BY prop2
+    withClue(query) {
+      plan.lhs.foldLeft(Seq.empty[String]) { (acc, p) =>
+        if (p.isInstanceOf[Sort]) acc :+ "sort" else acc
+      } should not be empty
+    }
   }
 
   test("should mark leveragedOrder in collect with ORDER BY") {

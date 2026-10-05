@@ -86,7 +86,7 @@ class RelationshipIndexOrderTest {
                 IndexReadSession index,
                 RelationshipValueIndexCursor cursor,
                 IndexQueryConstraints constraints,
-                PropertyIndexQuery query)
+                PropertyIndexQuery... query)
                 throws KernelException {
             tx.dataRead().relationshipIndexSeek(tx.queryContext(), index, cursor, constraints, query);
         }

@@ -691,6 +691,44 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
     @EnumSource(
             value = IndexOrder.class,
             names = {"ASCENDING", "DESCENDING"})
+    void shouldDoOrderedCompositeIndexSeekWithExactPrefixAndExistsSuffix(IndexOrder indexOrder) throws Exception {
+        List<Pair<Long, Value[]>> expected = new ArrayList<>();
+
+        try (KernelTransaction tx = beginTransaction()) {
+            expected.add(entityWithTwoProps(tx, 1, "a"));
+            expected.add(entityWithTwoProps(tx, 1, "c"));
+            expected.add(entityWithTwoProps(tx, 1, "b"));
+            // these have a different value for prop1 and should be filtered out by the exact prefix predicate
+            entityWithTwoProps(tx, 2, "a");
+            entityWithTwoProps(tx, 2, "b");
+            entityWithTwoProps(tx, 3, "a");
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try (KernelTransaction tx = beginTransaction()) {
+            int prop1 = tx.tokenRead().propertyKey(COMPOSITE_PROPERTY_1);
+            int prop2 = tx.tokenRead().propertyKey(COMPOSITE_PROPERTY_2);
+            IndexReadSession index =
+                    tx.dataRead().indexReadSession(tx.schemaRead().indexGetForName(INDEX_NAME));
+
+            try (var cursor = getEntityValueIndexCursor(tx)) {
+                PropertyIndexQuery[] query = new PropertyIndexQuery[] {
+                    PropertyIndexQuery.exact(prop1, Values.of(1)), PropertyIndexQuery.exists(prop2)
+                };
+                entityIndexSeek(tx, index, cursor, constrained(indexOrder, true), query);
+                assertCompositeResultsInOrder(expected, cursor, indexOrder);
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = IndexOrder.class,
+            names = {"ASCENDING", "DESCENDING"})
     void shouldDoOrderedCompositeIndexScanWithPointsInBothValues(IndexOrder indexOrder) throws Exception {
         List<Pair<Long, Value[]>> expected = new ArrayList<>();
 
@@ -1258,6 +1296,6 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
             IndexReadSession index,
             ENTITY_VALUE_INDEX_CURSOR cursor,
             IndexQueryConstraints constraints,
-            PropertyIndexQuery query)
+            PropertyIndexQuery... query)
             throws KernelException;
 }
