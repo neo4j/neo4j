@@ -33,6 +33,8 @@ import java.util.Map;
 public final class ParameterTokenRenderer implements QueryObfuscator.ObfuscatedLiteralRenderer {
     private final Map<String, Integer> countersByType = new HashMap<>();
 
+    private ParameterTokenRenderer() {}
+
     @Override
     public String render(String typeName) {
         int n = countersByType.merge(typeName, 1, Integer::sum);

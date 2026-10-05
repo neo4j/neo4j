@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.notification.devNullLogger
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
+import org.neo4j.kernel.api.query.ParameterTokenRenderer
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.values.virtual.MapValue
 
@@ -64,7 +65,7 @@ import scala.collection.View
  */
 class ObfuscateExplain(
   val args: CucumberSalad.Ingredients,
-  newRenderer: () => QueryObfuscator.ObfuscatedLiteralRenderer
+  newRenderer: () => QueryObfuscator.ObfuscatedLiteralRenderer = () => ParameterTokenRenderer.create()
 ) extends ScenarioGenerator {
 
   override val name: String = "obfuscate"

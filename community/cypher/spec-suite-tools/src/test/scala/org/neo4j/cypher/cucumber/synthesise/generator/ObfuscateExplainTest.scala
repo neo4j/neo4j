@@ -54,12 +54,6 @@ class ObfuscateExplainTest extends CypherFunSuite {
     (typeName: String) => "$" + typeName + "_" + counter.incrementAndGet()
   }
 
-  /** The production format, to prove the emitted tokens are parseable Cypher. */
-  private def productionShapedRenderer(): QueryObfuscator.ObfuscatedLiteralRenderer = {
-    val counter = new AtomicInteger()
-    (typeName: String) => "$`OBFUSCATED " + typeName + " " + counter.incrementAndGet() + "`"
-  }
-
   private def explain(cypher: String): String = generator().explainObfuscated(cypher)
 
   test("replaces literals with typed tokens in query-text order and prefixes EXPLAIN") {
@@ -79,9 +73,9 @@ class ObfuscateExplainTest extends CypherFunSuite {
   }
 
   test("tokens in the production format parse") {
-    val generated = new ObfuscateExplain(ingredients(), () => productionShapedRenderer())
+    val generated = new ObfuscateExplain(ingredients())
     val result = generated.explainObfuscated("RETURN 1, 'a', 2.0, false, null, [1, 'b']")
-    result should include("$`OBFUSCATED STRING 2`")
+    result should include("$`OBFUSCATED STRING 1`")
     noException should be thrownBy parser.parse(result)
   }
 

@@ -34,7 +34,6 @@ import org.neo4j.cypher.cucumber.synthesise.generator.ScenarioGenerator
 import org.neo4j.cypher.cucumber.synthesise.generator.Uncommitted
 import org.neo4j.cypher.cucumber.synthesise.glue.scenario.RecordedScenario
 import org.neo4j.cypher.internal.CypherVersion
-import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.test.RandomSupport
 
 import java.nio.file.Path
@@ -72,9 +71,7 @@ object CucumberSalad {
    * Rewrite test queries to EXPLAIN over their typed-obfuscated text, so obfuscated query-log
    * output must stay plannable.
    */
-  def obfuscateExplain(newRenderer: () => QueryObfuscator.ObfuscatedLiteralRenderer)(
-    args: Ingredients
-  ): ScenarioGenerator = new ObfuscateExplain(args, newRenderer)
+  def obfuscateExplain(args: Ingredients): ScenarioGenerator = new ObfuscateExplain(args)
 
   case class Ingredients(
     source: Seq[RecordedScenario],
