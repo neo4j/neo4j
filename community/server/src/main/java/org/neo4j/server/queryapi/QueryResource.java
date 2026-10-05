@@ -38,6 +38,7 @@ import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
 import org.neo4j.server.queryapi.request.AccessMode;
 import org.neo4j.server.queryapi.request.QueryRequest;
 import org.neo4j.server.queryapi.request.QueryTxRequest;
+import org.neo4j.server.queryapi.security.AuthTokenFactory;
 import org.neo4j.server.queryapi.versioning.QueryVersion;
 
 @Path(QueryResource.ROOT_PATH_V2)
@@ -90,12 +91,13 @@ public class QueryResource {
             @Context HttpHeaders headers) {
         meterRequest(request);
         var clientErrorResponse = validateRequest(request);
+        var authToken = AuthTokenFactory.fromHttpServletRequest(rawRequest);
 
         if (clientErrorResponse != null) {
             return clientErrorResponse;
         }
 
-        return queryController.executeQuery(request, rawRequest, databaseName);
+        return queryController.executeQuery(request, authToken, databaseName);
     }
 
     @POST
@@ -106,7 +108,8 @@ public class QueryResource {
             @Context HttpServletRequest rawRequest,
             @Context HttpHeaders headers) {
         meterRequest(request);
-        return queryController.beginTransaction(request, rawRequest, databaseName);
+        var authToken = AuthTokenFactory.fromHttpServletRequest(rawRequest);
+        return queryController.beginTransaction(request, authToken, databaseName);
     }
 
     @POST
@@ -118,7 +121,8 @@ public class QueryResource {
             @Context HttpServletRequest rawRequest,
             @Context HttpHeaders headers) {
         meterRequest(request);
-        return queryController.continueTransaction(request, rawRequest, databaseName, requestedTxId);
+        var authToken = AuthTokenFactory.fromHttpServletRequest(rawRequest);
+        return queryController.continueTransaction(request, authToken, databaseName, requestedTxId);
     }
 
     @POST
@@ -130,7 +134,8 @@ public class QueryResource {
             @Context HttpServletRequest rawRequest,
             @Context HttpHeaders headers) {
         meterRequest(request);
-        return queryController.commitTransaction(request, rawRequest, databaseName, txId);
+        var authToken = AuthTokenFactory.fromHttpServletRequest(rawRequest);
+        return queryController.commitTransaction(request, authToken, databaseName, txId);
     }
 
     @DELETE
@@ -141,7 +146,8 @@ public class QueryResource {
             QueryRequest request,
             @Context HttpServletRequest rawRequest,
             @Context HttpHeaders headers) {
-        return queryController.rollbackTransaction(txId, rawRequest, databaseName);
+        var authToken = AuthTokenFactory.fromHttpServletRequest(rawRequest);
+        return queryController.rollbackTransaction(txId, authToken, databaseName);
     }
 
     public static String absoluteDatabaseTransactionPathV2(Config config) {

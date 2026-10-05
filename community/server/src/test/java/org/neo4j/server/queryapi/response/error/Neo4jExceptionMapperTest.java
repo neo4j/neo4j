@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.queryapi.response.error;
 
+import java.util.Map;
 import java.util.stream.Stream;
 import javax.ws.rs.core.Response;
 import org.junit.jupiter.api.Assertions;
@@ -30,6 +31,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.TransientException;
 
 class Neo4jExceptionMapperTest {
@@ -56,6 +58,8 @@ class Neo4jExceptionMapperTest {
                 clientExceptionFixture(),
                 transientExceptionFixture(),
                 databaseExceptionFixture(),
+                securityExceptionFixture(),
+                securityExceptionMustChangedExceptionExceptionFixture(),
                 genericNeo4jExceptionFixture());
     }
 
@@ -81,6 +85,19 @@ class Neo4jExceptionMapperTest {
         var databaseException = new DatabaseException("some code", "some test exception");
 
         return Arguments.of(databaseException, Response.Status.INTERNAL_SERVER_ERROR);
+    }
+
+    private static Arguments securityExceptionFixture() {
+        var securityException = new SecurityException("some code", "some test exception");
+
+        return Arguments.of(securityException, Response.Status.UNAUTHORIZED);
+    }
+
+    private static Arguments securityExceptionMustChangedExceptionExceptionFixture() {
+        var securityException = new SecurityException(
+                "42NFD", "some test exception", "some neo4j code", "some message", Map.of(), null);
+
+        return Arguments.of(securityException, Response.Status.BAD_REQUEST);
     }
 
     private static Arguments genericNeo4jExceptionFixture() {

@@ -33,6 +33,7 @@ import org.neo4j.bolt.connection.netty.impl.messaging.response.RecordMessage;
 import org.neo4j.bolt.connection.netty.impl.messaging.response.SuccessMessage;
 import org.neo4j.bolt.connection.values.Value;
 import org.neo4j.boltmessages.response.FailureMessage;
+import org.neo4j.boltmessages.response.FailureMetadata;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.StringValue;
@@ -66,12 +67,25 @@ public class InboundMessageReader extends ChannelInboundHandlerAdapter {
 
     private GqlError toGqlError(FailureMessage gqlFailureMessage) {
         return new GqlError(
-                gqlFailureMessage.status().code().serialize(),
+                gqlFailureMessage.metadata().gqlStatus(),
                 gqlFailureMessage.message(),
                 gqlFailureMessage.status().code().serialize(),
-                gqlFailureMessage.metadata().message(),
+                gqlFailureMessage.metadata().legacyMessage(),
                 convertDiagnosticRecord(gqlFailureMessage.metadata().diagnosticRecord()),
-                null);
+                toGqlError(gqlFailureMessage.metadata().cause()));
+    }
+
+    private GqlError toGqlError(FailureMetadata metadata) {
+        if (metadata == null) {
+            return null;
+        }
+        return new GqlError(
+                metadata.gqlStatus(),
+                metadata.message(),
+                null,
+                metadata.legacyMessage(),
+                convertDiagnosticRecord(metadata.diagnosticRecord()),
+                toGqlError(metadata.cause()));
     }
 
     @SuppressWarnings("rawtypes")

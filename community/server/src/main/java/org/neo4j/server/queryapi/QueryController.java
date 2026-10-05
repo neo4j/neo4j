@@ -29,11 +29,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
@@ -54,7 +51,6 @@ import org.neo4j.server.queryapi.response.QueryResponseTxManaged;
 import org.neo4j.server.queryapi.tx.Transaction;
 import org.neo4j.server.queryapi.tx.TransactionManager;
 import org.neo4j.server.queryapi.tx.WrongUserException;
-import org.neo4j.server.rest.dbms.AuthorizationHeaders;
 
 public class QueryController {
     private static final String REALM_HEADER = "Neo4j-Realm";
@@ -79,14 +75,10 @@ public class QueryController {
         this.log = logProvider.getLog(QueryController.class);
     }
 
-    public Response executeQuery(QueryTxRequest request, HttpServletRequest rawRequest, String databaseName) {
+    public Response executeQuery(QueryTxRequest request, AuthToken sessionAuthToken, String databaseName) {
         var sessionConfig = buildSessionConfig(request, databaseName);
         // The session will be closed after the result set has been serialized, it must not be closed in a
         // try-with-resources block here. It must be closed only in an exceptional state
-        var sessionAuthToken = extractAuthToken(rawRequest);
-        if (sessionAuthToken == null) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
-        }
         Session session = driver.session(Session.class, sessionConfig, sessionAuthToken);
 
         var txConfig = buildTxConfig(request);
@@ -105,13 +97,9 @@ public class QueryController {
         }
     }
 
-    public Response beginTransaction(QueryTxRequest request, HttpServletRequest rawRequest, String databaseName) {
+    public Response beginTransaction(QueryTxRequest request, AuthToken sessionAuthToken, String databaseName) {
         var sessionConfig = buildSessionConfig(request, databaseName);
         var txId = randomTxId(txIdLength);
-        var sessionAuthToken = extractAuthToken(rawRequest);
-        if (sessionAuthToken == null) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
-        }
         Session session = driver.session(Session.class, sessionConfig, sessionAuthToken);
         Transaction transaction;
         try {
@@ -128,20 +116,20 @@ public class QueryController {
     }
 
     public Response continueTransaction(
-            QueryRequest request, HttpServletRequest rawRequest, String databaseName, String txId) {
-        return executeStatement(request, txId, extractAuthToken(rawRequest), databaseName, false);
+            QueryRequest request, AuthToken sessionAuthToken, String databaseName, String txId) {
+        return executeStatement(request, txId, sessionAuthToken, databaseName, false);
     }
 
     public Response commitTransaction(
-            QueryRequest request, HttpServletRequest rawRequest, String databaseName, String txId) {
-        return executeStatement(request, txId, extractAuthToken(rawRequest), databaseName, true);
+            QueryRequest request, AuthToken sessionAuthToken, String databaseName, String txId) {
+        return executeStatement(request, txId, sessionAuthToken, databaseName, true);
     }
 
-    public Response rollbackTransaction(String txId, HttpServletRequest rawRequest, String requestDatabase)
+    public Response rollbackTransaction(String txId, AuthToken sessionAuthToken, String requestDatabase)
             throws QueryApiException {
         Transaction transaction;
         try {
-            transaction = transactionManager.retrieveTransaction(txId, requestDatabase, extractAuthToken(rawRequest));
+            transaction = transactionManager.retrieveTransaction(txId, requestDatabase, sessionAuthToken);
         } catch (WrongUserException ex) {
             throw new TransactionNotFoundException(txId);
         } catch (ConcurrentModificationException ex) {
@@ -252,27 +240,6 @@ public class QueryController {
         }
         request.maybeTxMetadata().ifPresent(txConfigBuilder::withMetadata);
         return txConfigBuilder.build();
-    }
-
-    private static AuthToken extractAuthToken(HttpServletRequest request) {
-        // Auth has already passed through AuthorizationEnabledFilter, so we know we have formatted credential
-        var authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-
-        if (authHeader == null) {
-            return AuthTokens.none();
-        }
-
-        var decoded = AuthorizationHeaders.decode(authHeader);
-        if (decoded == null) {
-            return AuthTokens.none();
-        }
-
-        var realm = request.getHeader(REALM_HEADER);
-        return switch (decoded.scheme()) {
-            case BEARER -> AuthTokens.custom("", decoded.values()[0], realm, BEARER_SCHEME);
-            case BASIC -> AuthTokens.basic(decoded.values()[0], decoded.values()[1], realm);
-            default -> AuthTokens.none();
-        };
     }
 
     private static String randomTxId(Integer length) {

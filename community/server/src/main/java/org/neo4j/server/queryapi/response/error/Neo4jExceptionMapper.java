@@ -28,9 +28,12 @@ import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.GqlStatusErrorClassification;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.TransientException;
 
 public class Neo4jExceptionMapper implements ExceptionMapper<Neo4jException> {
+
+    private static final String MUST_CHANGE_CREDENTAILS_GQL_STATUS = "42NFD";
 
     @Override
     public Response toResponse(Neo4jException e) {
@@ -40,6 +43,11 @@ public class Neo4jExceptionMapper implements ExceptionMapper<Neo4jException> {
     private static Response.Status status(Neo4jException e) {
         if (e instanceof FatalDiscoveryException) {
             return Response.Status.NOT_FOUND;
+        } else if (e instanceof SecurityException) {
+            if (e.containsGqlStatus(MUST_CHANGE_CREDENTAILS_GQL_STATUS)) {
+                return Response.Status.BAD_REQUEST;
+            }
+            return Response.Status.UNAUTHORIZED;
         } else if (e instanceof ClientException || e instanceof TransientException) {
             return Response.Status.BAD_REQUEST;
         } else if (e instanceof DatabaseException) {

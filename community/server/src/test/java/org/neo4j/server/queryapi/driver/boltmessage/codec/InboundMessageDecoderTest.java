@@ -70,6 +70,55 @@ public class InboundMessageDecoderTest {
                                         null),
                                 true))),
                 Arguments.of(
+                        new FailureMessage(
+                                new FailureMetadata(
+                                        Status.General.UnknownError,
+                                        "oopsies",
+                                        "old oopsies",
+                                        "something terrible has happened",
+                                        "terrible.GQL",
+                                        Map.of(),
+                                        new FailureMetadata(
+                                                Status.General.UnknownError,
+                                                "oopsies",
+                                                "old oopsies",
+                                                "something terrible has happened",
+                                                "terrible.GQL",
+                                                Map.of(),
+                                                new FailureMetadata(
+                                                        Status.General.UnknownError,
+                                                        "oopsies",
+                                                        "old oopsies",
+                                                        "something terrible has happened",
+                                                        "terrible.GQL",
+                                                        Map.of(),
+                                                        null))),
+                                false),
+                        new GQLFailureMessage(new FailureMessage(
+                                new FailureMetadata(
+                                        Status.General.UnknownError,
+                                        "oopsies",
+                                        "old oopsies",
+                                        "something terrible has happened",
+                                        "terrible.GQL",
+                                        Map.of(),
+                                        new FailureMetadata(
+                                                Status.General.UnknownError,
+                                                "oopsies",
+                                                "old oopsies",
+                                                "something terrible has happened",
+                                                "terrible.GQL",
+                                                Map.of(),
+                                                new FailureMetadata(
+                                                        Status.General.UnknownError,
+                                                        "oopsies",
+                                                        "old oopsies",
+                                                        "something terrible has happened",
+                                                        "terrible.GQL",
+                                                        Map.of(),
+                                                        null))),
+                                false))),
+                Arguments.of(
                         new RecordMessage(ListValueBuilder.newListBuilder()
                                 .add(Values.stringValue("42"))
                                 .build()),

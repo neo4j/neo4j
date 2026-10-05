@@ -24,7 +24,7 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class QueryApiException extends RuntimeException implements ErrorGqlStatusObject, Status.HasStatus {
+public abstract class QueryApiException extends RuntimeException implements ErrorGqlStatusObject, Status.HasStatus {
     private final ErrorGqlStatusObject gqlStatusObject;
     private final Status status;
     private final Response.Status httpStatus;
