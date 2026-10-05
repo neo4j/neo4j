@@ -46,6 +46,8 @@ trait OptionsConverter[T] {
     params: MapValue,
     procedures: Option[Procedures]
   ): AnyValue = {
+    // The procedure variant is preferable as it covers more expressions properly
+    // For examples failing correctly on division by zero or too large integers instead of just getting a failed to evaluate expression exception
     procedures.map(StaticEvaluation.from(_, version).evaluate(expression, params, CypherRow.empty))
       .getOrElse(expressionEvaluator(version).evaluate(expression, params))
   }

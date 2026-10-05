@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.ASTNode
@@ -59,7 +60,10 @@ case class OptionsMap(map: Map[String, Expression])(val position: InputPosition)
       )
 
       if (invalidKeys.isEmpty) {
-        SemanticCheck.success
+        // Make sure the values are at least semantically correct
+        map.foldLeft(SemanticCheck.success) {
+          case (acc, (_, expr)) => acc chain SemanticExpressionCheck.check(Expression.SemanticContext.Results, expr)
+        }
       } else {
         SemanticCheck.error(SemanticError.invalidOption(
           invalidKeys.keys.mkString(" and "),

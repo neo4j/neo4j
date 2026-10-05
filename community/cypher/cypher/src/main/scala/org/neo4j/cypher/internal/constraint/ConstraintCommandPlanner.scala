@@ -92,7 +92,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       val (maybeIndexProvider, notifications) =
         IndexBackedConstraintsOptionsConverter(s"${nodeKey.description} constraint", indexContext(ctx))
-          .convert(cypherVersion, options, params, Some(ctx.getConfig))
+          .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
           .toOptionNotification
       val indexProvider = maybeIndexProvider.flatMap(_.provider)
       val propertyKeys = props.map(p => p.propertyKey.name)
@@ -118,7 +118,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       val (maybeIndexProvider, notifications) =
         IndexBackedConstraintsOptionsConverter(s"${relKey.description} constraint", indexContext(ctx))
-          .convert(cypherVersion, options, params, Some(ctx.getConfig))
+          .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
           .toOptionNotification
       val indexProvider = maybeIndexProvider.flatMap(_.provider)
       val propertyKeys = props.map(p => p.propertyKey.name)
@@ -144,7 +144,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       val (maybeIndexProvider, notifications) =
         IndexBackedConstraintsOptionsConverter(s"${nodePropUnique.description} constraint", indexContext(ctx))
-          .convert(cypherVersion, options, params, Some(ctx.getConfig))
+          .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
           .toOptionNotification
       val indexProvider = maybeIndexProvider.flatMap(_.provider)
       val propertyKeys = props.map(p => p.propertyKey.name)
@@ -170,7 +170,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       val (maybeIndexProvider, notifications) =
         IndexBackedConstraintsOptionsConverter(s"${relPropUnique.description} constraint", indexContext(ctx))
-          .convert(cypherVersion, options, params, Some(ctx.getConfig))
+          .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
           .toOptionNotification
       val indexProvider = maybeIndexProvider.flatMap(_.provider)
       val propertyKeys = props.map(p => p.propertyKey.name)
@@ -195,7 +195,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       // Assert empty options
       PropertyExistenceOrTypeConstraintOptionsConverter("node", "existence", indexContext(ctx))
-        .convert(cypherVersion, options, params)
+        .convert(cypherVersion, options, params, procedures = Some(ctx.transactionalContext.procedures))
       ctx.createConstraint(new Create.NodeExistence(
         constraintName.orNull,
         label.name,
@@ -217,7 +217,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       // Assert empty options
       PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "existence", indexContext(ctx))
-        .convert(cypherVersion, options, params)
+        .convert(cypherVersion, options, params, procedures = Some(ctx.transactionalContext.procedures))
       ctx.createConstraint(new Create.RelationshipExistence(
         constraintName.orNull,
         relType.name,
@@ -240,7 +240,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       // Assert empty options
       PropertyExistenceOrTypeConstraintOptionsConverter("node", "type", indexContext(ctx))
-        .convert(cypherVersion, options, params)
+        .convert(cypherVersion, options, params, procedures = Some(ctx.transactionalContext.procedures))
       ctx.createConstraint(new Create.NodePropertyType(
         constraintName.orNull,
         label.name,
@@ -265,7 +265,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       // Assert empty options
       PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "type", indexContext(ctx))
-        .convert(cypherVersion, options, params)
+        .convert(cypherVersion, options, params, procedures = Some(ctx.transactionalContext.procedures))
       ctx.createConstraint(new Create.RelationshipPropertyType(
         constraintName.orNull,
         relType.name,
@@ -315,28 +315,28 @@ object ConstraintCommandPlanner {
       val conversionResult = assertion match {
         case nodeKey: NodeKey =>
           IndexBackedConstraintsOptionsConverter(s"${nodeKey.description} constraint", indexContext(ctx))
-            .convert(cypherVersion, options, params, Some(ctx.getConfig))
+            .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
         case relKey: RelationshipKey =>
           IndexBackedConstraintsOptionsConverter(s"${relKey.description} constraint", indexContext(ctx))
-            .convert(cypherVersion, options, params, Some(ctx.getConfig))
+            .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
         case nodePropUnique: NodePropertyUniqueness =>
           IndexBackedConstraintsOptionsConverter(s"${nodePropUnique.description} constraint", indexContext(ctx))
-            .convert(cypherVersion, options, params, Some(ctx.getConfig))
+            .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
         case relPropUnique: RelationshipPropertyUniqueness =>
           IndexBackedConstraintsOptionsConverter(s"${relPropUnique.description} constraint", indexContext(ctx))
-            .convert(cypherVersion, options, params, Some(ctx.getConfig))
+            .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
         case NodePropertyExistence =>
           PropertyExistenceOrTypeConstraintOptionsConverter("node", "existence", indexContext(ctx))
-            .convert(cypherVersion, options, params)
+            .convert(cypherVersion, options, params, procedures = Some(ctx.transactionalContext.procedures))
         case RelationshipPropertyExistence =>
           PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "existence", indexContext(ctx))
-            .convert(cypherVersion, options, params)
+            .convert(cypherVersion, options, params, procedures = Some(ctx.transactionalContext.procedures))
         case _: NodePropertyType =>
           PropertyExistenceOrTypeConstraintOptionsConverter("node", "type", indexContext(ctx))
-            .convert(cypherVersion, options, params)
+            .convert(cypherVersion, options, params, procedures = Some(ctx.transactionalContext.procedures))
         case _: RelationshipPropertyType =>
           PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "type", indexContext(ctx))
-            .convert(cypherVersion, options, params)
+            .convert(cypherVersion, options, params, procedures = Some(ctx.transactionalContext.procedures))
       }
 
       val optionConverterNotifications = conversionResult.toOptionNotification._2

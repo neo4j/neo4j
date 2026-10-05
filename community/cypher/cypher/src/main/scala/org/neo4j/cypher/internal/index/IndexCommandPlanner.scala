@@ -60,7 +60,6 @@ import org.neo4j.cypher.internal.procs.IgnoredResult
 import org.neo4j.cypher.internal.procs.SchemaExecutionResult
 import org.neo4j.cypher.internal.procs.SuccessResult
 import org.neo4j.cypher.internal.runtime.IndexInformation
-import org.neo4j.cypher.internal.runtime.IndexProviderContext
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
@@ -94,7 +93,13 @@ object IndexCommandPlanner {
       val indexName = getName(name, params)
       val (indexProvider, indexConfig, notifications) =
         CreateFulltextIndexOptionsConverter(indexContext(ctx))
-          .convert(cypherVersion, options, params, Some(ctx.getConfig)) match {
+          .convert(
+            cypherVersion,
+            options,
+            params,
+            Some(ctx.getConfig),
+            Some(ctx.transactionalContext.procedures)
+          ) match {
           case Nothing => (None, schema.IndexConfig.empty(), Set.empty[InternalNotification])
           case ParsedOptions(CreateIndexWithFullOptions(provider, config)) =>
             (provider, config, Set.empty[InternalNotification])
@@ -116,7 +121,7 @@ object IndexCommandPlanner {
     (ctx, params) => {
       val indexName = getName(name, params)
       val (maybeProvider, notifications) = CreateLookupIndexOptionsConverter(indexContext(ctx))
-        .convert(cypherVersion, options, params, Some(ctx.getConfig))
+        .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
         .toOptionNotification
       val provider = maybeProvider.flatMap(_.provider)
       ctx.addLookupIndexRule(entityType, indexName, provider)
@@ -134,7 +139,13 @@ object IndexCommandPlanner {
       val indexName = getName(name, params)
       val (indexProvider, indexConfig, notifications) =
         CreatePointIndexOptionsConverter(indexContext(ctx))
-          .convert(cypherVersion, options, params, Some(ctx.getConfig)) match {
+          .convert(
+            cypherVersion,
+            options,
+            params,
+            Some(ctx.getConfig),
+            Some(ctx.transactionalContext.procedures)
+          ) match {
           case Nothing => (None, schema.IndexConfig.empty(), Set.empty[InternalNotification])
           case ParsedOptions(CreateIndexWithFullOptions(provider, config)) =>
             (provider, config, Set.empty[InternalNotification])
@@ -163,7 +174,7 @@ object IndexCommandPlanner {
       }
       val (maybeProvider, notifications) =
         CreateRangeIndexOptionsConverter(schemaType, indexContext(ctx))
-          .convert(cypherVersion, options, params, Some(ctx.getConfig))
+          .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
           .toOptionNotification
       val provider = maybeProvider.flatMap(_.provider)
       val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
@@ -182,7 +193,7 @@ object IndexCommandPlanner {
       val indexName = getName(name, params)
       val (maybeProvider: Option[CreateIndexProviderOnlyOptions], notifications) =
         CreateTextIndexOptionsConverter(indexContext(ctx))
-          .convert(cypherVersion, options, params, Some(ctx.getConfig))
+          .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
           .toOptionNotification
       val provider = maybeProvider.flatMap(_.provider)
       val (entityId, entityType) = getEntityInfo(entityName, ctx)
@@ -203,7 +214,13 @@ object IndexCommandPlanner {
       val indexName = getName(name, params)
       val (indexProvider, indexConfig, notifications) =
         CreateVectorIndexOptionsConverter(indexContext(ctx), vectorIndexVersion(ctx))
-          .convert(cypherVersion, options, params, Some(ctx.getConfig)) match {
+          .convert(
+            cypherVersion,
+            options,
+            params,
+            Some(ctx.getConfig),
+            Some(ctx.transactionalContext.procedures)
+          ) match {
           case Nothing =>
             (None, schema.IndexConfig.empty(), Set.empty[InternalNotification])
           case ParsedOptions(CreateIndexWithFullOptions(provider, config)) =>
@@ -259,13 +276,13 @@ object IndexCommandPlanner {
   ): (QueryContext, MapValue) => SchemaExecutionResult = {
     val (innerIndexType, optionsConverter): (schema.IndexType, QueryContext => IndexOptionsConverter[?]) =
       indexType match {
-        case POINT => (schema.IndexType.POINT, CreatePointIndexOptionsConverter.apply)
+        case POINT => (schema.IndexType.POINT, CreatePointIndexOptionsConverter.apply _)
         case RANGE => (
             schema.IndexType.RANGE,
             (ctx: QueryContext) =>
               CreateRangeIndexOptionsConverter("range index", indexContext(ctx))
           )
-        case TEXT => (schema.IndexType.TEXT, CreateTextIndexOptionsConverter.apply)
+        case TEXT => (schema.IndexType.TEXT, CreateTextIndexOptionsConverter.apply _)
         case VECTOR => (
             schema.IndexType.VECTOR,
             (ctx: QueryContext) =>
@@ -282,7 +299,7 @@ object IndexCommandPlanner {
       val indexName = getName(name, params)
       // Assert correct options to get errors even if matching index already exists
       val optionConverterNotifications = optionsConverter(ctx)
-        .convert(cypherVersion, options, params, Some(ctx.getConfig))
+        .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
         .toOptionNotification
         ._2
 
@@ -327,7 +344,7 @@ object IndexCommandPlanner {
       val indexName = getName(name, params)
       // Assert correct options to get errors even if matching index already exists
       val optionConverterNotifications = CreateFulltextIndexOptionsConverter(ctx)
-        .convert(cypherVersion, options, params, Some(ctx.getConfig))
+        .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
         .toOptionNotification
         ._2
 
@@ -376,7 +393,7 @@ object IndexCommandPlanner {
       val indexName = getName(name, params)
       // Assert correct options to get errors even if matching index already exists
       val optionConverterNotifications = CreateVectorIndexOptionsConverter(indexContext(ctx), vectorIndexVersion(ctx))
-        .convert(cypherVersion, options, params, Some(ctx.getConfig))
+        .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
         .toOptionNotification
         ._2
 
@@ -428,7 +445,7 @@ object IndexCommandPlanner {
       val indexName = getName(name, params)
       // Assert correct options to get errors even if matching index already exists
       val optionConverterNotifications = CreateLookupIndexOptionsConverter(ctx)
-        .convert(cypherVersion, options, params, Some(ctx.getConfig))
+        .convert(cypherVersion, options, params, Some(ctx.getConfig), Some(ctx.transactionalContext.procedures))
         .toOptionNotification
         ._2
 
