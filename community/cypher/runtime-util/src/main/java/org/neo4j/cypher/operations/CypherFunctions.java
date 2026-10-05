@@ -3897,7 +3897,7 @@ public final class CypherFunctions {
         final var itemType = typeName.innerType();
         // An empty list can be a list of anything, even NOTHING, so don't check further
         // A list of LIST<ANY> can also be anything, so no need to check further
-        if (values.isEmpty() || (!itemType.isNullable() && itemType instanceof AnyType)) return true;
+        if (values.isEmpty() || (itemType.isNullable() && itemType instanceof AnyType)) return true;
         // A non-empty list of NOTHING is always false
         if (itemType instanceof NothingType) return false;
         if (values instanceof ArrayValue array) {
