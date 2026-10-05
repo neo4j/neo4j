@@ -566,6 +566,17 @@ class RemoteIndexSeekRewriterTest extends CypherPlannerTestSuite {
     result shouldEqual input
   }
 
+  test("should not rewrite UndirectedRelationshipUniqueIndexSeek on RHS of a Merge-Apply") {
+    val input = new LogicalPlanBuilder(wholePlan = false)
+      .apply()
+      .|.merge(Seq(createNodeFull("p", labels = Seq("Person"), properties = Some("{name: 'Andy'}"))))
+      .|.relationshipIndexOperator("(x)-[r:R(prop = m.prop)]-(y)", argumentIds = Set("m"), unique = true)
+      .nodeByLabelScan("m", "Person", IndexOrderNone)
+      .build()
+
+    rewrite(input) shouldEqual input
+  }
+
   test("should not rewrite relationship seeks when rewriteRelationships = false") {
     val input = new LogicalPlanBuilder(wholePlan = false)
       .apply()

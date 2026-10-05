@@ -254,7 +254,7 @@ case class RemoteIndexSeekRewriter(
         argumentIds,
         indexOrder,
         indexType
-      ) if argumentIds.nonEmpty && rewriteRelationships =>
+      ) if argumentIds.nonEmpty && rewriteRelationships && readOnlyQuery =>
       RemoteUndirectedRelationshipUniqueIndexSeek(
         idName,
         leftNode,
