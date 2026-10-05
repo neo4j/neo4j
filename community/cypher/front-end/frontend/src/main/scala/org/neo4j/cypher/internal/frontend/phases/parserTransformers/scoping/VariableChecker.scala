@@ -288,6 +288,54 @@ case class VariableChecker(
     case _ => acc
   }
 
+  private def variableAlreadyBoundInUpdatingPattern(acc: Acc, ps: PatternScope): Acc = (acc, ps) match {
+    case (
+        Acc(_, UpdatingPattern(_, _, clause, _), _, _, _, _),
+        PatternScope(chain: RelationshipChain, _, referenced, _, _, _)
+      ) =>
+      val boundOutsideOrEarlierInChain = referenced.getVariables.toSet
+      acc(variableAlreadyBoundInChain(
+        chain,
+        boundOutsideOrEarlierInChain,
+        acc.foreachContext.allowedToShadow,
+        clause.name
+      ))
+    case _ => acc
+  }
+
+  private def variableAlreadyBoundInChain(
+    element: PatternElement,
+    bound: Set[LogicalVariable],
+    allowedToShadow: Set[LogicalVariable],
+    clauseName: String
+  ): Seq[SemanticError] = element match {
+    case chain: RelationshipChain =>
+      variableAlreadyBoundInChain(chain.element, bound, allowedToShadow, clauseName) ++
+        variableAlreadyBoundInNode(chain.rightNode, bound ++ nodeVariables(chain.element), allowedToShadow, clauseName)
+    case node: NodePattern => variableAlreadyBoundInNode(node, bound, allowedToShadow, clauseName)
+    case _                 => Seq.empty
+  }
+
+  private def variableAlreadyBoundInNode(
+    node: NodePattern,
+    bound: Set[LogicalVariable],
+    allowedToShadow: Set[LogicalVariable],
+    clauseName: String
+  ): Seq[SemanticError] = node match {
+    case NodePattern(Some(variable), labelExpression, properties, _)
+      if (labelExpression.nonEmpty || properties.isDefined) &&
+        !allowedToShadow(variable) &&
+        bound.contains(variable) =>
+      Seq(SemanticError.nodeVariableInCreateAlreadyDeclared(variable.name, clauseName, variable.position))
+    case _ => Seq.empty
+  }
+
+  private def nodeVariables(element: PatternElement): Set[LogicalVariable] = element match {
+    case node: NodePattern        => node.variable.toSet
+    case chain: RelationshipChain => nodeVariables(chain.element) ++ chain.rightNode.variable.toSet
+    case _                        => Set.empty
+  }
+
   private def relationshipVariableAlreadyBound(acc: Acc, ps: PatternScope): Acc = ps match {
     case Scope.Pattern.ShortestPath(name, element, topologicalConstants) => element match {
         case RelationshipChain(_, rel, _) if rel.variable.exists(topologicalConstants.contains) =>
@@ -316,6 +364,7 @@ case class VariableChecker(
 
   private val patternChecks: Seq[(Acc, PatternScope) => Acc] = Seq(
     redeclarationOfVariablesInPatterns,
+    variableAlreadyBoundInUpdatingPattern,
     relationshipVariableAlreadyBound
   )
 

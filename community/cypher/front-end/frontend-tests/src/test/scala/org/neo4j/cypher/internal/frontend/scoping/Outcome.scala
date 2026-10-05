@@ -232,6 +232,12 @@ case class E42N59(variable: String) extends GqlError {
   override val msg: String = s"Variable `$variable` already declared."
 }
 
+case class E42N78(variable: String, clause: String) extends GqlError {
+  override val num: String = "42N78"
+
+  override val msg: String = s"Node `$variable` has already been bound and cannot be modified by the $clause clause."
+}
+
 case class E42N62(variable: String) extends GqlError {
   override val num: String = "42N62"
 

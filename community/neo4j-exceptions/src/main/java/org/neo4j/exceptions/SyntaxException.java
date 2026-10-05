@@ -121,18 +121,6 @@ public class SyntaxException extends Neo4jException {
         return new SyntaxException(gql, legacyMessage);
     }
 
-    public static SyntaxException variableAlreadyBound(String variable, String clause) {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N78)
-                .withParam(GqlParams.StringParam.variable, variable)
-                .withParam(GqlParams.StringParam.clause, clause)
-                .build();
-        return new SyntaxException(
-                gql,
-                String.format(
-                        "Can't create node `%s` with labels or properties here. The variable is already declared in this context",
-                        variable));
-    }
-
     public static SyntaxException accessingMultipleGraphsOnlySupportedOnCompositeDatabases(
             String legacyMessage, String query, int offset) {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)

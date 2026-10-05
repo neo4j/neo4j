@@ -1272,6 +1272,22 @@ public class GqlHelper {
                 .build();
     }
 
+    public static ErrorGqlStatusObject getGql42001_42N59_42N78(
+            String variable, String clause, int offset, int line, int column) {
+        return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
+                .atPosition(offset, line, column)
+                .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N59)
+                        .atPosition(offset, line, column)
+                        .withParam(GqlParams.StringParam.variable, variable)
+                        .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N78)
+                                .atPosition(offset, line, column)
+                                .withParam(GqlParams.StringParam.variable, variable)
+                                .withParam(GqlParams.StringParam.clause, clause)
+                                .build())
+                        .build())
+                .build();
+    }
+
     public static ErrorGqlStatusObject getGql42001_42N60(String pathMode, int offset, int line, int column) {
         return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
                 .atPosition(offset, line, column)

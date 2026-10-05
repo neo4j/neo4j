@@ -1718,6 +1718,24 @@ object SemanticError {
     )
   }
 
+  def nodeVariableInCreateAlreadyDeclared(
+    variableName: String,
+    clauseName: String,
+    position: InputPosition
+  ): SemanticError = {
+    SemanticError(
+      GqlHelper.getGql42001_42N59_42N78(
+        variableName,
+        clauseName,
+        position.offset,
+        position.line,
+        position.column
+      ),
+      s"Can't create node `$variableName` with labels or properties here. The variable is already declared in this context",
+      position
+    )
+  }
+
   def invalidUseOfVariableLengthRelationship(
     expr: String,
     legacyMessage: String,

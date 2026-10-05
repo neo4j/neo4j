@@ -188,7 +188,7 @@ class CreateNodePlanningIntegrationTest extends CypherPlannerTestSuite with Logi
            |""".stripMargin
       ) {
         val exception = the[SyntaxException] thrownBy cfg.plan(query)
-        exception.getMessage should equal(
+        exception.getMessage should startWith(
           "Can't create node `a` with labels or properties here. The variable is already declared in this context"
         )
       }
@@ -236,7 +236,7 @@ class CreateNodePlanningIntegrationTest extends CypherPlannerTestSuite with Logi
            |""".stripMargin
       ) {
         val exception = the[SyntaxException] thrownBy cfg.plan(query)
-        exception.getMessage should equal(
+        exception.getMessage should startWith(
           "Can't create node `a` with labels or properties here. The variable is already declared in this context"
         )
       }

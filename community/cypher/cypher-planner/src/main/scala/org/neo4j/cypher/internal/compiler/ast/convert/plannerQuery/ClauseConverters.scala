@@ -151,7 +151,6 @@ import org.neo4j.cypher.internal.util.collection.immutable.ListSet.IterableOnceT
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.InternalException
-import org.neo4j.exceptions.SyntaxException
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -470,8 +469,12 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
           case CreateNodeCommand(create, _) =>
             if (seenPatternNodes.add(create.variable)) {
               commands += create
-            } else if (create.labels.nonEmpty || create.properties.nonEmpty) {
-              throw SyntaxException.variableAlreadyBound(create.variable.name, clause.name)
+            } else {
+              // SemanticAnalysis would already have failed on a redeclared variable with labels or properties
+              assert(
+                create.labels.isEmpty && create.properties.isEmpty,
+                s"Variable `${create.variable.name}` is already bound but carries labels or properties in $clause"
+              )
             }
           case CreateRelCommand(create, _) =>
             commands += create
@@ -517,10 +520,11 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
     def addNode(node: NodePattern): Vector[CreateEntityCommand] = {
       // avoid loops such as CREATE (a)-[:R]->(a)
       if (seenNodes.contains(node.variable.get)) {
-        if (node.labelExpression.nonEmpty || node.properties.nonEmpty) {
-          // reused patterns must be pure variable
-          throw SyntaxException.variableAlreadyBound(node.variable.get.name, clauseName)
-        }
+        // reused patterns must be pure variable; SemanticAnalysis would already have failed otherwise
+        assert(
+          node.labelExpression.isEmpty && node.properties.isEmpty,
+          s"Variable `${node.variable.get.name}` is already bound but carries labels or properties in $clauseName"
+        )
         acc
       } else {
         acc :+ createNodeCommand(node)
@@ -880,9 +884,13 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
           case CreateNodeCommand(c, _) => seenPatternNodesAndArguments(c.variable)
         }
 
-        nodesCreatedBefore.collectFirst {
-          case CreateNodeCommand(c, _) if c.labels.nonEmpty || c.properties.nonEmpty =>
-            throw SyntaxException.variableAlreadyBound(c.variable.name, clause.name)
+        nodesCreatedBefore.foreach {
+          case CreateNodeCommand(c, _) =>
+            // SemanticAnalysis would already have failed on a redeclared variable with labels or properties
+            assert(
+              c.labels.isEmpty && c.properties.isEmpty,
+              s"Variable `${c.variable.name}` is already bound but carries labels or properties in $clause"
+            )
         }
 
         val hasLabels = nodes.flatMap {
