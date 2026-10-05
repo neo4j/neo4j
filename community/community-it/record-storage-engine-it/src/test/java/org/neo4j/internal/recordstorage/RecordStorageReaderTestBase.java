@@ -115,6 +115,7 @@ public abstract class RecordStorageReaderTestBase {
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 NULL_CONTEXT,
                 storageCursors,
+                CommandCreationContext.NO_TRANSACTION_SEQUENCE_NUMBER,
                 CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
                 ResourceLocker.IGNORE,
                 () -> LockTracer.NONE);

@@ -152,4 +152,9 @@ public interface TransactionState extends ReadableTransactionState {
     String ontologyChange();
 
     EnrichmentMode enrichmentMode();
+
+    /**
+     * Marks this state as the last chunk of the transaction, before commands are extracted from it for commit.
+     */
+    void markAsFinalChunk();
 }

@@ -64,6 +64,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -132,6 +133,7 @@ class PropertyCreatorTest {
                 KernelVersionProvider.THROWING_PROVIDER,
                 cursorContext,
                 storeCursors,
+                CommandCreationContext.NO_TRANSACTION_SEQUENCE_NUMBER,
                 () -> (long) -1,
                 ResourceLocker.IGNORE,
                 () -> LockTracer.NONE);

@@ -648,6 +648,7 @@ class BatchingNeoStoresTest {
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                         NULL_CONTEXT,
                         storeCursors,
+                        CommandCreationContext.NO_TRANSACTION_SEQUENCE_NUMBER,
                         CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
                         ResourceLocker.IGNORE,
                         () -> LockTracer.NONE);

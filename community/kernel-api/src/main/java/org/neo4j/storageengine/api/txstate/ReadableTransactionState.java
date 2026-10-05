@@ -190,6 +190,12 @@ public interface ReadableTransactionState extends VisitableTransactionState {
     boolean isMultiChunk();
 
     /**
+     * @return {@code true} if this transaction state is the last chunk of the transaction, which for a transaction that
+     * isn't multi chunked is all of it.
+     */
+    boolean isFinalChunk();
+
+    /**
      * Computes the degree of a node by just looking in what is in the transaction state.
      * @param node the node which degree to compute
      * @param selection the selection to use for the computation

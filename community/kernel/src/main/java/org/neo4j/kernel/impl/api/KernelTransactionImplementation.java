@@ -735,6 +735,7 @@ public class KernelTransactionImplementation
                 kernelVersionProvider,
                 cursorContext,
                 transactionalCursors,
+                transactionSequenceNumber,
                 kernelTransactions::startTimeOfOldestExecutingTransaction,
                 lockClient,
                 currentStatement::lockTracer);
@@ -1735,6 +1736,7 @@ public class KernelTransactionImplementation
         releaseStorageEngineResources();
         if (txState != null) {
             txState.reset();
+            commandCreationContext.resetCaches();
         }
     }
 
@@ -1914,6 +1916,7 @@ public class KernelTransactionImplementation
         return multiVersioned
                 ? new ChunkSink(
                         committer,
+                        commandCreationContext,
                         transactionEventListeners,
                         clocks,
                         config,

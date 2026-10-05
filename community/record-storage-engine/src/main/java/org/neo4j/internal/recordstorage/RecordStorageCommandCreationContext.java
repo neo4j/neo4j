@@ -87,6 +87,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
             KernelVersionProvider kernelVersionProvider,
             CursorContext cursorContext,
             StoreCursors storeCursors,
+            long transactionSequenceNumber,
             LongSupplier startTimeOfOldestExecutingTransaction,
             ResourceLocker locks,
             Supplier<LockTracer> lockTracer) {

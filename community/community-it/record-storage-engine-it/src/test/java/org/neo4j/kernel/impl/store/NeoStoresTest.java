@@ -483,6 +483,7 @@ class NeoStoresTest {
                     LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     cursorContext,
                     storeCursors,
+                    CommandCreationContext.NO_TRANSACTION_SEQUENCE_NUMBER,
                     CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
                     IGNORE,
                     () -> LockTracer.NONE);

@@ -145,6 +145,7 @@ public class TxState implements TransactionState {
     private long dataRevision;
     private final TransactionEvent transactionEvent;
     private boolean isMultiChunk;
+    private boolean isFinalChunk;
     private final TxStateMemoryConsumer txStateMemoryConsumer;
 
     @VisibleForTesting
@@ -1016,6 +1017,16 @@ public class TxState implements TransactionState {
     @Override
     public boolean isMultiChunk() {
         return isMultiChunk;
+    }
+
+    @Override
+    public void markAsFinalChunk() {
+        isFinalChunk = true;
+    }
+
+    @Override
+    public boolean isFinalChunk() {
+        return isFinalChunk;
     }
 
     @Override

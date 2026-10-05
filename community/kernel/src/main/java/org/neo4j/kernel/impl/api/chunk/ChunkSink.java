@@ -38,6 +38,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.ExceptionHandlerService;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public final class ChunkSink implements ChunkedTransactionSink {
@@ -45,6 +46,7 @@ public final class ChunkSink implements ChunkedTransactionSink {
     private final TransactionClockContext clocks;
     private final long chunkSize;
     private final TransactionCommitter committer;
+    private final CommandCreationContext commandCreationContext;
 
     private CursorContext cursorContext;
     private LeaseClient leaseClient;
@@ -58,6 +60,7 @@ public final class ChunkSink implements ChunkedTransactionSink {
 
     public ChunkSink(
             TransactionCommitter committer,
+            CommandCreationContext commandCreationContext,
             TransactionEventListeners eventListeners,
             TransactionClockContext clocks,
             Config config,
@@ -65,6 +68,7 @@ public final class ChunkSink implements ChunkedTransactionSink {
             ExceptionHandlerService exceptionHandlerService,
             TransactionMonitor transactionMonitor) {
         this.committer = committer;
+        this.commandCreationContext = commandCreationContext;
         this.eventListeners = eventListeners;
         this.clocks = clocks;
         this.chunkSize = config.get(multi_version_transaction_chunk_size);
@@ -96,6 +100,7 @@ public final class ChunkSink implements ChunkedTransactionSink {
                         false,
                         applicationModeSupplier.get());
                 txState.reset();
+                commandCreationContext.resetCaches();
             } catch (Exception e) {
                 throw DefaultTransactionExceptionMapper.INSTANCE.mapException(e, log, exceptionHandlerService);
             }

@@ -142,6 +142,9 @@ public final class ChunkCommitter implements TransactionCommitter {
                 // be ordered before a later chunk of this (now old-version) transaction.
                 raftUpgradeBarrierEntered = ktx.enterRaftUpgradeBarrier();
             }
+            if (commit) {
+                ktx.txState().markAsFinalChunk();
+            }
             StorageCommands storageCommands = ktx.extractCommands(memoryTracker);
             List<StorageCommand> extractedCommands = storageCommands.commands();
             assert storageCommands.leases().size() == 0 : "LeaseMap not implemented for chunked transactions";

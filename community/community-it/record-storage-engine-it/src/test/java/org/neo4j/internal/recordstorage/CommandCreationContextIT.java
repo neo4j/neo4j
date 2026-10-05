@@ -107,6 +107,7 @@ public class CommandCreationContextIT {
                         kernelVersionProvider,
                         cursorContext,
                         StoreCursors.NULL,
+                        CommandCreationContext.NO_TRANSACTION_SEQUENCE_NUMBER,
                         CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
                         ResourceLocker.IGNORE,
                         () -> LockTracer.NONE);
@@ -126,6 +127,7 @@ public class CommandCreationContextIT {
                     kernelVersionProvider,
                     NULL_CONTEXT,
                     storeCursors,
+                    CommandCreationContext.NO_TRANSACTION_SEQUENCE_NUMBER,
                     CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
                     ResourceLocker.IGNORE,
                     () -> LockTracer.NONE);

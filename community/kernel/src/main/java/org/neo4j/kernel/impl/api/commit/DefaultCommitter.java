@@ -80,6 +80,9 @@ public final class DefaultCommitter implements TransactionCommitter {
             throws KernelException {
         try (Lock upgradeBarrier = ktx.enterRaftUpgradeBarrier()) {
             // Gather-up commands from the various sources
+            if (commit) {
+                ktx.txState().markAsFinalChunk();
+            }
             StorageCommands extractedCommands = ktx.extractCommands(memoryTracker);
 
             /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true

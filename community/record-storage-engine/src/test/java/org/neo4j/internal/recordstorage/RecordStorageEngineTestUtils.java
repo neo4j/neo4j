@@ -127,6 +127,7 @@ public class RecordStorageEngineTestUtils {
                     kernelVersionProvider,
                     cursorContext,
                     storeCursors,
+                    CommandCreationContext.NO_TRANSACTION_SEQUENCE_NUMBER,
                     CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
                     ResourceLocker.IGNORE,
                     () -> LockTracer.NONE);
