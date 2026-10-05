@@ -724,6 +724,37 @@ class LocalProceduresSemanticAnalysisTest extends LocalCallablesSemanticAnalysis
     )
   }
 
+  // Multiple extra columns in RETURN
+  test(s"""DEFINE PROCEDURE foo.a() :: (a :: INT) {
+          |  RETURN 1 AS a, 2 AS b, 2 AS c
+          |                      ^       ^
+          |}
+          |
+          |CALL foo.a() YIELD a AS x
+          |RETURN x
+          |""".stripMargin) {
+    runWithLC().hasErrorWithMarkedPosition(
+      pos =>
+        GqlHelper.getGql42001_42NAH(
+          "b",
+          "foo.a",
+          pos.offset,
+          pos.line,
+          pos.column
+        ),
+      msg42NAH("b", "foo.a"),
+      pos =>
+        GqlHelper.getGql42001_42NAH(
+          "c",
+          "foo.a",
+          pos.offset,
+          pos.line,
+          pos.column
+        ),
+      msg42NAH("c", "foo.a")
+    )
+  }
+
   // Extra columns in NEXT
   test(s"""DEFINE PROCEDURE foo.a() :: (a :: INT) {
           |  RETURN 1 AS a
@@ -861,6 +892,37 @@ class LocalProceduresSemanticAnalysisTest extends LocalCallablesSemanticAnalysis
           pos.column
         ),
       msg42NAI("b", "foo.a")
+    )
+  }
+
+  // Multiple extra columns in output signature with RETURN
+  test(s"""DEFINE PROCEDURE foo.a() :: (a :: INT, b :: INT, c :: INT) {
+          |                                       ^         ^
+          |  RETURN 1 AS a
+          |}
+          |
+          |CALL foo.a() YIELD a AS x, b AS y
+          |RETURN x, y
+          |""".stripMargin) {
+    runWithLC().hasErrorWithMarkedPosition(
+      pos =>
+        GqlHelper.getGql42001_42NAI(
+          "b",
+          "foo.a",
+          pos.offset,
+          pos.line,
+          pos.column
+        ),
+      msg42NAI("b", "foo.a"),
+      pos =>
+        GqlHelper.getGql42001_42NAI(
+          "c",
+          "foo.a",
+          pos.offset,
+          pos.line,
+          pos.column
+        ),
+      msg42NAI("c", "foo.a")
     )
   }
 
