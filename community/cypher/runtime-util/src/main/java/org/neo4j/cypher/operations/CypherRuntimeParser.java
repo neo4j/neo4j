@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.SyntaxException;
 import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.storable.Float16Format;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.storable.VectorValue;
@@ -125,6 +126,32 @@ abstract class CypherRuntimeParser {
             floats[i++] = asNumber(iterator.next()).floatValue();
         }
         return Values.float32Vector(floats);
+    }
+
+    static VectorValue parseFloat16Vector(String expression) {
+        var expressions = asList(expression);
+        int length = expressions.size();
+        short[] shorts = new short[length];
+        var iterator = expressions.iterator();
+        int i = 0;
+        while (iterator.hasNext()) {
+            shorts[i++] =
+                    Float16Format.FLOAT16.toFloat16(asNumber(iterator.next()).floatValue());
+        }
+        return Values.float16Vector(Float16Format.FLOAT16, shorts);
+    }
+
+    static VectorValue parseBFloat16Vector(String expression) {
+        var expressions = asList(expression);
+        int length = expressions.size();
+        short[] shorts = new short[length];
+        var iterator = expressions.iterator();
+        int i = 0;
+        while (iterator.hasNext()) {
+            shorts[i++] =
+                    Float16Format.BFLOAT16.toFloat16(asNumber(iterator.next()).floatValue());
+        }
+        return Values.float16Vector(Float16Format.BFLOAT16, shorts);
     }
 
     static VectorValue parseFloat64Vector(String expression) {

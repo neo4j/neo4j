@@ -45,6 +45,7 @@ import org.neo4j.cypher.cucumber.value.ValueRepresentation.Connection
 import org.neo4j.cypher.cucumber.value.ValueRepresentation.NoIdNode
 import org.neo4j.cypher.cucumber.value.ValueRepresentation.NoIdPath
 import org.neo4j.cypher.cucumber.value.ValueRepresentation.NoIdRel
+import org.neo4j.values.storable.Float16Format
 import org.neo4j.values.storable.Values
 
 import java.util.Collections
@@ -177,6 +178,34 @@ object CypherCucumberValueParser {
             org.neo4j.driver.Values.vector(coordinateArray)
           } else {
             Values.int64Vector(coordinateArray: _*)
+          }
+        case "BFloat16Vector" =>
+          val coordinateArray: Array[Float] = coordinates.asScala.collect { case i: Number =>
+            i.floatValue()
+          }.toArray
+          if (asDriverParameter) {
+            throw new UnsupportedOperationException(
+              "The Neo4j driver does not yet support BFLOAT16 vectors as query parameters"
+            )
+          } else {
+            Values.float16Vector(
+              Float16Format.BFLOAT16,
+              coordinateArray.map(c => Float16Format.BFLOAT16.toFloat16(c)): _*
+            )
+          }
+        case "Float16Vector" =>
+          val coordinateArray: Array[Float] = coordinates.asScala.collect { case i: Number =>
+            i.floatValue()
+          }.toArray
+          if (asDriverParameter) {
+            throw new UnsupportedOperationException(
+              "The Neo4j driver does not yet support FLOAT16 vectors as query parameters"
+            )
+          } else {
+            Values.float16Vector(
+              Float16Format.FLOAT16,
+              coordinateArray.map(c => Float16Format.FLOAT16.toFloat16(c)): _*
+            )
           }
         case "Float32Vector" =>
           val coordinateArray: Array[Float] = coordinates.asScala.collect { case i: Number =>

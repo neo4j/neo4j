@@ -127,6 +127,9 @@ class CypherConfiguration private (val config: Config) {
 
   val labelInference: CypherInferSchemaPartsOption = CypherInferSchemaPartsOption.fromConfig(config)
 
+  val float16CoordinateTypesEnabled: Boolean =
+    config.get(GraphDatabaseInternalSettings.cypher_float_coordinate_types_enabled).booleanValue()
+
   val statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption =
     CypherStatefulShortestPlanningModeOption.fromConfig(config)
 

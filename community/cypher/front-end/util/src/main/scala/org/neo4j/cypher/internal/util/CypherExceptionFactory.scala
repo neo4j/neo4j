@@ -274,7 +274,7 @@ trait CypherExceptionFactory {
 
     syntaxException(
       gql,
-      "Invalid vector inner type, expected INTEGER64, INTEGER32, INTEGER16, INTEGER8, FLOAT64 or FLOAT32",
+      "Invalid vector inner type, expected INTEGER64, INTEGER32, INTEGER16, INTEGER8, FLOAT64, FLOAT32, FLOAT16 or BFLOAT16",
       vectorType.position
     )
   }

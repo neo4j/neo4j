@@ -25,11 +25,13 @@ import org.neo4j.cypher.internal.ast.test.util.Parses
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.DateType
 import org.neo4j.cypher.internal.util.symbols.DurationType
+import org.neo4j.cypher.internal.util.symbols.Float16Type
 import org.neo4j.cypher.internal.util.symbols.Float32Type
 import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.Integer16Type
@@ -428,6 +430,36 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
     }
   }
 
+  test("RETURN x :: FLOAT16") {
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'FLOAT16': expected 'ANY', 'ARRAY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LIST', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 13 (offset: 12))
+            |"RETURN x :: FLOAT16"
+            |             ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'FLOAT16': expected 'ANY', 'ARRAY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'FLOAT64', 'INT', 'INT64', 'INTEGER', 'INTEGER64', 'LIST', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'UUID', 'PROPERTY VALUE', 'VARCHAR', 'VECTOR', 'VERTEX' or 'ZONED' (line 1, column 13 (offset: 12))
+            |"RETURN x :: FLOAT16"
+            |             ^""".stripMargin
+        )
+    }
+  }
+
+  test("RETURN x :: BFLOAT16") {
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'BFLOAT16': expected 'ANY', 'ARRAY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LIST', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 13 (offset: 12))
+            |"RETURN x :: BFLOAT16"
+            |             ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'BFLOAT16': expected 'ANY', 'ARRAY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'FLOAT64', 'INT', 'INT64', 'INTEGER', 'INTEGER64', 'LIST', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'UUID', 'PROPERTY VALUE', 'VARCHAR', 'VECTOR', 'VERTEX' or 'ZONED' (line 1, column 13 (offset: 12))
+            |"RETURN x :: BFLOAT16"
+            |             ^""".stripMargin
+        )
+    }
+  }
+
   // In Cypher 5 the property set is different (doesn't contain vector type), so this updates
   // the types accordingly
   def getCorrectCypherVersionOfType(fromCypher5: Boolean, typeExpr: CypherType): CypherType = {
@@ -607,7 +639,13 @@ object TypePredicateExpressionParserTest extends AstConstructionTestSupport {
     ("FLOAT64!", FloatType(isNullable = false)(pos)),
     ("FLOAT32", Float32Type(isNullable = false)(pos)),
     ("FLOAT32 NOT NULL", Float32Type(isNullable = false)(pos)),
-    ("FLOAT32!", Float32Type(isNullable = false)(pos))
+    ("FLOAT32!", Float32Type(isNullable = false)(pos)),
+    ("FLOAT16", Float16Type(isNullable = false)(pos)),
+    ("FLOAT16 NOT NULL", Float16Type(isNullable = false)(pos)),
+    ("FLOAT16!", Float16Type(isNullable = false)(pos)),
+    ("BFLOAT16", BFloat16Type(isNullable = false)(pos)),
+    ("BFLOAT16 NOT NULL", BFloat16Type(isNullable = false)(pos)),
+    ("BFLOAT16!", BFloat16Type(isNullable = false)(pos))
   )
 
   private def vectorTypes = {

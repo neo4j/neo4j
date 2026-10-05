@@ -18,8 +18,10 @@ package org.neo4j.cypher.internal.frontend.symbols
 
 import org.neo4j.cypher.internal.ast.semantics.MapExtendedType
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTBFloat16
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTFloat16
 import org.neo4j.cypher.internal.util.symbols.CTFloat32
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTInteger16
@@ -46,6 +48,8 @@ class TypeRangeTest extends CypherFunSuite {
     rangeOfInteger.contains(CTNumber) should equal(false)
     rangeOfInteger.contains(CTFloat) should equal(false)
     rangeOfInteger.contains(CTFloat32) should equal(false)
+    rangeOfInteger.contains(CTFloat16) should equal(false)
+    rangeOfInteger.contains(CTBFloat16) should equal(false)
     rangeOfInteger.contains(CTString) should equal(false)
     rangeOfInteger.contains(CTAny) should equal(false)
     rangeOfInteger.contains(CTVector) should equal(false)
@@ -58,6 +62,8 @@ class TypeRangeTest extends CypherFunSuite {
     rangeOfNumber.contains(CTNumber) should equal(true)
     rangeOfNumber.contains(CTFloat) should equal(false)
     rangeOfNumber.contains(CTFloat32) should equal(false)
+    rangeOfNumber.contains(CTFloat16) should equal(false)
+    rangeOfNumber.contains(CTBFloat16) should equal(false)
     rangeOfNumber.contains(CTString) should equal(false)
     rangeOfNumber.contains(CTAny) should equal(false)
 
@@ -105,10 +111,52 @@ class TypeRangeTest extends CypherFunSuite {
     rangeRootedAtListOfNumber.contains(CTList(CTInteger8)) should equal(true)
     rangeRootedAtListOfNumber.contains(CTList(CTFloat)) should equal(true)
     rangeRootedAtListOfNumber.contains(CTList(CTFloat32)) should equal(true)
+    rangeRootedAtListOfNumber.contains(CTList(CTFloat16)) should equal(true)
+    rangeRootedAtListOfNumber.contains(CTList(CTBFloat16)) should equal(true)
     rangeRootedAtListOfNumber.contains(CTList(CTNumber)) should equal(true)
     rangeRootedAtListOfNumber.contains(CTList(CTString)) should equal(false)
     rangeRootedAtListOfNumber.contains(CTVector) should equal(false)
     rangeRootedAtListOfNumber.contains(CTAny) should equal(false)
+
+    val rangeRootedAtFloat = TypeRange(CTFloat, None)
+    rangeRootedAtFloat.contains(CTInteger) should equal(false)
+    rangeRootedAtFloat.contains(CTFloat) should equal(true)
+    rangeRootedAtFloat.contains(CTFloat32) should equal(true)
+    rangeRootedAtFloat.contains(CTFloat16) should equal(true)
+    rangeRootedAtFloat.contains(CTBFloat16) should equal(true)
+    rangeRootedAtFloat.contains(CTNumber) should equal(false)
+    rangeRootedAtFloat.contains(CTString) should equal(false)
+    rangeRootedAtFloat.contains(CTAny) should equal(false)
+
+    val rangeRootedAtFloat32 = TypeRange(CTFloat32, None)
+    rangeRootedAtFloat32.contains(CTInteger) should equal(false)
+    rangeRootedAtFloat32.contains(CTFloat) should equal(false)
+    rangeRootedAtFloat32.contains(CTFloat32) should equal(true)
+    rangeRootedAtFloat32.contains(CTFloat16) should equal(true)
+    rangeRootedAtFloat32.contains(CTBFloat16) should equal(true)
+    rangeRootedAtFloat32.contains(CTNumber) should equal(false)
+    rangeRootedAtFloat32.contains(CTString) should equal(false)
+    rangeRootedAtFloat32.contains(CTAny) should equal(false)
+
+    val rangeRootedAtFloat16 = TypeRange(CTFloat16, None)
+    rangeRootedAtFloat16.contains(CTInteger) should equal(false)
+    rangeRootedAtFloat16.contains(CTFloat) should equal(false)
+    rangeRootedAtFloat16.contains(CTFloat32) should equal(false)
+    rangeRootedAtFloat16.contains(CTFloat16) should equal(true)
+    rangeRootedAtFloat16.contains(CTBFloat16) should equal(false)
+    rangeRootedAtFloat16.contains(CTNumber) should equal(false)
+    rangeRootedAtFloat16.contains(CTString) should equal(false)
+    rangeRootedAtFloat16.contains(CTAny) should equal(false)
+
+    val rangeRootedAtBFloat16 = TypeRange(CTBFloat16, None)
+    rangeRootedAtBFloat16.contains(CTInteger) should equal(false)
+    rangeRootedAtBFloat16.contains(CTFloat) should equal(false)
+    rangeRootedAtBFloat16.contains(CTFloat32) should equal(false)
+    rangeRootedAtBFloat16.contains(CTFloat16) should equal(false)
+    rangeRootedAtBFloat16.contains(CTBFloat16) should equal(true)
+    rangeRootedAtBFloat16.contains(CTNumber) should equal(false)
+    rangeRootedAtBFloat16.contains(CTString) should equal(false)
+    rangeRootedAtBFloat16.contains(CTAny) should equal(false)
   }
 
   test("unbounded TypeRange rooted at branch type should contain all more specific types") {
@@ -119,6 +167,8 @@ class TypeRangeTest extends CypherFunSuite {
     rangeRootedAtInteger.contains(CTInteger8) should equal(true)
     rangeRootedAtInteger.contains(CTFloat) should equal(true)
     rangeRootedAtInteger.contains(CTFloat32) should equal(true)
+    rangeRootedAtInteger.contains(CTFloat16) should equal(true)
+    rangeRootedAtInteger.contains(CTBFloat16) should equal(true)
     rangeRootedAtInteger.contains(CTNumber) should equal(true)
     rangeRootedAtInteger.contains(CTString) should equal(false)
     rangeRootedAtInteger.contains(CTAny) should equal(false)

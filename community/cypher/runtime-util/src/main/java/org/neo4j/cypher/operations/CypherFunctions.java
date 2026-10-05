@@ -68,11 +68,13 @@ import org.neo4j.cypher.internal.runtime.QueryContext;
 import org.neo4j.cypher.internal.runtime.RuntimeNotifier;
 import org.neo4j.cypher.internal.runtime.cursors.ExpressionCursors;
 import org.neo4j.cypher.internal.util.symbols.AnyType;
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type;
 import org.neo4j.cypher.internal.util.symbols.BooleanType;
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType;
 import org.neo4j.cypher.internal.util.symbols.CypherType;
 import org.neo4j.cypher.internal.util.symbols.DateType;
 import org.neo4j.cypher.internal.util.symbols.DurationType;
+import org.neo4j.cypher.internal.util.symbols.Float16Type;
 import org.neo4j.cypher.internal.util.symbols.Float32Type;
 import org.neo4j.cypher.internal.util.symbols.FloatType;
 import org.neo4j.cypher.internal.util.symbols.GeometryType;
@@ -766,6 +768,30 @@ public final class CypherFunctions {
             return assertDimension(VectorUtils.float32Vector(sequence), dimension);
         } else if (in instanceof TextValue textValue) {
             return assertDimension(CypherRuntimeParser.parseFloat32Vector(textValue.stringValue()), dimension);
+        } else {
+            throw invalidVector(in);
+        }
+    }
+
+    public static Value float16Vector(AnyValue in, AnyValue dimension) {
+        if (in == NO_VALUE || dimension == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof SequenceValue sequence) {
+            return assertDimension(VectorUtils.float16Vector(sequence), dimension);
+        } else if (in instanceof TextValue textValue) {
+            return assertDimension(CypherRuntimeParser.parseFloat16Vector(textValue.stringValue()), dimension);
+        } else {
+            throw invalidVector(in);
+        }
+    }
+
+    public static Value bfloat16Vector(AnyValue in, AnyValue dimension) {
+        if (in == NO_VALUE || dimension == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof SequenceValue sequence) {
+            return assertDimension(VectorUtils.bfloat16Vector(sequence), dimension);
+        } else if (in instanceof TextValue textValue) {
+            return assertDimension(CypherRuntimeParser.parseBFloat16Vector(textValue.stringValue()), dimension);
         } else {
             throw invalidVector(in);
         }
@@ -3747,6 +3773,8 @@ public final class CypherFunctions {
     private static boolean isVectorValueRepresentation(ValueRepresentation valueRepresentation) {
         return valueRepresentation.equals(ValueRepresentation.FLOAT64_VECTOR)
                 || valueRepresentation.equals(ValueRepresentation.FLOAT32_VECTOR)
+                || valueRepresentation.equals(ValueRepresentation.FLOAT16_VECTOR)
+                || valueRepresentation.equals(ValueRepresentation.BFLOAT16_VECTOR)
                 || valueRepresentation.equals(ValueRepresentation.INT64_VECTOR)
                 || valueRepresentation.equals(ValueRepresentation.INT32_VECTOR)
                 || valueRepresentation.equals(ValueRepresentation.INT16_VECTOR)
@@ -3830,6 +3858,8 @@ public final class CypherFunctions {
         if (cypherType instanceof VectorType vectorType) {
             if (vectorType.innerType().isDefined()) {
                 return switch (vectorType.innerType().get()) {
+                    case BFloat16Type __ -> List.of(ValueRepresentation.BFLOAT16_VECTOR);
+                    case Float16Type __ -> List.of(ValueRepresentation.FLOAT16_VECTOR);
                     case Float32Type __ -> List.of(ValueRepresentation.FLOAT32_VECTOR);
                     case FloatType __ -> List.of(ValueRepresentation.FLOAT64_VECTOR);
                     case Integer8Type __ -> List.of(ValueRepresentation.INT8_VECTOR);
@@ -3844,6 +3874,8 @@ public final class CypherFunctions {
                 return List.of(
                         ValueRepresentation.FLOAT64_VECTOR,
                         ValueRepresentation.FLOAT32_VECTOR,
+                        ValueRepresentation.FLOAT16_VECTOR,
+                        ValueRepresentation.BFLOAT16_VECTOR,
                         ValueRepresentation.INT64_VECTOR,
                         ValueRepresentation.INT32_VECTOR,
                         ValueRepresentation.INT16_VECTOR,

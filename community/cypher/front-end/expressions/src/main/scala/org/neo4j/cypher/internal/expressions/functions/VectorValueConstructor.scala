@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 case object VectorValueConstructor extends Function {
   override def name = "vector"
 
+  // TODO: Update the signature when the float16_coordinate_types_enabled flag is enabled
   override val signatures: Vector[FunctionTypeSignature] = Vector(
     FunctionTypeSignature(
       this,

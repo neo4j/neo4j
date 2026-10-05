@@ -623,7 +623,9 @@ import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.ProcedureName
 import org.neo4j.cypher.internal.util.ProcedureOutput
 import org.neo4j.cypher.internal.util.symbols.AnyType
+import org.neo4j.cypher.internal.util.symbols.CTBFloat16
 import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTFloat16
 import org.neo4j.cypher.internal.util.symbols.CTFloat32
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTInteger16
@@ -2794,7 +2796,9 @@ class AstGenerator(
       CTInteger16.withIsNullable(false),
       CTInteger8.withIsNullable(false),
       CTFloat.withIsNullable(false),
-      CTFloat32.withIsNullable(false)
+      CTFloat32.withIsNullable(false),
+      CTFloat16.withIsNullable(false),
+      CTBFloat16.withIsNullable(false)
     )
   } yield _type
 

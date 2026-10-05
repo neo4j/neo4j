@@ -123,6 +123,10 @@ object SemanticFeature {
     override def name: String = "secret manager"
   }
 
+  case object FloatCoordinateTypes extends SemanticFeature with FeatureToString {
+    override def name: String = "BFLOAT16/FLOAT16 coordinate types"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
@@ -143,7 +147,8 @@ object SemanticFeature {
     UserTags,
     ValueInListProperty,
     UserTagsInPropertyRules,
-    SecretManager
+    SecretManager,
+    FloatCoordinateTypes
   )
 
   def fromString(str: String): SemanticFeature =

@@ -20,11 +20,13 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTAnyNotNull
+import org.neo4j.cypher.internal.util.symbols.CTBFloat16
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTDuration
 import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTFloat16
 import org.neo4j.cypher.internal.util.symbols.CTFloat32
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTInteger16
@@ -182,8 +184,8 @@ trait CypherTypeTestSuite extends CypherFunSuite {
      *   CTInteger      CTFloat
      *         |          |
      *   CTInteger32    CTFloat32
-     *         |
-     *   CTInteger16
+     *         |          /    \
+     *   CTInteger16  CTFloat16 CTBFloat16
      *         |
      *   CTInteger8
      */
@@ -192,6 +194,8 @@ trait CypherTypeTestSuite extends CypherFunSuite {
       CTInteger8 -> CTInteger16,
       CTInteger16 -> CTInteger32,
       CTInteger32 -> CTInteger,
+      CTFloat16 -> CTFloat32,
+      CTBFloat16 -> CTFloat32,
       CTFloat32 -> CTFloat,
       CTInteger -> CTNumber,
       CTFloat -> CTNumber

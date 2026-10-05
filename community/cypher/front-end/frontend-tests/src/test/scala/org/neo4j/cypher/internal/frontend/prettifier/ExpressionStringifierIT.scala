@@ -189,7 +189,9 @@ class ExpressionStringifierIT extends CypherFunSuite {
 
   val cypher25OnlyTests: Seq[(String, String)] = Seq[(String, String)](
     "vector([1,2,3], 3, int)" -> "vector([1, 2, 3], 3, INTEGER NOT NULL)",
-    "VECTOR(\"[1,2,3]\", 3, float32!)" -> "vector(\"[1,2,3]\", 3, FLOAT32 NOT NULL)"
+    "VECTOR(\"[1,2,3]\", 3, float32!)" -> "vector(\"[1,2,3]\", 3, FLOAT32 NOT NULL)",
+    "VECTOR(\"[1,2,3]\", 3, float16!)" -> "vector(\"[1,2,3]\", 3, FLOAT16 NOT NULL)",
+    "VECTOR(\"[1,2,3]\", 3, bfloat16!)" -> "vector(\"[1,2,3]\", 3, BFLOAT16 NOT NULL)"
   )
 
   tests foreach {

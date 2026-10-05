@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.parser.v25.Cypher25ParserListener
 import org.neo4j.cypher.internal.parser.v25.ast.factory.LiteralBuilder.cypherStringToString
 import org.neo4j.cypher.internal.util._
 import org.neo4j.cypher.internal.util.symbols.AnyType
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -53,6 +54,7 @@ import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.DateType
 import org.neo4j.cypher.internal.util.symbols.DurationType
+import org.neo4j.cypher.internal.util.symbols.Float16Type
 import org.neo4j.cypher.internal.util.symbols.Float32Type
 import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.Integer16Type
@@ -1062,6 +1064,8 @@ trait ExpressionBuilder extends Cypher25ParserListener {
       case Cypher25Parser.INTEGER8 | Cypher25Parser.INT8   => Integer8Type(isNullable = false)(p)
       case Cypher25Parser.FLOAT | Cypher25Parser.FLOAT64   => FloatType(isNullable = false)(p)
       case Cypher25Parser.FLOAT32                          => Float32Type(isNullable = false)(p)
+      case Cypher25Parser.FLOAT16                          => Float16Type(isNullable = false)(p)
+      case Cypher25Parser.BFLOAT16                         => BFloat16Type(isNullable = false)(p)
       case Cypher25Parser.SIGNED                           => IntegerType(isNullable = false)(p)
       case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
     }

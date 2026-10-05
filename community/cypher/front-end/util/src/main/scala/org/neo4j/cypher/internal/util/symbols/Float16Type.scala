@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class Float16Type(isNullable: Boolean)(val position: InputPosition) extends CypherType {
-  val parentType: CypherType = CTFloat
-  override def coercibleTo: Set[CypherType] = Set(CTFloat)
+  val parentType: CypherType = CTFloat32
+  override def coercibleTo: Set[CypherType] = Set(CTFloat32, CTFloat)
   override val toClassString = "Float16"
   override val toCypherTypeString = "FLOAT16"
   override def hasCypherParserSupport: Boolean = false

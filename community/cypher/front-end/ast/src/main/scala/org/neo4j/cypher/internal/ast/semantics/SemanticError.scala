@@ -2007,6 +2007,21 @@ object SemanticError {
     )
   }
 
+  def vectorFloatCoordinateTypesNotSupported(position: InputPosition): SemanticError = {
+    val gql = GqlHelper.getGql42001_51N26(
+      "FLOAT16 and BFLOAT16 coordinate types",
+      "FLOAT16 and BFLOAT16 coordinate types",
+      position.offset,
+      position.line,
+      position.column
+    )
+    SemanticError(
+      gql,
+      "The FLOAT16 and BFLOAT16 coordinate types are not supported.",
+      position
+    )
+  }
+
   def unsupportedPathModeWithVarLength(
     varLengthRel: String,
     pathMode: String,

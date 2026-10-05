@@ -175,7 +175,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters.ShortestPathsConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.BFloat16VectorValueConstructorFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ConstantGraphReference
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Float16VectorValueConstructorFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Float32VectorValueConstructorFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Float64VectorValueConstructorFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.IdExpressionGraphReference
@@ -198,6 +200,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
+import org.neo4j.cypher.internal.util.symbols.Float16Type
 import org.neo4j.cypher.internal.util.symbols.Float32Type
 import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.Integer16Type
@@ -341,6 +345,10 @@ case class CommunityExpressionConverter(
             Int32VectorValueConstructorFunction(vectorExpression, dimensionExpression)
           case _: IntegerType =>
             Int64VectorValueConstructorFunction(vectorExpression, dimensionExpression)
+          case _: BFloat16Type =>
+            BFloat16VectorValueConstructorFunction(vectorExpression, dimensionExpression)
+          case _: Float16Type =>
+            Float16VectorValueConstructorFunction(vectorExpression, dimensionExpression)
           case _: Float32Type =>
             Float32VectorValueConstructorFunction(vectorExpression, dimensionExpression)
           case _: FloatType =>

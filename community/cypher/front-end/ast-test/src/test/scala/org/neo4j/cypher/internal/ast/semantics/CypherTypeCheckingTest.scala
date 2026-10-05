@@ -31,8 +31,10 @@ import org.neo4j.cypher.internal.graphtype.GraphTypeTestCase.nodeTypeRefByLabel
 import org.neo4j.cypher.internal.graphtype.GraphTypeTestCase.propertyTypeConstraint
 import org.neo4j.cypher.internal.graphtype.GraphTypeTestCase.propertyTypeWithPos
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.Float16Type
 import org.neo4j.cypher.internal.util.symbols.Float32Type
 import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.Integer16Type
@@ -61,6 +63,7 @@ class CypherTypeCheckingTest extends CypherFunSuite with AstConstructionTestSupp
   private val pos5 = InputPosition(42, 11, 14)
 
   private val initialState = SemanticState.clean
+  private val floatCoordinateTypesEnabledState = initialState.withFeature(SemanticFeature.FloatCoordinateTypes)
 
   // Dependent constraints allow non-nullable types (including non-nullable lists).
   // Otherwise, the rules are the same for all sort of property type constraints.
@@ -155,6 +158,60 @@ class CypherTypeCheckingTest extends CypherFunSuite with AstConstructionTestSupp
           pos3
         )
         constraintCommand.semanticCheck.run(initialState, arbitrarySemanticContext()).errors shouldBe empty
+      }
+
+      test(
+        s"vector with FLOAT16 coordinate type should be valid for relationship property type constraint when feature enabled - $constraintType"
+      ) {
+        val constraintCommand = relPropertyTypeConstraint(
+          constraintType,
+          VectorType(Some(Float16Type(isNullable = false)(pos1)), Some(12), isNullable = true)(pos2),
+          pos3
+        )
+        constraintCommand.semanticCheck.run(
+          floatCoordinateTypesEnabledState,
+          arbitrarySemanticContext()
+        ).errors shouldBe empty
+      }
+
+      test(
+        s"vector with BFLOAT16 coordinate type should be valid for relationship property type constraint when feature enabled - $constraintType"
+      ) {
+        val constraintCommand = relPropertyTypeConstraint(
+          constraintType,
+          VectorType(Some(BFloat16Type(isNullable = false)(pos1)), Some(12), isNullable = true)(pos2),
+          pos3
+        )
+        constraintCommand.semanticCheck.run(
+          floatCoordinateTypesEnabledState,
+          arbitrarySemanticContext()
+        ).errors shouldBe empty
+      }
+
+      test(
+        s"vector with FLOAT16 coordinate type should not be valid for relationship property type constraint when feature disabled - $constraintType"
+      ) {
+        val constraintCommand = relPropertyTypeConstraint(
+          constraintType,
+          VectorType(Some(Float16Type(isNullable = false)(pos1)), Some(12), isNullable = true)(pos2),
+          pos3
+        )
+        constraintCommand.semanticCheck.run(initialState, arbitrarySemanticContext()).errors shouldBe Seq(
+          SemanticError.vectorFloatCoordinateTypesNotSupported(pos2)
+        )
+      }
+
+      test(
+        s"vector with BFLOAT16 coordinate type should not be valid for relationship property type constraint when feature disabled - $constraintType"
+      ) {
+        val constraintCommand = relPropertyTypeConstraint(
+          constraintType,
+          VectorType(Some(BFloat16Type(isNullable = false)(pos1)), Some(12), isNullable = true)(pos2),
+          pos3
+        )
+        constraintCommand.semanticCheck.run(initialState, arbitrarySemanticContext()).errors shouldBe Seq(
+          SemanticError.vectorFloatCoordinateTypesNotSupported(pos2)
+        )
       }
 
       test(s"vector with omitted dimension should not be valid for property type constraint - $constraintType") {
@@ -279,6 +336,48 @@ class CypherTypeCheckingTest extends CypherFunSuite with AstConstructionTestSupp
         )
       }
 
+      test(
+        s"vector with FLOAT16 coordinate type and too large dimension should not be valid for property type constraint when feature enabled - $constraintType"
+      ) {
+        val constraintCommand = relPropertyTypeConstraint(
+          constraintType,
+          VectorType(Some(Float16Type(isNullable = false)(pos1)), Some(4097), isNullable = true)(pos2),
+          pos3
+        )
+
+        assertPropertyTypeConstraintErrorWithCause(
+          constraintCommand,
+          constraintType,
+          "relationship",
+          "VECTOR<FLOAT16 NOT NULL>(4097)",
+          dimensionErrorCause(4097),
+          "The dimension of property type constraints for vectors needs to be between 1 and 4096.",
+          pos2,
+          floatCoordinateTypesEnabledState
+        )
+      }
+
+      test(
+        s"vector with BFLOAT16 coordinate type and too large dimension should not be valid for property type constraint when feature enabled - $constraintType"
+      ) {
+        val constraintCommand = relPropertyTypeConstraint(
+          constraintType,
+          VectorType(Some(BFloat16Type(isNullable = false)(pos1)), Some(4097), isNullable = true)(pos2),
+          pos3
+        )
+
+        assertPropertyTypeConstraintErrorWithCause(
+          constraintCommand,
+          constraintType,
+          "relationship",
+          "VECTOR<BFLOAT16 NOT NULL>(4097)",
+          dimensionErrorCause(4097),
+          "The dimension of property type constraints for vectors needs to be between 1 and 4096.",
+          pos2,
+          floatCoordinateTypesEnabledState
+        )
+      }
+
       // List types
 
       test(
@@ -341,6 +440,62 @@ class CypherTypeCheckingTest extends CypherFunSuite with AstConstructionTestSupp
           expectedCause,
           "Lists cannot have a vector as an inner type.",
           pos3
+        )
+      }
+
+      test(
+        s"list of vector with FLOAT16 coordinate type should not be valid for property type constraint - $constraintType"
+      ) {
+        val constraintCommand = relPropertyTypeConstraint(
+          constraintType,
+          ListType(
+            VectorType(Some(Float16Type(isNullable = false)(pos1)), Some(12), isNullable = false)(pos2),
+            isNullable = true
+          )(pos3),
+          pos4
+        )
+
+        val expectedCause = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NB9)
+          .withParam(GqlParams.StringParam.typeDescription, "a vector")
+          .build()
+
+        assertPropertyTypeConstraintErrorWithCause(
+          constraintCommand,
+          constraintType,
+          "relationship",
+          "LIST<VECTOR<FLOAT16 NOT NULL>(12) NOT NULL>",
+          expectedCause,
+          "Lists cannot have a vector as an inner type.",
+          pos3,
+          floatCoordinateTypesEnabledState
+        )
+      }
+
+      test(
+        s"list of vector with BFLOAT16 coordinate type should not be valid for property type constraint - $constraintType"
+      ) {
+        val constraintCommand = relPropertyTypeConstraint(
+          constraintType,
+          ListType(
+            VectorType(Some(BFloat16Type(isNullable = false)(pos1)), Some(12), isNullable = false)(pos2),
+            isNullable = true
+          )(pos3),
+          pos4
+        )
+
+        val expectedCause = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NB9)
+          .withParam(GqlParams.StringParam.typeDescription, "a vector")
+          .build()
+
+        assertPropertyTypeConstraintErrorWithCause(
+          constraintCommand,
+          constraintType,
+          "relationship",
+          "LIST<VECTOR<BFLOAT16 NOT NULL>(12) NOT NULL>",
+          expectedCause,
+          "Lists cannot have a vector as an inner type.",
+          pos3,
+          floatCoordinateTypesEnabledState
         )
       }
 
@@ -673,13 +828,14 @@ class CypherTypeCheckingTest extends CypherFunSuite with AstConstructionTestSupp
     cypherType: String,
     cause: ErrorGqlStatusObject,
     additionalErrorInfo: String,
-    position: InputPosition
+    position: InputPosition,
+    state: SemanticState = initialState
   ): Unit = {
     val constraintDescr =
       if (constraintType.equals(Legacy)) s"$elementType property type constraint" else "graph type constraint"
-    constraintCommand.semanticCheck.run(initialState, arbitrarySemanticContext()).errors shouldBe SemanticCheckResult
+    constraintCommand.semanticCheck.run(state, arbitrarySemanticContext()).errors shouldBe SemanticCheckResult
       .error(
-        initialState,
+        state,
         SemanticError(
           ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_50N11)
             .withParam(GqlParams.StringParam.constrDescrOrName, constraintDescr)

@@ -22,12 +22,14 @@ import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.DateType
 import org.neo4j.cypher.internal.util.symbols.DurationType
+import org.neo4j.cypher.internal.util.symbols.Float16Type
 import org.neo4j.cypher.internal.util.symbols.Float32Type
 import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.Integer16Type
@@ -2116,6 +2118,8 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     ("INTEGER64", IntegerType(isNullable = false)(pos)),
     ("INT", IntegerType(isNullable = false)(pos)),
     ("INTEGER", IntegerType(isNullable = false)(pos)),
+    ("BFLOAT16", BFloat16Type(isNullable = false)(pos)),
+    ("FLOAT16", Float16Type(isNullable = false)(pos)),
     ("FLOAT32", Float32Type(isNullable = false)(pos)),
     ("FLOAT64", FloatType(isNullable = false)(pos)),
     ("FLOAT", FloatType(isNullable = false)(pos))

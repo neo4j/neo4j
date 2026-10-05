@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.AttributeBasedAcc
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.DisableTypeCheckingInSemanticAnalysis
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.EnableParsingOfObfuscatedLiterals
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExperimentalCypherVersions
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.FloatCoordinateTypes
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LocalCallables
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.OidcCredentialForwarding
@@ -169,7 +170,8 @@ object FrontEndCompilationPhases extends FrontEndCompilationPhases {
       GraphDatabaseInternalSettings.user_tags -> UserTags.productPrefix,
       GraphDatabaseInternalSettings.value_in_list_property -> ValueInListProperty.productPrefix,
       GraphDatabaseInternalSettings.user_tags_in_property_rules -> UserTagsInPropertyRules.productPrefix,
-      GraphDatabaseInternalSettings.secrets_manager_enabled -> SecretManager.productPrefix
+      GraphDatabaseInternalSettings.secrets_manager_enabled -> SecretManager.productPrefix,
+      GraphDatabaseInternalSettings.cypher_float_coordinate_types_enabled -> FloatCoordinateTypes.productPrefix
     )
   }
 }

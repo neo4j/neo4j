@@ -30,6 +30,7 @@ import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ByteArray;
+import org.neo4j.values.storable.Float16Format;
 import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.IntArray;
 import org.neo4j.values.storable.IntegralValue;
@@ -134,6 +135,34 @@ final class VectorUtils {
             }
         }
         return Values.float32Vector(values);
+    }
+
+    static VectorValue float16Vector(SequenceValue vectorSequence) {
+        int index = 0;
+        int length = vectorSequence.intSize();
+        short[] values = new short[length];
+        for (AnyValue value : vectorSequence) {
+            if (value instanceof NumberValue numberValue) {
+                values[index++] = Float16Format.FLOAT16.toFloat16(numberValue.floatValue());
+            } else {
+                throw invalidVectorType(value);
+            }
+        }
+        return Values.float16Vector(Float16Format.FLOAT16, values);
+    }
+
+    static VectorValue bfloat16Vector(SequenceValue vectorSequence) {
+        int index = 0;
+        int length = vectorSequence.intSize();
+        short[] values = new short[length];
+        for (AnyValue value : vectorSequence) {
+            if (value instanceof NumberValue numberValue) {
+                values[index++] = Float16Format.BFLOAT16.toFloat16(numberValue.floatValue());
+            } else {
+                throw invalidVectorType(value);
+            }
+        }
+        return Values.float16Vector(Float16Format.BFLOAT16, values);
     }
 
     static VectorValue float64Vector(SequenceValue vectorSequence) {

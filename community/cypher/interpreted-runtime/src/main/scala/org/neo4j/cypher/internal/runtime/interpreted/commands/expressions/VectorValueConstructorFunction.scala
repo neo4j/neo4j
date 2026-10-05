@@ -71,6 +71,18 @@ case class Float32VectorValueConstructorFunction(vector: Expression, dimension: 
   override def rewrite(f: Expression => Expression): Expression = f(copy(f(vector), f(dimension)))
 }
 
+case class Float16VectorValueConstructorFunction(vector: Expression, dimension: Expression)
+    extends VectorValueConstructorFunction(vector, dimension) {
+  override def vectorFunction(v: AnyValue, d: AnyValue): Value = CypherFunctions.float16Vector(v, d)
+  override def rewrite(f: Expression => Expression): Expression = f(copy(f(vector), f(dimension)))
+}
+
+case class BFloat16VectorValueConstructorFunction(vector: Expression, dimension: Expression)
+    extends VectorValueConstructorFunction(vector, dimension) {
+  override def vectorFunction(v: AnyValue, d: AnyValue): Value = CypherFunctions.bfloat16Vector(v, d)
+  override def rewrite(f: Expression => Expression): Expression = f(copy(f(vector), f(dimension)))
+}
+
 case class Float64VectorValueConstructorFunction(vector: Expression, dimension: Expression)
     extends VectorValueConstructorFunction(vector, dimension) {
   override def vectorFunction(v: AnyValue, d: AnyValue): Value = CypherFunctions.float64Vector(v, d)

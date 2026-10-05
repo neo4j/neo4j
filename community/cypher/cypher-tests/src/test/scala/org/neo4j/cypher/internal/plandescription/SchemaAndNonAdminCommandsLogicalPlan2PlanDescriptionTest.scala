@@ -128,6 +128,7 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTestBase.details
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTestBase.planDescription
 import org.neo4j.cypher.internal.util.symbols.AnyType
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -138,6 +139,7 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 import org.neo4j.cypher.internal.util.symbols.DateType
 import org.neo4j.cypher.internal.util.symbols.DurationType
+import org.neo4j.cypher.internal.util.symbols.Float16Type
 import org.neo4j.cypher.internal.util.symbols.Float32Type
 import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.Integer32Type
@@ -4208,6 +4210,64 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         "AlterCurrentGraphTypeDrop",
         Seq.empty,
         Seq(details("{ ()-[:R => {p :: VECTOR<FLOAT32 NOT NULL>(75)}]->() }")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        AlterCurrentGraphType(
+          GraphTypeForDrop(
+            Set(
+              RelationshipElementType(
+                relType("R"),
+                EmptyNodeElementTypeReference,
+                EmptyNodeElementTypeReference,
+                Set(PropertyType(
+                  propName("p"),
+                  VectorType(Some(Float16Type(isNullable = false)(pos)), Some(75), isNullable = true)(pos)
+                ))
+              )
+            ),
+            Set.empty
+          )
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "AlterCurrentGraphTypeDrop",
+        Seq.empty,
+        Seq(details("{ ()-[:R => {p :: VECTOR<FLOAT16 NOT NULL>(75)}]->() }")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        AlterCurrentGraphType(
+          GraphTypeForDrop(
+            Set(
+              RelationshipElementType(
+                relType("R"),
+                EmptyNodeElementTypeReference,
+                EmptyNodeElementTypeReference,
+                Set(PropertyType(
+                  propName("p"),
+                  VectorType(Some(BFloat16Type(isNullable = false)(pos)), Some(75), isNullable = true)(pos)
+                ))
+              )
+            ),
+            Set.empty
+          )
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "AlterCurrentGraphTypeDrop",
+        Seq.empty,
+        Seq(details("{ ()-[:R => {p :: VECTOR<BFLOAT16 NOT NULL>(75)}]->() }")),
         Set.empty
       )
     )

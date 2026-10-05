@@ -1435,6 +1435,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     }
 
     @Internal
+    @Description("Set this to enable the use of FLOAT16/BFLOAT16 vector coordinate types in Cypher.")
+    public static final Setting<Boolean> cypher_float_coordinate_types_enabled = newBuilder(
+                    "internal.cypher.float16_coordinate_types_enabled", BOOL, false)
+            .immutable()
+            .build();
+
+    @Internal
     @Description(
             "Control flags to decide whether to plan remote (unique) node index seeks and remote merge unique node operators on the RHS of write queries in sharded databases.")
     public static final Setting<Set<RemoteNodeIndexWriteOperators>> remote_node_index_write_operators = newBuilder(

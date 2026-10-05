@@ -20,11 +20,13 @@ import org.neo4j.cypher.internal.ast.CypherParserTestSuite
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.DateType
 import org.neo4j.cypher.internal.util.symbols.DurationType
+import org.neo4j.cypher.internal.util.symbols.Float16Type
 import org.neo4j.cypher.internal.util.symbols.Float32Type
 import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.Integer16Type
@@ -136,6 +138,8 @@ class CypherTypeNameTest extends CypherParserTestSuite {
       ("VECTOR<INTEGER16 NOT NULL>", VectorType(Some(Integer16Type(isNullable = false)(pos)), None, _)(pos)),
       ("VECTOR<INTEGER32 NOT NULL>", VectorType(Some(Integer32Type(isNullable = false)(pos)), None, _)(pos)),
       ("VECTOR<INTEGER NOT NULL>", VectorType(Some(IntegerType(isNullable = false)(pos)), None, _)(pos)),
+      ("VECTOR<BFLOAT16 NOT NULL>", VectorType(Some(BFloat16Type(isNullable = false)(pos)), None, _)(pos)),
+      ("VECTOR<FLOAT16 NOT NULL>", VectorType(Some(Float16Type(isNullable = false)(pos)), None, _)(pos)),
       ("VECTOR<FLOAT32 NOT NULL>", VectorType(Some(Float32Type(isNullable = false)(pos)), None, _)(pos)),
       ("VECTOR<FLOAT NOT NULL>", VectorType(Some(FloatType(isNullable = false)(pos)), None, _)(pos)),
       ("MAP", MapType(_)(pos)),
@@ -1523,6 +1527,10 @@ class CypherTypeNameTest extends CypherParserTestSuite {
     val `FLOAT64` = FloatType(isNullable = true)(pos)
     val `FLOAT32` = Float32Type(isNullable = true)(pos)
     val `FLOAT32 NOT NULL` = Float32Type(isNullable = false)(pos)
+    val `FLOAT16` = Float16Type(isNullable = true)(pos)
+    val `FLOAT16 NOT NULL` = Float16Type(isNullable = false)(pos)
+    val `BFLOAT16` = BFloat16Type(isNullable = true)(pos)
+    val `BFLOAT16 NOT NULL` = BFloat16Type(isNullable = false)(pos)
 
     // Vector types
     val `VECTOR (super type)` = VectorType(None, None, isNullable = true)(pos)
@@ -1538,6 +1546,11 @@ class CypherTypeNameTest extends CypherParserTestSuite {
     val `VECTOR (super type - FLOAT64)` = VectorType(Some(`FLOAT64`), None, isNullable = true)(pos)
     val `VECTOR (super type - FLOAT32)` = VectorType(Some(`FLOAT32`), None, isNullable = true)(pos)
     val `VECTOR (super type - FLOAT32 NOT NULL)` = VectorType(Some(`FLOAT32 NOT NULL`), None, isNullable = true)(pos)
+    val `VECTOR (super type - FLOAT16)` = VectorType(Some(`FLOAT16`), None, isNullable = true)(pos)
+    val `VECTOR (super type - FLOAT16 NOT NULL)` = VectorType(Some(`FLOAT16 NOT NULL`), None, isNullable = true)(pos)
+    val `VECTOR (super type - BFLOAT16)` = VectorType(Some(`BFLOAT16`), None, isNullable = true)(pos)
+    val `VECTOR (super type - BFLOAT16 NOT NULL)` =
+      VectorType(Some(`BFLOAT16 NOT NULL`), None, isNullable = true)(pos)
 
     val `VECTOR (super type - dimension 1024)` = VectorType(None, Some(1024), isNullable = true)(pos)
     val `VECTOR (super type - dimension 2048)` = VectorType(None, Some(2048), isNullable = true)(pos)
@@ -1548,6 +1561,12 @@ class CypherTypeNameTest extends CypherParserTestSuite {
     val `VECTOR (FLOAT32 - dimension 2048)` = VectorType(Some(`FLOAT32`), Some(2048), isNullable = true)(pos)
     val `VECTOR (FLOAT32 NOT NULL - dimension 2048)` =
       VectorType(Some(`FLOAT32 NOT NULL`), Some(2048), isNullable = true)(pos)
+    val `VECTOR (FLOAT16 - dimension 2048)` = VectorType(Some(`FLOAT16`), Some(2048), isNullable = true)(pos)
+    val `VECTOR (FLOAT16 NOT NULL - dimension 2048)` =
+      VectorType(Some(`FLOAT16 NOT NULL`), Some(2048), isNullable = true)(pos)
+    val `VECTOR (BFLOAT16 - dimension 2048)` = VectorType(Some(`BFLOAT16`), Some(2048), isNullable = true)(pos)
+    val `VECTOR (BFLOAT16 NOT NULL - dimension 2048)` =
+      VectorType(Some(`BFLOAT16 NOT NULL`), Some(2048), isNullable = true)(pos)
 
     val `ANY` = AnyType(isNullable = true)(pos)
     val `STRING | ANY` = ClosedDynamicUnionType(Set(`VECTOR (super type)`, `ANY`))(pos)
@@ -1564,25 +1583,52 @@ class CypherTypeNameTest extends CypherParserTestSuite {
     `VECTOR (INTEGER64 - dimension 2048)`.isSubtypeOf(`VECTOR (super type - dimension 2048)`) shouldBe true
     `VECTOR (INTEGER64 - dimension 1024)`.isSubtypeOf(`VECTOR (super type)`) shouldBe true
     `VECTOR (FLOAT32 - dimension 2048)`.isSubtypeOf(`VECTOR (super type)`) shouldBe true
+    `VECTOR (FLOAT16 - dimension 2048)`.isSubtypeOf(`VECTOR (super type)`) shouldBe true
+    `VECTOR (BFLOAT16 - dimension 2048)`.isSubtypeOf(`VECTOR (super type)`) shouldBe true
     `VECTOR (super type - dimension 1024)`.isSubtypeOf(`VECTOR (super type)`) shouldBe true
     `VECTOR (super type - FLOAT32)`.isSubtypeOf(`VECTOR (super type)`) shouldBe true
+    `VECTOR (super type - FLOAT16)`.isSubtypeOf(`VECTOR (super type)`) shouldBe true
+    `VECTOR (super type - BFLOAT16)`.isSubtypeOf(`VECTOR (super type)`) shouldBe true
     `VECTOR (FLOAT32 - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT32 - dimension 2048)`) shouldBe true
+    `VECTOR (FLOAT16 - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT16 - dimension 2048)`) shouldBe true
+    `VECTOR (BFLOAT16 - dimension 2048)`.isSubtypeOf(`VECTOR (BFLOAT16 - dimension 2048)`) shouldBe true
     `VECTOR (super type - FLOAT32 NOT NULL)`.isSubtypeOf(`VECTOR (super type - FLOAT32 NOT NULL)`) shouldBe true
+    `VECTOR (super type - FLOAT16 NOT NULL)`.isSubtypeOf(`VECTOR (super type - FLOAT16 NOT NULL)`) shouldBe true
+    `VECTOR (super type - BFLOAT16 NOT NULL)`.isSubtypeOf(`VECTOR (super type - BFLOAT16 NOT NULL)`) shouldBe true
     `VECTOR (FLOAT32 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (super type - FLOAT32 NOT NULL)`) shouldBe true
+    `VECTOR (FLOAT16 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (super type - FLOAT16 NOT NULL)`) shouldBe true
+    `VECTOR (BFLOAT16 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (super type - BFLOAT16 NOT NULL)`) shouldBe true
     `VECTOR (FLOAT32 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (super type - FLOAT32)`) shouldBe true
+    `VECTOR (FLOAT16 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (super type - FLOAT16)`) shouldBe true
+    `VECTOR (BFLOAT16 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (super type - BFLOAT16)`) shouldBe true
     `VECTOR (FLOAT32 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT32 NOT NULL - dimension 2048)`) shouldBe true
+    `VECTOR (FLOAT16 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT16 NOT NULL - dimension 2048)`) shouldBe true
+    `VECTOR (BFLOAT16 NOT NULL - dimension 2048)`.isSubtypeOf(
+      `VECTOR (BFLOAT16 NOT NULL - dimension 2048)`
+    ) shouldBe true
     `VECTOR (FLOAT32 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT32 - dimension 2048)`) shouldBe true
+    `VECTOR (FLOAT16 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT16 - dimension 2048)`) shouldBe true
+    `VECTOR (BFLOAT16 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (BFLOAT16 - dimension 2048)`) shouldBe true
     `VECTOR (FLOAT32 - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT32 NOT NULL - dimension 2048)`) shouldBe true
+    `VECTOR (FLOAT16 - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT16 NOT NULL - dimension 2048)`) shouldBe true
+    `VECTOR (BFLOAT16 - dimension 2048)`.isSubtypeOf(`VECTOR (BFLOAT16 NOT NULL - dimension 2048)`) shouldBe true
     `VECTOR (FLOAT32 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (super type - dimension 2048)`) shouldBe true
+    `VECTOR (FLOAT16 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (super type - dimension 2048)`) shouldBe true
+    `VECTOR (BFLOAT16 NOT NULL - dimension 2048)`.isSubtypeOf(`VECTOR (super type - dimension 2048)`) shouldBe true
     `VECTOR (super type - INTEGER64 NOT NULL)`.isSubtypeOf(`VECTOR (super type)`) shouldBe true
     `VECTOR (super type - INTEGER32 NOT NULL)`.isSubtypeOf(`VECTOR (super type)`) shouldBe true
 
     `VECTOR (super type - INTEGER32)`.isSubtypeOf(`VECTOR (super type - INTEGER64)`) shouldBe false
     `VECTOR (super type - FLOAT32)`.isSubtypeOf(`VECTOR (super type - FLOAT64)`) shouldBe false
+    `VECTOR (super type - FLOAT16)`.isSubtypeOf(`VECTOR (super type - FLOAT64)`) shouldBe false
+    `VECTOR (super type - BFLOAT16)`.isSubtypeOf(`VECTOR (super type - FLOAT64)`) shouldBe false
+    `VECTOR (super type - BFLOAT16)`.isSubtypeOf(`VECTOR (super type - FLOAT16)`) shouldBe false
     `VECTOR (super type - INTEGER64)`.isSubtypeOf(`VECTOR (INTEGER64 - dimension 1024)`) shouldBe false
     `VECTOR (super type - INTEGER8)`.isSubtypeOf(`VECTOR (super type - INTEGER16)`) shouldBe false
     `VECTOR (super type - dimension 1024)`.isSubtypeOf(`VECTOR (super type - dimension 2048)`) shouldBe false
     `VECTOR (FLOAT32 - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT64 - dimension 2048)`) shouldBe false
+    `VECTOR (FLOAT16 - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT64 - dimension 2048)`) shouldBe false
+    `VECTOR (BFLOAT16 - dimension 2048)`.isSubtypeOf(`VECTOR (FLOAT64 - dimension 2048)`) shouldBe false
 
     // Simple type isSubtype if contained in Closed Dynamic Union
     `VECTOR (super type)`.isSubtypeOf(`VECTOR (super type) | INTEGER`) shouldBe true
@@ -1647,6 +1693,12 @@ class CypherTypeNameTest extends CypherParserTestSuite {
     VectorType(Some(IntegerType(isNullable = false)(pos)), None, isNullable = true)(pos),
     VectorType(Some(IntegerType(isNullable = false)(pos)), Some(1024), isNullable = true)(pos),
     VectorType(Some(IntegerType(isNullable = false)(pos)), Some(2048), isNullable = true)(pos),
+    VectorType(Some(BFloat16Type(isNullable = false)(pos)), None, isNullable = true)(pos),
+    VectorType(Some(BFloat16Type(isNullable = false)(pos)), Some(1024), isNullable = true)(pos),
+    VectorType(Some(BFloat16Type(isNullable = false)(pos)), Some(2048), isNullable = true)(pos),
+    VectorType(Some(Float16Type(isNullable = false)(pos)), None, isNullable = true)(pos),
+    VectorType(Some(Float16Type(isNullable = false)(pos)), Some(1024), isNullable = true)(pos),
+    VectorType(Some(Float16Type(isNullable = false)(pos)), Some(2048), isNullable = true)(pos),
     VectorType(Some(Float32Type(isNullable = false)(pos)), None, isNullable = true)(pos),
     VectorType(Some(Float32Type(isNullable = false)(pos)), Some(1024), isNullable = true)(pos),
     VectorType(Some(Float32Type(isNullable = false)(pos)), Some(2048), isNullable = true)(pos),

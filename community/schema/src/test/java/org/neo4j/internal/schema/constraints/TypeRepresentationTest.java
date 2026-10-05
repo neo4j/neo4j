@@ -47,6 +47,7 @@ import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Float16Format;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -127,6 +128,26 @@ class TypeRepresentationTest {
                 Arguments.of(Values.int32Vector(1, 2, 3), VectorType.int32Vector(3)),
                 Arguments.of(Values.int64Vector(1), VectorType.int64Vector(1)),
                 Arguments.of(Values.int64Vector(1, 2, 3), VectorType.int64Vector(3)),
+                Arguments.of(
+                        Values.float16Vector(Float16Format.BFLOAT16, Float16Format.BFLOAT16.toFloat16(1)),
+                        VectorType.float16Vector(Float16Format.BFLOAT16, 1)),
+                Arguments.of(
+                        Values.float16Vector(
+                                Float16Format.BFLOAT16,
+                                Float16Format.BFLOAT16.toFloat16(1),
+                                Float16Format.BFLOAT16.toFloat16(2),
+                                Float16Format.BFLOAT16.toFloat16(3)),
+                        VectorType.float16Vector(Float16Format.BFLOAT16, 3)),
+                Arguments.of(
+                        Values.float16Vector(Float16Format.FLOAT16, Float16Format.FLOAT16.toFloat16(1)),
+                        VectorType.float16Vector(Float16Format.FLOAT16, 1)),
+                Arguments.of(
+                        Values.float16Vector(
+                                Float16Format.FLOAT16,
+                                Float16Format.FLOAT16.toFloat16(1),
+                                Float16Format.FLOAT16.toFloat16(2),
+                                Float16Format.FLOAT16.toFloat16(3)),
+                        VectorType.float16Vector(Float16Format.FLOAT16, 3)),
                 Arguments.of(Values.float32Vector(1), VectorType.float32Vector(1)),
                 Arguments.of(Values.float32Vector(1, 2, 3), VectorType.float32Vector(3)),
                 Arguments.of(Values.float64Vector(1), VectorType.float64Vector(1)),
@@ -144,12 +165,22 @@ class TypeRepresentationTest {
                         Arrays.stream(SchemaValueType.values()),
                         Arrays.stream(SpecialTypes.values()),
                         Stream.of(
-                                VectorType.int8Vector(1), VectorType.int8Vector(3),
-                                VectorType.int16Vector(1), VectorType.int16Vector(3),
-                                VectorType.int32Vector(1), VectorType.int32Vector(3),
-                                VectorType.int64Vector(1), VectorType.int64Vector(3),
-                                VectorType.float32Vector(1), VectorType.float32Vector(3),
-                                VectorType.float64Vector(1), VectorType.float64Vector(3)))
+                                VectorType.int8Vector(1),
+                                VectorType.int8Vector(3),
+                                VectorType.int16Vector(1),
+                                VectorType.int16Vector(3),
+                                VectorType.int32Vector(1),
+                                VectorType.int32Vector(3),
+                                VectorType.int64Vector(1),
+                                VectorType.int64Vector(3),
+                                VectorType.float16Vector(Float16Format.BFLOAT16, 1),
+                                VectorType.float16Vector(Float16Format.BFLOAT16, 3),
+                                VectorType.float16Vector(Float16Format.FLOAT16, 1),
+                                VectorType.float16Vector(Float16Format.FLOAT16, 3),
+                                VectorType.float32Vector(1),
+                                VectorType.float32Vector(3),
+                                VectorType.float64Vector(1),
+                                VectorType.float64Vector(3)))
                 .flatMap(Function.identity());
     }
 
@@ -230,6 +261,10 @@ class TypeRepresentationTest {
             "VECTOR<INTEGER32 NOT NULL>(3)",
             "VECTOR<INTEGER NOT NULL>(1)",
             "VECTOR<INTEGER NOT NULL>(3)",
+            "VECTOR<BFLOAT16 NOT NULL>(1)",
+            "VECTOR<BFLOAT16 NOT NULL>(3)",
+            "VECTOR<FLOAT16 NOT NULL>(1)",
+            "VECTOR<FLOAT16 NOT NULL>(3)",
             "VECTOR<FLOAT32 NOT NULL>(1)",
             "VECTOR<FLOAT32 NOT NULL>(3)",
             "VECTOR<FLOAT NOT NULL>(1)",
@@ -257,12 +292,22 @@ class TypeRepresentationTest {
         return Stream.of(
                         Arrays.stream(SchemaValueType.values()),
                         Stream.of(
-                                VectorType.int8Vector(1), VectorType.int8Vector(3),
-                                VectorType.int16Vector(1), VectorType.int16Vector(3),
-                                VectorType.int32Vector(1), VectorType.int32Vector(3),
-                                VectorType.int64Vector(1), VectorType.int64Vector(3),
-                                VectorType.float32Vector(1), VectorType.float32Vector(3),
-                                VectorType.float64Vector(1), VectorType.float64Vector(3)))
+                                VectorType.int8Vector(1),
+                                VectorType.int8Vector(3),
+                                VectorType.int16Vector(1),
+                                VectorType.int16Vector(3),
+                                VectorType.int32Vector(1),
+                                VectorType.int32Vector(3),
+                                VectorType.int64Vector(1),
+                                VectorType.int64Vector(3),
+                                VectorType.float16Vector(Float16Format.BFLOAT16, 1),
+                                VectorType.float16Vector(Float16Format.BFLOAT16, 3),
+                                VectorType.float16Vector(Float16Format.FLOAT16, 1),
+                                VectorType.float16Vector(Float16Format.FLOAT16, 3),
+                                VectorType.float32Vector(1),
+                                VectorType.float32Vector(3),
+                                VectorType.float64Vector(1),
+                                VectorType.float64Vector(3)))
                 .flatMap(Function.identity());
     }
 

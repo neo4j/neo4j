@@ -1213,6 +1213,14 @@ class PrettifierIT extends AbstractPrettifierTest {
     IgnoreInCypher5(
       "RETURN VECTOR_NORM(vector([1, 2, 3, 4], 4, float32), manhattan)",
       """RETURN vector_norm(vector([1, 2, 3, 4], 4, FLOAT32 NOT NULL), MANHATTAN)""".stripMargin
+    ),
+    IgnoreInCypher5(
+      "RETURN VECTOR_NORM(vector([1, 2, 3, 4], 4, float16), manhattan)",
+      """RETURN vector_norm(vector([1, 2, 3, 4], 4, FLOAT16 NOT NULL), MANHATTAN)""".stripMargin
+    ),
+    IgnoreInCypher5(
+      "RETURN VECTOR_NORM(vector([1, 2, 3, 4], 4, bfloat16), manhattan)",
+      """RETURN vector_norm(vector([1, 2, 3, 4], 4, BFLOAT16 NOT NULL), MANHATTAN)""".stripMargin
     )
   )
 

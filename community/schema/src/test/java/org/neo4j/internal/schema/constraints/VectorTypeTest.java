@@ -27,6 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.test.extension.RandomSupportExtension;
+import org.neo4j.values.storable.Float16Format;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -38,8 +39,22 @@ class VectorTypeTest {
                 Arguments.of(Values.int16Vector(new short[] {2, 3, 5, 7, 11}), VectorType.int16Vector(5)),
                 Arguments.of(Values.int32Vector(2, 3, 5, 7, 11), VectorType.int32Vector(5)),
                 Arguments.of(Values.int64Vector(2, 3, 5, 7, 11), VectorType.int64Vector(5)),
+                Arguments.of(
+                        Values.float16Vector(Float16Format.BFLOAT16, bfloat16(2, 3, 5, 7, 11)),
+                        VectorType.float16Vector(Float16Format.BFLOAT16, 5)),
+                Arguments.of(
+                        Values.float16Vector(Float16Format.FLOAT16, float16(2, 3, 5, 7, 11)),
+                        VectorType.float16Vector(Float16Format.FLOAT16, 5)),
                 Arguments.of(Values.float32Vector(2, 3, 5, 7, 11), VectorType.float32Vector(5)),
                 Arguments.of(Values.float64Vector(2, 3, 5, 7, 11), VectorType.float64Vector(5)));
+    }
+
+    private static short[] float16(float... values) {
+        return Float16Format.FLOAT16.toFloat16(values);
+    }
+
+    private static short[] bfloat16(float... values) {
+        return Float16Format.BFLOAT16.toFloat16(values);
     }
 
     @ParameterizedTest

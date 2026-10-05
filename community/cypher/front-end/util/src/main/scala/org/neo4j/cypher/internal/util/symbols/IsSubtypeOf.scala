@@ -36,8 +36,10 @@ object IsSubtypeOf extends TypeAssignabilityRelationship {
     case (Integer32Type(_), IntegerType(_) | NumberType(_))                    => isNullableSub(sub, sup)
     case (IntegerType(_), NumberType(_))                                       => isNullableSub(sub, sup)
 
-    case (Float32Type(_), FloatType(_) | NumberType(_)) => isNullableSub(sub, sup)
-    case (FloatType(_), NumberType(_))                  => isNullableSub(sub, sup)
+    case (Float16Type(_), Float32Type(_) | FloatType(_) | NumberType(_))  => isNullableSub(sub, sup)
+    case (BFloat16Type(_), Float32Type(_) | FloatType(_) | NumberType(_)) => isNullableSub(sub, sup)
+    case (Float32Type(_), FloatType(_) | NumberType(_))                   => isNullableSub(sub, sup)
+    case (FloatType(_), NumberType(_))                                    => isNullableSub(sub, sup)
 
     // property value types
     case (_, PropertyValueType(_)) => sub.canBeStoredInProperty && isNullableSub(sub, sup)

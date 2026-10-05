@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.Float16Type
 import org.neo4j.cypher.internal.util.symbols.Float32Type
 import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.Integer16Type
@@ -40,6 +42,8 @@ class VectorValueConstructorFunctionParserTest extends AstParsingTestBase {
   private val int8: CypherType = Integer8Type(isNullable = false)(pos)
   private val float64: CypherType = FloatType(isNullable = false)(pos)
   private val float32: CypherType = Float32Type(isNullable = false)(pos)
+  private val float16: CypherType = Float16Type(isNullable = false)(pos)
+  private val bfloat16: CypherType = BFloat16Type(isNullable = false)(pos)
 
   // All Vector coordinate types are accepted (Cypher 25)
   val vectorCoordinateTypes: Seq[(String, CypherType)] = Seq(
@@ -84,7 +88,13 @@ class VectorValueConstructorFunctionParserTest extends AstParsingTestBase {
     ("FLOAT64 NOT NULL", float64),
     ("FLOAT32", float32),
     ("FLOAT32!", float32),
-    ("FLOAT32 NOT NULL", float32)
+    ("FLOAT32 NOT NULL", float32),
+    ("FLOAT16 NOT NULL", float16),
+    ("FLOAT16", float16),
+    ("FLOAT16!", float16),
+    ("BFLOAT16 NOT NULL", bfloat16),
+    ("BFLOAT16", bfloat16),
+    ("BFLOAT16!", bfloat16)
   )
 
   vectorCoordinateTypes.foreach { case (typeName, cypherType) =>
@@ -133,7 +143,7 @@ class VectorValueConstructorFunctionParserTest extends AstParsingTestBase {
         }
       case Cypher25 =>
         _.withSyntaxErrorContaining(
-          """Invalid vector inner type, expected INTEGER64, INTEGER32, INTEGER16, INTEGER8, FLOAT64 or FLOAT32 (line 1, column 23 (offset: 22))
+          """Invalid vector inner type, expected INTEGER64, INTEGER32, INTEGER16, INTEGER8, FLOAT64, FLOAT32, FLOAT16 or BFLOAT16 (line 1, column 23 (offset: 22))
             |"RETURN vector(foo, 2, STRING)"
             |                       ^""".stripMargin,
           GqlStatusInfoCodes.STATUS_42I53,
@@ -154,7 +164,7 @@ class VectorValueConstructorFunctionParserTest extends AstParsingTestBase {
         }
       case Cypher25 =>
         _.withSyntaxErrorContaining(
-          """Invalid vector inner type, expected INTEGER64, INTEGER32, INTEGER16, INTEGER8, FLOAT64 or FLOAT32 (line 1, column 23 (offset: 22))
+          """Invalid vector inner type, expected INTEGER64, INTEGER32, INTEGER16, INTEGER8, FLOAT64, FLOAT32, FLOAT16 or BFLOAT16 (line 1, column 23 (offset: 22))
             |"RETURN vector(foo, 2, null)"
             |                       ^""".stripMargin,
           GqlStatusInfoCodes.STATUS_42I53,
@@ -174,7 +184,7 @@ class VectorValueConstructorFunctionParserTest extends AstParsingTestBase {
         }
       case Cypher25 =>
         _.withSyntaxErrorContaining(
-          """Invalid vector inner type, expected INTEGER64, INTEGER32, INTEGER16, INTEGER8, FLOAT64 or FLOAT32 (line 1, column 23 (offset: 22))
+          """Invalid vector inner type, expected INTEGER64, INTEGER32, INTEGER16, INTEGER8, FLOAT64, FLOAT32, FLOAT16 or BFLOAT16 (line 1, column 23 (offset: 22))
             |"RETURN vector(foo, 2, INTEGE)"
             |                       ^""".stripMargin,
           GqlStatusInfoCodes.STATUS_42I53,

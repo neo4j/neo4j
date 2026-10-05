@@ -115,8 +115,8 @@ public final class VectorType implements ConstrainableType {
             case INTEGER16 -> Ordering.VECTOR_INT16_ORDER;
             case INTEGER32 -> Ordering.VECTOR_INT32_ORDER;
             case INTEGER64 -> Ordering.VECTOR_INT64_ORDER;
-            case FLOAT16 -> Ordering.VECTOR_FLOAT16_ORDER;
             case BFLOAT16 -> Ordering.VECTOR_BFLOAT16_ORDER;
+            case FLOAT16 -> Ordering.VECTOR_FLOAT16_ORDER;
             case FLOAT32 -> Ordering.VECTOR_FLOAT32_ORDER;
             case FLOAT64 -> Ordering.VECTOR_FLOAT64_ORDER;
         };

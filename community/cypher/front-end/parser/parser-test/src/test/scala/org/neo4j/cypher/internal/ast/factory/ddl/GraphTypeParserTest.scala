@@ -34,7 +34,9 @@ import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.test.util.Parses
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.graphtype.GraphTypeTestCase
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
 import org.neo4j.cypher.internal.util.symbols.DateType
+import org.neo4j.cypher.internal.util.symbols.Float16Type
 import org.neo4j.cypher.internal.util.symbols.Float32Type
 import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.Integer32Type
@@ -158,6 +160,40 @@ class GraphTypeParserTest extends AstParsingTestBase with AstGraphTypeConstructi
               propertyType(
                 "feature",
                 VectorType(Some(Float32Type(isNullable = false)(defaultPos)), Some(4), isNullable = true)
+              )
+            )
+          )
+        ))
+    }
+  }
+
+  test("ALTER CURRENT GRAPH TYPE SET {(:Product => {feature :: VECTOR<FLOAT16>(4)})}") {
+    parsesIn[Statements] {
+      case Cypher5 => cypher5Error
+      case _ => _.toAst(alterCurrentGraphTypeSet(
+          graphType(
+            nodeType(
+              "Product",
+              propertyType(
+                "feature",
+                VectorType(Some(Float16Type(isNullable = false)(defaultPos)), Some(4), isNullable = true)
+              )
+            )
+          )
+        ))
+    }
+  }
+
+  test("ALTER CURRENT GRAPH TYPE SET {(:Product => {feature :: VECTOR<BFLOAT16>(4)})}") {
+    parsesIn[Statements] {
+      case Cypher5 => cypher5Error
+      case _ => _.toAst(alterCurrentGraphTypeSet(
+          graphType(
+            nodeType(
+              "Product",
+              propertyType(
+                "feature",
+                VectorType(Some(BFloat16Type(isNullable = false)(defaultPos)), Some(4), isNullable = true)
               )
             )
           )

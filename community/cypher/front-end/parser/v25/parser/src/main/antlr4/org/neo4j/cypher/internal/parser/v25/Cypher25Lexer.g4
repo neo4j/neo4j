@@ -559,8 +559,17 @@ FLOAT
 FLOAT64
    : F L O A T SIX FOUR
    ;
+
 FLOAT32
    : F L O A T THREE TWO
+   ;
+
+FLOAT16
+   : F L O A T ONE SIX
+   ;
+
+BFLOAT16
+   : B F L O A T ONE SIX
    ;
 
 FOR

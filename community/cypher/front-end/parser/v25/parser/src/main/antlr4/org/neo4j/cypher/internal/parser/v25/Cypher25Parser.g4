@@ -963,6 +963,8 @@ vectorCoordinateType
     | FLOAT
     | FLOAT64
     | FLOAT32
+    | FLOAT16
+    | BFLOAT16
     ) typeNullability?
     ;
 
@@ -2297,6 +2299,7 @@ unescapedSymbolicNameString_
    | AT
    | AUTH
    | AUTO
+   | BFLOAT16
    | BINDINGS
    | BOOL
    | BOOLEAN
@@ -2381,6 +2384,7 @@ unescapedSymbolicNameString_
    | FLOAT   
    | FLOAT64
    | FLOAT32
+   | FLOAT16
    | FOREACH
    | FOR
    | FORWARDING

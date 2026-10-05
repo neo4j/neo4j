@@ -18,7 +18,9 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.Float16Type
 import org.neo4j.cypher.internal.util.symbols.Float32Type
 import org.neo4j.cypher.internal.util.symbols.FloatType
 import org.neo4j.cypher.internal.util.symbols.Integer16Type
@@ -37,6 +39,8 @@ case class VectorValueConstructor(vectorCandidate: Expression, dimension: Expres
     case _: Integer8Type  => true
     case _: FloatType     => true
     case _: Float32Type   => true
+    case _: BFloat16Type  => true
+    case _: Float16Type   => true
     case _                => false
   }
 

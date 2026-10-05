@@ -70,6 +70,7 @@ import org.neo4j.internal.schema.constraints.SchemaValueType.STRING
 import org.neo4j.internal.schema.constraints.SchemaValueType.UUID
 import org.neo4j.internal.schema.constraints.SchemaValueType.ZONED_DATETIME
 import org.neo4j.internal.schema.constraints.SchemaValueType.ZONED_TIME
+import org.neo4j.values.storable.Float16Format
 
 object PropertyTypeMapper {
 
@@ -105,6 +106,10 @@ object PropertyTypeMapper {
       org.neo4j.internal.schema.constraints.VectorType.int32Vector(dim.toInt)
     case VectorType(Some(IntegerType(false)), Some(dim), _) =>
       org.neo4j.internal.schema.constraints.VectorType.int64Vector(dim.toInt)
+    case VectorType(Some(BFloat16Type(false)), Some(dim), _) =>
+      org.neo4j.internal.schema.constraints.VectorType.float16Vector(Float16Format.BFLOAT16, dim.toInt)
+    case VectorType(Some(Float16Type(false)), Some(dim), _) =>
+      org.neo4j.internal.schema.constraints.VectorType.float16Vector(Float16Format.FLOAT16, dim.toInt)
     case VectorType(Some(Float32Type(false)), Some(dim), _) =>
       org.neo4j.internal.schema.constraints.VectorType.float32Vector(dim.toInt)
     case VectorType(Some(FloatType(false)), Some(dim), _) =>

@@ -24,11 +24,13 @@ import static scala.jdk.javaapi.CollectionConverters.asScala;
 import java.util.HashSet;
 import java.util.Set;
 import org.neo4j.cypher.internal.util.InputPosition;
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type;
 import org.neo4j.cypher.internal.util.symbols.BooleanType;
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType;
 import org.neo4j.cypher.internal.util.symbols.CypherType;
 import org.neo4j.cypher.internal.util.symbols.DateType;
 import org.neo4j.cypher.internal.util.symbols.DurationType;
+import org.neo4j.cypher.internal.util.symbols.Float16Type;
 import org.neo4j.cypher.internal.util.symbols.Float32Type;
 import org.neo4j.cypher.internal.util.symbols.FloatType;
 import org.neo4j.cypher.internal.util.symbols.Integer16Type;
@@ -54,6 +56,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.BFloat16Vector;
 import org.neo4j.values.storable.BooleanArray;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DateArray;
@@ -62,6 +65,7 @@ import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationArray;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.Float16Vector;
 import org.neo4j.values.storable.Float32Vector;
 import org.neo4j.values.storable.Float64Vector;
 import org.neo4j.values.storable.FloatingPointArray;
@@ -104,6 +108,8 @@ public final class CypherTypeValueMapper implements ValueMapper<CypherType> {
     private static final Integer16Type INTEGER16_CYPHER_TYPE_NAME = new Integer16Type(false, dummyPos);
     private static final Integer32Type INTEGER32_CYPHER_TYPE_NAME = new Integer32Type(false, dummyPos);
     private static final IntegerType INTEGER_CYPHER_TYPE_NAME = new IntegerType(false, dummyPos);
+    private static final BFloat16Type BFLOAT16_CYPHER_TYPE_NAME = new BFloat16Type(false, dummyPos);
+    private static final Float16Type FLOAT16_CYPHER_TYPE_NAME = new Float16Type(false, dummyPos);
     private static final Float32Type FLOAT32_CYPHER_TYPE_NAME = new Float32Type(false, dummyPos);
     private static final FloatType FLOAT_CYPHER_TYPE_NAME = new FloatType(false, dummyPos);
     private static final DateType DATE_CYPHER_TYPE_NAME = new DateType(false, dummyPos);
@@ -126,6 +132,10 @@ public final class CypherTypeValueMapper implements ValueMapper<CypherType> {
             new VectorType(Option.apply(INTEGER32_CYPHER_TYPE_NAME), Option.empty(), false, dummyPos);
     private static final VectorType INTEGER64_VECTOR_CYPHER_TYPE_NAME =
             new VectorType(Option.apply(INTEGER_CYPHER_TYPE_NAME), Option.empty(), false, dummyPos);
+    private static final VectorType BFLOAT16_VECTOR_CYPHER_TYPE_NAME =
+            new VectorType(Option.apply(BFLOAT16_CYPHER_TYPE_NAME), Option.empty(), false, dummyPos);
+    private static final VectorType FLOAT16_VECTOR_CYPHER_TYPE_NAME =
+            new VectorType(Option.apply(FLOAT16_CYPHER_TYPE_NAME), Option.empty(), false, dummyPos);
     private static final VectorType FLOAT32_VECTOR_CYPHER_TYPE_NAME =
             new VectorType(Option.apply(FLOAT32_CYPHER_TYPE_NAME), Option.empty(), false, dummyPos);
     private static final VectorType FLOAT64_VECTOR_CYPHER_TYPE_NAME =
@@ -352,6 +362,16 @@ public final class CypherTypeValueMapper implements ValueMapper<CypherType> {
     @Override
     public CypherType mapInt64Vector(Int64Vector value) {
         return INTEGER64_VECTOR_CYPHER_TYPE_NAME.withDimension(value.dimensions());
+    }
+
+    @Override
+    public CypherType mapFloat16Vector(Float16Vector value) {
+        return FLOAT16_VECTOR_CYPHER_TYPE_NAME.withDimension(value.dimensions());
+    }
+
+    @Override
+    public CypherType mapFloat16Vector(BFloat16Vector value) {
+        return BFLOAT16_VECTOR_CYPHER_TYPE_NAME.withDimension(value.dimensions());
     }
 
     @Override

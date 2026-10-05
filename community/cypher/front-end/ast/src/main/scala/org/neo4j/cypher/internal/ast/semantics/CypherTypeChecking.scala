@@ -223,25 +223,31 @@ object CypherTypeChecking extends SemanticAnalysisTooling {
     // Can't use `isNotNullContaining` on the CypherType as that looks at the inner types of the lists
     // which, since they have NOT NULL, makes the check always evaluate to true
     val keepTypeErrorCause = allowedTypes.exists(!_.isNullable)
-    CypherTypeName(originalPropertyType).semanticCheck.map {
-      case r @ SemanticCheckResult(_, Nil) => r
-      // Catch the case where we have a single cause and set that as cause for why we failed
-      // If we have multiple errors we won't know which is the true cause so then we skip adding the cause
-      case SemanticCheckResult(state, cause :: Nil) if keepTypeErrorCause =>
-        val innerCause =
-          if (cause.gqlStatusObject.gqlStatus().equals(GqlStatusInfoCodes.STATUS_42001.getStatusString))
-            cause.gqlStatusObject.cause().toScala
-          else Some(cause.gqlStatusObject)
+    whenState(
+      !_.features.contains(SemanticFeature.FloatCoordinateTypes) &&
+        SemanticExpressionCheck.isNewFloatType(normalizedPropertyType)
+    ) {
+      error(SemanticError.vectorFloatCoordinateTypesNotSupported(normalizedPropertyType.position))
+    } chain
+      CypherTypeName(originalPropertyType).semanticCheck.map {
+        case r @ SemanticCheckResult(_, Nil) => r
+        // Catch the case where we have a single cause and set that as cause for why we failed
+        // If we have multiple errors we won't know which is the true cause so then we skip adding the cause
+        case SemanticCheckResult(state, cause :: Nil) if keepTypeErrorCause =>
+          val innerCause =
+            if (cause.gqlStatusObject.gqlStatus().equals(GqlStatusInfoCodes.STATUS_42001.getStatusString))
+              cause.gqlStatusObject.cause().toScala
+            else Some(cause.gqlStatusObject)
 
-        SemanticCheckResult(
-          state,
-          Seq(errorFn(originalPropertyType, "", innerCause))
-        )
-      case SemanticCheckResult(state, _) => SemanticCheckResult(
-          state,
-          Seq(errorFn(originalPropertyType, "", None))
-        )
-    } chain allowedTypesCheck
+          SemanticCheckResult(
+            state,
+            Seq(errorFn(originalPropertyType, "", innerCause))
+          )
+        case SemanticCheckResult(state, _) => SemanticCheckResult(
+            state,
+            Seq(errorFn(originalPropertyType, "", None))
+          )
+      } chain allowedTypesCheck
   }
 
   private def checkVectorAllowed(vectorType: VectorType): Boolean = {

@@ -159,6 +159,7 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.BFloat16Type
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
@@ -180,9 +181,12 @@ import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.cypher.internal.util.symbols.CTVector
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.Float16Type
+import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.cypher.internal.util.symbols.StorableType.storableType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.symbols.TypeSpecRange
+import org.neo4j.cypher.internal.util.symbols.VectorType
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.values.storable.VectorValue
 
@@ -348,14 +352,22 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           expectType(CTNode.covariant | CTRelationship.covariant, x.element) chain
           specifyType(CTBoolean, x)
 
-      case x: IsTyped =>
-        check(ctx, x.arguments) chain
+      case x: IsTyped => whenState(
+          !_.features.contains(SemanticFeature.FloatCoordinateTypes) && isNewFloatType(x.typeName)
+        ) {
+          error(SemanticError.vectorFloatCoordinateTypesNotSupported(x.typeName.position))
+        } chain
+          check(ctx, x.arguments) chain
           CypherTypeName(x.typeName).semanticCheck chain
           checkTypes(x, x.signatures) chain
           SemanticCheck.success
 
-      case x: IsNotTyped =>
-        check(ctx, x.arguments) chain
+      case x: IsNotTyped => whenState(
+          !_.features.contains(SemanticFeature.FloatCoordinateTypes) && isNewFloatType(x.typeName)
+        ) {
+          error(SemanticError.vectorFloatCoordinateTypesNotSupported(x.typeName.position))
+        } chain
+          check(ctx, x.arguments) chain
           CypherTypeName(x.typeName).semanticCheck chain
           checkTypes(x, x.signatures) chain
           SemanticCheck.success
@@ -434,8 +446,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           expectType(CTList(CTRelationship).covariant, x.relName) chain
           specifyType(CTBoolean, x)
 
-      case x: VectorValueConstructor =>
-        check(ctx, x.arguments) chain
+      case x: VectorValueConstructor => whenState(
+          !_.features.contains(SemanticFeature.FloatCoordinateTypes) && isNewFloatType(x.typeName)
+        ) {
+          error(SemanticError.vectorFloatCoordinateTypesNotSupported(x.typeName.position))
+        } chain
+          check(ctx, x.arguments) chain
           CypherTypeName(x.typeName).semanticCheck chain
           expectType(
             CTInteger.covariant,
@@ -470,10 +486,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
                 "INTEGER16",
                 "INTEGER8",
                 "FLOAT64",
-                "FLOAT32"
+                "FLOAT32",
+                "FLOAT16",
+                "BFLOAT16"
               ),
               x.typeName.toCypherTypeString,
-              "Invalid vector inner type, expected INTEGER64, INTEGER32, INTEGER16, INTEGER8, FLOAT64 or FLOAT32",
+              "Invalid vector inner type, expected INTEGER64, INTEGER32, INTEGER16, INTEGER8, FLOAT64, FLOAT32, FLOAT16 or BFLOAT16",
               x.dimension.position
             ))
           } chain
@@ -1075,6 +1093,16 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         val tokenType = if (entityType.contains(RELATIONSHIP_TYPE)) TokenType.RelationshipType else TokenType.NodeLabel
         checkValidLabels(tokenType, labelExpression.flatten, labelExpression.position)
       }
+  }
+
+  // Remove when feature flag for the new vector coordinate types is removed.
+  def isNewFloatType(typeName: CypherType): Boolean = typeName match {
+    case _: BFloat16Type                        => true
+    case _: Float16Type                         => true
+    case v: VectorType if v.innerType.isDefined => isNewFloatType(v.innerType.get)
+    case l: ListType                            => isNewFloatType(l.innerType)
+    case u: ClosedDynamicUnionType              => u.sortedInnerTypes.exists(isNewFloatType)
+    case _                                      => false
   }
 
   /**
