@@ -131,8 +131,9 @@ public final class UndirectedMultiShortestLoopCursor extends UndirectedShortestL
 
     private boolean bfs() {
         int pathLength = Integer.MAX_VALUE;
-        boolean exhausted = false;
         HeapTrackingLongHashSet currentRoots = HeapTrackingCollections.newLongSet(memoryTracker);
+        // For even maxDepth, level maxDepth / 2 can find no loop within the bound, but it records the
+        // traces the DFS walks upwards for an even loop of length maxDepth found one level earlier.
         while (2 * currentDepth <= maxDepth
                 && currentDepth <= intersectionDepth) { // We only check current frontier for loops so this is fine
             currentRoots.clear();
@@ -150,24 +151,29 @@ public final class UndirectedMultiShortestLoopCursor extends UndirectedShortestL
                     if (relationshipsFilter.test(selectionCursor)) {
                         long foundNode = selectionCursor.otherNodeReference();
                         Loop loop = checkForLoop(pathTracer, currentFrontier, nextFrontier, foundNode, origin);
-                        currentRoots.add(pathTracer.originRelationship(foundNode));
                         int temp = handleLoop(
                                 loop, foundNode, intersectionFoundEarly, origin, selectionCursor.reference());
+                        // Only after handleLoop does a newly found node carry its root; before, it read as -1.
+                        currentRoots.add(pathTracer.originRelationship(foundNode));
                         if (temp != -1) {
                             pathLength = Math.min(pathLength, temp);
                         }
                     }
                 }
-                if (relCount == 1 && startNode == origin) {
+                if (relCount == 1 && startNode == origin && intersections.isEmpty()) {
+                    // A start node with a single relationship has no trail loop, unless that relationship is a
+                    // self-relationship, which handleLoop has just recorded as an intersection.
                     currentRoots.close();
                     return false;
-                } // If there is just one relation from startNode then we cannot find a loop (in trail mode)
-                if (currentDepth > 1 && currentRoots.size() < 2) {
-                    exhausted = true;
-                    break;
                 }
             }
-            if (exhausted || nextFrontier.isEmpty()) {
+            // Judged once per level over every origin and neighbour: a level that hangs off a single start
+            // relationship cannot produce a meet between two roots at any later level.
+            // An odd loop is complete when its level ends: every trace the DFS walks exists by then, and the
+            // next level could only record longer loops as intersections. Only an even loop needs one more level.
+            if (nextFrontier.isEmpty()
+                    || (!intersections.isEmpty() && pathLength % 2 == 1)
+                    || (currentDepth > 1 && currentRoots.size() < 2)) {
                 break;
             }
             var tmp = currentFrontier;
@@ -191,8 +197,11 @@ public final class UndirectedMultiShortestLoopCursor extends UndirectedShortestL
     }
 
     private int handleLoop(Loop loop, long foundNode, boolean intersectionFoundEarly, long origin, long relationship) {
+        // At the level after an even loop, only traces to shallower nodes are wanted. The one exception is a
+        // second self-relationship on the start node at depth zero; a trace between two intersections, or from
+        // an intersection to itself, can only lengthen a loop.
         if (intersectionDepth <= currentDepth
-                && (!intersections.contains(foundNode) || !intersections.contains(origin))
+                && foundNode != startNode
                 && (intersectionDepth != currentDepth || intersectionFoundEarly)
                 && pathTracer.depth(foundNode) >= pathTracer.depth(origin)) {
             return -1;
@@ -262,7 +271,9 @@ public final class UndirectedMultiShortestLoopCursor extends UndirectedShortestL
                     return Loop.ALREADY_SEEN;
                 } else if (currentFrontier.contains(foundNode)) {
                     if (pathTracing.originRelationship(foundNode) == pathTracing.originRelationship(origin)) {
-                        return Loop.NO_LOOP; // There are no trail-mode intersections on the same root.
+                        // Same root at the same depth: a longer route to a node this level already
+                        // expands. NO_LOOP would re-insert it and expand it twice, duplicating its traces.
+                        return Loop.ALREADY_SEEN;
                     }
                     return Loop.LOOP_IN_CURRENT_FRONTIER;
                 } else if (nextFrontier.contains(foundNode)) {

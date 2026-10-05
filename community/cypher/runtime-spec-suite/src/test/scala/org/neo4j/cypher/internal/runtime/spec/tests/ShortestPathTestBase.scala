@@ -190,6 +190,301 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("path").withRows(singleColumn(expected))
   }
 
+  test(
+    "all shortest paths, AllowSameNode, same variable, does not drop rows when a branch exhausts its root set early"
+  ) {
+    // 6-cycle start-a-c-e-d-b-start plus a detour a-y-c. y and c share the start
+    // relationship (start)-(a) at depth two, so an origin expanded early in a BFS level
+    // sees a single root while the level as a whole still has two. Exhaustion must be
+    // judged per level, not per origin, or the search stops before e is expanded and
+    // the traces the DFS walks back from the meet are never recorded. Node creation
+    // order is part of the repro: keep c before e.
+    val (start, sa, ac, ce, ed, bd, bs) = givenGraph {
+      val relType = RelationshipType.withName("R")
+      val s = tx.createNode()
+      val a = tx.createNode()
+      val b = tx.createNode()
+      val c = tx.createNode()
+      val d = tx.createNode()
+      val e = tx.createNode()
+      val y = tx.createNode()
+      val sa = s.createRelationshipTo(a, relType)
+      val ac = a.createRelationshipTo(c, relType)
+      val ce = c.createRelationshipTo(e, relType)
+      val ed = e.createRelationshipTo(d, relType)
+      val bd = b.createRelationshipTo(d, relType)
+      val bs = b.createRelationshipTo(s, relType)
+      a.createRelationshipTo(y, relType)
+      y.createRelationshipTo(c, relType)
+      (s, sa, ac, ce, ed, bd, bs)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPath("(x)-[r*1..6]-(x)", pathName = Some("path"), all = true, sameNodeMode = AllowSameNode)
+      .nodeByIdSeek("x", Set.empty, start.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(
+      TestPath(start, Seq(sa, ac, ce, ed, bd, bs)),
+      TestPath(start, Seq(bs, bd, ed, ce, ac, sa))
+    )
+    runtimeResult should beColumns("path").withRows(singleColumn(expected))
+  }
+
+  test("shortest path, AllowSameNode, same variable, finds an odd loop of length exactly maxDepth") {
+    // Triangle start-a-b-start with maxDepth 3. The length-3 loop is detected at BFS
+    // depth 1, the level whose shortest detectable loop (2 * depth + 1) equals maxDepth,
+    // so the BFS must expand that level.
+    val start = givenGraph {
+      val relType = RelationshipType.withName("R")
+      val s = tx.createNode()
+      val a = tx.createNode()
+      val b = tx.createNode()
+      s.createRelationshipTo(a, relType)
+      a.createRelationshipTo(b, relType)
+      b.createRelationshipTo(s, relType)
+      s
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPath("(x)-[r*1..3]-(x)", pathName = Some("path"), all = false, sameNodeMode = AllowSameNode)
+      .nodeByIdSeek("x", Set.empty, start.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("path").withRows(rowCount(1))
+  }
+
+  test("all shortest paths, AllowSameNode, same variable, does not duplicate rows after a same-root meet") {
+    // Length-5 loop start-a-c-d-b-start (cross edge c-d) plus a same-root pair a-y-c.
+    // y reaches c at the same depth on the same start relationship: not a loop, and c
+    // must not be expanded a second time, which would record its traces twice and emit
+    // each orientation twice. The cross edge keeps two roots alive so the search is not
+    // cut short. Node creation order is part of the repro: keep c before y.
+    val (start, sa, sb, ac, bd, cd) = givenGraph {
+      val relType = RelationshipType.withName("R")
+      val s = tx.createNode()
+      val a = tx.createNode()
+      val b = tx.createNode()
+      val c = tx.createNode()
+      val d = tx.createNode()
+      val y = tx.createNode()
+      val sa = s.createRelationshipTo(a, relType)
+      val sb = s.createRelationshipTo(b, relType)
+      val ac = a.createRelationshipTo(c, relType)
+      val bd = b.createRelationshipTo(d, relType)
+      val cd = c.createRelationshipTo(d, relType)
+      a.createRelationshipTo(y, relType)
+      y.createRelationshipTo(c, relType)
+      (s, sa, sb, ac, bd, cd)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPath("(x)-[r*1..6]-(x)", pathName = Some("path"), all = true, sameNodeMode = AllowSameNode)
+      .nodeByIdSeek("x", Set.empty, start.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(
+      TestPath(start, Seq(sa, ac, cd, bd, sb)),
+      TestPath(start, Seq(sb, bd, cd, ac, sa))
+    )
+    runtimeResult should beColumns("path").withRows(singleColumn(expected))
+  }
+
+  test("shortest path, AllowSameNode, same variable, stays anchored at the start node after a same-root meet") {
+    // Length-5 loop start-a-c-d-b-start (cross edge c-d) plus a same-root pair a-y-c. y is created
+    // before c, so at depth two it is expanded first and reaches c on the same start relationship.
+    // c's trace must keep pointing at a, or the path reconstructed through c does not begin at start.
+    // Node creation order is part of the repro: keep y before c.
+    val (start, sa, sb, ac, bd, cd) = givenGraph {
+      val relType = RelationshipType.withName("R")
+      val s = tx.createNode()
+      val a = tx.createNode()
+      val b = tx.createNode()
+      val y = tx.createNode()
+      val c = tx.createNode()
+      val d = tx.createNode()
+      val sa = s.createRelationshipTo(a, relType)
+      val sb = s.createRelationshipTo(b, relType)
+      val ac = a.createRelationshipTo(c, relType)
+      val bd = b.createRelationshipTo(d, relType)
+      val cd = c.createRelationshipTo(d, relType)
+      a.createRelationshipTo(y, relType)
+      y.createRelationshipTo(c, relType)
+      (s, sa, sb, ac, bd, cd)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPath("(x)-[r*1..6]-(x)", pathName = Some("path"), all = false, sameNodeMode = AllowSameNode)
+      .nodeByIdSeek("x", Set.empty, start.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val forward = Seq(sa, ac, cd, bd, sb).map(_.getId)
+    val backward = forward.reverse
+    runtimeResult should beColumns("path").withRows(assertPaths(rowCount(1))(p =>
+      p.startNodeId() == start.getId &&
+        (p.relationshipIds().toSeq == forward || p.relationshipIds().toSeq == backward)
+    ))
+  }
+
+  test("shortest path, AllowSameNode, same variable, prefers an odd loop over an even loop met earlier in the level") {
+    // start-a-m-b-start has length four, start-p-q-start length three. Both are detected at BFS
+    // depth one, where the frontier iterates in node id order: b meets m in the next frontier before
+    // p or q is expanded. The cursor must not settle for the even loop. Node creation order is part
+    // of the repro: keep a and b before p and q.
+    val start = givenGraph {
+      val relType = RelationshipType.withName("R")
+      val s = tx.createNode()
+      val a = tx.createNode()
+      val b = tx.createNode()
+      val p = tx.createNode()
+      val q = tx.createNode()
+      val m = tx.createNode()
+      s.createRelationshipTo(a, relType)
+      s.createRelationshipTo(b, relType)
+      a.createRelationshipTo(m, relType)
+      b.createRelationshipTo(m, relType)
+      s.createRelationshipTo(p, relType)
+      s.createRelationshipTo(q, relType)
+      p.createRelationshipTo(q, relType)
+      s
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPath("(x)-[r*1..6]-(x)", pathName = Some("path"), all = false, sameNodeMode = AllowSameNode)
+      .nodeByIdSeek("x", Set.empty, start.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("path").withRows(assertPaths(rowCount(1))(p => p.size() == 3))
+  }
+
+  test("all shortest paths, AllowSameNode, same variable, returns a lone self-relationship") {
+    // The start node's only relationship is a self-relationship: one relationship, but a trail loop.
+    val (start, self) = givenGraph {
+      val s = tx.createNode()
+      val self = s.createRelationshipTo(s, RelationshipType.withName("R"))
+      (s, self)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPath("(x)-[r*1..3]-(x)", pathName = Some("path"), all = true, sameNodeMode = AllowSameNode)
+      .nodeByIdSeek("x", Set.empty, start.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("path").withRows(singleColumn(Seq(TestPath(start, Seq(self)))))
+  }
+
+  test("all shortest paths, AllowSameNode, same variable, ignores a longer odd loop through the start node") {
+    // Triangle start-p-q-start and pentagon start-a-c-d-b-start. The pentagon's cross edge c-d is
+    // met one level after the triangle and must not become an intersection, or the DFS overruns
+    // its arrays.
+    val (start, sp, pq, qs) = givenGraph {
+      val relType = RelationshipType.withName("R")
+      val s = tx.createNode()
+      val p = tx.createNode()
+      val q = tx.createNode()
+      val a = tx.createNode()
+      val b = tx.createNode()
+      val c = tx.createNode()
+      val d = tx.createNode()
+      val sp = s.createRelationshipTo(p, relType)
+      val pq = p.createRelationshipTo(q, relType)
+      val qs = q.createRelationshipTo(s, relType)
+      s.createRelationshipTo(a, relType)
+      a.createRelationshipTo(c, relType)
+      c.createRelationshipTo(d, relType)
+      d.createRelationshipTo(b, relType)
+      b.createRelationshipTo(s, relType)
+      (s, sp, pq, qs)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPath("(x)-[r*1..6]-(x)", pathName = Some("path"), all = true, sameNodeMode = AllowSameNode)
+      .nodeByIdSeek("x", Set.empty, start.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(TestPath(start, Seq(sp, pq, qs)), TestPath(start, Seq(qs, pq, sp)))
+    runtimeResult should beColumns("path").withRows(singleColumn(expected))
+  }
+
+  test("all shortest paths, AllowSameNode, same variable, ignores an edge between two intersections") {
+    // Two 4-cycles start-a-i-b-start and start-c-j-d-start plus i-j. Both far nodes are
+    // intersections of even loops; the edge between them can only lengthen a loop and must not be
+    // followed by the DFS.
+    val (start, sa, ai, ib, bs, sc, cj, jd, ds) = givenGraph {
+      val relType = RelationshipType.withName("R")
+      val s = tx.createNode()
+      val a = tx.createNode()
+      val b = tx.createNode()
+      val i = tx.createNode()
+      val c = tx.createNode()
+      val d = tx.createNode()
+      val j = tx.createNode()
+      val sa = s.createRelationshipTo(a, relType)
+      val ai = a.createRelationshipTo(i, relType)
+      val ib = i.createRelationshipTo(b, relType)
+      val bs = b.createRelationshipTo(s, relType)
+      val sc = s.createRelationshipTo(c, relType)
+      val cj = c.createRelationshipTo(j, relType)
+      val jd = j.createRelationshipTo(d, relType)
+      val ds = d.createRelationshipTo(s, relType)
+      i.createRelationshipTo(j, relType)
+      (s, sa, ai, ib, bs, sc, cj, jd, ds)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPath("(x)-[r*1..6]-(x)", pathName = Some("path"), all = true, sameNodeMode = AllowSameNode)
+      .nodeByIdSeek("x", Set.empty, start.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(
+      TestPath(start, Seq(sa, ai, ib, bs)),
+      TestPath(start, Seq(bs, ib, ai, sa)),
+      TestPath(start, Seq(sc, cj, jd, ds)),
+      TestPath(start, Seq(ds, jd, cj, sc))
+    )
+    runtimeResult should beColumns("path").withRows(singleColumn(expected))
+  }
+
   test("all shortest paths (length >= 0), AllowSameNode") {
     // given
     val start = givenGraph {

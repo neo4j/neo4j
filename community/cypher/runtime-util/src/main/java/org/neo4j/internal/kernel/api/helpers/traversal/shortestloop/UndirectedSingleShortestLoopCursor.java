@@ -93,6 +93,7 @@ public final class UndirectedSingleShortestLoopCursor extends UndirectedShortest
         HeapTrackingLongHashSet currentRoots = HeapTrackingCollections.newLongSet(memoryTracker);
         try {
             currentFrontier.add(startNode);
+            roots.put(startNode, -1L); // the start node is on no root, and 0 is a valid relationship id
             LongIterator currentFrontierIterator = currentFrontier.longIterator();
             int currentDepth = 0;
 
@@ -100,8 +101,10 @@ public final class UndirectedSingleShortestLoopCursor extends UndirectedShortest
                 pathReference = null;
                 return false;
             }
-            while (2 * (currentDepth + 1) <= maxDepth) {
+            // Level d detects loops of length 2d+1 and 2d+2; keep going while the shorter one fits.
+            while (Loop.LOOP_IN_CURRENT_FRONTIER.loopLength(currentDepth) <= maxDepth) {
                 currentRoots.clear();
+                PathReference evenLoop = null;
                 while (currentFrontierIterator.hasNext()) {
                     long origin = currentFrontierIterator.next();
                     currentRoots.add(roots.get(origin));
@@ -127,23 +130,34 @@ public final class UndirectedSingleShortestLoopCursor extends UndirectedShortest
                             switch (loop) {
                                 case LOOP_IN_CURRENT_FRONTIER, LOOP_IN_NEXT_FRONTIER -> {
                                     if (roots.get(foundNode) == roots.get(origin) && foundNode != origin) {
-                                        if (nodeFilter.test(foundNode)) {
-                                            nextFrontier.add(foundNode);
-                                            pathTracing.put(foundNode, new Trace(selectionCursor.reference(), origin));
-                                        }
+                                        // Same root: not a loop, and the node already has its shortest trace.
+                                        // Overwriting it with a same-depth parent breaks createPath.
                                         continue;
                                     }
                                     int pathLength = loop.loopLength(currentDepth);
                                     if (pathLength <= maxDepth) {
-                                        this.pathReference = createPath(
-                                                pathTracing,
-                                                foundNode,
-                                                selectionCursor.relationshipReference(),
-                                                origin,
-                                                pathLength,
-                                                currentDepth);
-                                        closeInternal();
-                                        return true;
+                                        if (loop == Loop.LOOP_IN_CURRENT_FRONTIER) {
+                                            this.pathReference = createPath(
+                                                    pathTracing,
+                                                    foundNode,
+                                                    selectionCursor.relationshipReference(),
+                                                    origin,
+                                                    pathLength,
+                                                    currentDepth);
+                                            closeInternal();
+                                            return true;
+                                        }
+                                        // An even loop is one longer than an odd loop a later origin in this level
+                                        // may still close; hold the first one until the level is done.
+                                        if (evenLoop == null) {
+                                            evenLoop = createPath(
+                                                    pathTracing,
+                                                    foundNode,
+                                                    selectionCursor.relationshipReference(),
+                                                    origin,
+                                                    pathLength,
+                                                    currentDepth);
+                                        }
                                     }
                                 }
                                 case NO_LOOP -> {
@@ -158,6 +172,11 @@ public final class UndirectedSingleShortestLoopCursor extends UndirectedShortest
                     if (relCount == 1 && startNode == origin) {
                         return false;
                     } // If there is just one relation from startNode then we cannot find a loop (in trail mode)
+                }
+                if (evenLoop != null) {
+                    this.pathReference = evenLoop;
+                    closeInternal();
+                    return true;
                 }
                 if (nextFrontier.isEmpty()) {
                     return false;
