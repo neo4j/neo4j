@@ -45,7 +45,6 @@ class ProblemReportersTest {
     private static final String DUFF = "duff";
     private static final String SOURCE = "some.file";
     private static final long LINE = 13;
-    private static final int COL = 31;
 
     private static final Groups GROUPS = new Groups();
     private static final Group G1 = GROUPS.getOrCreate("G1");
@@ -404,19 +403,6 @@ class ProblemReportersTest {
                         ID value is invalid for the id type specified.
                         some.file: line 13
                         Invalid ID value: `duff`.
-                        """),
-                new Problem(ProblemReporters.idColumnMissingReporter(SOURCE, LINE, COL), formatJson("""
-                            {
-                                "problem": "MissingIdColumn",
-                                "message": "Row has fewer columns than expected and ID column is missing.\\nsome.file: line 13\\nMissing ID column index: 31.",
-                                "source":"some.file",
-                                "line":13,
-                                "columnIndex":"31"
-                            }
-                            """), """
-                        Row has fewer columns than expected and ID column is missing.
-                        some.file: line 13
-                        Missing ID column index: 31.
                         """),
                 new Problem(ProblemReporters.badPropertyReporter(SOURCE, LINE, P1, DUFF, null), formatJson("""
                             {

@@ -82,11 +82,6 @@ public interface Collector extends AutoCloseable, ResumableState {
     void collectExtraColumns(String source, long row, String value);
 
     /**
-     * @param columnIndex 1-based index of the ID column that is missing, as per the header.
-     */
-    void collectIdColumnMissing(String source, long row, int columnIndex);
-
-    /**
      * @param entityType the type of entity that relates to the {@link org.neo4j.internal.schema.SchemaCommand} being
      *                  applied (or <code>null</code> if the type is unknown)
      * @param failureMessage the failure message that resulted when applying a {@link org.neo4j.internal.schema.SchemaCommand}
@@ -148,14 +143,6 @@ public interface Collector extends AutoCloseable, ResumableState {
                 type,
                 endId,
                 endIdGroup != null ? format(":%s", endIdGroup) : "");
-    }
-
-    static String idColumnMissingMessage(String source, long row, int columnIndex) {
-        return standardisedErrorMessage(
-                "Row has fewer columns than expected and ID column is missing.",
-                source,
-                row,
-                "Missing ID column index: %d.".formatted(columnIndex));
     }
 
     static String invalidIDMessage(String source, long row, String value) {
@@ -316,9 +303,6 @@ public interface Collector extends AutoCloseable, ResumableState {
         public void collectMissingRelationshipType(String source, long lineNumber) {}
 
         @Override
-        public void collectIdColumnMissing(String source, long row, int columnIndex) {}
-
-        @Override
         public void collectBadProperty(String source, long row, String column, String value, String additionalInfo) {}
 
         @Override
@@ -432,11 +416,6 @@ public interface Collector extends AutoCloseable, ResumableState {
         }
 
         @Override
-        public void collectIdColumnMissing(String source, long row, int columnIndex) {
-            throw new IllegalStateException(idColumnMissingMessage(source, row, columnIndex));
-        }
-
-        @Override
         public void collectSchemaCommandFailure(EntityType entityType, String failureMessage) {
             throw new IllegalStateException(failureMessage);
         }
@@ -531,9 +510,6 @@ public interface Collector extends AutoCloseable, ResumableState {
 
         @Override
         public void collectMissingRelationshipType(String source, long lineNumber) {}
-
-        @Override
-        public void collectIdColumnMissing(String source, long row, int columnIndex) {}
 
         @Override
         public void collectBadProperty(String source, long row, String column, String value, String additionalInfo) {}

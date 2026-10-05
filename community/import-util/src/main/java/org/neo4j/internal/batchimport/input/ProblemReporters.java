@@ -29,7 +29,6 @@ import static org.neo4j.internal.batchimport.input.BadCollector.EXTRA_COLUMNS;
 import static org.neo4j.internal.batchimport.input.BadCollector.ILLEGAL_QUOTE;
 import static org.neo4j.internal.batchimport.input.BadCollector.INVALID_NODE_ID;
 import static org.neo4j.internal.batchimport.input.BadCollector.INVALID_RELATIONSHIP_ID;
-import static org.neo4j.internal.batchimport.input.BadCollector.MISSING_ID_COLUMN;
 import static org.neo4j.internal.batchimport.input.BadCollector.MISSING_RELATIONSHIP_TYPE;
 import static org.neo4j.internal.batchimport.input.BadCollector.NODE_SCHEMA_VIOLATIONS;
 import static org.neo4j.internal.batchimport.input.BadCollector.OTHER_NODE_VIOLATION;
@@ -72,9 +71,8 @@ public class ProblemReporters {
             .addSerializer(DataAfterQuoteProblemReporter.SERIALIZER)
             .addSerializer(IllegalQuoteProblemReporter.SERIALIZER)
             .addSerializer(InvalidIdProblemReporter.SERIALIZER)
-            .addSerializer(IdColumnMissingProblemReporter.SERIALIZER)
-            .addSerializer(MissingRelationshipTypeProblemReporter.SERIALIZER)
-            .addSerializer(BadPropertyProblemReporter.SERIALIZER);
+            .addSerializer(BadPropertyProblemReporter.SERIALIZER)
+            .addSerializer(MissingRelationshipTypeProblemReporter.SERIALIZER);
 
     /**
      * Prints the {@link ProblemReporter#message()} of any reported errors to the provided {@link OutputStream}
@@ -242,10 +240,6 @@ public class ProblemReporters {
 
     public static ProblemReporter invalidIdReporter(String source, long row, String value, EntityType entityType) {
         return new InvalidIdProblemReporter(source, row, value, entityType);
-    }
-
-    public static ProblemReporter idColumnMissingReporter(String source, long row, int columnIndex) {
-        return new IdColumnMissingProblemReporter(source, row, columnIndex);
     }
 
     public static ProblemReporter badPropertyReporter(
@@ -869,55 +863,6 @@ public class ProblemReporters {
         @Override
         public InputException exception() {
             return new InputException(message());
-        }
-    }
-
-    private static class IdColumnMissingProblemReporter extends ProblemReporter {
-
-        private static final StdSerializer<IdColumnMissingProblemReporter> SERIALIZER =
-                new StdSerializer<>(IdColumnMissingProblemReporter.class) {
-                    @Override
-                    public void serialize(
-                            IdColumnMissingProblemReporter reporter,
-                            JsonGenerator jsonGenerator,
-                            SerializerProvider serializerProvider)
-                            throws IOException {
-                        jsonGenerator.writeStartObject();
-                        startReport(jsonGenerator, reporter);
-                        writeSource(jsonGenerator, reporter.source, reporter.row);
-                        writeField(jsonGenerator, "columnIndex", reporter.columnIndex);
-                        jsonGenerator.writeEndObject();
-                    }
-                };
-
-        private final String source;
-        private final long row;
-        private final int columnIndex;
-
-        private String message;
-
-        private IdColumnMissingProblemReporter(String source, long row, int columnIndex) {
-            super(MISSING_ID_COLUMN);
-            this.source = source;
-            this.row = row;
-            this.columnIndex = columnIndex;
-        }
-
-        @Override
-        public String message() {
-            return getReportMessage();
-        }
-
-        @Override
-        public InputException exception() {
-            return new InputException(getReportMessage());
-        }
-
-        private String getReportMessage() {
-            if (message == null) {
-                message = Collector.idColumnMissingMessage(source, row, columnIndex);
-            }
-            return message;
         }
     }
 
