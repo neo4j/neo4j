@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Concurrent
 import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Serial
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.InputValues
+import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
+import org.neo4j.cypher.internal.runtime.TransactionBatchSchedulerConfig
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
@@ -403,8 +405,25 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
     batchSize: Int,
     morselSize: Int = getConfig.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small).intValue,
     query: QueryTemplate = QueryTemplate.Simple,
-    disjointBy: Boolean = false
+    disjointBy: Option[TransactionBatchSchedulerConfig] = None
   ) {
+
+    /** DISJOINT BY is what activates deadlock prevention, so the scheduler only matters when it is on. */
+    def disjointByEnabled: Boolean = disjointBy.isDefined
+
+    /**
+     * True when rows pack into batches as [b*batchSize, (b+1)*batchSize). That is a greedy first-fit
+     * property, and it also holds trivially without DISJOINT BY, where no deadlock prevention runs.
+     * The affinity and parking schedulers repack, so any expectation derived from row arithmetic is
+     * invalid for them.
+     */
+    def batchCompositionIsPredictable: Boolean =
+      disjointBy.forall(_ == TransactionBatchSchedulerConfig.Greedy)
+
+    private def disjointByString: String = disjointBy.fold("off")(_.toString)
+
+    private def disjointByCodeString: String =
+      disjointBy.fold("None")(s => s"Some(TransactionBatchSchedulerConfig.$s)")
 
     def inExpectedOrder(rows: Iterable[Array[_]]): RowsMatcher = {
       concurrency match {
@@ -414,10 +433,10 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
     }
 
     override def toString: String =
-      s"concurrency=$concurrency onErrorBehaviour=$onErrorBehaviour plan=$applyOrForeach reportStatus=$reportStatus batchSize=$batchSize morselSize=$morselSize, query=$query, disjointBy=$disjointBy"
+      s"concurrency=$concurrency onErrorBehaviour=$onErrorBehaviour plan=$applyOrForeach reportStatus=$reportStatus batchSize=$batchSize morselSize=$morselSize, query=$query, disjointBy=$disjointByString"
 
     def codeString: String =
-      s"${this.getClass.getSimpleName}(concurrency=$concurrency, onErrorBehaviour=$onErrorBehaviour, applyOrForeach=ApplyOrForeach.$applyOrForeach, reportStatus=$reportStatus, batchSize=$batchSize, morselSize=$morselSize, query=$query, disjointBy=$disjointBy)"
+      s"${this.getClass.getSimpleName}(concurrency=$concurrency, onErrorBehaviour=$onErrorBehaviour, applyOrForeach=ApplyOrForeach.$applyOrForeach, reportStatus=$reportStatus, batchSize=$batchSize, morselSize=$morselSize, query=$query, disjointBy=$disjointByCodeString)"
   }
 
   case class TestCaseConfig(
@@ -572,11 +591,17 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
 
     def expectNoErrorsAndNoRetries(config: TestCaseConfig): TestCaseExpectation = {
       val nResultRows = config.nRows
+      // A repacking scheduler gives up some batch fill, so it forms more batches than a perfect packing
+      // and the count becomes a lower bound. With no errors injected every batch still commits and
+      // nothing rolls back, whichever scheduler is in use.
+      val nInnerTransactions =
+        if (config.params.batchCompositionIsPredictable) Exactly(config.nBatches)
+        else AtLeast(config.nBatches)
       TestCaseExpectation(
         config,
         Some(nResultRows),
-        transactionsStarted = Exactly(config.nBatches),
-        transactionsCommitted = Exactly(config.nBatches),
+        transactionsStarted = nInnerTransactions,
+        transactionsCommitted = nInnerTransactions,
         transactionsRolledBack = Exactly(0),
         expectedOuterFailure = ErrorMessageExpectation.NoError,
         batchesExpectedStartedStatus = TrueForAllBatches,
@@ -823,6 +848,18 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
   private[this] val morselSizesToTest = Seq(1, 2, 3, 4, 5)
   private[this] val nMorselSizesToTest = if (runOnlySafeScenarios) 1 else 5
 
+  // None means no DISJOINT BY at all, which is the only shape that skips deadlock prevention entirely.
+  // Which scheduler is in use changes how batches are formed and dispatched, and therefore which
+  // interleavings the retry logic has to survive, so all of them are worth covering.
+  // Affinity and parking repack rows, so they only run the scenarios whose expectations survive that:
+  // see batchCompositionIsPredictable and errorInjectionTest below.
+  private[this] val disjointByValuesToTest: Seq[Option[TransactionBatchSchedulerConfig]] = Seq(
+    None,
+    Some(TransactionBatchSchedulerConfig.Greedy),
+    Some(TransactionBatchSchedulerConfig.Affinity),
+    Some(TransactionBatchSchedulerConfig.Parking)
+  )
+
   for {
     concurrency <-
       Seq(Serial) ++ (if (!isPipelined)
@@ -833,7 +870,7 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
     reportStatus <- if (onErrorBehaviour != OnErrorRetryThenFail) Seq(true, false) else Seq(false)
     batchSize <- random.shuffle(batchSizesToTest).take(nBatchSizesToTest)
     morselSize <- if (isPipelined) random.shuffle(morselSizesToTest).take(nMorselSizesToTest) else Seq(1)
-    disjointByEnabled <- if (concurrency != Serial) Seq(false, true) else Seq(false)
+    disjointBy <- if (concurrency != Serial) disjointByValuesToTest else Seq(None)
     query <- Seq(QueryTemplate.Simple, QueryTemplate.Complex)
     params =
       TestCaseParameters(
@@ -844,9 +881,15 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
         batchSize,
         morselSize,
         query,
-        disjointByEnabled
+        disjointBy
       )
   } yield {
+
+    // Error injection targets a batch by row arithmetic, and the per-row status expectations resolve a
+    // row's batch the same way, so these scenarios are only meaningful when batch composition is
+    // predictable. Registering nothing for the repacking schedulers is deliberate.
+    def errorInjectionTest(testName: String)(testBody: => Unit): Unit =
+      if (params.batchCompositionIsPredictable) test(testName)(testBody)
 
     test(s"Transaction retry should succeed when no errors: $params") {
       val nBatches = defaultNumberOfBatches
@@ -855,7 +898,7 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
       TestCaseExpectation.expectNoErrorsAndNoRetries(config).verify(result)
     }
 
-    test(
+    errorInjectionTest(
       s"Transaction retry should succeed when a single error in one batch in the middle and a short timeout: $params"
     ) {
       val nBatches = defaultNumberOfBatches
@@ -870,7 +913,9 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
       TestCaseExpectation.expectNoFailedBatchesAtLeastOneRetry(config).verify(result)
     }
 
-    test(s"Transaction retry should succeed when a single error in the last batch and a short timeout: $params") {
+    errorInjectionTest(
+      s"Transaction retry should succeed when a single error in the last batch and a short timeout: $params"
+    ) {
       val nBatches = defaultNumberOfBatches
       val retryTimeoutSeconds = shortRetryTimeoutSeconds
       val config = TestCaseConfig.withErrors(
@@ -883,7 +928,9 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
       TestCaseExpectation.expectNoFailedBatchesAtLeastOneRetry(config).verify(result)
     }
 
-    test(s"Transaction retry should succeed when a single error in the first batch and a short timeout: $params") {
+    errorInjectionTest(
+      s"Transaction retry should succeed when a single error in the first batch and a short timeout: $params"
+    ) {
       val nBatches = defaultNumberOfBatches
       val retryTimeoutSeconds = shortRetryTimeoutSeconds
       val config = TestCaseConfig.withErrors(
@@ -896,7 +943,7 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
       TestCaseExpectation.expectNoFailedBatchesAtLeastOneRetry(config).verify(result)
     }
 
-    test(
+    errorInjectionTest(
       s"Transaction retry should succeed when a single error in the first, last and one batch in the middle and a short timeout: $params"
     ) {
       val nBatches = defaultNumberOfBatches
@@ -912,7 +959,9 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
       TestCaseExpectation.expectNoFailedBatchesAtLeastOneRetry(config).verify(result)
     }
 
-    test(s"Transaction retry should time out when many errors in one batch and a short timeout: $params") {
+    errorInjectionTest(
+      s"Transaction retry should time out when many errors in one batch and a short timeout: $params"
+    ) {
       val nBatches = defaultNumberOfBatches
       val retryTimeoutSeconds = shortRetryTimeoutSeconds
       val failedBatchNumber = nBatches / 2
@@ -931,7 +980,9 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
       ).verify(result)
     }
 
-    test(s"Transaction retry should succeed when single errors in 2/3 of batches and a short timeout: $params") {
+    errorInjectionTest(
+      s"Transaction retry should succeed when single errors in 2/3 of batches and a short timeout: $params"
+    ) {
       val nBatches = defaultNumberOfBatches
       val retryTimeoutSeconds = shortRetryTimeoutSeconds
       val config = TestCaseConfig.withErrors(
@@ -945,7 +996,9 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
       TestCaseExpectation.expectNoFailedBatchesAtLeastOneRetry(config).verify(result)
     }
 
-    test(s"Transaction retry should time out when many errors in 1/3 of batches and a short timeout: $params") {
+    errorInjectionTest(
+      s"Transaction retry should time out when many errors in 1/3 of batches and a short timeout: $params"
+    ) {
       val nBatches = defaultNumberOfBatches
       val retryTimeoutSeconds = shortRetryTimeoutSeconds
       val config = TestCaseConfig.withErrors(
@@ -970,7 +1023,7 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
       ).verify(result)
     }
 
-    test(s"Transaction retry should fail and not retry client errors: $params") {
+    errorInjectionTest(s"Transaction retry should fail and not retry client errors: $params") {
       val nBatches = defaultNumberOfBatches
       val failedBatchNumber = nBatches / 2
       val config = TestCaseConfig.withErrors(
@@ -989,7 +1042,7 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
   }
 
   def runTest(config: TestCaseConfig): RecordingRuntimeResult = {
-    val input = createInput(config.nRows, config.params.disjointBy)
+    val input = createInput(config.nRows, config.params.disjointByEnabled)
     val query = createTestQueryWithInput(config)
     val parametersClue =
       s"Test parameters:\nval params = ${config.params.codeString}\nval nBatches = ${config.nBatches}\nval retryTimeoutSeconds = ${config.retryTimeoutSeconds}\n\n"
@@ -1004,9 +1057,20 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
       config.params.morselSize,
       getClass.getSimpleName
     )
-    val result = execute(query, runtime, input)
+    val result = executeQuery(
+      query,
+      runtime,
+      input.stream(),
+      queryConfig = queryRuntimeConfigFor(config.params)
+    )
     result
   }
+
+  private def queryRuntimeConfigFor(params: TestCaseParameters): QueryRuntimeConfig =
+    params.disjointBy match {
+      case Some(scheduler) => defaultQueryRuntimeConfig.copy(transactionBatchSchedulerConfig = scheduler)
+      case None            => defaultQueryRuntimeConfig
+    }
 
   def createInput(nRows: Int, disjointBy: Boolean = false): InputValues = {
     // Range sized so ~50% of batches share at least one j value with another batch
@@ -1068,8 +1132,8 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
     }
     val reportAs = if (params.reportStatus) Some(statusVarName) else None
     val resultColumns = Seq(inputVarName) ++ reportAs
-    val inputVars = if (params.disjointBy) Seq(inputVarName, disjointByVarName) else Seq(inputVarName)
-    val disjointByExprs = if (params.disjointBy) Seq(disjointByVarName) else Seq.empty
+    val inputVars = if (params.disjointByEnabled) Seq(inputVarName, disjointByVarName) else Seq(inputVarName)
+    val disjointByExprs = if (params.disjointByEnabled) Seq(disjointByVarName) else Seq.empty
     val qt = config.params.query
     config.params.applyOrForeach match {
       case ApplyOrForeach.Apply =>

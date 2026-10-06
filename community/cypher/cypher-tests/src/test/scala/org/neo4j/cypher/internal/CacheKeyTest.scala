@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
+import org.neo4j.cypher.internal.options.CypherTransactionBatchSchedulerOption
 import org.neo4j.cypher.internal.options.CypherTransactionBatchStrategyOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.options.CypherVersionOption
@@ -92,6 +93,7 @@ class CacheKeyTest extends CommunityCypherTestSuite {
       pipelinedBatchReuseOption = CypherPipelinedBatchReuseOption.pack,
       heapEstimatorCacheOption = CypherHeapEstimatorCacheOption.disabled,
       transactionBatchStrategy = CypherTransactionBatchStrategyOption.auto,
+      transactionBatchScheduler = CypherTransactionBatchSchedulerOption.affinity,
       parallelRepeatHeuristic = CypherParallelRepeatHeuristicOption.enabled
     )
 
@@ -133,6 +135,7 @@ class CacheKeyTest extends CommunityCypherTestSuite {
       pipelinedBatchReuseOption = CypherPipelinedBatchReuseOption.pack,
       heapEstimatorCacheOption = CypherHeapEstimatorCacheOption.disabled,
       transactionBatchStrategy = CypherTransactionBatchStrategyOption.auto,
+      transactionBatchScheduler = CypherTransactionBatchSchedulerOption.affinity,
       parallelRepeatHeuristic = CypherParallelRepeatHeuristicOption.enabled
     )
 

@@ -23,12 +23,16 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherDerivedQueryOptions
 import org.neo4j.cypher.internal.options.CypherPipelinedBatchReuseOption
 import org.neo4j.cypher.internal.options.CypherQueryOptions
+import org.neo4j.cypher.internal.options.CypherTransactionBatchSchedulerOption
 import org.neo4j.memory.HeapEstimatorCacheConfig
 
 case class QueryRuntimeConfig(
   heapEstimatorCacheConfig: HeapEstimatorCacheConfig,
   morselReuseConfig: MorselReuseConfig,
-  memoryTrackingConfig: MemoryTrackingConfig
+  memoryTrackingConfig: MemoryTrackingConfig,
+  transactionBatchSchedulerConfig: TransactionBatchSchedulerConfig,
+  transactionBatchMaxBatchesInFormation: Int,
+  transactionBatchParkingBudgetRows: Int
 ) {
 
   def withHeapEstimatorCacheConfig(heapEstimatorCacheConfig: HeapEstimatorCacheConfig): QueryRuntimeConfig = {
@@ -61,14 +65,29 @@ object QueryRuntimeConfig {
       },
       memoryTrackingConfig = MemoryTrackingConfig(
         topOperatorTrackingStrategyThreshold = config.pipelinedTopOperatorMemoryTrackingStrategyThreshold
-      )
+      ),
+      transactionBatchSchedulerConfig = queryOptions.transactionBatchScheduler match {
+        case CypherTransactionBatchSchedulerOption.default =>
+          TransactionBatchSchedulerConfig.DEFAULT
+        case CypherTransactionBatchSchedulerOption.greedy =>
+          TransactionBatchSchedulerConfig.Greedy
+        case CypherTransactionBatchSchedulerOption.affinity =>
+          TransactionBatchSchedulerConfig.Affinity
+        case CypherTransactionBatchSchedulerOption.parking =>
+          TransactionBatchSchedulerConfig.Parking
+      },
+      transactionBatchMaxBatchesInFormation = config.transactionsMaxBatchesInFormation,
+      transactionBatchParkingBudgetRows = config.transactionsParkingBudgetRows
     )
   }
 
   final val DEFAULT: QueryRuntimeConfig = QueryRuntimeConfig(
     HeapEstimatorCacheConfig.DEFAULT,
     MorselReuseConfig.DEFAULT,
-    MemoryTrackingConfig.DEFAULT
+    MemoryTrackingConfig.DEFAULT,
+    TransactionBatchSchedulerConfig.DEFAULT,
+    transactionBatchMaxBatchesInFormation = 0,
+    transactionBatchParkingBudgetRows = 0
   )
 }
 
@@ -79,6 +98,19 @@ object MorselReuseConfig {
   case object FullReuse extends MorselReuseConfig
   case object ReuseRemainingRowsOnly extends MorselReuseConfig
   case object NeverReuse extends MorselReuseConfig
+}
+
+/**
+ * Selects the batch formation and scheduling policy used by deadlock prevention
+ * in CALL { ... } IN CONCURRENT TRANSACTIONS.
+ */
+sealed trait TransactionBatchSchedulerConfig
+
+object TransactionBatchSchedulerConfig {
+  final val DEFAULT: TransactionBatchSchedulerConfig = TransactionBatchSchedulerConfig.Greedy
+  case object Greedy extends TransactionBatchSchedulerConfig
+  case object Affinity extends TransactionBatchSchedulerConfig
+  case object Parking extends TransactionBatchSchedulerConfig
 }
 
 case class MemoryTrackingConfig(

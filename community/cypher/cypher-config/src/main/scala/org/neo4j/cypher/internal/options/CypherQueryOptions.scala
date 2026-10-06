@@ -64,6 +64,7 @@ case class CypherQueryOptions(
   pipelinedBatchReuseOption: CypherPipelinedBatchReuseOption,
   heapEstimatorCacheOption: CypherHeapEstimatorCacheOption,
   transactionBatchStrategy: CypherTransactionBatchStrategyOption,
+  transactionBatchScheduler: CypherTransactionBatchSchedulerOption,
   parallelRepeatHeuristic: CypherParallelRepeatHeuristicOption
 ) {
 
@@ -1048,6 +1049,38 @@ case object CypherTransactionBatchStrategyOption
   implicit val logicalPlanCacheKey: OptionLogicalPlanCacheKey[CypherTransactionBatchStrategyOption] =
     OptionLogicalPlanCacheKey.create(_.logicalPlanCacheKey)
   implicit val reader: OptionReader[CypherTransactionBatchStrategyOption] = singleOptionReader()
+}
+
+sealed abstract class CypherTransactionBatchSchedulerOption(scheduler: String)
+    extends CypherKeyValueOption(scheduler) {
+  override def companion: CypherTransactionBatchSchedulerOption.type = CypherTransactionBatchSchedulerOption
+  override def cacheKey: String = "" // Does not affect the cached query
+
+  /** Does not affect the plan we produce. */
+  override def relevantForLogicalPlanCacheKey: Boolean = false
+}
+
+case object CypherTransactionBatchSchedulerOption
+    extends CypherOptionCompanion[CypherTransactionBatchSchedulerOption](
+      name = "transactionBatchScheduler",
+      setting = Some(GraphDatabaseInternalSettings.cypher_transactions_subquery_batch_scheduler),
+      cypherConfigField = Some(_.transactionsBatchScheduler)
+    ) {
+
+  case object default extends CypherTransactionBatchSchedulerOption("default")
+  case object greedy extends CypherTransactionBatchSchedulerOption("greedy")
+  case object affinity extends CypherTransactionBatchSchedulerOption("affinity")
+  case object parking extends CypherTransactionBatchSchedulerOption("parking")
+
+  def values: Set[CypherTransactionBatchSchedulerOption] = Set(default, greedy, affinity, parking)
+
+  implicit val hasDefault: OptionDefault[CypherTransactionBatchSchedulerOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherTransactionBatchSchedulerOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherTransactionBatchSchedulerOption] = OptionCacheKey.create(_.cacheKey)
+
+  implicit val logicalPlanCacheKey: OptionLogicalPlanCacheKey[CypherTransactionBatchSchedulerOption] =
+    OptionLogicalPlanCacheKey.create(_.logicalPlanCacheKey)
+  implicit val reader: OptionReader[CypherTransactionBatchSchedulerOption] = singleOptionReader()
 }
 
 sealed abstract class CypherParallelRepeatHeuristicOption(name: String) extends CypherKeyValueOption(name) {

@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.TransactionBatchSchedulerConfig
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConcurrentTransactionsDeadlockPreventionLogicTest.seedRandomGenerator
 import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.storable.Values
 import org.scalatest.Failed
@@ -92,9 +94,10 @@ class ConcurrentTransactionsDeadlockPreventionLogicTest extends InterpretedRunti
     inputRows: Seq[Map[String, Any]],
     raidKeys: Seq[String],
     batchSize: Int,
-    maxBatchesInFormation: Int = 64
+    maxBatchesInFormation: Int = 64,
+    schedulerConfig: TransactionBatchSchedulerConfig = TransactionBatchSchedulerConfig.Greedy
   ): BatchTestHarness = {
-    new BatchTestHarness(inputRows, raidKeys, batchSize, maxBatchesInFormation, random)
+    new BatchTestHarness(inputRows, raidKeys, batchSize, maxBatchesInFormation, random, schedulerConfig)
   }
 
   val simulationParams: TableFor1[Boolean] = Table("randomCompletionOrder", false, true)
@@ -856,6 +859,247 @@ class ConcurrentTransactionsDeadlockPreventionLogicTest extends InterpretedRunti
     h.totalRows shouldBe rows.size
     batches shouldBe (rows.size / batchSize)
   }
+
+  // ==================== Affinity Scheduler Invariant Tests ====================
+  // The same safety invariants (topological order, row conservation, liveness) must hold for the
+  // affinity scheduler. Batch counts are placement-policy-dependent and are not asserted exactly.
+
+  test("affinity: random stream with ~50% batch dependencies preserves topological order") {
+    val rng = random
+    val nRows = 200000
+    val batchSize = 10
+    val rangeSize = math.max(2, 2 * batchSize * batchSize)
+    val rows: Seq[Map[String, Any]] =
+      (0 until nRows).map(_ => Map[String, Any]("a" -> rng.nextInt(rangeSize)))
+    forAll(simulationParams) { randomCompletionOrder =>
+      val h = createBatchTestHarness(
+        rows,
+        Seq("a"),
+        batchSize,
+        schedulerConfig = TransactionBatchSchedulerConfig.Affinity
+      )
+      val (batches, _) = h.runSimulation(randomCompletionOrder)
+      h.totalRows shouldBe nRows
+      batches should be >= (nRows / batchSize)
+    }
+  }
+
+  test("affinity: saturated batch formation with linear dependency chain does not deadlock") {
+    val maxBatches = 64
+    val batchSize = 2
+    val rows = new ArrayBuffer[Map[String, Any]]()
+    for (batch <- 0 until maxBatches * 3) {
+      rows += Map("a" -> batch) // unique to this batch
+      rows += Map("a" -> (batch + 1)) // overlaps with next batch
+    }
+    val h = createBatchTestHarness(
+      rows.toSeq,
+      Seq("a"),
+      batchSize,
+      maxBatchesInFormation = maxBatches,
+      schedulerConfig = TransactionBatchSchedulerConfig.Affinity
+    )
+    val (batches, _, _) = h.runMaxConcurrency()
+    h.totalRows shouldBe rows.size
+    batches should be >= (rows.size / batchSize)
+  }
+
+  test("affinity: multiple RAID keys with overlapping values preserve topological order") {
+    val rng = random
+    val nRows = 20000
+    val rows: Seq[Map[String, Any]] =
+      (0 until nRows).map(i => Map[String, Any]("a" -> rng.nextInt(50), "b" -> (if (i % 7 == 0) rng.nextInt(5) else i)))
+    forAll(simulationParams) { randomCompletionOrder =>
+      val h = createBatchTestHarness(
+        rows,
+        Seq("a", "b"),
+        batchSize = 5,
+        schedulerConfig = TransactionBatchSchedulerConfig.Affinity
+      )
+      val (_, _) = h.runSimulation(randomCompletionOrder)
+      h.totalRows shouldBe nRows
+    }
+  }
+
+  test("affinity: serial execution handles WAIT_MARKERs correctly") {
+    val rows = (1 to 100).map(i => Map[String, Any]("a" -> (i % 3)))
+    val h = createBatchTestHarness(
+      rows,
+      Seq("a"),
+      batchSize = 2,
+      schedulerConfig = TransactionBatchSchedulerConfig.Affinity
+    )
+    val count = h.runSerial()
+    h.totalRows shouldBe 100
+    count should be >= 1
+  }
+
+  test("affinity: onBatchCompleted is idempotent") {
+    val rows = Seq(
+      Map[String, Any]("a" -> 1),
+      Map[String, Any]("a" -> 1),
+      Map[String, Any]("a" -> 2)
+    )
+    val h = createBatchTestHarness(
+      rows,
+      Seq("a"),
+      batchSize = 2,
+      schedulerConfig = TransactionBatchSchedulerConfig.Affinity
+    )
+    while (h.batchIterator.hasNext) {
+      val batch = h.batchIterator.next()
+      if (!batch.isMarker) {
+        h.dpLogic.onBatchCompleted(batch)
+        h.dpLogic.onBatchCompleted(batch) // second call must be a no-op
+      } else {
+        fail("unexpected WAIT_MARKER in this scenario")
+      }
+    }
+  }
+
+  // ==================== Parking Scheduler Invariant Tests ====================
+  // The same safety invariants (topological order, row conservation, liveness) must hold for the
+  // parking scheduler, whose rows can additionally live outside all batches while parked.
+
+  test("parking: random stream with ~50% batch dependencies preserves topological order") {
+    val rng = random
+    val nRows = 200000
+    val batchSize = 10
+    val rangeSize = math.max(2, 2 * batchSize * batchSize)
+    val rows: Seq[Map[String, Any]] =
+      (0 until nRows).map(_ => Map[String, Any]("a" -> rng.nextInt(rangeSize)))
+    forAll(simulationParams) { randomCompletionOrder =>
+      val h = createBatchTestHarness(
+        rows,
+        Seq("a"),
+        batchSize,
+        schedulerConfig = TransactionBatchSchedulerConfig.Parking
+      )
+      val (batches, _) = h.runSimulation(randomCompletionOrder)
+      h.totalRows shouldBe nRows
+      batches should be >= (nRows / batchSize)
+    }
+  }
+
+  test("parking: saturated batch formation with linear dependency chain does not deadlock") {
+    val maxBatches = 64
+    val batchSize = 2
+    val rows = new ArrayBuffer[Map[String, Any]]()
+    for (batch <- 0 until maxBatches * 3) {
+      rows += Map("a" -> batch) // unique to this batch
+      rows += Map("a" -> (batch + 1)) // overlaps with next batch
+    }
+    val h = createBatchTestHarness(
+      rows.toSeq,
+      Seq("a"),
+      batchSize,
+      maxBatchesInFormation = maxBatches,
+      schedulerConfig = TransactionBatchSchedulerConfig.Parking
+    )
+    val (batches, _, _) = h.runMaxConcurrency()
+    h.totalRows shouldBe rows.size
+    batches should be >= (rows.size / batchSize)
+  }
+
+  test("parking: multiple RAID keys with overlapping values preserve topological order") {
+    val rng = random
+    val nRows = 20000
+    val rows: Seq[Map[String, Any]] =
+      (0 until nRows).map(i => Map[String, Any]("a" -> rng.nextInt(50), "b" -> (if (i % 7 == 0) rng.nextInt(5) else i)))
+    forAll(simulationParams) { randomCompletionOrder =>
+      val h = createBatchTestHarness(
+        rows,
+        Seq("a", "b"),
+        batchSize = 5,
+        schedulerConfig = TransactionBatchSchedulerConfig.Parking
+      )
+      val (_, _) = h.runSimulation(randomCompletionOrder)
+      h.totalRows shouldBe nRows
+    }
+  }
+
+  test("parking: serial execution handles WAIT_MARKERs correctly") {
+    val rows = (1 to 100).map(i => Map[String, Any]("a" -> (i % 3)))
+    val h = createBatchTestHarness(
+      rows,
+      Seq("a"),
+      batchSize = 2,
+      schedulerConfig = TransactionBatchSchedulerConfig.Parking
+    )
+    val count = h.runSerial()
+    h.totalRows shouldBe 100
+    count should be >= 1
+  }
+
+  test("parking: onBatchCompleted is idempotent") {
+    val rows = Seq(
+      Map[String, Any]("a" -> 1),
+      Map[String, Any]("a" -> 1),
+      Map[String, Any]("a" -> 2)
+    )
+    val h = createBatchTestHarness(
+      rows,
+      Seq("a"),
+      batchSize = 2,
+      schedulerConfig = TransactionBatchSchedulerConfig.Parking
+    )
+    while (h.batchIterator.hasNext) {
+      val batch = h.batchIterator.next()
+      if (!batch.isMarker) {
+        h.dpLogic.onBatchCompleted(batch)
+        h.dpLogic.onBatchCompleted(batch) // second call must be a no-op
+      } else {
+        fail("unexpected WAIT_MARKER in this scenario")
+      }
+    }
+  }
+
+  test("parking: input exhausting while rows are parked conserves all rows") {
+    // Two rows fill a batch that gets dispatched, then every following row conflicts with it and
+    // parks. Input then ends, so the drain path must flush the parked rows into batches.
+    val rows =
+      Seq(Map[String, Any]("a" -> 1), Map[String, Any]("a" -> 2)) ++
+        (0 until 20).map(i => Map[String, Any]("a" -> (1 + (i % 2))))
+    forAll(simulationParams) { randomCompletionOrder =>
+      val h = createBatchTestHarness(
+        rows,
+        Seq("a"),
+        batchSize = 2,
+        schedulerConfig = TransactionBatchSchedulerConfig.Parking
+      )
+      val (batches, _) = h.runSimulation(randomCompletionOrder)
+      h.totalRows shouldBe rows.size
+      batches should be >= (rows.size / 2)
+    }
+  }
+
+  test("parking: closing the iterator with rows parked releases all tracked heap") {
+    val memoryTracker = new LocalMemoryTracker()
+    val queryState = QueryStateHelper.emptyWithValueSerialization
+    // Rows 1-2 fill a batch that we dispatch. With parkingBudget = 8, rows 3-10 park against it,
+    // row 11 hits the budget and the iterator emits a WAIT marker, leaving 8 rows parked.
+    val rows = Seq(Map[String, Any]("a" -> 1), Map[String, Any]("a" -> 2)) ++
+      (0 until 9).map(i => Map[String, Any]("a" -> (1 + (i % 2))))
+    val inputIterator = FakePipe(rows).createResults(queryState)
+    val raids: Array[Expression] = Array(Variable("a"))
+    val dpLogic = new ConcurrentTransactionsDeadlockPreventionLogic(
+      raids,
+      maxBatchesInFormation = 64,
+      schedulerConfig = TransactionBatchSchedulerConfig.Parking,
+      parkingBudget = 8
+    )
+    val batchIterator = dpLogic.batchIterator(inputIterator, queryState, batchSize = 2, memoryTracker)
+    batchIterator.hasNext shouldBe true
+    val first = batchIterator.next()
+    first.isMarker shouldBe false
+    batchIterator.hasNext shouldBe true
+    val second = batchIterator.next()
+    second.isMarker shouldBe true // parked rows + full budget, waiting on the in-flight batch
+    // The dispatched batch's row buffer is normally consumed by the executing task
+    first.asInstanceOf[DependencyTrackingTransactionBatch].rows.close()
+    batchIterator.close()
+    memoryTracker.estimatedHeapMemory() shouldBe 0
+  }
 }
 
 /**
@@ -872,12 +1116,13 @@ class BatchTestHarness(
   raidKeys: Seq[String],
   batchSize: Int,
   maxBatchesInFormation: Int = 64,
-  val rng: Random
+  val rng: Random,
+  schedulerConfig: TransactionBatchSchedulerConfig = TransactionBatchSchedulerConfig.Greedy
 ) {
   val memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE
   private val queryState = QueryStateHelper.emptyWithValueSerialization
   private val raids: Array[Expression] = raidKeys.map(k => Variable(k)).toArray
-  val dpLogic = new ConcurrentTransactionsDeadlockPreventionLogic(raids, maxBatchesInFormation)
+  val dpLogic = new ConcurrentTransactionsDeadlockPreventionLogic(raids, maxBatchesInFormation, schedulerConfig)
 
   private val inputPipe = FakePipe(inputRows)
   private val inputIterator = inputPipe.createResults(queryState)
@@ -895,60 +1140,33 @@ class BatchTestHarness(
   private val completionOrder = new java.util.IdentityHashMap[TransactionBatch, Int]()
   // RAID value -> last batch that contained it (for dependency reconstruction)
   private val raidLastWriterBatch = new java.util.HashMap[Any, TransactionBatch]()
-  // batch -> set of parent batches
-  private val parentBatches = new java.util.IdentityHashMap[TransactionBatch, java.util.Set[TransactionBatch]]()
   private var dispatchCounter = 0
   private var completionCounter = 0
 
   private def trackDispatch(batch: TransactionBatch): Unit = {
     dispatchOrder.put(batch, dispatchCounter)
     dispatchCounter += 1
-    // Reconstruct dependencies from RAID values
-    val parents = new java.util.HashSet[TransactionBatch]()
+    // Reconstruct dependencies from RAID values. A batch may only be dispatched once every earlier
+    // batch sharing one of its RAID values has completed.
     val rowIter = batch.rows.iterator()
     while (rowIter.hasNext) {
       val row = rowIter.next()
       for (raidExpr <- raids) {
         val raidValue = raidExpr.apply(row, queryState)
         val lastWriter = raidLastWriterBatch.get(raidValue)
-        if (lastWriter != null && (lastWriter ne batch) && !completionOrder.containsKey(lastWriter)) {
-          // This batch depends on lastWriter which is still in-flight - this should NOT happen
-          // (the scheduler should have waited for it)
-          parents.add(lastWriter)
-        }
+        assert(
+          lastWriter == null || (lastWriter eq batch) || completionOrder.containsKey(lastWriter),
+          s"Topological order violation: batch dispatched at order ${dispatchOrder.get(batch)} shares RAID value " +
+            s"$raidValue with batch dispatched at order ${dispatchOrder.get(lastWriter)} that has not completed"
+        )
         raidLastWriterBatch.put(raidValue, batch)
       }
     }
-    parentBatches.put(batch, parents)
   }
 
   private def trackCompletion(batch: TransactionBatch): Unit = {
     completionOrder.put(batch, completionCounter)
     completionCounter += 1
-  }
-
-  /**
-   * Verify topological ordering: for every dispatched batch, all its parent batches
-   * (those sharing RAID values that were dispatched before it) must have been completed
-   * before it was dispatched.
-   */
-  def assertTopologicalOrder(): Unit = {
-    val iter = parentBatches.entrySet().iterator()
-    while (iter.hasNext) {
-      val entry = iter.next()
-      val batch = entry.getKey
-      val parents = entry.getValue
-      val pIter = parents.iterator()
-      while (pIter.hasNext) {
-        val parent = pIter.next()
-        val parentCompleted = completionOrder.containsKey(parent)
-        assert(
-          parentCompleted,
-          s"Topological order violation: batch dispatched at order ${dispatchOrder.get(batch)} " +
-            s"has parent dispatched at order ${dispatchOrder.get(parent)} that was not yet completed"
-        )
-      }
-    }
   }
 
   /**
@@ -983,7 +1201,6 @@ class BatchTestHarness(
       dpLogic.onBatchCompleted(b)
     }
     inFlightBatches.clear()
-    assertTopologicalOrder()
     (allBatches.size, waitCount)
   }
 
@@ -1006,7 +1223,6 @@ class BatchTestHarness(
         dpLogic.onBatchCompleted(batch)
       }
     }
-    assertTopologicalOrder()
     count
   }
 
@@ -1039,7 +1255,6 @@ class BatchTestHarness(
       dpLogic.onBatchCompleted(b)
     }
     inFlightBatches.clear()
-    assertTopologicalOrder()
     (allBatches.size, waitCount, maxConcurrent)
   }
 }

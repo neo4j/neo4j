@@ -86,9 +86,24 @@ abstract class AbstractConcurrentTransactionsPipe(
     val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
     val deadlockPreventionLogic: TransactionDeadlockPreventionLogic = if (disjointByArray.nonEmpty) {
-      // Use concurrency times 2 rounded up to the nearest multiple of 64 as the max batches in formation
-      val maxBatchesInFormation = ((concurrencyLong.toInt * 2) + 63) & ~63 // TODO: Make this configurable?
-      new ConcurrentTransactionsDeadlockPreventionLogic(disjointByArray, maxBatchesInFormation)
+      val configuredMaxBatches = state.query.queryConfig.transactionBatchMaxBatchesInFormation
+      val maxBatchesInFormation =
+        if (configuredMaxBatches > 0) {
+          // Round up to the nearest multiple of 64, within the 16-bit batch index encoding limit
+          math.min((configuredMaxBatches + 63) & ~63, 65472)
+        } else {
+          // Default: concurrency times 2 rounded up to the nearest multiple of 64, clamped to the
+          // same encoding limit as the configured path (concurrency can reach processors * 20)
+          math.min(((concurrencyLong.toInt * 2) + 63) & ~63, 65472)
+        }
+      val schedulerConfig = state.query.queryConfig.transactionBatchSchedulerConfig
+      val parkingBudget = state.query.queryConfig.transactionBatchParkingBudgetRows
+      new ConcurrentTransactionsDeadlockPreventionLogic(
+        disjointByArray,
+        maxBatchesInFormation,
+        schedulerConfig,
+        parkingBudget
+      )
     } else {
       NoopTransactionDeadlockPreventionLogic
     }
@@ -140,6 +155,9 @@ abstract class AbstractConcurrentTransactionsPipe(
 
     private[this] var pendingTaskCount: Int = 0 // NOTE: Only read and written by the main thread
     private[this] val activeTaskCount: AtomicInteger = new AtomicInteger(0)
+
+    // Reused by checkAndUpdateCompletedBatches to keep onBatchCompleted calls outside the queue lock
+    private[this] val completedBatchesScratch = new util.ArrayList[TransactionBatch]()
 
     final override def closeMore(): Unit = {
       input.close()
@@ -245,11 +263,23 @@ abstract class AbstractConcurrentTransactionsPipe(
 
     private def checkAndUpdateCompletedBatches(): Unit = {
       if (deadlockPreventionLogic.requiresBatchCompletedNotification && pendingTaskCount > 0) {
+        // Snapshot the completed batches under the queue lock and notify outside it. forEach holds
+        // the ArrayBlockingQueue's lock for the whole traversal, and onBatchCompleted can run heavy
+        // scheduler work (dependency updates, stale-RAID purge, parked-row admission) that would
+        // otherwise block every worker's outputQueue.put for its duration.
         outputQueue.forEach { taskOutputResult =>
           if (taskOutputResult.completedBatch != null) {
-            // NOTE: It is ok to call onBatchCompleted multiple times for the same batch as it is idempotent.
-            deadlockPreventionLogic.onBatchCompleted(taskOutputResult.completedBatch)
+            completedBatchesScratch.add(taskOutputResult.completedBatch)
           }
+        }
+        if (!completedBatchesScratch.isEmpty) {
+          var i = 0
+          while (i < completedBatchesScratch.size()) {
+            // NOTE: It is ok to call onBatchCompleted multiple times for the same batch as it is idempotent.
+            deadlockPreventionLogic.onBatchCompleted(completedBatchesScratch.get(i))
+            i += 1
+          }
+          completedBatchesScratch.clear()
         }
       }
     }

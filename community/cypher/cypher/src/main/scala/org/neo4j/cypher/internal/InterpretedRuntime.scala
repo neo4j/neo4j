@@ -150,17 +150,18 @@ trait InterpretedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTE
 object InterpretedRuntime {
 
   def calculateTransactionMode(logicalQuery: LogicalQuery): QueryTransactionMode = {
-    doCalculateTransactionMode(logicalQuery.logicalPlan)
+    calculateTransactionMode(logicalQuery.logicalPlan)
   }
 
-  private def doCalculateTransactionMode(plan: LogicalPlan): QueryTransactionMode = {
+  def calculateTransactionMode(plan: LogicalPlan): QueryTransactionMode = {
+    // StartsConcurrentTransactions wins once found, whatever is visited after it
     plan.folder.treeFold[QueryTransactionMode](StartsNoTransactions) {
       case TransactionApply(_, _, _, TransactionConcurrency.Concurrent(_), _, _, _, _) =>
         _ => SkipChildren(StartsConcurrentTransactions)
       case TransactionForeach(_, _, _, TransactionConcurrency.Concurrent(_), _, _, _, _) =>
         _ => SkipChildren(StartsConcurrentTransactions)
       case _: TransactionApply | _: TransactionForeach =>
-        _ => TraverseChildren(StartsSerialTransactions)
+        acc => TraverseChildren(if (acc == StartsConcurrentTransactions) acc else StartsSerialTransactions)
       case _: LogicalPlan =>
         b => TraverseChildren(b)
       case _ =>

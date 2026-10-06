@@ -529,6 +529,52 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     }
 
     @Internal
+    @Description("The batch scheduler used by deadlock prevention scheduling in a query with a "
+            + "`CALL () { ... } IN CONCURRENT TRANSACTIONS` clause when `DISJOINT BY` batching applies. "
+            + "`GREEDY` fills batches first-fit. "
+            + "`AFFINITY` matches rows to batches with compatible dependency sets, trading some batch fill "
+            + "for fewer dependencies between batches. "
+            + "`PARKING` holds conflicting rows outside batches until their blockers complete, so that "
+            + "dispatched batches are conflict-free by construction. "
+            + "When set to `DEFAULT`, the current product default is used (currently `GREEDY`). "
+            + "This setting is only used when no `transactionBatchScheduler` query option is specified.")
+    public static final Setting<CypherTransactionsBatchScheduler> cypher_transactions_subquery_batch_scheduler =
+            newBuilder(
+                            "internal.cypher.transactions.subquery_batch_scheduler",
+                            ofEnum(CypherTransactionsBatchScheduler.class),
+                            CypherTransactionsBatchScheduler.DEFAULT)
+                    .build();
+
+    public enum CypherTransactionsBatchScheduler {
+        DEFAULT,
+        GREEDY,
+        AFFINITY,
+        PARKING
+    }
+
+    @Internal
+    @Description("Maximum number of batch slots in formation for deadlock prevention scheduling in a query "
+            + "with a `CALL () { ... } IN CONCURRENT TRANSACTIONS` clause when `DISJOINT BY` batching applies. "
+            + "0 derives the value from the transaction concurrency (concurrency * 2, rounded up to a "
+            + "multiple of 64). Non-zero values are rounded up to a multiple of 64. "
+            + "Larger values increase the scheduler's CPU and memory cost per row.")
+    public static final Setting<Integer> cypher_transactions_subquery_max_batches_in_formation = newBuilder(
+                    "internal.cypher.transactions.subquery_max_batches_in_formation", INT, 0)
+            .addConstraint(range(0, 65472))
+            .build();
+
+    @Internal
+    @Description("Maximum number of rows the `PARKING` batch scheduler may hold outside batches while their "
+            + "blocking batches complete, per query. When the budget is full, input consumption is throttled "
+            + "until completions release reservations. 0 derives the value from the formation window "
+            + "(a quarter of max batches in formation * batch size). "
+            + "Only used by the `PARKING` scheduler of `internal.cypher.transactions.subquery_batch_scheduler`.")
+    public static final Setting<Integer> cypher_transactions_subquery_parking_budget_rows = newBuilder(
+                    "internal.cypher.transactions.subquery_parking_budget_rows", INT, 0)
+            .addConstraint(range(0, 1 << 20))
+            .build();
+
+    @Internal
     @Description(
             "The threshold of the LIMIT of a Top operator (planned with ORDER BY + LIMIT) to change the memory tracking "
                     + "strategy. If the LIMIT is less than or equal to the threshold, a more precise memory tracking strategy is used."

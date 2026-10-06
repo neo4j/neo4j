@@ -69,6 +69,92 @@ class OptionReaderTest extends CypherFunSuite {
     CypherDebugOption.cypherConfigBooleans should be(empty)
   }
 
+  test("Can read transactionBatchScheduler option from key-values") {
+
+    val options = CypherQueryOptions.fromValues(
+      config = CypherConfiguration.fromConfig(Config.defaults()),
+      keyValues = Set("transactionBatchScheduler" -> "affinity")
+    )
+
+    options
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
+        transactionBatchScheduler = CypherTransactionBatchSchedulerOption.affinity
+      ))
+  }
+
+  test("Can read transactionBatchScheduler option from config") {
+
+    val options = CypherQueryOptions.fromValues(
+      config = CypherConfiguration.fromConfig(
+        Config.newBuilder()
+          .set(
+            GraphDatabaseInternalSettings.cypher_transactions_subquery_batch_scheduler,
+            GraphDatabaseInternalSettings.CypherTransactionsBatchScheduler.AFFINITY
+          )
+          .build()
+      ),
+      keyValues = Set()
+    )
+
+    options
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
+        transactionBatchScheduler = CypherTransactionBatchSchedulerOption.affinity
+      ))
+  }
+
+  test("Can read transactionBatchScheduler parking option from key-values") {
+
+    val options = CypherQueryOptions.fromValues(
+      config = CypherConfiguration.fromConfig(Config.defaults()),
+      keyValues = Set("transactionBatchScheduler" -> "parking")
+    )
+
+    options
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
+        transactionBatchScheduler = CypherTransactionBatchSchedulerOption.parking
+      ))
+  }
+
+  test("Can read transactionBatchScheduler parking option from config") {
+
+    val options = CypherQueryOptions.fromValues(
+      config = CypherConfiguration.fromConfig(
+        Config.newBuilder()
+          .set(
+            GraphDatabaseInternalSettings.cypher_transactions_subquery_batch_scheduler,
+            GraphDatabaseInternalSettings.CypherTransactionsBatchScheduler.PARKING
+          )
+          .build()
+      ),
+      keyValues = Set()
+    )
+
+    options
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
+        transactionBatchScheduler = CypherTransactionBatchSchedulerOption.parking
+      ))
+  }
+
+  test("transactionBatchScheduler key-value overrides config") {
+
+    val options = CypherQueryOptions.fromValues(
+      config = CypherConfiguration.fromConfig(
+        Config.newBuilder()
+          .set(
+            GraphDatabaseInternalSettings.cypher_transactions_subquery_batch_scheduler,
+            GraphDatabaseInternalSettings.CypherTransactionsBatchScheduler.AFFINITY
+          )
+          .build()
+      ),
+      keyValues = Set("transactionBatchScheduler" -> "greedy")
+    )
+
+    options
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
+        transactionBatchScheduler = CypherTransactionBatchSchedulerOption.greedy
+      ))
+  }
+
   test("Can read options from key-values") {
 
     val options = CypherQueryOptions.fromValues(

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.collection.trackable.HeapTrackingObjectLongHashMap
 import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.TransactionBatchSchedulerConfig
 import org.neo4j.cypher.internal.runtime.debug.events.Debug
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.debug.events.BatchFormation
@@ -31,11 +31,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.DependencyTrackingTra
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionRetryLogic.RetryState
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
 import org.neo4j.kernel.impl.util.collection.EagerBuffer.createEagerBuffer
+import org.neo4j.memory.DefaultScopedMemoryTracker
+import org.neo4j.memory.HeapEstimator
 import org.neo4j.memory.MemoryTracker
-import org.neo4j.util.VisibleForTesting
+import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.values.AnyValue
-
-import java.lang.Long.numberOfTrailingZeros
 
 import scala.concurrent.duration.Duration
 
@@ -95,7 +95,8 @@ object NoopTransactionDeadlockPreventionLogic extends TransactionDeadlockPrevent
  * Deadlock prevention logic that sorts incoming rows into batches based on resource acquisition IDs (RAIDs).
  *
  * The algorithm:
- * - Assigns a canonical ID (CRAID) to each batch based on the first row's canonical expression value
+ * - Evaluates the RAID expressions for each row; all expressions are treated symmetrically
+ *   (the order of the expressions has no effect on batch formation or scheduling)
  * - Maintains a distinct set of RAIDs for each batch
  * - Groups rows into batches to minimize RAID overlaps between concurrent batches
  * - Maintains a dependency graph (DAG) based on overlapping RAID sets
@@ -181,10 +182,20 @@ object NoopTransactionDeadlockPreventionLogic extends TransactionDeadlockPrevent
  *
  * See https://linear.app/neo4j/issue/RUN-1011 for discussion on revisiting this design with grouped RAID maps.
  *
- * @param disjointBy Array of RAID expressions, where the first is the canonical ID expression (CRAID)
+ * @param disjointBy Array of RAID expressions
+ * @param maxBatchesInFormation The maximum number of batches that can be in formation at once
+ * @param schedulerConfig Selects the batch formation and scheduling policy (greedy, dependency-set
+ *                        affinity, or reservation-based parking)
+ * @param parkingBudget The maximum number of rows the parking scheduler may hold outside batches
+ *                      (0 derives a default from the formation window; ignored by the other
+ *                      schedulers)
  */
-class ConcurrentTransactionsDeadlockPreventionLogic(disjointBy: Array[Expression], maxBatchesInFormation: Int = 256)
-    extends TransactionDeadlockPreventionLogic {
+class ConcurrentTransactionsDeadlockPreventionLogic(
+  disjointBy: Array[Expression],
+  maxBatchesInFormation: Int = 256,
+  schedulerConfig: TransactionBatchSchedulerConfig = TransactionBatchSchedulerConfig.DEFAULT,
+  parkingBudget: Int = 0
+) extends TransactionDeadlockPreventionLogic {
   require(disjointBy.length >= 1)
 
   // The array of Resource Acquisition ID (RAID) expressions
@@ -205,7 +216,9 @@ class ConcurrentTransactionsDeadlockPreventionLogic(disjointBy: Array[Expression
       Math.toIntExact(batchSize),
       memoryTracker,
       raidExpressions,
-      maxBatchesInFormation
+      maxBatchesInFormation,
+      schedulerConfig,
+      parkingBudget
     )
     _batchIterator = iterator
     iterator
@@ -230,6 +243,15 @@ object ConcurrentTransactionsDeadlockPreventionLogic {
     case object Completed extends BatchState
     case object Closed extends BatchState
   }
+}
+
+/**
+ * Outcomes of processing one input row against the scheduler.
+ */
+private[pipes] object RowStatus {
+  final val INSERTED = 0
+  final val PARKED = 1
+  final val BACKPRESSURE = 2
 }
 
 /**
@@ -340,8 +362,9 @@ object DependencyTrackingTransactionBatch {
  * - The input queue is full and we need to yield batches without dependencies
  * - Input is exhausted
  *
- * Thread safety: This iterator is accessed from the main thread for iteration,
- * and from worker threads for batch completion notifications.
+ * Thread safety: This iterator is driven entirely from the main thread, both for iteration and for
+ * batch completion notifications. Worker threads only publish results to the output queue, which the
+ * main thread drains before calling onBatchCompleted, so the iterator's state needs no synchronization.
  */
 private[pipes] class DeadlockPreventingBatchIterator(
   source: ClosingIterator[CypherRow],
@@ -349,13 +372,27 @@ private[pipes] class DeadlockPreventingBatchIterator(
   batchSize: Int,
   memoryTracker: MemoryTracker,
   raidExpressions: Array[Expression],
-  maxBatchesInFormation: Int
+  maxBatchesInFormation: Int,
+  schedulerConfig: TransactionBatchSchedulerConfig = TransactionBatchSchedulerConfig.DEFAULT,
+  parkingBudget: Int = 0
 ) extends ClosingIterator[TransactionBatch] {
 
   type Batch = DependencyTrackingTransactionBatch
 
-  private[this] val scheduler =
-    new BitmaskBatchScheduler(batchSize, raidExpressions.length, maxBatchesInFormation, memoryTracker)
+  private[this] val scheduler: BatchScheduler = schedulerConfig match {
+    case TransactionBatchSchedulerConfig.Affinity =>
+      new AffinityBitmaskBatchScheduler(batchSize, raidExpressions.length, maxBatchesInFormation, memoryTracker)
+    case TransactionBatchSchedulerConfig.Greedy =>
+      new BitmaskBatchScheduler(batchSize, raidExpressions.length, maxBatchesInFormation, memoryTracker)
+    case TransactionBatchSchedulerConfig.Parking =>
+      new ParkingBitmaskBatchScheduler(
+        batchSize,
+        raidExpressions.length,
+        maxBatchesInFormation,
+        ParkingBitmaskBatchScheduler.effectiveParkingBudget(parkingBudget, maxBatchesInFormation, batchSize),
+        memoryTracker
+      )
+  }
   private[this] var batchCounter: Long = _
 
   // All batches in formation
@@ -365,6 +402,36 @@ private[pipes] class DeadlockPreventingBatchIterator(
 
   private[this] var pendingRow: CypherRow = _
 
+  // Scratch buffer for the current row's RAID values, reused across rows to avoid a per-row array
+  // allocation. Schedulers must copy it if they retain RAIDs (parking does). When a row is held back
+  // as pendingRow, its values stay valid in the scratch so the retry never re-evaluates the RAID
+  // expressions.
+  private[this] val rowRaidsScratch = new Array[AnyValue](raidExpressions.length)
+  private[this] var pendingRowRaidsValid: Boolean = false
+
+  // True while the scheduler is backpressured and no batch has completed since the last failed
+  // insert attempt. Nothing can change until a completion arrives, so batch formation skips the
+  // redundant re-attempts (and their failing full scans) that each produce cycle would otherwise
+  // trigger.
+  private[this] var waitingForCompletion: Boolean = false
+
+  // Rows parked by the scheduler live here, indexed by the park slot the scheduler assigned.
+  // The scheduler owns the admission queues, the iterator owns the row objects and their heap.
+  private[this] var parkedRows: Array[CypherRow] = _
+  private[this] var parkedRowCount: Int = 0
+  private[this] var parkedRowsMemoryTracker: ScopedMemoryTracker = _
+
+  private[this] val parkedRowSink: ParkedRowSink = new ParkedRowSink {
+    override def place(parkedSlot: Int, batchIdx: Int): Unit = {
+      val row = parkedRows(parkedSlot)
+      parkedRows(parkedSlot) = null
+      parkedRowCount -= 1
+      parkedRowsMemoryTracker.releaseHeap(row.estimatedHeapUsage)
+      val batch = getOrCreateBatch(batchIdx)
+      batch.addRow(row)
+    }
+  }
+
   // Flag to indicate if source is exhausted
   private[this] var sourceExhausted: Boolean = false
   private[this] var nextReadyBatch: Batch = _
@@ -373,15 +440,16 @@ private[pipes] class DeadlockPreventingBatchIterator(
     if (nextReadyBatch == null) {
       nextReadyBatch = formBatches()
       if (nextReadyBatch == null) {
-        if (hasInFlightBatches && (hasBatchesInFormation || !sourceExhausted)) {
+        if (hasInFlightBatches && (hasBatchesInFormation || hasParkedRows || !sourceExhausted)) {
           // If we have in-flight batches and no ready batch, we need to wait for some to complete to
-          // free up dependencies or free up batch slots.
+          // free up dependencies, free up batch slots, or release parked rows.
           // We signal this by returning WAIT_MARKER_BATCH
           nextReadyBatch = WAIT_MARKER_BATCH
           Debug.log(BatchFormation.WaitingForInFlight(this.toString))
-        } else if (hasBatchesInFormation) {
+        } else if (hasBatchesInFormation || hasParkedRows) {
           throw new IllegalStateException(
-            s"No ready batches and no in-flight batches, but $batchesInFormationCount batches still in formation"
+            s"No ready batches and no in-flight batches, but $batchesInFormationCount batches still in formation" +
+              s" and $parkedRowCount rows parked"
           )
         }
       }
@@ -420,6 +488,7 @@ private[pipes] class DeadlockPreventingBatchIterator(
   override protected[this] def closeMore(): Unit = {
     source.close()
     pendingRow = null
+    pendingRowRaidsValid = false
     // Close all batches in formation
     var i = 0
     while (i < maxBatchesInFormation) {
@@ -432,6 +501,14 @@ private[pipes] class DeadlockPreventingBatchIterator(
       }
       i += 1
     }
+    // Release any rows still parked (their heap is tracked by the scoped tracker)
+    if (parkedRows != null) {
+      java.util.Arrays.fill(parkedRows.asInstanceOf[Array[AnyRef]], null)
+      parkedRowCount = 0
+      parkedRowsMemoryTracker.close()
+      parkedRowsMemoryTracker = null
+      parkedRows = null
+    }
     scheduler.close()
   }
 
@@ -441,6 +518,10 @@ private[pipes] class DeadlockPreventingBatchIterator(
 
   @inline private def hasBatchesInFormation: Boolean = {
     batchesInFormationCount > 0
+  }
+
+  @inline private def hasParkedRows: Boolean = {
+    parkedRowCount > 0
   }
 
   /**
@@ -455,26 +536,52 @@ private[pipes] class DeadlockPreventingBatchIterator(
    * @return the next ready batch or null
    */
   private def formBatches(): Batch = {
+    if (waitingForCompletion) {
+      // No completion since the last failed attempt, so the scheduler cannot have gained capacity.
+      // Skip the redundant re-attempt.
+      return null
+    }
+    val readyBatch = doFormBatches()
+    if (readyBatch == null && hasInFlightBatches) {
+      waitingForCompletion = true
+    }
+    readyBatch
+  }
+
+  private def doFormBatches(): Batch = {
+    if (sourceExhausted && hasParkedRows) {
+      // Resume the drain of parked rows: the drain at source exhaustion (or a liveness fallback)
+      // may have stopped early on batch-slot exhaustion, so completions must let it continue.
+      scheduler.admitParked(force = true, parkedRowSink)
+    }
     var readyBatch = findNextReadyBatch(force = sourceExhausted)
     while (readyBatch == null && !sourceExhausted) {
       if (pendingRow != null || source.hasNext) {
-        val targetBatch = processNextRow()
-        if (targetBatch != null) {
+        val status = processNextRow()
+        if (status == RowStatus.INSERTED) {
           // The row was added to a batch, so we can check for ready batches again before pulling more rows
           readyBatch = findNextReadyBatch(force = false)
+        } else if (status == RowStatus.PARKED) {
+          // The scheduler absorbed the row into its parking queues; keep pulling input
         } else {
-          // We could not insert the row because we have too many batches in formation.
-          // We also have no ready batch, so either wait for in-flight batches to complete
-          // or force-select a batch that can execute but is not filled yet.
+          // We could not insert the row because we have too many batches in formation or the
+          // parking budget is full. We also have no ready batch, so either wait for in-flight
+          // batches to complete or force-select a batch that can execute but is not filled yet.
           if (hasInFlightBatches) {
             return null
           } else {
+            // Liveness fallback: nothing is in flight, so no completion will release parked rows
+            // or batch slots. Place parked rows using dependency edges to make progress.
+            if (hasParkedRows) {
+              scheduler.admitParked(force = true, parkedRowSink)
+            }
             // Force-select an executable batch even though it may not be filled yet
             readyBatch = findNextReadyBatch(force = true)
-            if (readyBatch == null && hasBatchesInFormation) {
+            if (readyBatch == null && (hasBatchesInFormation || hasParkedRows)) {
               // This should not happen - if we have no in-flight batches, we should be able to select a batch to execute
               throw new IllegalStateException(
-                s"Deadlock prevention failed: No ready batch found after processing row and no in-flight batches, but $batchesInFormationCount batches still in formation"
+                s"Deadlock prevention failed: No ready batch found after processing row and no in-flight batches, " +
+                  s"but $batchesInFormationCount batches still in formation and $parkedRowCount rows parked"
               )
             }
           }
@@ -483,6 +590,11 @@ private[pipes] class DeadlockPreventingBatchIterator(
         // We have no more input rows
         sourceExhausted = true
         Debug.log(BatchFormation.SourceExhausted(this.toString))
+        // Drain parked rows into batches using dependency edges (may stop early on slot
+        // exhaustion, in which case the resume at the top of this method continues it)
+        if (hasParkedRows) {
+          scheduler.admitParked(force = true, parkedRowSink)
+        }
         // Force-select an executable batch even though it may not be filled yet
         readyBatch = findNextReadyBatch(force = true)
       }
@@ -516,17 +628,24 @@ private[pipes] class DeadlockPreventingBatchIterator(
    * Complete a batch and update dependencies.
    */
   private def completeBatch(batch: Batch): Unit = {
+    waitingForCompletion = false
     batch.setState(BatchState.Completed)
     batchesInFlightCount -= 1
     // Close the batch metadata (but not the rows - they were already consumed)
     batch.close()
     scheduler.completeBatch(batch.index)
+    if (hasParkedRows) {
+      // The completion released this batch's RAID reservations, so parked rows waiting on them
+      // may now be admissible without adding dependency edges
+      scheduler.admitParked(force = false, parkedRowSink)
+    }
   }
 
   /**
-   * Process the next row from the source and add it to an appropriate batch.
+   * Process the next row from the source and hand it to the scheduler: inserted into a batch,
+   * parked by the scheduler, or rejected (backpressure, held as pendingRow).
    */
-  private def processNextRow(): Batch = {
+  private def processNextRow(): Int = {
     val row =
       if (pendingRow != null) {
         val _row = pendingRow
@@ -536,43 +655,58 @@ private[pipes] class DeadlockPreventingBatchIterator(
         source.next()
       }
 
-    // Extract RAID values from the row
-    val rowRaids = new Array[AnyValue](raidExpressions.length)
-    var i = 0
-    while (i < raidExpressions.length) {
-      rowRaids(i) = raidExpressions(i).apply(row, state)
-      i += 1
+    // Extract RAID values from the row into the reused scratch. A backpressured pendingRow's
+    // values are still valid in the scratch, so the retry skips the expression re-evaluation.
+    val rowRaids = rowRaidsScratch
+    if (!pendingRowRaidsValid) {
+      var i = 0
+      while (i < raidExpressions.length) {
+        rowRaids(i) = raidExpressions(i).apply(row, state)
+        i += 1
+      }
     }
+    pendingRowRaidsValid = false
 
     // Find the best batch for this row
-    val targetBatch = findOrCreateBatch(rowRaids)
-    if (targetBatch != null) {
-      // Add the row to the batch
-      targetBatch.addRow(row)
+    val result = scheduler.insertRow(rowRaids)
+    if (result >= 0) {
+      val batch = getOrCreateBatch(result)
+      batch.addRow(row)
+      RowStatus.INSERTED
+    } else if (result <= BatchScheduler.PARKED_BASE) {
+      parkRow(BatchScheduler.parkedSlot(result), row)
+      RowStatus.PARKED
     } else {
       pendingRow = row
+      pendingRowRaidsValid = true
+      RowStatus.BACKPRESSURE
     }
-    targetBatch
+  }
+
+  private def parkRow(slot: Int, row: CypherRow): Unit = {
+    if (parkedRows == null) {
+      parkedRows = new Array[CypherRow](scheduler.parkingCapacity)
+      parkedRowsMemoryTracker = new DefaultScopedMemoryTracker(memoryTracker)
+      parkedRowsMemoryTracker.allocateHeap(HeapEstimator.shallowSizeOfObjectArray(parkedRows.length))
+    }
+    parkedRows(slot) = row
+    parkedRowCount += 1
+    parkedRowsMemoryTracker.allocateHeap(row.estimatedHeapUsage)
   }
 
   /**
-   * Find the best existing batch for a row, or create a new one.
+   * Look up the batch at the slot the scheduler selected, creating it on first use.
    */
-  private def findOrCreateBatch(rowRaids: Array[AnyValue]): Batch = {
-    val batchIdx = scheduler.insertRow(rowRaids)
-    if (batchIdx >= 0) {
-      var batch = batchesInFormation(batchIdx)
-      if (batch == null) {
-        val rows = createEagerBuffer[CypherRow](memoryTracker, Math.min(batchSize, 1024))
-        batch = new Batch(batchCounter, batchIdx, rows, BatchState.InFormation)
-        batchCounter += 1
-        batchesInFormation(batchIdx) = batch
-        batchesInFormationCount += 1
-      }
-      batch
-    } else {
-      null
+  private def getOrCreateBatch(batchIdx: Int): Batch = {
+    var batch = batchesInFormation(batchIdx)
+    if (batch == null) {
+      val rows = createEagerBuffer[CypherRow](memoryTracker, Math.min(batchSize, 1024))
+      batch = new Batch(batchCounter, batchIdx, rows, BatchState.InFormation)
+      batchCounter += 1
+      batchesInFormation(batchIdx) = batch
+      batchesInFormationCount += 1
     }
+    batch
   }
 
   override def toString: String = {
@@ -583,424 +717,134 @@ private[pipes] class DeadlockPreventingBatchIterator(
 }
 
 /**
+ * Scheduler that groups rows into batches based on their RAID values and tracks dependencies
+ * between batches, so that batches sharing RAID values are never executed concurrently.
+ *
+ * Lifecycle per batch: insertRow (forms batches) -> pollReadyBatch -> dispatchBatch -> completeBatch.
+ * Implementations are not thread-safe and are driven from a single thread.
+ */
+trait BatchScheduler extends AutoCloseable {
+
+  /**
+   * Find a batch for a row with the given RAID values and record its dependencies.
+   *
+   * The caller may reuse the rowRaids array between calls, so a scheduler that needs to retain
+   * RAID values beyond this call (parking) must copy them.
+   *
+   * @return one of three outcomes:
+   *         - index >= 0: the batch slot the row was inserted into. The caller must append the
+   *           physical row to that batch.
+   *         - [[BatchScheduler.BACKPRESSURE]] (-1): the row was rejected (all batch slots active,
+   *           or the parking budget is full). The caller must hold the row and retry after
+   *           completions.
+   *         - <= [[BatchScheduler.PARKED_BASE]] (-2): the row was admitted into the scheduler's
+   *           parking queues. The caller must store the row at [[BatchScheduler.parkedSlot]] of
+   *           the result and keep it until [[ParkedRowSink.place]] is called for that slot, or
+   *           the iterator closes. Only schedulers with parkingCapacity > 0 return this outcome.
+   */
+  def insertRow(rowRaids: Array[AnyValue]): Int
+
+  /**
+   * Maximum number of rows this scheduler may park at any one time (0 for non-parking schedulers).
+   * The caller sizes its parked-row storage from this.
+   */
+  def parkingCapacity: Int = 0
+
+  /**
+   * Whether any rows are currently parked in this scheduler.
+   */
+  def hasParkedRows: Boolean = false
+
+  /**
+   * Move admissible parked rows into batches, calling sink.place(slot, batchIdx) once per row.
+   * With force=false, only rows that can be placed without adding dependency edges are admitted
+   * (called after completeBatch). With force=true, remaining parked rows are placed using
+   * dependency edges, like the non-parking schedulers would have placed them (called on drain
+   * when the input is exhausted, and as the liveness fallback when nothing else can progress).
+   * May stop early when batch slots are exhausted. Safe to call again after completions.
+   */
+  def admitParked(force: Boolean, sink: ParkedRowSink): Unit = ()
+
+  /**
+   * Select a batch for execution.
+   * @param force also consider ready batches that are not full yet
+   * @return batch index or -1 if none
+   */
+  def pollReadyBatch(force: Boolean): Int
+
+  /**
+   * Triggered when a ready batch is selected for execution.
+   */
+  def dispatchBatch(dispatchedBatchIdx: Int): Unit
+
+  /**
+   * Triggered when a batch finishes execution.
+   */
+  def completeBatch(completedBatchIdx: Int): Unit
+
+  override def close(): Unit
+}
+
+object BatchScheduler {
+
+  /**
+   * insertRow result: the row was rejected and the caller must hold it and retry after
+   * completions.
+   */
+  final val BACKPRESSURE: Int = -1
+
+  /**
+   * insertRow results at or below this value encode a parking slot: slot = PARKED_BASE - result.
+   */
+  final val PARKED_BASE: Int = -2
+
+  @inline def encodeParked(slot: Int): Int = PARKED_BASE - slot
+
+  @inline def parkedSlot(result: Int): Int = PARKED_BASE - result
+}
+
+/**
+ * Callback used by [[BatchScheduler.admitParked]] to move a parked row into a batch.
+ * Implementations append the row stored at parkedSlot to the batch at batchIdx and free the
+ * slot for reuse.
+ */
+trait ParkedRowSink {
+  def place(parkedSlot: Int, batchIdx: Int): Unit
+}
+
+/**
  * @param batchSize The maximum number of rows per batch
  * @param raidsPerRow The number of RAID expressions per row
  * @param maxBatches The maximum number of batches that can be in formation at once (must be multiple of 64)
  *                   Target: the size of the input queue times 2, rounded up to the next multiple of 64, for saturation.
  */
 class BitmaskBatchScheduler(batchSize: Int, raidsPerRow: Int, maxBatches: Int = 256, memoryTracker: MemoryTracker)
-    extends AutoCloseable {
-
-  require(maxBatches % 64 == 0, "maxBatches must be a multiple of 64")
-  require(maxBatches <= 65535, s"maxBatches must be <= 65535 (16-bit encoding limit), got $maxBatches")
-
-  // --- CONFIGURATION ---
-  // E.g. Using maxBatches=256 allows us to use exactly 4 Longs (64 bits * 4) per row.
-  // This fits well in cache lines.
-  final val ROW_WORDS = maxBatches >> 6 // equivalent to / 64
-
-  // --- STATE: DEPENDENCY MATRICES ---
-  // Cache-friendly when maxBatches is small (e.g. 256 = 4 Longs per row, fits in a cache line).
-  // Performance degrades for larger maxBatches (e.g. from ~1024-2048 batches, dependency arrays
-  // span multiple cache lines and L1/L2 pressure increases).
-  // forwardDeps(batchIdx)(wordIdx) -> bits representing parents
-  private[this] val forwardDeps = Array.ofDim[Long](maxBatches, ROW_WORDS)
-
-  // reverseDeps(batchIdx)(wordIdx) -> bits representing children
-  // Used to quickly notify children when a batch completes
-  private[this] val reverseDeps = Array.ofDim[Long](maxBatches, ROW_WORDS)
-
-  // --- STATE: MASKS ---
-  // 1 = Batch is Allocated but not yet Completed
-  private[this] val activeBatchesMask = new Array[Long](ROW_WORDS)
-  // 1 = Batch is Allocated and Open for insertion
-  private[this] val openBatchesMask = new Array[Long](ROW_WORDS)
-  // 1 = Batch is Allocated and Ready (no dependencies)
-  private[this] val readyBatchesMask = new Array[Long](ROW_WORDS)
-  // 1 = Batch is Allocated, Full, and Ready (no dependencies)
-  private[this] val filledReadyBatchesMask = new Array[Long](ROW_WORDS)
-
-  // --- STATE: BATCH METADATA ---
-  private[this] val batchSequence = new Array[Long](maxBatches) // Logical timestamp to prevent cycles
-  private[this] val batchFillCount = new Array[Int](maxBatches)
-
-  // --- STATE: RAID TRACKING (Last Writer Wins) ---
-  // Maps RAID -> encoded (batchSequence, batchIndex) that last touched it.
-  // Encoding: (sequence << 16) | (index + 1), where index + 1 avoids 0 (the default empty value)
-  private[this] val raidLastWriter =
-    HeapTrackingObjectLongHashMap.createObjectLongHashMap[AnyValue](memoryTracker, Math.max(batchSize, maxBatches))
-
-  // --- INTERNAL COUNTERS ---
-  private[this] var globalSequenceCounter: Long = 0L
-  private[this] var nextAllocationIndex: Int = 0
-
-  // --- PURGE THRESHOLD ---
-  private[this] val raidPurgeThreshold: Long = 2L * maxBatches * batchSize * raidsPerRow
-  // An array to temporarily hold RAID keys to be removed during a purge. Reused between purges.
-  private[this] var raidKeysToRemove: java.util.ArrayList[AnyValue] = _
-
-  private[this] val reqDeps = new Array[Long](ROW_WORDS)
+    extends AbstractBitmaskBatchScheduler(batchSize, raidsPerRow, maxBatches, memoryTracker) {
 
   /**
-   * PHASE A: Insert Row
-   * This is the tightest loop. It finds dependencies, selects a batch, and updates state.
+   * Insert a row: find dependencies, select the first open batch the cycle-prevention rule permits,
+   * and update state.
    * @return The index of the batch selected for insertion, or -1 if it was rejected due to too many batches in formation (backpressure)
    */
   def insertRow(rowRaids: Array[AnyValue]): Int = {
-    // 1. Calculate Dependencies for this new row
-    var maxDependencySeq: Long = -1L
+    resolveDependencies(rowRaids)
 
-    // NOTE: We reuse the field reqDeps, so this is not thread-safe
-    var i = 0
-    while (i < rowRaids.length) {
-      val raid = rowRaids(i)
-      // NOTE: Empty value is 0 in ObjectLongHashMap, so we offset by -1 to use 0-based indexing
-      val encoded = raidLastWriter.get(raid)
-      val writerIdx = (encoded & 0xffffL).toInt - 1
-      val writerStoredSeq = encoded >>> 16
-
-      if (
-        writerIdx != -1 &&
-        (activeBatchesMask(writerIdx >> 6) & (1L << writerIdx)) != 0 &&
-        batchSequence(writerIdx) == writerStoredSeq
-      ) {
-        val writerSeq = batchSequence(writerIdx)
-        if (writerSeq > maxDependencySeq) {
-          maxDependencySeq = writerSeq
-        }
-
-        // Set bit in temp mask
-        val wordIndex = writerIdx >> 6 // equivalent to / 64
-        reqDeps(wordIndex) |= (1L << writerIdx) // implicit modulo 64
-      }
-      i += 1
-    }
-
-    // 2. Find Candidate Batch
-    // Strategy: Prefer the oldest OPEN batch where Batch.Seq > MaxDep.Seq
-    var selectedBatch = -1
-
-    var w = 0
-    while (w < ROW_WORDS && selectedBatch == -1) {
-      var word = openBatchesMask(w)
-      while (word != 0) {
-        val bit = numberOfTrailingZeros(word)
-        val idx = (w << 6) + bit
-
-        // Validation: Must be at least as new as the dependencies to avoid cycles.
-        // Equal is allowed because it means the dependency is the candidate itself (self-dep removed in step 4).
-        if (batchSequence(idx) >= maxDependencySeq) {
-          if (batchFillCount(idx) < batchSize) {
-            selectedBatch = idx
-            // break inner loop
-            word = 0
-          }
-        }
-
-        // clear bit and continue if not selected
-        if (selectedBatch == -1) {
-          word &= ~(1L << bit)
-        }
-      }
-      w += 1
-    }
-
-    // 3. Allocate New if needed
+    // Prefer the oldest open batch with room whose sequence is at least maxDependencySeq. Equal is
+    // allowed because it means the dependency is the candidate itself (removed as a self-dependency).
+    var selectedBatch = firstOpenWithRoomAndSeq(maxDependencySeq)
     if (selectedBatch == -1) {
+      // A new batch always has a higher sequence, so it satisfies maxDependencySeq
       selectedBatch = allocateNewBatch()
       if (selectedBatch == -1) {
-        // All batches are active - backpressure needed
-        // Clear reqDeps before returning
-        var cw = 0
-        while (cw < ROW_WORDS) {
-          reqDeps(cw) = 0
-          cw += 1
-        }
+        clearReqDeps()
         return -1
       }
-      // NOTE: The new batch always has higher sequence, so it satisfies maxDependencySeq
     }
-
-    // 4. Update Graph State
-    // Remove self-dependency (a batch should not depend on itself)
-    val selfWordIndex = selectedBatch >> 6
-    reqDeps(selfWordIndex) &= ~(1L << selectedBatch)
 
     val wasReady = isReady(selectedBatch)
-    var addedDep = false
-
-    w = 0
-    while (w < ROW_WORDS) {
-      if (reqDeps(w) != 0) {
-        val oldDeps = forwardDeps(selectedBatch)(w)
-        val newDeps = oldDeps | reqDeps(w)
-
-        if (oldDeps != newDeps) {
-          forwardDeps(selectedBatch)(w) = newDeps
-          addedDep = true
-
-          // Update Reverse Index: Who depends on the parent?
-          // We need to mark 'selectedBatch' as a child of every parent in reqDeps
-          var diff = newDeps ^ oldDeps // bits that changed from 0 to 1
-          while (diff != 0) {
-            val parentBit = numberOfTrailingZeros(diff)
-            val parentIdx = (w << 6) + parentBit
-
-            // Mark selectedBatch in the parent's reverse dependency row
-            reverseDeps(parentIdx)(selectedBatch >> 6) |= (1L << selectedBatch)
-
-            diff &= (diff - 1)
-          }
-        }
-      }
-      // Clear reqDeps before next call
-      reqDeps(w) = 0
-      w += 1
-    }
-
-    // If it was ready, but we added a dependency, remove from ready mask
-    if (wasReady && addedDep) {
-      val wordIndex = selectedBatch >> 6
-      readyBatchesMask(wordIndex) &= ~(1L << selectedBatch)
-    }
-
-    // 5. Update ID Tracking
-    i = 0
-    while (i < rowRaids.length) {
-      val raid = rowRaids(i)
-      // NOTE: Empty value is 0 in ObjectLongHashMap, so we offset the batch index inside the map by +1
-      // Encode (sequence << 16) | (index + 1)
-      raidLastWriter.put(raid, (batchSequence(selectedBatch) << 16) | (selectedBatch + 1).toLong)
-      i += 1
-    }
-
-    val fillCount = batchFillCount(selectedBatch)
-    val newFillCount = fillCount + 1
-    batchFillCount(selectedBatch) = newFillCount
-    if (newFillCount >= batchSize) {
-      val wordIndex = selectedBatch >> 6
-      // Batch is full, clear open bit
-      openBatchesMask(wordIndex) &= ~(1L << selectedBatch) // Clear open bit
-      if (wasReady && !addedDep) {
-        filledReadyBatchesMask(wordIndex) |= (1L << selectedBatch)
-      }
-    }
+    val addedDep = linkDependencies(selectedBatch, wasReady)
+    recordLastWriter(rowRaids, selectedBatch)
+    bumpFillCount(selectedBatch, addedDep, wasReady)
     selectedBatch
   }
-
-  /**
-   * PHASE B: Select Batch for Execution
-   * Returns batch index or -1 if none.
-   */
-  def pollReadyBatch(force: Boolean): Int = {
-    var w = 0
-    while (w < ROW_WORDS) {
-      val word = filledReadyBatchesMask(w)
-      if (word != 0) {
-        val bit = numberOfTrailingZeros(word)
-        val idx = (w << 6) + bit
-        filledReadyBatchesMask(w) &= ~(1L << idx)
-        readyBatchesMask(w) &= ~(1L << idx)
-        return idx
-      }
-      w += 1
-    }
-    if (force) {
-      // Select a ready batch even if it's not full
-      w = 0
-      while (w < ROW_WORDS) {
-        val word = readyBatchesMask(w)
-        if (word != 0) {
-          val bit = numberOfTrailingZeros(word)
-          val idx = (w << 6) + bit
-          // TODO: Consider more parameters like fill count and dependencies (https://linear.app/neo4j/issue/RUN-1004)
-          readyBatchesMask(w) &= ~(1L << idx)
-          openBatchesMask(w) &= ~(1L << idx)
-          return idx
-        }
-        w += 1
-      }
-    }
-    -1
-  }
-
-  /**
-   * PHASE C: Dispatch Batch
-   * Triggered when a ready batch is selected for execution.
-   */
-  def dispatchBatch(dispatchedBatchIdx: Int): Unit = {
-    checkOnlyWhenAssertionsAreEnabled(
-      {
-        val wordIdx = dispatchedBatchIdx >> 6
-        (activeBatchesMask(wordIdx) & (1L << dispatchedBatchIdx)) != 0 &&
-        (openBatchesMask(wordIdx) & (1L << dispatchedBatchIdx)) == 0 &&
-        (readyBatchesMask(wordIdx) & (1L << dispatchedBatchIdx)) == 0 &&
-        (filledReadyBatchesMask(wordIdx) & (1L << dispatchedBatchIdx)) == 0
-      },
-      "Illegal batch state for batch " + dispatchedBatchIdx
-    )
-  }
-
-  /**
-   * PHASE D: Complete Batch
-   * Triggered when a batch finishes execution.
-   */
-  def completeBatch(completedBatchIdx: Int): Unit = {
-    checkOnlyWhenAssertionsAreEnabled(
-      {
-        val wordIndex = completedBatchIdx >> 6
-        (activeBatchesMask(wordIndex) & (1L << completedBatchIdx)) != 0 &&
-        (openBatchesMask(wordIndex) & (1L << completedBatchIdx)) == 0 &&
-        (readyBatchesMask(wordIndex) & (1L << completedBatchIdx)) == 0 &&
-        (filledReadyBatchesMask(wordIndex) & (1L << completedBatchIdx)) == 0
-      },
-      "Illegal state on complete for batch " + completedBatchIdx
-    )
-
-    // Clear from masks
-    val completedWordIdx = completedBatchIdx >> 6
-    val completedBitMask = ~(1L << completedBatchIdx)
-    activeBatchesMask(completedWordIdx) &= completedBitMask
-
-    // Periodic purge of stale RAID entries to bound memory growth
-    if (raidLastWriter.size() > raidPurgeThreshold) {
-      purgeStaleRaidEntries()
-    }
-
-    // Notify children
-    var w = 0
-    while (w < ROW_WORDS) {
-      var childrenWord = reverseDeps(completedBatchIdx)(w)
-
-      // Reset reverse deps for this batch immediately (cleanup)
-      reverseDeps(completedBatchIdx)(w) = 0
-
-      while (childrenWord != 0) {
-        val childBit = numberOfTrailingZeros(childrenWord)
-        val childIdx = (w << 6) + childBit
-
-        // 1. Remove dependency from child
-        // The child's dependency on 'completedBatchIdx' is located in child's forwardDeps
-        // at word 'completedWordIdx', bit 'completedBatchIdx'
-        forwardDeps(childIdx)(completedWordIdx) &= completedBitMask
-
-        // 2. Check if child is NOW ready
-        if (checkIfBatchReady(childIdx)) {
-          // Set bit in ready mask
-          val wordIdx = childIdx >> 6
-          readyBatchesMask(wordIdx) |= (1L << childIdx)
-          if ((openBatchesMask(wordIdx) & (1L << childIdx)) == 0) {
-            filledReadyBatchesMask(wordIdx) |= (1L << childIdx)
-          }
-        }
-
-        childrenWord &= (childrenWord - 1)
-      }
-      w += 1
-    }
-  }
-
-  override def close(): Unit = {
-    raidLastWriter.close()
-  }
-
-  private def purgeStaleRaidEntries(): Unit = {
-    // Reuse the array holding temporary keys to remove between purges
-    if (raidKeysToRemove == null) {
-      raidKeysToRemove = new java.util.ArrayList[AnyValue]()
-    }
-    val keysToRemove = raidKeysToRemove
-    var i = 0
-    val cachedSize = keysToRemove.size()
-    raidLastWriter.forEachKeyValue((raid: AnyValue, encoded: Long) => {
-      val writerIdx = (encoded & 0xffffL).toInt - 1
-      val writerStoredSeq = encoded >>> 16
-      if (
-        writerIdx == -1 ||
-        (activeBatchesMask(writerIdx >> 6) & (1L << writerIdx)) == 0 ||
-        batchSequence(writerIdx) != writerStoredSeq
-      ) {
-        if (i < cachedSize) {
-          keysToRemove.set(i, raid)
-          i += 1
-        } else {
-          keysToRemove.add(raid)
-        }
-      }
-    })
-    var j = 0
-    var key: AnyValue = null
-    val size = keysToRemove.size()
-    while (
-      j < size && {
-        key = keysToRemove.get(j)
-        key != null
-      }
-    ) {
-      raidLastWriter.removeKey(key)
-      keysToRemove.set(j, null) // Clear reference to avoid holding on to memory
-      j += 1
-    }
-  }
-
-  // --- HELPERS ---
-
-  // Returns the index of the newly allocated batch, or -1 if all batches are active (saturation)
-  private def allocateNewBatch(): Int = {
-    // Simple Ring Buffer allocation
-    // Start from nextAllocationIndex until we find an empty slot. Wrap around if necessary.
-    // If we cannot find an empty slot, backpressure is needed until some batches can be completed.
-    var attempts = 0
-    var idx = nextAllocationIndex
-    while ((activeBatchesMask(idx >> 6) & (1L << idx)) != 0) {
-      idx = (idx + 1) % maxBatches
-      attempts += 1
-      if (attempts >= maxBatches) {
-        return -1
-      }
-    }
-
-    // Update the allocation index for the next allocation
-    nextAllocationIndex = (idx + 1) % maxBatches
-
-    // Reset State
-    globalSequenceCounter += 1
-    batchSequence(idx) = globalSequenceCounter
-    batchFillCount(idx) = 0
-
-    // Clear dependencies (array fill is fast for small ranges)
-    var w = 0
-    while (w < ROW_WORDS) {
-      forwardDeps(idx)(w) = 0
-      reverseDeps(idx)(w) = 0
-      w += 1
-    }
-
-    // Mark as Active, Open and Ready initially (it has 0 deps until we add them)
-    val wIdx = idx >> 6
-    activeBatchesMask(wIdx) |= (1L << idx)
-    openBatchesMask(wIdx) |= (1L << idx)
-    readyBatchesMask(wIdx) |= (1L << idx)
-
-    idx
-  }
-
-  // Helper to check if a specific batch has zero dependencies remaining
-  @inline private def checkIfBatchReady(batchIdx: Int): Boolean = {
-    var k = 0
-    while (k < ROW_WORDS) {
-      if (forwardDeps(batchIdx)(k) != 0) return false
-      k += 1
-    }
-    true
-  }
-
-  // Helper to check if a batch is currently marked ready
-  @inline private def isReady(batchIdx: Int): Boolean = {
-    val wIdx = batchIdx >> 6
-    (readyBatchesMask(wIdx) & (1L << batchIdx)) != 0
-  }
-
-  @VisibleForTesting
-  private[pipes] def raidMapSize: Long = raidLastWriter.size()
 }

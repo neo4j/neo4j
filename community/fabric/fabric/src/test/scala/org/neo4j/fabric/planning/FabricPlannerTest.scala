@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
+import org.neo4j.cypher.internal.options.CypherTransactionBatchSchedulerOption
 import org.neo4j.cypher.internal.options.CypherTransactionBatchStrategyOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.options.CypherVersionOption
@@ -1394,6 +1395,7 @@ class FabricPlannerTest
         pipelinedBatchReuseOption = CypherPipelinedBatchReuseOption.default,
         heapEstimatorCacheOption = CypherHeapEstimatorCacheOption.default,
         transactionBatchStrategy = CypherTransactionBatchStrategyOption.default,
+        transactionBatchScheduler = CypherTransactionBatchSchedulerOption.default,
         parallelRepeatHeuristic = CypherParallelRepeatHeuristicOption.disabled
       )
       val expectedInner = QueryOptions(
@@ -1486,6 +1488,7 @@ class FabricPlannerTest
         pipelinedBatchReuseOption = CypherPipelinedBatchReuseOption.default,
         heapEstimatorCacheOption = CypherHeapEstimatorCacheOption.default,
         transactionBatchStrategy = CypherTransactionBatchStrategyOption.default,
+        transactionBatchScheduler = CypherTransactionBatchSchedulerOption.default,
         parallelRepeatHeuristic = CypherParallelRepeatHeuristicOption.disabled
       )
       val expectedInner = QueryOptions(

@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherPlannerVersionOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
+import org.neo4j.cypher.internal.options.CypherTransactionBatchSchedulerOption
 import org.neo4j.cypher.internal.options.CypherTransactionBatchStrategyOption
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.memory.HeapEstimatorCacheConfig
@@ -166,6 +167,15 @@ class CypherConfiguration private (val config: Config) {
 
   def transactionsDefaultBatchStrategy: CypherTransactionBatchStrategyOption =
     CypherTransactionBatchStrategyOption.fromConfig(config)
+
+  def transactionsBatchScheduler: CypherTransactionBatchSchedulerOption =
+    CypherTransactionBatchSchedulerOption.fromConfig(config)
+
+  def transactionsMaxBatchesInFormation: Int =
+    config.get(GraphDatabaseInternalSettings.cypher_transactions_subquery_max_batches_in_formation).intValue()
+
+  def transactionsParkingBudgetRows: Int =
+    config.get(GraphDatabaseInternalSettings.cypher_transactions_subquery_parking_budget_rows).intValue()
 
   val doSchedulerTracing: Boolean =
     config.get(GraphDatabaseInternalSettings.enable_pipelined_runtime_trace).booleanValue()
