@@ -79,7 +79,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
       val expected =
         SinglePlannerQuery
@@ -110,7 +111,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       val expected =
@@ -152,7 +154,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       val expectedFirst =
@@ -231,7 +234,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       query shouldEqual productQueryWithCustomerSubQuery(resolveStrictly)
@@ -253,7 +257,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       query shouldEqual productQueryWithCustomerSubQuery(resolveStrictly)
@@ -274,7 +279,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       query shouldEqual productQueryWithCustomerSubQuery(resolveStrictly)
@@ -295,7 +301,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       def aggregations(pq: PlannerQuery): Seq[AggregatingQueryProjection] = pq match {
@@ -348,7 +355,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       val expected =
@@ -553,7 +561,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       val expected =
@@ -637,7 +646,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       val expected =
@@ -804,7 +814,8 @@ class StandardStatementConvertersTest extends CypherPlannerTestSuite with Logica
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       query shouldEqual StandardFixtures.topLevelQuery
@@ -826,7 +837,8 @@ class StandardStatementConvertersTest extends CypherPlannerTestSuite with Logica
           None,
           None,
           compareVersions = false,
-          Map.empty
+          Map.empty,
+          enableNameDeduplication = true
         )
 
       query shouldEqual StandardFixtures.queryContainingSubQuery

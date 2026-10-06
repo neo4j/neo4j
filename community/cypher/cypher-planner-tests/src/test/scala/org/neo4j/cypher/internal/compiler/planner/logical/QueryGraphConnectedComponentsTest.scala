@@ -526,7 +526,8 @@ class QueryGraphConnectedComponentsTest extends CypherPlannerTestSuite with Logi
         embedding = listOfInt(1, 2, 3),
         where = None,
         limit = literal(10),
-        scoreVariable = Some(v"score")
+        scoreVariable = Some(v"score"),
+        matchFilterConfig = None
       )))
       .addPredicates(
         isNotNull(v"score"),
@@ -548,7 +549,8 @@ class QueryGraphConnectedComponentsTest extends CypherPlannerTestSuite with Logi
         embedding = listOfInt(1, 2, 3),
         where = None,
         limit = literal(10),
-        scoreVariable = Some(v"score")
+        scoreVariable = Some(v"score"),
+        matchFilterConfig = None
       )))
       .addPredicates(
         isNotNull(v"score"),
@@ -577,7 +579,8 @@ class QueryGraphConnectedComponentsTest extends CypherPlannerTestSuite with Logi
         embedding = listOfInt(1, 2, 3),
         where = None,
         limit = literal(10),
-        scoreVariable = Some(v"score")
+        scoreVariable = Some(v"score"),
+        matchFilterConfig = None
       )))
       .addPredicates(
         isNotNull(v"score"),
@@ -601,7 +604,8 @@ class QueryGraphConnectedComponentsTest extends CypherPlannerTestSuite with Logi
       embedding = listOfInt(1, 2, 3),
       where = None,
       limit = literal(10),
-      scoreVariable = Some(v"score")
+      scoreVariable = Some(v"score"),
+      matchFilterConfig = None
     )
 
     val qg = QueryGraph.empty

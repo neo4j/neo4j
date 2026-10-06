@@ -2639,7 +2639,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
         None,
         None,
         compareVersions = true,
-        Map.empty
+        Map.empty,
+        enableNameDeduplication = true
       )
 
       val rel =
@@ -2680,7 +2681,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       None,
       None,
       compareVersions = true,
-      Map.empty
+      Map.empty,
+      enableNameDeduplication = true
     )
 
     val rel =

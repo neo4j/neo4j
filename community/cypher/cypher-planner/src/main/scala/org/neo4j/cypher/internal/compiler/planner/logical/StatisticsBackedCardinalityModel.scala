@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.SearchWithComplexPatternConverter
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
@@ -235,16 +236,35 @@ class StatisticsBackedCardinalityModel(
     case _: PassthroughAllHorizon =>
       cardinalityAndInput
 
-    case CallSubqueryHorizon(subquery, _, true, _, _, _, _) =>
-      val subQueryCardinality = apply(
-        subquery,
-        cardinalityAndInput.labelInfo,
-        cardinalityAndInput.relTypeInfo,
-        semanticTable,
-        indexPredicateProviderContext,
-        cardinalityModel,
-        graphSchemaOptimizations
-      )
+    case horizon @ CallSubqueryHorizon(subquery, _, true, _, _, _, _) =>
+      val subQueryCardinality = {
+        horizon match {
+          // check if this is a synthetic subquery built for SEARCH with MATCH-filter
+          case SearchWithComplexPatternConverter.MatchFilterSubquery(matchWithSearchQueryGraph) =>
+            calculateCardinalityForQueryGraph(
+              matchWithSearchQueryGraph,
+              cardinalityAndInput.labelInfo,
+              cardinalityAndInput.relTypeInfo,
+              semanticTable,
+              indexPredicateProviderContext,
+              cardinalityModel,
+              graphSchemaOptimizations
+            ).cardinality
+
+          // regular CALL subquery
+          case _ =>
+            apply(
+              subquery,
+              cardinalityAndInput.labelInfo,
+              cardinalityAndInput.relTypeInfo,
+              semanticTable,
+              indexPredicateProviderContext,
+              cardinalityModel,
+              graphSchemaOptimizations
+            )
+        }
+      }
+
       // Cardinality of the subquery times current cardinality is the result
       cardinalityAndInput.copy(cardinality = cardinalityAndInput.cardinality * subQueryCardinality)
 

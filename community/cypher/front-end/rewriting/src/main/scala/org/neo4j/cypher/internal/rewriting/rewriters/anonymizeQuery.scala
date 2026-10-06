@@ -78,7 +78,8 @@ case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
     case x: StringLiteral      => StringLiteral(anonymizer.literal(x.value))(x.position)
     case x: CreateIndex        => x.withName(x.name.map(n => anonymizeIdentifierName(n, anonymizer.indexName)))
     case x: DropIndexOnName    => x.copy(name = anonymizeIdentifierName(x.name, anonymizer.indexName))(x.position)
-    case x: Search => x.copy(indexName = anonymizeIdentifierName(x.indexName, anonymizer.indexName))(x.position)
+    case x: Search =>
+      x.copy(indexName = anonymizeIdentifierName(x.indexName, anonymizer.indexName))(x.position, x.patternComplexity)
     case x: CreateConstraint => x.withName(x.name.map(n => anonymizeIdentifierName(n, anonymizer.constraintName)))
     case x: DropConstraintOnName =>
       x.copy(name = anonymizeIdentifierName(x.name, anonymizer.constraintName))(x.position)

@@ -414,6 +414,8 @@ trait StatementBuilder extends Cypher25ParserListener {
     val maybeWhereClause = ctx.whereClause()
     val maybeWhere = Option(maybeWhereClause).map(_.ast[Where]())
 
+    val patternComplexity = Search.PatternComplexity.default // calculated later
+
     ctx.ast = Search(
       ctx.variable.ast(),
       maybeScore,
@@ -424,7 +426,7 @@ trait StatementBuilder extends Cypher25ParserListener {
       astOpt(ctx.analyzerClause()),
       astOpt(ctx.skip()),
       ctx.limit().ast()
-    )(pos(ctx))
+    )(pos(ctx), patternComplexity)
   }
 
   final override def exitIndexSpecificationClause(ctx: Cypher25Parser.IndexSpecificationClauseContext): Unit = {
@@ -586,15 +588,15 @@ trait StatementBuilder extends Cypher25ParserListener {
 
     val position = pos(ctx)
     val patternPos = if (ctx.OPTIONAL() != null) ctxChild(ctx, 2) else ctxChild(ctx, 1)
+    val pattern = Pattern.ForMatch(patternPartsWithSelector)(pos(patternPos))
 
     ctx.ast = Match(
       optional = nodeChild(ctx, 0).getSymbol.getType == Cypher25Parser.OPTIONAL,
       matchMode = astOpt(ctx.matchMode(), MatchMode.default(position)),
-      pattern =
-        Pattern.ForMatch(patternPartsWithSelector)(pos(patternPos)),
+      pattern = pattern,
       hints = astSeq(ctx.hint()).toList,
       where = astOpt(ctx.whereClause()),
-      search = astOpt(ctx.searchClause())
+      search = astOpt[Search](ctx.searchClause()).map(_.withCheckedPatternComplexity(pattern))
     )(position)
   }
 

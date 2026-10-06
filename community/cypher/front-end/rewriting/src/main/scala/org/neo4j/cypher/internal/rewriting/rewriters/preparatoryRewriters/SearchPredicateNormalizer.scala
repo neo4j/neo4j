@@ -76,7 +76,7 @@ case object SearchPredicateNormalizer extends Step with DefaultPostCondition wit
         val rawBooleanPropertyPredicates = findBooleanPropertyPredicates(filter.expression, bindingVariable)
         val rewriter = filterRewriter(bindingVariable, rawBooleanPropertyPredicates)
         val newFilter = filter.endoRewrite(rewriter)
-        search.copy(where = Some(newFilter))(search.position)
+        search.copy(where = Some(newFilter))(search.position, search.patternComplexity)
     }
   }
 

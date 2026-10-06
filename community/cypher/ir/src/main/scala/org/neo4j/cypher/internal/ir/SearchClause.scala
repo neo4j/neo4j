@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.Search
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -39,19 +40,33 @@ sealed trait SearchClause {
   def isSolvableGivenSymbols(symbols: Set[LogicalVariable]): Boolean = dependencies.subsetOf(symbols)
 }
 
+object VectorSearchClause {
+
+  case class MatchFilterConfig(
+    candidateIds: LogicalVariable,
+    groupsCollection: LogicalVariable,
+    group: LogicalVariable,
+    joinPredicate: Equals
+  ) {
+    def dependencies: Set[LogicalVariable] = Set(candidateIds, groupsCollection)
+  }
+}
+
 case class VectorSearchClause(
   resultVariable: LogicalVariable,
   indexName: String,
   embedding: Expression,
   where: Option[Where],
   limit: Expression,
-  scoreVariable: Option[LogicalVariable]
+  scoreVariable: Option[LogicalVariable],
+  matchFilterConfig: Option[VectorSearchClause.MatchFilterConfig]
 ) extends SearchClause {
 
   override def dependencies: Set[LogicalVariable] =
     embedding.dependencies ++
       limit.dependencies ++
-      where.fold(Set.empty[LogicalVariable])(_.dependencies - resultVariable)
+      where.fold(Set.empty[LogicalVariable])(_.dependencies - resultVariable) ++
+      matchFilterConfig.fold(Set.empty[LogicalVariable])(_.dependencies)
 
   override def inlinedPredicatesSet: ListSet[Expression] = {
     where.fold(ListSet.empty[Expression])(w => Ands.unwrap(w.expression))
@@ -65,6 +80,10 @@ case class VectorSearchClause(
     val limitStr = SearchClause.stringifier(limit)
     val scoreStr = scoreVariable.map(v => s" SCORE AS ${v.name}").getOrElse("")
     s"SEARCH ${resultVariable.name} IN (VECTOR INDEX $indexName FOR $embeddingStr $whereStr LIMIT $limitStr)$scoreStr"
+  }
+
+  def withMatchFilterConfig(mfc: VectorSearchClause.MatchFilterConfig): VectorSearchClause = {
+    copy(matchFilterConfig = Some(mfc))
   }
 }
 
@@ -112,7 +131,7 @@ object SearchClause {
     javaCompatible = false
   )
 
-  def fromAst(search: Option[Search]): Option[SearchClause] = search.map(ast => {
+  def fromAst(ast: Search): SearchClause = {
     ast.indexName match {
       case _: Parameter =>
         // We currently only support String, update this when we allow Parameter.
@@ -128,7 +147,8 @@ object SearchClause {
               embedding = ast.embedding,
               where = ast.where,
               limit = ast.limit.expression,
-              scoreVariable = ast.score
+              scoreVariable = ast.score,
+              matchFilterConfig = None
             )
           case Search.Fulltext =>
             FulltextSearchClause(
@@ -150,5 +170,7 @@ object SearchClause {
           s"Invalid input ${ExpressionStringifier.apply().apply(exp)} for name. Expected to be STRING NOT NULL."
         )
     }
-  })
+  }
+
+  def fromAstOption(search: Option[Search]): Option[SearchClause] = search.map(fromAst)
 }

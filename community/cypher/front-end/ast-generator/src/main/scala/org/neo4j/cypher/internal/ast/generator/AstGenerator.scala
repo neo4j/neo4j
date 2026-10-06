@@ -1732,7 +1732,10 @@ class AstGenerator(
     analyzer <- option(_expression)
     skip <- option(_skip)
     limit <- _limit
-  } yield Search(variable, score, indexType, indexName, expr, where, analyzer, skip, limit)(pos)
+  } yield {
+    val patternComplexity = Search.PatternComplexity.default
+    Search(variable, score, indexType, indexName, expr, where, analyzer, skip, limit)(pos, patternComplexity)
+  }
 
   def _with: Gen[With] = for {
     distinct <- boolean
@@ -1822,7 +1825,7 @@ class AstGenerator(
     hints <- zeroOrMore(_hint)
     where <- option(_where)
     search <- if (usesCypher5) const(None) else option(_search)
-  } yield Match(optional, matchMode, pattern, hints, where, search)(pos)
+  } yield Match(optional, matchMode, pattern, hints, where, search.map(_.withCheckedPatternComplexity(pattern)))(pos)
 
   def _matchMode: Gen[MatchMode] = oneOf(MatchMode.RepeatableElements()(pos), MatchMode.DifferentRelationships()(pos))
 

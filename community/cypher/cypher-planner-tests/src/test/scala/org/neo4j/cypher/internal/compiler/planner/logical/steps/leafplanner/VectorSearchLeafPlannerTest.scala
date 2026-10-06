@@ -58,7 +58,8 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         embedding = embedding,
         where = None,
         limit = limit,
-        scoreVariable = None
+        scoreVariable = None,
+        matchFilterConfig = None
       )
       val qg = QueryGraph(
         patternNodes = Set(bindingVariable),
@@ -100,7 +101,8 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         embedding = embedding,
         where = None,
         limit = limit,
-        scoreVariable = None
+        scoreVariable = None,
+        matchFilterConfig = None
       )
 
       val qg = QueryGraph(
@@ -135,7 +137,8 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         embedding = embeddingWithDeps,
         where = None,
         limit = limit,
-        scoreVariable = None
+        scoreVariable = None,
+        matchFilterConfig = None
       )
 
       val qg = QueryGraph(
@@ -163,7 +166,8 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         embedding = embedding,
         where = None,
         limit = limitWithDeps,
-        scoreVariable = None
+        scoreVariable = None,
+        matchFilterConfig = None
       )
 
       val qg = QueryGraph(
@@ -189,7 +193,8 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         embedding = embedding,
         where = None,
         limit = limit,
-        scoreVariable = None
+        scoreVariable = None,
+        matchFilterConfig = None
       )
 
       val qg = QueryGraph(
@@ -227,7 +232,8 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         embedding = embedding,
         where = None,
         limit = limit,
-        scoreVariable = None
+        scoreVariable = None,
+        matchFilterConfig = None
       )
 
       val qg = QueryGraph(
@@ -257,7 +263,8 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         embedding = embedding,
         where = None,
         limit = limit,
-        scoreVariable = Some(scoreVariable)
+        scoreVariable = Some(scoreVariable),
+        matchFilterConfig = None
       )
 
       val qg = QueryGraph(
@@ -293,7 +300,8 @@ class VectorSearchLeafPlannerTest extends CypherPlannerTestSuite with LogicalPla
         embedding = embeddingWithDeps,
         where = None,
         limit = limit,
-        scoreVariable = None
+        scoreVariable = None,
+        matchFilterConfig = None
       )
 
       val qg = QueryGraph(

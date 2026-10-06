@@ -21,10 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.VectorSearchWithComplexPattern
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
-import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
@@ -32,16 +30,17 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.plans.AllQueryExpression
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.NodeVectorIndexSearch
 import org.neo4j.cypher.internal.logical.plans.NonExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -1833,136 +1832,593 @@ abstract class VectorSearchWithComplexPatternPlanningIntegrationTestBase
     super.plannerBuilder()
       .addSemanticFeature(VectorSearchWithComplexPattern)
 
-  test("plan node vector index search with pattern containing multiple variable declarations") {
-    val planner = plannerBuilder().build()
+  extension (str: String) {
+
+    def at(pos: Int): String = {
+      val name = AnonymousVariableNameGenerator.includeName(str, AnonymousVariableNameGenerator.anonymousVarName(pos))
+      s"`$name`"
+    }
+
+    def unbacktick: String = str.stripPrefix("`").stripSuffix("`")
+
+    def toVar: Variable = varFor(str)
+  }
+
+  test("single-hop pattern") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
 
     val query =
-      """MATCH (movie:Movie)<-[rel:DIRECTED]-(director:Person)
+      """MATCH (director:Person)-[:DIRECTED]->(movie:Movie)
+        |  WHERE director.born > 1950
         |  SEARCH movie IN (
         |    VECTOR INDEX moviePlots
         |    FOR $embedding
         |    LIMIT 10
         |  )
-        |RETURN movie.plot as plot, director.name as name""".stripMargin
+        |RETURN director.name AS name, movie.title AS title""".stripMargin
+
+    val director0 = "inner_director".at(0)
+    val movie1 = "inner_movie".at(1)
+    val movie2 = "movie".at(2)
+    val candidateIds3 = "candidateIds".at(3)
+    val groups4 = "groups".at(4)
+    val group5 = "group".at(5)
+    val rows6 = "rows".at(6)
+    val record7 = "record".at(7)
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot", "director.name AS name")
-      .filter("director:Person")
-      .expandAll("(movie)<-[:DIRECTED]-(director)")
-      .nodeVectorIndexSearch(
-        node = "movie",
+      .projection("director.name AS name", "movie.title AS title")
+      .projection(s"$record7.$director0 AS director", s"$record7.$movie1 AS movie")
+      .unwind(s"$group5.$rows6 AS $record7")
+      .apply()
+      .|.valueHashJoin(s"$group5.$movie1 = $movie2")
+      .|.|.nodeVectorIndexSearch(
+        node = movie2.unbacktick,
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
         vector = "$embedding",
         limit = "10",
-        argumentIds = Set()
+        entityFilter = preparedEntityFilter(candidateIds3.unbacktick.toVar),
+        argumentIds = Set(candidateIds3.unbacktick, groups4.unbacktick)
       )
+      .|.unwind(s"$groups4 AS $group5")
+      .|.argument(candidateIds3.unbacktick, groups4.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds3.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups4.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows6.unbacktick -> rows6.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(
+          rows6.unbacktick -> collect(mapOf(
+            director0.unbacktick -> director0.unbacktick.toVar,
+            movie1.unbacktick -> movie1.unbacktick.toVar
+          ))
+        )
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($director0)-[:DIRECTED]->($movie1)")
+      .filter(s"$director0.born > 1950")
+      .nodeByLabelScan(director0, "Person")
       .build()
   }
 
-  test("plan node vector index search with pattern containing multiple relationships") {
-    val planner = plannerBuilder().build()
+  test("every retained variable is buffered and restored, including relationships") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
 
     val query =
-      """MATCH (a)-[r]->(b)-[p]->(movie:Movie)-[q]->(c)
+      """MATCH (director:Person)-[rel:DIRECTED]->(movie:Movie)
         |  SEARCH movie IN (
         |    VECTOR INDEX moviePlots
         |    FOR $embedding
         |    LIMIT 10
         |  )
-        |RETURN movie.plot as plot""".stripMargin
+        |RETURN director, rel, movie""".stripMargin
+
+    val director0 = "inner_director".at(0)
+    val movie1 = "inner_movie".at(1)
+    val rel2 = "inner_rel".at(2)
+    val movie3 = "movie".at(3)
+    val candidateIds4 = "candidateIds".at(4)
+    val groups5 = "groups".at(5)
+    val group6 = "group".at(6)
+    val rows7 = "rows".at(7)
+    val record8 = "record".at(8)
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot")
-      .filter("NOT q = r", "NOT p = r")
-      .expandAll("(b)<-[r]-()")
-      .filter("NOT q = p")
-      .expandAll("(movie)<-[p]-(b)")
-      .expandAll("(movie)-[q]->()")
-      .nodeVectorIndexSearch(
-        node = "movie",
+      .projection(s"$record8.$director0 AS director", s"$record8.$movie1 AS movie", s"$record8.$rel2 AS rel")
+      .unwind(s"$group6.$rows7 AS $record8")
+      .apply()
+      .|.valueHashJoin(s"$group6.$movie1 = $movie3")
+      .|.|.nodeVectorIndexSearch(
+        node = movie3.unbacktick,
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
         vector = "$embedding",
         limit = "10",
-        argumentIds = Set()
+        entityFilter = preparedEntityFilter(candidateIds4.unbacktick.toVar),
+        argumentIds = Set(candidateIds4.unbacktick, groups5.unbacktick)
       )
+      .|.unwind(s"$groups5 AS $group6")
+      .|.argument(candidateIds4.unbacktick, groups5.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds4.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups5.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows7.unbacktick -> rows7.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(
+          rows7.unbacktick -> collect(mapOf(
+            director0.unbacktick -> director0.unbacktick.toVar,
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rel2.unbacktick -> rel2.unbacktick.toVar
+          ))
+        )
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($director0)-[$rel2:DIRECTED]->($movie1)")
+      .nodeByLabelScan(director0, "Person")
       .build()
   }
 
-  test("plan node vector index search with comma-separated pattern, single component") {
-    val planner = plannerBuilder().build()
+  test("variables that are not retained are not buffered, but multiplicity is preserved") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
 
     val query =
-      """MATCH (a)-[p:CONTRIBUTED]->(movie:Movie)-[q]->(b), (movie)<-[r:ACTS_IN]-(c)
+      """MATCH (director:Person)-[:DIRECTED]->(movie:Movie)
         |  SEARCH movie IN (
         |    VECTOR INDEX moviePlots
         |    FOR $embedding
         |    LIMIT 10
         |  )
-        |RETURN movie.plot as plot""".stripMargin
+        |RETURN movie.title AS title""".stripMargin
+
+    val director0 = "inner_director".at(0)
+    val movie1 = "inner_movie".at(1)
+    val movie2 = "movie".at(2)
+    val candidateIds3 = "candidateIds".at(3)
+    val groups4 = "groups".at(4)
+    val group5 = "group".at(5)
+    val rows6 = "rows".at(6)
+    val record7 = "record".at(7)
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot")
-      .filter("NOT q = r")
-      .expandAll("(movie)<-[r:ACTS_IN]-()")
-      .filter("NOT q = p")
-      .expandAll("(movie)-[q]->()")
-      .expandAll("(movie)<-[p:CONTRIBUTED]-()")
-      .nodeVectorIndexSearch(
-        node = "movie",
+      .projection("movie.title AS title")
+      .projection(s"$record7.$director0 AS director", s"$record7.$movie1 AS movie")
+      .unwind(s"$group5.$rows6 AS $record7")
+      .apply()
+      .|.valueHashJoin(s"$group5.$movie1 = $movie2")
+      .|.|.nodeVectorIndexSearch(
+        node = movie2.unbacktick,
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
         vector = "$embedding",
         limit = "10",
-        argumentIds = Set()
+        entityFilter = preparedEntityFilter(candidateIds3.unbacktick.toVar),
+        argumentIds = Set(candidateIds3.unbacktick, groups4.unbacktick)
       )
+      .|.unwind(s"$groups4 AS $group5")
+      .|.argument(candidateIds3.unbacktick, groups4.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds3.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups4.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows6.unbacktick -> rows6.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(
+          rows6.unbacktick -> collect(mapOf(
+            director0.unbacktick -> director0.unbacktick.toVar,
+            movie1.unbacktick -> movie1.unbacktick.toVar
+          ))
+        )
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($director0)-[:DIRECTED]->($movie1)")
+      .nodeByLabelScan(director0, "Person")
       .build()
   }
 
-  test("plan node vector index search with comma-separated pattern, multiple components") {
-    val planner = plannerBuilder().build()
+  test("multi-hop pattern with two retained variables") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
 
     val query =
-      """MATCH (a)-[p:CONTRIBUTED]->(movie:Movie)-[q]->(b), (otherMovie)<-[r:ACTS_IN]-(c)
+      """MATCH (actor:Person)-[:ACTS_IN]->(movie:Movie)<-[:DIRECTED]-(director:Person)
         |  SEARCH movie IN (
         |    VECTOR INDEX moviePlots
         |    FOR $embedding
         |    LIMIT 10
         |  )
-        |WHERE movie.year = otherMovie.year
-        |RETURN movie.plot as plot""".stripMargin
+        |RETURN actor.name AS actor, director.name AS director, movie.title AS title""".stripMargin
+
+    val actor0 = "actor".at(0)
+    val director1 = "director".at(1)
+    val actor2 = "actor".at(2)
+    val director3 = "director".at(3)
+    val innerActor4 = "inner_actor".at(4)
+    val innerDirector5 = "inner_director".at(5)
+    val innerMovie6 = "inner_movie".at(6)
+    val movie7 = "movie".at(7)
+    val candidateIds8 = "candidateIds".at(8)
+    val groups9 = "groups".at(9)
+    val group10 = "group".at(10)
+    val rows11 = "rows".at(11)
+    val record12 = "record".at(12)
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .projection("cacheN[movie.plot] AS plot")
-      .filter("NOT q = r", "cacheN[movie.year] = otherMovie.year")
+      .projection(s"$actor0.name AS $actor2", s"$director1.name AS $director3", "movie.title AS title")
+      .projection(
+        s"$record12.$innerActor4 AS $actor0",
+        s"$record12.$innerDirector5 AS $director1",
+        s"$record12.$innerMovie6 AS movie"
+      )
+      .unwind(s"$group10.$rows11 AS $record12")
+      .apply()
+      .|.valueHashJoin(s"$group10.$innerMovie6 = $movie7")
+      .|.|.nodeVectorIndexSearch(
+        node = movie7.unbacktick,
+        labelNames = Seq("Movie"),
+        properties = moviePlotsProperties,
+        indexName = "moviePlots",
+        vector = "$embedding",
+        limit = "10",
+        entityFilter = preparedEntityFilter(candidateIds8.unbacktick.toVar),
+        argumentIds = Set(candidateIds8.unbacktick, groups9.unbacktick)
+      )
+      .|.unwind(s"$groups9 AS $group10")
+      .|.argument(candidateIds8.unbacktick, groups9.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds8.unbacktick -> compileEntityFilter(id(innerMovie6.unbacktick.toVar), "moviePlots"),
+          groups9.unbacktick -> collect(mapOf(
+            innerMovie6.unbacktick -> innerMovie6.unbacktick.toVar,
+            rows11.unbacktick -> rows11.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(innerMovie6.unbacktick -> innerMovie6.unbacktick.toVar),
+        Map(
+          rows11.unbacktick -> collect(mapOf(
+            innerActor4.unbacktick -> innerActor4.unbacktick.toVar,
+            innerDirector5.unbacktick -> innerDirector5.unbacktick.toVar,
+            innerMovie6.unbacktick -> innerMovie6.unbacktick.toVar
+          ))
+        )
+      )
+      .filter(s"$innerActor4:Person")
+      .expandAll(s"($innerMovie6)<-[:ACTS_IN]-($innerActor4)")
+      .filter(s"$innerMovie6:Movie")
+      .expandAll(s"($innerDirector5)-[:DIRECTED]->($innerMovie6)")
+      .nodeByLabelScan(innerDirector5, "Person")
+      .build()
+  }
+
+  test("in-index property filter from SEARCH WHERE is combined with the entity filter") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      """MATCH (director:Person)-[:DIRECTED]->(movie:Movie)
+        |  SEARCH movie IN (
+        |    VECTOR INDEX moviePlots
+        |    FOR $embedding
+        |    WHERE movie.imdbRating > 8
+        |    LIMIT 10
+        |  )
+        |RETURN director.name AS name, movie.title AS title""".stripMargin
+
+    val director0 = "inner_director".at(0)
+    val movie1 = "inner_movie".at(1)
+    val movie2 = "movie".at(2)
+    val candidateIds3 = "candidateIds".at(3)
+    val groups4 = "groups".at(4)
+    val group5 = "group".at(5)
+    val rows6 = "rows".at(6)
+    val record7 = "record".at(7)
+
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("director.name AS name", "movie.title AS title")
+      .projection(s"$record7.$director0 AS director", s"$record7.$movie1 AS movie")
+      .unwind(s"$group5.$rows6 AS $record7")
+      .apply()
+      .|.valueHashJoin(s"$group5.$movie1 = $movie2")
+      .|.|.nodeVectorIndexSearch(
+        node = movie2.unbacktick,
+        labelNames = Seq("Movie"),
+        properties = moviePlotsProperties,
+        indexName = "moviePlots",
+        vector = "$embedding",
+        limit = "10",
+        entityFilter = preparedEntityFilter(candidateIds3.unbacktick.toVar),
+        propertyFilter = Some(composite(rangeExpression(gt(literalInt(8))), AllQueryExpression)),
+        argumentIds = Set(candidateIds3.unbacktick, groups4.unbacktick)
+      )
+      .|.unwind(s"$groups4 AS $group5")
+      .|.argument(candidateIds3.unbacktick, groups4.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds3.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups4.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows6.unbacktick -> rows6.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(
+          rows6.unbacktick -> collect(mapOf(
+            director0.unbacktick -> director0.unbacktick.toVar,
+            movie1.unbacktick -> movie1.unbacktick.toVar
+          ))
+        )
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($director0)-[:DIRECTED]->($movie1)")
+      .nodeByLabelScan(director0, "Person")
+      .build()
+  }
+
+  test("pattern WHERE predicate on an indexed property is solved in the pattern") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      """MATCH (director:Person)-[:DIRECTED]->(movie:Movie)
+        |  WHERE movie.releaseYear = 1989
+        |  SEARCH movie IN (
+        |    VECTOR INDEX moviePlots
+        |    FOR $embedding
+        |    LIMIT 10
+        |  )
+        |RETURN director.name AS name, movie.title AS title""".stripMargin
+
+    val director0 = "inner_director".at(0)
+    val movie1 = "inner_movie".at(1)
+    val movie2 = "movie".at(2)
+    val candidateIds3 = "candidateIds".at(3)
+    val groups4 = "groups".at(4)
+    val group5 = "group".at(5)
+    val rows6 = "rows".at(6)
+    val record7 = "record".at(7)
+
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("director.name AS name", "movie.title AS title")
+      .projection(s"$record7.$director0 AS director", s"$record7.$movie1 AS movie")
+      .unwind(s"$group5.$rows6 AS $record7")
+      .apply()
+      .|.valueHashJoin(s"$group5.$movie1 = $movie2")
+      .|.|.nodeVectorIndexSearch(
+        node = movie2.unbacktick,
+        labelNames = Seq("Movie"),
+        properties = moviePlotsProperties,
+        indexName = "moviePlots",
+        vector = "$embedding",
+        limit = "10",
+        entityFilter = preparedEntityFilter(candidateIds3.unbacktick.toVar),
+        argumentIds = Set(candidateIds3.unbacktick, groups4.unbacktick)
+      )
+      .|.unwind(s"$groups4 AS $group5")
+      .|.argument(candidateIds3.unbacktick, groups4.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds3.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups4.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows6.unbacktick -> rows6.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(
+          rows6.unbacktick -> collect(mapOf(
+            director0.unbacktick -> director0.unbacktick.toVar,
+            movie1.unbacktick -> movie1.unbacktick.toVar
+          ))
+        )
+      )
+      .filter(s"$movie1.releaseYear = 1989", s"$movie1:Movie")
+      .expandAll(s"($director0)-[:DIRECTED]->($movie1)")
+      .nodeByLabelScan(director0, "Person")
+      .build()
+  }
+
+  test("disconnected components are connected via CartesianProduct below the aggregations") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      """MATCH (person:Person), (director:Person)-[:DIRECTED]->(movie:Movie)
+        |  SEARCH movie IN (
+        |    VECTOR INDEX moviePlots
+        |    FOR $embedding
+        |    LIMIT 10
+        |  )
+        |RETURN person.name AS person, director.name AS director, movie.title AS title""".stripMargin
+
+    val person0 = "person".at(0)
+    val director1 = "director".at(1)
+    val person2 = "person".at(2)
+    val director3 = "director".at(3)
+    val innerDirector4 = "inner_director".at(4)
+    val innerPerson5 = "inner_person".at(5)
+    val innerMovie6 = "inner_movie".at(6)
+    val movie7 = "movie".at(7)
+    val candidateIds8 = "candidateIds".at(8)
+    val groups9 = "groups".at(9)
+    val group10 = "group".at(10)
+    val rows11 = "rows".at(11)
+    val record12 = "record".at(12)
+
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection(s"$person0.name AS $person2", s"$director1.name AS $director3", "movie.title AS title")
+      .projection(
+        s"$record12.$innerDirector4 AS $director1",
+        s"$record12.$innerPerson5 AS $person0",
+        s"$record12.$innerMovie6 AS movie"
+      )
+      .unwind(s"$group10.$rows11 AS $record12")
+      .apply()
+      .|.valueHashJoin(s"$group10.$innerMovie6 = $movie7")
+      .|.|.nodeVectorIndexSearch(
+        node = movie7.unbacktick,
+        labelNames = Seq("Movie"),
+        properties = moviePlotsProperties,
+        indexName = "moviePlots",
+        vector = "$embedding",
+        limit = "10",
+        entityFilter = preparedEntityFilter(candidateIds8.unbacktick.toVar),
+        argumentIds = Set(candidateIds8.unbacktick, groups9.unbacktick)
+      )
+      .|.unwind(s"$groups9 AS $group10")
+      .|.argument(candidateIds8.unbacktick, groups9.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds8.unbacktick -> compileEntityFilter(id(innerMovie6.unbacktick.toVar), "moviePlots"),
+          groups9.unbacktick -> collect(mapOf(
+            innerMovie6.unbacktick -> innerMovie6.unbacktick.toVar,
+            rows11.unbacktick -> rows11.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(innerMovie6.unbacktick -> innerMovie6.unbacktick.toVar),
+        Map(
+          rows11.unbacktick -> collect(mapOf(
+            innerDirector4.unbacktick -> innerDirector4.unbacktick.toVar,
+            innerMovie6.unbacktick -> innerMovie6.unbacktick.toVar,
+            innerPerson5.unbacktick -> innerPerson5.unbacktick.toVar
+          ))
+        )
+      )
       .cartesianProduct()
-      .|.relationshipTypeScan("()-[r:ACTS_IN]->(otherMovie)")
-      .cacheProperties("cacheNFromStore[movie.year]", "cacheNFromStore[movie.plot]")
-      .filter("NOT q = p")
-      .expandAll("(movie)-[q]->()")
-      .expandAll("(movie)<-[p:CONTRIBUTED]-()")
-      .nodeVectorIndexSearch(
-        node = "movie",
+      .|.filter(s"$innerMovie6:Movie")
+      .|.expandAll(s"($innerDirector4)-[:DIRECTED]->($innerMovie6)")
+      .|.nodeByLabelScan(innerDirector4, "Person")
+      .nodeByLabelScan(innerPerson5, "Person")
+      .build()
+  }
+
+  test("var-length relationship pattern") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      """MATCH (movie:Movie)-[r*2..4]->(endNode)
+        |  SEARCH movie IN (
+        |    VECTOR INDEX moviePlots
+        |    FOR $embedding
+        |    LIMIT 10
+        |  )
+        |RETURN movie.plot AS plot""".stripMargin
+
+    val endNode0 = "inner_endNode".at(0)
+    val movie1 = "inner_movie".at(1)
+    val r2 = "inner_r".at(2)
+    val movie3 = "movie".at(3)
+    val candidateIds4 = "candidateIds".at(4)
+    val groups5 = "groups".at(5)
+    val group6 = "group".at(6)
+    val rows7 = "rows".at(7)
+    val record8 = "record".at(8)
+
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("movie.plot AS plot")
+      .projection(
+        s"$record8.$endNode0 AS endNode",
+        s"$record8.$movie1 AS movie",
+        s"$record8.$r2 AS r"
+      )
+      .unwind(s"$group6.$rows7 AS $record8")
+      .apply()
+      .|.valueHashJoin(s"$group6.$movie1 = $movie3")
+      .|.|.nodeVectorIndexSearch(
+        node = movie3.unbacktick,
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
         vector = "$embedding",
         limit = "10",
-        argumentIds = Set()
+        entityFilter = preparedEntityFilter(candidateIds4.unbacktick.toVar),
+        argumentIds = Set(candidateIds4.unbacktick, groups5.unbacktick)
       )
+      .|.unwind(s"$groups5 AS $group6")
+      .|.argument(candidateIds4.unbacktick, groups5.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds4.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups5.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows7.unbacktick -> rows7.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(
+          rows7.unbacktick -> collect(mapOf(
+            endNode0.unbacktick -> endNode0.unbacktick.toVar,
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            r2.unbacktick -> r2.unbacktick.toVar
+          ))
+        )
+      )
+      .expand(s"($movie1)-[$r2*2..4]->($endNode0)")
+      .nodeByLabelScan(movie1, "Movie")
       .build()
   }
 
-  test("plan node vector index search with QPP") {
-    val planner = plannerBuilder().build()
+  test("QPP with a singleton search variable") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
 
     val query =
       """MATCH (movie:Movie) ((x:Movie)<-[p:DIRECTED]-(dir)-[q:DIRECTED]->(y:Movie)){1, 4} (otherMovie)
@@ -1972,423 +2428,729 @@ abstract class VectorSearchWithComplexPatternPlanningIntegrationTestBase
         |    LIMIT 10
         |  )
         |WHERE movie.year = otherMovie.year
-        |RETURN movie.plot as plot""".stripMargin
+        |RETURN movie.plot AS plot""".stripMargin
+
+    val x0 = "x".at(0)
+    val p1 = "p".at(1)
+    val dir2 = "dir".at(2)
+    val q3 = "q".at(3)
+    val y4 = "y".at(4)
+    val pGroup5 = "p".at(5)
+    val xGroup6 = "x".at(6)
+    val dirGroup7 = "dir".at(7)
+    val qGroup8 = "q".at(8)
+    val yGroup9 = "y".at(9)
+
+    val dirGroupInner = "inner_dir".at(10)
+    val pGroupInner = "inner_p".at(11)
+    val qGroupInner = "inner_q".at(12)
+    val xGroupInner = "inner_x".at(13)
+    val yGroupInner = "inner_y".at(14)
+    val movie15 = "inner_movie".at(15)
+    val otherMovie16 = "inner_otherMovie".at(16)
+    val movie17 = "movie".at(17)
+    val candidateIds18 = "candidateIds".at(18)
+    val groups19 = "groups".at(19)
+    val group20 = "group".at(20)
+    val rows21 = "rows".at(21)
+    val record22 = "record".at(22)
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     val trailParameters = TrailParameters(
       min = 1,
       max = UpperBound.Limited(4),
-      start = "movie",
-      end = "otherMovie",
-      innerStart = "x",
-      innerEnd = "y",
-      groupNodes = Set(),
-      groupRelationships = Set(),
-      innerRelationships = Set("p", "q"),
+      start = otherMovie16.unbacktick,
+      end = movie15.unbacktick,
+      innerStart = y4.unbacktick,
+      innerEnd = x0.unbacktick,
+      groupNodes = Set(
+        x0.unbacktick -> xGroupInner.unbacktick,
+        dir2.unbacktick -> dirGroupInner.unbacktick,
+        y4.unbacktick -> yGroupInner.unbacktick
+      ),
+      groupRelationships = Set(
+        p1.unbacktick -> pGroupInner.unbacktick,
+        q3.unbacktick -> qGroupInner.unbacktick
+      ),
+      innerRelationships = Set(p1.unbacktick, q3.unbacktick),
       previouslyBoundRelationships = Set(),
       previouslyBoundRelationshipGroups = Set(),
-      reverseGroupVariableProjections = false,
+      reverseGroupVariableProjections = true,
       expansionMode = ExpandAll,
       accumulators = Set()
     )
     plan shouldEqual planner.subPlanBuilder()
       .projection("movie.plot AS plot")
-      .filter("movie.year = otherMovie.year", "otherMovie:Movie")
-      .repeatTrail(trailParameters)
-      .|.filter("NOT q = p", isRepeatTrailUnique("q"), "y:Movie")
-      .|.expandAll("(dir)-[q:DIRECTED]->(y)")
-      .|.filter(isRepeatTrailUnique("p"))
-      .|.expandAll("(x)<-[p:DIRECTED]-(dir)")
-      .|.filter("x:Movie")
-      .|.argument("x")
-      .nodeVectorIndexSearch(
-        node = "movie",
-        labelNames = Seq("Movie"),
-        properties = moviePlotsProperties,
-        indexName = "moviePlots",
-        vector = "$embedding",
-        limit = "10",
-        argumentIds = Set()
+      .projection(
+        s"$record22.$dirGroupInner AS $dirGroup7",
+        s"$record22.$xGroupInner AS $xGroup6",
+        s"$record22.$pGroupInner AS $pGroup5",
+        s"$record22.$otherMovie16 AS otherMovie",
+        s"$record22.$qGroupInner AS $qGroup8",
+        s"$record22.$yGroupInner AS $yGroup9",
+        s"$record22.$movie15 AS movie"
       )
-      .build()
-  }
-
-  test("plan node vector index search with var-length relationship") {
-    val planner = plannerBuilder().build()
-
-    val query =
-      """MATCH (movie:Movie)-[r*2..4]->(endNode)
-        |  SEARCH movie IN (
-        |    VECTOR INDEX moviePlots
-        |    FOR $embedding
-        |    LIMIT 10
-        |  )
-        |RETURN movie.plot as plot""".stripMargin
-
-    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot")
-      .expand("(movie)-[*2..4]->()")
-      .nodeVectorIndexSearch(
-        node = "movie",
-        labelNames = Seq("Movie"),
-        properties = moviePlotsProperties,
-        indexName = "moviePlots",
-        vector = "$embedding",
-        limit = "10",
-        argumentIds = Set()
-      )
-      .build()
-  }
-
-  test("plan node vector index search with node pattern predicate") {
-    val planner = plannerBuilder().build()
-
-    val query =
-      """MATCH (movie:Movie)<-[rel:DIRECTED]-(director:Person WHERE director.name = 'Alice')
-        |  SEARCH movie IN (
-        |    VECTOR INDEX moviePlots
-        |    FOR $embedding
-        |    LIMIT 10
-        |  )
-        |RETURN movie.plot as plot""".stripMargin
-
-    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot")
-      .filter("director.name = 'Alice'", "director:Person")
-      .expandAll("(movie)<-[:DIRECTED]-(director)")
-      .nodeVectorIndexSearch(
-        node = "movie",
-        labelNames = Seq("Movie"),
-        properties = moviePlotsProperties,
-        indexName = "moviePlots",
-        vector = "$embedding",
-        limit = "10",
-        argumentIds = Set()
-      )
-      .build()
-  }
-
-  test("plan node vector index search with embedding depending on a symbol from the same pattern") {
-    val planner = plannerBuilder()
-      .enableDeduplicateNames(false)
-      .build()
-
-    val query =
-      """MATCH (movie:Movie)<-[rel:DIRECTED]-(director:Person)
-        |  SEARCH movie IN (
-        |    VECTOR INDEX moviePlots
-        |    FOR director.embedding
-        |    LIMIT 10
-        |  )
-        |RETURN movie.plot as plot, director.name as name""".stripMargin
-
-    val (plan, costComparisonCandidates) = planner.planAndRecordCostComparisonCandidates(CypherVersion.Cypher25, query)
-
-    plan.stripProduceResults shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot", "director.name AS name")
-      .filter("`  movie@0` = movie")
+      .unwind(s"$group20.$rows21 AS $record22")
       .apply()
-      .|.nodeVectorIndexSearch(
-        node = "  movie@0",
+      .|.valueHashJoin(s"$group20.$movie15 = $movie17")
+      .|.|.nodeVectorIndexSearch(
+        node = movie17.unbacktick,
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
-        vector = cachedNodeProp("director", "embedding"),
+        vector = "$embedding",
         limit = "10",
-        argumentIds = Set("director", "movie")
+        entityFilter = preparedEntityFilter(candidateIds18.unbacktick.toVar),
+        argumentIds = Set(candidateIds18.unbacktick, groups19.unbacktick)
       )
-      .filter("movie:Movie")
-      .expandAll("(director)-[:DIRECTED]->(movie)")
-      .cacheProperties("cacheNFromStore[director.embedding]")
-      .nodeByLabelScan("director", "Person")
-      .build()
-
-    costComparisonCandidates should contain {
-      planner.subPlanBuilder()
-        .expandInto("(director)-[rel:DIRECTED]->(movie)")
-        .apply()
-        .|.nodeVectorIndexSearch(
-          node = "movie",
-          labelNames = Seq("Movie"),
-          properties = moviePlotsProperties,
-          indexName = "moviePlots",
-          vector = prop("director", "embedding"),
-          limit = "10",
-          argumentIds = Set("director")
+      .|.unwind(s"$groups19 AS $group20")
+      .|.argument(candidateIds18.unbacktick, groups19.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds18.unbacktick -> compileEntityFilter(id(movie15.unbacktick.toVar), "moviePlots"),
+          groups19.unbacktick -> collect(mapOf(
+            movie15.unbacktick -> movie15.unbacktick.toVar,
+            rows21.unbacktick -> rows21.unbacktick.toVar
+          ))
         )
-        .nodeByLabelScan("director", "Person")
-        .build()
-    }
+      )
+      .aggregation(
+        Map(movie15.unbacktick -> movie15.unbacktick.toVar),
+        Map(rows21.unbacktick -> collect(mapOf(
+          dirGroupInner.unbacktick -> dirGroupInner.unbacktick.toVar,
+          movie15.unbacktick -> movie15.unbacktick.toVar,
+          otherMovie16.unbacktick -> otherMovie16.unbacktick.toVar,
+          pGroupInner.unbacktick -> pGroupInner.unbacktick.toVar,
+          qGroupInner.unbacktick -> qGroupInner.unbacktick.toVar,
+          xGroupInner.unbacktick -> xGroupInner.unbacktick.toVar,
+          yGroupInner.unbacktick -> yGroupInner.unbacktick.toVar
+        )))
+      )
+      .filter(s"$movie15.year = $otherMovie16.year", s"$movie15:Movie")
+      .repeatTrail(trailParameters)
+      .|.filter(s"NOT $q3 = $p1", isRepeatTrailUnique(p1.unbacktick), s"$x0:Movie")
+      .|.expandAll(s"($dir2)-[$p1:DIRECTED]->($x0)")
+      .|.filter(isRepeatTrailUnique(q3.unbacktick))
+      .|.expandAll(s"($y4)<-[$q3:DIRECTED]-($dir2)")
+      .|.filter(s"$y4:Movie")
+      .|.argument(y4.unbacktick)
+      .nodeByLabelScan(otherMovie16, "Movie")
+      .build()
   }
 
-  test("plan node vector index search with embedding depending on a symbol from the same pattern, longer pattern") {
+  test("OPTIONAL MATCH with a complex pattern") {
     val planner = plannerBuilder()
       .enableDeduplicateNames(false)
       .build()
 
     val query =
-      """MATCH (movie:Movie)<-[otherRel]-(otherMovie)<-[rel:DIRECTED]-(director:Person)
+      """OPTIONAL MATCH (director:Person)-[:DIRECTED]->(movie:Movie)
+        |  SEARCH movie IN (
+        |    VECTOR INDEX moviePlots
+        |    FOR $embedding
+        |    LIMIT 10
+        |  )
+        |RETURN director.name AS name, movie.title AS title""".stripMargin
+
+    val director0 = "inner_director".at(0)
+    val movie1 = "inner_movie".at(1)
+    val movie2 = "movie".at(2)
+    val candidateIds3 = "candidateIds".at(3)
+    val groups4 = "groups".at(4)
+    val group5 = "group".at(5)
+    val rows6 = "rows".at(6)
+    val record7 = "record".at(7)
+
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("director.name AS name", "movie.title AS title")
+      .optional()
+      .projection(s"$record7.$director0 AS director", s"$record7.$movie1 AS movie")
+      .unwind(s"$group5.$rows6 AS $record7")
+      .apply()
+      .|.valueHashJoin(s"$group5.$movie1 = $movie2")
+      .|.|.nodeVectorIndexSearch(
+        node = movie2.unbacktick,
+        labelNames = Seq("Movie"),
+        properties = moviePlotsProperties,
+        indexName = "moviePlots",
+        vector = "$embedding",
+        limit = "10",
+        entityFilter = preparedEntityFilter(candidateIds3.unbacktick.toVar),
+        argumentIds = Set(candidateIds3.unbacktick, groups4.unbacktick)
+      )
+      .|.unwind(s"$groups4 AS $group5")
+      .|.argument(candidateIds3.unbacktick, groups4.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds3.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups4.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows6.unbacktick -> rows6.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(rows6.unbacktick -> collect(mapOf(
+          director0.unbacktick -> director0.unbacktick.toVar,
+          movie1.unbacktick -> movie1.unbacktick.toVar
+        )))
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($director0)-[:DIRECTED]->($movie1)")
+      .nodeByLabelScan(director0, "Person")
+      .build()
+  }
+
+  test("embedding depending on a pattern symbol groups the search by that symbol") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
+
+    // A correlated query vector groups candidates by its dependencies, applying LIMIT per distinct vector.
+    val query =
+      """MATCH (director:Person)-[:DIRECTED]->(movie:Movie)
         |  SEARCH movie IN (
         |    VECTOR INDEX moviePlots
         |    FOR director.embedding
         |    LIMIT 10
         |  )
-        |RETURN movie.plot as plot, director.name as name""".stripMargin
+        |RETURN director.name AS name, movie.title AS title""".stripMargin
+
+    val director0 = "inner_director".at(0)
+    val movie1 = "inner_movie".at(1)
+    val movie2 = "movie".at(2)
+    val candidateIds3 = "candidateIds".at(3)
+    val groups4 = "groups".at(4)
+    val group5 = "group".at(5)
+    val rows6 = "rows".at(6)
+    val record7 = "record".at(7)
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot", "director.name AS name")
-      .filter("NOT rel = otherRel")
-      .expandInto("(otherMovie)<-[rel:DIRECTED]-(director)")
-      .expandAll("(movie)<-[otherRel]-(otherMovie)")
+      .projection("director.name AS name", "movie.title AS title")
+      .projection(s"$record7.$director0 AS director", s"$record7.$movie1 AS movie")
+      .unwind(s"$group5.$rows6 AS $record7")
       .apply()
-      .|.nodeVectorIndexSearch(
-        node = "movie",
+      .|.valueHashJoin(s"$group5.$movie1 = $movie2")
+      .|.|.nodeVectorIndexSearch(
+        node = movie2.unbacktick,
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
-        vector = prop("director", "embedding"),
+        vector = prop(director0.unbacktick, "embedding"),
         limit = "10",
-        argumentIds = Set("director")
+        entityFilter = preparedEntityFilter(candidateIds3.unbacktick.toVar),
+        argumentIds = Set(director0.unbacktick, candidateIds3.unbacktick, groups4.unbacktick)
       )
-      .nodeByLabelScan("director", "Person")
+      .|.unwind(s"$groups4 AS $group5")
+      .|.argument(director0.unbacktick, candidateIds3.unbacktick, groups4.unbacktick)
+      .aggregation(
+        Map(director0.unbacktick -> director0.unbacktick.toVar),
+        Map(
+          candidateIds3.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups4.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows6.unbacktick -> rows6.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(director0.unbacktick -> director0.unbacktick.toVar, movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(rows6.unbacktick -> collect(mapOf(
+          director0.unbacktick -> director0.unbacktick.toVar,
+          movie1.unbacktick -> movie1.unbacktick.toVar
+        )))
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($director0)-[:DIRECTED]->($movie1)")
+      .nodeByLabelScan(director0, "Person")
       .build()
   }
 
-  test("plan node vector index search with embedding depending on multiple symbols from the same pattern") {
+  test("in-index property filter depending on a pattern symbol groups the search by that symbol") {
     val planner = plannerBuilder()
       .enableDeduplicateNames(false)
       .build()
 
+    // A correlated in-index predicate groups candidates by its dependencies, running one search per distinct value.
     val query =
-      """MATCH (movie:Movie)<-[otherRel]-(otherMovie)<-[rel:DIRECTED]-(director:Person)
+      """MATCH (director:Person)-[:DIRECTED]->(movie:Movie)
         |  SEARCH movie IN (
         |    VECTOR INDEX moviePlots
-        |    FOR director[otherMovie.prop]
-        |    LIMIT 10
-        |  )
-        |RETURN movie.plot as plot, director.name as name""".stripMargin
-
-    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot", "director.name AS name")
-      .filter("`  movie@0` = movie")
-      .apply()
-      .|.nodeVectorIndexSearch(
-        node = "  movie@0",
-        labelNames = Seq("Movie"),
-        properties = moviePlotsProperties,
-        indexName = "moviePlots",
-        vector = containerIndex(v"director", prop("otherMovie", "prop")),
-        limit = "10",
-        argumentIds = Set("director", "movie", "otherMovie")
-      )
-      .filter("NOT rel = otherRel", "director:Person")
-      .expandAll("(otherMovie)<-[rel:DIRECTED]-(director)")
-      .expandAll("(movie)<-[otherRel]-(otherMovie)")
-      .nodeByLabelScan("movie", "Movie")
-      .build()
-  }
-
-  test("plan node vector index search with predicates depending on a symbol from the same pattern") {
-    val planner = plannerBuilder()
-      .enableDeduplicateNames(false)
-      .build()
-
-    val query =
-      """MATCH (movie:Movie)<-[otherRel]-(otherMovie)<-[rel:DIRECTED]-(director:Person)
-        |  SEARCH movie IN (
-        |    VECTOR INDEX moviePlots
-        |    FOR $vector
+        |    FOR $embedding
         |    WHERE movie.releaseYear < director.birthYear
         |    LIMIT 10
         |  )
-        |RETURN movie.plot as plot, director.name as name""".stripMargin
+        |RETURN director.name AS name, movie.title AS title""".stripMargin
+
+    val director0 = "inner_director".at(0)
+    val movie1 = "inner_movie".at(1)
+    val movie2 = "movie".at(2)
+    val candidateIds3 = "candidateIds".at(3)
+    val groups4 = "groups".at(4)
+    val group5 = "group".at(5)
+    val rows6 = "rows".at(6)
+    val record7 = "record".at(7)
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
-    plan.printLogicalPlanBuilderString()
     plan shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot", "director.name AS name")
-      .filter("NOT rel = otherRel")
-      .expandInto("(otherMovie)<-[rel:DIRECTED]-(director)")
-      .expandAll("(movie)<-[otherRel]-(otherMovie)")
+      .projection("director.name AS name", "movie.title AS title")
+      .projection(s"$record7.$director0 AS director", s"$record7.$movie1 AS movie")
+      .unwind(s"$group5.$rows6 AS $record7")
       .apply()
-      .|.nodeVectorIndexSearch(
-        node = "movie",
-        labelNames = Seq("Movie"),
-        properties = moviePlotsProperties,
-        indexName = "moviePlots",
-        vector = parameter("vector", CTAny),
-        limit = "10",
-        argumentIds = Set("director"),
-        propertyFilter = Some(composite(AllQueryExpression, rangeExpression(lt(prop("director", "birthYear")))))
-      )
-      .nodeByLabelScan("director", "Person")
-      .build()
-  }
-
-  // used to break cost ties in cartesian products
-  private val smallBatchedExecutionModel = ExecutionModel.BatchedSingleThreaded(2, 4)
-
-  test("plan node vector index search with a pattern with multiple components") {
-    val planner = plannerBuilder()
-      .setExecutionModel(smallBatchedExecutionModel)
-      .build()
-
-    val query =
-      """MATCH (n), (movie:Movie), (m:Person)
-        |  SEARCH movie IN (
-        |    VECTOR INDEX moviePlots
-        |    FOR [1,2,3]
-        |    LIMIT 10
-        |  )
-        |RETURN movie.plot as plot""".stripMargin
-
-    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
-      .projection("cacheN[movie.plot] AS plot")
-      .cartesianProduct()
-      .|.cartesianProduct()
-      .|.|.cacheProperties("cacheNFromStore[movie.plot]")
+      .|.valueHashJoin(s"$group5.$movie1 = $movie2")
       .|.|.nodeVectorIndexSearch(
-        node = "movie",
+        node = movie2.unbacktick,
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
-        vector = listOfInt(1, 2, 3),
-        limit = "10"
-      )
-      .|.allNodeScan("n")
-      .nodeByLabelScan("m", "Person")
-      .build()
-  }
-
-  test("plan node vector index search with a pattern with multiple components, embedding from another component") {
-    val planner = plannerBuilder()
-      .enableDeduplicateNames(false)
-      .setExecutionModel(smallBatchedExecutionModel)
-      .build()
-
-    val query =
-      """MATCH (n), (movie:Movie), (m:Person)
-        |  SEARCH movie IN (
-        |    VECTOR INDEX moviePlots
-        |    FOR n.embedding
-        |    LIMIT 10
-        |  )
-        |RETURN movie.plot as plot""".stripMargin
-
-    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
-      .projection("cacheN[movie.plot] AS plot")
-      .cartesianProduct()
-      .|.nodeByLabelScan("m", "Person")
-      .cacheProperties("cacheNFromStore[movie.plot]")
-      .filter("`  movie@0` = movie")
-      .apply()
-      .|.nodeVectorIndexSearch(
-        node = "  movie@0",
-        labelNames = Seq("Movie"),
-        properties = moviePlotsProperties,
-        indexName = "moviePlots",
-        vector = cachedNodeProp("n", "embedding"),
+        vector = "$embedding",
         limit = "10",
-        argumentIds = Set("n", "movie")
+        entityFilter = preparedEntityFilter(candidateIds3.unbacktick.toVar),
+        propertyFilter =
+          Some(composite(AllQueryExpression, rangeExpression(lt(prop(director0.unbacktick, "birthYear"))))),
+        argumentIds = Set(director0.unbacktick, candidateIds3.unbacktick, groups4.unbacktick)
       )
-      .cartesianProduct()
-      .|.nodeByLabelScan("movie", "Movie")
-      .cacheProperties("cacheNFromStore[n.embedding]")
-      .allNodeScan("n")
+      .|.unwind(s"$groups4 AS $group5")
+      .|.argument(director0.unbacktick, candidateIds3.unbacktick, groups4.unbacktick)
+      .aggregation(
+        Map(director0.unbacktick -> director0.unbacktick.toVar),
+        Map(
+          candidateIds3.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups4.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows6.unbacktick -> rows6.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(director0.unbacktick -> director0.unbacktick.toVar, movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(rows6.unbacktick -> collect(mapOf(
+          director0.unbacktick -> director0.unbacktick.toVar,
+          movie1.unbacktick -> movie1.unbacktick.toVar
+        )))
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($director0)-[:DIRECTED]->($movie1)")
+      .nodeByLabelScan(director0, "Person")
       .build()
   }
 
-  test(
-    "plan node vector index search with a pattern with multiple components, score variable predicate with dependency on another component"
-  ) {
+  test("score variable is bound by the search leaf and carried through the replay") {
     val planner = plannerBuilder()
       .enableDeduplicateNames(false)
-      .setExecutionModel(smallBatchedExecutionModel)
       .build()
 
     val query =
-      """MATCH (n), (movie:Movie), (m:Person)
+      """MATCH (director:Person)-[:DIRECTED]->(movie:Movie)
         |  SEARCH movie IN (
         |    VECTOR INDEX moviePlots
-        |    FOR n.embedding
+        |    FOR $embedding
         |    LIMIT 10
-        |  ) SCORE as score
-        |WHERE score > m.prop
-        |RETURN movie.plot as plot""".stripMargin
+        |  ) SCORE AS similarity
+        |RETURN director.name AS name, movie.title AS title, similarity""".stripMargin
+
+    val director0 = "inner_director".at(0)
+    val movie1 = "inner_movie".at(1)
+    val movie2 = "movie".at(2)
+    val candidateIds3 = "candidateIds".at(3)
+    val groups4 = "groups".at(4)
+    val group5 = "group".at(5)
+    val rows6 = "rows".at(6)
+    val record7 = "record".at(7)
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .projection("cacheN[movie.plot] AS plot")
-      .filter("cacheN[m.prop] < score")
-      .cartesianProduct()
-      .|.cacheProperties("cacheNFromStore[m.prop]")
-      .|.nodeByLabelScan("m", "Person")
-      .cacheProperties("cacheNFromStore[movie.plot]")
-      .filter("`  movie@0` = movie")
+      .projection("director.name AS name", "movie.title AS title")
+      .projection(s"$record7.$director0 AS director", s"$record7.$movie1 AS movie")
+      .unwind(s"$group5.$rows6 AS $record7")
       .apply()
-      .|.nodeVectorIndexSearch(
-        node = "  movie@0",
+      .|.valueHashJoin(s"$group5.$movie1 = $movie2")
+      .|.|.nodeVectorIndexSearch(
+        node = movie2.unbacktick,
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
-        vector = cachedNodeProp("n", "embedding"),
+        vector = "$embedding",
+        limit = "10",
+        score = "similarity",
+        entityFilter = preparedEntityFilter(candidateIds3.unbacktick.toVar),
+        argumentIds = Set(candidateIds3.unbacktick, groups4.unbacktick)
+      )
+      .|.unwind(s"$groups4 AS $group5")
+      .|.argument(candidateIds3.unbacktick, groups4.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds3.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups4.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows6.unbacktick -> rows6.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(rows6.unbacktick -> collect(mapOf(
+          director0.unbacktick -> director0.unbacktick.toVar,
+          movie1.unbacktick -> movie1.unbacktick.toVar
+        )))
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($director0)-[:DIRECTED]->($movie1)")
+      .nodeByLabelScan(director0, "Person")
+      .build()
+  }
+
+  test("predicate combining score and a pattern variable is applied as a post-filter") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      """MATCH (director:Person)-[rel:DIRECTED]->(movie:Movie)
+        |  SEARCH movie IN (
+        |    VECTOR INDEX moviePlots
+        |    FOR $embedding
+        |    LIMIT 10
+        |  ) SCORE AS score
+        |WHERE score > rel.weight
+        |RETURN director.name AS name, movie.title AS title""".stripMargin
+
+    val director0 = "inner_director".at(0)
+    val movie1 = "inner_movie".at(1)
+    val rel2 = "inner_rel".at(2)
+    val movie3 = "movie".at(3)
+    val candidateIds4 = "candidateIds".at(4)
+    val groups5 = "groups".at(5)
+    val group6 = "group".at(6)
+    val rows7 = "rows".at(7)
+    val record8 = "record".at(8)
+
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("director.name AS name", "movie.title AS title")
+      .filter("rel.weight < score")
+      .projection(s"$record8.$director0 AS director", s"$record8.$movie1 AS movie", s"$record8.$rel2 AS rel")
+      .unwind(s"$group6.$rows7 AS $record8")
+      .apply()
+      .|.valueHashJoin(s"$group6.$movie1 = $movie3")
+      .|.|.nodeVectorIndexSearch(
+        node = movie3.unbacktick,
+        labelNames = Seq("Movie"),
+        properties = moviePlotsProperties,
+        indexName = "moviePlots",
+        vector = "$embedding",
         limit = "10",
         score = "score",
-        argumentIds = Set("movie", "n")
+        entityFilter = preparedEntityFilter(candidateIds4.unbacktick.toVar),
+        argumentIds = Set(candidateIds4.unbacktick, groups5.unbacktick)
       )
-      .cartesianProduct()
-      .|.nodeByLabelScan("movie", "Movie")
-      .cacheProperties("cacheNFromStore[n.embedding]")
-      .allNodeScan("n")
+      .|.unwind(s"$groups5 AS $group6")
+      .|.argument(candidateIds4.unbacktick, groups5.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds4.unbacktick -> compileEntityFilter(id(movie1.unbacktick.toVar), "moviePlots"),
+          groups5.unbacktick -> collect(mapOf(
+            movie1.unbacktick -> movie1.unbacktick.toVar,
+            rows7.unbacktick -> rows7.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(movie1.unbacktick -> movie1.unbacktick.toVar),
+        Map(rows7.unbacktick -> collect(mapOf(
+          director0.unbacktick -> director0.unbacktick.toVar,
+          movie1.unbacktick -> movie1.unbacktick.toVar,
+          rel2.unbacktick -> rel2.unbacktick.toVar
+        )))
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($director0)-[$rel2:DIRECTED]->($movie1)")
+      .nodeByLabelScan(director0, "Person")
       .build()
   }
 
-  test(
-    "plan node vector index search with a pattern with multiple components, SEARCH on a previously bound variable with argument-only dependencies"
-  ) {
+  test("relationship search with a complex pattern") {
     val planner = plannerBuilder()
       .enableDeduplicateNames(false)
       .build()
 
     val query =
-      """MATCH (movie:Movie)-[directed_by]->(director)
-        |MATCH (n:Person), (movie)-->(), (m)
-        |WHERE n.prop < m.prop
-        |  SEARCH movie IN (
-        |    VECTOR INDEX moviePlots
-        |    FOR director.embedding
+      """MATCH (actor:Person)-[r:ACTS_IN]->(movie:Movie)
+        |  WHERE actor.born > 1950
+        |  SEARCH r IN (
+        |    VECTOR INDEX actsInScript
+        |    FOR $embedding
         |    LIMIT 10
         |  )
-        |RETURN movie.plot as plot""".stripMargin
+        |RETURN actor.name AS name, movie.title AS title""".stripMargin
 
-    val (plan, costComparisonCandidates) = planner.planAndRecordCostComparisonCandidates(CypherVersion.Cypher25, query)
+    val actor0 = "inner_actor".at(0)
+    val movie1 = "inner_movie".at(1)
+    val r2 = "inner_r".at(2)
+    val r3 = "r".at(3)
+    val candidateIds4 = "candidateIds".at(4)
+    val groups5 = "groups".at(5)
+    val group6 = "group".at(6)
+    val rows7 = "rows".at(7)
+    val record8 = "record".at(8)
 
-    plan.folder.findAllByClass[NodeVectorIndexSearch] shouldEqual Seq(
-      planner.subPlanBuilder()
-        .nodeVectorIndexSearch(
-          node = "  movie@0",
-          labelNames = Seq("Movie"),
-          properties = moviePlotsProperties,
-          indexName = "moviePlots",
-          vector = prop("director", "embedding"),
-          limit = "10",
-          argumentIds = Set("movie", "director", "directed_by")
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("actor.name AS name", "movie.title AS title")
+      .projection(s"$record8.$actor0 AS actor", s"$record8.$movie1 AS movie", s"$record8.$r2 AS r")
+      .unwind(s"$group6.$rows7 AS $record8")
+      .apply()
+      .|.valueHashJoin(s"$group6.$r2 = $r3")
+      .|.|.relationshipVectorIndexSearch(
+        pattern = s"()-[$r3]->()",
+        typeNames = Seq("ACTS_IN"),
+        properties = actsInScriptProperties,
+        indexName = "actsInScript",
+        vector = "$embedding",
+        limit = "10",
+        entityFilter = preparedEntityFilter(candidateIds4.unbacktick.toVar),
+        argumentIds = Set(candidateIds4.unbacktick, groups5.unbacktick)
+      )
+      .|.unwind(s"$groups5 AS $group6")
+      .|.argument(candidateIds4.unbacktick, groups5.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds4.unbacktick -> compileEntityFilter(id(r2.unbacktick.toVar), "actsInScript"),
+          groups5.unbacktick -> collect(mapOf(
+            r2.unbacktick -> r2.unbacktick.toVar,
+            rows7.unbacktick -> rows7.unbacktick.toVar
+          ))
         )
-        .build()
-    )
+      )
+      .aggregation(
+        Map(r2.unbacktick -> r2.unbacktick.toVar),
+        Map(rows7.unbacktick -> collect(mapOf(
+          actor0.unbacktick -> actor0.unbacktick.toVar,
+          movie1.unbacktick -> movie1.unbacktick.toVar,
+          r2.unbacktick -> r2.unbacktick.toVar
+        )))
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($actor0)-[$r2:ACTS_IN]->($movie1)")
+      .filter(s"$actor0.born > 1950")
+      .nodeByLabelScan(actor0, "Person")
+      .build()
+  }
 
-    // should not attempt to plan the same SEARCH in multiple components
-    costComparisonCandidates.foreach { candidatePlan =>
-      withClue(s"candidatePlan:\n$candidatePlan\n") {
-        candidatePlan.folder.findAllByClass[NodeVectorIndexSearch].size should be <= 1
-      }
-    }
+  test("relationship search combining entity filter and in-index property filter") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      """MATCH (actor:Person)-[r:ACTS_IN]->(movie:Movie)
+        |  SEARCH r IN (
+        |    VECTOR INDEX actsInScript
+        |    FOR $embedding
+        |    WHERE r.workingDays > 5
+        |    LIMIT 10
+        |  )
+        |RETURN actor.name AS name, movie.title AS title""".stripMargin
+
+    val actor0 = "inner_actor".at(0)
+    val movie1 = "inner_movie".at(1)
+    val r2 = "inner_r".at(2)
+    val r3 = "r".at(3)
+    val candidateIds4 = "candidateIds".at(4)
+    val groups5 = "groups".at(5)
+    val group6 = "group".at(6)
+    val rows7 = "rows".at(7)
+    val record8 = "record".at(8)
+
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("actor.name AS name", "movie.title AS title")
+      .projection(s"$record8.$actor0 AS actor", s"$record8.$movie1 AS movie", s"$record8.$r2 AS r")
+      .unwind(s"$group6.$rows7 AS $record8")
+      .apply()
+      .|.valueHashJoin(s"$group6.$r2 = $r3")
+      .|.|.relationshipVectorIndexSearch(
+        pattern = s"()-[$r3]->()",
+        typeNames = Seq("ACTS_IN"),
+        properties = actsInScriptProperties,
+        indexName = "actsInScript",
+        vector = "$embedding",
+        limit = "10",
+        entityFilter = preparedEntityFilter(candidateIds4.unbacktick.toVar),
+        propertyFilter = Some(rangeExpression(gt(literalInt(5)))),
+        argumentIds = Set(candidateIds4.unbacktick, groups5.unbacktick)
+      )
+      .|.unwind(s"$groups5 AS $group6")
+      .|.argument(candidateIds4.unbacktick, groups5.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds4.unbacktick -> compileEntityFilter(id(r2.unbacktick.toVar), "actsInScript"),
+          groups5.unbacktick -> collect(mapOf(
+            r2.unbacktick -> r2.unbacktick.toVar,
+            rows7.unbacktick -> rows7.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(r2.unbacktick -> r2.unbacktick.toVar),
+        Map(rows7.unbacktick -> collect(mapOf(
+          actor0.unbacktick -> actor0.unbacktick.toVar,
+          movie1.unbacktick -> movie1.unbacktick.toVar,
+          r2.unbacktick -> r2.unbacktick.toVar
+        )))
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($actor0)-[$r2:ACTS_IN]->($movie1)")
+      .nodeByLabelScan(actor0, "Person")
+      .build()
+  }
+
+  test("undirected relationship search with a complex pattern") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .setRelationshipCardinality("(:Movie)-[:ACTS_IN]->(:Person)", 50)
+      .setRelationshipCardinality("()-[:ACTS_IN]->(:Person)", 50)
+      .setRelationshipCardinality("(:Movie)-[:ACTS_IN]->()", 50)
+      .build()
+
+    val query =
+      """MATCH (actor:Person)-[r:ACTS_IN]-(movie:Movie)
+        |  SEARCH r IN (
+        |    VECTOR INDEX actsInScript
+        |    FOR $embedding
+        |    LIMIT 10
+        |  ) SCORE AS similarity
+        |RETURN actor.name AS name, movie.title AS title""".stripMargin
+
+    val actor0 = "inner_actor".at(0)
+    val movie1 = "inner_movie".at(1)
+    val r2 = "inner_r".at(2)
+    val r3 = "r".at(3)
+    val candidateIds4 = "candidateIds".at(4)
+    val groups5 = "groups".at(5)
+    val group6 = "group".at(6)
+    val rows7 = "rows".at(7)
+    val record8 = "record".at(8)
+
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("actor.name AS name", "movie.title AS title")
+      .projection(s"$record8.$actor0 AS actor", s"$record8.$movie1 AS movie", s"$record8.$r2 AS r")
+      .unwind(s"$group6.$rows7 AS $record8")
+      .apply()
+      .|.valueHashJoin(s"$group6.$r2 = $r3")
+      .|.|.distinct(s"$r3 AS $r3", "similarity AS similarity")
+      .|.|.relationshipVectorIndexSearch(
+        pattern = s"()-[$r3]-()",
+        typeNames = Seq("ACTS_IN"),
+        properties = actsInScriptProperties,
+        indexName = "actsInScript",
+        vector = "$embedding",
+        limit = "10",
+        entityFilter = preparedEntityFilter(candidateIds4.unbacktick.toVar),
+        score = "similarity",
+        argumentIds = Set(candidateIds4.unbacktick, groups5.unbacktick)
+      )
+      .|.unwind(s"$groups5 AS $group6")
+      .|.argument(candidateIds4.unbacktick, groups5.unbacktick)
+      .aggregation(
+        Map.empty,
+        Map(
+          candidateIds4.unbacktick -> compileEntityFilter(id(r2.unbacktick.toVar), "actsInScript"),
+          groups5.unbacktick -> collect(mapOf(
+            r2.unbacktick -> r2.unbacktick.toVar,
+            rows7.unbacktick -> rows7.unbacktick.toVar
+          ))
+        )
+      )
+      .aggregation(
+        Map(r2.unbacktick -> r2.unbacktick.toVar),
+        Map(rows7.unbacktick -> collect(mapOf(
+          actor0.unbacktick -> actor0.unbacktick.toVar,
+          movie1.unbacktick -> movie1.unbacktick.toVar,
+          r2.unbacktick -> r2.unbacktick.toVar
+        )))
+      )
+      .filter(s"$movie1:Movie")
+      .expandAll(s"($actor0)-[$r2:ACTS_IN]-($movie1)")
+      .nodeByLabelScan(actor0, "Person")
+      .build()
+  }
+
+  test("complex pattern referencing a previously bound pattern variable") {
+    val planner = plannerBuilder()
+      .enableDeduplicateNames(false)
+      .setRelationshipCardinality("(:Actor)-[:ACTS_IN]->()", 50)
+      .setRelationshipCardinality("(:Actor)-[:ACTS_IN]->(:Movie)", 50)
+      .build()
+
+    val query =
+      """MATCH (actor:Actor)
+        |MATCH (movie:Movie)<-[:ACTS_IN]-(actor)
+        |  SEARCH movie IN (
+        |    VECTOR INDEX moviePlots
+        |    FOR $embedding
+        |    LIMIT 10
+        |  )
+        |RETURN actor.name AS name, movie.title AS title""".stripMargin
+
+    val movie0 = "inner_movie".at(0)
+    val movie1 = "movie".at(1)
+    val candidateIds2 = "candidateIds".at(2)
+    val groups3 = "groups".at(3)
+    val group4 = "group".at(4)
+    val rows5 = "rows".at(5)
+    val record6 = "record".at(6)
+
+    val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("cacheN[actor.name] AS name", "movie.title AS title")
+      .projection(s"$record6.$movie0 AS movie")
+      .apply()
+      .|.unwind(s"$group4.$rows5 AS $record6")
+      .|.apply()
+      .|.|.valueHashJoin(s"$group4.$movie0 = $movie1")
+      .|.|.|.nodeVectorIndexSearch(
+        node = movie1.unbacktick,
+        labelNames = Seq("Movie"),
+        properties = moviePlotsProperties,
+        indexName = "moviePlots",
+        vector = "$embedding",
+        limit = "10",
+        entityFilter = preparedEntityFilter(candidateIds2.unbacktick.toVar),
+        argumentIds = Set(candidateIds2.unbacktick, groups3.unbacktick, "actor")
+      )
+      .|.|.unwind(s"$groups3 AS $group4")
+      .|.|.argument(candidateIds2.unbacktick, groups3.unbacktick, "actor")
+      .|.cacheProperties("cacheNFromStore[actor.name]")
+      .|.aggregation(
+        Map.empty,
+        Map(
+          candidateIds2.unbacktick -> compileEntityFilter(id(movie0.unbacktick.toVar), "moviePlots"),
+          groups3.unbacktick -> collect(mapOf(
+            movie0.unbacktick -> movie0.unbacktick.toVar,
+            rows5.unbacktick -> rows5.unbacktick.toVar
+          ))
+        )
+      )
+      .|.aggregation(
+        Map(movie0.unbacktick -> movie0.unbacktick.toVar),
+        Map(rows5.unbacktick -> collect(mapOf(movie0.unbacktick -> movie0.unbacktick.toVar)))
+      )
+      .|.filter(s"$movie0:Movie")
+      .|.expandAll(s"(actor)-[:ACTS_IN]->($movie0)")
+      .|.argument("actor")
+      .nodeByLabelScan("actor", "Actor")
+      .build()
   }
 
   test("plan vector index search with OPTIONAL MATCH and DISTINCT score") {

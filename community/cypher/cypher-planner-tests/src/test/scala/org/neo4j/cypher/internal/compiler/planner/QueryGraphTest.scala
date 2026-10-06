@@ -163,7 +163,8 @@ class QueryGraphTest extends CypherPlannerTestSuite with AstConstructionTestSupp
       embedding = listOfInt(1, 2, 3),
       where = None,
       limit = literal(10),
-      scoreVariable = None
+      scoreVariable = None,
+      matchFilterConfig = None
     )
 
     val arg = v"arg"
@@ -197,7 +198,8 @@ class QueryGraphTest extends CypherPlannerTestSuite with AstConstructionTestSupp
       embedding = listOfInt(1, 2, 3),
       where = None,
       limit = literal(10),
-      scoreVariable = None
+      scoreVariable = None,
+      matchFilterConfig = None
     )
 
     val arg = v"arg"

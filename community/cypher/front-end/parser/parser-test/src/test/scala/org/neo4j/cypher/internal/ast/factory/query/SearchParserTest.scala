@@ -39,10 +39,11 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.Integer32Type
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
+import org.scalatest.OptionValues
 
 import scala.reflect.ClassTag
 
-class SearchParserTest extends AstParsingTestBase {
+class SearchParserTest extends AstParsingTestBase with OptionValues {
 
   def parsesValidSearch[T <: ASTNode : ClassTag](expected: T, pos: InputPosition)(implicit p: Parsers[T]): Parses[T] =
     parsesIn[T] {
@@ -97,6 +98,19 @@ class SearchParserTest extends AstParsingTestBase {
             expectedError,
             fuzzyStatusDescr = true
           ))
+    }
+
+  def parsesValidSearchWithAstLike[T <: ASTNode : ClassTag](query: String)(assertion: T => Unit)(implicit
+    p: Parsers[T]): Unit =
+    query should parseIn[T] {
+      // 42001 and 42I67 will be added later in the stack, so cannot be asserted on in parser test
+      case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'SEARCH': expected")
+          .withGqlStatus(gqlStatus(
+            GqlStatusInfoCodes.STATUS_42I06,
+            "Invalid input 'SEARCH'",
+            fuzzyStatusDescr = true
+          ))
+      case _ => _.withAstLike(assertion)
     }
 
   for {
@@ -615,7 +629,7 @@ class SearchParserTest extends AstParsingTestBase {
             None,
             None,
             Limit(nullLiteral)(pos)
-          )(pos))
+          )(pos, Search.PatternComplexity.default))
         ),
         searchPos
       )
@@ -1123,7 +1137,7 @@ class SearchParserTest extends AstParsingTestBase {
             None,
             Some(offset(2L)),
             limit(5L)
-          )(pos))
+          )(pos, Search.PatternComplexity.default))
         ),
         searchPos
       )
@@ -1236,7 +1250,7 @@ class SearchParserTest extends AstParsingTestBase {
             None,
             Some(Skip(nullLiteral)(pos)),
             limit(5L)
-          )(pos))
+          )(pos, Search.PatternComplexity.default))
         ),
         searchPos
       )
@@ -1321,7 +1335,7 @@ class SearchParserTest extends AstParsingTestBase {
             None,
             Some(offset(2L)),
             limit(5L)
-          )(pos))
+          )(pos, Search.PatternComplexity.default))
         ),
         searchPos
       )
@@ -1426,25 +1440,79 @@ class SearchParserTest extends AstParsingTestBase {
       |  ) SCORE AS score
       |""".stripMargin
   ) {
+    val matchPattern = Pattern.ForMatch(Seq(
+      PrefixedPatternPart(
+        selector = anyShortestPathSelector(1),
+        part = PathPatternPart(relationshipChain(
+          nodePat(Some("n")),
+          relPat(),
+          nodePat()
+        ))
+      )
+    ))(pos)
+    val searchClause =
+      vectorSearch("n", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L)
+        .withCheckedPatternComplexity(matchPattern)
+
     parsesValidSearch[Clause](
       Match(
         optional = false,
         matchMode = RepeatableElements()(pos),
-        Pattern.ForMatch(Seq(
-          PrefixedPatternPart(
-            selector = anyShortestPathSelector(1),
-            part = PathPatternPart(relationshipChain(
-              nodePat(Some("n")),
-              relPat(),
-              nodePat()
-            ))
-          )
-        ))(pos),
+        matchPattern,
         where = None,
-        search = Some(vectorSearch("n", Some("score"), literalString("moviePlots"), prop("m", "embedding"), 5L)),
+        search = Some(searchClause),
         hints = Seq.empty
       )(pos),
       InputPosition(50, 2, 3)
     )
+  }
+
+  test("should classify simple patterns correctly") {
+    val simplePatterns = Seq("(x)", "()-[x]->()")
+    for (pattern <- simplePatterns) {
+      val clause =
+        s"""MATCH $pattern
+           |  SEARCH x IN (
+           |    VECTOR INDEX moviePlots
+           |    FOR m.embedding
+           |    LIMIT 5
+           |  ) SCORE AS score
+           |""".stripMargin
+
+      parsesValidSearchWithAstLike[Match](clause) {
+        case Match(_, _, _, _, _, search) =>
+          search.value.patternComplexity.isSimple shouldBe true
+      }
+    }
+  }
+
+  test("should classify complex patterns correctly") {
+    val complexPatterns = Seq(
+      "(x)-->(y)",
+      "()-[x]->(y)",
+      "(), ()",
+      "(x), (y)",
+      "(x)-->()-->()",
+      "()-[x*1..2]->(y)",
+      "(:A)",
+      "({prop: 123})",
+      "(WHERE x.prop > 123)",
+      "(x) (()-->())+ ()"
+    )
+    for (pattern <- complexPatterns) {
+      val clause =
+        s"""MATCH $pattern
+           |  SEARCH x IN (
+           |    VECTOR INDEX moviePlots
+           |    FOR m.embedding
+           |    LIMIT 5
+           |  ) SCORE AS score
+           |""".stripMargin
+
+      parsesValidSearchWithAstLike[Match](clause) {
+        case Match(_, _, _, _, _, search) =>
+          search.value.patternComplexity.isSimple shouldBe false
+      }
+    }
   }
 }

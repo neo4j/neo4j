@@ -152,6 +152,7 @@ import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.VectorSearchClause
+import org.neo4j.cypher.internal.ir.VectorSearchClause.MatchFilterConfig
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -251,6 +252,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
+import org.neo4j.cypher.internal.logical.plans.PreparedEntityFilterExpression
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
@@ -2142,9 +2144,9 @@ case class LogicalPlanProducer(
     limit: Expression,
     scoreVariable: Option[LogicalVariable],
     argumentIds: Set[LogicalVariable],
-    implicitlySolvedPredicates: Set[Expression]
+    implicitlySolvedPredicates: Set[Expression],
+    maybeMatchFilterConfig: Option[VectorSearchClause.MatchFilterConfig]
   ): LogicalPlan = {
-
     val solved = RegularSinglePlannerQuery(
       queryGraph =
         QueryGraph.empty
@@ -2155,7 +2157,8 @@ case class LogicalPlanProducer(
             embedding,
             where,
             limit,
-            scoreVariable
+            scoreVariable,
+            matchFilterConfig = None
           )))
           .addPredicates(implicitlySolvedPredicates)
           .addArgumentIds(argumentIds),
@@ -2182,8 +2185,9 @@ case class LogicalPlanProducer(
         indexName = indexName,
         vector = rewrittenEmbedding,
         limit = rewrittenLimit,
-        // TODO: we only produce match all for now
-        entityFilter = MatchAllQueryExpression,
+        entityFilter = maybeMatchFilterConfig.fold(MatchAllQueryExpression)(mfc =>
+          PreparedEntityFilterExpression(mfc.candidateIds)
+        ),
         maybePropertyFilter = maybeFilter,
         argumentIds = allArgumentIds
       )(idGen)
@@ -2200,12 +2204,84 @@ case class LogicalPlanProducer(
       solver.rewriteLeafPlan(annotatedVectorSearchPlan)
     }
 
-    planLeafFilteredOnPreBoundVariable(
-      resultVariable,
-      argumentIds,
-      context,
-      createNodeVectorIndexSearchPlan
+    maybeMatchFilterConfig match {
+      case None =>
+        planLeafFilteredOnPreBoundVariable(
+          resultVariable,
+          argumentIds,
+          context,
+          createNodeVectorIndexSearchPlan
+        )
+      case Some(matchFilterConfig) =>
+        planMatchFilterForVectorSearch(
+          createNodeVectorIndexSearchPlan(resultVariable),
+          matchFilterConfig,
+          argumentIds,
+          None,
+          context
+        )
+    }
+  }
+
+  private def planMatchFilterForVectorSearch(
+    searchPlan: LogicalPlan,
+    mfc: VectorSearchClause.MatchFilterConfig,
+    argumentIds: Set[LogicalVariable],
+    distinctSearchResultColumns: Option[Set[LogicalVariable]],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val solved = solveds.get(searchPlan.id).asSinglePlannerQuery.amendQueryGraph(qg =>
+      qg.mapSearchClause {
+        case vsc: VectorSearchClause => vsc.withMatchFilterConfig(mfc)
+        case ftsc: FulltextSearchClause =>
+          throw new IllegalArgumentException(s"Expected ${classOf[VectorSearchClause].getSimpleName}, got: $ftsc")
+      }
     )
+
+    /*
+      Target plan:
+      .valueHashJoin(groups.resultVariable = resultVariable)
+      .|.distinct(resultVariable) // for undirected relationship pattern only
+      .|.search(resultVariable)
+      .unwind(groups AS group)
+      .argument(groups, ...)
+     */
+
+    val argument = annotate(
+      Argument(argumentIds),
+      solved,
+      ProvidedOrder.empty,
+      context.plannerState.previouslyCachedProperties,
+      context
+    )
+    val unwindGroups = annotate(
+      UnwindCollection(argument, variable = mfc.group, expression = mfc.groupsCollection),
+      solved,
+      ProvidedOrder.empty,
+      context.plannerState.previouslyCachedProperties,
+      context
+    )
+
+    val joinRhs = distinctSearchResultColumns.fold(searchPlan) {
+      distinctColumns =>
+        val distinct = annotate(
+          Distinct(searchPlan, distinctColumns.map(v => v -> v).toMap),
+          solved,
+          ProvidedOrder.empty,
+          cachedPropertiesPerPlan.get(unwindGroups.id).intersectProperties(cachedPropertiesPerPlan.get(searchPlan.id)),
+          context
+        )
+        distinct
+    }
+
+    val joinSearchWithMatch = annotate(
+      ValueHashJoin(left = unwindGroups, right = joinRhs, join = mfc.joinPredicate),
+      solved,
+      ProvidedOrder.empty,
+      cachedPropertiesPerPlan.get(unwindGroups.id).intersectProperties(cachedPropertiesPerPlan.get(searchPlan.id)),
+      context
+    )
+    joinSearchWithMatch
   }
 
   def planNodeFulltextIndexSearch(
@@ -2302,7 +2378,8 @@ case class LogicalPlanProducer(
     limit: Expression,
     scoreVariable: Option[LogicalVariable],
     argumentIds: Set[LogicalVariable],
-    implicitlySolvedPredicates: Set[Expression] = Set.empty
+    implicitlySolvedPredicates: Set[Expression] = Set.empty,
+    maybeMatchFilterConfig: Option[MatchFilterConfig]
   ): LogicalPlan = {
     val selectionsFromUnsolvedTypes = selectionsFromTypesUnsolvedByIndex(patternRelationship, indexedTypes)
 
@@ -2314,7 +2391,8 @@ case class LogicalPlanProducer(
           embedding,
           where,
           limit,
-          scoreVariable
+          scoreVariable,
+          matchFilterConfig = None
         )))
         .addPredicates(implicitlySolvedPredicates)
         .addArgumentIds(argumentIds)
@@ -2355,8 +2433,9 @@ case class LogicalPlanProducer(
             indexName = indexName,
             vector = rewrittenEmbedding,
             limit = rewrittenLimit,
-            // TODO: we only produce match all for now
-            entityFilter = MatchAllQueryExpression,
+            entityFilter = maybeMatchFilterConfig.fold(MatchAllQueryExpression)(mfc =>
+              PreparedEntityFilterExpression(mfc.candidateIds)
+            ),
             maybePropertyFilter = maybeFilter,
             argumentIds = allArgumentIds
           )(idGen)
@@ -2370,8 +2449,9 @@ case class LogicalPlanProducer(
             indexName = indexName,
             vector = rewrittenEmbedding,
             limit = rewrittenLimit,
-            // TODO: we only produce match all for now
-            entityFilter = MatchAllQueryExpression,
+            entityFilter = maybeMatchFilterConfig.fold(MatchAllQueryExpression)(mfc =>
+              PreparedEntityFilterExpression(mfc.candidateIds)
+            ),
             maybePropertyFilter = maybeFilter,
             argumentIds = allArgumentIds
           )(idGen)
@@ -2390,12 +2470,30 @@ case class LogicalPlanProducer(
       planHiddenSelectionIfNeeded(rewritten, selectionsFromUnsolvedTypes, context, patternRelationship)
     }
 
-    planLeafFilteredOnPreBoundVariable(
-      patternRelationship.variable,
-      argumentIds,
-      context,
-      createRelationshipVectorIndexSearchPlan
-    )
+    maybeMatchFilterConfig match {
+      case None =>
+        planLeafFilteredOnPreBoundVariable(
+          patternRelationship.variable,
+          argumentIds,
+          context,
+          createRelationshipVectorIndexSearchPlan
+        )
+      case Some(matchFilterConfig) =>
+        // SEARCH with undirected relationship might output the same relationship twice.
+        // Make result distinct to not increase the cardinality of the original MATCH.
+        val distinctSearchResultColumns =
+          Option.when(patternRelationship.dir == SemanticDirection.BOTH)(
+            Set(patternRelationship.variable) ++ scoreVariable
+          )
+
+        planMatchFilterForVectorSearch(
+          createRelationshipVectorIndexSearchPlan(patternRelationship.variable),
+          matchFilterConfig,
+          argumentIds,
+          distinctSearchResultColumns,
+          context
+        )
+    }
   }
 
   private def planLeafFilteredOnPreBoundVariable(

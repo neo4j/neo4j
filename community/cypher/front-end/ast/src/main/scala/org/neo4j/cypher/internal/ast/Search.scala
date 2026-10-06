@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.Search.PatternComplexity
 import org.neo4j.cypher.internal.ast.Search.SearchIndexType
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.*
@@ -45,6 +46,7 @@ import org.neo4j.cypher.internal.expressions.VectorFilterExpression.VectorFilter
 import org.neo4j.cypher.internal.notification.IdentifierShadowsVariableNotification
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 import org.neo4j.cypher.internal.util.helpers.LazyVal
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
@@ -95,6 +97,102 @@ object Search {
     override def requireFulltextIndex(clause: String, pos: InputPosition): SemanticCheck = SemanticCheck.success
   }
 
+  enum PatternComplexity {
+    case Simple
+    case Complex(reason: PatternComplexity.Reason, position: InputPosition)
+
+    def isSimple: Boolean = this == Simple
+  }
+
+  object PatternComplexity {
+    def default: PatternComplexity = Simple
+
+    enum Reason {
+      case InvalidPredicate
+      case MultipleBoundVariables
+      case MultiplePatternParts
+      case TooComplexMatch
+    }
+
+    /**
+     * Classify the pattern from the MATCH statement.
+     */
+    def from(pattern: Pattern.ForMatch, bindingVariable: LogicalVariable): PatternComplexity = {
+      val patternParts = pattern.patternParts
+      val patternVariables = patternParts.flatMap(p => p.allVariables).toSet
+      val patternPart = patternParts.head.part
+
+      if (patternParts.size > 1) {
+        Complex(Reason.MultiplePatternParts, patternParts(1).position)
+      } else if (!patternPart.isInstanceOf[NamedPatternPart] && patternVariables.size > 1) {
+        val firstUnrelatedVar = patternVariables.filterNot(v => v == bindingVariable).head
+        Complex(Reason.MultipleBoundVariables, firstUnrelatedVar.position)
+      } else if (patternPart.isInstanceOf[NamedPatternPart] && patternVariables.size > 2) {
+        val firstUnrelatedVar = patternVariables.filterNot(v =>
+          v == bindingVariable || v == patternPart.asInstanceOf[NamedPatternPart].variable
+        ).head
+        Complex(Reason.MultipleBoundVariables, firstUnrelatedVar.position)
+      } else {
+        checkPatternElement(patternPart.element)
+      }
+    }
+
+    private def checkPatternElement(element: PatternElement): PatternComplexity = {
+      element match {
+        case n: NodePattern => checkNodePattern(n)
+        case relChain @ RelationshipChain(_: RelationshipChain, _, _) =>
+          Complex(Reason.TooComplexMatch, relChain.position)
+        case RelationshipChain(p, r, n) =>
+          Seq(
+            checkPatternElement(p),
+            checkRelationshipPattern(r),
+            checkNodePattern(n)
+          ).dropWhile(_.isSimple)
+            .headOption
+            .getOrElse(Simple)
+        case _ => Complex(Reason.TooComplexMatch, element.position)
+      }
+    }
+
+    private def checkNodePattern(nodePattern: NodePattern): PatternComplexity = {
+      nodePattern match {
+        case NodePattern(None, Some(pred), _, _) =>
+          Complex(Reason.InvalidPredicate, pred.position)
+        case NodePattern(None, _, Some(pred), _) =>
+          Complex(Reason.InvalidPredicate, pred.position)
+        case NodePattern(None, _, _, Some(pred)) =>
+          Complex(Reason.InvalidPredicate, pred.position)
+        case _ => Simple
+      }
+    }
+
+    private def checkRelationshipPattern(relationshipPattern: RelationshipPattern): PatternComplexity = {
+      relationshipPattern match {
+        case RelationshipPattern(None, Some(pred), _, _, _, _) =>
+          Complex(Reason.InvalidPredicate, pred.position)
+        case RelationshipPattern(None, _, _, Some(pred), _, _) =>
+          Complex(Reason.InvalidPredicate, pred.position)
+        case RelationshipPattern(None, _, _, _, Some(pred), _) =>
+          Complex(Reason.InvalidPredicate, pred.position)
+        // Variable length relationship
+        case r @ RelationshipPattern(None, _, Some(_), _, _, _) =>
+          Complex(Reason.TooComplexMatch, r.position)
+        case _ => Simple
+      }
+    }
+  }
+
+  opaque type CheckedPatternComplexity = Search
+
+  private def withCheckedPatternComplexity(
+    search: Search,
+    pattern: Pattern.ForMatch
+  ): Search & CheckedPatternComplexity = {
+    search.copy()(
+      position = search.position,
+      patternComplexity = PatternComplexity.from(pattern, search.bindingVariable)
+    )
+  }
 }
 
 case class Search(
@@ -107,7 +205,7 @@ case class Search(
   analyzer: Option[Expression],
   skip: Option[Skip],
   limit: Limit
-)(val position: InputPosition)
+)(val position: InputPosition, val patternComplexity: Search.PatternComplexity)
     extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
 
   def semanticCheck: SemanticCheck = {
@@ -119,7 +217,6 @@ case class Search(
       checkWhere() chain
       checkSkip() chain
       checkAnalyzer()
-
   }
 
   private def checkIndexName(): SemanticCheck = {
@@ -300,68 +397,81 @@ case class Search(
     // We only want to do these checks once, because later rewriters can have made the pattern more complex
     whenState(!_.semanticCheckHasRunOnce) {
       val patternParts = pattern.patternParts
-      val patternVariables = patternParts.flatMap(p => p.allVariables).toSet
-      val patternPart = patternParts.head.part
       val selectors = patternParts.collect(p => p.selector).filterNot(s => s.isInstanceOf[AllPaths])
+
+      import PatternComplexity.Reason.*
 
       ifOkChainAll(
         checkWhenComplexPatternNotAllowed {
-          if (patternParts.size > 1) {
-            SemanticError.searchWithTooComplexMatch(patternParts(1).position)
-          } else if (!patternPart.isInstanceOf[NamedPatternPart] && patternVariables.size > 1) {
-            val firstUnrelatedVar = patternVariables.filterNot(v => v == bindingVariable).head
-            SemanticError.searchWithMultipleBoundVariables(firstUnrelatedVar.position)
-          } else if (patternPart.isInstanceOf[NamedPatternPart] && patternVariables.size > 2) {
-            val firstUnrelatedVar = patternVariables.filterNot(v =>
-              v == bindingVariable || v == patternPart.asInstanceOf[NamedPatternPart].variable
-            ).head
-            SemanticError.searchWithMultipleBoundVariables(firstUnrelatedVar.position)
-          } else {
-            SemanticCheck.success
+          patternComplexity match {
+            case PatternComplexity.Simple => SemanticCheck.success
+            case PatternComplexity.Complex(reason, position) =>
+              reason match {
+                case MultiplePatternParts   => SemanticError.searchWithTooComplexMatch(position)
+                case MultipleBoundVariables => SemanticError.searchWithMultipleBoundVariables(position)
+                case TooComplexMatch        => SemanticCheck.success
+                case InvalidPredicate       => SemanticCheck.success
+              }
           }
         },
         when(selectors.nonEmpty) {
           SemanticError.searchWithTooComplexMatch(selectors.head.position)
         },
         checkWhenComplexPatternNotAllowed {
-          checkPatternElement(patternPart.element)
+          patternComplexity match {
+            case PatternComplexity.Simple => SemanticCheck.success
+            case PatternComplexity.Complex(reason, position) =>
+              reason match {
+                case MultiplePatternParts   => SemanticCheck.success
+                case MultipleBoundVariables => SemanticCheck.success
+                case TooComplexMatch        => SemanticError.searchWithTooComplexMatch(position)
+                case InvalidPredicate       => SemanticError.searchWithInvalidPredicates(position)
+              }
+          }
         }
       )
     }
   }
 
-  private def checkPatternElement(element: PatternElement): SemanticCheck = {
-    element match {
-      case n: NodePattern => checkNodePattern(n)
-      case relChain @ RelationshipChain(_: RelationshipChain, _, _) =>
-        SemanticError.searchWithTooComplexMatch(relChain.position)
-      case RelationshipChain(p, r, n) =>
-        checkPatternElement(p) chain checkNodePattern(n) chain checkRelationshipPattern(r)
-      case _ => SemanticError.searchWithTooComplexMatch(element.position)
+  override def dup(children: Seq[AnyRef]): this.type = {
+    if (children.iterator eqElements this.treeChildren)
+      this
+    else {
+      children match {
+        case Seq(
+            bindingVariable: LogicalVariable,
+            score: Option[LogicalVariable @unchecked],
+            indexType: SearchIndexType,
+            indexName: Expression,
+            embedding: Expression,
+            where: Option[Where @unchecked],
+            analyzer: Option[Expression @unchecked],
+            skip: Option[Skip @unchecked],
+            limit: Limit
+          ) =>
+          copy(
+            bindingVariable = bindingVariable,
+            score = score,
+            indexType = indexType,
+            indexName = indexName,
+            embedding = embedding,
+            where = where,
+            analyzer = analyzer,
+            skip = skip,
+            limit = limit
+          )(
+            position = position,
+            patternComplexity = patternComplexity
+          ).asInstanceOf[this.type]
+        case _ =>
+          throw new IllegalStateException(
+            s"Failed rewriting $this\nTried using children: ${children.mkString(",")}"
+          )
+      }
     }
   }
 
-  private def checkNodePattern(nodePattern: NodePattern): SemanticCheck = {
-    nodePattern match {
-      case NodePattern(None, Some(pred), _, _) => SemanticError.searchWithInvalidPredicates(pred.position)
-      case NodePattern(None, _, Some(pred), _) => SemanticError.searchWithInvalidPredicates(pred.position)
-      case NodePattern(None, _, _, Some(pred)) => SemanticError.searchWithInvalidPredicates(pred.position)
-      case _                                   => SemanticCheck.success
-    }
-  }
-
-  private def checkRelationshipPattern(relationshipPattern: RelationshipPattern): SemanticCheck = {
-    relationshipPattern match {
-      case RelationshipPattern(None, Some(pred), _, _, _, _) =>
-        SemanticError.searchWithInvalidPredicates(pred.position)
-      case RelationshipPattern(None, _, _, Some(pred), _, _) =>
-        SemanticError.searchWithInvalidPredicates(pred.position)
-      case RelationshipPattern(None, _, _, _, Some(pred), _) =>
-        SemanticError.searchWithInvalidPredicates(pred.position)
-      // Variable length relationship
-      case r @ RelationshipPattern(None, _, Some(_), _, _, _) =>
-        SemanticError.searchWithTooComplexMatch(r.position)
-      case _ => SemanticCheck.success
-    }
+  def withCheckedPatternComplexity(pattern: Pattern.ForMatch): Search & Search.CheckedPatternComplexity = {
+    Search.withCheckedPatternComplexity(this, pattern)
   }
 }

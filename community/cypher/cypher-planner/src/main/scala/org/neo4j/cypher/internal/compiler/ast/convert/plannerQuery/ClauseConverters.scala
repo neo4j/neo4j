@@ -174,11 +174,11 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
     cancellationChecker: CancellationChecker,
     position: QueryProjection.Position
   ): PlannerQueryBuilder = clause match {
-    case _: Finish               => acc
-    case c: Return               => addReturnToLogicalPlanInput(acc, c, position)
-    case c: Match                => addMatchToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
-    case c: With                 => addWithToLogicalPlanInput(acc, c, nextClause)
-    case c: Unwind               => addUnwindToLogicalPlanInput(acc, c)
+    case _: Finish => acc
+    case c: Return => addReturnToLogicalPlanInput(acc, c, position)
+    case c: Match  => addMatchToLogicalPlanInput(acc, c, anonymousVariableNameGenerator, cancellationChecker)
+    case c: With   => addWithToLogicalPlanInput(acc, c, nextClause)
+    case c: Unwind => addUnwindToLogicalPlanInput(acc, c)
     case c: ResolvedNonLocalCall => addCallToLogicalPlanInput(acc, c)
     case c: CreateOrInsert       => addCreateToLogicalPlanInput(acc, c)
     case c: SetClause            => addSetClauseToLogicalPlanInput(acc, c)
@@ -577,7 +577,8 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
   private def addMatchToLogicalPlanInput(
     acc: PlannerQueryBuilder,
     clause: Match,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
   ): PlannerQueryBuilder = {
     val converter = new PatternConverters(anonymousVariableNameGenerator)
     val pathPatterns = converter.convertPattern(clause.pattern)
@@ -665,29 +666,33 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
         (acc, selections)
       }
 
-    if (clause.optional) {
-      accWithMaybeHorizon.amendQueryGraph { qg =>
-        qg.addOptionalMatch(
-          // When adding QueryGraphs for optional matches, we always start with a new one.
-          // It's either all or nothing per match clause.
-          QueryGraph(
-            selections = remainingSelections,
-            hints = expandAstHintsToIrHints(clause.hints).toListSet,
-            searchClause = SearchClause.fromAst(clause.search)
-          ).addPathPatterns(pathPatterns)
-        )
+    SearchWithComplexPatternConverter(statementConverters, anonymousVariableNameGenerator, cancellationChecker)
+      .convertIfExists(accWithMaybeHorizon, clause)
+      .getOrElse {
+        if (clause.optional) {
+          accWithMaybeHorizon.amendQueryGraph { qg =>
+            qg.addOptionalMatch(
+              // When adding QueryGraphs for optional matches, we always start with a new one.
+              // It's either all or nothing per match clause.
+              QueryGraph(
+                selections = remainingSelections,
+                hints = expandAstHintsToIrHints(clause.hints).toListSet,
+                searchClause = SearchClause.fromAstOption(clause.search)
+              ).addPathPatterns(pathPatterns)
+            )
+          }
+        } else {
+          accWithMaybeHorizon.amendQueryGraph {
+            qg =>
+              val maybeSearchClause = SearchClause.fromAstOption(clause.search)
+              qg
+                .addSelections(remainingSelections -- inlinedSearchClausePredicates(maybeSearchClause))
+                .addHints(expandAstHintsToIrHints(clause.hints))
+                .addPathPatterns(pathPatterns)
+                .addSearchClause(maybeSearchClause)
+          }
+        }
       }
-    } else {
-      accWithMaybeHorizon.amendQueryGraph {
-        qg =>
-          val maybeSearchClause = SearchClause.fromAst(clause.search)
-          qg
-            .addSelections(remainingSelections -- inlinedSearchClausePredicates(maybeSearchClause))
-            .addHints(expandAstHintsToIrHints(clause.hints))
-            .addPathPatterns(pathPatterns)
-            .addSearchClause(maybeSearchClause)
-      }
-    }
   }
 
   private def inlinedSearchClausePredicates(maybeSearchClause: Option[SearchClause]): ListSet[Expression] = {

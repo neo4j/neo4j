@@ -75,7 +75,17 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     queryGraph.searchClause match {
-      case Some(search @ VectorSearchClause(resultVariable, indexName, embedding, where, limit, scoreVariable))
+      case Some(
+          search @ VectorSearchClause(
+            resultVariable,
+            indexName,
+            embedding,
+            where,
+            limit,
+            scoreVariable,
+            maybeMatchFilterConfig
+          )
+        )
         if search.isSolvableGivenSymbols(queryGraph.argumentIds) =>
 
         if (queryGraph.patternNodes.contains(resultVariable)) {
@@ -128,7 +138,8 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
                   limit = limit,
                   scoreVariable = scoreVariable,
                   argumentIds = queryGraph.argumentIds,
-                  implicitlySolvedPredicates = implicitlySolvedPredicates
+                  implicitlySolvedPredicates = implicitlySolvedPredicates,
+                  maybeMatchFilterConfig = maybeMatchFilterConfig
                 )
               Set(nodeVectorIndexSearch)
 
@@ -195,7 +206,8 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
                   limit = limit,
                   scoreVariable = scoreVariable,
                   argumentIds = queryGraph.argumentIds,
-                  implicitlySolvedPredicates = implicitlySolvedPredicates
+                  implicitlySolvedPredicates = implicitlySolvedPredicates,
+                  maybeMatchFilterConfig = maybeMatchFilterConfig
                 )
               Set(relationshipVectorIndexSearch)
 

@@ -78,6 +78,7 @@ import org.neo4j.cypher.internal.frontend.helpers.CNFNormalizerTestUtil
 import org.neo4j.cypher.internal.frontend.helpers.ExpandClausesTestUtil
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
+import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.MoveBoundaryNodePredicates
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
@@ -564,7 +565,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
     functionLookup: Option[FunctionName => Option[UserFunctionSignature]],
     additionalSettings: Map[Setting[_], AnyRef]
   ): SinglePlannerQuery = {
-    buildPlannerQuery(version, query, procedureLookup, functionLookup, true, additionalSettings) match {
+    buildPlannerQuery(version, query, procedureLookup, functionLookup, true, additionalSettings, true) match {
       case pq: SinglePlannerQuery => pq
       case _                      => throw new IllegalArgumentException("This method cannot be used for UNION queries")
     }
@@ -572,7 +573,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
 
   lazy val cnfNormalizerTransformer = CNFNormalizerTestUtil.getTransformer()
 
-  private lazy val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
+  private def pipeLine(enableNameDeduplication: Boolean): Transformer[PlannerContext, BaseState, LogicalPlanState] =
     Parse andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = Some(true)) andThen
@@ -603,7 +604,9 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
       ScopeSurveyor andThen
       ComputeExpressionDependencies andThen
       CreatePlannerQueryTransformer andThen
-      NameDeduplication
+      If((_: LogicalPlanState) => enableNameDeduplication)(
+        NameDeduplication
+      )
 
   // Hack to guarantee coverage in all versions :/
   def buildPlannerQuery(
@@ -611,7 +614,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
     procedureLookup: Option[ProcedureName => ProcedureSignature] = None,
     functionLookup: Option[FunctionName => Option[UserFunctionSignature]] = None,
     additionalSettings: Map[Setting[_], AnyRef] = Map.empty
-  ): PlannerQuery = buildPlannerQuery(randomVersion(), query, procedureLookup, functionLookup, true, additionalSettings)
+  ): PlannerQuery =
+    buildPlannerQuery(randomVersion(), query, procedureLookup, functionLookup, true, additionalSettings, true)
 
   def buildPlannerQuery(
     version: CypherVersion,
@@ -619,7 +623,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
     procedureLookup: Option[ProcedureName => ProcedureSignature],
     functionLookup: Option[FunctionName => Option[UserFunctionSignature]],
     compareVersions: Boolean,
-    additionalSettings: Map[Setting[_], AnyRef]
+    additionalSettings: Map[Setting[_], AnyRef],
+    enableNameDeduplication: Boolean
   ): PlannerQuery = {
     val signature = ProcedureSignature(
       procedureName("foo"),
@@ -652,7 +657,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
       config = CypherPlannerConfiguration.withSettings(databaseConfig ++ additionalSettings),
       semanticFeatures = semanticFeatures
     )
-    val output = pipeLine.transform(state, context)
+    val output = pipeLine(enableNameDeduplication).transform(state, context)
 
     output.query
   }

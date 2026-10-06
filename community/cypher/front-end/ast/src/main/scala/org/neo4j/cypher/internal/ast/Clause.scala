@@ -134,7 +134,6 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ScopeBoundary
-import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StartsWith
@@ -811,7 +810,7 @@ case class Match(
   pattern: Pattern.ForMatch,
   hints: Seq[AstHint],
   where: Option[Where],
-  search: Option[Search]
+  search: Option[Search & Search.CheckedPatternComplexity]
 )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name = "MATCH"
 
@@ -1468,10 +1467,7 @@ case class Match(
 
   def allExportedVariables: Set[LogicalVariable] = {
 
-    val patternVariables = pattern.patternParts.folder.treeFold(Set.empty[LogicalVariable]) {
-      case _: ScopeExpression          => acc => SkipChildren(acc)
-      case logicalVar: LogicalVariable => acc => TraverseChildren(acc ++ Set(logicalVar))
-    }
+    val patternVariables = pattern.patternParts.flatMap(_.allVariables).toSet
 
     val maybeScoreVariable = search match {
       case Some(Search(_, Some(score), _, _, _, _, _, _, _)) => Set(score)

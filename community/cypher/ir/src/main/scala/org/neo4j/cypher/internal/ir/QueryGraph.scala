@@ -230,6 +230,8 @@ final case class QueryGraph private (
 
   def withoutSearchClause: QueryGraph = copy(searchClause = None)
 
+  def mapSearchClause(f: SearchClause => SearchClause): QueryGraph = copy(searchClause = searchClause.map(f))
+
   /**
    * Returns a copy of the query graph, with an additional selective path pattern added.
    */

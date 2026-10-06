@@ -1425,11 +1425,16 @@ trait AstConstructionTestSupport {
     matchMode: MatchMode = MatchMode.default(pos),
     where: Option[Where] = None,
     search: Option[Search] = None
-  ): Match =
-    Match(optional = false, matchMode = matchMode, patternForMatch(pattern), Seq(), where, search)(pos)
+  ): Match = {
+    val matchPattern = patternForMatch(pattern)
+    val checkedSearch = search.map(_.withCheckedPatternComplexity(matchPattern))
+    Match(optional = false, matchMode = matchMode, matchPattern, Seq(), where, checkedSearch)(pos)
+  }
 
   def optionalMatch(pattern: PatternElement, where: Option[Where] = None, search: Option[Search] = None): Match = {
-    Match(optional = true, MatchMode.default(pos), patternForMatch(pattern), Seq(), where, search)(pos)
+    val matchPattern = patternForMatch(pattern)
+    val checkedSearch = search.map(_.withCheckedPatternComplexity(matchPattern))
+    Match(optional = true, MatchMode.default(pos), matchPattern, Seq(), where, checkedSearch)(pos)
   }
 
   def match_(patterns: Seq[PatternElement], where: Option[Where]): Match =
@@ -1525,7 +1530,7 @@ trait AstConstructionTestSupport {
       analyzer,
       skipNbr.map(n => skip(n, pos)),
       limit(limitNbr)
-    )(pos)
+    )(pos, Search.PatternComplexity.default)
   }
 
   def with_(items: ReturnItem*): With =
