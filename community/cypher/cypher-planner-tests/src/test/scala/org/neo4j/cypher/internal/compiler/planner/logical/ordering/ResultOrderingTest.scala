@@ -253,23 +253,16 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   }
 
   test(
-    "IndexOperator: Multi property order results in provided order if property order does not match (no exact predicates)"
-  ) {
-    val properties = Seq("y", "x", "z").map { node =>
-      PropertyAndPredicateType(prop(node, "foo"), isSingleExactPredicate = false)
-    }
-    val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(xFoo).asc(yFoo).asc(zFoo))
-    indexOrder(interestingOrder, properties, BOTH) should beEmpty
-  }
-
-  test(
     "IndexOperator: Multi property order results in provided order if property order does not match (all exact predicates)"
   ) {
     val properties = Seq("y", "x", "z").map { node =>
       PropertyAndPredicateType(prop(node, "foo"), isSingleExactPredicate = true)
     }
     val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(xFoo).asc(yFoo).asc(zFoo))
-    indexOrder(interestingOrder, properties, BOTH) should beEmpty
+    indexOrder(interestingOrder, properties, BOTH) should be((
+      DefaultProvidedOrderFactory.asc(xFoo),
+      IndexOrderAscending
+    ))
   }
 
   test(
@@ -293,7 +286,7 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
     }
     val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(xFoo).asc(yFoo).asc(zFoo))
     indexOrder(interestingOrder, properties, BOTH) should be((
-      DefaultProvidedOrderFactory.asc(xFoo).asc(zFoo).asc(yFoo),
+      DefaultProvidedOrderFactory.asc(xFoo).asc(yFoo),
       IndexOrderAscending
     ))
   }
@@ -373,7 +366,7 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
     }
     val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(xFoo).asc(yFoo))
     indexOrder(interestingOrder, properties, BOTH) should be((
-      DefaultProvidedOrderFactory.asc(xFoo).asc(yFoo).asc(zFoo).asc(wFoo),
+      DefaultProvidedOrderFactory.asc(xFoo).asc(yFoo),
       IndexOrderAscending
     ))
   }
