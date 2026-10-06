@@ -702,6 +702,27 @@ class SearchSemanticAnalysisTest extends CypherFunSuite with NameBasedSemanticAn
     }
 
     test(
+      s"""${maybeOptional}MATCH (movie:Movie)
+         |  SEARCH movie IN (
+         |    VECTOR INDEX moviePlots
+         |    FOR [1, 2, 3]
+         |    WHERE x.year > 2000
+         |    LIMIT 5
+         |  )
+         |RETURN movie.title AS title
+         |// complexPatternAllowed = $complexPatternAllowed
+         |""".stripMargin
+    ) {
+      runSearch(complexPatternAllowed).hasErrors(
+        SemanticError(
+          GqlHelper.getGql42001_42N62("x", 96 + optionalLength, 5, 11),
+          "Variable `x` not defined",
+          p(96 + optionalLength, 5, 11)
+        )
+      )
+    }
+
+    test(
       s"""MATCH (m:Movie {title:'Matrix, The'})
          |${maybeOptional}MATCH (movie: Movie)
          |  SEARCH movie IN (
@@ -1809,6 +1830,26 @@ class SearchSemanticAnalysisTest extends CypherFunSuite with NameBasedSemanticAn
       )
     }
 
+    test(
+      s"""${maybeOptional}MATCH (movie: Movie)
+         |  SEARCH movie IN (
+         |    FULLTEXT INDEX moviePlots
+         |    FOR 'matrix' WITH ANALYZER movie.lang
+         |    LIMIT 5
+         |  )
+         |RETURN movie.title AS title
+         |// complexPatternAllowed = $complexPatternAllowed
+         |""".stripMargin
+    ) {
+      runSearch(complexPatternAllowed).hasErrors(
+        SemanticError(
+          GqlHelper.getGql42001_42I75("movie.lang", "movie", 107 + optionalLength, 4, 37),
+          "Full-text search analyzer referencing the search binding variable",
+          InputPosition(107 + optionalLength, 4, 37)
+        )
+      )
+    }
+
     // R6: WITH ANALYZER is fulltext-only -> 42N14 (error at analyzer expr position)
     test(
       s"""${maybeOptional}MATCH (movie: Movie)
@@ -1870,6 +1911,62 @@ class SearchSemanticAnalysisTest extends CypherFunSuite with NameBasedSemanticAn
   ) {
     runWith(disabledCypherVersions = Set(CypherVersion.Cypher5)).hasNotifications(
       IdentifierShadowsVariableNotification(InputPosition.withLength(83, 4, 20, 10), "moviePlots", "FULLTEXT INDEX")
+    )
+  }
+
+  // A SEARCH self-reference error must not be sorted ahead of an earlier, unrelated error.
+
+  test(
+    """WITH undefinedVar AS x
+      |MATCH (movie: Movie)
+      |  SEARCH movie IN (
+      |    VECTOR INDEX moviePlots
+      |    FOR [1, 2, 3]
+      |    WHERE movie.imdbRating >= movie.prop
+      |    LIMIT 5
+      |  )
+      |RETURN movie.title AS title
+      |""".stripMargin
+  ) {
+    runWith(disabledCypherVersions = Set(CypherVersion.Cypher5)).hasErrors(
+      SemanticError(
+        GqlHelper.getGql42001_42N62("undefinedVar", 5, 1, 6),
+        "Variable `undefinedVar` not defined",
+        InputPosition(5, 1, 6)
+      ),
+      SemanticError(
+        GqlHelper.getGql42001_42I75("movie.prop", "movie", 145, 6, 36),
+        s"Vector search filter predicate referencing the search binding variable",
+        InputPosition(145, 6, 36)
+      )
+    )
+  }
+
+  // The 42I75 message must name the SEARCH clause's binding variable, not the filter predicate's own variable.
+
+  test(
+    """MATCH (m: Movie)
+      |MATCH (movie: Movie)
+      |  SEARCH movie IN (
+      |    VECTOR INDEX moviePlots
+      |    FOR [1, 2, 3]
+      |    WHERE m.imdbRating > m.prop
+      |    LIMIT 5
+      |  )
+      |RETURN movie.title AS title
+      |""".stripMargin
+  ) {
+    runWith(disabledCypherVersions = Set(CypherVersion.Cypher5)).hasErrors(
+      SemanticError(
+        GqlHelper.getGql42001_42I74("m", "movie", 114, 6, 11),
+        "The variable `m` in a vector search filter property predicate must be the same as the search clause binding variable `movie`.",
+        InputPosition(114, 6, 11)
+      ),
+      SemanticError(
+        GqlHelper.getGql42001_42I75("m.prop", "movie", 130, 6, 27),
+        s"Vector search filter predicate referencing the search binding variable",
+        InputPosition(130, 6, 27)
+      )
     )
   }
 }

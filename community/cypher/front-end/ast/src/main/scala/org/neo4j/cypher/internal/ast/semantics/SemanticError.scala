@@ -2585,6 +2585,18 @@ object SemanticError {
     )
   }
 
+  def singleStageWithAnalyzerReferencingEntity(
+    expression: String,
+    variable: String,
+    position: InputPosition
+  ): SemanticError = {
+    SemanticError(
+      GqlHelper.getGql42001_42I75(expression, variable, position.offset, position.line, position.column),
+      s"Full-text search analyzer referencing the search binding variable",
+      position
+    )
+  }
+
   def localCallableAlreadyDefined(
     name: String,
     position: InputPosition

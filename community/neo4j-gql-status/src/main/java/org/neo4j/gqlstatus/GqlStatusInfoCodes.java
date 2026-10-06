@@ -2010,7 +2010,7 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
                 new NonSensitiveGqlParam(GqlParams.StringParam.expr, List.of(SCHEMA)),
                 new NonSensitiveGqlParam(GqlParams.StringParam.variable, List.of(CYPHER_VARIABLE))
             },
-            "self-referencing in vector search",
+            "self-referencing in search",
             ErrorClassification.CLIENT_ERROR),
     STATUS_42I76(
             "The provided index or constraint { %s } { %s } ({ %s } bytes) exceeded limit of { %s } bytes.",

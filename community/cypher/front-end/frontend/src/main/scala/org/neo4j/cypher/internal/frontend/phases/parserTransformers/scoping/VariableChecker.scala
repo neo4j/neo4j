@@ -50,6 +50,8 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.AllReducePredicate.AllReduceScope
 import org.neo4j.cypher.internal.expressions.AllReducePredicate.ReductionStepVariableScope
+import org.neo4j.cypher.internal.expressions.Conjunction
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractMapEntriesScope
 import org.neo4j.cypher.internal.expressions.ExtractMapScope
 import org.neo4j.cypher.internal.expressions.ExtractScope
@@ -62,6 +64,7 @@ import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.VectorFilterExpression
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -74,6 +77,7 @@ import org.neo4j.cypher.internal.util.Foldable.FoldingBehavior
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 
 import scala.annotation.tailrec
@@ -345,6 +349,71 @@ case class VariableChecker(
     case _ => acc
   }
 
+  private def searchVariables(acc: Acc, ss: StatementScope): Acc = ss match {
+    case StatementScope(s: Search, incoming, _, _, _, _, children, _) =>
+      val bindingName = s.bindingVariable.name
+
+      def referencesVariable(scope: WorkingScope, name: String): Boolean =
+        scope.referenced.getVariables.exists(_.name == name)
+
+      def selfReferenceError(
+        expression: Expression,
+        error: (String, String, InputPosition) => SemanticError
+      ): Seq[SemanticError] =
+        children.find(_.astNode eq expression).toSeq
+          .filter(referencesVariable(_, bindingName))
+          .map(_ => error(expression.asCanonicalStringVal, bindingName, expression.position))
+
+      val embeddingErrors = selfReferenceError(s.embedding, SemanticError.singleStageWithEmbeddingReferencingEntity)
+      val analyzerErrors =
+        s.analyzer.toSeq.flatMap(selfReferenceError(_, SemanticError.singleStageWithAnalyzerReferencingEntity))
+      val whereErrors = s.where.toSeq.flatMap { w =>
+        children.find(_.astNode eq w.expression).toSeq.flatMap(searchFilterPredicates).flatMap {
+          case SearchFilterPredicate(variable, rhs, rhsScope) =>
+            Option.when(variable.name != bindingName && incoming.allSymbols.exists(_.name == variable.name)) {
+              SemanticError.singleStageWithInvalidVariable(variable.name, bindingName, variable.position)
+            }.toSeq ++ rhsScope.toSeq
+              .filter(referencesVariable(_, variable.name))
+              .map(_ =>
+                SemanticError.singleStageWithPredicateReferencingEntity(
+                  rhs.asCanonicalStringVal,
+                  bindingName,
+                  rhs.position
+                )
+              )
+        }
+      }
+      acc(embeddingErrors ++ analyzerErrors ++ whereErrors)
+    case _ => acc
+  }
+
+  // rhsScope is empty for IsNull/IsNotNull filters: their synthetic Null rhs is not pegged,
+  // and it can hold no references anyway.
+  private case class SearchFilterPredicate(variable: LogicalVariable, rhs: Expression, rhsScope: Option[WorkingScope])
+
+  // Descend only through And/Ands; the rhs scope is looked up separately because the predicate's
+  // own scope also contains the lhs variable use.
+  private def searchFilterPredicates(scope: WorkingScope): Seq[SearchFilterPredicate] = scope match {
+    case ExpressionScope(expression: Expression, _, _, _, children) =>
+      expression match {
+        case VectorFilterExpression(variable, rhs, _) =>
+          Seq(SearchFilterPredicate(variable, rhs, children.find(_.astNode eq rhs)))
+        case Conjunction(_*) => children.flatMap(searchFilterPredicates)
+        case _               => Seq.empty
+      }
+    case _ => Seq.empty
+  }
+
+  private def searchBindingVariable(acc: Acc, ss: StatementScope): Acc = ss match {
+    case StatementScope(m: Match, _, _, _, _, _, _, _) =>
+      acc(m.search.toSeq.flatMap { search =>
+        Option.when(!m.pattern.patternParts.flatMap(_.allVariables).contains(search.bindingVariable)) {
+          SemanticError.searchWithVariableFromOutsideMatch(search.bindingVariable)
+        }
+      })
+    case _ => acc
+  }
+
   private val statementChecks: Seq[(Acc, StatementScope) => Acc] = Seq(
     redeclarationOfVariable,
     multipleReturnColumns,
@@ -354,7 +423,9 @@ case class VariableChecker(
     variableNotDefinedInGroupBy,
     invalidEntityReferenceInUpdatingClause,
     localCallableAlreadyDefined,
-    duplicateLocalCallableParameter
+    duplicateLocalCallableParameter,
+    searchVariables,
+    searchBindingVariable
   )
 
   private val expressionChecks: Seq[(Acc, ExpressionScope) => Acc] = Seq(
@@ -652,6 +723,8 @@ case object VariableChecker extends Phase[BaseContext, BaseState, BaseState] wit
     "42I37", // Invalid use of RETURN *
     "42I38",
     "42I69",
+    "42I74",
+    "42I75",
     "42N25",
     "42N71",
     "22N27",

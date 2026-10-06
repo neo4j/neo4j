@@ -74,6 +74,19 @@ object Ands {
 }
 
 /**
+ * Matches `And` and `Ands`, extracting their direct conjuncts. Lets callers that need to descend through either
+ * conjunction form do so via a single pattern.
+ */
+object Conjunction {
+
+  def unapplySeq(expression: Expression): Option[Seq[Expression]] = expression match {
+    case And(lhs, rhs) => Some(Seq(lhs, rhs))
+    case Ands(exprs)   => Some(exprs.toSeq)
+    case _             => None
+  }
+}
+
+/**
  * Conjunction of multiple expressions.
  */
 case class Ands(exprs: ListSet[Expression])(val position: InputPosition) extends BooleanExpression

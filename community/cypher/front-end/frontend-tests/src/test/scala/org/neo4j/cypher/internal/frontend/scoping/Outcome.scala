@@ -270,6 +270,27 @@ case class E42I58(variable: String) extends GqlError {
     s"Entity, '$variable', cannot be created and referenced in the same clause."
 }
 
+case class E42I69(variable: String) extends GqlError {
+  override val num: String = "42I69"
+
+  override val msg: String =
+    s"`$variable` must reference a variable from the same MATCH statement."
+}
+
+case class E42I74(filterVariable: String, bindingVariable: String) extends GqlError {
+  override val num: String = "42I74"
+
+  override val msg: String =
+    s"The variable `$filterVariable` in a vector search filter property predicate must be the same as the search clause binding variable `$bindingVariable`."
+}
+
+case class E42I75(expression: String, bindingVariable: String) extends GqlError {
+  override val num: String = "42I75"
+
+  override val msg: String =
+    s"The expression '$expression' in the search clause may not depend on the search clause binding variable `$bindingVariable`."
+}
+
 case class E42I77(name: String) extends GqlError {
   override val num: String = "42I77"
 

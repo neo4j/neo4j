@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.expressions.And
-import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Conjunction
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
@@ -241,17 +240,16 @@ case class Search(
     LazyVal(CheckedVectorFilterExpression(SemanticCheck.success, Seq.empty))
 
   private def checkedVectorFilterExpression(
-    variable: LogicalVariable,
     rhs: Expression,
     filterExpression: VectorFilterExpression
   ): CheckedVectorFilterExpression = {
     filterExpression match {
       case InSet(_, _) => CheckedVectorFilterExpression(
-          checkWhereVariable(variable) chain expectType(CTList(CTAny).covariant, rhs),
+          expectType(CTList(CTAny).covariant, rhs),
           Seq(filterExpression)
         )
       case _ => CheckedVectorFilterExpression(
-          checkWhereVariable(variable) chain checkRhs(rhs),
+          checkRhs(rhs),
           Seq(filterExpression)
         )
     }
@@ -262,18 +260,12 @@ case class Search(
 
   private def asFilterExpressions(expression: Expression): CheckedVectorFilterExpression =
     expression match {
-      case VectorFilterExpression(variable: LogicalVariable, rhs: Expression, operator: VectorFilterExpression) =>
-        checkedVectorFilterExpression(variable, rhs, operator)
-      case And(lhs, rhs) => asFilterExpressions(lhs) ++ asFilterExpressions(rhs)
-      case Ands(exprs) =>
-        exprs.map(asFilterExpressions).foldLeft(emptyCheckedVectorFilterExpression.value)(_ ++ _)
+      case VectorFilterExpression(_: LogicalVariable, rhs: Expression, operator: VectorFilterExpression) =>
+        checkedVectorFilterExpression(rhs, operator)
+      case Conjunction(conjuncts*) =>
+        conjuncts.map(asFilterExpressions).foldLeft(emptyCheckedVectorFilterExpression.value)(_ ++ _)
       case expr =>
         checkedVectorFilterExpression(SemanticError.singleStageWithInvalidPredicate(expr, expr.position))
-    }
-
-  private def checkWhereVariable(variable: LogicalVariable): SemanticCheck =
-    when(!bindingVariable.equals(variable)) {
-      SemanticError.singleStageWithInvalidVariable(variable.name, bindingVariable.name, variable.position)
     }
 
   private def checkRhs(rhs: Expression): SemanticCheck =
@@ -313,9 +305,6 @@ case class Search(
       val selectors = patternParts.collect(p => p.selector).filterNot(s => s.isInstanceOf[AllPaths])
 
       ifOkChainAll(
-        when(!patternVariables.contains(bindingVariable)) {
-          SemanticError.searchWithVariableFromOutsideMatch(bindingVariable)
-        },
         checkWhenComplexPatternNotAllowed {
           if (patternParts.size > 1) {
             SemanticError.searchWithTooComplexMatch(patternParts(1).position)
