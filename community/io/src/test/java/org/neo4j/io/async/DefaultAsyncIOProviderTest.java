@@ -48,4 +48,15 @@ class DefaultAsyncIOProviderTest {
                         1, 2, new long[] {3}, new int[] {4}, 1, new long[] {1}, new long[] {2}, 1))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void describesADeclinedProviderWithEveryCause() {
+        var failure = new NoClassDefFoundError("Could not initialize class Ring");
+        failure.initCause(new ExceptionInInitializerError(new IllegalArgumentException("Cannot open library")));
+
+        assertThat(AsyncIOProvider.AsyncIOProviderHolder.describeFailure(new AbsentAsyncIOProvider(), failure))
+                .startsWith(AbsentAsyncIOProvider.class.getName())
+                .contains("Could not initialize class Ring")
+                .contains("Cannot open library");
+    }
 }

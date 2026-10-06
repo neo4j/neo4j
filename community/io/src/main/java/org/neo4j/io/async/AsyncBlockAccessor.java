@@ -48,6 +48,10 @@ public interface AsyncBlockAccessor extends AutoCloseable {
 
     void completeSubmitted();
 
+    default void completeAvailable() {
+        completeSubmitted();
+    }
+
     AsyncVectorIOData asyncVectorIOData(long key);
 
     @Override

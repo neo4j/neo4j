@@ -249,6 +249,9 @@ public enum SystemDiagnostics implements DiagnosticsProvider {
             logger.log("Native access details: " + nativeAccess.describe());
             logger.log(
                     "Native async IO provider: " + AsyncIOProvider.getInstance().describe());
+            for (String declined : AsyncIOProvider.declinedProviders()) {
+                logger.log("Declined native async IO provider: " + declined);
+            }
         }
     };
 

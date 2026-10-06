@@ -48,7 +48,12 @@ public interface AsyncIOProvider extends PrioritizedService {
         return AsyncIOProviderHolder.ASYNC_IO_PROVIDER;
     }
 
+    static List<String> declinedProviders() {
+        return AsyncIOProviderHolder.DECLINED_PROVIDERS;
+    }
+
     final class AsyncIOProviderHolder {
+        private static final List<String> DECLINED_PROVIDERS = new ArrayList<>();
         private static final AsyncIOProvider ASYNC_IO_PROVIDER = loadProvider();
 
         private static AsyncIOProvider loadProvider() {
@@ -62,6 +67,7 @@ public interface AsyncIOProvider extends PrioritizedService {
                     createTestAccessor(provider);
                     return provider;
                 } catch (Throwable t) {
+                    DECLINED_PROVIDERS.add(describeFailure(provider, t));
                     if (PRINT_SERVICE_LOADER_STACK_TRACES) {
                         t.printStackTrace();
                     }
@@ -69,6 +75,16 @@ public interface AsyncIOProvider extends PrioritizedService {
             }
             throw new IllegalStateException(
                     new IllegalStateException("Failed to load instance of " + AsyncIOProvider.class));
+        }
+
+        static String describeFailure(AsyncIOProvider provider, Throwable failure) {
+            StringBuilder description = new StringBuilder(provider.getClass().getName())
+                    .append(": ")
+                    .append(failure);
+            for (Throwable cause = failure.getCause(); cause != null; cause = cause.getCause()) {
+                description.append(" caused by ").append(cause);
+            }
+            return description.toString();
         }
 
         private static void createTestAccessor(AsyncIOProvider provider) {
