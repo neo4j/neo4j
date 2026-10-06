@@ -3121,6 +3121,80 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable shouldEqual initialTable
   }
 
+  test("should not use unavailable symbols from RHS of SemiApply in PropertiesUsingCachedProperties") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("props")
+      .projection("properties(n) AS props")
+      .semiApply()
+      .|.filter("alias.prop > 123", "alias.prop < 321")
+      .|.projection("n AS alias")
+      .|.argument("n")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+    newPlan shouldEqual new LogicalPlanBuilder()
+      .produceResults("props")
+      .projection("properties(n) AS props")
+      .semiApply()
+      .|.filterExpression(
+        greaterThan(cachedNodeProp("n", "prop", "alias", knownToAccessStore = true), literal(123)),
+        lessThan(cachedNodeProp("n", "prop", "alias", knownToAccessStore = true), literal(321))
+      )
+      .|.projection("n AS alias")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should not use unavailable symbols from RHS of RollUpApply in PropertiesUsingCachedProperties") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("props", "coll")
+      .projection("properties(n) AS props")
+      .rollUpApply("coll", "alias")
+      .|.filter("alias.prop > 123", "alias.prop < 321")
+      .|.projection("n AS alias")
+      .|.argument("n")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("props", "coll")
+      .projection("properties(n) AS props")
+      .rollUpApply("coll", "alias")
+      .|.filterExpression(
+        greaterThan(cachedNodeProp("n", "prop", "alias", knownToAccessStore = true), literal(123)),
+        lessThan(cachedNodeProp("n", "prop", "alias", knownToAccessStore = true), literal(321))
+      )
+      .|.projection("n AS alias")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+  }
+
+  // documents current behaviour, can be improved
+  test(
+    "does not use PropertiesUsingCachedProperties in aggregating function with a symbol unavailable post-aggregation"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("props")
+      .aggregation(Seq(), Seq("collect(properties(n)) AS props"))
+      .filter("alias.prop > 123", "alias.prop < 321")
+      .projection("n AS alias")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("props")
+      .aggregation(Seq(), Seq("collect(properties(n)) AS props")) // could access cached `alias` properties here
+      .filterExpression(
+        greaterThan(cachedNodeProp("n", "prop", "alias", knownToAccessStore = true), literal(123)),
+        lessThan(cachedNodeProp("n", "prop", "alias", knownToAccessStore = true), literal(321))
+      )
+      .projection("n AS alias")
+      .allNodeScan("n")
+      .build()
+  }
+
   private def replace(
     plan: LogicalPlan,
     initialTable: SemanticTable,

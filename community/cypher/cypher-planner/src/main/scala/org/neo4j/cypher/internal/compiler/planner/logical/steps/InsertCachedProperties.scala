@@ -111,6 +111,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
@@ -195,7 +196,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       logicalPlan,
       propertyUsagesAndRenamings,
       from.semanticTable(),
-      context.config.cachePropertiesForEntities()
+      context.config.cachePropertiesForEntities(),
+      context.cancellationChecker
     )
 
     from
@@ -363,19 +365,28 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
     logicalPlan: LogicalPlan,
     acc: PropertyUsagesAndRenamings,
     semanticTable: SemanticTable,
-    cachePropertiesForEntities: Boolean
+    cachePropertiesForEntities: Boolean,
+    cancellationChecker: CancellationChecker
   ): (LogicalPlan, SemanticTable) = {
     var currentTypes = semanticTable.types
     val cachedPropertiesTracker = new CachedPropertiesTracker
+
+    val availableSymbolsForPropertiesFunction: Map[Ref[Expression], Set[LogicalVariable]] =
+      collectAvailableSymbolsForPropertiesFunction(logicalPlan, cachePropertiesForEntities, cancellationChecker)
+
     val rewriter = bottomUp(Rewriter.lift {
 
       case produceResult: ProduceResult if cachePropertiesForEntities =>
-        cachedPropertiesTracker.clearUnavailableSymbols(produceResult.availableSymbols)
+        val symbols = produceResult.availableSymbols
+        cachedPropertiesTracker.clearUnavailableSymbols(symbols)
         val newColumns =
           produceResult
             .returnColumns
             .map(column =>
-              cachedPropertiesTracker.get(acc.variableWithOriginalName(asVariable(column.variable))).fold(column) {
+              cachedPropertiesTracker.get(
+                acc.variableWithOriginalName(asVariable(column.variable)),
+                symbols
+              ).fold(column) {
                 cached: Set[ASTCachedProperty] =>
                   column.copy(cachedProperties = cached.collect {
                     case cp: CachedProperty => cp.copy(failOnMissingEntity = false)(cp.position)
@@ -389,7 +400,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
         aggregating
 
       case properties @ Properties(variable: LogicalVariable) if cachePropertiesForEntities =>
-        cachedPropertiesTracker.get(acc.variableWithOriginalName(asVariable(variable))) match {
+        cachedPropertiesTracker.get(
+          acc.variableWithOriginalName(asVariable(variable)),
+          availableSymbolsForPropertiesFunction.getOrElse(Ref(properties), Set.empty)
+        ) match {
           case Some(cached) => PropertiesUsingCachedProperties(variable, cached)
           case None         => properties
         }
@@ -482,6 +496,35 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
   private def isRel(semanticTable: SemanticTable, variable: Variable) =
     semanticTable.typeFor(variable.name).is(CTRelationship)
+
+  private def collectAvailableSymbolsForPropertiesFunction(
+    rootPlan: LogicalPlan,
+    cachePropertiesForEntities: Boolean,
+    cancellationChecker: CancellationChecker
+  ): Map[Ref[Expression], Set[LogicalVariable]] = {
+    if (!cachePropertiesForEntities) {
+      Map.empty
+    } else {
+      case class Acc(currentPlan: LogicalPlan, symbolsMap: Map[Ref[Expression], Set[LogicalVariable]])
+      val initialAcc = Acc(currentPlan = rootPlan, symbolsMap = Map.empty)
+      val resultAcc = rootPlan.folder(cancellationChecker).treeFold(initialAcc) {
+        case plan: LogicalPlan =>
+          acc =>
+            TraverseChildrenNewAccForSiblings(
+              accumulatorForChildren = acc.copy(currentPlan = plan),
+              forSiblings = _.copy(currentPlan = acc.currentPlan) // restore parent plan
+            )
+        case properties @ Properties(variable: LogicalVariable) =>
+          acc =>
+            // This should calculate "incoming" available symbols, but we don't have that currently.
+            // May miss some opportunities to use cached properties for plans that de-list available symbols.
+            // Using `ValidateAvailableSymbols.availableVariables` might be too permissive, so keeping it more conservative here for correctness.
+            val symbols = acc.currentPlan.availableSymbols
+            TraverseChildren(acc.copy(symbolsMap = acc.symbolsMap.updated(Ref(properties), symbols)))
+      }
+      resultAcc.symbolsMap
+    }
+  }
 }
 
 case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCondition
@@ -877,6 +920,15 @@ object RestrictedCaching {
       newProperties.foreach(np => addOne(variable, np))
     }
 
-    def get(variable: LogicalVariable): Option[Set[ASTCachedProperty]] = cachedProperties.get(variable)
+    def get(variable: LogicalVariable, availableSymbols: Set[LogicalVariable]): Option[Set[ASTCachedProperty]] = {
+      cachedProperties
+        .get(variable)
+        .filter(_ => availableSymbols.contains(variable))
+        .map { props =>
+          val availableSymbolNames = availableSymbols.map(_.name)
+          props.filter(prop => availableSymbolNames.contains(prop.entityName))
+        }
+        .filter(_.nonEmpty)
+    }
   }
 }
