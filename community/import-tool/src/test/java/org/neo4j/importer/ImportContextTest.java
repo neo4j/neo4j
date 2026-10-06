@@ -1099,7 +1099,7 @@ class ImportContextTest {
     }
 
     @Test
-    void detailedProgressReportSkidbladnirIncludesAllFieldsInJson() {
+    void detailedProgressReportResumableIncludesAllFieldsInJson() {
         try (var importContext = getImportContext()) {
             var reportBase = new DetailedProgressReportBase(42, 69, true);
             reportBase.registerNodeStats(ApplicationMode.CREATE, IntSets.immutable.of(1, 2));
@@ -1112,7 +1112,7 @@ class ImportContextTest {
             reportBase.storeApplyingTimer().end();
             reportBase.schemaTimer().start();
             reportBase.schemaTimer().end();
-            importContext.detailedProgressReport(reportBase.skidbladnirSnapshot());
+            importContext.detailedProgressReport(reportBase.resumableSnapshot());
 
             assertThat(importsDir)
                     .exists()

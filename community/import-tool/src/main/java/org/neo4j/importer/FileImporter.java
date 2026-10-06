@@ -264,7 +264,7 @@ public class FileImporter {
      * When {@link ImportCommand.Full#forceOverwriteDestinationForResume} is removed, the changes that came
      * along with this comment need to be reverted.
      */
-    public void doImport(ImportCommand.Base type, boolean skidbladnir, boolean resume) throws IOException {
+    public void doImport(ImportCommand.Base type, boolean resumable, boolean resume) throws IOException {
         if (force) {
             Predicate<Path> preserved = resume ? preservedByResume() : path -> false;
             fileSystem.deleteRecursively(
@@ -275,7 +275,7 @@ public class FileImporter {
 
         try (var badCollector = getBadCollector();
                 var input = importInput()) {
-            doImport(input, badCollector, type, skidbladnir, resume);
+            doImport(input, badCollector, type, resumable, resume);
         }
     }
 
@@ -372,7 +372,7 @@ public class FileImporter {
     }
 
     private void doImport(
-            Input input, Collector badCollector, ImportCommand.Base type, boolean skidbladnir, boolean resume) {
+            Input input, Collector badCollector, ImportCommand.Base type, boolean resumable, boolean resume) {
         boolean success = false;
 
         printOverview(false);
@@ -393,9 +393,9 @@ public class FileImporter {
                     pageCacheTracer,
                     contextFactory);
             InternalLog log = logProvider.getLog(getClass());
-            if (skidbladnir) {
+            if (resumable) {
                 log.info("This import is running the current version.");
-                type.doSkidbladnirImport(
+                type.doResumableImport(
                         fileSystem,
                         databaseLayout,
                         force,

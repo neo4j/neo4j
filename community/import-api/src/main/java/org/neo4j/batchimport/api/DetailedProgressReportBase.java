@@ -59,7 +59,7 @@ public class DetailedProgressReportBase implements ResumableState {
     // Standard timers
     private final Timer nodeTimer = new Timer();
     private final Timer relationshipTimer = new Timer();
-    // Skidbladnir timers
+    // Resumable timers
     private final Timer nodeIdMappingTimer = new Timer();
     private final Timer relationshipRangeDivisionTimer = new Timer();
     private final Timer storeApplyingTimer = new Timer();
@@ -198,8 +198,8 @@ public class DetailedProgressReportBase implements ResumableState {
                 schemaTimer.snapshot());
     }
 
-    public DetailedProgressReport.Skidbladnir skidbladnirSnapshot() {
-        return new DetailedProgressReport.Skidbladnir(
+    public DetailedProgressReport.Resumable resumableSnapshot() {
+        return new DetailedProgressReport.Resumable(
                 estimatedTotalNumberOfNodes,
                 estimatedTotalNumberOfRelationships,
                 nodeStats.snapshot(),

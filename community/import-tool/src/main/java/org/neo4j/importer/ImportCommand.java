@@ -215,14 +215,14 @@ public class ImportCommand {
         private boolean dryRun;
 
         @Option(
-                names = "--skidbladnir",
+                names = "--legacy",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
                 fallbackValue = "true",
                 description = "Zzzing",
                 hidden = true)
-        private boolean skidbladnir;
+        private boolean legacy = true;
 
         @Option(
                 names = RESUME_OPTION,
@@ -748,7 +748,7 @@ public class ImportCommand {
                     } else {
                         try (var ignore = maybeLockChecker().maybeCheckLock(databaseLayout)) {
                             preImport(importContext, importer);
-                            importer.doImport(this, skidbladnir, resume);
+                            importer.doImport(this, isResumable(), resume);
                             postImport(fileSystem, databaseConfig, importContext, databaseLayout);
                             importContext.markSuccessful();
                         }
@@ -769,8 +769,8 @@ public class ImportCommand {
             verifyInputFilesStillMatch(importContext, inputFiles);
             importContext.preamble(ctx.out());
             importContext.persistCliArgs();
-            if (skidbladnir) {
-                // only a skidbladnir import can be resumed, and only a resume has any use for the configuration
+            if (isResumable()) {
+                // only a resumable import can be resumed, and only a resume has any use for the configuration
                 importContext.persistConfig();
 
                 importContext.persistInputFilesHash(inputFiles);
@@ -898,16 +898,17 @@ public class ImportCommand {
         }
 
         /**
-         * Refuses an attempt that cannot be continued: '--skidbladnir' is currently the only importer that produces
-         * resumable state, and an attempt that completed has nothing left to resume - rerunning it would overwrite
+         * Refuses an attempt that cannot be continued: the resumable importer ('--legacy=false') is currently the
+         * only importer that produces resumable state, and an attempt that completed has nothing left to resume -
+         * rerunning it would overwrite
          * the database it produced. Reads what the attempt asked for off the fields {@link #adoptInvocationOf(Path)}
          * resolved its arguments into, rather than interpreting those arguments a second time here.
          */
         private void verifyPreviousAttemptIsResumable(Path contextDir) {
-            if (!isSkidbladnir()) {
+            if (!isResumable()) {
                 throw new CommandFailedException(
                         "ERROR: '--resume' is only supported when the import attempt being resumed used "
-                                + "'--skidbladnir'.");
+                                + "'--legacy=false'.");
             }
             if (ImportContext.wasSuccessful(ctx.fs(), contextDir)) {
                 throw new CommandFailedException(
@@ -964,8 +965,8 @@ public class ImportCommand {
             return dryRun;
         }
 
-        protected boolean isSkidbladnir() {
-            return skidbladnir;
+        protected boolean isResumable() {
+            return !legacy;
         }
 
         MultilineFieldOptions multilineFieldOptions() {
@@ -1017,35 +1018,35 @@ public class ImportCommand {
                         .formatted(highIo.name().toLowerCase(Locale.ROOT), resolvedDbFormat));
             }
             CommandLine.ParseResult parseResult = spec.commandLine().getParseResult();
-            if (isSkidbladnir()) {
+            if (isResumable()) {
                 if (autoSkipHeaders) {
                     throw new ParameterException(
                             spec.commandLine(),
-                            "ERROR: Skidbladnir import is not supported with '--auto-skip-subsequent-headers'");
+                            "ERROR: Resumable import is not supported with '--auto-skip-subsequent-headers'");
                 }
                 if (allowMultibyteDelimiter) {
                     throw new ParameterException(
                             spec.commandLine(),
-                            "ERROR: Skidbladnir import is not supported with multibyte delimiters "
+                            "ERROR: Resumable import is not supported with multibyte delimiters "
                                     + "(--accept-multibyte-delimiter)");
                 }
                 if (String.valueOf(quote).getBytes(StandardCharsets.UTF_8).length > 1) {
                     throw new ParameterException(
                             spec.commandLine(),
-                            "ERROR: Skidbladnir import is not supported with multibyte quote characters");
+                            "ERROR: Resumable import is not supported with multibyte quote characters");
                 }
                 if (defaultIdType == IdType.ACTUAL) {
                     throw new CommandFailedException(
-                            "ERROR: Skidbladnir import is not supported with '--id-type=actual'.");
+                            "ERROR: Resumable import is not supported with '--id-type=actual'.");
                 }
                 if (!BLOCK_FORMATS.contains(resolvedDbFormat)) {
                     throw new CommandFailedException(
-                            "ERROR: Skidbladnir import is only supported for the 'block' format, but '%s' was specified."
+                            "ERROR: Resumable import is only supported for the 'block' format, but '%s' was specified."
                                     .formatted(resolvedDbFormat));
                 }
                 if (!parseResult.hasMatchedOption("--read-buffer-size")) {
-                    // Default is different for Skidbladnir
-                    bufferSize = org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR;
+                    // Default is different for Resumable
+                    bufferSize = org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_RESUMABLE;
                 }
                 rejectCompressedInput(fs);
             }
@@ -1067,7 +1068,7 @@ public class ImportCommand {
                 Magic magic = detectCompression(fs, path);
                 if (magic == Magic.ZIP || magic == Magic.GZIP) {
                     throw new CommandFailedException(
-                            "ERROR: Skidbladnir import is not supported for compressed (ZIP/GZIP) input, but '%s' is %s-compressed."
+                            "ERROR: Resumable import is not supported for compressed (ZIP/GZIP) input, but '%s' is %s-compressed."
                                     .formatted(path, magic == Magic.ZIP ? "ZIP" : "GZIP"));
                 }
             }
@@ -1092,9 +1093,9 @@ public class ImportCommand {
         }
 
         protected void validateInputType(FileInputType inputType) {
-            if (isSkidbladnir() && inputType != FileInputType.CSV) {
+            if (isResumable() && inputType != FileInputType.CSV) {
                 throw new ParameterException(
-                        spec.commandLine(), "ERROR: Skidbladnir import is only supported for CSV input type");
+                        spec.commandLine(), "ERROR: Resumable import is only supported for CSV input type");
             }
         }
 
@@ -1165,7 +1166,7 @@ public class ImportCommand {
                 Monitor monitor)
                 throws IOException;
 
-        protected abstract void doSkidbladnirImport(
+        protected abstract void doResumableImport(
                 FileSystemAbstraction fileSystem,
                 DatabaseLayout databaseLayout,
                 boolean force,
@@ -1330,7 +1331,7 @@ public class ImportCommand {
                     .withLegacyStyleQuoting(legacyStyleQuoting)
                     .withBufferSize(toIntExact(bufferSize));
 
-            if (isSkidbladnir()) {
+            if (isResumable()) {
                 // We use the legacy multiline behaviour only for the nodes (and there the old parser is only used
                 // for validateAndEstimate). The relationships use the old parser, and use the user provided values for
                 // --multiline-fields and --multiline-fields-format.
@@ -1406,7 +1407,7 @@ public class ImportCommand {
 
                 @Override
                 public int intermediaryBufferSize() {
-                    if (skidbladnir) {
+                    if (isResumable()) {
                         return (int) ByteUnit.mebiBytes(1);
                     }
                     return super.intermediaryBufferSize();
@@ -1588,7 +1589,7 @@ public class ImportCommand {
         }
 
         @Override
-        protected void doSkidbladnirImport(
+        protected void doResumableImport(
                 FileSystemAbstraction fileSystem,
                 DatabaseLayout databaseLayout,
                 boolean force,
@@ -1640,7 +1641,7 @@ public class ImportCommand {
                             DatabaseCreationOptions.EMPTY_CREATION_OPTIONS,
                             HardwareValidation.WARNING)
                     // resume is not yet supported by the batch importer itself
-                    .doSkidbladnirImport(input, encoding, nodeFileGroupsByAdditionalLabels, resumableStateAccessor);
+                    .doResumableImport(input, encoding, nodeFileGroupsByAdditionalLabels, resumableStateAccessor);
         }
 
         @Override

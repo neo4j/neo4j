@@ -76,7 +76,7 @@ public interface DetailedProgressReport {
             Duration schemaImportDuration)
             implements DetailedProgressReport {}
 
-    record Skidbladnir(
+    record Resumable(
             long estimatedTotalNumberOfNodes,
             long estimatedTotalNumberOfRelationships,
             Stats nodeStats,

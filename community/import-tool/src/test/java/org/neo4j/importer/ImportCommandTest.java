@@ -68,7 +68,7 @@ class ImportCommandTest {
     @Test
     void readBufferSizeDefaultShouldBeSet() {
         // We want "--help" to print the default value that is applied when we don't use
-        // "--skidbladnir".
+        // "--legacy=false".
         final var command = new ImportCommand.Full(getExecutionContext());
         final var help = getUsageHelp(command);
         Object readBufferSizeDefault =
@@ -240,11 +240,11 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldAcceptSkidbladnirWithoutMultilineFieldsAndUseLegacyForNodesButNotForRelationships() {
+    void shouldAcceptResumableWithoutMultilineFieldsAndUseLegacyForNodesButNotForRelationships() {
         var nodes = testDir.createFile("nodes.csv");
         var command = new ImportCommand.Full(getExecutionContext());
 
-        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--legacy=false");
 
         var csvConfig = command.csvConfiguration(new SchemeFileSystemAbstraction(testDir.getFileSystem()));
         // and multiline-fields should be true for nodes, but not for relationships
@@ -253,11 +253,11 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldAcceptSkidbladnirWithMultilineFieldsFalseAndUseLegacyForNodesButNotForRelationships() {
+    void shouldAcceptResumableWithMultilineFieldsFalseAndUseLegacyForNodesButNotForRelationships() {
         var nodes = testDir.createFile("nodes.csv");
         var command = new ImportCommand.Full(getExecutionContext());
 
-        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir", "--multiline-fields=false");
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--legacy=false", "--multiline-fields=false");
 
         var csvConfig = command.csvConfiguration(new SchemeFileSystemAbstraction(testDir.getFileSystem()));
         // and multiline-fields should be true for nodes, but not for relationships
@@ -266,11 +266,11 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldAcceptSkidbladnirWithMultilineFieldsTrueAndUseLegacyForNodesAndForRelationships() {
+    void shouldAcceptResumableWithMultilineFieldsTrueAndUseLegacyForNodesAndForRelationships() {
         var nodes = testDir.createFile("nodes.csv");
         var command = new ImportCommand.Full(getExecutionContext());
 
-        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir", "--multiline-fields=true");
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--legacy=false", "--multiline-fields=true");
 
         var csvConfig = command.csvConfiguration(new SchemeFileSystemAbstraction(testDir.getFileSystem()));
         // and multiline-fields should be true for nodes and relationships
@@ -279,7 +279,7 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldAcceptSkidbladnirWithMultilineFieldsFormatV2AndUseLegacyForNodesAndV2ForRelationships() {
+    void shouldAcceptResumableWithMultilineFieldsFormatV2AndUseLegacyForNodesAndV2ForRelationships() {
         var nodes = testDir.createFile("nodes.csv");
         var rels1 = testDir.createFile("rels1.csv");
         var rels2 = testDir.createFile("rels2.csv");
@@ -290,7 +290,7 @@ class ImportCommandTest {
                 "--nodes=" + nodes,
                 "--relationships=" + rels1,
                 "--relationships=" + rels2,
-                "--skidbladnir",
+                "--legacy=false",
                 "--multiline-fields-format=v2",
                 "--multiline-fields=" + rels1);
 
@@ -304,11 +304,11 @@ class ImportCommandTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"block", "multiversion_block"})
-    void shouldAcceptSkidbladnirForBlockFormats(String dbFormat) {
+    void shouldAcceptResumableForBlockFormats(String dbFormat) {
         var nodes = testDir.createFile("nodes.csv");
         var command = new ImportCommand.Full(getExecutionContext());
 
-        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--legacy=false");
 
         // then - should not throw
         command.importConfigurationValidation(
@@ -317,16 +317,16 @@ class ImportCommandTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"aligned", "standard", "high_limit"})
-    void shouldRejectSkidbladnirForNonBlockFormats(String dbFormat) {
+    void shouldRejectResumableForNonBlockFormats(String dbFormat) {
         var nodes = testDir.createFile("nodes.csv");
         var command = new ImportCommand.Full(getExecutionContext());
 
-        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--legacy=false");
 
         assertThatThrownBy(() -> command.importConfigurationValidation(
                         new SchemeFileSystemAbstraction(testDir.getFileSystem()), dbFormat, Config.defaults()))
                 .isInstanceOf(CommandFailedException.class)
-                .hasMessageContaining("Skidbladnir import is only supported for the 'block' format, "
+                .hasMessageContaining("Resumable import is only supported for the 'block' format, "
                         + "but '%s' was specified.".formatted(dbFormat));
     }
 
@@ -346,18 +346,18 @@ class ImportCommandTest {
     }
 
     @Test
-    void bufferSizeDefaultIsOverwrittenForSkidbladnir() {
+    void bufferSizeDefaultIsOverwrittenForResumable() {
         var nodes = testDir.createFile("nodes.csv");
         var command = new ImportCommand.Full(getExecutionContext());
 
-        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--legacy=false");
 
         // when
         command.importConfigurationValidation(
                 new SchemeFileSystemAbstraction(testDir.getFileSystem()), "block", Config.defaults());
         // then
         assertThat(command.bufferSize())
-                .isEqualTo(org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR);
+                .isEqualTo(org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_RESUMABLE);
     }
 
     @Test
@@ -372,7 +372,7 @@ class ImportCommandTest {
     }
 
     @Test
-    void resumeFailsWhenPreviousImportAttemptDidNotUseSkidbladnir() throws IOException {
+    void resumeFailsWhenPreviousImportAttemptDidNotUseResumable() throws IOException {
         ExecutionContext ctx = homedExecutionContext();
         ImportCommand.Full command = new ImportCommand.Full(ctx);
         writePreviousAttemptCliArgs(command.loadNeo4jConfig("block"), "--nodes=old.csv");
@@ -381,21 +381,21 @@ class ImportCommandTest {
         assertThatThrownBy(command::rerunFromPreviousAttempt)
                 .isInstanceOf(CommandFailedException.class)
                 .hasMessageContaining("'--resume' is only supported")
-                .hasMessageContaining("--skidbladnir");
+                .hasMessageContaining("--legacy=false");
     }
 
     @Test
-    void resumeRerunsPreviousSkidbladnirAttemptVerbatim() throws IOException {
+    void resumeRerunsPreviousResumableAttemptVerbatim() throws IOException {
         ExecutionContext ctx = homedExecutionContext();
         ImportCommand.Full command = new ImportCommand.Full(ctx);
         writePreviousAttemptCliArgs(
-                command.loadNeo4jConfig("block"), "--nodes=old.csv", "--skidbladnir", "--overwrite-destination");
+                command.loadNeo4jConfig("block"), "--nodes=old.csv", "--legacy=false", "--overwrite-destination");
         CommandLine.populateCommand(command, "--resume");
 
         command.rerunFromPreviousAttempt();
 
         assertThat(command.overwriteDestination).isTrue();
-        assertThat(command.isSkidbladnir()).isTrue();
+        assertThat(command.isResumable()).isTrue();
     }
 
     @Test
@@ -403,7 +403,7 @@ class ImportCommandTest {
         ExecutionContext ctx = homedExecutionContext();
         ImportCommand.Full command = new ImportCommand.Full(ctx);
         Path contextDir = writePreviousAttemptCliArgs(
-                command.loadNeo4jConfig("block"), "--nodes=old.csv", "--skidbladnir", "--overwrite-destination");
+                command.loadNeo4jConfig("block"), "--nodes=old.csv", "--legacy=false", "--overwrite-destination");
         Files.writeString(contextDir.resolve(ImportContext.SUCCESS_FILE_NAME), "");
         CommandLine.populateCommand(command, "--resume");
 
@@ -430,7 +430,7 @@ class ImportCommandTest {
         ExecutionContext ctx = homedExecutionContext();
         ImportCommand.Full command = new ImportCommand.Full(ctx);
         Path nodes = testDir.createFile("nodes.csv");
-        writePreviousAttemptCliArgs(command.loadNeo4jConfig("block"), "--nodes=old.csv", "--skidbladnir");
+        writePreviousAttemptCliArgs(command.loadNeo4jConfig("block"), "--nodes=old.csv", "--legacy=false");
         CommandLine.populateCommand(command, "--nodes=" + nodes, "--verbose", "--resume");
 
         assertThatThrownBy(command::rerunFromPreviousAttempt)
@@ -448,7 +448,7 @@ class ImportCommandTest {
         writePreviousAttemptCliArgs(
                 command.loadNeo4jConfig("block"),
                 "--nodes=old.csv",
-                "--skidbladnir",
+                "--legacy=false",
                 "--skip-duplicate-nodes=false",
                 "--skip-bad-relationships");
         CommandLine.populateCommand(command, "--skip-duplicate-nodes", "--skip-bad-relationships=false", "--resume");
@@ -464,7 +464,7 @@ class ImportCommandTest {
         ExecutionContext ctx = homedExecutionContext();
         ImportCommand.Full command = new ImportCommand.Full(ctx);
         writePreviousAttemptCliArgs(
-                command.loadNeo4jConfig("block"), "--nodes=old.csv", "--skidbladnir", "--skip-duplicate-nodes");
+                command.loadNeo4jConfig("block"), "--nodes=old.csv", "--legacy=false", "--skip-duplicate-nodes");
         CommandLine.populateCommand(command, "--resume");
 
         command.rerunFromPreviousAttempt();
@@ -490,7 +490,7 @@ class ImportCommandTest {
         ExecutionContext ctx = homedExecutionContext();
         ImportCommand.Full command = new ImportCommand.Full(ctx);
         Path nodes = testDir.createFile("nodes.csv");
-        CommandLine.populateCommand(command, "--nodes=" + nodes, "--skidbladnir");
+        CommandLine.populateCommand(command, "--nodes=" + nodes, "--legacy=false");
 
         // then - should not throw even though no previous import attempt exists, and not rerun anything
         command.rerunFromPreviousAttempt();
@@ -504,7 +504,7 @@ class ImportCommandTest {
         ImportCommand.Full command = new ImportCommand.Full(ctx);
         Config databaseConfig = command.loadNeo4jConfig("block");
         Path contextDir =
-                writePreviousAttemptCliArgs(databaseConfig, "--nodes=old.csv", "--skidbladnir", "--format=block");
+                writePreviousAttemptCliArgs(databaseConfig, "--nodes=old.csv", "--legacy=false", "--format=block");
         // the attempt ran with its data somewhere this run no longer looks, so its store and intermediary data are
         // not where a resume would continue them
         var asRecorded = ImportContext.configValuesStringMapping(databaseConfig);
@@ -529,7 +529,7 @@ class ImportCommandTest {
         ImportCommand.Full command = new ImportCommand.Full(ctx);
         Config databaseConfig = command.loadNeo4jConfig("block");
         Path contextDir =
-                writePreviousAttemptCliArgs(databaseConfig, "--nodes=old.csv", "--skidbladnir", "--format=block");
+                writePreviousAttemptCliArgs(databaseConfig, "--nodes=old.csv", "--legacy=false", "--format=block");
         Files.writeString(
                 contextDir.resolve(ImportContext.CONFIG_FILE_NAME),
                 ImportContext.asConfigFile(ImportContext.configValuesStringMapping(databaseConfig)));
@@ -537,7 +537,7 @@ class ImportCommandTest {
 
         command.rerunFromPreviousAttempt();
 
-        assertThat(command.isSkidbladnir()).isTrue();
+        assertThat(command.isResumable()).isTrue();
     }
 
     private Path writePreviousAttemptCliArgs(Config databaseConfig, String... cliArgs) throws IOException {

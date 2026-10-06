@@ -59,7 +59,7 @@ class DetailedProgressReportBaseTest {
         var resumed = reportBaseWithNoStats();
         resumed.resumeFromCheckpoint(checkpoint);
 
-        assertThat(resumed.skidbladnirSnapshot()).isEqualTo(original.skidbladnirSnapshot());
+        assertThat(resumed.resumableSnapshot()).isEqualTo(original.resumableSnapshot());
         assertThat(resumed.snapshot()).isEqualTo(original.snapshot());
     }
 
@@ -72,7 +72,7 @@ class DetailedProgressReportBaseTest {
         var resumed = reportBaseWithNoStats();
         resumed.resumeFromCheckpoint(checkpoint);
 
-        assertThat(resumed.skidbladnirSnapshot()).isEqualTo(original.skidbladnirSnapshot());
+        assertThat(resumed.resumableSnapshot()).isEqualTo(original.resumableSnapshot());
         assertThat(resumed.snapshot()).isEqualTo(original.snapshot());
     }
 
@@ -88,8 +88,8 @@ class DetailedProgressReportBaseTest {
         resumed.registerRelationshipStats(ApplicationMode.UPDATE, 7);
         resumed.registerIndexStats(ApplicationMode.CREATE, EntityType.NODE, IntSets.immutable.of(1));
 
-        DetailedProgressReport originalReport = original.skidbladnirSnapshot();
-        DetailedProgressReport resumedReport = resumed.skidbladnirSnapshot();
+        DetailedProgressReport originalReport = original.resumableSnapshot();
+        DetailedProgressReport resumedReport = resumed.resumableSnapshot();
         assertThat(resumedReport.nodeStats().created())
                 .isEqualTo(originalReport.nodeStats().created() + 1);
         assertThat(resumedReport.nodePerLabelStats().get("Label1").created())
@@ -106,7 +106,7 @@ class DetailedProgressReportBaseTest {
     void shouldKeepRestoredTimerDurationWhileTheTimerDoesNotRunAgain() {
         var original = populatedReportBase();
         ResumableStateData checkpoint = checkpointOf(original);
-        Duration originalDuration = original.skidbladnirSnapshot().relationshipRangeDivisionDuration();
+        Duration originalDuration = original.resumableSnapshot().relationshipRangeDivisionDuration();
 
         var resumed = new DetailedProgressReportBase(42, 69, true);
         resumed.resumeFromCheckpoint(checkpoint);
@@ -135,7 +135,7 @@ class DetailedProgressReportBaseTest {
         var resumed = new DetailedProgressReportBase(42, 69, true);
         resumed.resumeFromCheckpoint(new ResumableStateDataBuilder().build());
 
-        assertThat(resumed.skidbladnirSnapshot().nodeStats()).isEqualTo(new DetailedProgressReport.Stats(0, 0, 0, 0));
+        assertThat(resumed.resumableSnapshot().nodeStats()).isEqualTo(new DetailedProgressReport.Stats(0, 0, 0, 0));
     }
 
     @Test
@@ -143,8 +143,8 @@ class DetailedProgressReportBaseTest {
         var resumed = new DetailedProgressReportBase(42, 69, true);
         resumed.resumeFromStart();
 
-        assertThat(resumed.skidbladnirSnapshot().nodeStats()).isEqualTo(new DetailedProgressReport.Stats(0, 0, 0, 0));
-        assertThat(resumed.skidbladnirSnapshot().nodePerLabelStats()).isEmpty();
+        assertThat(resumed.resumableSnapshot().nodeStats()).isEqualTo(new DetailedProgressReport.Stats(0, 0, 0, 0));
+        assertThat(resumed.resumableSnapshot().nodePerLabelStats()).isEmpty();
     }
 
     @Test

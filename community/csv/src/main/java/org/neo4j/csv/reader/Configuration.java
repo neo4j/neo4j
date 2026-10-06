@@ -205,7 +205,7 @@ public class Configuration {
 
     public static class Builder {
         public static final int DEFAULT_BUFFER_SIZE = (int) mebiBytes(4);
-        public static final int DEFAULT_BUFFER_SIZE_IF_SKIDBLADNIR = (int) kibiBytes(64);
+        public static final int DEFAULT_BUFFER_SIZE_IF_RESUMABLE = (int) kibiBytes(64);
 
         private char quotationCharacter = '"';
         private char delimiter = ',';

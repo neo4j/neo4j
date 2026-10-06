@@ -28,7 +28,7 @@ import org.neo4j.batchimport.api.DetailedProgressReport;
 
 /**
  * The state of a {@link org.neo4j.batchimport.api.DetailedProgressReportBase} at the time of a checkpoint.
- * Per-token stats are keyed by token id, not name; thus not using {@link DetailedProgressReport.Skidbladnir}.
+ * Per-token stats are keyed by token id, not name; thus not using {@link DetailedProgressReport.Resumable}.
  * <p>
  * Part of {@link ResumableStateData}.
  */

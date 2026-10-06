@@ -90,7 +90,7 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable {
      */
     default Getter newGetter() {
         throw new UnsupportedOperationException(
-                "workerId agnostic idMapperGetters are only supported in SkidbladnirImporter");
+                "workerId agnostic idMapperGetters are only supported in ResumableImporter");
     }
 
     /**
