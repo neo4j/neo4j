@@ -20,10 +20,12 @@
 package org.neo4j.values.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Equality;
+import org.neo4j.values.SequenceValue;
 
 public class AnyValueTestUtil {
     public static void assertEqual(AnyValue a, AnyValue b) {
@@ -54,6 +56,15 @@ public class AnyValueTestUtil {
         assertEquals(Equality.UNDEFINED, a.ternaryEquals(b), a + " should not be equal to " + b);
         assertEquals(Equality.UNDEFINED, b.ternaryEquals(a), a + " should not be equal to " + b);
         assertEquals(a.hashCode(), b.hashCode(), a + ".hashCode() should be equivalent to " + b + ".hashCode()");
+    }
+
+    public static void assertEqualityForEmptySequenceValues(AnyValue a, AnyValue b) {
+        assertInstanceOf(SequenceValue.class, a);
+        assertInstanceOf(SequenceValue.class, b);
+        assertNotEquals(a, b, a + " should be equivalent to " + b);
+        assertNotEquals(b, a, a + " should be equivalent to " + b);
+        assertEquals(Equality.TRUE, a.ternaryEquals(b), a + " should be equal to " + b);
+        assertEquals(Equality.TRUE, b.ternaryEquals(a), a + " should be equal to " + b);
     }
 
     public static void assertNotEqual(AnyValue a, AnyValue b) {

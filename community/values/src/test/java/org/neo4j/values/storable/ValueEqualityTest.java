@@ -27,6 +27,7 @@ import static org.neo4j.values.storable.Values.int16Vector;
 import static org.neo4j.values.storable.Values.int32Vector;
 import static org.neo4j.values.storable.Values.int64Vector;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqualityForEmptySequenceValues;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
 import java.util.stream.Stream;
@@ -144,7 +145,13 @@ public class ValueEqualityTest {
                 of(shouldNotMatch(int32Vector(1), float32Vector(1.0f))),
                 of(shouldNotMatch(int32Vector(1), int64Vector(1))),
                 of(shouldNotMatch(int32Vector(1), int32Vector(1, 2))),
-                of(shouldMatch(int32Vector(1, 2), int32Vector(1, 2))));
+                of(shouldMatch(int32Vector(1, 2), int32Vector(1, 2))),
+                of(shouldNotMatchWhenBothAreEmpty(
+                        new DurationArray(new DurationValue[0]), new FloatArray(new float[0]))),
+                of(shouldNotMatchWhenBothAreEmpty(
+                        new DurationArray(new DurationValue[0]), new DoubleArray(new double[0]))),
+                of(shouldNotMatchWhenBothAreEmpty(
+                        new DurationArray(new DurationValue[0]), new PointArray(new PointValue[0]))));
     }
 
     @ParameterizedTest
@@ -237,15 +244,29 @@ public class ValueEqualityTest {
         return new Testcase(Values.stringArray(propertyValue), value, true);
     }
 
+    private static Testcase shouldNotMatchWhenBothAreEmpty(Value propertyValue, Value value) {
+        return new Testcase(propertyValue, value, false, true);
+    }
+
     private static class Testcase {
         final Value a;
         final Value b;
         final boolean shouldMatch;
+        final boolean emptyArrays;
 
         private Testcase(Value a, Object b, boolean shouldMatch) {
+            this(a, Values.of(b), shouldMatch);
+        }
+
+        private Testcase(Value a, Value b, boolean shouldMatch) {
+            this(a, b, shouldMatch, false);
+        }
+
+        private Testcase(Value a, Value b, boolean shouldMatch, boolean emptyArrays) {
             this.a = a;
-            this.b = Values.of(b);
+            this.b = b;
             this.shouldMatch = shouldMatch;
+            this.emptyArrays = emptyArrays;
         }
 
         @Override
@@ -256,6 +277,8 @@ public class ValueEqualityTest {
         void checkAssertion() {
             if (shouldMatch) {
                 assertEqual(a, b);
+            } else if (emptyArrays) {
+                assertEqualityForEmptySequenceValues(a, b);
             } else {
                 assertNotEqual(a, b);
             }
