@@ -70,6 +70,7 @@ import org.neo4j.wal.LogFileCreateEvent;
 import org.neo4j.wal.LogFileFlushEvent;
 import org.neo4j.wal.LogForceEvent;
 import org.neo4j.wal.LogForceWaitEvent;
+import org.neo4j.wal.LogPosition;
 import org.neo4j.wal.LogPositionMarker;
 import org.neo4j.wal.LogTracers;
 import org.neo4j.wal.StoreChannelNativeAccessor;
@@ -132,6 +133,10 @@ class EnvelopedLogFilesTest {
     }
 
     private void recreateEnvelopedLogFiles(KernelVersion kernelVersion, LogTracers logTracers) {
+        recreateEnvelopedLogFiles(kernelVersion, logTracers, totalSegments);
+    }
+
+    private void recreateEnvelopedLogFiles(KernelVersion kernelVersion, LogTracers logTracers, int segmentsPerFile) {
         var baseFileName = "raft.log";
         var baseFolder = testDirectory.directory("logsFolder");
         var filesHelper = new SequentialFileNameHelper(baseFolder, baseFileName);
@@ -146,7 +151,7 @@ class EnvelopedLogFilesTest {
                 logHeaderFactory,
                 segmentBlockSize,
                 writeBufferedBlocks,
-                totalSegments,
+                segmentsPerFile,
                 EmptyMemoryTracker.INSTANCE,
                 ThresholdFactory.PRUNE_ALL,
                 new StoreChannelNativeAccessor(
@@ -1631,6 +1636,80 @@ class EnvelopedLogFilesTest {
         } finally {
             IOUtils.closeAllSilently(storeChannels.storeChannels());
         }
+    }
+
+    @Test
+    void everyRangeShouldStartAndEndWhereIndependentSeeksPutItsEntries() throws IOException {
+        // Mixed sizes give multi-envelope entries, padded tails and entries spilling across files; 64 segments per
+        // file also give long ranges within a single file
+        recreateEnvelopedLogFiles(LatestVersions.LATEST_KERNEL_VERSION, LogTracers.NULL, 64);
+        envelopedLogFiles.initialise();
+        var writeChannel = envelopedLogFiles.getLogFile().currentWriteChannel();
+        int[] sizes = {3, 13, 307, 1111};
+        int entryCount = 120;
+        for (int i = 0; i < entryCount; i++) {
+            // Payloads unique per entry, so equal offsets in different files hold different bytes
+            var payload = new byte[sizes[i % sizes.length]];
+            Arrays.fill(payload, (byte) (i + 1));
+            writeData(writeChannel, payload);
+        }
+        writeChannel.prepareForFlush().flush();
+        var newestFirst = envelopedLogFiles.logFilesMetadata(true);
+        newestFirst.next();
+        assertThat(newestFirst.get().version()).isGreaterThanOrEqualTo(BASE_VERSION + 2);
+
+        var mismatches = new ArrayList<String>();
+        for (long from = 0; from < entryCount; from++) {
+            LogPosition expectedFrom;
+            try (var channel = envelopedLogFiles.openReadChannel(from)) {
+                long offset = channel.goToEntry(from);
+                expectedFrom = new LogPosition(channel.getLogVersion(), offset);
+            }
+            for (long to = from; to < entryCount; to++) {
+                LogPosition expectedTo;
+                try (var channel = envelopedLogFiles.openReadChannel(to)) {
+                    channel.goToEntry(to);
+                    long offset = channel.goToEndOfEntry().getByteOffset();
+                    expectedTo = new LogPosition(channel.getLogVersion(), offset);
+                }
+                var transfer = envelopedLogFiles.entryStreamChannels(from, to);
+                try {
+                    var first = transfer.storeChannels().getFirst();
+                    var last = transfer.storeChannels().getLast();
+                    if (first.position() != expectedFrom.getByteOffset()
+                            || transfer.toPosition() != expectedTo.getByteOffset()
+                            || !Arrays.equals(
+                                    bytesAt(first, first.position(), HEADER_SIZE),
+                                    fileBytesAt(expectedFrom, 0, HEADER_SIZE))
+                            || !Arrays.equals(
+                                    bytesAt(last, transfer.toPosition() - 1, 1), fileBytesAt(expectedTo, -1, 1))) {
+                        mismatches.add("[%d..%d] from %d, expected %s; to %d, expected %s"
+                                .formatted(
+                                        from, to, first.position(), expectedFrom, transfer.toPosition(), expectedTo));
+                    }
+                } finally {
+                    IOUtils.closeAllSilently(transfer.storeChannels());
+                }
+            }
+        }
+        assertThat(mismatches).isEmpty();
+    }
+
+    private byte[] fileBytesAt(LogPosition position, long delta, int length) throws IOException {
+        try (var context = mirroringRepository.openReadChannel(position.getLogVersion())) {
+            return bytesAt(context.channel(), position.getByteOffset() + delta, length);
+        }
+    }
+
+    private static byte[] bytesAt(StoreChannel channel, long position, int length) throws IOException {
+        long transferPosition = channel.position();
+        var buffer = ByteBuffer.allocate(length);
+        channel.position(position);
+        while (buffer.hasRemaining() && channel.read(buffer) > 0) {
+            // keep reading until full or end of file
+        }
+        channel.position(transferPosition);
+        return buffer.array();
     }
 
     @Test

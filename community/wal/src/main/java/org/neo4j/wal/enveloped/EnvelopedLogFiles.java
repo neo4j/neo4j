@@ -662,8 +662,14 @@ class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoCloseable {
         try {
             long toPosition;
             try (var envToChannel = envelopedReadChannel(logsRepository.openReadChannel(toFileVersion), true)) {
-                envToChannel.goToEntry(toIndex);
-                toPosition = envToChannel.goToEndOfEntry().getByteOffset();
+                try {
+                    envToChannel.goToEntry(toIndex);
+                    toPosition = envToChannel.goToEndOfEntry().getByteOffset();
+                } catch (Exception e) {
+                    // Closing envToChannel leaves the file open, and it is not in storeChannels yet
+                    IOUtils.closeAllSilently(ensureClosable(envToChannel.channel()));
+                    throw e;
+                }
                 toFileVersion = envToChannel.getLogVersion();
                 var channelToAdd = ensureClosable(envToChannel.channel());
                 storeChannels.add(channelToAdd);
