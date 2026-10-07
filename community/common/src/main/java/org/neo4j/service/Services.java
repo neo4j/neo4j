@@ -150,13 +150,21 @@ public final class Services {
     }
 
     private static <T> List<T> loadAllSafely(Class<T> type, ClassLoader classLoader) {
+        return loadAllSafely(type, classLoader, THROW_SERVICE_LOADER_EXCEPTIONS);
+    }
+
+    /** @param throwFailures whether a provider that fails to load is thrown rather than skipped. */
+    static <T> List<T> loadAllSafely(Class<T> type, ClassLoader classLoader, boolean throwFailures) {
         final List<T> services = new ArrayList<>();
         final Iterator<T> loader = ServiceLoader.load(type, classLoader).iterator();
-        while (loader.hasNext()) {
+        while (true) {
             try {
+                if (!loader.hasNext()) {
+                    break;
+                }
                 services.add(loader.next());
-            } catch (ServiceConfigurationError e) {
-                if (THROW_SERVICE_LOADER_EXCEPTIONS) {
+            } catch (ServiceConfigurationError | UnsupportedClassVersionError e) {
+                if (throwFailures) {
                     throw e;
                 }
                 if (PRINT_SERVICE_LOADER_STACK_TRACES) {

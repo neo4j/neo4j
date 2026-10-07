@@ -137,6 +137,21 @@ class ServicesTest {
         });
     }
 
+    @Test
+    void skipsAProviderThisRuntimeCannotLink() {
+        // The first of the two the test services file lists, so that loading has to carry on past it.
+        var loader = new TooNewClassLoader(FooService.class.getName());
+        assertThat(Services.loadAllSafely(SomeService.class, loader, false))
+                .singleElement()
+                .isInstanceOf(BazService.class);
+    }
+
+    @Test
+    void throwsAProviderThisRuntimeCannotLinkWhenToldTo() {
+        var loader = new TooNewClassLoader(FooService.class.getName());
+        assertThrows(UnsupportedClassVersionError.class, () -> Services.loadAllSafely(SomeService.class, loader, true));
+    }
+
     private static void withContextClassLoader(ClassLoader contextClassLoader, Runnable action) {
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         try {
@@ -144,6 +159,53 @@ class ServicesTest {
             action.run();
         } finally {
             Thread.currentThread().setContextClassLoader(originalClassLoader);
+        }
+    }
+
+    private static final class TooNewClassLoader extends ClassLoader {
+        private final String tooNew;
+        private final TestClassLoader services = new TestClassLoader();
+
+        TooNewClassLoader(String tooNew) {
+            this.tooNew = tooNew;
+        }
+
+        @Override
+        protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            if (!name.equals(tooNew)) {
+                return super.loadClass(name, resolve);
+            }
+            synchronized (getClassLoadingLock(name)) {
+                Class<?> loaded = findLoadedClass(name);
+                if (loaded != null) {
+                    return loaded;
+                }
+                try (InputStream in = getParent().getResourceAsStream(name.replace('.', '/') + ".class")) {
+                    byte[] bytes = in.readAllBytes();
+                    // Bump major version of the class file, it's an unsigned 16-bit integer at offset 6 and 7
+                    // ClassFile {
+                    //    u4             magic;          // 0-3
+                    //    u2             minor_version;  // 4-5
+                    //    u2             major_version;  // 6-7
+                    //    ...
+                    // }
+                    // While not pretty, no other way of faking this was found.
+                    bytes[7] += 40; // 20+ years with the current release cadence
+                    return defineClass(name, bytes, 0, bytes.length);
+                } catch (IOException e) {
+                    throw new ClassNotFoundException(name, e);
+                }
+            }
+        }
+
+        @Override
+        public Enumeration<URL> getResources(String name) throws IOException {
+            return services.getResources(name);
+        }
+
+        @Override
+        public URL getResource(String name) {
+            return services.getResource(name);
         }
     }
 

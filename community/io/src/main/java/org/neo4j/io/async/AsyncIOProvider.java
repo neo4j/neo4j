@@ -57,9 +57,6 @@ public interface AsyncIOProvider extends PrioritizedService {
         private static final AsyncIOProvider ASYNC_IO_PROVIDER = loadProvider();
 
         private static AsyncIOProvider loadProvider() {
-            if (Runtime.version().feature() < 25) {
-                return new AbsentAsyncIOProvider();
-            }
             List<AsyncIOProvider> availableIOProviders = new ArrayList<>(Services.loadAll(AsyncIOProvider.class));
             availableIOProviders.sort(Comparator.comparingInt(AsyncIOProvider::getPriority));
             for (AsyncIOProvider provider : availableIOProviders) {
