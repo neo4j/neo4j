@@ -2059,6 +2059,30 @@ class EnvelopeReadChannelTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void shouldAlignOnEntryBoundaryWithoutRewindingToPreviousEntry(boolean reloadState) throws IOException {
+        int segmentSize = 256;
+        final var bytes = bytes(random, TEST_DATA_SIZE);
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            int checksum = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes, START_INDEX);
+            checksum = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksum, bytes, START_INDEX + 1);
+            writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksum, bytes, START_INDEX + 2);
+        });
+
+        try (var channel = new EnvelopeReadChannel(
+                logChannel(), segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            channel.position(segmentSize + TEST_ENTRY_SIZE * 2);
+            if (reloadState) {
+                channel.reloadChannelStateBeforeCurrentPosition();
+            }
+            assertThat(channel.alignWithStartEntry()).isEqualTo(segmentSize + TEST_ENTRY_SIZE * 2);
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX + 2);
+        }
+    }
+
     @Test
     void shouldAlignPositionAtTheEndIfNoNewEntries() throws IOException {
         int segmentSize = 256;

@@ -171,7 +171,8 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     @Override
     public long alignWithStartEntry() throws IOException {
         try {
-            if (payloadType == null) {
+            // A fully consumed payload sits on an entry boundary, so rewinding would re-read that entry
+            if (payloadType == null || checkForEndOfEnvelope()) {
                 readEnvelopeHeader();
             } else {
                 buffer.position(payloadStartOffset);

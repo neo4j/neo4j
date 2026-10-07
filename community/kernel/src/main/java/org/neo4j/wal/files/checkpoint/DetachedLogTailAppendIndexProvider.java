@@ -19,6 +19,7 @@
  */
 package org.neo4j.wal.files.checkpoint;
 
+import static java.lang.Math.max;
 import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
@@ -115,14 +116,28 @@ public class DetachedLogTailAppendIndexProvider implements LastAppendBatchInfoPr
                 LogPosition logFileStartPosition = getLogFileStartPosition(currentFileVersion, logVersion);
                 // if file does not even have header lets switch to the previous one
                 if (logFileStartPosition != null) {
+                    // Header exist (and is cached) since we were able to figure out logFileStartPosition
+                    LogHeader logHeader = logFile.extractHeader(currentFileVersion);
                     if (appendIndex == UNKNOWN_APPEND_INDEX) {
-                        // Header exist (and is cached) since we were able to figure out logFileStartPosition,
                         // let's initiate appendIndex to the header last append index just in case we don't find any
-                        // entries at all.
-                        appendIndex = logFile.extractHeader(currentFileVersion).getLastAppendIndex();
+                        // entries at all. The max prevents setting to -1 in merge logs
+                        appendIndex = max(logHeader.getLastAppendIndex(), appendIndex);
+                        if (logHeader.getLogFormatVersion().supportsConsensusEntries()) {
+                            consensusIndex = appendIndex;
+                        }
                     }
                     try (var reader =
                             logFile.getReader(logFileStartPosition, ReaderLogVersionBridge.forFile(logFile))) {
+                        if (startingAppendIndex == UNKNOWN_APPEND_INDEX
+                                && logHeader.getLogFormatVersion().usesSegments()) {
+                            // the header only knows the index at the start of the file, so load the index of the
+                            // last entry before the position in case there are no entries after it
+                            reader.reloadChannelStateBeforeCurrentPosition();
+                            appendIndex = max(reader.getAppendIndex(), appendIndex);
+                            if (logHeader.getLogFormatVersion().supportsConsensusEntries()) {
+                                consensusIndex = appendIndex;
+                            }
+                        }
                         if (isAfterOrSameAsMaxPosition(reader)) {
                             currentFileVersion--;
                             continue;
@@ -164,7 +179,7 @@ public class DetachedLogTailAppendIndexProvider implements LastAppendBatchInfoPr
                                     infoFound = true;
                                 } else if (entry instanceof LogEntryEmpty empty) {
                                     appendIndex = empty.getAppendIndex();
-                                    consensusIndex = UNKNOWN_CONSENSUS_INDEX;
+                                    consensusIndex = empty.getAppendIndex(); // must be equal in merge logs
                                     postLogPosition = reader.getCurrentLogPosition();
                                     infoFound = true;
                                 }
