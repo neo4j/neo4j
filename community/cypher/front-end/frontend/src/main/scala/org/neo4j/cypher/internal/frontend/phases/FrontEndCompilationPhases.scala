@@ -59,7 +59,8 @@ trait FrontEndCompilationPhases {
     RelationshipPropertyValueAccessRules.productPrefix,
     AttributeBasedAccessControl.productPrefix,
     UserTags.productPrefix,
-    ValueInListProperty.productPrefix
+    ValueInListProperty.productPrefix,
+    UserTagsInPropertyRules.productPrefix
   )
 
   def enabledSemanticFeatures(features: Set[String]): Seq[SemanticFeature] =
