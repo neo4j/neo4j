@@ -658,10 +658,11 @@ final class TransformingPlanner private[planning] (
         graphStatisticsDecorator
       ))
 
-    val inferredRuntime: CypherRuntimeOption = options.queryOptions.runtime match {
-      case CypherRuntimeOption.default => runtime.correspondingRuntimeOption.getOrElse(CypherRuntimeOption.default)
-      case x                           => x
-    }
+    val inferredRuntime: CypherRuntimeOption =
+      // `runtime` has already been chosen based on the query options and actual runtime availability.
+      // Use `correspondingRuntimeOption` to derive execution model based on the actual runtime.
+      runtime.correspondingRuntimeOption.getOrElse(options.queryOptions.runtime)
+
     val containsUpdates: Boolean = syntacticQuery.statement().containsUpdates
     val inferredRuntimeConfig = () => options.queryOptions.parallelRuntimeConfigOption
     val executionModel =

@@ -23,6 +23,7 @@ import org.neo4j.common
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CommunityInterpretedRuntime
+import org.neo4j.cypher.internal.CommunityRuntimeFactory
 import org.neo4j.cypher.internal.CommunitySchemaCommandRuntime
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.TestExecutorCaffeineCacheFactory
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.CacheStrategy
 import org.neo4j.cypher.internal.compiler.CypherParsingConfig
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
@@ -47,6 +49,7 @@ import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.notification.devNullLogger
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -362,5 +365,95 @@ class CypherPlannerTest extends CommunityCypherTestSuite {
       mock[Monitors]
     )
     solverWithoutCaching.existsSubqueryPlanner shouldBe ExistsSubqueryPlanner
+  }
+
+  test("community planner should select volcano execution mode regardless of runtime option") {
+    for {
+      runtimeOption <- CypherRuntimeOption.values
+    } withClue(runtimeOption) {
+
+      val getTx = () => 1L
+      val planContext = new NotImplementedPlanContext {
+        override def statistics: InstrumentedGraphStatistics = {
+          InstrumentedGraphStatistics(
+            mock[GraphStatistics],
+            new MutableGraphStatisticsSnapshot(mutable.Map(NodesAllCardinality -> 1.0))
+          )
+        }
+
+        override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
+
+        override def getPropertiesWithExistenceConstraint: Set[String] = Set.empty
+
+        override def nodeTokenIndex: Option[TokenIndexDescriptor] = None
+
+        override def lastCommittedTxIdProvider: () => Long = getTx
+
+        override def databaseMode: DatabaseMode = DatabaseMode.SINGLE
+
+        override def storageHasPropertyColocation: Boolean = true
+
+        override def storageSupportsFastExpandInto: Boolean = true
+
+        override def storageIsMvcc: Boolean = false
+
+        override def txStateHasChanges(): Boolean = false
+      }
+
+      TransformingPlanner.customPlanContextCreator = Some((_, _, _, _, _) => planContext)
+
+      val monitors = new monitoring.Monitors()
+
+      val cypherConfig = CypherConfiguration.fromConfig(Config.defaults())
+      val caches = new CypherQueryCaches(
+        CypherQueryCaches.Config.fromCypherConfiguration(cypherConfig),
+        getTx,
+        TestExecutorCaffeineCacheFactory,
+        Clock.systemUTC(),
+        monitors,
+        NullLogProvider.getInstance()
+      )
+
+      val planner = DefaultCypherPlanner(
+        CypherParsingConfig(),
+        CypherPlannerConfiguration.defaults(),
+        Clock.systemUTC(),
+        monitors,
+        NullLog.getInstance(),
+        CommunitySecurityLog.NULL_LOG,
+        caches,
+        CypherPlannerOption.default,
+        null,
+        CommunitySchemaCommandRuntime,
+        null,
+        new InternalUsageStatsImpl
+      )
+
+      val queryOptions = {
+        val default = QueryOptions.default(cypherConfig, CypherVersion.Legacy.legacyVersion())
+        default.copy(queryOptions = default.queryOptions.copy(runtime = runtimeOption))
+      }
+
+      val query = "RETURN 1"
+      val preParserQuery = PreParsedQuery(query, query, queryOptions)
+      val tc = mock[TransactionalContext](org.mockito.Mockito.RETURNS_DEEP_STUBS)
+
+      val runtime = CommunityRuntimeFactory.getRuntime(runtimeOption, disallowFallback = false)
+      val executionModel = planner
+        .parseAndPlan(
+          preParserQuery,
+          NO_TRACING,
+          tc,
+          MapValue.EMPTY,
+          runtime,
+          devNullLogger,
+          null,
+          cacheStrategy = CacheStrategy.defaultDefault
+        )
+        .plannerContext
+        .executionModel
+
+      executionModel shouldBe ExecutionModel.Volcano
+    }
   }
 }
