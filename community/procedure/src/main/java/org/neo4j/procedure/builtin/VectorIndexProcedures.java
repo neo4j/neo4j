@@ -26,6 +26,7 @@ import static org.neo4j.procedure.Mode.SCHEMA;
 import static org.neo4j.procedure.Mode.WRITE;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterator;
@@ -35,7 +36,14 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.neo4j.common.EntityType;
 import org.neo4j.cypher.operations.CypherCoercions;
+import org.neo4j.cypher.operations.CypherTypeValueMapper;
+import org.neo4j.exceptions.CypherTypeException;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlHelper;
+import org.neo4j.gqlstatus.GqlParams;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -54,6 +62,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -61,6 +70,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryLanguage;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.procedure.QueryLanguageScope;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -153,11 +163,12 @@ public class VectorIndexProcedures {
                     Long numberOfNearestNeighbours,
             @Name(value = "query", description = "The object to find approximate matches for.") AnyValue candidateQuery)
             throws KernelException {
-        VectorCandidate query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
+        VectorCandidate query =
+                validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery, QUERY_NODES_PROCEDURE);
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
-        return new NodeIndexQuery(tx, ktx, kernelVersion, name, !spdBuiltInProcedures.isSpd())
+        return new NodeIndexQuery(tx, ktx, kernelVersion, name, !spdBuiltInProcedures.isSpd(), QUERY_NODES_PROCEDURE)
                 .query(Math.toIntExact(numberOfNearestNeighbours), query);
     }
 
@@ -176,11 +187,12 @@ public class VectorIndexProcedures {
                     Long numberOfNearestNeighbours,
             @Name(value = "query", description = "The object to find approximate matches for.") AnyValue candidateQuery)
             throws KernelException {
-        VectorCandidate query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
+        VectorCandidate query =
+                validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery, QUERY_NODES_PROCEDURE);
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
-        return new NodeIndexQuery(tx, ktx, kernelVersion, name, !spdBuiltInProcedures.isSpd())
+        return new NodeIndexQuery(tx, ktx, kernelVersion, name, !spdBuiltInProcedures.isSpd(), QUERY_NODES_PROCEDURE)
                 .query(Math.toIntExact(numberOfNearestNeighbours), query);
     }
 
@@ -198,11 +210,13 @@ public class VectorIndexProcedures {
                     Long numberOfNearestNeighbours,
             @Name(value = "query", description = "The object to find approximate matches for.") AnyValue candidateQuery)
             throws KernelException {
-        VectorCandidate query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
+        VectorCandidate query =
+                validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery, QUERY_RELATIONSHIPS_PROCEDURE);
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
-        return new RelationshipIndexQuery(tx, ktx, kernelVersion, name, !spdBuiltInProcedures.isSpd())
+        return new RelationshipIndexQuery(
+                        tx, ktx, kernelVersion, name, !spdBuiltInProcedures.isSpd(), QUERY_RELATIONSHIPS_PROCEDURE)
                 .query(Math.toIntExact(numberOfNearestNeighbours), query);
     }
 
@@ -221,31 +235,69 @@ public class VectorIndexProcedures {
                     Long numberOfNearestNeighbours,
             @Name(value = "query", description = "The object to find approximate matches for.") AnyValue candidateQuery)
             throws KernelException {
-        VectorCandidate query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
+        VectorCandidate query =
+                validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery, QUERY_RELATIONSHIPS_PROCEDURE);
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
-        return new RelationshipIndexQuery(tx, ktx, kernelVersion, name, !spdBuiltInProcedures.isSpd())
+        return new RelationshipIndexQuery(
+                        tx, ktx, kernelVersion, name, !spdBuiltInProcedures.isSpd(), QUERY_RELATIONSHIPS_PROCEDURE)
                 .query(Math.toIntExact(numberOfNearestNeighbours), query);
     }
 
+    private static final String QUERY_NODES_PROCEDURE = "index.vector.queryNodes";
+    private static final String QUERY_RELATIONSHIPS_PROCEDURE = "index.vector.queryRelationships";
+    private static final String INDEX_NAME_PARAMETER = "indexName";
+    private static final String NUMBER_OF_NEAREST_NEIGHBOURS_PARAMETER = "numberOfNearestNeighbours";
+    private static final String QUERY_PARAMETER = "query";
+
     private static VectorCandidate validateQueryArguments(
-            String name, Long numberOfNearestNeighbours, AnyValue candidateQuery) {
-        Objects.requireNonNull(name, "'indexName' must not be null");
-        Objects.requireNonNull(numberOfNearestNeighbours, "'numberOfNearestNeighbours' must not be null");
-        Preconditions.checkArgument(numberOfNearestNeighbours > 0, "'numberOfNearestNeighbours' must be positive");
-        Objects.requireNonNull(candidateQuery, "'query' must not be null");
-        if (candidateQuery == Values.NO_VALUE) {
-            throw new IllegalArgumentException(
-                    "'query' must not be NO_VALUE, which is treated as null",
-                    new NullPointerException("'query' must not be null"));
+            String name, Long numberOfNearestNeighbours, AnyValue candidateQuery, String procedureName) {
+        if (name == null) {
+            throw requiredArgumentMissing(INDEX_NAME_PARAMETER);
+        }
+        if (numberOfNearestNeighbours == null) {
+            throw requiredArgumentMissing(NUMBER_OF_NEAREST_NEIGHBOURS_PARAMETER);
+        }
+        if (numberOfNearestNeighbours < 1 || numberOfNearestNeighbours > Integer.MAX_VALUE) {
+            throw new InvalidArgumentException(
+                    GqlHelper.getGql22N38_22N03(
+                            procedureName,
+                            NUMBER_OF_NEAREST_NEIGHBOURS_PARAMETER,
+                            "INTEGER",
+                            1,
+                            Integer.MAX_VALUE,
+                            numberOfNearestNeighbours),
+                    "'%s' must be between 1 and %d inclusively"
+                            .formatted(NUMBER_OF_NEAREST_NEIGHBOURS_PARAMETER, Integer.MAX_VALUE));
+        }
+        if (candidateQuery == null || candidateQuery == Values.NO_VALUE) {
+            throw requiredArgumentMissing(QUERY_PARAMETER);
         }
 
         VectorCandidate query = VectorCandidate.maybeFrom(candidateQuery);
         if (query == null) {
-            throw new IllegalArgumentException("'query' must be a non-null numerical array");
+            // Interacting with the value also surfaces a deferred conversion error (ErrorValue), which is a more
+            // precise error to report than the generic type error built here.
+            throw CypherTypeException.functionArgumentWrongType(
+                    "'%s' must be a non-null numerical array".formatted(QUERY_PARAMETER),
+                    procedureName,
+                    candidateQuery.prettify(),
+                    List.of("LIST<INTEGER | FLOAT>", "VECTOR"),
+                    CypherTypeValueMapper.valueType(candidateQuery));
         }
         return query;
+    }
+
+    private static InvalidArgumentException requiredArgumentMissing(String argumentName) {
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N06)
+                .withParam(GqlParams.ListParam.inputList, List.of(argumentName))
+                .build();
+        return new InvalidArgumentException(gql, "'%s' must not be null".formatted(argumentName));
+    }
+
+    private static String plural(EntityType entityType) {
+        return entityType == EntityType.NODE ? "nodes" : "relationships";
     }
 
     @Description("Set a vector property on a given node in a more space efficient representation than Cypher's SET.")
@@ -302,18 +354,16 @@ public class VectorIndexProcedures {
         entity.setProperty(propKey, EUCLIDEAN.toValidVector(vector));
     }
 
-    private IndexDescriptor getValidIndex(String name) {
-        IndexDescriptor index = ktx.schemaRead().indexGetForName(name);
-        if (index == IndexDescriptor.NO_INDEX || index.getIndexType() != IndexType.VECTOR) {
-            throw new IllegalArgumentException("There is no such vector schema index: " + name);
-        }
-        return index;
-    }
-
     private static class NodeIndexQuery extends IndexQuery<NodeValueIndexCursor, NodeNeighbor> {
         private NodeIndexQuery(
-                Transaction tx, KernelTransaction ktx, KernelVersion kernelVersion, String name, boolean awaitOnline) {
-            super(EntityType.NODE, tx, ktx, kernelVersion, name, awaitOnline);
+                Transaction tx,
+                KernelTransaction ktx,
+                KernelVersion kernelVersion,
+                String name,
+                boolean awaitOnline,
+                String procedureName)
+                throws ProcedureException {
+            super(EntityType.NODE, tx, ktx, kernelVersion, name, awaitOnline, procedureName);
         }
 
         @Override
@@ -342,8 +392,14 @@ public class VectorIndexProcedures {
 
     private static class RelationshipIndexQuery extends IndexQuery<RelationshipValueIndexCursor, RelationshipNeighbor> {
         private RelationshipIndexQuery(
-                Transaction tx, KernelTransaction ktx, KernelVersion kernelVersion, String name, boolean awaitOnline) {
-            super(EntityType.RELATIONSHIP, tx, ktx, kernelVersion, name, awaitOnline);
+                Transaction tx,
+                KernelTransaction ktx,
+                KernelVersion kernelVersion,
+                String name,
+                boolean awaitOnline,
+                String procedureName)
+                throws ProcedureException {
+            super(EntityType.RELATIONSHIP, tx, ktx, kernelVersion, name, awaitOnline, procedureName);
         }
 
         @Override
@@ -382,21 +438,28 @@ public class VectorIndexProcedures {
                 KernelTransaction ktx,
                 KernelVersion kernelVersion,
                 String name,
-                boolean awaitOnline) {
+                boolean awaitOnline,
+                String procedureName)
+                throws ProcedureException {
             this.tx = tx;
             this.ktx = ktx;
             this.kernelVersion = kernelVersion;
 
             IndexDescriptor index = ktx.schemaRead().indexGetForName(name);
             if (index == IndexDescriptor.NO_INDEX || index.getIndexType() != IndexType.VECTOR) {
-                throw new IllegalArgumentException("There is no such vector schema index: " + name);
+                throw ProcedureException.noSuchIndex(name, procedureName, true);
             }
 
             EntityType entityTypeFromIndex = index.schema().entityType();
             if (entityTypeFromIndex != entityType) {
-                throw new IllegalArgumentException(
-                        "The '%s' index (%s) is an index on %s, so it cannot be queried for nodes."
-                                .formatted(index.getName(), index, entityTypeFromIndex));
+                throw ProcedureException.invalidProcedureArgument(
+                        index.getName(),
+                        INDEX_NAME_PARAMETER,
+                        procedureName,
+                        "an index on " + plural(entityType),
+                        Status.Statement.ArgumentError,
+                        "The '%s' index (%s) is an index on %s, so it cannot be queried for %s."
+                                .formatted(index.getName(), index, entityTypeFromIndex, plural(entityType)));
             }
 
             this.index = index;
