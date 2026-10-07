@@ -104,12 +104,12 @@ class SWARCsvStreamTest {
     @Test
     void shouldReadingFullLegacyCsv() throws IOException {
         byte[] data = loadCSVFile();
-        long[] offsets = new long[1024 * 16];
+        int[] offsets = new int[1024 * 16];
         SWARCsvStream vectoredStream = new SWARCsvStream((byte) ',', (byte) '"', true);
         int offsetSize =
                 vectoredStream.indexSeparators(ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN), 0, offsets);
         offsets = Arrays.copyOf(offsets, offsetSize);
-        long[] expected = getExpected();
+        int[] expected = getExpected();
         assertThat(offsets).isEqualTo(expected);
     }
 
@@ -124,7 +124,7 @@ class SWARCsvStreamTest {
     private static List<String> toFields(String s, boolean legacyEscape) {
         ByteBuffer bytes = ByteBuffer.wrap(s.getBytes(StandardCharsets.UTF_8)).order(ByteOrder.LITTLE_ENDIAN);
         SWARCsvStream swarCsvStream = new SWARCsvStream((byte) ',', (byte) '"', legacyEscape);
-        long[] offsets = new long[1024];
+        int[] offsets = new int[1024];
         int offsetSize = swarCsvStream.indexSeparators(bytes, 0, offsets);
         swarCsvStream.validateEnd();
 
@@ -150,7 +150,7 @@ class SWARCsvStreamTest {
         return out.toByteArray();
     }
 
-    private long[] getExpected() throws IOException {
+    private int[] getExpected() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (InputStream in = getClass().getResourceAsStream("expectedOffsets.txt")) {
             in.transferTo(out);
@@ -158,9 +158,9 @@ class SWARCsvStreamTest {
 
         String string = out.toString(StandardCharsets.UTF_8);
         String[] split = string.split(",");
-        long[] expected = new long[split.length];
+        int[] expected = new int[split.length];
         for (int i = 0; i < split.length; i++) {
-            expected[i] = Long.parseLong(split[i].trim());
+            expected[i] = Integer.parseInt(split[i].trim());
         }
         return expected;
     }

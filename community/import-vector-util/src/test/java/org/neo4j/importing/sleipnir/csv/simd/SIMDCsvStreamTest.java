@@ -108,7 +108,7 @@ class SIMDCsvStreamTest {
     private static List<String> toFields(String s, boolean legacyEscape) {
         ByteBuffer bytes = ByteBuffer.wrap(s.getBytes(StandardCharsets.UTF_8)).order(ByteOrder.LITTLE_ENDIAN);
         SIMDCsvStream csvStream = new SIMDCsvStream(',', '"', legacyEscape);
-        long[] offsets = new long[1024];
+        int[] offsets = new int[1024];
         int offsetSize = csvStream.indexSeparators(bytes, 0, offsets);
         csvStream.validateEnd();
 

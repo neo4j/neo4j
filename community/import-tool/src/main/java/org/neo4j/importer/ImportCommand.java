@@ -1047,6 +1047,14 @@ public class ImportCommand {
                 if (!parseResult.hasMatchedOption("--read-buffer-size")) {
                     // Default is different for Resumable
                     bufferSize = org.neo4j.csv.reader.Configuration.Builder.DEFAULT_BUFFER_SIZE_IF_RESUMABLE;
+                } else {
+                    // Check buffer is not too big. We need to be able to index into the buffer with an int
+                    // even considering encoding conversion can up 6x the buffer size internally
+                    if (bufferSize > ByteUnit.mebiBytes(300)) {
+                        throw new ParameterException(
+                                spec.commandLine(),
+                                "ERROR: Resumable import is not supported with '--read-buffer-size' larger than 300MiB");
+                    }
                 }
                 rejectCompressedInput(fs);
             }

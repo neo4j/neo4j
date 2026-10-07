@@ -36,7 +36,7 @@ public interface CsvStream {
      * @param destination array to insert all indexes into.
      * @return the number of indexes inserted into the {@code destionation} array.
      */
-    int indexSeparators(ByteBuffer buffer, long baseOffset, long[] destination);
+    int indexSeparators(ByteBuffer buffer, int baseOffset, int[] destination);
 
     /**
      * Called at end of stream to verify all state is correct.
@@ -46,7 +46,7 @@ public interface CsvStream {
     void validateEnd();
 
     /**
-     * Reset all internal state kept between invocations of {@link #indexSeparators(ByteBuffer, long, long[])}.
+     * Reset all internal state kept between invocations of {@link #indexSeparators(ByteBuffer, int, int[])}.
      */
     void reset();
 }

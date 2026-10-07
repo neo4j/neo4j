@@ -34,7 +34,7 @@ public class SIMDCsvStream extends SWARCsvStream {
     }
 
     @Override
-    public int indexSeparators(ByteBuffer buffer, long baseOffset, long[] destination) {
+    public int indexSeparators(ByteBuffer buffer, int baseOffset, int[] destination) {
         MemorySegment memorySegment = MemorySegment.ofBuffer(buffer);
         byte separatorCharacter = this.separatorCharacter;
         byte quoteCharacter = this.quoteCharacter;

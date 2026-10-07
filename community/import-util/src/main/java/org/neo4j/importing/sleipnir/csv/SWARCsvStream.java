@@ -67,7 +67,7 @@ public class SWARCsvStream implements CsvStream {
     }
 
     @Override
-    public int indexSeparators(ByteBuffer buffer, long baseOffset, long[] destination) {
+    public int indexSeparators(ByteBuffer buffer, int baseOffset, int[] destination) {
         assert buffer.order() == ByteOrder.LITTLE_ENDIAN;
 
         int indexCursor = 0; // Current append index to the "offsets" array
@@ -124,7 +124,7 @@ public class SWARCsvStream implements CsvStream {
         prevIterInsideQuote = 0;
     }
 
-    protected int processTail(ByteBuffer buffer, long baseOffset, int indexCursor, long[] destination) {
+    protected int processTail(ByteBuffer buffer, int baseOffset, int indexCursor, int[] destination) {
         while (buffer.hasRemaining()) {
             byte b = buffer.get();
             if (nextIsEscaped != 0) {
@@ -197,7 +197,7 @@ public class SWARCsvStream implements CsvStream {
      * @param bitmask bitmask with all separators.
      * @return the next {@code indexesCursor} to use.
      */
-    protected static int extractIndexes(long[] indexes, int indexesCursor, long offset, long bitmask) {
+    protected static int extractIndexes(int[] indexes, int indexesCursor, int offset, long bitmask) {
         int cnt = Long.bitCount(bitmask);
         int nextBase = indexesCursor + cnt;
         // Unrolled loop to avoid miss predicted branches
