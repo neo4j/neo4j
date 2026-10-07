@@ -2117,12 +2117,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Description("")
     public static final Setting<Double> spd_segment_memory_reclaim = newBuilder(
                     "internal.db.spd_import.segment_memory_reclaim", DOUBLE, 0.1)
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Double> spd_segment_memory_reclaim_trigger = newBuilder(
                     "internal.db.spd_import.segment_memory_reclaim_trigger", DOUBLE, 0.5)
+            .dynamic()
             .build();
 
     @Internal
@@ -2130,30 +2132,35 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Long> spd_import_segment_buffer_size = newBuilder(
                     "internal.db.spd_import.segment_buffer_size", BYTES, mebiBytes(8))
             .addConstraint(max(gibiBytes(2)))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Double> spd_import_buffer_max_direct_memory_fraction = newBuilder(
                     "internal.db.spd_import.buffer_max_direct_memory_fraction", DOUBLE, 0.001)
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Long> spd_import_segment_increment_size = newBuilder(
                     "internal.db.spd_import.segment_increment_size", BYTES, mebiBytes(1))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Double> spd_import_segment_records_heap_limit = newBuilder(
                     "internal.db.spd_import.segment_records_heap_limit", DOUBLE, 0.1)
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Integer> spd_import_max_segment_records = newBuilder(
                     "internal.db.spd_import.max_segment_records", INT, 100_000)
+            .dynamic()
             .build();
 
     @Internal
@@ -2161,23 +2168,26 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Long> spd_import_io_buffer_size = newBuilder(
                     "internal.db.spd_import.io_buffer_size", BYTES, mebiBytes(2))
             .addConstraint(max(gibiBytes(2)))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Integer> spd_import_merge_step =
-            newBuilder("internal.db.spd_import.merge_step", INT, 50).build();
+            newBuilder("internal.db.spd_import.merge_step", INT, 50).dynamic().build();
 
     @Internal
     @Description("")
     public static final Setting<Double> spd_import_heap_for_entity_tasks = newBuilder(
                     "internal.db.spd_import.heap_for_entity_tasks", DOUBLE, 0.05)
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Double> spd_import_prefetcher_heap_fraction = newBuilder(
                     "internal.db.spd_import.prefetcher_heap_fraction", DOUBLE, 0.01)
+            .dynamic()
             .build();
 
     @Internal
@@ -2185,18 +2195,21 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Long> spd_import_prefetcher_batch_size = newBuilder(
                     "internal.db.spd_import.prefetcher_batch_size", BYTES, mebiBytes(2))
             .addConstraint(max(gibiBytes(1)))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Integer> spd_import_entity_executor_preallocation_size = newBuilder(
                     "internal.db.spd_import.entity_executor_preallocation_size", INT, 10_000)
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Long> spd_import_entity_encoding_buffer_initial_capacity = newBuilder(
                     "internal.db.spd_import.entity_encoding_buffer_initial_capacity", BYTES, 10 * 1024L)
+            .dynamic()
             .build();
 
     @Internal
@@ -2205,6 +2218,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             + "without creating an IT with huge number of relationships and consuming too much memory.")
     public static final Setting<Integer> spd_import_batch_memory_limit_override = newBuilder(
                     "internal.db.spd_import.batch_memory_limit_override", INT, null)
+            .dynamic()
             .build();
 
     @Internal
@@ -2218,59 +2232,68 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Description("")
     public static final Setting<Duration> spd_import_rpc_poll_interval = newBuilder(
                     "internal.db.spd_import.rpc.poll_interval", DURATION, ofSeconds(1))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Duration> spd_import_termination_check_interval = newBuilder(
                     "internal.db.spd_import.termination_check_interval", DURATION, ofSeconds(1))
+            .dynamic()
             .build();
 
     @Internal
     @Description("How often the SPD import scans its stores directory for stores marked for deletion.")
     public static final Setting<Duration> spd_import_store_gc_interval = newBuilder(
                     "internal.db.spd_import.store_gc_interval", DURATION, ofMinutes(2))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Duration> spd_import_progress_collect_interval = newBuilder(
                     "internal.db.spd_import.progress_collect_interval", DURATION, ofSeconds(1))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Duration> spd_import_progress_log_update_interval = newBuilder(
                     "internal.db.spd_import.progress_log_update_interval", DURATION, ofMinutes(1))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Duration> spd_import_rpc_report_interval = newBuilder(
                     "internal.db.spd_import.rpc.report_interval", DURATION, ofMinutes(10))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Boolean> spd_import_rpc_retry =
-            newBuilder("internal.db.spd_import.rpc.retry", BOOL, true).build();
+            newBuilder("internal.db.spd_import.rpc.retry", BOOL, true).dynamic().build();
 
     @Internal
     @Description("")
     public static final Setting<Duration> spd_import_rpc_retry_interval = newBuilder(
                     "internal.db.spd_import.rpc.retry_interval", DURATION, ofSeconds(1))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Duration> spd_import_rpc_connect_timeout = newBuilder(
                     "internal.db.spd_import.rpc.connect_timeout", DURATION, ofSeconds(30))
+            .dynamic()
             .build();
 
     @Internal
     @Description("")
     public static final Setting<Duration> spd_import_rpc_request_timeout = newBuilder(
                     "internal.db.spd_import.rpc.request_timeout", DURATION, ofMinutes(5))
+            .dynamic()
             .build();
 
     @Internal
