@@ -27,25 +27,25 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderin
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.extractVariableForValue
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.providedOrderForLabelScan
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.providedOrderForRelationshipTypeScan
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.indexOrder
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.indexPropertyXFoo
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.indexPropertyXFooExact
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.interestingAscX
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.interestingAscXFoo
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.interestingAscY
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.interestingDescX
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.interestingDescXFoo
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.interestingDescY
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.requiredAscX
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.requiredAscXFoo
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.requiredDescX
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.requiredDescXFoo
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.wFoo
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.x
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.xFoo
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.y
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.yFoo
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.zFoo
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.indexOrder
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.indexPropertyXFoo
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.indexPropertyXFooExact
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.interestingAscX
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.interestingAscXFoo
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.interestingAscY
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.interestingDescX
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.interestingDescXFoo
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.interestingDescY
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.requiredAscX
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.requiredAscXFoo
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.requiredDescX
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.requiredDescXFoo
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.wFoo
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.x
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.xFoo
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.y
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.yFoo
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTestBase.zFoo
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -66,7 +66,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.NONE
 import org.scalatest.matchers.Matcher
 
-abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
+abstract class ResultOrderingTestBase[OC <: OrderCandidate[OC]](
   ascXFoo: InterestingOrder,
   descXFoo: InterestingOrder,
   ascX: InterestingOrder,
@@ -521,7 +521,7 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   }
 }
 
-object ResultOrderingTest extends AstConstructionTestSupport {
+object ResultOrderingTestBase extends AstConstructionTestSupport {
   val xFoo: Property = prop("x", "foo")
   val yFoo: Property = prop("y", "foo")
   val zFoo: Property = prop("z", "foo")
@@ -559,7 +559,7 @@ object ResultOrderingTest extends AstConstructionTestSupport {
     )
 }
 
-class RequiredTestIndexOrder extends ResultOrderingTest[RequiredOrderCandidate](
+class RequiredOrderResultOrderingTest extends ResultOrderingTestBase[RequiredOrderCandidate](
       requiredAscXFoo,
       requiredDescXFoo,
       requiredAscX,
@@ -568,7 +568,7 @@ class RequiredTestIndexOrder extends ResultOrderingTest[RequiredOrderCandidate](
       InterestingOrder.required
     )
 
-class InterestingTestIndexOrder extends ResultOrderingTest[InterestingOrderCandidate](
+class InterestingOrderResultOrderingTest extends ResultOrderingTestBase[InterestingOrderCandidate](
       InterestingOrder.interested(interestingAscXFoo),
       InterestingOrder.interested(interestingDescXFoo),
       InterestingOrder.interested(interestingAscX),
