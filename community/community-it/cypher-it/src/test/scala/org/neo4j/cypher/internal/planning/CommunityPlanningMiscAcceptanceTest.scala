@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.planning
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.util.DontRunOnSpdBuild
 
-class CommunityPlanningMiscAcceptanceTest extends ExecutionEngineFunSuite {
+class CommunityPlanningMiscAcceptanceTest extends ExecutionEngineFunSuite with DontRunOnSpdBuild {
 
   test(
     "community planner should estimate cardinality of cartesian product RHS using volcano model regardless of runtime option"
