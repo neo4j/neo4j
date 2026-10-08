@@ -57,8 +57,6 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
     cardinalityModel: CardinalityModel,
     graphSchemaOptimizations: GraphSchemaOptimizations
   ): Cardinality = {
-    // Plan context statistics must be consulted at least one per query, otherwise approximately 60k tests fail, so we cache the total number of nodes here
-    val allNodesCardinality = planContext.statistics.nodesAllCardinality()
     val context = QueryGraphCardinalityContext(
       planContext.statistics,
       selectivityCalculator,
@@ -67,7 +65,6 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       semanticTable,
       indexPredicateProviderContext,
       cardinalityModel,
-      allNodesCardinality,
       labelInferenceStrategy,
       queryGraph.argumentIds,
       graphSchemaOptimizations

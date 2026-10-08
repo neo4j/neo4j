@@ -45,5 +45,7 @@ class TestGraphStatistics extends GraphStatistics {
   override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
     fail()
 
-  private def fail() = throw new IllegalStateException("Should not have been called in this test.")
+  private def fail() = throw new IllegalStateException(
+    s"${Thread.currentThread().getStackTrace()(2).getMethodName} has not been defined and should therefore not have been called in this test."
+  )
 }

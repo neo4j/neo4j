@@ -93,7 +93,7 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
                 relationshipDirection = relationship.dir
               )
             case i =>
-              if (context.allNodesCardinality > Cardinality.EMPTY) {
+              if (context.graphStatistics.nodesAllCardinality() > Cardinality.EMPTY) {
                 // Prior to this call (in getBaseQueryGraphCardinality()), labels on the start and end nodes are already inferred
                 // Here, we want to find the labels that can be inferred on the middle nodes.
                 val a = Variable("a")(InputPosition.NONE, isIsolated = false)
@@ -274,7 +274,7 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
 
     val nodeCardinality =
       getNodeCardinality(context, labelInfo, relationship.left)
-        .getOrElse(context.allNodesCardinality)
+        .getOrElse(context.graphStatistics.nodesAllCardinality())
 
     Multiplier.ofDivision(relCardinality, nodeCardinality)
       .getOrElse(Multiplier.ZERO)
@@ -301,7 +301,7 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
         labelInfo,
         relationship.left
       )
-        .getOrElse(context.allNodesCardinality)
+        .getOrElse(context.graphStatistics.nodesAllCardinality())
 
     Multiplier.ofDivision(relCardinality, nodeCardinality)
       .getOrElse(Multiplier.ZERO)

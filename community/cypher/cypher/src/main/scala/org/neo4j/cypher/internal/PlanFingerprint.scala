@@ -38,12 +38,7 @@ case class PlanFingerprint(
   lastCommittedTxId: Long,
   snapshot: GraphStatisticsSnapshot,
   procedureSignatureVersion: Option[Long]
-) {
-
-  if (snapshot.statsValues.isEmpty) {
-    throw new IllegalArgumentException("Cannot create plan fingerprint with empty graph statistics snapshot")
-  }
-}
+)
 
 object PlanFingerprint {
 

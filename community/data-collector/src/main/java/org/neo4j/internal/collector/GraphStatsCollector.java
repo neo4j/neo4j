@@ -131,8 +131,9 @@ public class GraphStatsCollector extends LifecycleAdapter {
                         .equals(current.statsValues().keySet())
                 || !retainedIndexIdentities.equals(currentIndexIdentities)
                 || !retainedConstraintIdentities.equals(currentConstraintIdentities)
-                || retainedSnapshot.diverges(current).divergence()
-                        > config.get(graph_stats_collection_divergence_threshold);
+                || retainedSnapshot
+                        .diverges(current)
+                        .exists(d -> d.divergence() > config.get(graph_stats_collection_divergence_threshold));
 
         if (stale) {
             retainedSnapshot = current;

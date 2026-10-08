@@ -83,7 +83,7 @@ trait NodeCardinalityModel {
 
   def getLabelsCardinality(context: QueryGraphCardinalityContext, labels: Iterable[LabelId]): Cardinality =
     if (labels.isEmpty)
-      context.allNodesCardinality
+      context.graphStatistics.nodesAllCardinality()
     else {
       val firstLabelCardinality = context.graphStatistics.nodesWithLabelCardinality(Some(labels.head))
       context.combiner.andTogetherSelectivities(labels.tail.flatMap(getLabelSelectivity(context, _))) match {
@@ -93,5 +93,5 @@ trait NodeCardinalityModel {
     }
 
   def getLabelSelectivity(context: QueryGraphCardinalityContext, labelId: LabelId): Option[Selectivity] =
-    context.graphStatistics.nodesWithLabelCardinality(Some(labelId)) / context.allNodesCardinality
+    context.graphStatistics.nodesWithLabelCardinality(Some(labelId)) / context.graphStatistics.nodesAllCardinality()
 }

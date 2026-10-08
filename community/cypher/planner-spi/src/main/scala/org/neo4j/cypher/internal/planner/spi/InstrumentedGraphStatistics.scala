@@ -72,16 +72,19 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
     snapshot.freeze
   }
 
-  def diverges(snapshot: GraphStatisticsSnapshot): DivergenceState = {
+  /**
+   * @return the statistic with the maximum relative difference (|e1 - e2| / max(e1, e2)),
+   *         or None if this snapshot holds no statistics.
+   */
+  def diverges(snapshot: GraphStatisticsSnapshot): Option[DivergenceState] = {
     assert(statsValues.keySet == snapshot.statsValues.keySet)
-    // find the maximum relative difference (|e1 - e2| / max(e1, e2))
-    val (divergedStats, divergedStatKey, before, after) = (statsValues map {
+    statsValues.map {
       case (k, e1) =>
         val e2 = snapshot.statsValues(k)
         val divergence = abs(e1 - e2) / max(e1, e2)
-        if (divergence.isNaN) (0.0, k, e1, e2) else (divergence, k, e1, e2)
-    }).maxBy(_._1)
-    DivergenceState(divergedStatKey, divergedStats, before, after)
+        val nonNanDivergence = if (divergence.isNaN) 0.0 else divergence
+        DivergenceState(k, nonNanDivergence, e1, e2)
+    }.maxByOption(_.divergence)
   }
 }
 

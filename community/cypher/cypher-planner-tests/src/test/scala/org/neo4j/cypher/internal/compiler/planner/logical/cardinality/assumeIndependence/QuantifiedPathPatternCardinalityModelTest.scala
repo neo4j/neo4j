@@ -68,6 +68,8 @@ class QuantifiedPathPatternCardinalityModelTest extends CypherPlannerTestSuite
           case (Some(LabelId(1)), Some(RelTypeId(0)), None) => Cardinality(15)
           case _ => sys.error(s"missing rel cardinality: (:$fromLabel)-[:$relTypeId]->(:$toLabel)")
         }
+
+      override def nodesAllCardinality(): Cardinality = Cardinality(200)
     }
 
     val semanticTable =
@@ -84,7 +86,6 @@ class QuantifiedPathPatternCardinalityModelTest extends CypherPlannerTestSuite
       semanticTable = semanticTable,
       indexPredicateProviderContext = null,
       cardinalityModel = null,
-      allNodesCardinality = Cardinality(200),
       LabelInferenceStrategy.NoInference,
       Set.empty,
       GraphSchemaOptimizations.Disabled

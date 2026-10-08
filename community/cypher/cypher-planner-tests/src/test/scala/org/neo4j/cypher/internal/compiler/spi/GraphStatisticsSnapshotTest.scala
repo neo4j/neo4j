@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.spi
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.planner.spi.CardinalityByLabelsAndRelationshipType
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.GraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexSelectivity
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
@@ -92,7 +93,11 @@ class GraphStatisticsSnapshotTest extends CypherPlannerTestSuite {
     val frozen1 = snapshot.freeze
     val reallySensitiveDivergence: Double = 0.9
 
-    frozen1.diverges(snapshot2.freeze).divergence should be < reallySensitiveDivergence
+    frozen1.diverges(snapshot2.freeze).get.divergence should be < reallySensitiveDivergence
+  }
+
+  test("an empty snapshot shouldn't diverge") {
+    GraphStatisticsSnapshot().diverges(GraphStatisticsSnapshot()) shouldBe None
   }
 
   test("a snapshot shouldn't diverge from small differences") {
@@ -105,7 +110,7 @@ class GraphStatisticsSnapshotTest extends CypherPlannerTestSuite {
     instrumentedStatistics2.nodesAllCardinality()
 
     val frozen1 = snapshot.freeze
-    frozen1.diverges(snapshot2.freeze).divergence should (be > 0.001 and be < 0.01)
+    frozen1.diverges(snapshot2.freeze).get.divergence should (be > 0.001 and be < 0.01)
   }
 
   test("a snapshot should pick up divergences") {
@@ -129,7 +134,7 @@ class GraphStatisticsSnapshotTest extends CypherPlannerTestSuite {
     val smallNumber = 0.1
     val bigNumber = 0.6
 
-    frozen1.diverges(frozen2).divergence should (be > smallNumber and be < bigNumber)
+    frozen1.diverges(frozen2).get.divergence should (be > smallNumber and be < bigNumber)
   }
 
   test("0 selectivity values should not lead to wrong divergences") {
@@ -151,7 +156,7 @@ class GraphStatisticsSnapshotTest extends CypherPlannerTestSuite {
     val frozen2 = snapshot2.freeze
     val smallNumber = 0.1
 
-    frozen1.diverges(frozen2).divergence should be > smallNumber
+    frozen1.diverges(frozen2).get.divergence should be > smallNumber
   }
 
   test("0 label cardinality values should not lead to wrong divergences") {
@@ -173,7 +178,7 @@ class GraphStatisticsSnapshotTest extends CypherPlannerTestSuite {
     val frozen2 = snapshot2.freeze
     val smallNumber = 0.1
 
-    frozen1.diverges(frozen2).divergence should be > smallNumber
+    frozen1.diverges(frozen2).get.divergence should be > smallNumber
   }
 
   test("0 all nodes cardinality values should not lead to wrong divergences") {
@@ -195,7 +200,7 @@ class GraphStatisticsSnapshotTest extends CypherPlannerTestSuite {
     val frozen2 = snapshot2.freeze
     val smallNumber = 0.1
 
-    frozen1.diverges(frozen2).divergence should be > smallNumber
+    frozen1.diverges(frozen2).get.divergence should be > smallNumber
   }
 
   test("if threshold is 1.0 nothing diverges") {
@@ -217,7 +222,7 @@ class GraphStatisticsSnapshotTest extends CypherPlannerTestSuite {
     val frozen1 = snapshot1.freeze
     val frozen2 = snapshot2.freeze
 
-    frozen1.diverges(frozen2).divergence should not(be < 1.0)
+    frozen1.diverges(frozen2).get.divergence should not(be < 1.0)
   }
 
   private def graphStatistics(

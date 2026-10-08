@@ -267,6 +267,26 @@ class PlanStalenessCallerTest extends CommunityCypherTestSuite {
     }
   }
 
+  test("should never be stale due to statistics if the plan did not depend on any statistics") {
+    testAll { (algorithm, clock) =>
+      val emptyGraphStatisticSnapshot = GraphStatisticsSnapshot()
+      val fingerprintRef =
+        new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, emptyGraphStatisticSnapshot, None))
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.1, 0.05, 1000, 100000)
+
+      val stats = new TestGraphStatistics
+      val idSupplier = TransactionIdSupplier(23)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, idSupplier, not_used, null)
+
+      clock.forward(2, SECONDS)
+      planStalenessCaller.staleness(fingerprintRef, stats, -1) shouldBe NotStale
+
+      clock.forward(100, SECONDS)
+      idSupplier.id = 73
+      planStalenessCaller.staleness(fingerprintRef, stats, -1) shouldBe NotStale
+    }
+  }
+
   def testAll(f: (CypherReplanAlgorithm, FakeClock) => Unit): Unit = {
     for (algorithm <- divergenceCalculators)
       withClue(s"For divergence calculator '$algorithm': ") { f(algorithm, Clocks.fakeClock()) }

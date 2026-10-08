@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Selectivity
 
 case class QueryGraphCardinalityContext(
@@ -42,7 +41,6 @@ case class QueryGraphCardinalityContext(
   semanticTable: SemanticTable,
   indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
   cardinalityModel: CardinalityModel,
-  allNodesCardinality: Cardinality,
   labelInferenceStrategy: LabelInferenceStrategy,
   argumentIds: Set[LogicalVariable],
   graphSchemaOptimizations: GraphSchemaOptimizations

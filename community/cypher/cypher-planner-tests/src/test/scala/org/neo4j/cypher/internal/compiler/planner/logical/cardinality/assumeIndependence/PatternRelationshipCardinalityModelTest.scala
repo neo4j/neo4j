@@ -57,7 +57,6 @@ class PatternRelationshipCardinalityModelTest extends CypherPlannerTestSuite wit
       semanticTable = semanticTable,
       indexPredicateProviderContext = null,
       cardinalityModel = null,
-      allNodesCardinality = null,
       LabelInferenceStrategy.NoInference,
       Set.empty,
       GraphSchemaOptimizations.Disabled
@@ -91,7 +90,6 @@ class PatternRelationshipCardinalityModelTest extends CypherPlannerTestSuite wit
       semanticTable = semanticTable,
       indexPredicateProviderContext = null,
       cardinalityModel = null,
-      allNodesCardinality = null,
       LabelInferenceStrategy.NoInference,
       Set.empty,
       GraphSchemaOptimizations.Disabled
@@ -115,6 +113,8 @@ class PatternRelationshipCardinalityModelTest extends CypherPlannerTestSuite wit
         relTypeId: Option[RelTypeId],
         toLabel: Option[LabelId]
       ): Cardinality = Cardinality.SINGLE
+
+      override def nodesAllCardinality(): Cardinality = Cardinality.SINGLE
     }
     val semanticTable = new SemanticTable(resolvedLabelNames = Map("L" -> LabelId(0)))
     val context = QueryGraphCardinalityContext(
@@ -125,7 +125,6 @@ class PatternRelationshipCardinalityModelTest extends CypherPlannerTestSuite wit
       semanticTable = semanticTable,
       indexPredicateProviderContext = null,
       cardinalityModel = null,
-      allNodesCardinality = Cardinality.SINGLE,
       LabelInferenceStrategy.NoInference,
       Set.empty,
       GraphSchemaOptimizations.Disabled
@@ -154,7 +153,6 @@ class PatternRelationshipCardinalityModelTest extends CypherPlannerTestSuite wit
       semanticTable = semanticTable,
       indexPredicateProviderContext = null,
       cardinalityModel = null,
-      allNodesCardinality = null,
       LabelInferenceStrategy.NoInference,
       Set.empty,
       GraphSchemaOptimizations.Disabled

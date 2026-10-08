@@ -83,17 +83,19 @@ class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](
     ) {
       // check if we have diverged?
       val threshold = divergenceCalculator.decay(currentTimeMillis - f.creationTimeMillis)
-      val divergence = f.snapshot.diverges(f.snapshot.recompute(statistics))
-      if (divergence.divergence > threshold) {
-        Stale(
-          secondsSincePlan,
-          Option(s"${divergence.key} changed from ${divergence.before} to ${divergence.after}, " +
-            s"which is a divergence of ${divergence.divergence} which is greater than " +
-            s"threshold $threshold")
-        )
-      } else {
-        ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis, lastCommittedTxId = lastCommittedTxId)
-        NotStale
+      f.snapshot
+        .diverges(f.snapshot.recompute(statistics))
+        .filter(_.divergence > threshold) match {
+        case Some(divergence) =>
+          Stale(
+            secondsSincePlan,
+            Option(s"${divergence.key} changed from ${divergence.before} to ${divergence.after}, " +
+              s"which is a divergence of ${divergence.divergence} which is greater than " +
+              s"threshold $threshold")
+          )
+        case None =>
+          ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis, lastCommittedTxId = lastCommittedTxId)
+          NotStale
       }
     } else {
       NotStale
