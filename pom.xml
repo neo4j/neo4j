@@ -84,7 +84,7 @@
     <asm.version>9.10.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
     <awssdk.version>2.54.15</awssdk.version>
-    <bouncycastle.version>1.85</bouncycastle.version>
+    <bouncycastle.version>1.86</bouncycastle.version>
     <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
     <build-resources.version>2026.07.1</build-resources.version>
     <caffeine.version>3.2.4</caffeine.version>
@@ -126,7 +126,7 @@
     <guava.version>33.7.1-jre</guava.version>
     <!-- no more patch releases for jackson-annotations so different versioning from jackson -->
     <jackson.annotations.version>2.22</jackson.annotations.version>
-    <jackson.version>2.22.2</jackson.version>
+    <jackson.version>2.22.3</jackson.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
     <jakarta.inject.version>2.0.1</jakarta.inject.version>
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
@@ -158,7 +158,7 @@
     <license.id>neo4j_gpl_v3</license.id>
     <licensing.prepend.text>license/neo4j_gpl_v3/notice.txt</licensing.prepend.text>
     <log4j.version>2.26.1</log4j.version>
-    <logback.version>1.6.3</logback.version>
+    <logback.version>1.6.5</logback.version>
     <lucene.version>10.5.1</lucene.version>
     <lucene9.version>9.12.3</lucene9.version>
     <lz4.version>1.11.2</lz4.version>
@@ -178,7 +178,7 @@
      - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
      - needs updating.
      -->
-    <netty.version>4.2.18.Final</netty.version>
+    <netty.version>4.2.19.Final</netty.version>
     <opencypher.version>1.0.0-M23</opencypher.version>
     <opentest4j.version>1.3.0</opentest4j.version>
     <oshi-common.version>7.6.1</oshi-common.version>
