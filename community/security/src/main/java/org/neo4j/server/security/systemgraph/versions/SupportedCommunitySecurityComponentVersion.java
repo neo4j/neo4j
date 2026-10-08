@@ -31,6 +31,7 @@ import static org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.USER_LABEL;
 import static org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.USER_NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.USER_SUSPENDED_PROPERTY;
 import static org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.USER_TAGS_PROPERTY;
+import static org.neo4j.internal.helpers.NameUtil.escapeSingleQuotes;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static org.neo4j.server.security.systemgraph.SecurityGraphHelper.NATIVE_AUTH;
@@ -38,7 +39,6 @@ import static org.neo4j.util.Stringifier.backtick;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -176,13 +176,13 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
                     }
 
                     // tags
-                    List<String> tags;
+                    String[] tags;
                     if (allowedToSeeTags) {
                         Object maybeTags = userNode.getProperty(USER_TAGS_PROPERTY, null);
                         if (maybeTags instanceof String[] rawTags) {
-                            tags = Arrays.asList(rawTags);
+                            tags = rawTags;
                         } else {
-                            tags = Collections.emptyList();
+                            tags = new String[0];
                         }
                     } else {
                         tags = null;
@@ -238,7 +238,7 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
                                                     home,
                                                     nativeAuth.provider,
                                                     authMap,
-                                                    tags));
+                                                    asNullableList(tags)));
                                         }
                                         case ExternalAuth extAuth -> {
                                             Map<String, AnyValue> authMap =
@@ -252,14 +252,14 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
                                                     home,
                                                     extAuth.provider,
                                                     authMap,
-                                                    tags));
+                                                    asNullableList(tags)));
                                         }
                                     }
                                 }
                             } else {
                                 // SHOW USERS AS COMMANDS
                                 usersRows.add(new ShowUsersOutput.ShowUsersRow(
-                                        command, username, roles, null, null, null, null, null, tags));
+                                        command, username, roles, null, null, null, null, null, asNullableList(tags)));
                             }
                         } else {
                             // no auth object found for the user
@@ -268,11 +268,19 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
                                 command = asCommand(username, suspended, home, "", tags);
                             }
                             usersRows.add(new ShowUsersOutput.ShowUsersRow(
-                                    command, username, roles, changeReq, suspended, home, null, null, tags));
+                                    command,
+                                    username,
+                                    roles,
+                                    changeReq,
+                                    suspended,
+                                    home,
+                                    null,
+                                    null,
+                                    asNullableList(tags)));
                         }
                     } else {
                         usersRows.add(new ShowUsersOutput.ShowUsersRow(
-                                null, username, roles, changeReq, suspended, home, null, null, tags));
+                                null, username, roles, changeReq, suspended, home, null, null, asNullableList(tags)));
                     }
                 } catch (NotFoundException n) {
                     // user was deleted concurrently with reading properties from it,
@@ -283,20 +291,20 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
         return new ShowUsersOutput(usersRows);
     }
 
-    private static String asCommand(String username, Boolean suspended, String home, String auth, List<String> tags) {
+    private static String asCommand(String username, Boolean suspended, String home, String auth, String[] tags) {
         var command = new StringBuilder();
         command.append("CREATE USER ").append(backtick(username));
         if (suspended != null && suspended) {
             command.append(" SET STATUS SUSPENDED");
         }
         if (home != null) {
-            command.append(" SET HOME DATABASE ").append(home);
+            command.append(" SET HOME DATABASE ").append(backtick(home));
         }
 
         command.append(auth);
 
-        if (tags != null && !tags.isEmpty()) {
-            command.append(" SET TAGS [").append(String.join(",", tags)).append("]");
+        if (tags != null && tags.length > 0) {
+            command.append(UsersTagFormatter.tagsClause(tags));
         }
         return command.toString();
     }
@@ -320,7 +328,36 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
     private record ExternalAuth(String provider, String id) implements Auth {
         @Override
         public String asCommand() {
-            return String.format(" SET AUTH PROVIDER '%s' { SET ID '%s' }", provider, id);
+            return String.format(
+                    " SET AUTH PROVIDER '%s' { SET ID '%s' }", escapeSingleQuotes(provider), escapeSingleQuotes(id));
+        }
+    }
+
+    // tags is null when the caller is not allowed to see tags; the null must survive into the row
+    private static List<String> asNullableList(String[] tags) {
+        return tags != null ? Arrays.asList(tags) : null;
+    }
+
+    public static class UsersTagFormatter {
+        public static String tagsClause(String[] tags) {
+            return Arrays.stream(tags)
+                    .map(UsersTagFormatter::quoteTag)
+                    .collect(Collectors.joining(", ", " SET TAGS [", "]"));
+        }
+
+        // Render a tag as a Cypher string literal that round-trips through the parser on restore.
+        // Mirrors ExpressionStringifier.quote: prefer single quotes, switch to double quotes when the
+        // value contains a single quote, and escape backslashes (and embedded double quotes).
+        private static String quoteTag(String tag) {
+            String escaped = tag.replace("\\", "\\\\");
+            boolean hasSingle = escaped.indexOf('\'') >= 0;
+            boolean hasDouble = escaped.indexOf('"') >= 0;
+            if (hasSingle && hasDouble) {
+                return '"' + escaped.replace("\"", "\\\"") + '"';
+            } else if (hasSingle) {
+                return '"' + escaped + '"';
+            }
+            return "'" + escaped + "'";
         }
     }
 }
