@@ -26,7 +26,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 
 /**
@@ -91,9 +90,8 @@ public interface SystemGraphComponent {
 
     static void executeWithFullAccess(GraphDatabaseService system, ThrowingConsumer<Transaction, Exception> consumer)
             throws Exception {
-        try (TransactionImpl tx = (TransactionImpl) system.beginTx();
-                KernelTransaction.Revertable ignore =
-                        tx.kernelTransaction().overrideWith(SecurityContext.AUTH_DISABLED)) {
+        try (var tx = system.beginTx();
+                var ignore = tryWithAuthenticationDisabled(tx)) {
             consumer.accept(tx);
             tx.commit();
         }
@@ -106,7 +104,7 @@ public interface SystemGraphComponent {
     /**
      * Get the version number of a component from the system graph.
      *
-     * @param tx an open transaction
+     * @param tx            an open transaction
      * @param componentName name of the property describing the version for the component
      * @return The version of the component or null if there is no stored information.
      */
@@ -119,6 +117,13 @@ public interface SystemGraphComponent {
             }
         }
         return result;
+    }
+
+    /**
+     * This should return false if the component executes arbitrary cypher over an empty system graph
+     */
+    default boolean initializationWithImportPossible() {
+        return true;
     }
 
     enum Status {
@@ -178,5 +183,15 @@ public interface SystemGraphComponent {
         public String toString() {
             return name;
         }
+    }
+
+    private static AutoCloseable tryWithAuthenticationDisabled(Transaction tx) {
+        if (tx instanceof TransactionImpl txImpl) {
+            return txImpl.kernelTransaction().overrideWith(SecurityContext.AUTH_DISABLED);
+        }
+        if (tx instanceof SystemGraphComponents.SkipSpecifics) {
+            return () -> {};
+        }
+        throw new UnsupportedOperationException("Transaction object cannot be used in an authentication disabled way");
     }
 }

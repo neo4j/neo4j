@@ -49,6 +49,8 @@ import org.neo4j.util.Preconditions;
  * upgrade from one version to another.
  */
 public class SystemGraphComponents {
+    public interface SkipSpecifics {}
+
     private final Map<SystemGraphComponent.Name, SystemGraphComponent> componentMap;
 
     private SystemGraphComponents(Map<SystemGraphComponent.Name, SystemGraphComponent> componentMap) {
@@ -77,6 +79,10 @@ public class SystemGraphComponents {
                 .map(c -> c.detect(system))
                 .reduce(SystemGraphComponent.Status::with)
                 .orElse(SystemGraphComponent.Status.CURRENT);
+    }
+
+    public boolean initializationWithImportPossible() {
+        return componentMap.values().stream().allMatch(SystemGraphComponent::initializationWithImportPossible);
     }
 
     public void initializeSystemGraph(GraphDatabaseService system) {
@@ -108,14 +114,18 @@ public class SystemGraphComponents {
     }
 
     public static void awaitSystemGraphSchemaOnline(GraphDatabaseService system) {
-        // refresh boundaries for populations
-        ((GraphDatabaseAPI) system)
-                .getDependencyResolver()
-                .resolveDependency(TransactionMonitor.class)
-                .run();
+        if (system instanceof GraphDatabaseAPI api) {
+            // refresh boundaries for populations
+            api.getDependencyResolver()
+                    .resolveDependency(TransactionMonitor.class)
+                    .run();
 
-        try (Transaction tx = system.beginTx()) {
-            tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES);
+            try (var tx = system.beginTx()) {
+                tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES);
+            }
+        } else if (!(system instanceof SkipSpecifics)) {
+            throw new UnsupportedOperationException(
+                    "TransactionMonitor cannot be resolved with given system database object");
         }
     }
 
