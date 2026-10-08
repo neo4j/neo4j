@@ -110,11 +110,13 @@
          Update with caution and observe nightly tests against Big Query, Databricks and Snowflake. -->
     <ge-HikariCP.version>7.1.0</ge-HikariCP.version>
     <ge-bigquery-jdbc.version>1.4.1</ge-bigquery-jdbc.version>
-    <ge-databricks-jdbc.version>3.4.2</ge-databricks-jdbc.version>
+    <ge-clickhouse-jdbc.version>0.11.0-rc1</ge-clickhouse-jdbc.version>
+    <ge-databricks-jdbc.version>3.4.3</ge-databricks-jdbc.version>
     <ge-datasource-proxy.version>1.11.0</ge-datasource-proxy.version>
     <ge-duckdb_jdbc.version>1.5.6.0</ge-duckdb_jdbc.version>
     <ge-flyway-core.version>13.6.0</ge-flyway-core.version>
-    <ge-flyway-database-duckdb.version>10.24.0</ge-flyway-database-duckdb.version>
+    <ge-flyway-database-clickhouse.version>10.26.0</ge-flyway-database-clickhouse.version>
+    <ge-flyway-database-duckdb.version>10.26.0</ge-flyway-database-duckdb.version>
     <ge-ojdbc17.version>23.26.3.0.0</ge-ojdbc17.version>
     <ge-postgresql-jdbc.version>42.7.13</ge-postgresql-jdbc.version>
     <ge-snowflake-jdbc.version>4.3.4</ge-snowflake-jdbc.version>
@@ -341,6 +343,12 @@
         <groupId>blue.strategic.parquet</groupId>
         <artifactId>parquet-floor</artifactId>
         <version>${parquet-floor.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.clickhouse</groupId>
+        <artifactId>clickhouse-jdbc</artifactId>
+        <version>${ge-clickhouse-jdbc.version}</version>
+        <classifier>all</classifier>
       </dependency>
       <dependency>
         <groupId>com.databricks</groupId>
@@ -1067,6 +1075,17 @@
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-core</artifactId>
         <version>${ge-flyway-core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-database-clickhouse</artifactId>
+        <version>${ge-flyway-database-clickhouse.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.clickhouse</groupId>
+            <artifactId>clickhouse-jdbc</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.flywaydb</groupId>
