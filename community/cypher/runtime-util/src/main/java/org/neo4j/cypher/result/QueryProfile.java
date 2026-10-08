@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.result;
 
+import java.util.Optional;
+
 /**
  * Profile of a query execution.
  */
@@ -34,6 +36,19 @@ public interface QueryProfile {
      * @param operatorId operator id
      */
     OperatorProfile operatorProfile(int operatorId);
+
+    /**
+     * Get the CONCURRENT TRANSACTIONS runtime-concurrency profile for a specific operator, if any.
+     *
+     * Returns a value only for TransactionApply / TransactionForeach operators, and only when a
+     * recording concurrent-transactions tracer was installed for the query (e.g. under PROFILE).
+     * Defaults to empty so non-recording profiles do not need to implement it.
+     *
+     * @param operatorId operator id
+     */
+    default Optional<ConcurrentTransactionsProfile> concurrentTransactionsProfile(int operatorId) {
+        return Optional.empty();
+    }
 
     /**
      * The maximum amount of memory that this query held onto while executing.

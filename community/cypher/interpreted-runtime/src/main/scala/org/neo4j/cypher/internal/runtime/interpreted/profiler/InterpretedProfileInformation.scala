@@ -23,10 +23,13 @@ import org.neo4j.cypher.internal.runtime.memory.MemoryTrackerForOperatorProvider
 import org.neo4j.cypher.internal.runtime.memory.NoOpQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.result.ConcurrentTransactionsProfile
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.query.QueryTransactionStatisticsAggregator.CommitPhaseStatisticsListener
+
+import java.util.Optional
 
 import scala.collection.mutable
 
@@ -59,6 +62,10 @@ class InterpretedProfileInformation extends QueryProfile {
   val indexSeeksMap: mutable.Map[Id, mutable.Map[IndexDescriptor, Int]] = mutable.Map.empty
   val rowMap: mutable.Map[Id, ProfilingIterator] = mutable.Map.empty
 
+  // Per-operator CONCURRENT TRANSACTIONS runtime-concurrency snapshots, written once per operator on
+  // the main thread at operator close (after all workers have finished), keyed by operator id.
+  private[this] val concurrentTransactionsMap: mutable.Map[Id, ConcurrentTransactionsProfile] = mutable.Map.empty
+
   // Intended to be overridden by `setQueryMemoryTracker`
   private var memoryTracker: QueryMemoryTracker = NoOpQueryMemoryTracker
 
@@ -86,6 +93,17 @@ class InterpretedProfileInformation extends QueryProfile {
     val aggregatedDbHits = dbHitsMap.values.map(_.count).sum
     InterpretedProfileInformationAggregatedSnapshot(aggregatedDbHits)
   }
+
+  override def concurrentTransactionsProfile(operatorId: Int): Optional[ConcurrentTransactionsProfile] =
+    concurrentTransactionsMap.get(Id(operatorId)) match {
+      case Some(profile) => Optional.of(profile)
+      case None          => Optional.empty()
+    }
+
+  def recordConcurrentTransactions(id: Id, profile: ConcurrentTransactionsProfile): Unit =
+    if (profile != null) {
+      concurrentTransactionsMap(id) = profile
+    }
 
   override def maxAllocatedMemory(): Long =
     MemoryTrackerForOperatorProvider.memoryAsProfileData(memoryTracker.heapHighWaterMark)

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.result.ConcurrentTransactionsProfile
 
 sealed abstract class Argument extends Product {
 
@@ -103,6 +104,12 @@ object Arguments {
   case class PageCacheHits(value: Long) extends Argument
 
   case class PageCacheMisses(value: Long) extends Argument
+
+  // Runtime concurrency achieved by a CONCURRENT TRANSACTIONS operator (TransactionApply /
+  // TransactionForeach). Only attached to those operators, and only under PROFILE.
+  case class ConcurrentTransactions(profile: ConcurrentTransactionsProfile) extends Argument {
+    override def name = "concurrent-transactions"
+  }
 
   case class EstimatedRows(effectiveCardinality: Double, cardinality: Option[Double] = None) extends Argument
 

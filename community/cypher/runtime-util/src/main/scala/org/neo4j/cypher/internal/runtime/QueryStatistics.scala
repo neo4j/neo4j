@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.result.ConcurrentTransactionsProfile
 import org.neo4j.kernel.api.query.ExtendedQueryStatistics
 
 // Whenever you add a field here, please also update
@@ -54,6 +55,24 @@ case class QueryStatistics(
   fileLinesRead: Long = 0,
   systemUpdates: Int = 0
 ) extends org.neo4j.graphdb.QueryStatistics with ExtendedQueryStatistics {
+
+  // CONCURRENT TRANSACTIONS runtime concurrency, recorded whenever a query starts concurrent
+  // transactions. Deliberately NOT a constructor parameter: it is diagnostic metadata that must not
+  // affect equals/hashCode/copy (so that statistics comparisons in tests and elsewhere ignore it) and
+  // must not change the constructor arity. None for queries that did not run a CONCURRENT TRANSACTIONS
+  // operator. Attached exactly once, at the outermost result when its statistics are read; `+` and `-`
+  // carry an already-attached profile along (left operand wins) but never merge two profiles. Note that
+  // conversions through the non-case-class arms of QueryStatistics.apply (e.g. composite/Fabric
+  // statistics) do not carry this metadata.
+  private var _concurrentTransactions: Option[ConcurrentTransactionsProfile] = None
+
+  def concurrentTransactions: Option[ConcurrentTransactionsProfile] = _concurrentTransactions
+
+  def withConcurrentTransactions(profile: ConcurrentTransactionsProfile): QueryStatistics = {
+    val result = this.copy()
+    result._concurrentTransactions = Some(profile)
+    result
+  }
 
   val constraintsAdded: Int = nodePropUniquenessConstraintsAdded + relPropUniquenessConstraintsAdded +
     nodePropExistenceConstraintsAdded + relPropExistenceConstraintsAdded +
@@ -109,6 +128,22 @@ case class QueryStatistics(
 
   override def getFileLinesRead: Long = fileLinesRead
 
+  override def concurrentTransactionsPeakConcurrency: Long = concurrentTransactions.map(_.peakConcurrency).getOrElse(0L)
+
+  override def concurrentTransactionsAvgConcurrency: Double =
+    concurrentTransactions.map(_.avgConcurrency).getOrElse(0.0)
+
+  override def concurrentTransactionsPeakQueuedBatches: Long =
+    concurrentTransactions.map(_.peakQueuedBatches).getOrElse(0L)
+
+  override def concurrentTransactionsAvgQueuedBatches: Double =
+    concurrentTransactions.map(_.avgQueuedBatches).getOrElse(0.0)
+
+  override def concurrentTransactionsConcurrencyLimit: Long =
+    concurrentTransactions.map(_.concurrencyLimit).getOrElse(0L)
+
+  override def concurrentTransactionsRetries: Long = concurrentTransactions.map(_.retries).getOrElse(0L)
+
   override def toString: String = {
     val builder = new StringBuilder
 
@@ -155,7 +190,7 @@ case class QueryStatistics(
   }
 
   def +(other: QueryStatistics): QueryStatistics = {
-    QueryStatistics(
+    val result = QueryStatistics(
       nodesCreated = this.nodesCreated + other.nodesCreated,
       relationshipsCreated = this.relationshipsCreated + other.relationshipsCreated,
       propertiesSet = this.propertiesSet + other.propertiesSet,
@@ -187,10 +222,12 @@ case class QueryStatistics(
       fileLinesRead = this.fileLinesRead + other.fileLinesRead,
       systemUpdates = this.systemUpdates + other.systemUpdates
     )
+    result._concurrentTransactions = this._concurrentTransactions.orElse(other._concurrentTransactions)
+    result
   }
 
   def -(other: QueryStatistics): QueryStatistics = {
-    QueryStatistics(
+    val result = QueryStatistics(
       nodesCreated = this.nodesCreated - other.nodesCreated,
       relationshipsCreated = this.relationshipsCreated - other.relationshipsCreated,
       propertiesSet = this.propertiesSet - other.propertiesSet,
@@ -222,6 +259,8 @@ case class QueryStatistics(
       fileLinesRead = this.fileLinesRead - other.fileLinesRead,
       systemUpdates = this.systemUpdates - other.systemUpdates
     )
+    result._concurrentTransactions = this._concurrentTransactions.orElse(other._concurrentTransactions)
+    result
   }
 }
 

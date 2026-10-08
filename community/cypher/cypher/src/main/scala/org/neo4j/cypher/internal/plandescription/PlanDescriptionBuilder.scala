@@ -171,6 +171,14 @@ class PlanDescriptionBuilder(
               )
             } else plan
           }
+          .pipe { plan =>
+            // Only TransactionApply / TransactionForeach operators populate this, and only under
+            // PROFILE; everything else returns empty here.
+            val concurrentTransactions = queryProfile.concurrentTransactionsProfile(input.id.x)
+            if (concurrentTransactions.isPresent) {
+              plan.addArgument(Arguments.ConcurrentTransactions.apply, concurrentTransactions.get())
+            } else plan
+          }
           .plan
       }
 

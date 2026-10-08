@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryTracers
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RecordingQueryTracers
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfileInformation
 import org.neo4j.cypher.internal.runtime.memory.CustomTrackingQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.memory.NoOpQueryMemoryTracker
@@ -73,6 +75,19 @@ abstract class BaseExecutionResultBuilderFactory(
       case StartsConcurrentTransactions =>
         Some(queryContext.jobScheduler.executor(Group.CYPHER_TRANSACTION_WORKER))
       case _ => None
+    }
+
+    /**
+     * The per-query tracer container. A CONCURRENT TRANSACTIONS query always installs a recording
+     * container: the recorded concurrency statistics are part of the query statistics (query log,
+     * executing-query snapshot), not only of PROFILE output, and the recording cost per batch is
+     * negligible next to the inner transaction each batch runs. Everything else gets the noop
+     * container (zero overhead). The CONCURRENT TRANSACTIONS pipe additionally writes its
+     * per-operator snapshot into the profile at operator close when profiling.
+     */
+    protected def createQueryTracers(): QueryTracers = transactionMode match {
+      case StartsConcurrentTransactions => new RecordingQueryTracers()
+      case _                            => QueryTracers.NULL
     }
 
     protected def createQueryMemoryTracker(
@@ -196,6 +211,7 @@ case class InterpretedExecutionResultBuilderFactory(
         input = input,
         if (doProfile) profileInformation else null,
         transactionWorkerExecutor,
+        createQueryTracers(),
         notifications = new util.HashSet[InternalNotification],
         warnOnAggregationSkipNull = warnOnAggregationSkipNull
       )

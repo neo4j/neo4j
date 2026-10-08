@@ -101,6 +101,7 @@ class SlottedExecutionResultBuilderFactory(
         input = input,
         if (doProfile) profileInformation else null,
         transactionWorkerExecutor = transactionWorkerExecutor,
+        queryTracers = createQueryTracers(),
         notifications = new util.HashSet[InternalNotification],
         warnOnAggregationSkipNull
       )

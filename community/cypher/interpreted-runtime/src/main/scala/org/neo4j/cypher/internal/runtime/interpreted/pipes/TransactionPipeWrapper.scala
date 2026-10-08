@@ -148,8 +148,14 @@ trait TransactionPipeWrapper {
     // Ensure that no write happens before a 'CALL { ... } IN TRANSACTIONS'
     assertTransactionStateIsEmpty(state)
 
+    // Commit-side trace points are only meaningful for CONCURRENT TRANSACTIONS (workers committing in
+    // parallel); skip the per-batch tracer lookup entirely for serial CALL IN TRANSACTIONS.
+    val citTracer =
+      if (concurrentAccess) state.queryTracers.concurrentTransactions(outerId) else ConcurrentTransactionsTracer.NULL
+
     // beginTx()
     val stateWithNewTransaction = state.withNewTransaction(concurrentAccess)
+    citTracer.onWorkerInnerTransactionStarted()
     val innerTxContext = stateWithNewTransaction.query.transactionalContext
     val transactionId = innerTxContext.userTransactionId
     val entityTransformer = new CypherRowEntityTransformer(stateWithNewTransaction.query.entityTransformer)
@@ -182,6 +188,7 @@ trait TransactionPipeWrapper {
         )
       }
       innerTxContext.commitTransaction()
+      citTracer.onWorkerInnerTransactionCommitted()
       Commit(transactionId, statistics, profileInformation)
     } catch {
       case RecoverableCypherError(e) =>
@@ -391,6 +398,23 @@ case object NonRecoverableError extends TransactionStatus {
 
 trait TransactionBatch {
   def rows: EagerBuffer[CypherRow]
+
+  /**
+   * Tracer scratch field: the nanoTime when this batch attempt became ready (fully formed and eligible
+   * to start), written by the producer-side onProducerBatchReady hook and read by the worker-side hook
+   * to compute the queued-to-start gap. Doubles as a fired-once guard for the dispatch fallback hook.
+   * Only written/read when a recording ConcurrentTransactionsTracer is active; left at 0 otherwise.
+   * Safe as a plain var because the executor submit establishes the happens-before edge.
+   */
+  var readyNanos: Long = 0L
+
+  /**
+   * Tracer scratch field: the nanoTime when a worker started processing this batch attempt. Written
+   * and read on the same worker thread within one attempt (the paired started/finished hooks) and
+   * cleared at finish, so a retry attempt starts from a clean slate. Cross-attempt publication rides
+   * the same output-queue and executor-submit edges as [[readyNanos]].
+   */
+  var startNanos: Long = 0L
 
   def close(): Unit = {
     rows.close()

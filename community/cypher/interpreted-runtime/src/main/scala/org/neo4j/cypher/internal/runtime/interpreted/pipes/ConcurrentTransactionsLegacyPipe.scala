@@ -102,6 +102,7 @@ case class ConcurrentTransactionApplyLegacyPipe(
     batch: TransactionBatch,
     memoryTracker: MemoryTracker,
     state: QueryState,
+    tracer: ConcurrentTransactionsTracer,
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ): Runnable = {
@@ -110,6 +111,7 @@ case class ConcurrentTransactionApplyLegacyPipe(
       batch,
       memoryTracker,
       state,
+      tracer,
       outputQueue,
       activeTaskCount
     )
@@ -146,6 +148,7 @@ case class ConcurrentTransactionForeachLegacyPipe(
     batch: TransactionBatch,
     memoryTracker: MemoryTracker,
     state: QueryState,
+    tracer: ConcurrentTransactionsTracer,
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ): Runnable = {
@@ -154,6 +157,7 @@ case class ConcurrentTransactionForeachLegacyPipe(
       batch,
       memoryTracker,
       state,
+      tracer,
       outputQueue,
       activeTaskCount
     )

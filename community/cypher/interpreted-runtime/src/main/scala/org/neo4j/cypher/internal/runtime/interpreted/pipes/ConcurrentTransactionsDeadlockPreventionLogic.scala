@@ -47,12 +47,16 @@ trait TransactionDeadlockPreventionLogic {
   /**
    * Creates a batch iterator that groups rows into batches.
    * The iterator should yield batches in an order that prevents deadlocks.
+   *
+   * The tracer's onProducerBatchReady must fire exactly once per batch, when the batch stops
+   * accepting rows (full, or sealed at input exhaustion / forced dispatch).
    */
   def batchIterator(
     input: ClosingIterator[CypherRow],
     state: QueryState,
     batchSize: Long,
-    memoryTracker: MemoryTracker
+    memoryTracker: MemoryTracker,
+    tracer: ConcurrentTransactionsTracer = ConcurrentTransactionsTracer.NULL
   ): ClosingIterator[TransactionBatch]
 
   /**
@@ -79,9 +83,15 @@ object NoopTransactionDeadlockPreventionLogic extends TransactionDeadlockPrevent
     input: ClosingIterator[CypherRow],
     state: QueryState,
     batchSize: Long,
-    memoryTracker: MemoryTracker
+    memoryTracker: MemoryTracker,
+    tracer: ConcurrentTransactionsTracer
   ): ClosingIterator[TransactionBatch] = {
-    input.eagerGrouped(batchSize, memoryTracker).map(TransactionBatch(_))
+    // Batches are formed just-in-time when pulled, so a batch becomes ready at creation
+    input.eagerGrouped(batchSize, memoryTracker).map { rows =>
+      val batch = TransactionBatch(rows)
+      tracer.onProducerBatchReady(batch)
+      batch
+    }
   }
 
   override def requiresBatchCompletedNotification: Boolean = false
@@ -208,7 +218,8 @@ class ConcurrentTransactionsDeadlockPreventionLogic(
     input: ClosingIterator[CypherRow],
     state: QueryState,
     batchSize: Long,
-    memoryTracker: MemoryTracker
+    memoryTracker: MemoryTracker,
+    tracer: ConcurrentTransactionsTracer
   ): ClosingIterator[TransactionBatch] = {
     val iterator = new DeadlockPreventingBatchIterator(
       input,
@@ -218,7 +229,8 @@ class ConcurrentTransactionsDeadlockPreventionLogic(
       raidExpressions,
       maxBatchesInFormation,
       schedulerConfig,
-      parkingBudget
+      parkingBudget,
+      tracer
     )
     _batchIterator = iterator
     iterator
@@ -374,7 +386,8 @@ private[pipes] class DeadlockPreventingBatchIterator(
   raidExpressions: Array[Expression],
   maxBatchesInFormation: Int,
   schedulerConfig: TransactionBatchSchedulerConfig = TransactionBatchSchedulerConfig.DEFAULT,
-  parkingBudget: Int = 0
+  parkingBudget: Int = 0,
+  tracer: ConcurrentTransactionsTracer = ConcurrentTransactionsTracer.NULL
 ) extends ClosingIterator[TransactionBatch] {
 
   type Batch = DependencyTrackingTransactionBatch
@@ -429,6 +442,18 @@ private[pipes] class DeadlockPreventingBatchIterator(
       parkedRowsMemoryTracker.releaseHeap(row.estimatedHeapUsage)
       val batch = getOrCreateBatch(batchIdx)
       batch.addRow(row)
+      notifyIfBatchFull(batch)
+    }
+  }
+
+  /**
+   * A batch becomes ready (queued, in tracer terms) when it stops accepting rows. That is when it
+   * fills up, at one of the two addRow funnels, or, for a batch dispatched before it is full (input
+   * exhaustion, forced dispatch), at dispatch. The readyNanos stamp doubles as the fired-once guard.
+   */
+  @inline private def notifyIfBatchFull(batch: Batch): Unit = {
+    if (batch.readyNanos == 0L && batch.isFull(batchSize)) {
+      tracer.onProducerBatchReady(batch)
     }
   }
 
@@ -617,6 +642,11 @@ private[pipes] class DeadlockPreventingBatchIterator(
    * Dispatch a batch
    */
   private def dispatchBatch(batch: Batch): Batch = {
+    if (batch.readyNanos == 0L) {
+      // The batch is dispatched before filling up (input exhausted or forced dispatch), so it
+      // becomes ready only now
+      tracer.onProducerBatchReady(batch)
+    }
     scheduler.dispatchBatch(batch.index)
     batchesInFormation(batch.index) = null
     batchesInFormationCount -= 1
@@ -672,6 +702,7 @@ private[pipes] class DeadlockPreventingBatchIterator(
     if (result >= 0) {
       val batch = getOrCreateBatch(result)
       batch.addRow(row)
+      notifyIfBatchFull(batch)
       RowStatus.INSERTED
     } else if (result <= BatchScheduler.PARKED_BASE) {
       parkRow(BatchScheduler.parkedSlot(result), row)

@@ -66,6 +66,7 @@ abstract class AbstractConcurrentTransactionsPipe(
     batch: TransactionBatch,
     memoryTracker: MemoryTracker,
     state: QueryState,
+    tracer: ConcurrentTransactionsTracer,
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ): Runnable
@@ -108,7 +109,13 @@ abstract class AbstractConcurrentTransactionsPipe(
       NoopTransactionDeadlockPreventionLogic
     }
 
-    val inputBatchIterator = deadlockPreventionLogic.batchIterator(input, state, batchSizeLong, memoryTracker)
+    // Per-operator tracer, shared by the batch iterator (ready hooks), the producer iterator, the
+    // workers and the commit path. The container returns the same instance for this operator id.
+    val tracer = state.queryTracers.concurrentTransactions(id)
+    tracer.onProducerInit(concurrencyLong)
+
+    val inputBatchIterator =
+      deadlockPreventionLogic.batchIterator(input, state, batchSizeLong, memoryTracker, tracer)
 
     retryLogic match {
       case Some(retryLogic) =>
@@ -153,6 +160,10 @@ abstract class AbstractConcurrentTransactionsPipe(
     private var currentOutputIterator: ClosingIterator[CypherRow] = _
     private val executorService: CallableExecutor = queryState.transactionWorkerExecutor.get
 
+    // Per-operator tracer for this execution. The container returns the same instance for this
+    // operator id, so the producer (this iterator), the workers and the commit path all share it.
+    protected val tracer: ConcurrentTransactionsTracer = queryState.queryTracers.concurrentTransactions(id)
+
     private[this] var pendingTaskCount: Int = 0 // NOTE: Only read and written by the main thread
     private[this] val activeTaskCount: AtomicInteger = new AtomicInteger(0)
 
@@ -165,6 +176,16 @@ abstract class AbstractConcurrentTransactionsPipe(
         currentOutputIterator.close()
       }
       drainOutputQueue()
+      // All workers have finished (drainOutputQueue waited for every pending result, and each worker
+      // notifies the tracer before publishing its result), so the snapshot is complete here. When
+      // profiling, hand the per-operator concurrency snapshot to the profile keyed by this operator id.
+      val profileInformation = queryState.profileInformation
+      if (profileInformation != null) {
+        val snapshot = tracer.snapshot()
+        if (snapshot != null) {
+          profileInformation.recordConcurrentTransactions(id, snapshot)
+        }
+      }
     }
 
     final override def produceNext(): Option[CypherRow] = {
@@ -318,6 +339,7 @@ abstract class AbstractConcurrentTransactionsPipe(
         batch,
         memoryTracker,
         queryState,
+        tracer,
         outputQueue,
         activeTaskCount
       ))
@@ -397,7 +419,11 @@ abstract class AbstractConcurrentTransactionsPipe(
         val retryBatch = retryQueue.peek()
         val delay = retryBatch.nanosUntilRetry()
         if (delay <= 0L) {
-          return retryQueue.poll()
+          val batch = retryQueue.poll()
+          // A retry attempt becomes ready when its backoff has elapsed and it is polled for
+          // re-execution; the backoff wait itself is deliberately not counted as queued time.
+          tracer.onProducerBatchReady(batch)
+          return batch
         } else if (retryQueue.size() >= retryQueueSizeLimit) {
           // If the retry queue is full we should hold off on adding new input batches,
           // so it doesn't grow unbounded if the next input batches also need to be retried.
@@ -462,6 +488,7 @@ abstract class AbstractConcurrentTransactionsPipe(
 
           case _ =>
             val retryableBatch = batch.computeNextRetryState(retryLogic)
+            tracer.onProducerBatchRetried(batch)
             Debug.log(ConcurrentTransactions.AddingBatchToRetryQueue(this.toString))
             retryQueue.add(retryableBatch)
         }
@@ -472,7 +499,9 @@ abstract class AbstractConcurrentTransactionsPipe(
   }
 
   abstract protected class AbstractConcurrentTransactionsResultsTask(
+    protected val batch: TransactionBatch,
     state: QueryState,
+    tracer: ConcurrentTransactionsTracer,
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ) extends Runnable {
@@ -481,6 +510,9 @@ abstract class AbstractConcurrentTransactionsPipe(
     override def run(): Unit = {
       var outputResult: TaskOutputResult = null
       try {
+        // Inside the try so that a throwing hook could never skip the result publication below,
+        // which the main thread waits for
+        tracer.onWorkerBatchStarted(batch)
         initializeMemoryTracker()
         outputResult = consumeBatch()
         Debug.log(ConcurrentTransactionsWorker.Done(this.toString))
@@ -495,6 +527,10 @@ abstract class AbstractConcurrentTransactionsPipe(
           // since that could result in the query finishing on the main thread.
           closeMemoryTracker()
         } finally {
+          // Notify the tracer that this worker finished BEFORE publishing the result to the output
+          // queue. This establishes a happens-before edge through the queue: once the main thread has
+          // drained all task results it is guaranteed to observe a fully-accounted tracer snapshot.
+          tracer.onWorkerBatchFinished(batch)
           try {
             outputQueue.put(outputResult)
           } finally {
@@ -538,10 +574,13 @@ abstract class AbstractConcurrentTransactionsPipe(
     batch: TransactionBatch,
     memoryTracker: MemoryTracker,
     state: QueryState,
+    tracer: ConcurrentTransactionsTracer,
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ) extends AbstractConcurrentTransactionsResultsTask(
+        batch,
         state,
+        tracer,
         outputQueue,
         activeTaskCount
       ) {
@@ -596,10 +635,13 @@ abstract class AbstractConcurrentTransactionsPipe(
     batch: TransactionBatch,
     memoryTracker: MemoryTracker,
     state: QueryState,
+    tracer: ConcurrentTransactionsTracer,
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ) extends AbstractConcurrentTransactionsResultsTask(
+        batch,
         state,
+        tracer,
         outputQueue,
         activeTaskCount
       ) {

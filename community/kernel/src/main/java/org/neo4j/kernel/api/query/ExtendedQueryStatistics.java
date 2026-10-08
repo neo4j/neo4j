@@ -47,6 +47,36 @@ public interface ExtendedQueryStatistics extends QueryStatistics {
 
     long getFileLinesRead();
 
+    // CALL { ... } IN CONCURRENT TRANSACTIONS runtime concurrency, recorded whenever a query starts
+    // concurrent transactions. Zero for queries that did not run a CONCURRENT TRANSACTIONS operator;
+    // concurrencyLimit > 0 indicates that one ran. Queued batches count attempts that were fully
+    // formed and eligible to start but that no worker had picked up yet (worker pickup precedes the
+    // inner transaction begin), time-weighted. Retries count attempts scheduled for retry, whether
+    // or not the retry attempt ran before the query completed.
+    default long concurrentTransactionsPeakConcurrency() {
+        return 0L;
+    }
+
+    default double concurrentTransactionsAvgConcurrency() {
+        return 0.0;
+    }
+
+    default long concurrentTransactionsPeakQueuedBatches() {
+        return 0L;
+    }
+
+    default double concurrentTransactionsAvgQueuedBatches() {
+        return 0.0;
+    }
+
+    default long concurrentTransactionsConcurrencyLimit() {
+        return 0L;
+    }
+
+    default long concurrentTransactionsRetries() {
+        return 0L;
+    }
+
     ExtendedQueryStatistics EMPTY = new ExtendedQueryStatistics() {
 
         @Override

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.AvailableWorkers
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.Comment
+import org.neo4j.cypher.internal.plandescription.Arguments.ConcurrentTransactions
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.DeclaredCallables
 import org.neo4j.cypher.internal.plandescription.Arguments.DeclaredConstants
@@ -70,14 +71,31 @@ object PlanDescriptionArgumentSerializer {
 
   def serialize(arg: Argument): AnyRef = {
     arg match {
-      case Details(info)                                  => info.mkPrettyString(", ").prettifiedString
-      case DbHits(value)                                  => Long.box(value)
-      case Memory(value)                                  => Long.box(value)
-      case GlobalMemory(value)                            => Long.box(value)
-      case AvailableWorkers(value)                        => Int.box(value)
-      case AvailableProcessors(value)                     => Int.box(value)
-      case PageCacheHits(value)                           => Long.box(value)
-      case PageCacheMisses(value)                         => Long.box(value)
+      case Details(info)              => info.mkPrettyString(", ").prettifiedString
+      case DbHits(value)              => Long.box(value)
+      case Memory(value)              => Long.box(value)
+      case GlobalMemory(value)        => Long.box(value)
+      case AvailableWorkers(value)    => Int.box(value)
+      case AvailableProcessors(value) => Int.box(value)
+      case PageCacheHits(value)       => Long.box(value)
+      case PageCacheMisses(value)     => Long.box(value)
+      case ConcurrentTransactions(p)  =>
+        // Rendered as a structured map so consumers (drivers, tests) can read individual metrics
+        // off the public ExecutionPlanDescription#getArguments() without parsing a string.
+        val map = new java.util.LinkedHashMap[String, Number]()
+        map.put("peakConcurrency", Long.box(p.peakConcurrency))
+        map.put("avgConcurrency", Double.box(p.avgConcurrency))
+        map.put("peakQueuedBatches", Long.box(p.peakQueuedBatches))
+        map.put("avgQueuedBatches", Double.box(p.avgQueuedBatches))
+        map.put("peakStartGapNanos", Long.box(p.peakStartGapNanos))
+        map.put("avgStartGapNanos", Double.box(p.avgStartGapNanos))
+        map.put("concurrencyLimit", Long.box(p.concurrencyLimit))
+        map.put("batchesQueued", Long.box(p.batchesQueued))
+        map.put("batchesStarted", Long.box(p.batchesStarted))
+        map.put("innerTransactionsStarted", Long.box(p.innerTransactionsStarted))
+        map.put("innerTransactionsCommitted", Long.box(p.innerTransactionsCommitted))
+        map.put("retries", Long.box(p.retries))
+        map
       case Rows(value)                                    => Long.box(value)
       case Time(value)                                    => Long.box(value)
       case EstimatedRows(effectiveCardinality, _)         => Double.box(effectiveCardinality)

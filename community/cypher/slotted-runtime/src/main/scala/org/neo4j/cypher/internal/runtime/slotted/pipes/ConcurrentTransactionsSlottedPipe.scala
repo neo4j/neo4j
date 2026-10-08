@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIt
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AbstractConcurrentTransactionsPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConcurrentTransactionsTracer
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionBatch
@@ -123,6 +124,7 @@ case class ConcurrentTransactionApplySlottedPipe(
     batch: TransactionBatch,
     memoryTracker: MemoryTracker,
     state: QueryState,
+    tracer: ConcurrentTransactionsTracer,
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ): Runnable = {
@@ -131,6 +133,7 @@ case class ConcurrentTransactionApplySlottedPipe(
       batch,
       memoryTracker,
       state,
+      tracer,
       outputQueue,
       activeTaskCount
     )
@@ -167,6 +170,7 @@ case class ConcurrentTransactionForeachSlottedPipe(
     batch: TransactionBatch,
     memoryTracker: MemoryTracker,
     state: QueryState,
+    tracer: ConcurrentTransactionsTracer,
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ): Runnable = {
@@ -175,6 +179,7 @@ case class ConcurrentTransactionForeachSlottedPipe(
       batch,
       memoryTracker,
       state,
+      tracer,
       outputQueue,
       activeTaskCount
     )

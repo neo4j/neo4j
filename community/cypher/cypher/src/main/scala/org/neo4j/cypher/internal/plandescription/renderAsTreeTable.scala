@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.plandescription.Arguments.ConcurrentTransactions
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.Distinctness
@@ -212,6 +213,7 @@ private object Header {
   val PIPELINE = "Pipeline"
   val LANES = "Lanes"
   val INDEXES_USED = "Indexes Used"
+  val CONCURRENCY = "Concurrency"
 
   val ALL: Seq[String] =
     Seq(
@@ -228,7 +230,8 @@ private object Header {
       DISTINCTNESS,
       PIPELINE,
       LANES,
-      INDEXES_USED
+      INDEXES_USED,
+      CONCURRENCY
     )
 }
 
@@ -468,6 +471,8 @@ private class TreeTableBuilder private (
       case lane: LaneInfo         => Header.LANES -> Cell.left(serialize(lane).toString)
       case indexes: UsedIndexes =>
         Header.INDEXES_USED -> Cell.left(indexes.toSeqOfStrings: _*)
+      case ConcurrentTransactions(p) =>
+        Header.CONCURRENCY -> Cell.right(s"peak ${p.peakConcurrency} / avg ${"%.2f".format(p.avgConcurrency)}")
     }
 
     val idString = Option(plan.id)

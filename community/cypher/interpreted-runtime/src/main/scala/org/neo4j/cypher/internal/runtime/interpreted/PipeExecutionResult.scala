@@ -99,10 +99,16 @@ class PipeExecutionResult(
   override def notifications(): util.Set[InternalNotification] = state.notifications
 
   private def queryStatisticsSnapshot: QueryStatistics = {
-    val statisticsSnapshot = state.getStatistics
+    var statisticsSnapshot = state.getStatistics
     val fileLinesRead = state.resources.getFileLinesRead
     if (fileLinesRead > 0L) {
-      return new QueryStatistics(fileLinesRead = fileLinesRead) + statisticsSnapshot
+      statisticsSnapshot = new QueryStatistics(fileLinesRead = fileLinesRead) + statisticsSnapshot
+    }
+    // Only populated when the query actually ran a CONCURRENT TRANSACTIONS operator (a recording
+    // container is always installed for queries that start concurrent transactions); null otherwise.
+    val concurrentTransactions = state.queryTracers.aggregateSnapshot()
+    if (concurrentTransactions != null) {
+      statisticsSnapshot = statisticsSnapshot.withConcurrentTransactions(concurrentTransactions)
     }
     statisticsSnapshot
   }

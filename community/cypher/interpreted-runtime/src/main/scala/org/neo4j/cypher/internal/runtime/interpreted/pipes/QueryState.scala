@@ -75,6 +75,7 @@ class QueryState(
   val input: InputDataStream = NoInput,
   val profileInformation: InterpretedProfileInformation = null,
   val transactionWorkerExecutor: Option[CallableExecutor] = None,
+  val queryTracers: QueryTracers = QueryTracers.NULL,
   val notifications: util.Set[InternalNotification] = new util.HashSet[InternalNotification](),
   val warnOnAggregationSkipNull: Boolean = false
 ) extends AutoCloseable with RuntimeNotifier {
@@ -139,6 +140,7 @@ class QueryState(
       input,
       profileInformation,
       transactionWorkerExecutor,
+      queryTracers,
       notifications
     )
 
@@ -165,6 +167,7 @@ class QueryState(
       input,
       profileInformation,
       transactionWorkerExecutor,
+      queryTracers,
       notifications
     )
 
@@ -191,6 +194,7 @@ class QueryState(
       input,
       profileInformation,
       transactionWorkerExecutor,
+      queryTracers,
       notifications
     )
 
@@ -217,6 +221,7 @@ class QueryState(
       input,
       profileInformation,
       transactionWorkerExecutor,
+      queryTracers,
       notifications
     )
 
@@ -287,6 +292,7 @@ class QueryState(
       input,
       newProfileInformation,
       transactionWorkerExecutor,
+      queryTracers,
       notifications,
       warnOnAggregationSkipNull
     )
@@ -315,6 +321,7 @@ class QueryState(
       input,
       profileInformation,
       transactionWorkerExecutor,
+      queryTracers,
       notifications
     )
   }
@@ -404,6 +411,7 @@ object QueryState {
     input: InputDataStream,
     profileInformation: InterpretedProfileInformation,
     transactionWorkerExecutor: Option[CallableExecutor],
+    queryTracers: QueryTracers,
     notifications: util.Set[InternalNotification],
     warnOnAggregationSkipNull: Boolean
   ): QueryState = {
@@ -431,6 +439,7 @@ object QueryState {
       input,
       profileInformation,
       transactionWorkerExecutor,
+      queryTracers,
       notifications,
       warnOnAggregationSkipNull
     )
