@@ -147,8 +147,10 @@ public class CypherShellTerminalBuilder {
             jLineTerminal.dumb(true).type(Terminal.TYPE_DUMB).attributes(attributes);
         }
 
+        final var activityListener = new ActivityListener();
+
         var readerBuilder = LineReaderBuilder.builder()
-                .terminal(jLineTerminal.build())
+                .terminal(new ActivityTrackingTerminal(jLineTerminal.build(), activityListener))
                 .parser(new StatementJlineParser(new ShellStatementParser()))
                 .completer(new JlineCompleter(new CommandFactoryHelper(), completionEngine))
                 .expander(new JlineTerminal.EmptyExpander())
@@ -164,7 +166,8 @@ public class CypherShellTerminalBuilder {
 
         bindKeyPadKeys(reader);
 
-        return new JlineTerminal(reader, isInteractive, printer, simplePromptSupplier, idleTimeout, idleDelay, dbInfo);
+        return new JlineTerminal(
+                reader, isInteractive, printer, simplePromptSupplier, idleTimeout, idleDelay, dbInfo, activityListener);
     }
 
     public static CypherShellTerminalBuilder terminalBuilder() {

@@ -143,6 +143,14 @@ class InteractiveShellRunnerTest {
     }
 
     @Test
+    void testDumbTerminalDoesNotSpamPromptWhileReadingUnmaskedInput() throws Exception {
+        var runner = runner(lines("return 1;"));
+        runner.runUntilEnd();
+
+        assertThat(out).hasToString("myusername@mydb> return 1;\r\nmyusername@mydb> \r\n");
+    }
+
+    @Test
     void runUntilEndShouldKeepGoingOnErrors() throws CommandException {
         var runner = runner(lines("good1;", "bad1;", "good2;", "bad2;", "good3;"));
         int code = runner.runUntilEnd();

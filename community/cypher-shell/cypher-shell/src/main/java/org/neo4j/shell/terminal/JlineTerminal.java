@@ -34,7 +34,6 @@ import java.util.function.Supplier;
 import org.jline.reader.Expander;
 import org.jline.reader.History;
 import org.jline.reader.LineReader;
-import org.jline.reader.MaskingCallback;
 import org.jline.reader.ParsedLine;
 import org.jline.terminal.Terminal;
 import org.neo4j.shell.Historian;
@@ -53,6 +52,7 @@ import org.neo4j.shell.timeout.IdleTimeoutService;
 public class JlineTerminal implements CypherShellTerminal {
     private static final Logger log = Logger.create();
     static final String NO_CONTINUATION_PROMPT_PATTERN = "  ";
+    private static final char MASK_CHAR = '*';
 
     private final LineReader jLineReader;
     private final Printer printer;
@@ -63,7 +63,6 @@ public class JlineTerminal implements CypherShellTerminal {
     private final Supplier<SimplePrompt> simplePromptSupplier;
     private final IdleTimeoutService exitOnIdleTimeoutService;
     private final IdleTimeoutService stopPollingWhenIdleService;
-    private final IdleTimeoutHook idleTimeoutHook;
 
     public JlineTerminal(
             LineReader jLineReader,
@@ -72,7 +71,8 @@ public class JlineTerminal implements CypherShellTerminal {
             Supplier<SimplePrompt> simplePromptSupplier,
             Duration idleTimeout,
             Duration idleDelay,
-            DbInfo dbInfo) {
+            DbInfo dbInfo,
+            ActivityListener activityListener) {
         assert jLineReader.getParser() instanceof StatementJlineParser;
         this.jLineReader = jLineReader;
         this.printer = printer;
@@ -91,7 +91,10 @@ public class JlineTerminal implements CypherShellTerminal {
                 Duration.of(30, ChronoUnit.SECONDS),
                 dbInfo::stopPolling,
                 dbInfo::resumePolling);
-        this.idleTimeoutHook = new IdleTimeoutHook();
+        activityListener.set(() -> {
+            exitOnIdleTimeoutService.imAwake();
+            stopPollingWhenIdleService.imAwake();
+        });
     }
 
     private StatementJlineParser getParser() {
@@ -225,8 +228,8 @@ public class JlineTerminal implements CypherShellTerminal {
             try {
                 stopPollingWhenIdleService.resume();
                 exitOnIdleTimeoutService.resume();
-                final var hook = mask ? new MaskingIdleTimeoutHook() : idleTimeoutHook;
-                return jLineReader.readLine(prompt, null, hook, null);
+                final Character mask0 = mask ? MASK_CHAR : null;
+                return jLineReader.readLine(prompt, mask0, null);
             } catch (org.jline.reader.EndOfFileException e) {
                 throw new NoMoreInputException();
             } catch (org.jline.reader.UserInterruptException e) {
@@ -300,35 +303,6 @@ public class JlineTerminal implements CypherShellTerminal {
         @Override
         public String expandVar(String word) {
             return word;
-        }
-    }
-
-    // This is a hack to let us timeout on idle inside of jline
-    private class IdleTimeoutHook implements MaskingCallback {
-        @Override
-        public String display(String line) {
-            exitOnIdleTimeoutService.imAwake();
-            stopPollingWhenIdleService.imAwake();
-            return line;
-        }
-
-        @Override
-        public String history(String line) {
-            return line;
-        }
-    }
-
-    private class MaskingIdleTimeoutHook implements MaskingCallback {
-        @Override
-        public String display(String line) {
-            exitOnIdleTimeoutService.imAwake();
-            stopPollingWhenIdleService.imAwake();
-            return "*".repeat(line.length());
-        }
-
-        @Override
-        public String history(String line) {
-            return null;
         }
     }
 

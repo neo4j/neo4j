@@ -150,7 +150,7 @@
     <jersey.version>2.46</jersey.version>
     <jetty.toolchain.version>4.0.9</jetty.toolchain.version>
     <jetty.version>12.1.13</jetty.version>
-    <jline.version>3.29.0</jline.version>
+    <jline.version>3.30.15</jline.version>
     <json-unit.version>6.2.0</json-unit.version>
     <json4s.version>4.1.0</json4s.version>
     <jsr305.version>3.0.2</jsr305.version>
