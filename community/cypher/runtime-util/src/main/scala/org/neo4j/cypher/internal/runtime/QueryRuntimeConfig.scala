@@ -107,7 +107,7 @@ object MorselReuseConfig {
 sealed trait TransactionBatchSchedulerConfig
 
 object TransactionBatchSchedulerConfig {
-  final val DEFAULT: TransactionBatchSchedulerConfig = TransactionBatchSchedulerConfig.Greedy
+  final val DEFAULT: TransactionBatchSchedulerConfig = TransactionBatchSchedulerConfig.Parking
   case object Greedy extends TransactionBatchSchedulerConfig
   case object Affinity extends TransactionBatchSchedulerConfig
   case object Parking extends TransactionBatchSchedulerConfig
