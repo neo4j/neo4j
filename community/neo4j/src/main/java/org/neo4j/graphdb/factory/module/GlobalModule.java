@@ -295,6 +295,7 @@ public class GlobalModule {
                 tryResolveOrCreate(NativeAccess.class, NativeAccessProvider::getNativeAccess));
         pagePrefetcher = tryResolveOrCreate(PagePrefetcher.class, this::createPrefetcher);
         globalLife.add(pagePrefetcher);
+        globalDependencies.satisfyDependency(pagePrefetcher.counters());
         globalDependencies.satisfyDependency(new SharedMultiRootLfuCache(
                 globalConfig.get(GraphDatabaseInternalSettings.dense_relationships_store_root_cache_size)));
     }

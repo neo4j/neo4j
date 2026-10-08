@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.neo4j.io.pagecache.prefetch.PrefetchSource.CATCHUP;
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
 import static org.neo4j.kernel.impl.store.StoreType.STORE_TYPES;
 
@@ -112,7 +113,7 @@ public class PrefetchingTransactionApplier extends TransactionApplier.Adapter {
             int index = storeType.ordinal();
             var pages = checkedPages[index];
             if (pages != null) {
-                prefetcher.submit(neoStores.getRecordStore(storeType).getStoreFile(), pages.toSortedArray());
+                prefetcher.submit(CATCHUP, neoStores.getRecordStore(storeType).getStoreFile(), pages.toSortedArray());
             }
         }
     }

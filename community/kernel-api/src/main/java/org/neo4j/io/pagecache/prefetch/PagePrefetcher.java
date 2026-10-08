@@ -23,35 +23,21 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.muninn.StoreFile;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * Component that can load pages into page cache in background
  */
 public interface PagePrefetcher extends Lifecycle {
-    PagePrefetcher DISABLED = new PagePrefetcher() {
-        @Override
-        public void init() {}
-
-        @Override
-        public void start() {}
-
-        @Override
-        public void stop() {}
-
-        @Override
-        public void shutdown() {}
-
-        @Override
-        public void submit(StoreFile storeFile, PagesSupplier pages) {}
-    };
+    PagePrefetcher DISABLED = new EmptyPagePrefetcher();
 
     /**
      * Ask prefetcher to load file pages for specific file. Sorted array is preferred.
      * @param storeFile file path
      * @param pages page numbers
      */
-    default void submit(StoreFile storeFile, long[] pages) {
-        submit(storeFile, ctx -> pages);
+    default void submit(PrefetchSource source, StoreFile storeFile, long[] pages) {
+        submit(source, storeFile, ctx -> pages);
     }
 
     /**
@@ -59,10 +45,22 @@ public interface PagePrefetcher extends Lifecycle {
      * @param storeFile file path
      * @param pages supplier of page numbers
      */
-    void submit(StoreFile storeFile, PagesSupplier pages);
+    void submit(PrefetchSource source, StoreFile storeFile, PagesSupplier pages);
+
+    default PrefetcherCounters counters() {
+        return PrefetcherCounters.EMPTY_PAGE_PREFETCHER_COUNTERS;
+    }
 
     @FunctionalInterface
     interface PagesSupplier {
         long[] pageIds(CursorContext context) throws IOException;
+    }
+
+    final class EmptyPagePrefetcher extends LifecycleAdapter implements PagePrefetcher {
+
+        private EmptyPagePrefetcher() {}
+
+        @Override
+        public void submit(PrefetchSource source, StoreFile storeFile, PagesSupplier pages) {}
     }
 }

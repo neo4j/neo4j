@@ -156,7 +156,7 @@ class CommandPrefetchIT {
         private final ConcurrentLinkedQueue<Path> tasks = new ConcurrentLinkedQueue<>();
 
         @Override
-        public void submit(StoreFile path, PagesSupplier pages) {
+        public void submit(PrefetchSource source, StoreFile path, PagesSupplier pages) {
             if (path.toString().contains(NamedDatabaseId.SYSTEM_DATABASE_NAME)) {
                 return;
             }
