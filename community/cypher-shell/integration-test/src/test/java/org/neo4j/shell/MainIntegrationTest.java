@@ -464,7 +464,8 @@ class MainIntegrationTest extends TestHarness {
                 .assertSuccessAndConnected()
                 .assertThatOutput(
                         contains("> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME)),
-                        contains(format("%nusername: %s", USER) + format("%npassword: ***")),
+                        contains(format("%nusername: %s", USER) + format("%npassword: ")),
+                        notContains("***"),
                         endsWith(format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE)));
     }
 
@@ -477,7 +478,8 @@ class MainIntegrationTest extends TestHarness {
                 .assertSuccessAndConnected()
                 .assertThatOutput(
                         contains("> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME)),
-                        contains(format("%nusername: %s", USER) + format("%npassword: ***")),
+                        contains(format("%nusername: %s", USER) + format("%npassword: ")),
+                        notContains("***"),
                         endsWith(format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE)));
     }
 
@@ -490,7 +492,8 @@ class MainIntegrationTest extends TestHarness {
                 .assertSuccessAndConnected()
                 .assertThatOutput(
                         contains("> :disconnect " + format("%nDisconnected> :connect")),
-                        contains(format("%nusername: %s", USER) + format("%npassword: ***")),
+                        contains(format("%nusername: %s", USER) + format("%npassword: ")),
+                        notContains("***"),
                         endsWith(GOOD_BYE));
     }
 
@@ -882,9 +885,10 @@ class MainIntegrationTest extends TestHarness {
                 .run()
                 .assertThatOutput(
                         contains("neo4j@neo4j> :disconnect\n" + "Disconnected> :connect -u new_user -d neo4j\n"
-                                + "password: ***\n"
+                                + "password: \n"
                                 + "Disconnected> show current user yield user;\n"
-                                + "Disconnected>"))
+                                + "Disconnected>"),
+                        notContains("***"))
                 .errorOutputSatisfies(e -> assertThat(e)
                         .contains("Not connected")
                         .containsAnyOf(

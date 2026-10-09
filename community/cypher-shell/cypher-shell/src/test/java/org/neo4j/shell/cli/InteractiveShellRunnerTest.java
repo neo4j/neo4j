@@ -43,14 +43,19 @@ import static org.neo4j.shell.test.Util.testConnectionConfig;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.fusesource.jansi.Ansi;
+import org.jline.terminal.Terminal;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,10 +86,13 @@ import org.neo4j.shell.parser.StatementParser.CommandStatement;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.printer.AnsiFormattedText;
 import org.neo4j.shell.printer.AnsiPrinter;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
+import org.neo4j.shell.terminal.JlineTerminal;
+import org.neo4j.shell.terminal.TestSimplePrompt;
 
 class InteractiveShellRunnerTest {
     @TempDir
@@ -148,6 +156,124 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         assertThat(out).hasToString("myusername@mydb> return 1;\r\nmyusername@mydb> \r\n");
+    }
+
+    @Test
+    void testDumbTerminalDoesNotSpamPromptWhileReadingMaskedInput() throws Exception {
+        var terminal = testTerminal(lines("secret"));
+
+        // read() must come first: it's what starts the terminal's input pump in production too.
+        var reader = terminal.read();
+        var read = reader.simplePrompt("password: ", true);
+
+        assertThat(read).isEqualTo("secret");
+        assertThat(out).hasToString(format("password: %n"));
+    }
+
+    @Test
+    void testDumbTerminalMaskedPromptHandlesBackspaceAndDel() throws Exception {
+        var terminal = testTerminal("secxy\u007f\u0008ret");
+
+        var reader = terminal.read();
+        var read = reader.simplePrompt("password: ", true);
+
+        assertThat(read).isEqualTo("secret");
+    }
+
+    @Test
+    void testDumbTerminalMaskedPromptHandlesBackspaceOnSupplementaryCharacter() throws Exception {
+        // 😀 is a single supplementary-plane code point (an emoji) encoded as a surrogate pair;
+        // one backspace must remove the whole code point, not just its low surrogate.
+        var terminal = testTerminal("sec😀\u007fret");
+
+        var reader = terminal.read();
+        var read = reader.simplePrompt("password: ", true);
+
+        assertThat(read).isEqualTo("secret");
+    }
+
+    @Test
+    void testDumbTerminalMaskedPromptTreatsCtrlDOnEmptyLineAsEof() throws Exception {
+        var terminal = testTerminal("\u0004");
+
+        var reader = terminal.read();
+        assertThatThrownBy(() -> reader.simplePrompt("password: ", true)).isInstanceOf(NoMoreInputException.class);
+    }
+
+    @Test
+    void testDumbTerminalMaskedPromptIgnoresCtrlDOnNonEmptyLine() throws Exception {
+        var terminal = testTerminal("sec\u0004ret");
+
+        var reader = terminal.read();
+        var read = reader.simplePrompt("password: ", true);
+
+        assertThat(read).isEqualTo("secret");
+    }
+
+    @Test
+    void testDumbTerminalMaskedPromptConsumesCrlfLineEnding() throws Exception {
+        // The trailing \n must be consumed too, or it leaks into the next read as a spurious empty line.
+        var terminal = testTerminal("secret\r\nnext line;\n");
+
+        var reader = terminal.read();
+        var read = reader.simplePrompt("password: ", true);
+        assertThat(read).isEqualTo("secret");
+
+        var statement = reader.readStatement(AnsiFormattedText.from("prompt> "));
+        assertThat(statement.statements()).hasSize(1);
+        assertThat(statement.statements().get(0).statement()).isEqualTo("next line");
+    }
+
+    @Test
+    void testDumbTerminalMaskedPromptTreatsEtxByteAsInterrupt() throws Exception {
+        var terminal = testTerminal("sec\u0003ret");
+
+        var reader = terminal.read();
+        assertThatThrownBy(() -> reader.simplePrompt("password: ", true)).isInstanceOf(UserInterruptException.class);
+    }
+
+    @Test
+    void testDumbTerminalMaskedPromptCanBeInterrupted() throws Exception {
+        // raise(Signal.INT), not Thread.interrupt(), exercises the registered handler itself.
+        var pipeOut = new PipedOutputStream();
+        var in = new PipedInputStream(pipeOut);
+        CompletionEngine mockedCompletionEngine = mock(CompletionEngine.class);
+        var dbInfo = new StubDbInfo(mock(ParameterService.class), false);
+        var terminal = (JlineTerminal) terminalBuilder()
+                .dumb()
+                .streams(in, out)
+                .interactive(true)
+                .logger(printer)
+                .build(dbInfo, mockedCompletionEngine);
+        var reader = terminal.read();
+
+        var result = new AtomicReference<Object>();
+        Thread t = new Thread(() -> {
+            try {
+                result.set(reader.simplePrompt("password: ", true));
+            } catch (Exception e) {
+                result.set(e);
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+
+        try {
+            // WAITING/TIMED_WAITING proves the worker is genuinely blocked, not just started.
+            var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (t.getState() != Thread.State.WAITING && t.getState() != Thread.State.TIMED_WAITING) {
+                assertThat(System.nanoTime()).isLessThan(deadline);
+                Thread.sleep(10);
+            }
+
+            terminal.getTerminal().raise(Terminal.Signal.INT);
+            t.join(5000);
+
+            assertThat(result.get()).isInstanceOf(UserInterruptException.class);
+        } finally {
+            pipeOut.close();
+            t.join(1000);
+        }
     }
 
     @Test
@@ -680,6 +806,7 @@ class InteractiveShellRunnerTest {
         return terminalBuilder()
                 .dumb()
                 .streams(in, out)
+                .simplePromptSupplier(() -> new TestSimplePrompt(in, new PrintWriter(out)))
                 .interactive(true)
                 .logger(printer)
                 .build(dbInfo, mockedCompletionEngine);

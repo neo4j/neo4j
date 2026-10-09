@@ -22,6 +22,7 @@ package org.neo4j.shell.terminal;
 import static java.util.stream.StreamSupport.stream;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -35,7 +36,9 @@ import org.jline.reader.Expander;
 import org.jline.reader.History;
 import org.jline.reader.LineReader;
 import org.jline.reader.ParsedLine;
+import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
+import org.jline.utils.NonBlockingReader;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.completions.DbInfo;
 import org.neo4j.shell.exception.NoMoreInputException;
@@ -45,6 +48,7 @@ import org.neo4j.shell.parser.StatementParser.ParsedStatements;
 import org.neo4j.shell.printer.AnsiFormattedText;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.timeout.IdleTimeoutService;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * CypherShellTerminal backed by jline.
@@ -105,6 +109,11 @@ public class JlineTerminal implements CypherShellTerminal {
     public Reader read() {
         jLineReader.getTerminal().resume();
         return reader;
+    }
+
+    @VisibleForTesting
+    public Terminal getTerminal() {
+        return jLineReader.getTerminal();
     }
 
     @Override
@@ -224,20 +233,33 @@ public class JlineTerminal implements CypherShellTerminal {
     }
 
     private class JLineReader implements Reader {
-        private String readLine(String prompt, boolean mask) throws NoMoreInputException, UserInterruptException {
+        private interface ThrowingSupplier<T> {
+            T get() throws NoMoreInputException, UserInterruptException;
+        }
+
+        private <T> T withIdleServicesActive(ThrowingSupplier<T> read)
+                throws NoMoreInputException, UserInterruptException {
             try {
                 stopPollingWhenIdleService.resume();
                 exitOnIdleTimeoutService.resume();
-                final Character mask0 = mask ? MASK_CHAR : null;
-                return jLineReader.readLine(prompt, mask0, null);
-            } catch (org.jline.reader.EndOfFileException e) {
-                throw new NoMoreInputException();
-            } catch (org.jline.reader.UserInterruptException e) {
-                throw new UserInterruptException(e.getPartialLine());
+                return read.get();
             } finally {
                 stopPollingWhenIdleService.pause();
                 exitOnIdleTimeoutService.pause();
             }
+        }
+
+        private String readLine(String prompt, boolean mask) throws NoMoreInputException, UserInterruptException {
+            return withIdleServicesActive(() -> {
+                try {
+                    final Character mask0 = mask ? MASK_CHAR : null;
+                    return jLineReader.readLine(prompt, mask0, null);
+                } catch (org.jline.reader.EndOfFileException e) {
+                    throw new NoMoreInputException();
+                } catch (org.jline.reader.UserInterruptException e) {
+                    throw new UserInterruptException(e.getPartialLine());
+                }
+            });
         }
 
         @Override
@@ -272,6 +294,11 @@ public class JlineTerminal implements CypherShellTerminal {
 
         @Override
         public String simplePrompt(String prompt, boolean mask) throws NoMoreInputException, UserInterruptException {
+            // JLine's dumb-terminal mask thread corrupts the prompt.
+            if (mask && isTerminalDumb()) {
+                return withIdleServicesActive(() -> readMaskedLineFromTerminal(prompt));
+            }
+
             try {
                 // Temporarily disable history, completion and statement parsing for simple prompts
                 jLineReader.getVariables().put(LineReader.DISABLE_HISTORY, Boolean.TRUE);
@@ -284,6 +311,121 @@ public class JlineTerminal implements CypherShellTerminal {
                 jLineReader.getVariables().remove(LineReader.DISABLE_COMPLETION);
                 getParser().setEnableStatementParsing(true);
             }
+        }
+
+        private boolean isTerminalDumb() {
+            var type = jLineReader.getTerminal().getType();
+            return Terminal.TYPE_DUMB.equals(type) || Terminal.TYPE_DUMB_COLOR.equals(type);
+        }
+
+        private static final long READ_TIMEOUT_MILLIS = 100;
+
+        // Finite timeout, not a single blocking read: on a real DumbTerminal, a zero-timeout read falls into a
+        // plain blocking stream read that Thread.interrupt() can't wake (same reason jline's own
+        // BindingReader.readCharacter polls instead of a single read).
+        private int readWithTimeout(NonBlockingReader reader) throws IOException {
+            while (true) {
+                // A buffered byte returns immediately without checking Thread.interrupted(), so check
+                // explicitly or a concurrent interrupt could go unnoticed while input keeps arriving.
+                if (Thread.interrupted()) {
+                    throw new InterruptedIOException();
+                }
+                int c = reader.read(READ_TIMEOUT_MILLIS);
+                if (Thread.interrupted()) {
+                    throw new InterruptedIOException();
+                }
+                if (c != NonBlockingReader.READ_EXPIRED) {
+                    return c;
+                }
+            }
+        }
+
+        // peek() has the same buffered-byte fast path as readWithTimeout; not looped, since a timed-out peek
+        // is a legitimate "no newline yet" answer rather than something to retry.
+        private int peekWithTimeout(NonBlockingReader reader) throws IOException {
+            if (Thread.interrupted()) {
+                throw new InterruptedIOException();
+            }
+            int c = reader.peek(READ_TIMEOUT_MILLIS);
+            if (Thread.interrupted()) {
+                throw new InterruptedIOException();
+            }
+            return c;
+        }
+
+        // Reads via the terminal's own reader rather than a second stream consumer: the pump thread already
+        // owns the raw input once resumed, so a separate reader on the same stream would race it for bytes.
+        private String readMaskedLineFromTerminal(String prompt) throws NoMoreInputException, UserInterruptException {
+            var terminal = jLineReader.getTerminal();
+            var writer = terminal.writer();
+
+            // Disable echo (and ECHONL, which echoes the newline even with ECHO off) before printing the
+            // prompt, not after, so keystrokes aren't echoed in the window before attributes take effect.
+            var originalAttributes = terminal.getAttributes();
+            var maskedAttributes = new Attributes(originalAttributes);
+            maskedAttributes.setLocalFlag(Attributes.LocalFlag.ECHO, false);
+            maskedAttributes.setLocalFlag(Attributes.LocalFlag.ECHONL, false);
+            terminal.setAttributes(maskedAttributes);
+
+            // Install before the prompt is visible, not after: a Ctrl-C in that window would otherwise reach
+            // the stale previous handler instead of interrupting this read.
+            var readingThread = Thread.currentThread();
+            var previousIntrHandler = terminal.handle(Terminal.Signal.INT, signal -> readingThread.interrupt());
+
+            writer.print(prompt);
+            writer.flush();
+
+            var reader = terminal.reader();
+            var line = new StringBuilder();
+            try {
+                int c;
+                while ((c = readWithTimeout(reader)) != -1 && c != '\n' && c != '\r') {
+                    // jline's own EOF and Ctrl-D handling is bypassed here too; a non-empty line's Ctrl-D is a
+                    // no-op (DELETE_CHAR_OR_LIST falls through to completion, which is disabled), so consume it.
+                    if (c == '\u0004') {
+                        if (line.isEmpty()) {
+                            throw new NoMoreInputException();
+                        }
+                        continue;
+                    }
+                    // Without ISIG configured (e.g. a real DumbTerminal), Ctrl-C arrives as a literal ETX byte
+                    // rather than Terminal.Signal.INT.
+                    if (c == '\u0003') {
+                        writer.println();
+                        writer.flush();
+                        throw new UserInterruptException(line.toString());
+                    }
+                    // Backward-delete, reimplemented since this bypasses jline's line editor. By code point,
+                    // not UTF-16 unit, so a supplementary character (e.g. an emoji) isn't split.
+                    if (c == '\b' || c == '\u007f') {
+                        if (!line.isEmpty()) {
+                            var lastCodePointStart = line.offsetByCodePoints(line.length(), -1);
+                            line.delete(lastCodePointStart, line.length());
+                        }
+                        continue;
+                    }
+                    line.append((char) c);
+                }
+                if (c == '\r' && peekWithTimeout(reader) == '\n') {
+                    readWithTimeout(reader);
+                }
+                if (c == -1 && line.isEmpty()) {
+                    throw new NoMoreInputException();
+                }
+            } catch (InterruptedIOException e) {
+                writer.println();
+                writer.flush();
+                throw new UserInterruptException(line.toString());
+            } catch (IOException e) {
+                throw new NoMoreInputException();
+            } finally {
+                terminal.setAttributes(originalAttributes);
+                terminal.handle(Terminal.Signal.INT, previousIntrHandler);
+            }
+
+            writer.println();
+            writer.flush();
+            return line.toString();
         }
     }
 
