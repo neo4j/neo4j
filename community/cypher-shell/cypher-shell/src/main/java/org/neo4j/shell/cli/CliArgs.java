@@ -23,11 +23,13 @@ import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.cli.CliArgHelper.DEFAULT_IDLE_TIMEOUT;
 import static org.neo4j.shell.cli.CliArgHelper.DEFAULT_IDLE_TIMEOUT_DELAY;
 
+import java.io.File;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Handler;
+import org.neo4j.shell.ClientCertificateConfig;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.terminal.CypherShellTerminal;
@@ -65,6 +67,9 @@ public class CliArgs {
     private Duration idleTimeoutDelay = DEFAULT_IDLE_TIMEOUT_DELAY;
     private ErrorFormat errorFormat = ErrorFormat.DEFAULT;
     private Optional<Duration> txTimeout = Optional.empty();
+    private File clientCert;
+    private File clientKey;
+    private String clientKeyPassword;
 
     /**
      * Set the username to the primary value, or if null, the fallback value.
@@ -243,9 +248,34 @@ public class CliArgs {
         return changePassword;
     }
 
+    public void setClientCert(File clientCert) {
+        this.clientCert = clientCert;
+    }
+
+    public void setClientKey(File clientKey) {
+        this.clientKey = clientKey;
+    }
+
+    public void setClientKeyPassword(String clientKeyPassword) {
+        this.clientKeyPassword = clientKeyPassword;
+    }
+
+    public Optional<ClientCertificateConfig> getClientCertificate() {
+        if (clientCert == null || clientKey == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new ClientCertificateConfig(clientCert, clientKey, Optional.ofNullable(clientKeyPassword)));
+    }
+
     public ConnectionConfig connectionConfig() {
         return new ConnectionConfig(
-                getUri(), getUsername(), getPassword(), getEncryption(), getDatabase(), impersonatedUser);
+                getUri(),
+                getUsername(),
+                getPassword(),
+                getEncryption(),
+                getDatabase(),
+                impersonatedUser,
+                getClientCertificate());
     }
 
     public CypherShellTerminal.HistoryBehaviour getHistoryBehaviour() {

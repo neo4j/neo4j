@@ -40,10 +40,12 @@ import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
 import static org.neo4j.shell.test.Util.testConnectionConfig;
 
+import java.io.File;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +53,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.BookmarkManager;
+import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
@@ -70,6 +73,7 @@ import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.ServerInfo;
+import org.neo4j.shell.ClientCertificateConfig;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.TriFunction;
 import org.neo4j.shell.build.Build;
@@ -725,6 +729,28 @@ class BoltStateHandlerTest {
         assertThat(uriScheme[0]).isEqualTo(fallbackScheme);
     }
 
+    @Test
+    void passesClientCertificateManagerToDriverWhenConfigured() throws CommandException {
+        var provider = new ClientCertificateRecordingDriverProvider();
+        BoltStateHandler handler = new BoltStateHandler(provider, false);
+        var clientCertificate =
+                new ClientCertificateConfig(new File("public.crt"), new File("private.key"), Optional.empty());
+
+        handler.connect(config.withClientCertificate(clientCertificate));
+
+        assertThat(provider.clientCertificateManager).isPresent();
+    }
+
+    @Test
+    void doesNotPassClientCertificateManagerByDefault() throws CommandException {
+        var provider = new ClientCertificateRecordingDriverProvider();
+        BoltStateHandler handler = new BoltStateHandler(provider, false);
+
+        handler.connect(config);
+
+        assertThat(provider.clientCertificateManager).isEmpty();
+    }
+
     /**
      * Bolt state with faked bolt interactions
      */
@@ -736,6 +762,20 @@ class BoltStateHandlerTest {
 
         public void connect() throws CommandException {
             connect(testConnectionConfig("bolt://localhost"));
+        }
+    }
+
+    private static class ClientCertificateRecordingDriverProvider implements BoltStateHandler.DriverProvider {
+        Optional<ClientCertificateManager> clientCertificateManager;
+
+        @Override
+        public Driver apply(
+                URI uri,
+                AuthToken authToken,
+                Optional<ClientCertificateManager> clientCertificateManager,
+                Config config) {
+            this.clientCertificateManager = clientCertificateManager;
+            return new FakeDriver();
         }
     }
 

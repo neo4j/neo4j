@@ -30,18 +30,19 @@ public record ConnectionConfig(
         String password,
         Encryption encryption,
         String database,
-        Optional<String> impersonatedUser) {
+        Optional<String> impersonatedUser,
+        Optional<ClientCertificateConfig> clientCertificate) {
 
     public ConnectionConfig withPassword(String password) {
-        return new ConnectionConfig(uri, username, password, encryption, database, impersonatedUser);
+        return new ConnectionConfig(uri, username, password, encryption, database, impersonatedUser, clientCertificate);
     }
 
     public ConnectionConfig withUsernameAndPassword(String username, String password) {
-        return new ConnectionConfig(uri, username, password, encryption, database, impersonatedUser);
+        return new ConnectionConfig(uri, username, password, encryption, database, impersonatedUser, clientCertificate);
     }
 
     public ConnectionConfig withUsernameAndPasswordAndDatabase(String username, String password, String database) {
-        return new ConnectionConfig(uri, username, password, encryption, database, impersonatedUser);
+        return new ConnectionConfig(uri, username, password, encryption, database, impersonatedUser, clientCertificate);
     }
 
     public ConnectionConfig withScheme(String scheme) {
@@ -54,7 +55,8 @@ public record ConnectionConfig(
                     uri.getPath(),
                     uri.getQuery(),
                     uri.getFragment());
-            return new ConnectionConfig(newUri, username, password, encryption, database, impersonatedUser);
+            return new ConnectionConfig(
+                    newUri, username, password, encryption, database, impersonatedUser, clientCertificate);
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Invalid scheme " + scheme, e);
         }
@@ -62,6 +64,23 @@ public record ConnectionConfig(
 
     public ConnectionConfig withImpersonatedUser(String impersonatedUser) {
         return new ConnectionConfig(
-                uri, username, password, encryption, database, Optional.ofNullable(impersonatedUser));
+                uri,
+                username,
+                password,
+                encryption,
+                database,
+                Optional.ofNullable(impersonatedUser),
+                clientCertificate);
+    }
+
+    public ConnectionConfig withClientCertificate(ClientCertificateConfig clientCertificate) {
+        return new ConnectionConfig(
+                uri,
+                username,
+                password,
+                encryption,
+                database,
+                impersonatedUser,
+                Optional.ofNullable(clientCertificate));
     }
 }

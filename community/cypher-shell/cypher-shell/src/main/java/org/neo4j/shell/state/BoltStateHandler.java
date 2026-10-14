@@ -38,6 +38,7 @@ import java.util.logging.LogManager;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -58,6 +59,7 @@ import org.neo4j.driver.internal.Scheme;
 import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.shell.ClientCertificateConfig;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Connector;
 import org.neo4j.shell.DatabaseManager;
@@ -85,7 +87,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private static final String USER_AGENT = "neo4j-cypher-shell/v" + Build.version();
     private static final Version supportsCypherVersionPrefix = new Version(5, 26, 0);
     private static final TransactionConfig SYSTEM_TX_CONF = txConfig(TransactionType.SYSTEM);
-    private final TriFunction<URI, AuthToken, Config, Driver> driverProvider;
+    private final DriverProvider driverProvider;
     private final boolean isInteractive;
     private final TransactionConfig userDirectTxConf;
     protected Driver driver;
@@ -101,16 +103,23 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
 
     public BoltStateHandler(
             boolean isInteractive, org.neo4j.shell.cli.AccessMode accessMode, Optional<Duration> txTimeout) {
-        this(GraphDatabase::driver, isInteractive, accessMode, txTimeout);
+        this(BoltStateHandler::createDriver, isInteractive, accessMode, txTimeout);
     }
 
     @VisibleForTesting
     BoltStateHandler(TriFunction<URI, AuthToken, Config, Driver> driverProvider, boolean isInteractive) {
+        this(
+                (uri, authToken, clientCertificateManager, config) -> driverProvider.apply(uri, authToken, config),
+                isInteractive);
+    }
+
+    @VisibleForTesting
+    BoltStateHandler(DriverProvider driverProvider, boolean isInteractive) {
         this(driverProvider, isInteractive, org.neo4j.shell.cli.AccessMode.WRITE, Optional.empty());
     }
 
     private BoltStateHandler(
-            TriFunction<URI, AuthToken, Config, Driver> driverProvider,
+            DriverProvider driverProvider,
             boolean isInteractive,
             org.neo4j.shell.cli.AccessMode accessMode,
             Optional<Duration> txTimeout) {
@@ -692,7 +701,16 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             default -> {}
             // Do nothing
         }
-        return driverProvider.apply(connectionConfig.uri(), authToken, configBuilder.build());
+        var clientCertificateManager =
+                connectionConfig.clientCertificate().map(ClientCertificateConfig::toClientCertificateManager);
+        return driverProvider.apply(connectionConfig.uri(), authToken, clientCertificateManager, configBuilder.build());
+    }
+
+    private static Driver createDriver(
+            URI uri, AuthToken authToken, Optional<ClientCertificateManager> clientCertificateManager, Config config) {
+        return clientCertificateManager
+                .map(manager -> GraphDatabase.driver(uri, authToken, manager, config))
+                .orElseGet(() -> GraphDatabase.driver(uri, authToken, config));
     }
 
     private boolean isSystemDb() {
@@ -736,5 +754,14 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
 
     public org.neo4j.shell.cli.AccessMode accessMode() {
         return accessMode;
+    }
+
+    @FunctionalInterface
+    interface DriverProvider {
+        Driver apply(
+                URI uri,
+                AuthToken authToken,
+                Optional<ClientCertificateManager> clientCertificateManager,
+                Config config);
     }
 }

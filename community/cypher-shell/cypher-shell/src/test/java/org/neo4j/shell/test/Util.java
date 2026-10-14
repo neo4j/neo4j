@@ -38,7 +38,8 @@ public final class Util {
     }
 
     public static ConnectionConfig testConnectionConfig(String uri, Encryption encryption) {
-        return new ConnectionConfig(URI.create(uri), "user", "pass", encryption, ABSENT_DB_NAME, Optional.empty());
+        return new ConnectionConfig(
+                URI.create(uri), "user", "pass", encryption, ABSENT_DB_NAME, Optional.empty(), Optional.empty());
     }
 
     public static class NotImplementedYetException extends RuntimeException {

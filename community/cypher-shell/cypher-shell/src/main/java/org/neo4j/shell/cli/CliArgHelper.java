@@ -28,6 +28,7 @@ import static org.neo4j.shell.cli.CliArgs.DEFAULT_SCHEME;
 import static org.neo4j.shell.cli.FailBehavior.FAIL_AT_END;
 import static org.neo4j.shell.cli.FailBehavior.FAIL_FAST;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -70,6 +71,9 @@ public class CliArgHelper {
     public static final String DATABASE_ENV_VAR = "NEO4J_DATABASE";
     public static final String ADDRESS_ENV_VAR = "NEO4J_ADDRESS";
     public static final String URI_ENV_VAR = "NEO4J_URI";
+    public static final String CLIENT_CERT_ENV_VAR = "NEO4J_CLIENT_CERT";
+    public static final String CLIENT_KEY_ENV_VAR = "NEO4J_CLIENT_KEY";
+    public static final String CLIENT_KEY_PASSWORD_ENV_VAR = "NEO4J_CLIENT_KEY_PASSWORD";
     private static final String HISTORY_ENV_VAR = "NEO4J_CYPHER_SHELL_HISTORY";
     private static final String DEFAULT_ADDRESS = format("%s://%s:%d", DEFAULT_SCHEME, DEFAULT_HOST, DEFAULT_PORT);
     private static final AccessMode DEFAULT_ACCESS_MODE = AccessMode.WRITE;
@@ -154,6 +158,20 @@ public class CliArgHelper {
         if (impersonatedUser != null) {
             cliArgs.setImpersonatedUser(impersonatedUser);
         }
+
+        final var clientCert = ofNullable(ns.getString("client-cert"))
+                .or(() -> ofNullable(environment.getVariable(CLIENT_CERT_ENV_VAR)));
+        final var clientKey = ofNullable(ns.getString("client-key"))
+                .or(() -> ofNullable(environment.getVariable(CLIENT_KEY_ENV_VAR)));
+        if (clientCert.isPresent() != clientKey.isPresent()) {
+            throw new ArgumentParserException(
+                    "Both --client-cert and --client-key must be specified when using a client certificate", parser);
+        }
+        clientCert.ifPresent(cert -> cliArgs.setClientCert(new File(cert)));
+        clientKey.ifPresent(key -> cliArgs.setClientKey(new File(key)));
+        ofNullable(ns.getString("client-key-password"))
+                .or(() -> ofNullable(environment.getVariable(CLIENT_KEY_PASSWORD_ENV_VAR)))
+                .ifPresent(cliArgs::setClientKeyPassword);
 
         cliArgs.setAccessMode(ns.get("access-mode"));
 
@@ -309,6 +327,24 @@ public class CliArgHelper {
                         Encryption.FALSE.name().toLowerCase(Locale.ROOT),
                         Encryption.DEFAULT.name().toLowerCase(Locale.ROOT)))
                 .setDefault(Encryption.DEFAULT.name().toLowerCase(Locale.ROOT));
+        connGroup
+                .addArgument("--client-cert")
+                .dest("client-cert")
+                .help("File path of a PEM encoded client certificate for mutual TLS authentication. "
+                        + "Requires --client-key. Can also be specified using the environment variable "
+                        + CLIENT_CERT_ENV_VAR + ".");
+        connGroup
+                .addArgument("--client-key")
+                .dest("client-key")
+                .help("File path of the PEM encoded private key for the client certificate. "
+                        + "Requires --client-cert. Can also be specified using the environment variable "
+                        + CLIENT_KEY_ENV_VAR + ".");
+        connGroup
+                .addArgument("--client-key-password")
+                .dest("client-key-password")
+                .help("Password of an encrypted client private key. "
+                        + "Can also be specified using the environment variable " + CLIENT_KEY_PASSWORD_ENV_VAR
+                        + ".");
         connGroup
                 .addArgument("-d", "--database")
                 .help("Database to connect to. Can also be specified using the environment variable " + DATABASE_ENV_VAR

@@ -50,6 +50,7 @@ import java.util.logging.FileHandler;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.shell.ClientCertificateConfig;
 import org.neo4j.shell.Environment;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parameter.ParameterService.RawParameters;
@@ -131,7 +132,13 @@ class CliArgHelperTest extends LocaleDependentTestBase {
                 "--database",
                 "mydb",
                 "--access-mode",
-                "read");
+                "read",
+                "--client-cert",
+                "client.crt",
+                "--client-key",
+                "client.key",
+                "--client-key-password",
+                "keypass");
         assertThat(args.getFailBehavior()).isEqualTo(FailBehavior.FAIL_AT_END);
         assertThat(args.getFormat()).isEqualTo(Format.PLAIN);
         assertThat(args.getParameters()).isEqualTo(List.of(new ParameterService.RawParameters("{p:1}")));
@@ -151,6 +158,9 @@ class CliArgHelperTest extends LocaleDependentTestBase {
         assertThat(args.getEncryption()).isEqualTo(Encryption.TRUE);
         assertThat(args.getDatabase()).isEqualTo("mydb");
         assertThat(args.getAccessMode()).isEqualTo(AccessMode.READ);
+        assertThat(args.getClientCertificate())
+                .contains(new ClientCertificateConfig(
+                        new File("client.crt"), new File("client.key"), Optional.of("keypass")));
     }
 
     @Test
@@ -586,6 +596,61 @@ class CliArgHelperTest extends LocaleDependentTestBase {
     }
 
     @Test
+    void clientCertificateDefaultsToEmpty() {
+        var args = parse();
+        assertThat(args.getClientCertificate()).isEmpty();
+        assertThat(args.connectionConfig().clientCertificate()).isEmpty();
+    }
+
+    @Test
+    void parsesClientCertificate() {
+        var args =
+                parse("--client-cert", "public.crt", "--client-key", "private.key", "--client-key-password", "secret");
+        var expected =
+                new ClientCertificateConfig(new File("public.crt"), new File("private.key"), Optional.of("secret"));
+        assertThat(args.getClientCertificate()).contains(expected);
+        assertThat(args.connectionConfig().clientCertificate()).contains(expected);
+    }
+
+    @Test
+    void parsesClientCertificateWithoutPassword() {
+        var args = parse("--client-cert", "public.crt", "--client-key", "private.key");
+        assertThat(args.getClientCertificate())
+                .contains(
+                        new ClientCertificateConfig(new File("public.crt"), new File("private.key"), Optional.empty()));
+    }
+
+    @Test
+    void parsesClientCertificateFromEnvironment() {
+        env.put("NEO4J_CLIENT_CERT", "env.crt");
+        env.put("NEO4J_CLIENT_KEY", "env.key");
+        env.put("NEO4J_CLIENT_KEY_PASSWORD", "envsecret");
+        assertThat(parse().getClientCertificate())
+                .contains(new ClientCertificateConfig(
+                        new File("env.crt"), new File("env.key"), Optional.of("envsecret")));
+    }
+
+    @Test
+    void clientCertificateArgumentsOverrideEnvironment() {
+        env.put("NEO4J_CLIENT_CERT", "env.crt");
+        env.put("NEO4J_CLIENT_KEY", "env.key");
+        assertThat(parse("--client-cert", "arg.crt", "--client-key", "arg.key").getClientCertificate())
+                .contains(new ClientCertificateConfig(new File("arg.crt"), new File("arg.key"), Optional.empty()));
+    }
+
+    @Test
+    void failsOnClientCertificateWithoutKey() {
+        assertThat(parseAndFail("--client-cert", "public.crt"))
+                .containsIgnoringWhitespaces("Both --client-cert and --client-key must be specified");
+    }
+
+    @Test
+    void failsOnClientKeyWithoutCertificate() {
+        assertThat(parseAndFail("--client-key", "private.key"))
+                .containsIgnoringWhitespaces("Both --client-cert and --client-key must be specified");
+    }
+
+    @Test
     void rememberToUpdateDocs() {
         final var defaultOut = System.out;
         final String helpText;
@@ -601,11 +666,13 @@ class CliArgHelperTest extends LocaleDependentTestBase {
 
         var expectedHelpText = """
 usage: cypher-shell [-h] [-a ADDRESS] [-u USERNAME] [--impersonate IMPERSONATE] [-p PASSWORD]
-                    [--encryption {true,false,default}] [-d DATABASE] [--access-mode {read,write}]
-                    [--enable-autocompletions] [--format {auto,verbose,plain}] [-P PARAM]
-                    [--non-interactive] [--sample-rows SAMPLE-ROWS] [--wrap {true,false}] [-v]
-                    [--driver-version] [-f FILE] [--change-password] [--log [LOG-FILE]]
-                    [--history HISTORY-BEHAVIOUR] [--notifications] [--idle-timeout IDLE-TIMEOUT]
+                    [--encryption {true,false,default}] [--client-cert CLIENT-CERT]
+                    [--client-key CLIENT-KEY] [--client-key-password CLIENT-KEY-PASSWORD]
+                    [-d DATABASE] [--access-mode {read,write}] [--enable-autocompletions]
+                    [--format {auto,verbose,plain}] [-P PARAM] [--non-interactive]
+                    [--sample-rows SAMPLE-ROWS] [--wrap {true,false}] [-v] [--driver-version]
+                    [-f FILE] [--change-password] [--log [LOG-FILE]] [--history HISTORY-BEHAVIOUR]
+                    [--notifications] [--idle-timeout IDLE-TIMEOUT]
                     [--error-format {gql,legacy,stacktrace}]
                     [--transaction-timeout TRANSACTION-TIMEOUT] [--fail-fast | --fail-at-end]
                     [cypher]
@@ -690,6 +757,17 @@ connection arguments:
                          consistent with  the  Neo4j's  configuration.  If  choosing  'default', the
                          encryption setting is deduced from the  specified address. For example, the
                          'neo4j+ssc' protocol uses encryption. (default: default)
+  --client-cert CLIENT-CERT
+                         File  path  of  a   PEM   encoded   client   certificate   for  mutual  TLS
+                         authentication. Requires --client-key.  Can  also  be  specified  using the
+                         environment variable NEO4J_CLIENT_CERT.
+  --client-key CLIENT-KEY
+                         File path of  the  PEM  encoded  private  key  for  the client certificate.
+                         Requires  --client-cert.  Can  also  be  specified  using  the  environment
+                         variable NEO4J_CLIENT_KEY.
+  --client-key-password CLIENT-KEY-PASSWORD
+                         Password of an encrypted client  private  key.  Can also be specified using
+                         the environment variable NEO4J_CLIENT_KEY_PASSWORD.
   -d DATABASE, --database DATABASE
                          Database to  connect  to.  Can  also  be  specified  using  the environment
                          variable NEO4J_DATABASE.
