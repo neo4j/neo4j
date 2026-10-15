@@ -27,65 +27,265 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport {
 
-  test("should collapse collection containing ConstValues for id function") {
+  /*
+   * The grids below check every way to merge two comparisons of the same predicand v (see `mergeCases`) in the two
+   * situations that decide whether a merge is correct under three-valued logic: a list containing null, and an empty
+   * merged list. The scaladoc of MergeInPredicates explains why. Each cell states one of:
+   *   - Merges(to)    the comparisons are rewritten to `to`
+   *   - MustNotMerge  the comparisons are left as they are, and must be: merging would change the result
+   *   - MayMerge(to)  the comparisons are left as they are, although `to` would be equivalent. The rewriter never
+   *                   merges lists containing null, to keep it simple. A finer guard may turn these into Merges(to).
+   */
+
+  sealed private trait Expected {
+
+    def describe: String = this match {
+      case Merges(to)   => s"merges to `$to`"
+      case MustNotMerge => "must not merge"
+      case MayMerge(to) => s"does not merge, although `$to` would be equivalent"
+    }
+
+    def mapMerged(f: String => String): Expected = this match {
+      case Merges(to)   => Merges(f(to))
+      case MustNotMerge => MustNotMerge
+      case MayMerge(to) => MayMerge(f(to))
+    }
+  }
+  private case class Merges(to: String) extends Expected
+  private case object MustNotMerge extends Expected
+  private case class MayMerge(to: String) extends Expected
+
+  private case class MergeCase(original: (String, String) => String, merged: String => String) {
+    def template: String = original("A", "B")
+  }
+
+  // All ways to merge two comparisons of the same predicand, with the merged comparison
+  private val mergeCases: Map[Int, MergeCase] = Map(
+    // AND
+    1 -> MergeCase((a, b) => s"v IN $a AND v IN $b", l => s"v IN $l"), // v IN A∩B
+    2 -> MergeCase((a, b) => s"v IN $a AND NOT v IN $b", l => s"v IN $l"), // v IN A∖B
+    3 -> MergeCase((a, b) => s"NOT v IN $a AND v IN $b", l => s"v IN $l"), // v IN B∖A
+    4 -> MergeCase((a, b) => s"NOT v IN $a AND NOT v IN $b", l => s"NOT v IN $l"), // NOT v IN A∪B
+    // OR
+    5 -> MergeCase((a, b) => s"v IN $a OR v IN $b", l => s"v IN $l"), // v IN A∪B
+    6 -> MergeCase((a, b) => s"v IN $a OR NOT v IN $b", l => s"NOT v IN $l"), // NOT v IN B∖A
+    7 -> MergeCase((a, b) => s"NOT v IN $a OR v IN $b", l => s"NOT v IN $l"), // NOT v IN A∖B
+    8 -> MergeCase((a, b) => s"NOT v IN $a OR NOT v IN $b", l => s"NOT v IN $l") // NOT v IN A∩B
+  )
+
+  /*
+   * Null in a list. Every column uses A = [1, 2] and B = [2, 3], with null appended as the header says, so that
+   * A∩B, A∖B and B∖A are all non-empty. A cell gives the merged list; the case turns it into the merged comparison.
+   */
+  private val nullInListColumns = Seq(
+    ("no null", "[1, 2]", "[2, 3]"),
+    ("null in A", "[1, 2, null]", "[2, 3]"),
+    ("null in B", "[1, 2]", "[2, 3, null]"),
+    ("null in both", "[1, 2, null]", "[2, 3, null]")
+  )
+
+  private val nullInList: Seq[(Int, Expected, Expected, Expected, Expected)] = Seq(
+    // format: off
+    //  no null              null in A                    null in B                    null in both
+    (1, Merges("[2]"),       MustNotMerge,                MustNotMerge,                MayMerge("[2, null]")),
+    (2, Merges("[1]"),       MustNotMerge,                MustNotMerge,                MustNotMerge),
+    (3, Merges("[3]"),       MustNotMerge,                MustNotMerge,                MustNotMerge),
+    (4, Merges("[1, 2, 3]"), MayMerge("[1, 2, null, 3]"), MayMerge("[1, 2, 3, null]"), MayMerge("[1, 2, null, 3]")),
+    (5, Merges("[1, 2, 3]"), MayMerge("[1, 2, null, 3]"), MayMerge("[1, 2, 3, null]"), MayMerge("[1, 2, null, 3]")),
+    (6, Merges("[3]"),       MustNotMerge,                MustNotMerge,                MustNotMerge),
+    (7, Merges("[1]"),       MustNotMerge,                MustNotMerge,                MustNotMerge),
+    (8, Merges("[2]"),       MustNotMerge,                MustNotMerge,                MayMerge("[2, null]"))
+    // format: on
+  )
+
+  for {
+    (caseNumber, noNull, nullInA, nullInB, nullInBoth) <- nullInList
+    ((column, a, b), expected) <- nullInListColumns.zip(Seq(noNull, nullInA, nullInB, nullInBoth))
+  } {
+    val mergeCase = mergeCases(caseNumber)
+    checkCell(caseNumber, column, mergeCase.original(a, b), expected.mapMerged(mergeCase.merged))
+  }
+
+  /**
+   * Cases that would result in a comparison to an empty list.
+   * Cases 4 and 5 result in unions, which can only be empty if both lists are empty.
+   */
+  private val emptyMergedList: Seq[(Int, Option[(String, String, Expected)], (String, String, Expected))] = Seq(
+    // format: off
+    //  A and B non-empty                      A or B empty
+    (1, Some(("[1]", "[2]", MustNotMerge)),    ("[]", "[1]", Merges("false"))),
+    (2, Some(("[1]", "[1]", MustNotMerge)),    ("[]", "[1]", Merges("false"))),
+    (3, Some(("[1, 2]", "[2]", MustNotMerge)), ("[1]", "[]", Merges("false"))),
+    (4, None,                                  ("[]", "[]", Merges("true"))),
+    (5, None,                                  ("[]", "[]", Merges("false"))),
+    (6, Some(("[1]", "[1]", MustNotMerge)),    ("[1]", "[]", Merges("true"))),
+    (7, Some(("[1]", "[1, 2]", MustNotMerge)), ("[]", "[1]", Merges("true"))),
+    (8, Some(("[1]", "[2]", MustNotMerge)),    ("[]", "[1]", Merges("true")))
+    // format: on
+  )
+
+  for ((caseNumber, absent, present) <- emptyMergedList) {
+    val mergeCase = mergeCases(caseNumber)
+    for ((a, b, expected) <- absent) {
+      checkCell(caseNumber, "empty merged list, constant absent", mergeCase.original(a, b), expected)
+    }
+    val (a, b, expected) = present
+    checkCell(caseNumber, "empty merged list, constant present", mergeCase.original(a, b), expected)
+  }
+
+  private def checkCell(caseNumber: Int, column: String, original: String, expected: Expected): Unit = {
+    test(s"case $caseNumber (${mergeCases(caseNumber).template}), $column: `$original` ${expected.describe}") {
+      expected match {
+        case Merges(to)                 => shouldRewrite(s"RETURN $original AS result", s"RETURN $to AS result")
+        case MustNotMerge | MayMerge(_) => shouldNotRewrite(s"RETURN $original AS result")
+      }
+    }
+  }
+
+  // Three-valued logic in larger expressions
+
+  test("should merge the IN lists without null and leave the one containing null joined by AND") {
     shouldRewrite(
-      "MATCH (a) WHERE id(a) IN [42] OR id(a) IN [13] RETURN a",
-      "MATCH (a) WHERE id(a) IN [42, 13] RETURN a"
+      "RETURN v IN [1, 2] AND NOT v IN [2, null] AND v IN [1, 3] AS result",
+      "RETURN v IN [1] AND NOT v IN [2, null] AS result"
     )
   }
 
-  test("should collapse collections containing ConstValues and nonConstValues for id function") {
+  test("should merge IN lists of one predicand when a list of another predicand contains null") {
     shouldRewrite(
-      "MATCH (a) WHERE id(a) IN [42] OR id(a) IN [rand()] RETURN a",
-      "MATCH (a) WHERE id(a) IN [42, rand()] RETURN a"
+      "RETURN v IN [1, 2] AND w IN [null] AND v IN [2, 3] AS result",
+      "RETURN v IN [2] AND w IN [null] AS result"
     )
   }
 
-  test("should collapse collection containing ConstValues for property") {
+  // `v IN []` is FALSE for every v, so the whole conjunction is FALSE
+  test("should replace with false IN lists joined by AND if one of them is empty") {
     shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [42] OR a.prop IN [13] RETURN a",
-      "MATCH (a) WHERE a.prop IN [42, 13] RETURN a"
+      "RETURN v IN [1] AND v IN [2] AND v IN [] AS result",
+      "RETURN false AS result"
     )
   }
 
-  test("should collapse collections containing ConstValues and nonConstValues for property") {
+  // The empty list has the wrong polarity to dominate the conjunction.
+  // v = null: original `null AND null AND TRUE` = null; merged FALSE
+  test("should not replace with false IN lists without overlap joined by AND with empty NOT IN list") {
+    shouldNotRewrite("RETURN v IN [1] AND v IN [2] AND NOT v IN [] AS result")
+  }
+
+  // The guard against an empty merged list applies per predicand: v is left as it is, w is still merged
+  test("should merge IN lists of one predicand joined by AND when another predicand would merge to an empty list") {
     shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [42] OR a.prop IN [rand()] RETURN a",
-      "MATCH (a) WHERE a.prop IN [42, rand()] RETURN a"
+      "RETURN v IN [1] AND v IN [2] AND w IN [1, 2] AND w IN [2, 3] AS result",
+      "RETURN v IN [1] AND v IN [2] AND w IN [2] AS result"
     )
   }
 
-  test("should collapse collections containing same nonConstValues for property") {
+  // Without the list containing null, the other two would merge to an empty list.
+  // v = null: original `null AND null AND NOT null` = null; merged FALSE
+  test("should not replace with false IN lists without overlap and NOT IN list containing null joined by AND") {
+    shouldNotRewrite("RETURN v IN [1] AND v IN [2] AND NOT v IN [3, null] AS result")
+  }
+
+  // `v IN []` is FALSE for every v, so the whole conjunction is FALSE, whatever the list containing null evaluates to
+  test("should replace with false IN lists joined by AND with an empty one and NOT IN list containing null") {
     shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [rand()] OR a.prop IN [rand()] RETURN a",
-      "MATCH (a) WHERE a.prop IN [rand()] RETURN a"
+      "RETURN v IN [1] AND v IN [] AND NOT v IN [3, null] AS result",
+      "RETURN false AS result"
     )
   }
 
-  test("MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [2,3,4] RETURN *") {
+  // v = null, n.q = 2: original `null AND TRUE AND NOT null` = null; merged FALSE
+  test("should not replace with false IN list and same NOT IN list joined by AND around an unrelated predicate") {
+    shouldNotRewrite("RETURN v IN [1] AND n.q > 1 AND NOT v IN [1] AS result")
+  }
+
+  // Replacing the inner conjunction by FALSE would leave `w IN [3]`.
+  // v = null, w = 4: original `(null AND null) OR FALSE` = null; rewritten FALSE
+  test("should not replace with false nested IN lists without overlap joined by AND") {
+    shouldNotRewrite("RETURN (v IN [1] AND v IN [2]) OR w IN [3] AS result")
+  }
+
+  // NaN and Infinity
+
+  // NaN never matches, so v = NaN makes both sides FALSE, and dropping NaN from the IN list changes nothing
+  test("should merge IN list containing NaN with NOT IN list containing NaN joined by AND") {
     shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [2,3,4] RETURN *",
-      "MATCH (a) WHERE a.prop IN [2,3] RETURN *"
+      "RETURN v IN [1, NaN] AND NOT v IN [NaN] AS result",
+      "RETURN v IN [1] AS result"
     )
   }
 
-  test("MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [4,5,6] RETURN *") {
+  // `v IN [NaN]` is FALSE for a non-null v and null for a null v, just like the original
+  test("should merge IN lists containing NaN joined by AND") {
     shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [4,5,6] RETURN *",
-      "MATCH (a) WHERE false RETURN *"
+      "RETURN v IN [NaN, 1] AND v IN [NaN, 2] AS result",
+      "RETURN v IN [NaN] AS result"
     )
   }
 
-  test("MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [2,3,4] AND a.prop IN [3,4,5] RETURN *") {
+  // `NOT v IN [NaN]` is TRUE for a non-null v and null for a null v, just like the original
+  test("should merge NOT IN lists containing NaN joined by OR") {
     shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [2,3,4] AND a.prop IN [3,4,5] RETURN *",
-      "MATCH (a) WHERE a.prop IN [3] RETURN *"
+      "RETURN NOT v IN [NaN, 1] OR NOT v IN [NaN, 2] AS result",
+      "RETURN NOT v IN [NaN] AS result"
     )
   }
 
-  test(
-    "MATCH (a) WHERE (a.prop IN [1,2,3] AND a.prop IN [2,3,4]) OR (a.prop IN [2,3,4] AND a.prop IN [3,4,5]) RETURN *"
-  ) {
+  // The original is FALSE for every non-null v, including NaN, but null for a null v
+  test("should not replace with false IN list of NaN and NOT IN list of NaN joined by AND") {
+    shouldNotRewrite("RETURN v IN [NaN] AND NOT v IN [NaN] AS result")
+  }
+
+  // Boolean structure
+
+  test("should merge a series of IN and NOT IN joined by AND") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop IN [1,2,3] AND NOT a.prop IN [3,4,5] AND a.prop IN [2,3,4] RETURN *",
+      "MATCH (a) WHERE a.prop IN [2] RETURN *"
+    )
+  }
+
+  test("should merge (NOT mergeable) AND (NOT mergeable)") {
+    shouldRewrite(
+      "MATCH (a) WHERE NOT (a.prop IN [1,2] AND a.prop IN [2,3]) AND NOT (a.prop IN [3,4] AND a.prop IN [4,5])",
+      "MATCH (a) WHERE NOT a.prop IN [2,4]"
+    )
+  }
+
+  test("should merge a right-skewed tree of ORs") {
+    shouldRewrite(
+      "WITH 1 AS v RETURN v IN [1] OR (v IN [2] OR (v IN [3] OR v IN [4])) AS result",
+      "WITH 1 AS v RETURN v IN [1, 2, 3, 4] AS result"
+    )
+  }
+
+  test("should merge a tree of ORs") {
+    shouldRewrite(
+      "WITH 1 AS v RETURN (v IN [1] OR (v IN [2])) OR ((v IN [3] OR v IN [4]) OR v IN [5]) AS result",
+      "WITH 1 AS v RETURN v IN [1, 2, 3, 4, 5] AS result"
+    )
+  }
+
+  test("should merge a right-skewed tree of ANDs") {
+    shouldRewrite(
+      "WITH 1 AS v RETURN v IN [1, 5] AND (v IN [2, 5] AND (v IN [3, 5] AND v IN [4, 5])) AS result",
+      "WITH 1 AS v RETURN v IN [5] AS result"
+    )
+  }
+
+  test("should merge a tree of ANDs") {
+    shouldRewrite(
+      """
+        |WITH 1 AS v
+        |RETURN (v IN [1, 'tree'] AND (v IN [2, 'tree']))
+        |  AND ((v IN [3, 'tree'] AND v IN [4, 'tree']) AND v IN [5, 'tree']) AS result""".stripMargin,
+      """
+        |WITH 1 AS v
+        |RETURN v IN ['tree'] AS result""".stripMargin
+    )
+  }
+
+  test("should merge two mergeable ANDs joined by OR") {
     shouldRewrite(
       "MATCH (a) WHERE (a.prop IN [1,2,3] AND a.prop IN [2,3,4]) OR (a.prop IN [2,3,4] AND a.prop IN [3,4,5]) RETURN *",
       "MATCH (a) WHERE a.prop IN [2,3,4] RETURN *"
@@ -93,30 +293,7 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test(
-    "MATCH (a) WHERE a.prop IN [1,2,3] AND a.foo IN ['foo', 'bar'] AND a.prop IN [2,3,4] AND a.foo IN ['bar'] RETURN *"
-  ) {
-    shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [1,2,3] AND a.foo IN ['foo','bar'] AND a.prop IN [2,3,4] AND a.foo IN ['bar'] RETURN *",
-      "MATCH (a) WHERE a.prop IN [2,3] AND a.foo IN ['bar'] RETURN *"
-    )
-  }
-
-  test("MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] RETURN *") {
-    shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] RETURN *",
-      "MATCH (a) WHERE a.prop IN [1,2,3,4] RETURN *"
-    )
-  }
-
-  test("MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] OR a.prop IN [3,4,5] RETURN *") {
-    shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] OR a.prop IN [3,4,5] RETURN *",
-      "MATCH (a) WHERE a.prop IN [1,2,3,4,5] RETURN *"
-    )
-  }
-
-  test(
-    "MATCH (a) WHERE (a.prop IN [1,2,3] OR a.prop IN [2,3,4]) AND (a.prop IN [2,3,4] OR a.prop IN [3,4,5]) RETURN *"
+    "should merge two mergeable ORs joined by AND"
   ) {
     shouldRewrite(
       "MATCH (a) WHERE (a.prop IN [1,2,3] OR a.prop IN [2,3,4]) AND (a.prop IN [2,3,4] OR a.prop IN [3,4,5]) RETURN *",
@@ -124,94 +301,241 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
     )
   }
 
-  test(
-    "MATCH (a) WHERE a.prop IN [1,2,3] OR a.foo IN ['foo', 'bar'] OR a.prop IN [2,3,4] OR a.foo IN ['bar'] RETURN *"
-  ) {
+  test("should merge AND within NOT") {
     shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [1,2,3] OR a.foo IN ['foo','bar'] OR a.prop IN [2,3,4] OR a.foo IN ['bar'] RETURN *",
-      "MATCH (a) WHERE a.prop IN [1,2,3,4] OR a.foo IN ['foo','bar'] RETURN *"
+      "MATCH (a) WHERE NOT (a.prop IN [1,2] AND a.prop IN [2,3])",
+      "MATCH (a) WHERE NOT a.prop IN [2]"
     )
   }
 
-  test("MATCH (n) RETURN n.prop IN [1,2,3] AND n.prop IN [3,4,5]") {
+  test("should merge three lists joined by OR for a property") {
     shouldRewrite(
-      "MATCH (n) RETURN n.prop IN [1,2,3] AND n.prop IN [3,4,5] AS FOO",
-      "MATCH (n) RETURN n.prop IN [3] AS FOO"
+      "MATCH (a) WHERE a.prop IN [1,2,3] OR a.prop IN [2,3,4] OR a.prop IN [3,4,5] RETURN *",
+      "MATCH (a) WHERE a.prop IN [1,2,3,4,5] RETURN *"
     )
   }
 
-  test("MATCH (n) RETURN (n.prop IN [1,2,3] OR TRUE) AND n.prop IN [3,4,5] AS FOO") {
-    shouldNotRewrite("MATCH (n) RETURN (n.prop IN [1,2,3] OR TRUE) AND n.prop IN [3,4,5] AS FOO")
-  }
-
-  test("MATCH (n) RETURN (n.prop IN [1,2,3] AND FALSE) OR n.prop IN [3,4,5] AS FOO") {
-    shouldNotRewrite("MATCH (n) RETURN (n.prop IN [1,2,3] AND FALSE) OR n.prop IN [3,4,5] AS FOO")
-  }
-
-  // Tests for IN combined with NOT
-
-  test("MATCH (a) WHERE NOT a.prop IN [1, 2, 3] AND NOT a.prop IN [3, 4, 5] RETURN *") {
+  test("should replace AND whose LHS is always true with the RHS") {
     shouldRewrite(
-      "MATCH (a) WHERE NOT a.prop IN [1, 2, 3] AND NOT a.prop IN [3, 4, 5] RETURN *",
-      "MATCH (a) WHERE NOT a.prop IN [1, 2, 3, 4, 5] RETURN *"
+      "MATCH (n) RETURN (n.prop IN [1,2,3] OR TRUE) AND n.prop IN [3,4,5] AS FOO",
+      "MATCH (n) RETURN n.prop IN [3,4,5] AS FOO"
     )
   }
 
-  test("MATCH (a) WHERE NOT a.prop IN [1, 2, 3] OR NOT a.prop IN [3, 4, 5] RETURN *") {
+  test("should replace OR whose LHS is always false with the RHS") {
     shouldRewrite(
-      "MATCH (a) WHERE NOT a.prop IN [1, 2, 3] OR NOT a.prop IN [3, 4, 5] RETURN *",
-      "MATCH (a) WHERE NOT a.prop IN [3] RETURN *"
+      "MATCH (n) RETURN (n.prop IN [1,2,3] AND FALSE) OR n.prop IN [3,4,5] AS FOO",
+      "MATCH (n) RETURN n.prop IN [3,4,5] AS FOO"
     )
   }
 
-  test("MATCH (a) WHERE a.prop IN [1, 2, 3] AND NOT a.prop IN [3, 4, 5]") {
-    shouldNotRewrite("MATCH (a) WHERE a.prop IN [1, 2, 3] AND NOT a.prop IN [3, 4, 5]")
-  }
-
-  test("MATCH (a) WHERE NOT a.prop IN [1, 2, 3] OR a.prop IN [3, 4, 5]") {
-    shouldNotRewrite("MATCH (a) WHERE a.prop IN [1, 2, 3] OR NOT a.prop IN [3, 4, 5]")
-  }
-
-  // would have been nice to rewrite the order of predicates to allow merging in predicates
-  test("MATCH (a) WHERE a.prop IN [1,2,3] AND NOT a.prop IN [3,4,5] AND a.prop IN [2,3,4] RETURN *") {
-    shouldNotRewrite("MATCH (a) WHERE a.prop IN [1,2,3] AND NOT a.prop IN [3,4,5] AND a.prop IN [2,3,4] RETURN *")
-  }
-
-  test("MATCH (a) WHERE NOT (a.prop IN [1,2] AND a.prop IN [2,3])") {
-    shouldRewrite("MATCH (a) WHERE NOT (a.prop IN [1,2] AND a.prop IN [2,3])", "MATCH (a) WHERE NOT a.prop IN [2]")
-  }
-
-  test("MATCH (a) WHERE NOT (a.prop IN [1,2] AND a.prop IN [2,3]) AND NOT (a.prop IN [3,4] AND a.prop IN [4,5])") {
+  test("should replace (NOT _ IN [] AND predicate) with (predicate) as LHS is always TRUE") {
     shouldRewrite(
-      "MATCH (a) WHERE NOT (a.prop IN [1,2] AND a.prop IN [2,3]) AND NOT (a.prop IN [3,4] AND a.prop IN [4,5])",
-      "MATCH (a) WHERE NOT a.prop IN [2,4]"
+      "RETURN NOT n.prop IN [] AND n.prop IS NOT NULL AS result",
+      "RETURN n.prop IS NOT NULL AS result"
     )
   }
 
-  test("RETURN ANY(i IN [1,2,3]) AND ANY(i IN [4])") {
-    shouldNotRewrite("MATCH (n) WHERE ANY(i IN n.prop WHERE i IN [1,2]) AND ANY(i IN n.prop WHERE i IN [3]) RETURN n")
+  test("should make list elements distinct") {
+    shouldRewrite(
+      "MATCH (n:Label) WHERE n.prop1 IN [43, 44] AND n.prop2 IN [3, 3]",
+      "MATCH (n:Label) WHERE n.prop1 IN [43, 44] AND n.prop2 IN [3]"
+    )
   }
 
-  test("RETURN [] OR [] AS n") {
+  test("should collapse collection containing ConstValues for id function") {
+    shouldRewrite(
+      "MATCH (a) WHERE id(a) IN [42] OR id(a) IN [13] RETURN a",
+      "MATCH (a) WHERE id(a) IN [42, 13] RETURN a"
+    )
+  }
+
+  test("should not rewrite OR with LHS and RHS that are empty list literals") {
     shouldNotRewrite("RETURN [] OR [] AS n")
   }
 
-  test("RETURN [1] OR [1] AS n") {
+  test("should not rewrite OR with LHS and RHS that are non-empty list literals") {
     shouldNotRewrite("RETURN [1] OR [1] AS n")
   }
 
-  test("RETURN [] AND [] AS n") {
+  test("should not rewrite AND with LHS and RHS that are empty list literals") {
     shouldNotRewrite("RETURN [] AND [] AS n")
   }
 
-  test("RETURN [1] AND [1] AS n") {
+  test("should not rewrite AND with LHS and RHS that are non-empty list literals") {
     shouldNotRewrite("RETURN [1] AND [1] AS n")
   }
 
-  test("should collapse collection containing ConstValues for id function but keep unrelated list") {
+  // Predicands
+
+  test("should merge only IN comparisons for the same predicand") {
     shouldRewrite(
-      "MATCH (a) WHERE id(a) IN [42] OR [] OR id(a) IN [13] RETURN a",
-      "MATCH (a) WHERE id(a) IN [42, 13] OR [] RETURN a"
+      "WITH 1 AS v RETURN v IN [1] OR (w IN [2] OR (v IN [3] OR v IN [4])) AS result",
+      "WITH 1 AS v RETURN v IN [1, 3, 4] OR w IN [2] AS result"
+    )
+  }
+
+  test("should merge when lhs expression is parameter") {
+    shouldRewrite(
+      "RETURN NOT $p IN [1, 2] AND NOT $q IN [2, 3] AND NOT $p IN [1, 3] AS result",
+      "RETURN NOT $p IN [1, 2, 3] AND NOT $q IN [2, 3] AS result"
+    )
+  }
+
+  test("should merge for multiple predicands") {
+    shouldRewrite(
+      "WITH 1 AS p, 2 AS q RETURN NOT p IN [1, 2] AND NOT q IN [2, 3] AND NOT p IN [1, 3] AND q IN [4] AS result",
+      "WITH 1 AS p, 2 AS q RETURN NOT p IN [1, 2, 3] AND q IN [4] AS result"
+    )
+  }
+
+  test("should merge lists for multiple properties") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop IN [1,2,3] AND a.foo IN ['foo','bar'] AND a.prop IN [2,3,4] AND a.foo IN ['bar'] RETURN *",
+      "MATCH (a) WHERE a.prop IN [2,3] AND a.foo IN ['bar'] RETURN *"
+    )
+  }
+
+  test("should not replace with false a sequence of AND IN where non-overlapping lists for one of two predicands") {
+    shouldNotRewrite("RETURN v IN [1, 2] AND u IN [3, 4] AND v IN [5, 6] AS result")
+  }
+
+  test("should not replace with true a sequence of OR NOT IN where non-overlapping lists for one of two predicands") {
+    shouldNotRewrite("RETURN NOT v IN [1, 2] OR NOT u IN [3, 4] OR NOT v IN [5, 6] AS result")
+  }
+
+  test("should not merge IN for different variables") {
+    shouldNotRewrite("MATCH (a)-->(b) WHERE a.prop IN [1, 2, 3] AND b.prop IN [2, 3, 4]")
+  }
+
+  test("should merge IN comparisons across AND for same predicand and ignore unrelated comparison") {
+    shouldRewrite(
+      "RETURN (m.id IN [21,22,31] AND (NOT m.id IN [22,32]) AND (t.id <> 1 AND t.id <> 3)) AS result",
+      "RETURN (m.id IN [21,31] AND (t.id <> 1 AND t.id <> 3)) AS result"
+    )
+  }
+
+  test("should merge IN comparisons across OR for same predicand and ignore unrelated comparison") {
+    shouldRewrite(
+      "RETURN (m.id IN [21,22,31] OR (m.id = 'other') OR (t.id <> 1 AND t.id <> 3) OR m.id IN [1]) AS result",
+      "RETURN (m.id IN [21,22,31,1] OR (m.id = 'other') OR (t.id <> 1 AND t.id <> 3)) AS result"
+    )
+  }
+
+  test("should merge IN comparisons with unrelated comparisons higher in a tree of boolean binaries") {
+    shouldRewrite(
+      "RETURN (m.id = 'other' OR (t.id <> 1 AND (t.id <> 3 OR m.id IN [21,22,31] OR m.id IN [1]))) AS result",
+      "RETURN (m.id = 'other' OR (t.id <> 1 AND (t.id <> 3 OR m.id IN [21,22,31,1]))) AS result"
+    )
+  }
+
+  test("should skip merging list of same predicand if in AND with different predicand nested in series of ORs") {
+    shouldRewrite(
+      "WITH v IN [1, 2] OR (b IN [4] OR v IN [2, 3]) OR (c IN [5] AND NOT v IN [0, 1, 2]) OR NOT v IN [3, 4] AS result",
+      "WITH NOT v IN [4] OR b IN [4] OR (c IN [5] AND NOT v IN [0, 1, 2]) AS result"
+    )
+  }
+
+  test("should not merge across AND and OR when mixed with comparisons with different predicands") {
+    shouldNotRewrite("RETURN $p IN ['a', 'b'] AND ($q IN [1.2, 1.3] OR $p IN ['b', 'd']) AS result")
+  }
+
+  test("should not merge across OR and AND when mixed with comparisons with different predicands") {
+    shouldNotRewrite("RETURN $p IN ['a', 'b'] OR ($q IN [1.2, 1.3] AND $p IN ['b', 'd']) AS result")
+  }
+
+  test("should not merge across AND NOT when mixed with comparisons with different predicands") {
+    shouldNotRewrite("RETURN $p IN ['a', 'b'] AND NOT ($q IN [1.2, 1.3] AND $p IN ['b', 'd']) AS result")
+  }
+
+  test("should not merge across OR NOT when mixed with comparisons with different predicands") {
+    shouldNotRewrite("RETURN $p IN ['a', 'b'] OR NOT ($q IN [1.2, 1.3] OR $p IN ['b', 'd']) AS result")
+  }
+
+  test("should not merge lists with an intermediate NOT that does not immediately contain IN") {
+    shouldNotRewrite(
+      "RETURN NOT $p IN [1, 2] OR NOT ($q IN [3, 4] OR $p IN [2, 3])"
+    )
+  }
+
+  // Scopes
+
+  test("should not merge IN that are in different any()") {
+    shouldNotRewrite("MATCH (n) WHERE ANY(i IN n.prop WHERE i IN [1,2]) AND ANY(i IN n.prop WHERE i IN [3]) RETURN n")
+  }
+
+  test("should merge IN that are in the same any()") {
+    shouldRewrite(
+      "MATCH (n) WHERE ANY(i IN n.prop WHERE i IN [1,2] AND i IN [2,3]) RETURN n",
+      "MATCH (n) WHERE ANY(i IN n.prop WHERE i IN [2]) RETURN n"
+    )
+  }
+
+  test("should not merge IN comparisons across QPP boundary") {
+    shouldRewrite(
+      "MATCH (a WHERE v IN ['a', 'b'] AND NOT v IN ['b']) ((l)-->(r) WHERE v IN [4.5, 10.1] AND NOT v IN [10.01])+",
+      "MATCH (a WHERE v IN ['a']) ((l)-->(r) WHERE v IN [4.5, 10.1])+"
+    )
+  }
+
+  test("should not merge IN comparisons across EXISTS subquery boundary") {
+    shouldRewrite(
+      "MATCH (a) WHERE v IN ['a', 'b'] AND NOT v IN ['b'] AND EXISTS { MATCH (a)-->(b) WHERE v IN ['c'] }",
+      "MATCH (a) WHERE v IN ['a'] AND EXISTS { MATCH (a)-->(b) WHERE v IN ['c'] }"
+    )
+  }
+
+  test("should not merge IN comparisons across pattern comprehension boundary") {
+    shouldRewrite(
+      "RETURN v IN [1, 2] AND NOT v IN [2, 3] AND size([v IN $p WHERE v IN [1]]) > 0 AS result",
+      "RETURN v IN [1] AND size([v IN $p WHERE v IN [1]]) > 0 AS result"
+    )
+  }
+
+  // List elements that are not literals
+
+  test("should not consolidate lists of integers with lists of expressions") {
+    shouldRewrite(
+      "WITH 1 AS v RETURN v IN [1] OR (w IN [2] OR (v IN [v IN [3]] OR v IN [4])) AS result",
+      "WITH 1 AS v RETURN v IN [1, 4] OR w IN [2] OR v IN [v IN [3]] AS result"
+    )
+  }
+
+  test("should not collapse collections containing function invocations") {
+    shouldNotRewrite("MATCH (a) WHERE id(a) IN [42] OR id(a) IN [rand()] RETURN a")
+  }
+
+  test("should not collapse non-equal collections containing function invocations") {
+    shouldNotRewrite("MATCH (a) WHERE a.prop IN [42, rand()] OR a.prop IN [rand(), 54] RETURN a")
+  }
+
+  test("should collapse equal collections containing function invocations") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop IN [1, rand(), 'string'] OR a.prop IN [1, rand(), 'string'] RETURN a",
+      "MATCH (a) WHERE a.prop IN [1, rand(), 'string'] RETURN a"
+    )
+  }
+
+  test("should not merge IN lists containing properties") {
+    shouldNotRewrite(
+      "MATCH (a WHERE v IN [a.p] AND NOT v IN [a.q]) ((l)-->(r) WHERE v IN [l.p, r.p] AND NOT v IN [l.q, r.q])+"
+    )
+  }
+
+  test("should not merge lists containing variables") {
+    shouldNotRewrite("RETURN v IN [1, 2] AND v IN [2, a] AS result")
+  }
+
+  test("should not merge lists containing parameters") {
+    shouldRewrite(
+      "RETURN v IN [1, 2] AND NOT v IN [3, $x] AND NOT v IN [2, 3] AS result",
+      "RETURN v IN [1] AND NOT v IN [3, $x] AS result"
+    )
+  }
+
+  test("should not merge lists containing date functions") {
+    shouldNotRewrite(
+      "RETURN NOT v IN [date('2025-02-02'), 2] AND v IN [2, 3] AS result"
     )
   }
 

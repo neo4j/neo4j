@@ -106,6 +106,43 @@ import java.lang.Boolean.TRUE
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp
     with LogicalPlanningIntegrationTestSupport {
 
+  private val nodeIndexScanCost
+    : PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = {
+    case (_: AllNodesScan, _, _, _)          => 1000.0
+    case (_: NodeByLabelScan, _, _, _)       => 50.0
+    case (_: NodeIndexScan, _, _, _)         => 10.0
+    case (_: NodeIndexContainsScan, _, _, _) => 10.0
+    case (nodeIndexSeek: NodeIndexSeek, _, cardinalities, _) =>
+      val planCardinality = cardinalities.get(nodeIndexSeek.id).amount
+      val rowCost = 1.0
+      val allNodesCardinality = 1000.0
+      rowCost * planCardinality / allNodesCardinality
+    case (Selection(_, plan), input, c, p) => nodeIndexScanCost((plan, input, c, p)) + 1.0
+    case _                                 => Double.MaxValue
+  }
+
+  private val nodeIndexSeekCost
+    : PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = {
+    case (_: AllNodesScan, _, _, _)                    => 1000000000.0
+    case (_: NodeIndexSeek, _, _, _)                   => 0.1
+    case (Expand(plan, _, _, _, _, _, _), input, c, p) => nodeIndexSeekCost((plan, input, c, p))
+    case (Selection(_, plan), input, c, p)             => nodeIndexSeekCost((plan, input, c, p))
+    case _                                             => 1000.0
+  }
+
+  private def promoteOnlyPlansSolving(
+    patternNodes: Set[String],
+    expressions: Set[Expression]
+  ): PartialFunction[PlannerQuery, Double] = {
+    case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == patternNodes.map(varFor) =>
+      queryGraph.selections.predicates.map(_.expr) match {
+        case es if es == expressions => 10.0
+        case _                       => Double.MaxValue
+      }
+
+    case _ => Double.MaxValue
+  }
+
   test("should plan index seek by prefix for simple prefix search based on STARTS WITH with prefix") {
     (new givenConfig {
       textIndexOn("Person", "name")
@@ -347,43 +384,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  private val nodeIndexScanCost
-    : PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = {
-    case (_: AllNodesScan, _, _, _)          => 1000.0
-    case (_: NodeByLabelScan, _, _, _)       => 50.0
-    case (_: NodeIndexScan, _, _, _)         => 10.0
-    case (_: NodeIndexContainsScan, _, _, _) => 10.0
-    case (nodeIndexSeek: NodeIndexSeek, _, cardinalities, providedOrders) =>
-      val planCardinality = cardinalities.get(nodeIndexSeek.id).amount
-      val rowCost = 1.0
-      val allNodesCardinality = 1000.0
-      rowCost * planCardinality / allNodesCardinality
-    case (Selection(_, plan), input, c, p) => nodeIndexScanCost((plan, input, c, p)) + 1.0
-    case _                                 => Double.MaxValue
-  }
-
-  private val nodeIndexSeekCost
-    : PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = {
-    case (_: AllNodesScan, _, _, _)                    => 1000000000.0
-    case (_: NodeIndexSeek, _, _, _)                   => 0.1
-    case (Expand(plan, _, _, _, _, _, _), input, c, p) => nodeIndexSeekCost((plan, input, c, p))
-    case (Selection(_, plan), input, c, p)             => nodeIndexSeekCost((plan, input, c, p))
-    case _                                             => 1000.0
-  }
-
-  private def promoteOnlyPlansSolving(
-    patternNodes: Set[String],
-    expressions: Set[Expression]
-  ): PartialFunction[PlannerQuery, Double] = {
-    case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == patternNodes.map(varFor) =>
-      queryGraph.selections.predicates.map(_.expr) match {
-        case es if es == expressions => 10.0
-        case _                       => Double.MaxValue
-      }
-
-    case _ => Double.MaxValue
-  }
-
   test("should plan index scan for n.prop IS NOT NULL") {
     val plan =
       new givenConfig {
@@ -558,6 +558,84 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     }
   }
 
+  test("should not plan 'NOT any IN <empty list literal>' with index scan") {
+    val (logicalPlan, _, _) =
+      new givenConfig {
+        indexOn("A", "prop")
+      } getLogicalPlanFor
+        """
+          |MATCH (n:A)
+          |WHERE NOT any(val IN [] WHERE n.prop = val)
+          |RETURN n""".stripMargin
+
+    logicalPlan should beLike { case Selection(_, _: NodeByLabelScan) => }
+  }
+
+  test("should not plan 'none IN <empty list literal>' with index scan") {
+    val (logicalPlan, _, _) =
+      new givenConfig {
+        indexOn("A", "prop")
+      } getLogicalPlanFor
+        """
+          |MATCH (n:A)
+          |WHERE none(val IN [] WHERE n.prop = val)
+          |RETURN n""".stripMargin
+
+    logicalPlan should beLike { case Selection(_, _: NodeByLabelScan) => }
+  }
+
+  test("should plan '<property> IN <non-empty list literal>' with index scan") {
+    val (logicalPlan, _, _) =
+      new givenConfig {
+        indexOn("A", "prop")
+      } getLogicalPlanFor
+        """
+          |MATCH (n:A)
+          |WHERE NOT n.prop IN [1]
+          |RETURN n""".stripMargin
+
+    logicalPlan should beLike { case Selection(_, _: NodeIndexScan) => }
+  }
+
+  test("should plan 'NOT <property> EQUALS <literal>' index scan (Not(Equals) is rewritten to Not(In)") {
+    val (logicalPlan, _, _) =
+      new givenConfig {
+        indexOn("A", "prop")
+      } getLogicalPlanFor
+        """
+          |MATCH (n:A)
+          |WHERE NOT n.prop = 2
+          |RETURN n""".stripMargin
+
+    logicalPlan should beLike { case Selection(_, _: NodeIndexScan) => }
+  }
+
+  test("should plan '<property> IS TYPED <type> NOT NULL' with index scan") {
+    val (logicalPlan, _, _) =
+      new givenConfig {
+        indexOn("A", "prop")
+      } getLogicalPlanFor
+        """
+          |MATCH (n:A)
+          |WHERE n.prop IS TYPED STRING NOT NULL
+          |RETURN n""".stripMargin
+
+    logicalPlan should beLike { case Selection(_, _: NodeIndexScan) => }
+  }
+
+  test("should plan non-scannable predicate AND scannable predicate with index scan") {
+    val (logicalPlan, _, _) =
+      new givenConfig {
+        indexOn("A", "prop")
+      } getLogicalPlanFor
+        """
+          |MATCH (n:A)
+          |WHERE (NOT n.prop IS TYPED STRING NOT NULL) AND (n.prop IS NOT NULL)
+          |RETURN n""".stripMargin
+
+    logicalPlan should beLike { case Selection(_, _: NodeIndexScan) => }
+  }
+
   test("should use indexes for large collections if it is a unique index") {
     val result =
       new givenConfig {
@@ -707,7 +785,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  val awesomePlanner = plannerBuilder()
+  private val awesomePlanner = plannerBuilder()
     .setAllNodesCardinality(1000)
     .setLabelCardinality("Awesome", 100)
     .addNodeIndex("Awesome", Seq("prop1"), 0.1, 0.01)
@@ -819,7 +897,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   private object nodePointIndexHints {
 
-    val pointQueryExpression = Some(SingleQueryExpression(
+    val pointQueryExpression: Option[SingleQueryExpression[FunctionInvocation]] = Some(SingleQueryExpression(
       FunctionInvocation(
         FunctionName("point")(pos),
         MapExpression(Seq(
@@ -1826,14 +1904,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |RETURN end""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("end")
         .filterExpression(andsReorderable("end:B", "end:C"))
         .expandAll("(start)-[r]->(end)")
         .nodeByLabelScan("start", "A")
         .build()
-    ))
+    )
   }
 
   private def plannerForIntersectionScanTests(aLabelCardinality: Double, bLabelCardinality: Double) = {
@@ -1903,12 +1981,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (n:A&!B) RETURN n"
     val plan = planner.plan(q)
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("n")
         .subtractionNodeByLabelsScan("n", Seq("A"), Seq("B"))
         .build()
-    ))
+    )
   }
 
   test("should plan subtraction node label scan for one positive label and two negative label") {
@@ -1922,12 +2000,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (n:A&!B&!C) RETURN n"
     val plan = planner.plan(q)
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("n")
         .subtractionNodeByLabelsScan("n", Seq("A"), Seq("B", "C"))
         .build()
-    ))
+    )
   }
 
   test(
@@ -1943,12 +2021,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (n:A&!(B|C)) RETURN n"
     val plan = planner.plan(q)
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("n")
         .subtractionNodeByLabelsScan("n", Seq("A"), Seq("B", "C"))
         .build()
-    ))
+    )
   }
 
   test("should plan subtraction node label scan for two positive label and one negative label") {
@@ -1962,12 +2040,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (n:A&B&!C) RETURN n"
     val plan = planner.plan(q)
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("n")
         .subtractionNodeByLabelsScan("n", Seq("A", "B"), Seq("C"))
         .build()
-    ))
+    )
   }
 
   test("should plan subtraction node label scan for two positive label and two negative label") {
@@ -1982,12 +2060,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (n:!A&B&!C&D) RETURN n"
     val plan = planner.plan(q)
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("n")
         .subtractionNodeByLabelsScan("n", Seq("B", "D"), Seq("A", "C"))
         .build()
-    ))
+    )
   }
 
   test("should plan subtraction node label scan for two positive label and two negative label descending order") {
@@ -2002,12 +2080,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (n:!A&B&!C&D) RETURN n ORDER BY n DESC"
     val plan = planner.plan(q)
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("n")
         .subtractionNodeByLabelsScan("n", Seq("B", "D"), Seq("A", "C"), IndexOrderDescending)
         .build()
-    ))
+    )
   }
 
   test("should plan subtraction node label scan for two positive label and two negative label ascending order") {
@@ -2022,12 +2100,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (n:!A&B&!C&D) RETURN n ORDER BY n ASC"
     val plan = planner.plan(q)
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("n")
         .subtractionNodeByLabelsScan("n", Seq("B", "D"), Seq("A", "C"), IndexOrderAscending)
         .build()
-    ))
+    )
   }
 
   test("should not plan subtraction node label scan when hint for relationship type scan is given") {
@@ -2044,13 +2122,13 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (a)-[r:R1]->(b:!A&B) USING SCAN r:R1 RETURN r"
     val plan = planner.plan(q)
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("r")
         .filter("b:B", "NOT b:A")
         .relationshipTypeScan("(a)-[r:R1]->(b)")
         .build()
-    ))
+    )
   }
 
   test("should plan subtraction node label scan when hint for node label scan is given") {
@@ -2070,7 +2148,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (a:A {id:123})-[r:R1]->(b:!A&B) USING SCAN b:B RETURN r"
     val plan = planner.plan(q)
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("r")
         .nodeHashJoin("b")
@@ -2078,7 +2156,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .expandAll("(a)-[r:R1]->(b)")
         .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
         .build()
-    ))
+    )
   }
 
   test("should not plan subtraction node label scan when hint for node label scan is given for another node") {
@@ -2097,14 +2175,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (a:A)-[r:R1]->(b:!A&B) USING SCAN a:A RETURN r"
     val plan = planner.plan(q)
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("r")
         .filter("b:B", "NOT b:A")
         .expandAll("(a)-[r:R1]->(b)")
         .nodeByLabelScan("a", "A")
         .build()
-    ))
+    )
   }
 
   test("should not plan subtraction node label scan when hint for node label scan is given for a negative label") {
