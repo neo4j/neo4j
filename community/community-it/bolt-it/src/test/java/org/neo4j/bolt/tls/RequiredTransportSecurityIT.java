@@ -82,7 +82,7 @@ public class RequiredTransportSecurityIT {
 
         BoltConnectionAssertions.assertThat(connection).is(protocolNegotiated());
 
-        connection.close();
+        connection.disconnect();
     }
 
     private static Condition<BoltTestConnection> protocolNegotiated() {

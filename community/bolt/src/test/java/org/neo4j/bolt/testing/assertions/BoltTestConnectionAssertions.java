@@ -116,7 +116,7 @@ public abstract class BoltTestConnectionAssertions<
             Predicates.await(
                     () -> {
                         try {
-                            return actual.isClosed();
+                            return actual.isDisconnected();
                         } catch (BoltTestClientInterruptedException ex) {
                             fail(ex);
                         }

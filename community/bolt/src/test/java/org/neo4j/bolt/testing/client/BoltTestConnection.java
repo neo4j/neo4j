@@ -205,7 +205,7 @@ public interface BoltTestConnection extends AutoCloseable {
 
     ByteBuf receiveMessage();
 
-    boolean isClosed();
+    boolean isDisconnected();
 
     @Override
     default void close() {
