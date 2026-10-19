@@ -852,7 +852,7 @@ Eclipse Distribution License - v 1.0
   fastinfoset
   istack common utility code runtime
   Jakarta Activation API jar
-  jakarta.xml.bind-api
+  Jakarta XML Binding API
   JAXB Runtime
   jersey-container-servlet
   jersey-container-servlet-core

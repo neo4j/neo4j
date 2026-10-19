@@ -32,10 +32,16 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.ExecutableQuery;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.encryption.BasePropertyEncryption;
 import org.neo4j.driver.exceptions.Neo4jException;
 
 public class FakeDriver implements Driver {
     public List<SessionConfig> sessionConfigs = new LinkedList<>();
+
+    @Override
+    public <T extends BasePropertyEncryption> T propertyEncryption(Class<T> propertyEncryptionClass) {
+        return null;
+    }
 
     @Override
     public ExecutableQuery executableQuery(String s) {
