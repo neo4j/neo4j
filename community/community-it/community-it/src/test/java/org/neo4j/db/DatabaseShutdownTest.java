@@ -156,17 +156,6 @@ class DatabaseShutdownTest {
                                             segmentTracker);
                                     return new DelegatingPagedFile(pagedFile) {
                                         @Override
-                                        public void flush(
-                                                FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor)
-                                                throws IOException {
-                                            if (failFlush) {
-                                                // this is simulating a failing check pointing on shutdown
-                                                throw new IOException("Boom!");
-                                            }
-                                            super.flush(flushEvent, asyncBlockAccessor);
-                                        }
-
-                                        @Override
                                         public void flushAndForce(
                                                 FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor)
                                                 throws IOException {

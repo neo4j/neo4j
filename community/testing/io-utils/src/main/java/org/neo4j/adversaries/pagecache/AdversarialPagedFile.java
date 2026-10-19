@@ -65,12 +65,6 @@ public class AdversarialPagedFile extends DelegatingPagedFile {
     }
 
     @Override
-    public void flush(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor) throws IOException {
-        adversary.injectFailure(NoSuchFileException.class, IOException.class, SecurityException.class);
-        delegate.flush(flushEvent, asyncBlockAccessor);
-    }
-
-    @Override
     public void flushAndForce(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor) throws IOException {
         adversary.injectFailure(NoSuchFileException.class, IOException.class, SecurityException.class);
         delegate.flushAndForce(flushEvent, asyncBlockAccessor);

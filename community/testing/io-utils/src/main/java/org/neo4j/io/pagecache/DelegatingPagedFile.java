@@ -40,11 +40,6 @@ public class DelegatingPagedFile implements PagedFile {
     }
 
     @Override
-    public void flush(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor) throws IOException {
-        delegate.flush(flushEvent, asyncBlockAccessor);
-    }
-
-    @Override
     public void flushAndForce(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor) throws IOException {
         delegate.flushAndForce(flushEvent, asyncBlockAccessor);
     }

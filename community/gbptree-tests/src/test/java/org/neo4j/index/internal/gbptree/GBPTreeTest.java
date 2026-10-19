@@ -1147,8 +1147,7 @@ class GBPTreeTest {
     }
 
     @Test
-    void checkPointShouldForceChannelTwice() throws IOException {
-        // GIVEN
+    void checkPointShouldForceChannelThreeTimes() throws IOException {
         var forceCountingSwapper = new ForceCountingSwapperFactory();
         try (JobScheduler jobScheduler = new ThreadPoolJobScheduler();
                 PageCache pageCache = new MuninnPageCache(
@@ -1158,7 +1157,34 @@ class GBPTreeTest {
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
             forceCountingSwapper.reset();
             index.checkpoint(FileFlushEvent.NULL, asyncBlockAccessor, NULL_CONTEXT);
-            assertThat(forceCountingSwapper.count.get()).isEqualTo(2);
+            assertThat(forceCountingSwapper.count.get()).isEqualTo(3);
+        }
+    }
+
+    @Test
+    void checkpointShouldForceBeforeBlockingWriters() throws IOException {
+        var forceCountingSwapper = new ForceCountingSwapperFactory();
+        try (JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+                PageCache pageCache = new MuninnPageCache(
+                        fileSystem,
+                        jobScheduler,
+                        MuninnPageCache.forPages(1_000).swapperFactory(forceCountingSwapper));
+                GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
+            var writerCompletedDuringFirstForce = new AtomicBoolean();
+            forceCountingSwapper.reset();
+            forceCountingSwapper.onFirstForce = throwing(() -> {
+                executor.submit(throwing(() -> {
+                            try (var writer = index.writer(NULL_CONTEXT)) {
+                                writer.put(new MutableLong(1), new MutableLong(1));
+                            }
+                        }))
+                        .get(1, TimeUnit.MINUTES);
+                writerCompletedDuringFirstForce.set(true);
+            });
+
+            index.checkpoint(FileFlushEvent.NULL, asyncBlockAccessor, NULL_CONTEXT);
+
+            assertThat(writerCompletedDuringFirstForce).isTrue();
         }
     }
 
@@ -2776,13 +2802,6 @@ class GBPTreeTest {
                     }
 
                     @Override
-                    public void flush(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor)
-                            throws IOException {
-                        maybeThrow();
-                        super.flush(flushEvent, asyncBlockAccessor);
-                    }
-
-                    @Override
                     public void flushAndForce(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor)
                             throws IOException {
                         maybeThrow();
@@ -3169,6 +3188,7 @@ class GBPTreeTest {
         private final PageSwapperFactory delegate =
                 new SingleFilePageSwapperFactory(fileSystem, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE);
         private final AtomicLong count = new AtomicLong();
+        private volatile Runnable onFirstForce = () -> {};
 
         @Override
         public PageSwapper createPageSwapper(
@@ -3197,7 +3217,9 @@ class GBPTreeTest {
             return new DelegatingPageSwapper(delegate) {
                 @Override
                 public void force() {
-                    count.incrementAndGet();
+                    if (count.incrementAndGet() == 1) {
+                        onFirstForce.run();
+                    }
                 }
             };
         }

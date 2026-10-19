@@ -1192,17 +1192,17 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      * |-WW--W-WWWW│-│WFWWFFFWFWWFWWWF│-│WWW-W--WW-WWW--| time
      *             └┬┴────────┬───────┴┬┘
      *              │         │        └ #3 block and drain writers, force (data pages), bump generation, force (state page), unblock writers
-     *              │         └ #2 flush all file pages cooperatively with writers
+     *              │         └ #2 flush and force all file pages cooperatively with writers
      *              └ #1 block and drain writers (and block new ones), set writers-must-flush flag, unblock writers
      * </pre>
      *
-     * The two sections where writers are blocked are both very short:
-     * <ul>
-     *     <li>#1 flips a boolean</li>
-     *     <li>#3 writes and flushes a handful of pages (one state page and potentially two freelist pages).
-     *     If {@code doCompaction==true} then potentially a lot more pages will be dirtied and flushed additionally.</li>
-     * </ul>
-     * During #2 (when the file is flushed), writers are unblocked and will eagerly flush their changes as they write.
+     * Writers are blocked in #1 and #3. #1 flips a boolean. #3 flushes the freelist pages, the state page and any page
+     * still dirty, and forces twice. Its first force syncs every write that #2's force didn't cover, so #2 forces even
+     * though crash safety doesn't need it. Otherwise #3 would sync all of #2's writes, which can take seconds on slow
+     * storage, while writers are blocked.
+     * If {@code doCompaction==true} then potentially a lot more pages will be dirtied, flushed and forced in #3.
+     *
+     * During #2, writers are unblocked and will eagerly flush their changes as they write.
      *
      * If {@code doCompaction==true} also tries to compact the tree to some extent.
      * This compaction is designed to run boxed by some upper ceiling of page count, as to run fairly quickly.
@@ -1233,9 +1233,9 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             // w/o blocking on its completion.
             withCheckpointAndWriterLock(() -> writersMustEagerlyFlush = true);
 
-            // Do the file-global flush together with the flushing by any potential concurrent writer
+            // Do the file-global flush and force together with the flushing by any potential concurrent writer
             monitor.checkpointStarted();
-            pagedFile.flush(flushEvent, asyncBlockAccessor);
+            pagedFile.flushAndForce(flushEvent, asyncBlockAccessor);
 
             // Drain writers, bump generation and do the final forcing of the file.
             // New writers after this section don't need to eagerly flush anymore.
@@ -1249,11 +1249,10 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 freeList.flush(
                         stableGeneration, unstableGeneration, bind(pagedFile, PF_SHARED_WRITE_LOCK, cursorContext));
 
-                // Force any potential pages flushed from writers after completion of the above flush.
+                // Flush the freelist and any page still dirty (eager flush can fail), and force every write the above
+                // force didn't cover.
                 // This will prevent any risk of state page w/ the generation bump change below making
                 // it to disk before any data page from this to-be-stable generation.
-                // Only force is needed, but there's no method only doing force,
-                // although the flush part is really fast if there are no dirty pages.
                 structureWriteLog.checkpoint(stableGeneration, unstableGeneration, unstableGeneration + 1);
                 pagedFile.flushAndForce(flushEvent, asyncBlockAccessor);
 
