@@ -48,8 +48,11 @@ import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.queryapi.test.annotation.QueryAPITestExtension;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension
 class QueryResourceConfigIT {
 
     private static DatabaseManagementService dbms;
@@ -87,7 +90,7 @@ class QueryResourceConfigIT {
         var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"CREATE (n) RETURN n\"}"))
                 .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
@@ -104,7 +107,7 @@ class QueryResourceConfigIT {
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"CREATE (n) RETURN n\",\"accessMode\": \"" + input + "\"}"))
                 .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
@@ -122,7 +125,7 @@ class QueryResourceConfigIT {
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"RETURN 1\",\"accessMode\": \"" + input + "\"}"))
                 .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
@@ -140,7 +143,7 @@ class QueryResourceConfigIT {
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"CREATE (n) RETURN n\",\"accessMode\": \"READ\"}"))
                 .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.body())
@@ -155,7 +158,7 @@ class QueryResourceConfigIT {
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"CREATE (n) RETURN n\",\"accessMode\": \"bananas\"}"))
                 .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.body())
@@ -169,7 +172,7 @@ class QueryResourceConfigIT {
         var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"EXPLAIN RETURN 1\"}"))
                 .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
@@ -200,7 +203,7 @@ class QueryResourceConfigIT {
         var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"PROFILE RETURN 1\"}"))
                 .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());

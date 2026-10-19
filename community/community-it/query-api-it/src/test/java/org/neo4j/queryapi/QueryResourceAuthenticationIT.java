@@ -44,8 +44,11 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.queryapi.test.annotation.QueryAPITestExtension;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension
 class QueryResourceAuthenticationIT {
 
     private static DatabaseManagementService dbms;
@@ -82,7 +85,7 @@ class QueryResourceAuthenticationIT {
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"SHOW USERS\"}"))
                 .build();
 
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(400);
         var parsedResponse = MAPPER.readTree(response.body());
@@ -101,7 +104,7 @@ class QueryResourceAuthenticationIT {
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
 
-        var accessResponse = client.send(accessRequest, HttpResponse.BodyHandlers.ofString());
+        var accessResponse = QueryAPITestClient.send(client, accessRequest, HttpResponse.BodyHandlers.ofString());
         var parsedJson = MAPPER.readTree(accessResponse.body());
 
         assertThat(accessResponse.statusCode()).isEqualTo(202);
@@ -119,7 +122,7 @@ class QueryResourceAuthenticationIT {
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
 
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(401);
 
@@ -134,7 +137,7 @@ class QueryResourceAuthenticationIT {
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
 
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(401);
 
@@ -150,7 +153,7 @@ class QueryResourceAuthenticationIT {
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
 
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(400);
 
@@ -171,7 +174,7 @@ class QueryResourceAuthenticationIT {
                     .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "WrongPasswordBud"))
                     .POST(HttpRequest.BodyPublishers.ofString("shouldn't be parsing this"))
                     .build();
-            response = client.send(req, HttpResponse.BodyHandlers.ofString());
+            response = QueryAPITestClient.send(client, req, HttpResponse.BodyHandlers.ofString());
         } while (response.statusCode() != 429);
         assertThat(response.body())
                 .isEqualTo(
@@ -185,7 +188,8 @@ class QueryResourceAuthenticationIT {
                         "{\"statement\": \"ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secretPassword'\"}"))
                 .build();
 
-        var updatePasswordResp = client.send(updatePasswordReq, HttpResponse.BodyHandlers.ofString());
+        var updatePasswordResp =
+                QueryAPITestClient.send(client, updatePasswordReq, HttpResponse.BodyHandlers.ofString());
 
         assertThat(updatePasswordResp.statusCode()).isEqualTo(202);
     }

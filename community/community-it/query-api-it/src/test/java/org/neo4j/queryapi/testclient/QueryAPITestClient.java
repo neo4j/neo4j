@@ -132,7 +132,8 @@ public class QueryAPITestClient {
 
     public HttpResponse<QueryResponse> rollbackTx(String txId, String database)
             throws IOException, InterruptedException {
-        return client.send(
+        return QueryAPITestClient.send(
+                client,
                 HttpRequest.newBuilder(URI.create(endpoint.replace("{databaseName}", database) + "/tx/" + txId))
                         .DELETE()
                         .build(),
@@ -144,7 +145,8 @@ public class QueryAPITestClient {
     }
 
     public HttpResponse<QueryResponse> sendRaw(String rawJson) throws IOException, InterruptedException {
-        return client.send(
+        return QueryAPITestClient.send(
+                client,
                 HttpRequest.newBuilder()
                         .uri(URI.create(endpoint.replace("{databaseName}", "neo4j")))
                         .header("Content-Type", this.contentType.mimeType())
@@ -172,7 +174,7 @@ public class QueryAPITestClient {
         }
 
         var builtRequest = reqBuilder.build();
-        return client.send(builtRequest, responseHandler());
+        return QueryAPITestClient.send(client, builtRequest, responseHandler());
     }
 
     private HttpResponse.BodyHandler<QueryResponse> responseHandler() {
@@ -213,5 +215,15 @@ public class QueryAPITestClient {
         return this.acceptedContentTypes.stream()
                 .map(QueryContentType::mimeType)
                 .collect(Collectors.joining(","));
+    }
+
+    public static <T> HttpResponse<T> send(
+            HttpClient client, HttpRequest request, HttpResponse.BodyHandler<T> responseHandler)
+            throws InterruptedException {
+        try {
+            return client.send(request, responseHandler);
+        } catch (IOException exception) {
+            throw new QueryAPITestRetryException("Can't connect to HTTP Endpoint.", exception);
+        }
     }
 }

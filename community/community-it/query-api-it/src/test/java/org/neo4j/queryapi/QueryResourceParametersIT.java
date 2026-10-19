@@ -44,10 +44,12 @@ import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.queryapi.test.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension
 class QueryResourceParametersIT {
 
     private static DatabaseManagementService dbms;
@@ -179,7 +181,7 @@ class QueryResourceParametersIT {
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"RETURN $parameter\"," + "\"parameters\": 123}"))
                 .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(400);
 

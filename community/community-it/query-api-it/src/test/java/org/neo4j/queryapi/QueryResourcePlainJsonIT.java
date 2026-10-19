@@ -37,11 +37,13 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.queryapi.test.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.server.queryapi.response.format.Fieldnames;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension
 class QueryResourcePlainJsonIT {
 
     private static DatabaseManagementService dbms;

@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.queryapi.QueryApiTestUtil;
+import org.neo4j.queryapi.test.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryApiTestClientException;
 import org.neo4j.queryapi.testclient.QueryRequest;
@@ -54,6 +55,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.queryapi.tx.TransactionManager;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension
 public class QueryResourceTxTimeoutIT {
 
     private static QueryAPITestClient testClient;

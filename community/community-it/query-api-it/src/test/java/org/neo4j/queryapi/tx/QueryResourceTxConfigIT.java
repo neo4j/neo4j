@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.notifications.NotificationCodeWithDescription;
 import org.neo4j.queryapi.QueryApiTestUtil;
+import org.neo4j.queryapi.test.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryApiTestClientException;
 import org.neo4j.queryapi.testclient.QueryRequest;
@@ -61,6 +62,7 @@ import org.neo4j.server.queryapi.request.AccessMode;
 import org.neo4j.server.queryapi.tx.TransactionManager;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension
 public class QueryResourceTxConfigIT {
 
     private static QueryAPITestClient testClient;

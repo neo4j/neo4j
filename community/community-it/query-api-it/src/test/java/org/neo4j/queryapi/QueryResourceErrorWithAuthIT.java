@@ -40,8 +40,11 @@ import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.queryapi.test.annotation.QueryAPITestExtension;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension
 class QueryResourceErrorWithAuthIT {
 
     private static DatabaseManagementService dbms;
@@ -88,7 +91,7 @@ class QueryResourceErrorWithAuthIT {
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
-        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        var response = QueryAPITestClient.send(client, request, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.body())

@@ -40,6 +40,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.QueryResponseAssertions;
+import org.neo4j.queryapi.test.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryApiTestClientException;
 import org.neo4j.queryapi.testclient.QueryRequest;
@@ -47,6 +48,7 @@ import org.neo4j.queryapi.testclient.QueryResponse;
 import org.neo4j.server.queryapi.tx.TransactionManager;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension
 class QueryResourceTxAuthenticationIT {
 
     private static QueryAPITestClient testClient;
