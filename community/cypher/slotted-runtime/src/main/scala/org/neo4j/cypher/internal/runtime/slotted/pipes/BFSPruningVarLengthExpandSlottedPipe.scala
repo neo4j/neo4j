@@ -70,6 +70,10 @@ case class BFSPruningVarLengthExpandSlottedPipe(
         row.setLongAt(to.offset, endNode)
         row.setRefAt(depthOffset, Values.intValue(depth))
         row
+    case (Some(depthOffset), None) =>
+      (row: CypherRow, _: Long, depth: Int) =>
+        row.setRefAt(depthOffset, Values.intValue(depth))
+        row
     case (None, Some(to)) =>
       (row: CypherRow, endNode: Long, _: Int) =>
         row.setLongAt(to.offset, endNode)
