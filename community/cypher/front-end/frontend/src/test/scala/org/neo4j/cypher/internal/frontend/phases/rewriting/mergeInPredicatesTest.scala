@@ -133,6 +133,71 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
     checkCell(caseNumber, "empty merged list, constant present", mergeCase.original(a, b), expected)
   }
 
+  /*
+   * Equal values spelled differently. Every column uses A = [1, x] and B = [y, 3], where x and y are different
+   * literals of the same value, so they must count as the same element. The merged list keeps the spelling of A.
+   */
+  private val equalValueColumns = Seq(
+    ("integer and float", "2", "2.0"),
+    ("float and integer", "2.0", "2"),
+    ("decimal and hexadecimal integer", "2", "0x2"),
+    ("decimal and octal integer", "2", "0o2"),
+    ("zero and negative integer zero", "0", "-0"),
+    ("float zero and negative float zero", "0.0", "-0.0"),
+    ("float in decimal and exponent notation", "200.0", "2e2"),
+    ("float with and without trailing zero", "2.0", "2.00"),
+    ("integer and float beyond 2^53", "9007199254740992", "9007199254740992.0")
+  )
+
+  private val equalValue: Seq[(Int, String => String)] = Seq(
+    1 -> (x => s"[$x]"),
+    2 -> (_ => "[1]"),
+    3 -> (_ => "[3]"),
+    4 -> (x => s"[1, $x, 3]"),
+    5 -> (x => s"[1, $x, 3]"),
+    6 -> (_ => "[3]"),
+    7 -> (_ => "[1]"),
+    8 -> (x => s"[$x]")
+  )
+
+  for {
+    (column, x, y) <- equalValueColumns
+    (caseNumber, merged) <- equalValue
+  } {
+    val mergeCase = mergeCases(caseNumber)
+    checkCell(
+      caseNumber,
+      s"equal values: $column",
+      mergeCase.original(s"[1, $x]", s"[$y, 3]"),
+      Merges(mergeCase.merged(merged(x)))
+    )
+  }
+
+  /*
+   * Different values that are close: 2^53 + 1 is not a double, so it is not equal to the double 2^53, although
+   * converting it to a double gives 2^53. Uses A = [1, x] and B = [y, 3] like the columns above.
+   */
+  private val closeValues: Seq[(Int, Expected)] = Seq(
+    1 -> MustNotMerge,
+    2 -> Merges("[1, 9007199254740993]"),
+    3 -> Merges("[9007199254740992.0, 3]"),
+    4 -> Merges("[1, 9007199254740993, 9007199254740992.0, 3]"),
+    5 -> Merges("[1, 9007199254740993, 9007199254740992.0, 3]"),
+    6 -> Merges("[9007199254740992.0, 3]"),
+    7 -> Merges("[1, 9007199254740993]"),
+    8 -> MustNotMerge
+  )
+
+  for ((caseNumber, expected) <- closeValues) {
+    val mergeCase = mergeCases(caseNumber)
+    checkCell(
+      caseNumber,
+      "different values: integer 2^53 + 1 and float 2^53",
+      mergeCase.original("[1, 9007199254740993]", "[9007199254740992.0, 3]"),
+      expected.mapMerged(mergeCase.merged)
+    )
+  }
+
   private def checkCell(caseNumber: Int, column: String, original: String, expected: Expected): Unit = {
     test(s"case $caseNumber (${mergeCases(caseNumber).template}), $column: `$original` ${expected.describe}") {
       expected match {
@@ -181,15 +246,17 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   // Without the list containing null, the other two would merge to an empty list.
-  // v = null: original `null AND null AND NOT null` = null; merged FALSE
+  // v = null: original `NOT null AND null AND null` = null; merged FALSE
+  // AND is left-associative, so the list containing null is in the subtree the outermost AND merges.
   test("should not replace with false IN lists without overlap and NOT IN list containing null joined by AND") {
-    shouldNotRewrite("RETURN v IN [1] AND v IN [2] AND NOT v IN [3, null] AS result")
+    shouldNotRewrite("RETURN NOT v IN [3, null] AND v IN [1] AND v IN [2] AS result")
   }
 
-  // `v IN []` is FALSE for every v, so the whole conjunction is FALSE, whatever the list containing null evaluates to
+  // `v IN []` is FALSE for every v, so the whole conjunction is FALSE, whatever the list containing null evaluates to.
+  // AND is left-associative, so the list containing null is in the subtree the outermost AND merges.
   test("should replace with false IN lists joined by AND with an empty one and NOT IN list containing null") {
     shouldRewrite(
-      "RETURN v IN [1] AND v IN [] AND NOT v IN [3, null] AS result",
+      "RETURN NOT v IN [3, null] AND v IN [1] AND v IN [] AS result",
       "RETURN false AS result"
     )
   }
@@ -234,6 +301,23 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
   // The original is FALSE for every non-null v, including NaN, but null for a null v
   test("should not replace with false IN list of NaN and NOT IN list of NaN joined by AND") {
     shouldNotRewrite("RETURN v IN [NaN] AND NOT v IN [NaN] AS result")
+  }
+
+  // Equal values spelled differently
+
+  // 0 = 0.0, so v = 0 is in both lists
+  test("should merge IN lists of integer zero and float zero joined by AND") {
+    shouldRewrite(
+      "WITH 0 AS v RETURN v IN [0] AND v IN [0.0] AS result",
+      "WITH 0 AS v RETURN v IN [0] AS result"
+    )
+  }
+
+  test("should make list elements with equal values distinct") {
+    shouldRewrite(
+      "MATCH (n:Label) WHERE n.prop1 IN [43, 44] AND n.prop2 IN [2, 2.0, 0x2, -0.0, 0]",
+      "MATCH (n:Label) WHERE n.prop1 IN [43, 44] AND n.prop2 IN [2, -0.0]"
+    )
   }
 
   // Boolean structure
@@ -343,7 +427,14 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
     )
   }
 
-  test("should collapse collection containing ConstValues for id function") {
+  test("should merge equal comparisons of different order") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop IN [1, 2, 3] OR a.prop IN [3, 2, 1] RETURN a",
+      "MATCH (a) WHERE a.prop IN [1, 2, 3] RETURN a"
+    )
+  }
+
+  test("should merge comparisons of literals for id function") {
     shouldRewrite(
       "MATCH (a) WHERE id(a) IN [42] OR id(a) IN [13] RETURN a",
       "MATCH (a) WHERE id(a) IN [42, 13] RETURN a"
@@ -509,11 +600,9 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
     shouldNotRewrite("MATCH (a) WHERE a.prop IN [42, rand()] OR a.prop IN [rand(), 54] RETURN a")
   }
 
-  test("should collapse equal collections containing function invocations") {
-    shouldRewrite(
-      "MATCH (a) WHERE a.prop IN [1, rand(), 'string'] OR a.prop IN [1, rand(), 'string'] RETURN a",
-      "MATCH (a) WHERE a.prop IN [1, rand(), 'string'] RETURN a"
-    )
+  // Each rand() is evaluated on its own, so the two comparisons are not the same
+  test("should not collapse equal collections containing function invocations") {
+    shouldNotRewrite("MATCH (a) WHERE a.prop IN [1, rand(), 'string'] OR a.prop IN [1, rand(), 'string'] RETURN a")
   }
 
   test("should not merge IN lists containing properties") {

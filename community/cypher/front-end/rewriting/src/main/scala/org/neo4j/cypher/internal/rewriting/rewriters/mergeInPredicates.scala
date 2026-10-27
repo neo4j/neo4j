@@ -17,14 +17,19 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.DoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.Infinity
+import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Literal
+import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.rewriting.conditions.LiteralsExtracted
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
@@ -112,6 +117,10 @@ import org.neo4j.cypher.internal.util.topDown
  *      already is that constant. Otherwise, the comparisons are not merged, e.g. `v IN [1] AND v IN [2]` is null,
  *      not FALSE, for a null v.</li>
  * </ul>
+ * <p>
+ * The set operations compare list elements by the values they match, not by how they are written: `0`, `0.0` and
+ * `-0` are the same element, so `v IN [0] AND v IN [0.0]` becomes `v IN [0]`. Only lists whose elements are all
+ * literals with a known normalised value are merged.
  *
  * The AND and OR are further simplified using these operations:
  * <pre>
@@ -154,29 +163,32 @@ case object mergeInPredicates extends Step with DefaultPostCondition with Prepar
     case _                   => false
   }
 
+  /**
+   * Matches `IN` and `NOT IN` with a list literal that can be merged, i.e. whose elements all normalise.
+   */
   private object AsListComparison {
 
     def unapply(v: Expression): Option[ListComparison] = v match {
-      case Not(In(expr, ListLiteral(list))) => Some(NotInList(expr, list.distinct))
-      case In(expr, ListLiteral(list))      => Some(InList(expr, list.distinct))
+      case Not(In(expr, ListLiteral(list))) => normaliseAll(list).map(NotInList(expr, _))
+      case In(expr, ListLiteral(list))      => normaliseAll(list).map(InList(expr, _))
       case _                                => None
     }
   }
 
   sealed private trait ListComparison {
     def predicand: Expression
-    def list: Seq[Expression]
+    def list: Seq[NormalisedElement]
     def isNegated: Boolean
     def rewrite(original: Expression): Expression
   }
 
-  private case class InList(predicand: Expression, list: Seq[Expression]) extends ListComparison {
+  private case class InList(predicand: Expression, list: Seq[NormalisedElement]) extends ListComparison {
     def isNegated: Boolean = false
 
     def rewrite(original: Expression): Expression = original match {
       case AsComparisonPositions(positions) =>
         if (list.nonEmpty)
-          In(predicand, ListLiteral(list)(positions.listPosition))(positions.exprPosition)
+          In(predicand, ListLiteral(list.map(_.literal))(positions.listPosition))(positions.exprPosition)
         else
           False()(positions.exprPosition)
       case _ =>
@@ -184,14 +196,14 @@ case object mergeInPredicates extends Step with DefaultPostCondition with Prepar
     }
   }
 
-  private case class NotInList(predicand: Expression, list: Seq[Expression]) extends ListComparison {
+  private case class NotInList(predicand: Expression, list: Seq[NormalisedElement]) extends ListComparison {
     def isNegated: Boolean = true
 
     def rewrite(original: Expression): Expression = original match {
       case AsComparisonPositions(positions) =>
         if (list.nonEmpty)
           Not(
-            In(predicand, ListLiteral(list)(positions.listPosition))(positions.exprPosition)
+            In(predicand, ListLiteral(list.map(_.literal))(positions.listPosition))(positions.exprPosition)
           )(positions.exprPosition)
         else
           True()(positions.exprPosition)
@@ -201,11 +213,18 @@ case object mergeInPredicates extends Step with DefaultPostCondition with Prepar
   }
 
   /**
+   * @param expression an IN or NOT(IN()) expression that needs to be rewritten
+   * @param comparison the comparison extracted from it
+   */
+  private case class ComparisonToUpdate(expression: Expression, comparison: ListComparison)
+
+  /**
    * @param comparisonsToUpdate the IN and NOT(IN()) expressions that need to be rewritten
-   * @param updates map of predicands (the LHS of the expressions to be rewritten) to their merged list of literal values
+   * @param updates map of predicands (the LHS of the expressions to be rewritten) to their merged list of literal
+   *                values
    */
   private case class PendingUpdates(
-    comparisonsToUpdate: Seq[Expression],
+    comparisonsToUpdate: Seq[ComparisonToUpdate],
     updates: Map[Expression, ListComparison]
   ) {
 
@@ -215,7 +234,7 @@ case object mergeInPredicates extends Step with DefaultPostCondition with Prepar
       newComparison: ListComparison
     ): PendingUpdates =
       PendingUpdates(
-        comparisonsToUpdate :+ comparisonExpr,
+        comparisonsToUpdate :+ ComparisonToUpdate(comparisonExpr, newComparison),
         updates.updatedWith(newComparison.predicand) {
           case Some(curComparison) => Some(binaryBoolean.merge(curComparison, newComparison))
           case None                => Some(newComparison)
@@ -223,10 +242,8 @@ case object mergeInPredicates extends Step with DefaultPostCondition with Prepar
       )
 
     def hasEmptyListComparison(predicand: Expression, isNegated: Boolean): Boolean =
-      comparisonsToUpdate.exists {
-        case AsListComparison(comparison) =>
-          comparison.predicand == predicand && comparison.list.isEmpty && comparison.isNegated == isNegated
-        case _ => false
+      comparisonsToUpdate.exists { case ComparisonToUpdate(_, comparison) =>
+        comparison.predicand == predicand && comparison.list.isEmpty && comparison.isNegated == isNegated
       }
   }
 
@@ -239,11 +256,10 @@ case object mergeInPredicates extends Step with DefaultPostCondition with Prepar
    */
   private class MergedComparisonExtractor(pendingUpdates: PendingUpdates) {
 
-    def unapply(comparison: Expression): Option[ListComparison] = comparison match {
-      case AsListComparison(listComparison) if pendingUpdates.comparisonsToUpdate.exists(_ eq comparison) =>
-        pendingUpdates.updates.get(listComparison.predicand)
-      case _ => None
-    }
+    def unapply(expression: Expression): Option[ListComparison] =
+      pendingUpdates.comparisonsToUpdate
+        .find(_.expression eq expression)
+        .flatMap(toUpdate => pendingUpdates.updates.get(toUpdate.comparison.predicand))
   }
 
   private case class ComparisonPositions(exprPosition: InputPosition, listPosition: InputPosition)
@@ -308,10 +324,10 @@ case object mergeInPredicates extends Step with DefaultPostCondition with Prepar
 
     def merge(lhs: ListComparison, rhs: ListComparison): ListComparison =
       (lhs, rhs) match {
-        case (l: InList, _: InList)       => l.copy(list = lhs.list.intersect(rhs.list))
-        case (l: InList, _: NotInList)    => l.copy(list = lhs.list.diff(rhs.list))
-        case (_: NotInList, r: InList)    => r.copy(list = rhs.list.diff(lhs.list))
-        case (l: NotInList, _: NotInList) => l.copy(list = lhs.list.concat(rhs.list).distinct)
+        case (l: InList, _: InList)       => l.copy(list = ListValues.intersect(lhs.list, rhs.list))
+        case (l: InList, _: NotInList)    => l.copy(list = ListValues.diff(lhs.list, rhs.list))
+        case (_: NotInList, r: InList)    => r.copy(list = ListValues.diff(rhs.list, lhs.list))
+        case (l: NotInList, _: NotInList) => l.copy(list = ListValues.union(lhs.list, rhs.list))
       }
 
     def copy(newLhs: Expression, newRhs: Expression): Expression = (newLhs, newRhs) match {
@@ -328,10 +344,10 @@ case object mergeInPredicates extends Step with DefaultPostCondition with Prepar
 
     def merge(lhs: ListComparison, rhs: ListComparison): ListComparison =
       (lhs, rhs) match {
-        case (l: InList, _: InList)       => l.copy(list = lhs.list.concat(rhs.list).distinct)
-        case (_: InList, r: NotInList)    => r.copy(list = rhs.list.diff(lhs.list))
-        case (l: NotInList, _: InList)    => l.copy(list = lhs.list.diff(rhs.list))
-        case (l: NotInList, _: NotInList) => l.copy(list = lhs.list.intersect(rhs.list))
+        case (l: InList, _: InList)       => l.copy(list = ListValues.union(lhs.list, rhs.list))
+        case (_: InList, r: NotInList)    => r.copy(list = ListValues.diff(rhs.list, lhs.list))
+        case (l: NotInList, _: InList)    => l.copy(list = ListValues.diff(lhs.list, rhs.list))
+        case (l: NotInList, _: NotInList) => l.copy(list = ListValues.intersect(lhs.list, rhs.list))
       }
 
     def copy(newLhs: Expression, newRhs: Expression): Expression = (newLhs, newRhs) match {
@@ -358,16 +374,13 @@ case object mergeInPredicates extends Step with DefaultPostCondition with Prepar
 
     val expressions = Seq(binaryBoolean.lhs, binaryBoolean.rhs)
 
-    val keys = expressions.collect { case AsListComparison(in) => in.predicand }.toSet
+    val keys = expressions.collect { case AsListComparison(comparison) => comparison.predicand }.toSet
 
     expressions.foldLeft(PendingUpdates.empty)((pendingUpdates, expression) =>
       expression.folder.treeFold(pendingUpdates) {
 
-        case expr @ AsListComparison(listComparison) =>
-          if (keys.contains(listComparison.predicand) && listComparison.list.forall(isNonNullLiteral))
-            acc => SkipChildren(acc.addComparison(binaryBoolean, expr, listComparison))
-          else
-            acc => SkipChildren(acc)
+        case expr @ AsListComparison(listComparison) if keys.contains(listComparison.predicand) =>
+          acc => SkipChildren(acc.addComparison(binaryBoolean, expr, listComparison))
 
         case _: Or =>
           binaryBoolean match {
@@ -387,9 +400,82 @@ case object mergeInPredicates extends Step with DefaultPostCondition with Prepar
     )
   }
 
-  private def isNonNullLiteral(v: Expression): Boolean = v match {
-    case _: Null    => false
-    case _: Literal => true
-    case _          => false
+  /**
+   * Set operations on lists of normalised elements. Elements are the same if their normalised values are equal.
+   * Results keep the literals of the left-hand list.
+   */
+  private object ListValues {
+
+    def distinct(list: Seq[NormalisedElement]): Seq[NormalisedElement] = list.distinctBy(_.value)
+
+    def union(lhs: Seq[NormalisedElement], rhs: Seq[NormalisedElement]): Seq[NormalisedElement] =
+      distinct(lhs.concat(rhs))
+
+    def intersect(lhs: Seq[NormalisedElement], rhs: Seq[NormalisedElement]): Seq[NormalisedElement] = {
+      val rhsValues = rhs.map(_.value).toSet
+      lhs.filter(element => rhsValues.contains(element.value))
+    }
+
+    def diff(lhs: Seq[NormalisedElement], rhs: Seq[NormalisedElement]): Seq[NormalisedElement] = {
+      val rhsValues = rhs.map(_.value).toSet
+      lhs.filterNot(element => rhsValues.contains(element.value))
+    }
   }
+
+  /**
+   * Literals are normalised such that two literals have equal normalised values if and only if they match the same
+   * values in a list. E.g. `2`, `2.0` and `0x2` all normalise to `IntegralValue(2)`.
+   * NaN matches no value, so all NaN normalise to the same value.
+   */
+  sealed private trait NormalisedValue
+  private case class IntegralValue(value: Long) extends NormalisedValue
+  private case class FractionalValue(value: Double) extends NormalisedValue
+  private case object NaNValue extends NormalisedValue
+  private case class StringValue(value: String) extends NormalisedValue
+  private case class BooleanValue(value: Boolean) extends NormalisedValue
+
+  // The literal is kept to be written back, so that the merged list keeps the spelling and position of the query
+  private case class NormalisedElement(literal: Literal, value: NormalisedValue)
+
+  /**
+   * @return the distinct normalised elements of a list, or None if the list must not be merged
+   */
+  private def normaliseAll(list: Seq[Expression]): Option[Seq[NormalisedElement]] = {
+    val elements = list.flatMap(normalise)
+    Option.when(elements.size == list.size)(ListValues.distinct(elements))
+  }
+
+  /**
+   * @return the normalised element, or None if the element must not be merged
+   */
+  private def normalise(element: Expression): Option[NormalisedElement] = element match {
+    case literal: Literal => normaliseLiteral(literal).map(NormalisedElement(literal, _))
+    case _                => None
+  }
+
+  // Separate from `normalise` so that the match is on the sealed Literal: a new kind of literal then fails
+  // compilation with -Xfatal-warnings, until it is decided whether and how it can be normalised.
+  private def normaliseLiteral(literal: Literal): Option[NormalisedValue] = literal match {
+    case integer: IntegerLiteral => Some(IntegralValue(integer.value))
+    case double: DoubleLiteral   => Some(normaliseDouble(double.value))
+    case _: NaN                  => Some(NaNValue)
+    case infinity: Infinity      => Some(FractionalValue(infinity.value))
+    case string: StringLiteral   => Some(StringValue(string.value))
+    case _: True                 => Some(BooleanValue(true))
+    case _: False                => Some(BooleanValue(false))
+    case _: Null                 => None
+  }
+
+  private val minLongAsDouble: Double = Long.MinValue.toDouble
+  private val maxLongAsDoubleExclusive: Double = -minLongAsDouble
+
+  // An integer equals a float only if the float is whole and exactly that integer. Converting the integer to a
+  // float instead would make 2^53 + 1 equal to 2^53.
+  private def normaliseDouble(value: Double): NormalisedValue =
+    if (value.isNaN)
+      NaNValue
+    else if (value.isWhole && minLongAsDouble <= value && value < maxLongAsDoubleExclusive)
+      IntegralValue(value.toLong)
+    else
+      FractionalValue(value)
 }
