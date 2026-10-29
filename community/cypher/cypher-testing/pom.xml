@@ -110,6 +110,12 @@
       <artifactId>scala3-staging_3</artifactId>
       <version>${scala3.version}</version>
       <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jline</groupId>
+          <artifactId>jline-reader</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- test  -->

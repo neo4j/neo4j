@@ -363,7 +363,6 @@ BSD License
   asm-util
   JLine JNI Terminal
   JLine Native Library
-  JLine Reader
   JLine Terminal
   scala-asm
   Zstandard

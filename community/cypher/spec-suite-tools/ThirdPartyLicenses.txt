@@ -389,7 +389,6 @@ BSD License
   Hamcrest Core
   JLine JNI Terminal
   JLine Native Library
-  JLine Reader
   JLine Terminal
   scala-asm
   scalacheck
