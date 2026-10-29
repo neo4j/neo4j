@@ -21,6 +21,7 @@ package org.neo4j.internal.nativeimpl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.nativeimpl.NativeCallResult.SUCCESS;
 
 import org.junit.jupiter.api.Test;
@@ -45,5 +46,11 @@ class AbsentNativeAccessTest {
         assertEquals(SUCCESS, absentNativeAccess.tryPreallocateSpace(0, 1L));
         assertEquals(SUCCESS, absentNativeAccess.tryPreallocateSpace(1, 2L));
         assertEquals(SUCCESS, absentNativeAccess.tryPreallocateSpace(3, 4L));
+    }
+
+    @Test
+    void absentNativeAccessTruncateAlwaysFails() {
+        assertTrue(absentNativeAccess.truncate(1, 0).isError());
+        assertTrue(absentNativeAccess.truncate(2, 1024).isError());
     }
 }

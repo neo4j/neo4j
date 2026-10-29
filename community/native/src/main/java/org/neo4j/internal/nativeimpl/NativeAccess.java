@@ -69,6 +69,16 @@ public interface NativeAccess {
     NativeCallResult tryPreallocateSpace(int fd, long bytes);
 
     /**
+     * Truncate the file referenced by provided file descriptor to the provided length, with the semantics of
+     * {@code ftruncate(2)}: a shorter length discards the data past it, a longer length extends the file with zeroes,
+     * and the file offset is left unchanged.
+     * @param fd file descriptor, open for writing
+     * @param length new length of the file in bytes
+     * @return returns zero on success, or an error number on failure
+     */
+    NativeCallResult truncate(int fd, long length);
+
+    /**
      * High level error translator to be able to map high level exceptions checks with low level error codes on particular system
      */
     ErrorTranslator errorTranslator();

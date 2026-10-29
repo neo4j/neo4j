@@ -31,9 +31,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
 import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -62,8 +64,10 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.mockito.stubbing.Answer;
+import org.neo4j.internal.nativeimpl.AbsentNativeAccess;
 import org.neo4j.internal.nativeimpl.ErrorTranslator;
 import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
@@ -85,6 +89,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -804,6 +810,123 @@ class TransactionLogFileTest {
         });
     }
 
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    @EnabledOnOs(OS.LINUX)
+    void rotationTruncatesRotatedLogNatively(KernelVersion kernelVersion) throws IOException {
+        final var rotations = new ArrayList<LogPosition>();
+        logFileVersionTracker = completedLogsTracker(rotations);
+        final var nativeAccess = new TruncateInterceptingNativeAccess(false);
+        final var logFiles =
+                logFilesBuilder(kernelVersion).withNativeAccess(nativeAccess).build();
+        life.start();
+        life.add(logFiles);
+
+        final var logFile = logFiles.getLogFile();
+        final var rotatedChannel = wrappingFileSystem.getCapturingChannel();
+        logFile.rotate();
+
+        assertThat(rotations).hasSize(1);
+        final var endPosition = rotations.get(0);
+        assertThat(nativeAccess.truncateCounter).isEqualTo(1);
+        assertThat(nativeAccess.truncatedDescriptor).isPositive();
+        assertThat(nativeAccess.truncatedLength).isEqualTo(endPosition.getByteOffset());
+        assertThat(rotatedChannel.getTruncateCounter().get()).isZero();
+        assertEndLogPosition(logFile, endPosition.getLogVersion(), endPosition);
+    }
+
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    @EnabledOnOs(OS.LINUX)
+    void rotationFallsBackToChannelTruncateWhenNativeTruncateFails(KernelVersion kernelVersion) throws IOException {
+        final var rotations = new ArrayList<LogPosition>();
+        logFileVersionTracker = completedLogsTracker(rotations);
+        final var nativeAccess = new TruncateInterceptingNativeAccess(true);
+        final var logProvider = new AssertableLogProvider();
+        final var logFiles = logFilesBuilder(kernelVersion)
+                .withNativeAccess(nativeAccess)
+                .withLogProvider(logProvider)
+                .build();
+        life.start();
+        life.add(logFiles);
+
+        final var logFile = logFiles.getLogFile();
+        final var rotatedChannel = wrappingFileSystem.getCapturingChannel();
+        logFile.rotate();
+
+        assertThat(nativeAccess.truncateCounter).isEqualTo(1);
+        assertThat(rotatedChannel.getTruncateCounter().get()).isEqualTo(1);
+        assertThat(rotations).hasSize(1);
+        final var endPosition = rotations.get(0);
+        assertEndLogPosition(logFile, endPosition.getLogVersion(), endPosition);
+        LogAssertions.assertThat(logProvider)
+                .forClass(TransactionLogFile.class)
+                .forLevel(WARN)
+                .containsMessageWithAll("truncate log file on rotation", "Fallback to JDK based truncate");
+    }
+
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void rotationFallsBackToChannelTruncateWithoutFileDescriptor(KernelVersion kernelVersion) throws IOException {
+        final var rotations = new ArrayList<LogPosition>();
+        logFileVersionTracker = completedLogsTracker(rotations);
+        final var nativeAccess = new TruncateInterceptingNativeAccess(false);
+        wrappingFileSystem = new CapturingChannelFileSystem(new DescriptorHidingFileSystem(fileSystem));
+        final var logFiles =
+                logFilesBuilder(kernelVersion).withNativeAccess(nativeAccess).build();
+        life.start();
+        life.add(logFiles);
+
+        final var logFile = logFiles.getLogFile();
+        final var rotatedChannel = wrappingFileSystem.getCapturingChannel();
+        logFile.rotate();
+
+        assertThat(nativeAccess.truncateCounter).isZero();
+        assertThat(rotatedChannel.getTruncateCounter().get()).isEqualTo(1);
+        assertThat(rotations).hasSize(1);
+        final var endPosition = rotations.get(0);
+        assertEndLogPosition(logFile, endPosition.getLogVersion(), endPosition);
+    }
+
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void rotationFallsBackToChannelTruncateWhenNativeAccessIsAbsent(KernelVersion kernelVersion) throws IOException {
+        final var rotations = new ArrayList<LogPosition>();
+        logFileVersionTracker = completedLogsTracker(rotations);
+        final var logProvider = new AssertableLogProvider();
+        final var logFiles = logFilesBuilder(kernelVersion)
+                .withNativeAccess(new AbsentNativeAccess())
+                .withLogProvider(logProvider)
+                .build();
+        life.start();
+        life.add(logFiles);
+
+        final var logFile = logFiles.getLogFile();
+        final var rotatedChannel = wrappingFileSystem.getCapturingChannel();
+        logFile.rotate();
+
+        assertThat(rotatedChannel.getTruncateCounter().get()).isEqualTo(1);
+        assertThat(rotations).hasSize(1);
+        final var endPosition = rotations.get(0);
+        assertEndLogPosition(logFile, endPosition.getLogVersion(), endPosition);
+        LogAssertions.assertThat(logProvider)
+                .forClass(TransactionLogFile.class)
+                .forLevel(WARN)
+                .doesNotHaveAnyLogs();
+    }
+
+    private static LogFileVersionTracker completedLogsTracker(List<LogPosition> rotations) {
+        return new LogFileVersionTracker() {
+            @Override
+            public void logDeleted(long version) {}
+
+            @Override
+            public void logCompleted(LogPosition endLogPosition) {
+                rotations.add(endLogPosition);
+            }
+        };
+    }
+
     private void assertEndLogPosition(LogFile logFile, long expectedVersion, LogPosition endLogPosition) {
         assertThat(endLogPosition.getLogVersion()).isEqualTo(expectedVersion);
         try {
@@ -821,6 +944,10 @@ class TransactionLogFileTest {
     }
 
     private LogFiles buildLogFiles(KernelVersion kernelVersion) throws IOException {
+        return logFilesBuilder(kernelVersion).build();
+    }
+
+    private LogFilesBuilder logFilesBuilder(KernelVersion kernelVersion) {
         return LogFilesBuilder.builder(databaseLayout, wrappingFileSystem, () -> kernelVersion)
                 .withRotationThreshold(rotationThreshold)
                 .withTransactionIdStore(transactionIdStore)
@@ -828,8 +955,7 @@ class TransactionLogFileTest {
                 .withLogFileVersionTracker(logFileVersionTracker)
                 .withAppendIndexProvider(appendIndexProvider)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
-                .withStoreId(STORE_ID)
-                .build();
+                .withStoreId(STORE_ID);
     }
 
     private static byte[] someBytes(int length) {
@@ -910,6 +1036,11 @@ class TransactionLogFileTest {
         }
 
         @Override
+        public NativeCallResult truncate(int fd, long length) {
+            return new NativeCallResult(ERROR, "Truncation is not captured.");
+        }
+
+        @Override
         public ErrorTranslator errorTranslator() {
             return callResult -> false;
         }
@@ -943,6 +1074,85 @@ class TransactionLogFileTest {
         }
     }
 
+    private static class TruncateInterceptingNativeAccess implements NativeAccess {
+        private final NativeAccess delegate = NativeAccessProvider.getNativeAccess();
+        private final boolean failTruncate;
+        private int truncateCounter;
+        private int truncatedDescriptor;
+        private long truncatedLength;
+
+        TruncateInterceptingNativeAccess(boolean failTruncate) {
+            this.failTruncate = failTruncate;
+        }
+
+        @Override
+        public boolean isAvailable() {
+            return true;
+        }
+
+        @Override
+        public NativeCallResult tryEvictFromCache(int fd) {
+            return delegate.tryEvictFromCache(fd);
+        }
+
+        @Override
+        public NativeCallResult tryAdviseSequentialAccess(int fd) {
+            return delegate.tryAdviseSequentialAccess(fd);
+        }
+
+        @Override
+        public NativeCallResult tryAdviseToKeepInCache(int fd) {
+            return delegate.tryAdviseToKeepInCache(fd);
+        }
+
+        @Override
+        public NativeCallResult tryPreallocateSpace(int fd, long bytes) {
+            return delegate.tryPreallocateSpace(fd, bytes);
+        }
+
+        @Override
+        public NativeCallResult truncate(int fd, long length) {
+            truncateCounter++;
+            truncatedDescriptor = fd;
+            truncatedLength = length;
+            if (failTruncate) {
+                return new NativeCallResult(ERROR, "Truncate rejected by test");
+            }
+            return delegate.truncate(fd, length);
+        }
+
+        @Override
+        public ErrorTranslator errorTranslator() {
+            return delegate.errorTranslator();
+        }
+
+        @Override
+        public String describe() {
+            return "Truncate intercepting test native access";
+        }
+    }
+
+    private static class DescriptorHidingFileSystem extends DelegatingFileSystemAbstraction {
+        DescriptorHidingFileSystem(FileSystemAbstraction fs) {
+            super(fs);
+        }
+
+        @Override
+        public StoreChannel write(Path fileName) throws IOException {
+            return new DelegatingStoreChannel<>(super.write(fileName)) {
+                @Override
+                public int getFileDescriptor() {
+                    return INVALID_FILE_DESCRIPTOR;
+                }
+            };
+        }
+
+        @Override
+        public int getFileDescriptor(StoreChannel channel) {
+            return INVALID_FILE_DESCRIPTOR;
+        }
+    }
+
     private static class CapturingChannelFileSystem extends DelegatingFileSystemAbstraction {
         private CapturingStoreChannel capturingChannel;
 
@@ -967,6 +1177,7 @@ class TransactionLogFileTest {
     private static class CapturingStoreChannel extends DelegatingStoreChannel<StoreChannel> {
         private final AtomicInteger writeAllCounter = new AtomicInteger();
         private final AtomicInteger flushCounter = new AtomicInteger();
+        private final AtomicInteger truncateCounter = new AtomicInteger();
         private final ReentrantLock writeAllLock = new ReentrantLock();
 
         private CapturingStoreChannel(StoreChannel delegate) {
@@ -990,12 +1201,22 @@ class TransactionLogFileTest {
             super.flush();
         }
 
+        @Override
+        public StoreChannel truncate(long size) throws IOException {
+            truncateCounter.incrementAndGet();
+            return super.truncate(size);
+        }
+
         public AtomicInteger getWriteAllCounter() {
             return writeAllCounter;
         }
 
         public AtomicInteger getFlushCounter() {
             return flushCounter;
+        }
+
+        public AtomicInteger getTruncateCounter() {
+            return truncateCounter;
         }
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
@@ -49,6 +50,8 @@ import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -103,6 +106,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     private final ConcurrentMap<Long, List<StoreChannel>> externalFileReaders = new ConcurrentHashMap<>();
     private final LogFileVersionTracker versionTracker;
     private final InternalLog logger;
+    private final NativeAccess nativeAccess;
     private final LogRotationMonitor rotationMonitor;
     private volatile PhysicalLogVersionedStoreChannel channel;
     private PhysicalFlushableLogPositionAwareChannel writer;
@@ -126,6 +130,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         this.logRotation = transactionLogRotation(this, context.getClock(), databaseHealth, rotationMonitor);
         this.memoryTracker = context.getMemoryTracker();
         this.logger = context.getLogProvider().getLog(TransactionLogFile.class);
+        this.nativeAccess = context.getNativeAccess();
     }
 
     @Override
@@ -713,7 +718,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
         final var logVersion = currentLog.getLogVersion();
         final var endSize = currentLog.position();
-        currentLog.truncate(endSize);
+        truncateChannel(currentLog, endSize);
 
         /*
          * The log version is now in the store, flushed and persistent. If we crash
@@ -735,6 +740,21 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         }
 
         return newLog;
+    }
+
+    private void truncateChannel(LogVersionedStoreChannel currentLog, long endSize) throws IOException {
+        int fileDescriptor = currentLog.getFileDescriptor();
+        if (nativeAccess.isAvailable() && fileDescriptor != INVALID_FILE_DESCRIPTOR) {
+            // when native access is available we prefer native truncate call since that will try to release
+            // any of fs optimistically pre-allocated resources
+            NativeCallResult callResult = nativeAccess.truncate(fileDescriptor, endSize);
+            if (!callResult.isError()) {
+                return;
+            }
+            logger.warn("Error occurred whilst trying to truncate log file on rotation: " + callResult
+                    + ". Fallback to JDK based truncate.");
+        }
+        currentLog.truncate(endSize);
     }
 
     private static boolean isCoveredByCommittedTransaction(

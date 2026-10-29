@@ -92,6 +92,16 @@ public class LinuxNativeAccess implements NativeAccess {
     private static native int posix_fallocate(int fd, long offset, long len) throws LastErrorException;
 
     /**
+     * Truncates the regular file referenced by the file descriptor fd to a size specified by length bytes.
+     * If the file previously was larger than this size, the extra data is lost. If the file previously was shorter,
+     * it is extended, and the extended part reads as null bytes. The file offset is not changed.
+     * @param fd file descriptor, must be open for writing
+     * @param length new size of the file in bytes
+     * @return 0 on success. On error, -1 is returned and errno is set
+     */
+    private static native int ftruncate(int fd, long length) throws LastErrorException;
+
+    /**
      * Return pointer to a string describing error number, possibly using the LC_MESSAGES part of the current locale to select the appropriate language.
      * @param errnum error number to describe
      * @param buffPtr pointer to error message buffer
@@ -138,6 +148,17 @@ public class LinuxNativeAccess implements NativeAccess {
                     ERROR, "Number of bytes to preallocate should be positive. Requested: " + bytes);
         }
         return wrapResult(() -> posix_fallocate(fd, 0, bytes));
+    }
+
+    @Override
+    public NativeCallResult truncate(int fd, long length) {
+        if (fd <= 0) {
+            return new NativeCallResult(ERROR, "Incorrect file descriptor: " + fd);
+        }
+        if (length < 0) {
+            return new NativeCallResult(ERROR, "Length to truncate to should not be negative. Requested: " + length);
+        }
+        return wrapResult(() -> ftruncate(fd, length));
     }
 
     @Override

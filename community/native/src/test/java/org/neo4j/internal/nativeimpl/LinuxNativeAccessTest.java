@@ -32,11 +32,13 @@ import static org.neo4j.internal.nativeimpl.NativeAccess.ERROR;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -111,6 +113,88 @@ class LinuxNativeAccessTest {
         }
 
         @Test
+        void truncateShrinksFileToRequestedLength() throws IOException, IllegalAccessException, ClassNotFoundException {
+            Path file = tempFile.resolve("truncateShrink");
+            byte[] content = pattern(4096);
+            try (FileChannel channel = FileChannel.open(file, READ, WRITE, CREATE)) {
+                channel.write(ByteBuffer.wrap(content));
+                var result = nativeAccess.truncate(getDescriptor(channel), 1000);
+                assertThat(result.isError()).isFalse();
+                assertThat(channel.size()).isEqualTo(1000);
+            }
+            assertThat(Files.readAllBytes(file)).isEqualTo(Arrays.copyOf(content, 1000));
+        }
+
+        @Test
+        void truncateToCurrentLengthKeepsContentAndOffset()
+                throws IOException, IllegalAccessException, ClassNotFoundException {
+            Path file = tempFile.resolve("truncateSameLength");
+            byte[] content = pattern(4096);
+            try (FileChannel channel = FileChannel.open(file, READ, WRITE, CREATE)) {
+                channel.write(ByteBuffer.wrap(content));
+                var result = nativeAccess.truncate(getDescriptor(channel), content.length);
+                assertThat(result.isError()).isFalse();
+                assertThat(channel.size()).isEqualTo(content.length);
+                assertThat(channel.position()).isEqualTo(content.length);
+            }
+            assertThat(Files.readAllBytes(file)).isEqualTo(content);
+        }
+
+        @Test
+        void truncateExtendsFileWithZeroes() throws IOException, IllegalAccessException, ClassNotFoundException {
+            Path file = tempFile.resolve("truncateExtend");
+            byte[] content = pattern(100);
+            try (FileChannel channel = FileChannel.open(file, READ, WRITE, CREATE)) {
+                channel.write(ByteBuffer.wrap(content));
+                var result = nativeAccess.truncate(getDescriptor(channel), 4096);
+                assertThat(result.isError()).isFalse();
+                assertThat(channel.size()).isEqualTo(4096);
+            }
+            byte[] extended = Files.readAllBytes(file);
+            assertThat(extended).hasSize(4096);
+            assertThat(Arrays.copyOf(extended, content.length)).isEqualTo(content);
+            assertThat(Arrays.copyOfRange(extended, content.length, extended.length))
+                    .containsOnly((byte) 0);
+        }
+
+        @Test
+        void failToTruncateForIncorrectDescriptor() {
+            var zeroDescriptor = nativeAccess.truncate(0, 0);
+            assertEquals(ERROR, zeroDescriptor.getErrorCode());
+            assertTrue(zeroDescriptor.isError());
+
+            var negativeDescriptor = nativeAccess.truncate(-1, 0);
+            assertEquals(ERROR, negativeDescriptor.getErrorCode());
+            assertTrue(negativeDescriptor.isError());
+        }
+
+        @Test
+        void failToTruncateToNegativeLength() throws IOException, IllegalAccessException, ClassNotFoundException {
+            Path file = tempFile.resolve("truncateNegative");
+            try (FileChannel channel = FileChannel.open(file, READ, WRITE, CREATE)) {
+                channel.write(ByteBuffer.wrap(pattern(100)));
+                var result = nativeAccess.truncate(getDescriptor(channel), -1);
+                assertEquals(ERROR, result.getErrorCode());
+                assertThat(result.getErrorMessage()).isNotEmpty();
+                assertThat(channel.size()).isEqualTo(100);
+            }
+        }
+
+        @Test
+        void failToTruncateDescriptorNotOpenForWriting()
+                throws IOException, IllegalAccessException, ClassNotFoundException {
+            Path file = tempFile.resolve("truncateReadOnly");
+            Files.write(file, pattern(100));
+            try (FileChannel channel = FileChannel.open(file, READ)) {
+                var result = nativeAccess.truncate(getDescriptor(channel), 10);
+                assertThat(result.isError()).isTrue();
+                assertThat(result.getErrorCode()).isEqualTo(LinuxErrorTranslator.EINVAL);
+                assertThat(result.getErrorMessage()).isNotEmpty();
+            }
+            assertThat(Files.size(file)).isEqualTo(100);
+        }
+
+        @Test
         void failToAdviseSequentialOnLinuxForIncorrectDescriptor()
                 throws IOException, IllegalAccessException, ClassNotFoundException {
             var nativeCallResult = nativeAccess.tryAdviseSequentialAccess(0);
@@ -169,6 +253,14 @@ class LinuxNativeAccessTest {
             int descriptor = getDescriptor(channel);
             assertFalse(nativeAccess.tryPreallocateSpace(descriptor, bytes).isError());
         }
+    }
+
+    private static byte[] pattern(int length) {
+        byte[] bytes = new byte[length];
+        for (int i = 0; i < length; i++) {
+            bytes[i] = (byte) (i * 31 + 7);
+        }
+        return bytes;
     }
 
     private static int getClosedDescriptor(Path file)

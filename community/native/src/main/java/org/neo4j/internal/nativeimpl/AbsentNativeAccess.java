@@ -46,6 +46,11 @@ public class AbsentNativeAccess implements NativeAccess {
     }
 
     @Override
+    public NativeCallResult truncate(int fd, long length) {
+        return new NativeCallResult(ERROR, "Truncation is not supported.");
+    }
+
+    @Override
     public ErrorTranslator errorTranslator() {
         return MissingErrorTranslator.INSTANCE;
     }
