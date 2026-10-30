@@ -440,6 +440,8 @@ object ClosingIterator {
 abstract class ClosingLongIterator extends LongIterator {
   def close(): Unit
 
+  private var closedOnExhaustion = false
+
   /**
    * Implements the test of whether this iterator can provide another element.
    */
@@ -448,7 +450,8 @@ abstract class ClosingLongIterator extends LongIterator {
 
   final override def hasNext: Boolean = {
     val _hasNext = innerHasNext
-    if (!_hasNext) {
+    if (!_hasNext && !closedOnExhaustion) {
+      closedOnExhaustion = true
       close()
     }
     _hasNext

@@ -141,6 +141,25 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(nodes ++ nodes))
   }
 
+  test("should union node scans when skip exhausts the lhs") {
+    // given
+    val nodes = givenGraph { nodeGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .union()
+      .|.allNodeScan("x")
+      .skip(sizeHint + 1)
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes))
+  }
+
   test("should union after expands") {
     // given
     val nodes = givenGraph {

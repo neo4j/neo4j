@@ -87,6 +87,18 @@ class ClosingIteratorTest extends CypherFunSuite {
     iter.closeCount shouldBe 1
   }
 
+  test("ClosingLongIterator closes only once when depleted") {
+    var closeCount = 0
+    val iter = new ClosingLongIterator {
+      override protected[this] def innerHasNext: Boolean = false
+      override def close(): Unit = closeCount += 1
+      override def next(): Long = 0L
+    }
+    iter.hasNext shouldBe false
+    iter.hasNext shouldBe false
+    closeCount shouldBe 1
+  }
+
   test("flatMap explicit close closes current inner") {
     // given
     val outer = forever(0)
