@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
 trait ParameterTransformerFunction {
@@ -41,7 +40,6 @@ trait ParameterTransformerFunction {
   protected def safeMergeParameters(systemParams: MapValue, userParams: MapValue, initialParams: MapValue): MapValue = {
     val updatedSystemParams: MapValue = systemParams.updatedWith(initialParams)
     updatedSystemParams.foreach {
-      case (_, Values.NO_VALUE) => // placeholders should be replaced
       case (key, _) => if (userParams.containsKey(key))
           throw new InvalidArgumentException(s"The query contains a parameter with an illegal name: '$key'")
     }

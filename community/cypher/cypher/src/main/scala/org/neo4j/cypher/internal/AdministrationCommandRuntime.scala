@@ -73,6 +73,7 @@ import org.neo4j.gqlstatus.GqlParams
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Transaction
+import org.neo4j.internal.helpers.NameUtil.escapeBackticks
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
@@ -184,9 +185,11 @@ object AdministrationCommandRuntime {
       case parameterPassword: Parameter =>
         validateStringParameterType(parameterPassword)
 
+        // Derived from a fixed name, never the client-chosen one: these keys reach generated query text,
+        // where a crafted name could break out of the quoted reference.
         // make sure we get a unique parameter name so we don't overwrite other parameters
-        val hashedPwKey = ensureUniqueParamName(internalKey(parameterPassword.name) + "_hashed", otherParams)
-        val passwordByteKey = ensureUniqueParamName(internalKey(parameterPassword.name) + "_bytes", otherParams)
+        val hashedPwKey = ensureUniqueParamName(internalKey("password") + "_hashed", otherParams)
+        val passwordByteKey = ensureUniqueParamName(internalKey("password") + "_bytes", otherParams)
 
         def convertPasswordParameters(params: MapValue): MapValue = {
           val encodedPassword = getValidPasswordParameter(params, parameterPassword.name)
@@ -302,9 +305,10 @@ object AdministrationCommandRuntime {
       case Some(Password(password, isEncrypted)) =>
         getPasswordExpression(password, isEncrypted, nonPasswordParameterNames)(config)
     }
-    val homeDatabaseCypher = homeDatabaseFields.map(ddf => s", $userHomeDbPropKey: $$`${ddf.nameKey}`").getOrElse("")
+    val homeDatabaseCypher =
+      homeDatabaseFields.map(ddf => s", $userHomeDbPropKey: $$`${escapeBackticks(ddf.nameKey)}`").getOrElse("")
     val nativeAuthCypher = credentialsOption.map(credentials =>
-      s", $userCredPropKey: $$`${credentials.key}`, $userPwChangeReqPropKey: $$`$passwordChangeRequiredKey`"
+      s", $userCredPropKey: $$`${escapeBackticks(credentials.key)}`, $userPwChangeReqPropKey: $$`$passwordChangeRequiredKey`"
     ).getOrElse("")
 
     def authMapGenerator: ParameterGenerationFunction = (_, _, params) => {
@@ -462,7 +466,7 @@ object AdministrationCommandRuntime {
       val propertyName: String = param._1
       val key: String = param._2
       val value: Value = param._3
-      (acc._1 + s" SET user.$propertyName = $$`$key`", acc._2 :+ key, acc._3 :+ value)
+      (acc._1 + s" SET user.$propertyName = $$`${escapeBackticks(key)}`", acc._2 :+ key, acc._3 :+ value)
     }
     val parameterKeys: Array[String] =
       ((keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameFields.nameKey).toArray ++ Array(
@@ -791,12 +795,13 @@ object AdministrationCommandRuntime {
           IdentityConverter
         )
       case pn @ ParameterName(parameter) =>
-        def rename: String => String = paramName => internalKey(paramName)
-        val displayNameKey = internalKey(parameter.name + "_displayName")
+        // Keys derive from the fixed nameKey, never the client-chosen parameter name: these keys
+        // reach generated query text, where a crafted name could break out of the quoted reference
+        val displayNameKey = internalKey(nameKey + "_displayName")
         DatabaseNameFields(
-          rename(parameter.name),
+          internalKey(nameKey),
           Values.NO_VALUE,
-          internalKey(parameter.name + "_namespace"),
+          internalKey(nameKey + "_namespace"),
           Values.utf8Value(DEFAULT_NAMESPACE),
           displayNameKey,
           Values.NO_VALUE,
@@ -804,10 +809,10 @@ object AdministrationCommandRuntime {
           (_, params) => {
             val (namespace, name, displayName) = pn.getNameParts(params, DEFAULT_NAMESPACE)
             params.updatedWith(
-              internalKey(parameter.name + "_namespace"),
+              internalKey(nameKey + "_namespace"),
               Values.utf8Value(valueMapper(namespace.getOrElse(DEFAULT_NAMESPACE)))
             )
-              .updatedWith(internalKey(parameter.name), Values.utf8Value(valueMapper(name)))
+              .updatedWith(internalKey(nameKey), Values.utf8Value(valueMapper(name)))
               .updatedWith(displayNameKey, Values.utf8Value(valueMapper(displayName)))
           }
         )
@@ -1030,7 +1035,8 @@ object AdministrationCommandRuntime {
     val keys: Array[String] = Array(nameKey, namespaceKey, displayNameKey)
     val values: Array[AnyValue] = Array(nameValue, namespaceValue, displayNameValue)
 
-    def asNodeFilter: String = s"{$NAME_PROPERTY: $$`$nameKey`, $NAMESPACE_PROPERTY: $$`$namespaceKey`}"
+    def asNodeFilter: String =
+      s"{$NAME_PROPERTY: $$`${escapeBackticks(nameKey)}`, $NAMESPACE_PROPERTY: $$`${escapeBackticks(namespaceKey)}`}"
 
   }
 

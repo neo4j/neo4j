@@ -42,6 +42,7 @@ import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.Neo4jException
+import org.neo4j.internal.helpers.NameUtil.escapeBackticks
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
@@ -68,13 +69,14 @@ case class SetOwnPasswordExecutionPlanner(
     sourcePlan: Option[ExecutionPlan]
   ): ExecutionPlan = {
     val usernameKey = internalKey("username")
-    val newPw = getPasswordExpression(newPassword, isEncryptedPassword = false, Array(usernameKey))(config)
     val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
+    val newPw =
+      getPasswordExpression(newPassword, isEncryptedPassword = false, Array(usernameKey, currentKeyBytes))(config)
     def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
     val query =
       s"""MATCH (user:$userLabel {name: $$`$usernameKey`})
          |WITH user, user.$userCredPropKey AS oldCredentials
-         |SET user.$userCredPropKey = $$`${newPw.key}`
+         |SET user.$userCredPropKey = $$`${escapeBackticks(newPw.key)}`
          |SET user.$userPwChangeReqPropKey = false
          |RETURN oldCredentials""".stripMargin
 
@@ -148,7 +150,7 @@ case class SetOwnPasswordExecutionPlanner(
       case parameterPassword: Parameter =>
         validateStringParameterType(parameterPassword)
         val passwordParameter = parameterPassword.name
-        val renamedParameter = s"__current_${passwordParameter}_bytes"
+        val renamedParameter = internalKey("current_password") + "_bytes"
         def convertPasswordParameters(params: MapValue): MapValue = {
           val encodedPassword = getValidPasswordParameter(params, passwordParameter)
           params.updatedWith(renamedParameter, Values.byteArray(encodedPassword))

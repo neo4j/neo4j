@@ -1923,6 +1923,110 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin(username, password, AuthenticationResult.FAILURE)
   }
 
+  test("should change own password when password parameter names differ only by the current-password prefix") {
+    prepareUser(changeRequired = false)
+    val parameter = Map[String, Object]("pw" -> password, "current_pw" -> newPassword).asJava
+
+    // WHEN
+    executeOnSystem(
+      username,
+      password,
+      "ALTER CURRENT USER SET PASSWORD FROM $pw TO $current_pw",
+      parameter
+    )
+
+    // THEN
+    testUserLogin(username, newPassword, AuthenticationResult.SUCCESS)
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+  }
+
+  // The derived internal keys are fixed names, so a user parameter in that same namespace would be
+  // read or written by the converters rather than treated as the user's own value. Such names are
+  // reserved and must be rejected, whatever the command binds them to.
+  Seq(
+    "__internal_password_hashed",
+    "__internal_password_bytes",
+    "__internal_current_password_bytes"
+  ).foreach { reserved =>
+    test(s"should not be able to override internal parameter $reserved when changing own password") {
+      prepareUser(changeRequired = false)
+
+      // WHEN/THEN the reserved name is rejected rather than silently colliding with a derived key
+      the[QueryExecutionException] thrownBy {
+        executeOnSystem(
+          username,
+          password,
+          s"ALTER CURRENT USER SET PASSWORD FROM $$currentPw TO $$`$reserved`",
+          Map[String, Object]("currentPw" -> password, reserved -> newPassword).asJava
+        )
+      } should have message s"The query contains a parameter with an illegal name: '$reserved'"
+
+      // and the password is unchanged
+      testUserLogin(username, password, AuthenticationResult.SUCCESS)
+      testUserLogin(username, newPassword, AuthenticationResult.FAILURE)
+    }
+  }
+
+  test("should not be able to override internal parameter __internal_username when creating a user") {
+    // GIVEN a password parameter whose name collides with the username's internal key: without a
+    // guard the username converter overwrites it before the password converter reads it, so the
+    // user is created with their username as the password
+    the[InvalidArgumentException] thrownBy {
+      execute(
+        "CREATE USER $user SET PASSWORD $__internal_username CHANGE NOT REQUIRED",
+        Map("user" -> username, "__internal_username" -> newPassword)
+      )
+    } should have message "The query contains a parameter with an illegal name: '__internal_username'"
+
+    // THEN no user was created with the username as its password
+    testUserLogin(username, username, AuthenticationResult.FAILURE)
+  }
+
+  // The generated system-graph query is re-parsed through the unicode-unescape reader, which decodes
+  // the four characters after a backslash-u with Integer.parseInt(_, 16) — accepting far more than the
+  // literal text "0060". Each spelling that decodes to a backtick must stay contained, so that a
+  // parameter name can never break out of the quoted reference and smuggle in extra clauses.
+  Seq(
+    "backtick" -> None,
+    "unicode-escaped backtick, plain hex" -> Some("0060"),
+    "unicode-escaped backtick, sign-prefixed hex" -> Some("+060"),
+    "unicode-escaped backtick, arabic-indic digits" -> Some("٠٠٦٠"),
+    "unicode-escaped backtick, fullwidth digits" -> Some("００６０")
+  ).foreach { case (spelling, maybeHex) =>
+    test(s"should change own password with $spelling in password parameter name") {
+      // GIVEN a parameter name that tries to break out of the quoted reference in the generated query
+      prepareUser(changeRequired = false)
+      val injectedCypher = "SET user.hacked = true"
+      val textBackslash = "\\"
+      val queryTextBackslash = textBackslash + "u005c"
+      val breakout = maybeHex.map(hex => textBackslash + "u" + hex).getOrElse("`")
+      val queryBreakout = maybeHex.map(hex => queryTextBackslash + "u" + hex).getOrElse("``")
+      val passwordParameterName = s"password$breakout $injectedCypher //"
+      val parameterText = s"password$queryBreakout $injectedCypher //"
+
+      val parameter = Map[String, Object](
+        passwordParameterName -> newPassword,
+        "__internal_password" -> "ignored"
+      ).asJava
+
+      // WHEN
+      executeOnSystem(
+        username,
+        password,
+        s"ALTER CURRENT USER SET PASSWORD FROM '$password' TO $$`$parameterText`",
+        parameter
+      )
+
+      // THEN the password change succeeded and the injected clause has not executed
+      testUserLogin(username, newPassword, AuthenticationResult.SUCCESS)
+      testUserLogin(username, password, AuthenticationResult.FAILURE)
+      withTx { tx =>
+        val user = tx.findNode(USER_LABEL, USER_NAME, username)
+        user.getProperty("hacked", null) shouldBe null
+      }
+    }
+  }
+
   test("should fail when changing own password from existing parameter to missing parameter") {
     // GIVEN
     prepareUser(changeRequired = false)

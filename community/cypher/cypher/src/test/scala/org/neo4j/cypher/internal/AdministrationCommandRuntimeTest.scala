@@ -91,17 +91,17 @@ class AdministrationCommandRuntimeTest extends CypherFunSuite {
       ParameterName(ExplicitParameter("param", CTString)(InputPosition.NONE))(InputPosition.NONE)
     )
     databaseNameFields.keys shouldBe Array(
-      "__internal_param",
-      "__internal_param_namespace",
-      "__internal_param_displayName"
+      "__internal_name",
+      "__internal_name_namespace",
+      "__internal_name_displayName"
     )
 
     val initialParams = VirtualValues.map(databaseNameFields.keys, databaseNameFields.values)
     val convertedParams =
       databaseNameFields.nameConverter(null, initialParams.updatedWith("param", Values.stringValue("a.b.c")))
-    convertedParams.get("__internal_param") shouldBe Values.stringValue("b.c")
-    convertedParams.get("__internal_param_namespace") shouldBe Values.stringValue("a")
-    convertedParams.get("__internal_param_displayName") shouldBe Values.stringValue("a.b.c")
+    convertedParams.get("__internal_name") shouldBe Values.stringValue("b.c")
+    convertedParams.get("__internal_name_namespace") shouldBe Values.stringValue("a")
+    convertedParams.get("__internal_name_displayName") shouldBe Values.stringValue("a.b.c")
   }
 
   test("databaseNameFields should convert parameter to default namespaced parameter") {
@@ -110,17 +110,17 @@ class AdministrationCommandRuntimeTest extends CypherFunSuite {
       ParameterName(ExplicitParameter("param", CTString)(InputPosition.NONE))(InputPosition.NONE)
     )
     databaseNameFields.keys shouldBe Array(
-      "__internal_param",
-      "__internal_param_namespace",
-      "__internal_param_displayName"
+      "__internal_name",
+      "__internal_name_namespace",
+      "__internal_name_displayName"
     )
 
     val initialParams = VirtualValues.map(databaseNameFields.keys, databaseNameFields.values)
     val convertedParams =
       databaseNameFields.nameConverter(null, initialParams.updatedWith("param", Values.stringValue("a")))
-    convertedParams.get("__internal_param") shouldBe Values.stringValue("a")
-    convertedParams.get("__internal_param_namespace") shouldBe Values.stringValue(DEFAULT_NAMESPACE)
-    convertedParams.get("__internal_param_displayName") shouldBe Values.stringValue("a")
+    convertedParams.get("__internal_name") shouldBe Values.stringValue("a")
+    convertedParams.get("__internal_name_namespace") shouldBe Values.stringValue(DEFAULT_NAMESPACE)
+    convertedParams.get("__internal_name_displayName") shouldBe Values.stringValue("a")
   }
 
   test("databaseNameFields should convert parameter to default namespaced parameter if it is specified explicitly") {
@@ -129,9 +129,9 @@ class AdministrationCommandRuntimeTest extends CypherFunSuite {
       ParameterName(ExplicitParameter("param", CTString)(InputPosition.NONE))(InputPosition.NONE)
     )
     databaseNameFields.keys shouldBe Array(
-      "__internal_param",
-      "__internal_param_namespace",
-      "__internal_param_displayName"
+      "__internal_name",
+      "__internal_name_namespace",
+      "__internal_name_displayName"
     )
 
     val initialParams = VirtualValues.map(databaseNameFields.keys, databaseNameFields.values)
@@ -139,9 +139,9 @@ class AdministrationCommandRuntimeTest extends CypherFunSuite {
       null,
       initialParams.updatedWith("param", Values.stringValue(s"$DEFAULT_NAMESPACE.a"))
     )
-    convertedParams.get("__internal_param") shouldBe Values.stringValue("a")
-    convertedParams.get("__internal_param_namespace") shouldBe Values.stringValue(DEFAULT_NAMESPACE)
-    convertedParams.get("__internal_param_displayName") shouldBe Values.stringValue("a")
+    convertedParams.get("__internal_name") shouldBe Values.stringValue("a")
+    convertedParams.get("__internal_name_namespace") shouldBe Values.stringValue(DEFAULT_NAMESPACE)
+    convertedParams.get("__internal_name_displayName") shouldBe Values.stringValue("a")
   }
 
   test("databaseNameFields should fail convert parameter with incorrect type") {
@@ -150,9 +150,9 @@ class AdministrationCommandRuntimeTest extends CypherFunSuite {
       ParameterName(ExplicitParameter("param", CTInteger)(InputPosition.NONE))(InputPosition.NONE)
     )
     databaseNameFields.keys shouldBe Array(
-      "__internal_param",
-      "__internal_param_namespace",
-      "__internal_param_displayName"
+      "__internal_name",
+      "__internal_name_namespace",
+      "__internal_name_displayName"
     )
 
     val e = the[ParameterWrongTypeException] thrownBy databaseNameFields.nameConverter(
@@ -168,6 +168,26 @@ class AdministrationCommandRuntimeTest extends CypherFunSuite {
     e.cause().get().gqlStatus() shouldBe "22N27"
     e.cause().get().statusDescription() shouldBe
       "error: data exception - invalid entity type. Invalid input '42' for $`param`. Expected to be STRING."
+  }
+
+  test("ensureUniqueParamName should leave a name that does not collide untouched") {
+    AdministrationCommandRuntime.ensureUniqueParamName(
+      "__internal_password_hashed",
+      Array("__internal_username", "__internal_uuid")
+    ) shouldBe "__internal_password_hashed"
+  }
+
+  test("ensureUniqueParamName should append an underscore per colliding name") {
+    AdministrationCommandRuntime.ensureUniqueParamName("key", Array("key")) shouldBe "key_"
+    AdministrationCommandRuntime.ensureUniqueParamName("key", Array("key", "key_")) shouldBe "key__"
+  }
+
+  test("ensureUniqueParamName should resolve collisions regardless of the order given") {
+    AdministrationCommandRuntime.ensureUniqueParamName("key", Array("key_", "key")) shouldBe "key__"
+  }
+
+  test("ensureUniqueParamName should ignore duplicate collisions") {
+    AdministrationCommandRuntime.ensureUniqueParamName("key", Array("key", "key")) shouldBe "key_"
   }
 
 }
