@@ -302,6 +302,61 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
+    @MethodSource("parametersForRange")
+    void shouldPerformStringRangeSearchWithChangedAndDeletedEntityInTxState(IndexType indexType, boolean needsValues)
+            throws Exception {
+        // given
+        Set<Pair<Long, Value>> expected = new HashSet<>();
+        long entityToChange;
+        try (KernelTransaction tx = beginTransaction()) {
+            entityToChange = entityWithPropId(tx, "apple");
+            entityWithPropId(tx, "dragonfruit");
+            tx.commit();
+        }
+
+        createIndex(indexType);
+
+        // when
+        try (KernelTransaction tx = beginTransaction()) {
+            int prop = tx.tokenRead().propertyKey(DEFAULT_PROPERTY_NAME);
+            expected.add(entityWithProp(tx, "cherry"));
+            IndexDescriptor index = tx.schemaRead().indexGetForName(INDEX_NAME);
+            setProperty(tx, entityToChange, stringValue("banana"));
+            deleteEntity(tx, entityToChange);
+
+            assertEntityAndValueForSeek(
+                    expected, tx, index, needsValues, "berry", PropertyIndexQuery.range(prop, "b", true, "d", false));
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = IndexType.class,
+            names = {"RANGE", "TEXT"})
+    void shouldPerformEqualitySeekWithRewrittenAndDeletedEntityInTxState(IndexType indexType) throws Exception {
+        // given
+        long entityToChange;
+        try (KernelTransaction tx = beginTransaction()) {
+            entityToChange = entityWithPropId(tx, "cherry");
+            entityWithPropId(tx, "apple");
+            tx.commit();
+        }
+
+        createIndex(indexType);
+
+        // when
+        try (KernelTransaction tx = beginTransaction()) {
+            int prop = tx.tokenRead().propertyKey(DEFAULT_PROPERTY_NAME);
+            IndexDescriptor index = tx.schemaRead().indexGetForName(INDEX_NAME);
+            setProperty(tx, entityToChange, stringValue("banana"));
+            deleteEntity(tx, entityToChange);
+
+            assertEntityAndValueForSeek(
+                    new HashSet<>(), tx, index, false, "banana", PropertyIndexQuery.exact(prop, "banana"));
+        }
+    }
+
+    @ParameterizedTest
     @MethodSource("parametersForSuffixAndContains")
     void shouldPerformStringContainsSearch(IndexType indexType, boolean needsValues) throws Exception {
         // given

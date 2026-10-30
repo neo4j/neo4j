@@ -347,6 +347,66 @@ public class IndexTxStateLookupTest {
         }
     }
 
+    @ParameterizedTest(name = "store=<{0}> lookup=<{1}>")
+    @MethodSource("argumentsProvider")
+    void shouldRemoveChangedAndDeletedCommittedNodeFromIndexTxState(Object store, Object lookup) {
+        init(store, lookup);
+
+        Label label = label("Node");
+        String key = "prop";
+        Node committed;
+        try (Transaction tx = db.beginTx()) {
+            committed = tx.createNode(label);
+            committed.setProperty(key, "original");
+            tx.commit();
+        }
+
+        try (Transaction tx = db.beginTx()) {
+            // given
+            Node node = tx.getNodeById(committed.getId());
+            node.setProperty(key, this.store);
+            assertTrue(exists(tx.findNodes(label, key, this.lookup)));
+
+            // when
+            node.delete();
+
+            // then
+            assertFalse(exists(tx.findNodes(label, key, this.lookup)));
+            assertFalse(exists(tx.findNodes(label, key, "original")));
+            tx.commit();
+        }
+    }
+
+    @ParameterizedTest(name = "store=<{0}> lookup=<{1}>")
+    @MethodSource("argumentsProvider")
+    void shouldRemoveChangedAndDeletedCommittedRelationshipFromIndexTxState(Object store, Object lookup) {
+        init(store, lookup);
+
+        RelationshipType type = RelationshipType.withName("Rel");
+        String key = "prop";
+        Relationship committed;
+        try (Transaction tx = db.beginTx()) {
+            committed = tx.createNode().createRelationshipTo(tx.createNode(), type);
+            committed.setProperty(key, "original");
+            tx.commit();
+        }
+
+        try (Transaction tx = db.beginTx()) {
+            // given
+            Relationship relationship = tx.getRelationshipById(committed.getId());
+            relationship.setProperty(key, this.store);
+            assertTrue(exists(tx.findRelationships(type, key, this.lookup)));
+
+            // when
+            relationship.delete();
+
+            // then
+            assertFalse(exists(tx.findRelationships(type, key, this.lookup)));
+            assertFalse(exists(tx.findRelationships(type, key, "original")));
+            tx.commit();
+        }
+    }
+
     private static boolean exists(ResourceIterator<?> iterator) {
         try (iterator) {
             return iterator.hasNext();

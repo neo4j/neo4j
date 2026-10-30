@@ -461,7 +461,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 throw new IllegalStateException("Relationship " + relationship
                         + " was created in this transaction, but was not found when deleting it");
             }
-            updater.onDeleteUncreated(relationshipCursor, propertyCursor);
+            updater.onDelete(relationshipCursor, propertyCursor);
             txState.relationshipDoDeleteAddedInThisBatch(relationship);
             return true;
         }
@@ -493,9 +493,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         ktx.securityAuthorizationHandler()
                 .assertAllowsDeleteRelationship(
                         ktx.securityContext(), token::relationshipTypeGetName, relationshipCursor.type());
-        if (transactionStateBehaviour.useIndexCommands()) {
-            updater.onDeleteUncreated(relationshipCursor, propertyCursor);
-        }
+        updater.onDelete(relationshipCursor, propertyCursor);
         txState.relationshipDoDelete(relationship, relationshipCursor.type(), sourceNode, targetNode);
         return true;
     }
@@ -617,7 +615,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                     throw new IllegalStateException("Node " + node
                             + " was created in this transaction, but was not found when it was about to be deleted");
                 }
-                updater.onDeleteUncreated(nodeCursor, propertyCursor);
+                updater.onDelete(nodeCursor, propertyCursor);
                 state.nodeDoDelete(node);
                 return true;
             }
@@ -638,9 +636,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
             ktx.securityAuthorizationHandler()
                     .assertAllowsDeleteNode(ktx.securityContext(), token::labelGetName, nodeCursor::labels);
-            if (transactionStateBehaviour.useIndexCommands()) {
-                updater.onDeleteUncreated(nodeCursor, propertyCursor);
-            }
+            updater.onDelete(nodeCursor, propertyCursor);
             ktx.txState().nodeDoDelete(node);
             return true;
         }

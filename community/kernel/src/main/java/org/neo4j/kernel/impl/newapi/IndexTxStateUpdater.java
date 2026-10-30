@@ -215,12 +215,12 @@ public class IndexTxStateUpdater {
                 afterValue);
     }
 
-    void onDeleteUncreated(NodeCursor node, PropertyCursor propertyCursor) {
-        onDeleteUncreated(node, NODE, propertyCursor, node.labels().all());
+    void onDelete(NodeCursor node, PropertyCursor propertyCursor) {
+        onDelete(node, NODE, propertyCursor, node.labels().all());
     }
 
-    void onDeleteUncreated(RelationshipScanCursor relationship, PropertyCursor propertyCursor) {
-        onDeleteUncreated(relationship, RELATIONSHIP, propertyCursor, new int[] {relationship.type()});
+    void onDelete(RelationshipScanCursor relationship, PropertyCursor propertyCursor) {
+        onDelete(relationship, RELATIONSHIP, propertyCursor, new int[] {relationship.type()});
     }
 
     private boolean noSchemaChangedInTx() {
@@ -233,13 +233,13 @@ public class IndexTxStateUpdater {
     /**
      * Creating an entity with its data in a transaction adds also adds that state to index transaction state (for matching indexes).
      * When deleting an entity this method will delete this state from the index transaction state.
+     * This is also applicable if there has been an index update in the transaction where an entity is deleted.
      *
      * @param entity entity that was deleted.
      * @param propertyCursor property cursor for accessing the properties of the entity.
      * @param tokens the entity tokens this entity has.
      */
-    private void onDeleteUncreated(
-            EntityCursor entity, EntityType entityType, PropertyCursor propertyCursor, int[] tokens) {
+    private void onDelete(EntityCursor entity, EntityType entityType, PropertyCursor propertyCursor, int[] tokens) {
         assert noSchemaChangedInTx();
         entity.properties(propertyCursor, PropertySelection.ALL_PROPERTY_KEYS);
         MutableIntList propertyKeyList = IntLists.mutable.empty();

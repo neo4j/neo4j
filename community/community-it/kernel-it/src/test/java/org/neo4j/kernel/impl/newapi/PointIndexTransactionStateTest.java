@@ -160,6 +160,84 @@ class PointIndexTransactionStateTest extends KernelAPIWriteTestBase<WriteTestSup
         }
     }
 
+    @ParameterizedTest
+    @EnumSource(EntityOperations.class)
+    void shouldPerformScanWithChangedAndDeletedEntityInTxState(EntityOperations ops) throws Exception {
+        // given
+        Set<Pair<Long, Value>> expected = new HashSet<>();
+        long entityToChange;
+        try (KernelTransaction tx = beginTransaction()) {
+            entityToChange = entityWithPropId(ops, tx, point(-1, 1));
+            expected.add(ops.entityWithProp(tx, point(-2, 2)));
+            tx.commit();
+        }
+
+        ops.createIndex(graphDb);
+
+        // when
+        try (KernelTransaction tx = beginTransaction()) {
+            ops.setProperty(tx, entityToChange, point(-3, 3));
+            ops.deleteEntity(tx, entityToChange);
+
+            IndexDescriptor index = tx.schemaRead().indexGetForName(INDEX_NAME);
+
+            ops.assertEntityAndValueForScan(expected, tx, index, point(-4, 4));
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(EntityOperations.class)
+    void shouldPerformEqualitySeekWithChangedAndDeletedEntityInTxState(EntityOperations ops) throws Exception {
+        // given
+        Set<Pair<Long, Value>> expected = new HashSet<>();
+        long entityToChange;
+        try (KernelTransaction tx = beginTransaction()) {
+            entityToChange = entityWithPropId(ops, tx, point(-1, 1));
+            tx.commit();
+        }
+
+        ops.createIndex(graphDb);
+
+        // when
+        try (KernelTransaction tx = beginTransaction()) {
+            ops.setProperty(tx, entityToChange, point(-2, 2));
+            ops.deleteEntity(tx, entityToChange);
+
+            IndexDescriptor index = tx.schemaRead().indexGetForName(INDEX_NAME);
+
+            int prop = tx.tokenRead().propertyKey(DEFAULT_PROPERTY_NAME);
+            ops.assertEntityAndValueForSeek(
+                    expected, tx, index, point(-2, 2), PropertyIndexQuery.exact(prop, point(-2, 2)));
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(EntityOperations.class)
+    void shouldPerformBoundingBoxSeekWithChangedAndDeletedEntityInTxState(EntityOperations ops) throws Exception {
+        // given
+        Set<Pair<Long, Value>> expected = new HashSet<>();
+        long entityToChange;
+        try (KernelTransaction tx = beginTransaction()) {
+            entityToChange = entityWithPropId(ops, tx, point(10, 10));
+            expected.add(ops.entityWithProp(tx, point(1, 1)));
+            tx.commit();
+        }
+
+        ops.createIndex(graphDb);
+
+        // when
+        try (KernelTransaction tx = beginTransaction()) {
+            ops.setProperty(tx, entityToChange, point(2, 2));
+            ops.deleteEntity(tx, entityToChange);
+
+            IndexDescriptor index = tx.schemaRead().indexGetForName(INDEX_NAME);
+
+            int prop = tx.tokenRead().propertyKey(DEFAULT_PROPERTY_NAME);
+            ops.assertEntityAndValueForSeek(
+                    expected, tx, index, point(3, 3), PropertyIndexQuery.boundingBox(prop, point(0, 0), point(5, 5)));
+        }
+    }
+
     private PointValue point(int x, int y) {
         return Values.pointValue(CoordinateReferenceSystem.CARTESIAN, x, y);
     }

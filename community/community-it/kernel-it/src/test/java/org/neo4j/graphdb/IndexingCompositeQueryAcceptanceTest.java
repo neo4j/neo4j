@@ -229,6 +229,42 @@ public class IndexingCompositeQueryAcceptanceTest {
         assertThat(found).isEqualTo(expected);
     }
 
+    @ParameterizedTest(
+            name = "shouldNotIncludeEntitiesChangedAndDeletedInSameTxInIndexSeek using {0} with {1} index for {2}")
+    @MethodSource("data")
+    public void shouldNotIncludeEntitiesChangedAndDeletedInSameTxInIndexSeek(
+            DataSet dataSet, IndexingMode withIndex, EntityControl entityControl) {
+        createIndex(withIndex, dataSet.keys, entityControl);
+
+        // GIVEN
+        createEntities(db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.nonMatching[0]);
+        LongSet toChangeToMatchAndDelete =
+                createEntities(db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.nonMatching[1]);
+        LongSet toChangeToNotMatchAndDelete =
+                createEntities(db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.values);
+        LongSet expected = createEntities(db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.values);
+        // WHEN
+        LongSet found;
+        try (Transaction tx = db.beginTx()) {
+            LongIterator toMatching = toChangeToMatchAndDelete.longIterator();
+            while (toMatching.hasNext()) {
+                long id = toMatching.next();
+                entityControl.setProperties(tx, id, dataSet.keys, dataSet.values);
+                entityControl.deleteEntity(tx, id);
+            }
+            LongIterator toNotMatching = toChangeToNotMatchAndDelete.longIterator();
+            while (toNotMatching.hasNext()) {
+                long id = toNotMatching.next();
+                entityControl.setProperties(tx, id, dataSet.keys, dataSet.nonMatching[2]);
+                entityControl.deleteEntity(tx, id);
+            }
+
+            found = dataSet.indexSeek.findEntities(tx, dataSet.keys, dataSet.values, entityControl);
+        }
+        // THEN
+        assertThat(found).isEqualTo(expected);
+    }
+
     private static MutableLongSet createEntities(
             GraphDatabaseService db,
             EntityControl entityControl,
