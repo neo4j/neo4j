@@ -221,7 +221,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     exception.getMessage should startWith("Unable to plan hash join")
   }
 
-  test("Plans Join on top of Expand for single relationship if hint is used - Generic ORDER BY solved in RHS") {
+  test("Plans Join on top of Expand for single relationship if hint is used - Generic ORDER BY solved after join") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setAllRelationshipsCardinality(100)
@@ -237,10 +237,10 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val plan = planner.plan(query).stripProduceResults
     plan should equal(planner.subPlanBuilder()
+      .sort("1 ASC")
+      .projection("1 AS 1")
       .nodeHashJoin("a")
       .|.expand("(b)-[anon_0*1..2]-(a)", projectedDir = INCOMING)
-      .|.sort("1 ASC")
-      .|.projection("1 AS 1")
       .|.nodeByIdSeek("b", Set(), 0)
       .nodeByIdSeek("a", Set(), 0)
       .build())

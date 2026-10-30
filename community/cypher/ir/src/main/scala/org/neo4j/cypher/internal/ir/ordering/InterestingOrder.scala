@@ -92,8 +92,10 @@ case class InterestingOrder(
    * and which are not arguments (because those should have been solved before).
    */
   def forQueryGraph(queryGraph: QueryGraph): InterestingOrder = {
-    def columnHasDependencies(co: ColumnOrder): Boolean =
-      co.dependencies.subsetOf(queryGraph.allCoveredIds -- queryGraph.argumentIds)
+    def columnHasDependencies(co: ColumnOrder): Boolean = {
+      val dependencies = co.dependencies
+      dependencies.nonEmpty && dependencies.subsetOf(queryGraph.allCoveredIds -- queryGraph.argumentIds)
+    }
     this.mapOrderCandidates { _.dropWhile(!columnHasDependencies(_)).takeWhile(columnHasDependencies) }
   }
 

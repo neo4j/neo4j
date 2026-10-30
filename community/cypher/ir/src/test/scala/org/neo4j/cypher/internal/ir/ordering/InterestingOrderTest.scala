@@ -362,4 +362,12 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
     )
   }
 
+  test("forQueryGraph should exclude constant columns") {
+    val io = InterestingOrder
+      .required(RequiredOrderCandidate.asc(v"constant", Map(v"constant" -> literalInt(1))))
+      .interesting(InterestingOrderCandidate.asc(literalInt(1)))
+
+    io.forQueryGraph(QueryGraph(patternNodes = Set(v"a"))) should equal(InterestingOrder.empty)
+  }
+
 }

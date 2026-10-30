@@ -1757,4 +1757,31 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .allNodeScan("x")
       .build()
   }
+
+  test("should project a constant sort key only after connecting components with zero cardinality") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      // previously Sort was pushed down into both branches of Cartesian due to 0 cardinality/cost
+      .setRelationshipCardinality("()-[:R]->()", 0)
+      .setRelationshipCardinality("()-[:S]->()", 0)
+      .build()
+
+    val query =
+      """MATCH (a)-[r:R]-(b), (c)-[s:S]-(d)
+        |RETURN 1
+        |ORDER BY 1
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan.stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .sort("1 ASC")
+        .projection("1 AS 1")
+        .cartesianProduct()
+        .|.relationshipTypeScan("(c)-[s:S]-(d)")
+        .relationshipTypeScan("(a)-[r:R]-(b)")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
+  }
 }

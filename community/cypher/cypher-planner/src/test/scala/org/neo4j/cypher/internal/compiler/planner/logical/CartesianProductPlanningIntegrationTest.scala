@@ -336,7 +336,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     )(SymmetricalLogicalPlanEquality)
   }
 
-  test("Plans ExpandInto on top of CartesianProduct for single relationship - Generic ORDER BY solved in LHS") {
+  test("Plans ExpandInto on top of CartesianProduct for single relationship - Generic ORDER BY solved after expand") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setAllRelationshipsCardinality(100)
@@ -351,11 +351,11 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     val plan = planner.plan(query).stripProduceResults
     plan should (equal(planner.subPlanBuilder()
+      .sort("1 ASC")
+      .projection("1 AS 1")
       .expandInto("(a)-[anon_0*1..2]-(b)")
       .cartesianProduct()
       .|.nodeByIdSeek("b", Set(), 0)
-      .sort("1 ASC")
-      .projection("1 AS 1")
       .nodeByIdSeek("a", Set(), 0)
       .build()) or
       equal(planner.subPlanBuilder()
@@ -364,8 +364,6 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         .expandInto("(a)-[anon_0*1..2]-(b)")
         .cartesianProduct()
         .|.nodeByIdSeek("a", Set(), 0)
-        .sort("1 ASC")
-        .projection("1 AS 1")
         .nodeByIdSeek("b", Set(), 0)
         .build()))
   }
