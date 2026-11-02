@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.kernel.database.NormalizedDatabaseName
 
 import java.util.regex.Pattern
 
@@ -64,7 +65,7 @@ object NameValidator {
       throw new InvalidArgumentException("The provided alias is empty.")
     if (name.length > 65534)
       throw InvalidArgumentException.aliasTooLong(name)
-    if (name.startsWith("system")) {
+    if (NormalizedDatabaseName.normalize(name).startsWith("system")) {
       throw new InvalidArgumentException("Alias name '" + name + "' is invalid, due to the prefix 'system'.")
     }
     true
@@ -75,7 +76,7 @@ object NameValidator {
       throw new InvalidArgumentException("The provided target database name is empty.")
     if (name.length > 65534)
       throw InvalidArgumentException.dbNameTooLong(name)
-    if (name.startsWith("system")) {
+    if (NormalizedDatabaseName.normalize(name).startsWith("system")) {
       throw new InvalidArgumentException("Target database name '" + name + "' is invalid, due to the prefix 'system'.")
     }
     true

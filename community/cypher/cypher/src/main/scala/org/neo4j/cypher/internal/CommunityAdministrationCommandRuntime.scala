@@ -90,6 +90,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode
 import org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
@@ -242,7 +243,7 @@ case class CommunityAdministrationCommandRuntime(
               securityContext.allowsAdminAction(
                 new AdminActionOnResource(
                   ActionMapper.asKernelAction(action),
-                  new DatabaseScope(runtimeStringValue(database, params)),
+                  new DatabaseScope(NormalizedDatabaseName.normalize(runtimeStringValue(database, params))),
                   Segment.ALL
                 )
               )
