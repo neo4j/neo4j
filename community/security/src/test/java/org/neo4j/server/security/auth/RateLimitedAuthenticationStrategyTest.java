@@ -167,6 +167,30 @@ class RateLimitedAuthenticationStrategyTest {
         }
     }
 
+    @Test
+    void lockStartNeverMovesBackwards() {
+        // A failure can record an earlier time than one already recorded: concurrent failures can store
+        // their readings out of order (a sub-millisecond gap), and the wall clock this runs on in
+        // production can step backwards, e.g. on an NTP correction (an arbitrarily large gap). Either
+        // way the lock must run from the latest failure, or the account would unlock early. Moving the
+        // fake clock back between two failures reproduces both.
+        Duration lockDuration = Duration.ofSeconds(5);
+        FakeClock clock = getFakeClock();
+        AuthenticationStrategy authStrategy = newAuthStrategy(clock, 2, lockDuration);
+        User user = new User("user", null, credentialFor("right"), false, false);
+
+        clock.forward(Duration.ofSeconds(4));
+        authStrategy.authenticate(user, password("wrong")); // the later time, recorded first
+        clock.forward(Duration.ofSeconds(-4));
+        authStrategy.authenticate(user, password("wrong")); // an earlier time, recorded last
+
+        // Just before the lock from the later failure expires, the account must still be locked.
+        clock.forward(Duration.ofSeconds(4)).forward(lockDuration.minusMillis(1));
+        assertThat(authStrategy.authenticate(user, password("right")))
+                .as("the lock must run from the latest failure time, not the earlier one recorded last")
+                .isEqualTo(AuthenticationResult.TOO_MANY_ATTEMPTS);
+    }
+
     private static FakeClock getFakeClock() {
         return Clocks.fakeClock();
     }

@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.impl.security.User;
@@ -38,14 +39,14 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
 
     private class AuthenticationMetadata {
         private final AtomicInteger failedAuthAttempts = new AtomicInteger();
-        private long lastFailedAttemptTime;
+        private final AtomicLong lastFailedAttemptTime = new AtomicLong();
 
         boolean authenticationPermitted() {
             return maxFailedAttempts <= 0
                     || // amount of attempts is not limited
                     failedAuthAttempts.get() < maxFailedAttempts
                     || // less failed attempts than configured
-                    clock.millis() >= lastFailedAttemptTime + lockDurationMs; // auth lock duration expired
+                    clock.millis() >= lastFailedAttemptTime.get() + lockDurationMs; // auth lock duration expired
         }
 
         void authSuccess() {
@@ -53,8 +54,13 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
         }
 
         void authFailed() {
+            // Publish the timestamp before the count: a concurrent authenticationPermitted() that
+            // observes the incremented count must also observe this timestamp, otherwise it could
+            // read a stale (e.g. zero) time, conclude the lock duration expired, and admit the
+            // attempt. Keep the timestamp monotonic so a failure that read an earlier clock value
+            // cannot overwrite a later one and shorten the lock.
+            lastFailedAttemptTime.accumulateAndGet(clock.millis(), Math::max);
             failedAuthAttempts.incrementAndGet();
-            lastFailedAttemptTime = clock.millis();
         }
     }
 
