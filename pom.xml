@@ -169,7 +169,8 @@
     <jackson.annotation.version>2.22</jackson.annotation.version>
     <amazon-sdk.version>1.12.772</amazon-sdk.version>
     <awssdk.version>2.31.20</awssdk.version>
-    <guava.version>33.3.1-jre</guava.version>
+    <guava.version>33.7.2-jre</guava.version>
+    <jsr305.version>3.0.2</jsr305.version>
     <awaitility.version>4.2.2</awaitility.version>
     <log4j.version>2.26.1</log4j.version>
     <slf4j.version>2.0.9</slf4j.version>
@@ -1103,7 +1104,7 @@
       <dependency>
         <groupId>at.yawk.lz4</groupId>
         <artifactId>lz4-java</artifactId>
-        <version>1.11.1</version>
+        <version>1.12.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
@@ -1325,6 +1326,12 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -1607,9 +1614,14 @@
         <version>1.27.1</version>
       </dependency>
       <dependency>
+        <groupId>org.xerial.snappy</groupId>
+        <artifactId>snappy-java</artifactId>
+        <version>1.1.10.12</version>
+      </dependency>
+      <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.5.6-6</version>
+        <version>1.5.7-25</version>
       </dependency>
 
       <!--
@@ -1843,6 +1855,10 @@
           <exclusion>
             <groupId>com.google.errorprone</groupId>
             <artifactId>error_prone_annotations</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
           </exclusion>
         </exclusions>
       </dependency>

@@ -32,11 +32,9 @@ Apache Software License, Version 2.0
   AutoService Processor
   AutoValue Annotations
   error-prone annotations
-  FindBugs-jsr305
   Guava InternalFutureFailureAccess and InternalFutures
   Guava ListenableFuture only
   Guava: Google Core Libraries for Java
   J2ObjC Annotations
-  JSpecify annotations
   Truth Core
 

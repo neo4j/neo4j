@@ -25,6 +25,3 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
-Eclipse Public License - v 1.0
-  Logback Classic Module
-
