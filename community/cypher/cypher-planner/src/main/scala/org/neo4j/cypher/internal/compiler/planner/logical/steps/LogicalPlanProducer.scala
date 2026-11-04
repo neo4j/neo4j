@@ -2684,7 +2684,9 @@ case class LogicalPlanProducer(
     // The limit leverages the order, not the following optional
     markOrderAsLeveragedBackwardsUntilOrigin(annotatedLimitPlan, context.providedOrderFactory)
 
-    val plan = Optional(annotatedLimitPlan)
+    // Importing-WITH subqueries carry their imports in the head query graph rather than the planner state.
+    val protectedSymbols = context.plannerState.importedSubqueryVariables ++ solved.queryGraph.argumentIds
+    val plan = Optional(annotatedLimitPlan, protectedSymbols)
     annotate(plan, solved, providedOrderRule, cachedPropertiesPerPlan.get(annotatedLimitPlan.id), context)
   }
 

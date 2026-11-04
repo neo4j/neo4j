@@ -40,6 +40,9 @@ import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -2836,5 +2839,137 @@ class SubqueryCallPlanningIntegrationTest
         .|.argument("r")
         .allRelationshipsScan("(x)-[r]->(y)")
         .build()
+  }
+
+  test("should protect imported variables when rewriting min or max in a CALL subquery to a limit") {
+    for {
+      (function, indexOrder) <- Seq("min" -> IndexOrderAscending, "max" -> IndexOrderDescending)
+    } withClue(s"function=$function: ") {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("L", 1000)
+        .addNodeIndex("L", Seq("p"), 1.0, 1.0)
+        .build()
+
+      val query = s"""UNWIND [1, 100] AS x
+                     |CALL (x) {
+                     |  MATCH (b:L)
+                     |  WHERE b.p > x
+                     |  RETURN $function(b.p) AS m
+                     |}
+                     |RETURN x, m""".stripMargin
+
+      planner.plan(query) shouldEqual planner.subPlanBuilder()
+        .produceResults("x", "m")
+        .apply()
+        .|.optional("x")
+        .|.limit(1)
+        .|.projection("cacheN[b.p] AS m")
+        .|.nodeIndexOperator(
+          "b:L(p > ???)",
+          paramExpr = Some(v"x"),
+          getValue = Map("p" -> GetValue),
+          indexOrder = indexOrder,
+          argumentIds = Set("x")
+        )
+        .unwind("[1, 100] AS x")
+        .argument()
+        .build()
+    }
+  }
+
+  test("should only protect imported variables when rewriting min or max in a later subquery part to a limit") {
+    for {
+      (function, indexOrder) <- Seq("min" -> IndexOrderAscending, "max" -> IndexOrderDescending)
+      importingWith <- Seq(false, true)
+    } withClue(s"function=$function, importingWith=$importingWith: ") {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("L", 1000)
+        .addNodeIndex("L", Seq("p"), 1.0, 1.0)
+        .build()
+
+      val subqueryStart = if (importingWith) "CALL { WITH x" else "CALL (x) {"
+      val query = s"""UNWIND [1, 100] AS x
+                     |$subqueryStart
+                     |  WITH x + 1 AS y
+                     |  MATCH (b:L)
+                     |  WHERE b.p > y
+                     |  RETURN $function(b.p) AS m
+                     |}
+                     |RETURN x, m""".stripMargin
+
+      planner.plan(query) shouldEqual planner.subPlanBuilder()
+        .produceResults("x", "m")
+        .apply()
+        .|.optional("x")
+        .|.limit(1)
+        .|.projection("cacheN[b.p] AS m")
+        .|.apply()
+        .|.|.nodeIndexOperator(
+          "b:L(p > ???)",
+          paramExpr = Some(v"y"),
+          getValue = Map("p" -> GetValue),
+          indexOrder = indexOrder,
+          argumentIds = if (importingWith) Set("y") else Set("x", "y")
+        )
+        .|.projection("x + 1 AS y")
+        .|.argument("x")
+        .unwind("[1, 100] AS x")
+        .argument()
+        .build()
+    }
+  }
+
+  test("should protect the innermost CALL imports when rewriting min or max to a limit") {
+    for {
+      (function, indexOrder) <- Seq("min" -> IndexOrderAscending, "max" -> IndexOrderDescending)
+      outerImportingWith <- Seq(false, true)
+      innerImportingWith <- Seq(false, true)
+    } withClue(
+      s"function=$function, outerImportingWith=$outerImportingWith, innerImportingWith=$innerImportingWith: "
+    ) {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("L", 1000)
+        .addNodeIndex("L", Seq("p"), 1.0, 1.0)
+        .build()
+
+      val outerStart = if (outerImportingWith) "CALL { WITH x" else "CALL (x) {"
+      val innerStart = if (innerImportingWith) "CALL { WITH y" else "CALL (y) {"
+      val query = s"""UNWIND [1, 100] AS x
+                     |$outerStart
+                     |  WITH x + 1 AS y
+                     |  $innerStart
+                     |    WITH y + 1 AS z
+                     |    MATCH (b:L)
+                     |    WHERE b.p > z
+                     |    RETURN $function(b.p) AS m
+                     |  }
+                     |  RETURN y, m
+                     |}
+                     |RETURN x, y, m""".stripMargin
+
+      planner.plan(query) shouldEqual planner.subPlanBuilder()
+        .produceResults("x", "y", "m")
+        .apply()
+        .|.optional("y")
+        .|.limit(1)
+        .|.projection("cacheN[b.p] AS m")
+        .|.apply()
+        .|.|.nodeIndexOperator(
+          "b:L(p > ???)",
+          paramExpr = Some(v"z"),
+          getValue = Map("p" -> GetValue),
+          indexOrder = indexOrder,
+          argumentIds = if (innerImportingWith) Set("z") else Set("y", "z")
+        )
+        .|.projection("y + 1 AS z")
+        .|.argument("y")
+        .projection("x + 1 AS y")
+        .unwind("[1, 100] AS x")
+        .argument()
+        .build()
+    }
   }
 }
