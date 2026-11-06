@@ -170,6 +170,7 @@
     <amazon-sdk.version>1.12.772</amazon-sdk.version>
     <awssdk.version>2.31.20</awssdk.version>
     <guava.version>33.7.2-jre</guava.version>
+    <reactor-netty.version>1.2.18</reactor-netty.version>
     <jsr305.version>3.0.2</jsr305.version>
     <awaitility.version>4.2.2</awaitility.version>
     <log4j.version>2.26.1</log4j.version>
@@ -1253,9 +1254,27 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>2024.0.11</version>
+        <version>2025.0.8</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <!--
+       - reactor-bom 2025.0.x manages reactor-netty 1.3.x, which requires Netty 4.2. This branch stays on Netty 4.1,
+       -->
+      <dependency>
+        <groupId>io.projectreactor.netty</groupId>
+        <artifactId>reactor-netty-http</artifactId>
+        <version>${reactor-netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor.netty</groupId>
+        <artifactId>reactor-netty-core</artifactId>
+        <version>${reactor-netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.reactivestreams</groupId>
+        <artifactId>reactive-streams</artifactId>
+        <version>1.0.4</version>
       </dependency>
 
       <dependency>

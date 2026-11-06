@@ -76,6 +76,7 @@ Apache Software License, Version 2.0
   json4s-core
   json4s-native
   json4s-scalap
+  JSpecify annotations
   magnolia
   Neo4j Java Driver
   Netty/Buffer

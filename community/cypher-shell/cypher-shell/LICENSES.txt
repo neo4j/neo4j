@@ -12,6 +12,7 @@ Apache Software License, Version 2.0
   jackson-databind
   jansi
   Java Native Access
+  JSpecify annotations
   Neo4j Java Driver
   Netty/Buffer
   Netty/Codec

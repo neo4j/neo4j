@@ -75,6 +75,7 @@ Apache Software License, Version 2.0
   Jetty :: Servlet API and Schemas for JPMS and OSGi
   jPowerShell
   jProcesses
+  JSpecify annotations
   magnolia
   Neo4j Java Driver
   Netty/Buffer
