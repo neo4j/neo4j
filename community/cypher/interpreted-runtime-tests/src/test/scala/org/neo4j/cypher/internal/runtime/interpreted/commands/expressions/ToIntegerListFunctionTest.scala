@@ -117,6 +117,32 @@ class ToIntegerListFunctionTest extends InterpretedRuntimeTestSuite with CypherS
     ))
   }
 
+  test("should convert floats outside the integer range and NaN in a list to null") {
+    assert(toIntegerList(Seq(1E300d, 1.5d, -1E300d, Double.NaN, 9223372036854775808.0d)) == VirtualValues.list(
+      NO_VALUE,
+      longValue(1),
+      NO_VALUE,
+      NO_VALUE,
+      NO_VALUE
+    ))
+  }
+
+  test("should convert floats outside the integer range and NaN in a float array to null") {
+    assert(toIntegerList(Values.doubleArray(Array(1E300d, 1.5d, -1E300d, Double.NaN, 9223372036854775808.0d))) ==
+      VirtualValues.list(NO_VALUE, longValue(1), NO_VALUE, NO_VALUE, NO_VALUE))
+  }
+
+  test("should convert floats outside the integer range in a vector to null") {
+    // vectors can only hold finite coordinates, so NaN cannot occur here
+    assert(toIntegerList(float64Vector(1E300d, 1.5d, -1E300d, 9223372036854775808.0d)) ==
+      VirtualValues.list(NO_VALUE, longValue(1), NO_VALUE, NO_VALUE))
+  }
+
+  test("should convert floats at the integer range boundaries in a float array") {
+    assert(toIntegerList(Values.doubleArray(Array(-9223372036854775808.0d, 9223372036854774784.0d))) ==
+      VirtualValues.list(longValue(Long.MinValue), longValue(9223372036854774784L)))
+  }
+
   test("should not throw an exception if the list argument contains an object which cannot be converted to integer") {
     assert(toIntegerList(
       Seq("1234", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0))

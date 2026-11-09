@@ -2954,6 +2954,12 @@ public final class CypherFunctions {
             return NO_VALUE;
         } else if (in instanceof IntegralValue integer) {
             return integer;
+        } else if (in instanceof FloatingPointValue floatingPoint) {
+            double value = floatingPoint.doubleValue();
+            if (!isRepresentableAsLong(value)) {
+                throw ArithmeticException.numericValueOutOfRange(floatingPoint.prettyPrint(), "toInteger()");
+            }
+            return longValue((long) value);
         } else if (in instanceof NumberValue number) {
             return longValue(number.longValue());
         } else if (in instanceof TextValue text) {
@@ -2977,7 +2983,11 @@ public final class CypherFunctions {
 
     public static Value toIntegerOrNull(AnyValue in) {
         if (in instanceof NumberValue || in instanceof BooleanValue) {
-            return toInteger(in);
+            try {
+                return toInteger(in);
+            } catch (ArithmeticException e) {
+                return NO_VALUE;
+            }
         } else if (in instanceof TextValue textValue) {
             try {
                 return CypherRuntimeParser.parseAsLongOrElseNoValue(textValue.stringValue());
@@ -3001,7 +3011,7 @@ public final class CypherFunctions {
         } else if (in instanceof VectorValue v) {
             var list = ListValueBuilder.newListBuilder(v.dimensions());
             for (int i = 0; i < v.dimensions(); i++) {
-                list.add(Values.longValue((long) v.doubleValue(i)));
+                list.add(doubleToIntegerOrNull(v.doubleValue(i)));
             }
             return list.build();
         } else {
@@ -4016,9 +4026,22 @@ public final class CypherFunctions {
     private static ListValue toIntegerList(FloatingPointArray array) {
         var converted = ListValueBuilder.newListBuilder(array.intSize());
         for (int i = 0; i < array.intSize(); i++) {
-            converted.add(longValue((long) array.doubleValue(i)));
+            converted.add(doubleToIntegerOrNull(array.doubleValue(i)));
         }
         return converted.build();
+    }
+
+    /**
+     * Whether {@code value} can be converted to a {@code long} without saturating. NaN is not representable.
+     */
+    private static boolean isRepresentableAsLong(double value) {
+        // (double) Long.MAX_VALUE rounds up to 2^63, which is itself out of range, hence the strict upper bound.
+        // The negated form also rejects NaN.
+        return value >= -0x1p63 && value < 0x1p63;
+    }
+
+    private static Value doubleToIntegerOrNull(double value) {
+        return isRepresentableAsLong(value) ? longValue((long) value) : NO_VALUE;
     }
 
     private static ListValue toIntegerList(SequenceValue sequenceValue) {
