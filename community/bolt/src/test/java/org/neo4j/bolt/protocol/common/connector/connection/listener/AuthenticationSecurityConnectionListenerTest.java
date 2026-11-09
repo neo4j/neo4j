@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.protocol.common.connector.connection.listener;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
@@ -38,8 +39,11 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.handler.AuthenticationProtocolLimiterHandler;
 import org.neo4j.bolt.protocol.common.handler.AuthenticationTimeoutHandler;
 import org.neo4j.bolt.protocol.common.handler.HouseKeeperHandler;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.packstream.codec.transport.ChunkFrameDecoder;
@@ -199,5 +203,27 @@ class AuthenticationSecurityConnectionListenerTest {
         this.listener.onListenerRemoved();
 
         Mockito.verify(this.memoryTracker).releaseHeap(AuthenticationSecurityConnectionListener.SHALLOW_SIZE);
+    }
+
+    @Test
+    void shouldNotFailWhenLogonCompletesConcurrentlyWithRequestReceived() {
+        var log = Mockito.mock(InternalLog.class);
+        var logProvider = Mockito.mock(InternalLogProvider.class);
+        Mockito.doReturn(log).when(logProvider).getLog(AuthenticationSecurityConnectionListener.class);
+
+        var listener = new AuthenticationSecurityConnectionListener(connection, TIMEOUT, logProvider);
+
+        // simulates the worker thread completing LOGON while the event loop is notifying listeners of a new request
+        Mockito.doAnswer(invocation -> {
+                    listener.onLogon(Mockito.mock(LoginContext.class));
+                    return null;
+                })
+                .when(log)
+                .debug(eq("[%s] Received request during authentication phase"), Mockito.<Object>any());
+
+        listener.onNetworkPipelineInitialized(this.pipeline);
+
+        assertThatCode(() -> listener.onRequestReceived(Mockito.mock(RequestMessage.class)))
+                .doesNotThrowAnyException();
     }
 }

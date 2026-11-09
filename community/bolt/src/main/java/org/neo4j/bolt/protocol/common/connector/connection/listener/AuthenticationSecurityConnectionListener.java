@@ -78,6 +78,7 @@ public class AuthenticationSecurityConnectionListener implements ConnectionListe
 
     @Override
     public void onRequestReceived(RequestMessage message) {
+        var timeoutHandler = this.timeoutHandler;
         if (timeoutHandler != null) {
             log.debug("[%s] Received request during authentication phase", this.connection.id());
             timeoutHandler.setRequestReceived(true);
