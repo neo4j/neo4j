@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropert
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.functionArgumentGqlException
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlException
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
+import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.values.AnyValue
@@ -184,6 +185,32 @@ class ToIntegerFunctionTest extends InterpretedRuntimeTestSuite with CypherScala
         "error: data exception - specified numeric value out of range. Expected 'input' to be of type INTEGER and in the range -9223372036854775808 to 9223372036854775807 but found 9223372036854775808."
       )
     ))
+  }
+
+  test("toInteger should fail for floats outside the integer range") {
+    Seq(1E300d, -1E300d, 9223372036854775808.0d, Double.PositiveInfinity, Double.NegativeInfinity).foreach { f =>
+      withClue(s"toInteger($f): ") {
+        an[ArithmeticException] shouldBe thrownBy(toInteger(f))
+      }
+    }
+  }
+
+  test("toInteger should fail for NaN") {
+    an[ArithmeticException] shouldBe thrownBy(toInteger(Double.NaN))
+  }
+
+  test("toInteger should handle floats at the integer range boundaries") {
+    toInteger(-9223372036854775808.0d) should equal(longValue(Long.MinValue))
+    toInteger(9223372036854774784.0d) should equal(longValue(9223372036854774784L))
+  }
+
+  test("toIntegerOrNull should return null for floats outside the integer range and NaN") {
+    Seq(1E300d, -1E300d, 9223372036854775808.0d, Double.PositiveInfinity, Double.NegativeInfinity, Double.NaN)
+      .foreach { f =>
+        withClue(s"toIntegerOrNull($f): ") {
+          toIntegerOrNull(f) should equal(NO_VALUE)
+        }
+      }
   }
 
   test(
