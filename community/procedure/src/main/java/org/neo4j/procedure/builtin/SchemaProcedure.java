@@ -122,8 +122,10 @@ public class SchemaProcedure {
                 int labelId = tokenRead.nodeLabel(labelName);
 
                 tracker.allocateHeap(MEMORY_ESTIMATION_COUNT_STORE_LOOKUP);
-                // Filter out labels that are denied or aren't explicitly allowed
-                if (mode.allowsTraverseNode(labelId) && dataRead.estimateCountsForNode(labelId) > 0) {
+                // Filter out labels that are denied or aren't explicitly allowed (label-based or property-based),
+                // using the same rule as TokenRead#labelsGetAllTokens
+                if ((mode.allowsTraverseNode(labelId) || mode.hasApplicableTraverseNodeAllowPropertyRules(labelId))
+                        && dataRead.estimateCountsForNode(labelId) > 0) {
                     labelNamesAndIds.add(new LabelNameId(labelName, labelId));
 
                     Map<String, Object> buildProperties = buildProperties(labelId, tokenRead, schemaRead);
@@ -143,8 +145,9 @@ public class SchemaProcedure {
                 String relationshipTypeGetName = relationshipType.name();
                 int relId = tokenRead.relationshipType(relationshipTypeGetName);
 
-                // Filter out relTypes that are denied or aren't explicitly allowed
-                if (mode.allowsTraverseRelType(relId)) {
+                // Filter out relTypes that are denied or aren't explicitly allowed (type-based or property-based),
+                // using the same rule as TokenRead#relationshipTypesGetAllTokens
+                if (mode.allowsTraverseRelType(relId) || mode.hasApplicableTraverseRelAllowPropertyRules(relId)) {
                     HeapTracking.List<VirtualNodeHack> startNodes = collections.newHeapTrackingArrayList();
                     HeapTracking.List<VirtualNodeHack> endNodes = collections.newHeapTrackingArrayList();
 

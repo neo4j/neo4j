@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -49,6 +50,8 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class EntityCounterTest {
     private static final int CHECK_PERIOD = 100_000;
+    private static final int LABEL = 1;
+    private static final int REL_TYPE = 2;
 
     private final StorageReader storageReader = mock(StorageReader.class);
     private final CursorFactory cursors = mock(CursorFactory.class);
@@ -106,6 +109,93 @@ class EntityCounterTest {
         assertThat(assertOpenCalls.intValue()).isZero();
     }
 
+    @Test
+    void shouldUseCountStoreForRelationshipsWhenAllRelationshipsAndNodesCanBeTraversed() {
+        AccessMode accessMode = mock(AccessMode.class);
+        when(accessMode.allowsTraverseAllRelsWithType(REL_TYPE)).thenReturn(true);
+        when(accessMode.allowsTraverseAllNodesWithLabel(LABEL)).thenReturn(true);
+        when(accessMode.allowsTraverseAllLabels()).thenReturn(true);
+        when(storageReader.countsForRelationship(anyInt(), anyInt(), anyInt(), any()))
+                .thenReturn(42L);
+
+        EntityCounter counter = new EntityCounter(false, () -> {});
+
+        assertThat(countsForRelationship(counter, accessMode, LABEL, REL_TYPE, ANY_LABEL))
+                .isEqualTo(42L);
+        verify(storageReader).countsForRelationship(LABEL, REL_TYPE, ANY_LABEL, CursorContext.NULL_CONTEXT);
+        verify(cursors, never()).allocateRelationshipScanCursor(any(), any());
+    }
+
+    @Test
+    void shouldNotUseCountStoreForRelationshipsWhenOnlySomeRelationshipsWithTypeCanBeTraversed() {
+        // allowsTraverseRelType/allowsTraverseNode only say that *some* entities may be traversable, e.g. a label
+        // or type grant combined with a property-based deny, or a custom AccessMode that filters per entity.
+        AccessMode accessMode = permissiveForSomeEntities();
+        when(accessMode.allowsTraverseAllNodesWithLabel(anyInt())).thenReturn(true);
+        when(accessMode.allowsTraverseAllLabels()).thenReturn(true);
+        when(accessMode.allowsTraverseAllRelsWithType(REL_TYPE)).thenReturn(false);
+
+        assertCountedByScan(accessMode, ANY_LABEL, REL_TYPE, ANY_LABEL);
+    }
+
+    @Test
+    void shouldNotUseCountStoreForRelationshipsWhenOnlySomeNodesWithLabelCanBeTraversed() {
+        AccessMode accessMode = permissiveForSomeEntities();
+        when(accessMode.allowsTraverseAllRelsWithType(REL_TYPE)).thenReturn(true);
+        when(accessMode.allowsTraverseAllLabels()).thenReturn(true);
+        when(accessMode.allowsTraverseAllNodesWithLabel(LABEL)).thenReturn(false);
+
+        assertCountedByScan(accessMode, LABEL, REL_TYPE, ANY_LABEL);
+        assertCountedByScan(accessMode, ANY_LABEL, REL_TYPE, LABEL);
+    }
+
+    @Test
+    void shouldNotUseCountStoreForAnyRelationshipTypeWhenNotAllRelationshipsCanBeTraversed() {
+        AccessMode accessMode = permissiveForSomeEntities();
+        when(accessMode.allowsTraverseAllRelsWithType(anyInt())).thenReturn(true);
+        when(accessMode.allowsTraverseAllNodesWithLabel(anyInt())).thenReturn(true);
+        when(accessMode.allowsTraverseAllLabels()).thenReturn(true);
+        when(accessMode.allowsTraverseAllRelTypes()).thenReturn(false);
+
+        assertCountedByScan(accessMode, ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL);
+    }
+
+    @Test
+    void shouldNotUseCountStoreForAnyLabelWhenNotAllNodesCanBeTraversed() {
+        AccessMode accessMode = permissiveForSomeEntities();
+        when(accessMode.allowsTraverseAllRelsWithType(anyInt())).thenReturn(true);
+        when(accessMode.allowsTraverseAllNodesWithLabel(anyInt())).thenReturn(true);
+        when(accessMode.allowsTraverseAllRelTypes()).thenReturn(true);
+        when(accessMode.allowsTraverseAllLabels()).thenReturn(false);
+
+        assertCountedByScan(accessMode, ANY_LABEL, REL_TYPE, ANY_LABEL);
+    }
+
+    /**
+     * An access mode that says some (but not necessarily all) nodes and relationships with any token can be
+     * traversed, and denies nothing outright.
+     */
+    private static AccessMode permissiveForSomeEntities() {
+        AccessMode accessMode = mock(AccessMode.class);
+        when(accessMode.allowsTraverseRelType(anyInt())).thenReturn(true);
+        when(accessMode.allowsTraverseNode(anyInt())).thenReturn(true);
+        return accessMode;
+    }
+
+    private void assertCountedByScan(AccessMode accessMode, int startLabel, int type, int endLabel) {
+        when(cursors.allocateRelationshipScanCursor(any(), any())).thenReturn(mock(RelationshipScanCursor.class));
+        when(cursors.allocateFullAccessNodeCursor(any(), any())).thenReturn(mock(NodeCursor.class));
+        when(storageReader.countsForRelationship(anyInt(), anyInt(), anyInt(), any()))
+                .thenReturn(42L);
+
+        EntityCounter counter = new EntityCounter(false, () -> {});
+
+        assertThat(countsForRelationship(counter, accessMode, startLabel, type, endLabel))
+                .isZero();
+        verify(storageReader, never()).countsForRelationship(anyInt(), anyInt(), anyInt(), any());
+        verify(read, atLeastOnce()).allRelationshipsScan(any());
+    }
+
     private void countsForNode(EntityCounter counter, AccessMode accessMode) {
         counter.countsForNode(
                 ANY_LABEL,
@@ -120,10 +210,15 @@ class EntityCounterTest {
     }
 
     private void countsForRelationship(EntityCounter counter, AccessMode accessMode) {
-        counter.countsForRelationship(
-                ANY_LABEL,
-                ANY_RELATIONSHIP_TYPE,
-                ANY_LABEL,
+        countsForRelationship(counter, accessMode, ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL);
+    }
+
+    private long countsForRelationship(
+            EntityCounter counter, AccessMode accessMode, int startLabel, int type, int endLabel) {
+        return counter.countsForRelationship(
+                startLabel,
+                type,
+                endLabel,
                 accessMode,
                 storageReader,
                 cursors,

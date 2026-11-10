@@ -125,8 +125,14 @@ public class BuiltInProcedures {
                             kernelTransaction.dataRead(),
                             kernelTransaction.schemaRead(),
                             kernelTransaction.tokenRead()))
-                    // filter out labels that are denied or aren't explicitly allowed
-                    .filter(label -> mode.allowsTraverseNode(tokenRead.nodeLabel(label.name())))
+                    // filter out labels that are denied or aren't explicitly allowed, using the same rule as
+                    // TokenRead#labelsGetAllTokens: a label is listed if it can be traversed, or if nodes with it
+                    // could be traversable through property-based rules
+                    .filter(label -> {
+                        int labelId = tokenRead.nodeLabel(label.name());
+                        return mode.allowsTraverseNode(labelId)
+                                || mode.hasApplicableTraverseNodeAllowPropertyRules(labelId);
+                    })
                     .map(LabelResult::new)
                     .collect(Collectors.toList());
         }
@@ -167,8 +173,14 @@ public class BuiltInProcedures {
                             kernelTransaction.dataRead(),
                             kernelTransaction.schemaRead(),
                             kernelTransaction.tokenRead()))
-                    // filter out relTypes that are denied or aren't explicitly allowed
-                    .filter(type -> mode.allowsTraverseRelType(tokenRead.relationshipType(type.name())))
+                    // filter out relTypes that are denied or aren't explicitly allowed, using the same rule as
+                    // TokenRead#relationshipTypesGetAllTokens: a type is listed if it can be traversed, or if
+                    // relationships with it could be traversable through property-based rules
+                    .filter(type -> {
+                        int typeId = tokenRead.relationshipType(type.name());
+                        return mode.allowsTraverseRelType(typeId)
+                                || mode.hasApplicableTraverseRelAllowPropertyRules(typeId);
+                    })
                     .map(RelationshipTypeResult::new)
                     .collect(Collectors.toList());
         }
