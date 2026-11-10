@@ -85,6 +85,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -107,6 +108,7 @@ import org.neo4j.procedure.impl.temporal.TemporalFunction;
 import org.neo4j.procedure.memory.ProcedureMemory;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.api.NamedToken;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -240,6 +242,36 @@ class BuiltInProceduresTest {
 
         // When/Then
         assertThat(call("db.relationshipTypes")).contains(record("EATS"), record("SPROUTS"));
+    }
+
+    @Test
+    void shouldListOnlyLabelsTheUserCanTraverseOrHasPropertyRulesFor() throws Throwable {
+        // Given
+        givenLabels("Visible", "PropertyRuled", "Hidden");
+        AccessMode mode = givenRestrictedAccessMode();
+        int visible = tokens.nodeLabel("Visible");
+        int propertyRuled = tokens.nodeLabel("PropertyRuled");
+        // Label-based grant on Visible; only a property-based grant (e.g. GRANT TRAVERSE ... WHERE n.p = 1) on
+        // PropertyRuled; nothing on Hidden.
+        when(mode.allowsTraverseNode(visible)).thenReturn(true);
+        when(mode.hasApplicableTraverseNodeAllowPropertyRules(propertyRuled)).thenReturn(true);
+
+        // When/Then
+        assertThat(call("db.labels")).containsExactlyInAnyOrder(record("Visible"), record("PropertyRuled"));
+    }
+
+    @Test
+    void shouldListOnlyRelTypesTheUserCanTraverseOrHasPropertyRulesFor() throws Throwable {
+        // Given
+        givenRelationshipTypes("VISIBLE", "PROPERTY_RULED", "HIDDEN");
+        AccessMode mode = givenRestrictedAccessMode();
+        int visible = tokens.relationshipType("VISIBLE");
+        int propertyRuled = tokens.relationshipType("PROPERTY_RULED");
+        when(mode.allowsTraverseRelType(visible)).thenReturn(true);
+        when(mode.hasApplicableTraverseRelAllowPropertyRules(propertyRuled)).thenReturn(true);
+
+        // When/Then
+        assertThat(call("db.relationshipTypes")).containsExactlyInAnyOrder(record("VISIBLE"), record("PROPERTY_RULED"));
     }
 
     @Test
@@ -639,6 +671,24 @@ class BuiltInProceduresTest {
         for (String key : types) {
             token(key, relTypes);
         }
+    }
+
+    private AccessMode givenRestrictedAccessMode() {
+        when(tokens.nodeLabel(any())).thenAnswer(invocation -> tokenId(invocation.getArgument(0), labels));
+        when(tokens.relationshipType(any())).thenAnswer(invocation -> tokenId(invocation.getArgument(0), relTypes));
+        AccessMode mode = mock(AccessMode.class);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.mode()).thenReturn(mode);
+        when(tx.securityContext()).thenReturn(securityContext);
+        return mode;
+    }
+
+    private static int tokenId(String name, Map<Integer, String> tokens) {
+        return tokens.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(name))
+                .mapToInt(Map.Entry::getKey)
+                .findFirst()
+                .orElse(TokenConstants.NO_TOKEN);
     }
 
     private static Integer token(String name, Map<Integer, String> tokens) {
