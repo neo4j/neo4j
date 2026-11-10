@@ -164,9 +164,13 @@ final class EntityCounter {
             SchemaRead schemaRead,
             TxStateHolder txStateHolder) {
         if (!multiVersioned
-                && accessMode.allowsTraverseRelType(typeId)
-                && accessMode.allowsTraverseNode(startLabelId)
-                && accessMode.allowsTraverseNode(endLabelId)) {
+                && allowsTraverseAllRelsWithType(accessMode, typeId)
+                && allowsTraverseAllNodesWithLabel(accessMode, startLabelId)
+                && allowsTraverseAllNodesWithLabel(accessMode, endLabelId)) {
+            // All relationships with the specified type, and all nodes with the specified start and end labels, can be
+            // traversed, so the count store can be used. Note that allowsTraverseRelType/allowsTraverseNode are not
+            // sufficient here: they only say that *some* entities with the token may be traversable, while the count
+            // store also counts the ones that are not.
             return storageReader.countsForRelationship(startLabelId, typeId, endLabelId, cursorContext)
                     + countsForRelationshipInTxState(
                             startLabelId,
@@ -196,6 +200,20 @@ final class EntityCounter {
 
         return countRelationshipByScan(
                 startLabelId, typeId, endLabelId, cursors, read, schemaRead, cursorContext, memoryTracker);
+    }
+
+    private static boolean allowsTraverseAllRelsWithType(AccessMode accessMode, int typeId) {
+        if (typeId == TokenConstants.ANY_RELATIONSHIP_TYPE) {
+            return accessMode.allowsTraverseAllRelTypes() && accessMode.allowsTraverseAllLabels();
+        }
+        return accessMode.allowsTraverseAllRelsWithType(typeId);
+    }
+
+    private static boolean allowsTraverseAllNodesWithLabel(AccessMode accessMode, int labelId) {
+        if (labelId == TokenConstants.ANY_LABEL) {
+            return accessMode.allowsTraverseAllLabels();
+        }
+        return accessMode.allowsTraverseAllNodesWithLabel(labelId);
     }
 
     private long countRelationshipByScan(
