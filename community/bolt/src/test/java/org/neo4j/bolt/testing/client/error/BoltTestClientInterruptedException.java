@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.testing.client.error;
 
-public class BoltTestClientInterruptedException extends BoltTestClientException {
+public final class BoltTestClientInterruptedException extends BoltTestClientException {
 
     public BoltTestClientInterruptedException(InterruptedException cause) {
         super(cause);

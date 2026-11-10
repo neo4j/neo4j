@@ -31,10 +31,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
-import org.neo4j.bolt.testing.client.error.BoltTestClientException;
+import org.neo4j.bolt.testing.client.error.BoltTestClientStateException;
 import org.neo4j.bolt.testing.client.tls.NaiveTrustManager;
 
 public final class SecureWebSocketConnection extends WebSocketConnection implements SecureBoltTestConnection {
+
     private static final Factory factory = new Factory();
 
     public static BoltTestConnection.Factory factory() {
@@ -76,7 +77,7 @@ public final class SecureWebSocketConnection extends WebSocketConnection impleme
         try {
             return new URI("wss", null, this.address.getHostString(), this.address.getPort(), "/", null, null);
         } catch (URISyntaxException ex) {
-            throw new BoltTestClientException("Failed to construct WebSocket address", ex);
+            throw new BoltTestClientStateException("Failed to construct WebSocket address", ex);
         }
     }
 

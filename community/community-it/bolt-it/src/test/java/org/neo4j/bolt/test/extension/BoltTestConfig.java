@@ -23,6 +23,8 @@ import java.util.List;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.neo4j.bolt.test.extension.db.ServerInstanceContext;
+import org.neo4j.bolt.test.extension.handler.ConnectionTerminationRetryHandler;
+import org.neo4j.bolt.test.extension.handler.ConnectionTimeoutRetryHandler;
 import org.neo4j.bolt.test.extension.lifecycle.ServerInstanceManager;
 import org.neo4j.bolt.test.extension.lifecycle.TransportConnectionManager;
 import org.neo4j.bolt.test.extension.resolver.connection.ConnectionProviderParameterResolver;
@@ -57,6 +59,8 @@ record BoltTestConfig(
         var connectionManager = new TransportConnectionManager(this.transport);
 
         return List.of(
+                new ConnectionTerminationRetryHandler(),
+                new ConnectionTimeoutRetryHandler(),
                 new ServerInstanceManager(this.instanceContext),
                 connectionManager,
                 new StaticParameterResolver<>(BoltWire.class, this.wire),

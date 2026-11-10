@@ -30,10 +30,11 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import org.neo4j.bolt.testing.client.error.BoltTestClientException;
+import org.neo4j.bolt.testing.client.error.BoltTestClientStateException;
 import org.neo4j.bolt.testing.client.handler.WebSocketHandler;
 
 public sealed class WebSocketConnection extends SocketConnection permits SecureWebSocketConnection {
+
     private static final Factory factory = new Factory();
 
     public WebSocketConnection(InetSocketAddress address) {
@@ -68,7 +69,7 @@ public sealed class WebSocketConnection extends SocketConnection permits SecureW
         try {
             return new URI("ws", null, this.address.getHostString(), this.address.getPort(), "/", null, null);
         } catch (URISyntaxException ex) {
-            throw new BoltTestClientException("Failed to construct WebSocket address", ex);
+            throw new BoltTestClientStateException("Failed to construct WebSocket address", ex);
         }
     }
 

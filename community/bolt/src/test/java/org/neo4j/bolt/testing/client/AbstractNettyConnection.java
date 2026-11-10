@@ -49,19 +49,28 @@ import javax.net.ssl.SSLException;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
 import org.neo4j.bolt.negotiation.util.BitMask;
+import org.neo4j.bolt.testing.client.error.BoltTestClientClosedException;
+import org.neo4j.bolt.testing.client.error.BoltTestClientConnectionTimeoutException;
 import org.neo4j.bolt.testing.client.error.BoltTestClientException;
 import org.neo4j.bolt.testing.client.error.BoltTestClientIOException;
 import org.neo4j.bolt.testing.client.error.BoltTestClientInterruptedException;
+import org.neo4j.bolt.testing.client.error.BoltTestClientReadTimeoutException;
+import org.neo4j.bolt.testing.client.error.BoltTestClientStateException;
+import org.neo4j.bolt.testing.client.error.BoltTestClientWriteTimeoutException;
 import org.neo4j.bolt.testing.client.handler.NotifyingChannelInboundHandler;
 import org.neo4j.bolt.testing.client.handler.TestChannelInitializer;
 import org.neo4j.bolt.testing.client.struct.ProtocolProposal;
+import org.neo4j.internal.helpers.Exceptions;
 
 public abstract sealed class AbstractNettyConnection implements BoltTestConnection
         permits LocalConnection, SocketConnection, UnixDomainSocketConnection {
+
     private static final int MAX_CHUNK_SIZE = 1 << 16 - 1;
 
     protected static final String LOGGING_HANDLER_NAME = "loggingHandler";
     protected static final String INBOUND_HANDLER_NAME = "notifyingChannelInboundHandler";
+    public static final long RECV_TIMEOUT = 30_000_000_000L;
+    public static final int READ_LOCK_TIMEOUT = 1_000;
 
     private final EventLoopGroup eventLoopGroup;
     protected final Object readLock = new Object();
@@ -116,7 +125,7 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
                 throw new IllegalStateException("Requested mTLS authentication on connection without TLS support");
             }
         } catch (SSLException ex) {
-            throw new BoltTestClientIOException("Failed to instantiate SslContext", ex);
+            throw new BoltTestClientConnectionTimeoutException("Failed to instantiate SslContext", ex);
         }
 
         ch.pipeline()
@@ -145,7 +154,7 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     protected void ensureActive() {
         if (this.channel == null || !this.channel.isActive()) {
-            throw new BoltTestClientIOException("Connection closed");
+            throw new BoltTestClientClosedException("Connection closed");
         }
     }
 
@@ -176,12 +185,13 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
             var f = bootstrap.connect(address);
             if (!f.await(30, TimeUnit.SECONDS)) {
                 f.cancel(true);
-                throw new BoltTestClientIOException(
+
+                throw new BoltTestClientConnectionTimeoutException(
                         "Failed to establish connection to " + address + ": Timed out after 30 seconds");
             }
 
             if (!f.isSuccess()) {
-                throw new BoltTestClientIOException("Failed to establish connection: " + address, f.cause());
+                throw new BoltTestClientClosedException("Failed to establish connection: " + address, f.cause());
             }
 
             this.channel = f.channel();
@@ -233,7 +243,7 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
                     f.await();
 
                     if (!f.isSuccess()) {
-                        throw new BoltTestClientIOException(
+                        throw new BoltTestClientClosedException(
                                 "Failed to close channel: " + this.channel.remoteAddress(), f.cause());
                     }
                 } catch (InterruptedException ex) {
@@ -253,7 +263,7 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
         this.ensureValid();
 
         if (this.channel == null) {
-            throw new BoltTestClientException("No active connection");
+            throw new BoltTestClientStateException("No active connection");
         }
 
         this.ensureActive();
@@ -265,12 +275,27 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
                 this.ensureActive();
 
-                throw new BoltTestClientIOException(
+                throw new BoltTestClientWriteTimeoutException(
                         "Failed to write message to " + this.channel.remoteAddress() + ": Timed out after 30 seconds");
             }
 
             if (!f.isSuccess()) {
-                throw new BoltTestClientIOException(
+                var cause = f.cause();
+
+                var networkErrors = Exceptions.contains(cause, e -> {
+                    var simpleName = e.getClass().getSimpleName();
+                    if (simpleName.contains("StacklessClosedChannel") || simpleName.contains("NativeIoException")) {
+                        return true;
+                    }
+
+                    return e.getMessage() != null && e.getMessage().contains("Connection reset by peer");
+                });
+
+                if (networkErrors) {
+                    throw new BoltTestClientClosedException(cause);
+                }
+
+                throw new BoltTestClientClosedException(
                         "Failed to write message to " + this.channel.remoteAddress(), f.cause());
             }
         } catch (InterruptedException ex) {
@@ -356,19 +381,19 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
                 this.ensureActive();
 
                 try {
-                    this.readLock.wait(1_000);
+                    this.readLock.wait(READ_LOCK_TIMEOUT);
                     currentReadableBytes = this.readBuffer.readableBytes();
 
                     // abort if the message has not been made available within a reasonable amount
                     // of time
                     if (currentReadableBytes < length) {
                         var currentTime = System.nanoTime();
-                        if (currentTime - readInitializedAt > 30_000_000_000L) {
+                        if (currentTime - readInitializedAt > RECV_TIMEOUT) {
                             var message = "Failed to receive expected message of " + length
                                     + " bytes within deadline of 30 seconds (available bytes: " + currentReadableBytes
                                     + "; channel: " + (this.channel.isOpen() ? "open" : "closed") + ")";
 
-                            throw new BoltTestClientIOException(message);
+                            throw new BoltTestClientReadTimeoutException(message);
                         }
                     }
                 } catch (InterruptedException ex) {
@@ -394,8 +419,7 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
         var versionLength = this.receiveVarInt();
         if (versionLength < 0) {
-            throw new BoltTestClientIOException(
-                    "Received illegal protocol proposal: Announced " + versionLength + " versions");
+            throw new AssertionError("Received illegal protocol proposal: Announced " + versionLength + " versions");
         }
 
         var versions = new ArrayList<ProtocolVersion>(versionLength);
@@ -421,7 +445,7 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
             }
         }
 
-        throw new BoltTestClientIOException("Received illegal VarInt consisting of more than 5 bytes");
+        throw new AssertionError("Received illegal VarInt consisting of more than 5 bytes");
     }
 
     public BitMask receiveBitMask() {

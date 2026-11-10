@@ -38,9 +38,10 @@ import javax.net.ssl.TrustManagerFactory;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPResp;
-import org.neo4j.bolt.testing.client.error.BoltTestClientException;
+import org.neo4j.bolt.testing.client.error.BoltTestClientClosedException;
 
 public final class CertConfiguredSecureSocketConnection extends SecureSocketConnection {
+
     private final X509Certificate rootCert;
 
     public CertConfiguredSecureSocketConnection(InetSocketAddress address, X509Certificate trustedRootCertificate) {
@@ -71,7 +72,7 @@ public final class CertConfiguredSecureSocketConnection extends SecureSocketConn
                 | NoSuchAlgorithmException
                 | CertificateException
                 | UnrecoverableKeyException ex) {
-            throw new BoltTestClientException("Failed to initialize SslContext", ex);
+            throw new BoltTestClientClosedException("Failed to initialize SslContext", ex);
         }
     }
 
