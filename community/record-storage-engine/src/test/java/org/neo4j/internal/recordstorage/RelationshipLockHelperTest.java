@@ -65,6 +65,31 @@ class RelationshipLockHelperTest {
     RandomSupport random;
 
     @Test
+    void shouldSortInitiallyCollectedLocksAndPreserveDynamicInsertion() {
+        SortedLockList lockList = new SortedLockList(5);
+        lockList.addUnsorted(4);
+        lockList.addUnsorted(2);
+        lockList.addUnsorted(NULL_REFERENCE.longValue());
+        lockList.addUnsorted(4);
+        lockList.addUnsorted(1);
+        lockList.sort();
+
+        assertThat(lockList.underlyingList().toArray()).containsExactly(1L, 2L, 4L, 4L);
+        assertThat(lockList.nextUnique()).isTrue();
+        assertThat(lockList.currentHighestLockedId()).isEqualTo(1L);
+
+        lockList.add(3);
+        assertThat(lockList.underlyingList().toArray()).containsExactly(1L, 2L, 3L, 4L, 4L);
+        assertThat(lockList.nextUnique()).isTrue();
+        assertThat(lockList.currentHighestLockedId()).isEqualTo(2L);
+        assertThat(lockList.nextUnique()).isTrue();
+        assertThat(lockList.currentHighestLockedId()).isEqualTo(3L);
+        assertThat(lockList.nextUnique()).isTrue();
+        assertThat(lockList.currentHighestLockedId()).isEqualTo(4L);
+        assertThat(lockList.nextUnique()).isFalse();
+    }
+    
+    @Test
     void shouldKeepListSorted() {
         MutableLongList shuffle = LongLists.mutable.empty();
         int numIds = 1000;

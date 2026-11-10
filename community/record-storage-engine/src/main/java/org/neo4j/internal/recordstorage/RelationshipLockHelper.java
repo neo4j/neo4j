@@ -165,21 +165,20 @@ final class RelationshipLockHelper {
                     HeapTrackingCollections.newLongObjectMap(scopedMemoryTracker);
             scopedMemoryTracker.allocateHeap(sizeOfLongArray(upperLimitOfLocks));
 
-            // First will build the list of locks we need
+            // Collect lock IDs first, then sort once before acquiring locks.
             SortedLockList lockList = new SortedLockList(upperLimitOfLocks);
-            lockList.add(
-                    optionalFirstInChain); // The locklist does not accept NULL(-1) values, so we don't need to care
-            // about that
+            lockList.addUnsorted(optionalFirstInChain);
             ids.forEach((id, type, startNode, endNode, noProperties, removedProperties) -> {
                 RelationshipRecord relationship = relRecords.getOrLoad(id, null).forReadingLinkage();
                 optimistic.put(id, relationship);
-                lockList.add(relationship.getId());
-                lockList.add(START_NEXT.get(relationship));
-                lockList.add(START_PREV.get(relationship));
-                lockList.add(END_NEXT.get(relationship));
-                lockList.add(END_PREV.get(relationship));
+                lockList.addUnsorted(relationship.getId());
+                lockList.addUnsorted(START_NEXT.get(relationship));
+                lockList.addUnsorted(START_PREV.get(relationship));
+                lockList.addUnsorted(END_NEXT.get(relationship));
+                lockList.addUnsorted(END_PREV.get(relationship));
             });
-
+            lockList.sort();
+            
             // Then we start traversing and locking
             while (lockList.nextUnique()) {
                 long id = lockList.currentHighestLockedId();
@@ -332,6 +331,17 @@ final class RelationshipLockHelper {
             this.list = LongLists.mutable.withInitialCapacity(initialCapacity);
         }
 
+        void addUnsorted(long l) {
+            if (l != NULL_REFERENCE.longValue()) {
+                list.add(l);
+            }
+        }
+
+        void sort() {
+            assert index == -1;
+            list.sortThis();
+        }
+        
         /**
          * @return true if list did not already contain l
          */
