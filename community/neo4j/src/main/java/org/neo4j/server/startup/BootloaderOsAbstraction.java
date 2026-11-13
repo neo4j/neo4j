@@ -27,6 +27,7 @@ import static org.neo4j.kernel.info.JvmChecker.SUPPORTED_JAVA_NAME_PATTERN;
 import static org.neo4j.server.startup.Bootloader.ENV_HEAP_SIZE;
 import static org.neo4j.server.startup.Bootloader.ENV_JAVA_OPTS;
 import static org.neo4j.server.startup.Bootloader.PROP_JAVA_CP;
+import static org.neo4j.server.startup.Bootloader.PROP_JAVA_HOME;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_NAME;
 
 import java.io.File;
@@ -166,10 +167,30 @@ abstract class BootloaderOsAbstraction {
         err.println("* Please see https://neo4j.com/docs/ for Neo4j installation instructions.");
     }
 
-    private static Path getJava() {
+    private Path getJava() {
         Optional<String> currentCommand = ProcessHandle.current().info().command();
-        return Path.of(
-                currentCommand.orElseThrow(() -> new IllegalStateException("Wasn't able to figure out java binary")));
+        // Process introspection can be unavailable
+        return currentCommand.map(Path::of).orElseGet(this::getJavaFromJavaHome);
+    }
+
+    private Path getJavaFromJavaHome() {
+        String javaHome = bootloader.getProp(PROP_JAVA_HOME);
+        Path java = javaBinaryInJavaHome(javaHome);
+        if (java != null) {
+            return java;
+        }
+        throw new IllegalStateException(
+                "Wasn't able to figure out java binary, and java.home does not contain a java executable: " + javaHome);
+    }
+
+    static Path javaBinaryInJavaHome(String javaHome) {
+        if (isNotEmpty(javaHome)) {
+            Path java = Path.of(javaHome).resolve("bin").resolve(SystemUtils.IS_OS_WINDOWS ? "java.exe" : "java");
+            if (Files.isExecutable(java)) {
+                return java;
+            }
+        }
+        return null;
     }
 
     private void checkJavaVersion() {
