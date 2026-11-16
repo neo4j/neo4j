@@ -86,6 +86,7 @@ Apache Software License, Version 2.0
   Jackson-JAXRS: base
   Jackson-JAXRS: JSON
   Jakarta Bean Validation API
+  jansi
   Java Concurrency Tools Core Library
   Java Native Access
   Javassist
@@ -400,8 +401,7 @@ BSD License
   hoek
   hoist-non-react-statics
   ieee754
-  JLine JNI Terminal
-  JLine Native Library
+  JLine JANSI Terminal
   JLine Reader
   JLine Terminal
   json-schema

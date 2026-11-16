@@ -33,9 +33,7 @@ import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import org.jline.terminal.Attributes;
-import org.jline.terminal.impl.exec.ExecPty;
-import org.jline.terminal.spi.SystemStream;
-import org.jline.terminal.spi.TerminalProvider;
+import org.jline.terminal.impl.ExecPty;
 import org.neo4j.util.VisibleForTesting;
 
 /**
@@ -58,7 +56,7 @@ public interface SimplePrompt extends AutoCloseable {
         }
 
         try {
-            final var pty = (ExecPty) ExecPty.current(TerminalProvider.load("exec"), SystemStream.Output);
+            final var pty = (ExecPty) ExecPty.current();
             return new TtyPrompt(pty);
         } catch (Exception e) {
             // Ignore

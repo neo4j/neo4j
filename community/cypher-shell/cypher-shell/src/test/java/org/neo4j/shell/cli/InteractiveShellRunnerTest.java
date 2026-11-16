@@ -50,6 +50,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import org.fusesource.jansi.Ansi;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,7 +81,6 @@ import org.neo4j.shell.parser.StatementParser.CommandStatement;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
-import org.neo4j.shell.printer.AnsiFormattedText;
 import org.neo4j.shell.printer.AnsiPrinter;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltStateHandler;
@@ -103,7 +103,7 @@ class InteractiveShellRunnerTest {
 
     @BeforeEach
     void setup() throws Exception {
-        AnsiFormattedText.setEnabled(true);
+        Ansi.setEnabled(true);
         printer = mock(Printer.class);
         cmdExecuter = mock(StatementExecuter.class);
         txHandler = mock(TransactionHandler.class);
@@ -126,7 +126,7 @@ class InteractiveShellRunnerTest {
 
     @AfterEach
     void cleanup() {
-        AnsiFormattedText.resetToDefault();
+        Ansi.setEnabled(Ansi.isDetected());
     }
 
     @Test

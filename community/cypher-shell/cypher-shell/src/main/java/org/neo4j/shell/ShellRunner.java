@@ -19,6 +19,9 @@
  */
 package org.neo4j.shell;
 
+import static org.fusesource.jansi.internal.CLibrary.isatty;
+import static org.neo4j.shell.system.Utils.isWindows;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,10 +33,12 @@ import org.neo4j.shell.cli.InteractiveShellRunner;
 import org.neo4j.shell.cli.NonInteractiveShellRunner;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.printer.Printer;
-import org.neo4j.shell.system.Tty;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
 public interface ShellRunner {
+    int STDIN_FILENO = 0;
+    int STDOUT_FILENO = 1;
+
     /**
      * @param cliArgs
      * @return true if an interactive shellrunner should be used, false otherwise
@@ -43,21 +48,45 @@ public interface ShellRunner {
     }
 
     /**
-     * Checks if STDIN is a TTY.
+     * Checks if STDIN is a TTY. In case TTY checking is not possible (lack of libc), then the check falls back to the built in Java {@link System#console()}
+     * which checks if EITHER STDIN or STDOUT has been redirected.
      *
      * @return true if the shell is reading from an interactive terminal, false otherwise (e.g., we are reading from a file).
      */
     static boolean isInputInteractive() {
-        return Tty.isStdinTty();
+        if (isWindows()) {
+            // Input will never be a TTY on windows and it isatty seems to be able to block forever on Windows so avoid
+            // calling it.
+            return System.console() != null;
+        }
+        try {
+            return 1 == isatty(STDIN_FILENO);
+        } catch (Throwable ignored) {
+            // system is not using libc (like Alpine Linux)
+            // Fallback to checking stdin OR stdout
+            return System.console() != null;
+        }
     }
 
     /**
-     * Checks if STDOUT is a TTY.
+     * Checks if STDOUT is a TTY. In case TTY checking is not possible (lack of libc), then the check falls back to the built in Java {@link System#console()}
+     * which checks if EITHER STDIN or STDOUT has been redirected.
      *
      * @return true if the shell is outputting to an interactive terminal, false otherwise (e.g., we are outputting to a file)
      */
     static boolean isOutputInteractive() {
-        return Tty.isStdoutTty();
+        if (isWindows()) {
+            // Input will never be a TTY on windows and it isatty seems to be able to block forever on Windows so avoid
+            // calling it.
+            return System.console() != null;
+        }
+        try {
+            return 1 == isatty(STDOUT_FILENO);
+        } catch (Throwable ignored) {
+            // system is not using libc (like Alpine Linux)
+            // Fallback to checking stdin OR stdout
+            return System.console() != null;
+        }
     }
 
     /**

@@ -21,6 +21,7 @@ package org.neo4j.shell.printer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.fusesource.jansi.Ansi;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,12 +30,12 @@ class AnsiFormattedTextTest {
 
     @BeforeEach
     void setup() {
-        AnsiFormattedText.setEnabled(true);
+        Ansi.setEnabled(true);
     }
 
     @AfterEach
     void cleanup() {
-        AnsiFormattedText.resetToDefault();
+        Ansi.setEnabled(Ansi.isDetected());
     }
 
     @Test

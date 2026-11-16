@@ -32,6 +32,7 @@ Apache Software License, Version 2.0
   Jackson-annotations
   Jackson-core
   jackson-databind
+  jansi
   Java Native Access
   JSpecify annotations
   Neo4j Java Driver
@@ -50,8 +51,7 @@ BSD - Scala License
 
 BSD License
   ANTLR 4 Runtime
-  JLine JNI Terminal
-  JLine Native Library
+  JLine JANSI Terminal
   JLine Reader
   JLine Terminal
 

@@ -135,9 +135,7 @@ public class CypherShellTerminalBuilder {
             attributes.setLocalFlag(Attributes.LocalFlag.ECHO, false);
             jLineTerminal
                     .jna(false)
-                    .jansi(false)
-                    .jni(false); // Certain environments (osx) can't handle native terminal modes when running tests
-            // in maven
+                    .jansi(false); // Certain environments (osx) can't handle jna/jansi mode when running tests in maven
             jLineTerminal.dumb(true).type(Terminal.TYPE_DUMB).attributes(attributes);
         }
 

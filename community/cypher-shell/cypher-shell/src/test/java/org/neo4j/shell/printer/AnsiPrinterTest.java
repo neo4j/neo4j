@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.io.PrintStream;
+import org.fusesource.jansi.Ansi;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,12 +41,12 @@ class AnsiPrinterTest {
 
     @BeforeEach
     void setup() {
-        AnsiFormattedText.setEnabled(true);
+        Ansi.setEnabled(true);
     }
 
     @AfterEach
     void cleanup() {
-        AnsiFormattedText.resetToDefault();
+        Ansi.setEnabled(Ansi.isDetected());
     }
 
     @Test

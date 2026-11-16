@@ -25,17 +25,17 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.shell.test.Util.testConnectionConfig;
 
 import java.util.Optional;
+import org.fusesource.jansi.Ansi;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.shell.printer.AnsiFormattedText;
 
 class UserMessagesHandlerTest {
     private Connector connector;
 
     @BeforeEach
     void setup() {
-        AnsiFormattedText.setEnabled(true);
+        Ansi.setEnabled(true);
         connector = mock(Connector.class);
         when(connector.username()).thenReturn("bob");
         when(connector.getProtocolVersion()).thenReturn("3.0");
@@ -45,7 +45,7 @@ class UserMessagesHandlerTest {
 
     @AfterEach
     void cleanup() {
-        AnsiFormattedText.resetToDefault();
+        Ansi.setEnabled(Ansi.isDetected());
     }
 
     @Test
@@ -61,7 +61,7 @@ class UserMessagesHandlerTest {
 
     @Test
     void welcomeMessageTestNoAnsi() {
-        AnsiFormattedText.setEnabled(false);
+        Ansi.setEnabled(false);
         UserMessagesHandler userMessagesHandler = new UserMessagesHandler(connector);
         assertEquals(
                 """
@@ -85,7 +85,7 @@ class UserMessagesHandlerTest {
 
     @Test
     void welcomeWithImpersonationNoAnsi() {
-        AnsiFormattedText.setEnabled(false);
+        Ansi.setEnabled(false);
         when(connector.impersonatedUser()).thenReturn(Optional.of("impersonated_user"));
         UserMessagesHandler userMessagesHandler = new UserMessagesHandler(connector);
         assertEquals(

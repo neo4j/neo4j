@@ -19,18 +19,25 @@
  */
 package org.neo4j.shell.printer;
 
+import static org.fusesource.jansi.internal.CLibrary.STDERR_FILENO;
+import static org.fusesource.jansi.internal.CLibrary.STDOUT_FILENO;
+import static org.fusesource.jansi.internal.CLibrary.isatty;
+
 import java.io.PrintStream;
+import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.AnsiConsole;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.AnsiFormattedException;
-import org.neo4j.shell.system.Tty;
+import org.neo4j.shell.log.Logger;
 
 /**
  * A basic logger which prints Ansi formatted text to STDOUT and STDERR
  */
 public class AnsiPrinter implements Printer {
+    private static final Logger log = Logger.create();
     private final PrintStream out;
     private final PrintStream err;
     private Format format;
@@ -44,7 +51,17 @@ public class AnsiPrinter implements Printer {
         this.out = out;
         this.err = err;
 
-        AnsiFormattedText.setEnabled(isOutputInteractive());
+        try {
+            if (isOutputInteractive()) {
+                Ansi.setEnabled(true);
+                AnsiConsole.systemInstall();
+            } else {
+                Ansi.setEnabled(false);
+            }
+        } catch (Throwable t) {
+            log.warn("Not running on a distro with standard c library, disabling Ansi", t);
+            Ansi.setEnabled(false);
+        }
     }
 
     private static Throwable getRootCause(final Throwable th) {
@@ -57,9 +74,11 @@ public class AnsiPrinter implements Printer {
 
     /**
      * @return true if the shell is outputting to a TTY, false otherwise (e.g., we are writing to a file)
+     * @throws UnsatisfiedLinkError maybe if standard c library can't be found
+     * @throws NoClassDefFoundError maybe if standard c library can't be found
      */
     private static boolean isOutputInteractive() {
-        return Tty.isStdoutAndStderrTty();
+        return 1 == isatty(STDOUT_FILENO) && 1 == isatty(STDERR_FILENO);
     }
 
     @Override

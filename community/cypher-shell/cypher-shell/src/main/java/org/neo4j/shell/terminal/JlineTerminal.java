@@ -98,11 +98,6 @@ public class JlineTerminal implements CypherShellTerminal {
         return (StatementJlineParser) jLineReader.getParser();
     }
 
-    private boolean isDumbTerminal() {
-        var type = jLineReader.getTerminal().getType();
-        return Terminal.TYPE_DUMB.equals(type) || Terminal.TYPE_DUMB_COLOR.equals(type);
-    }
-
     @Override
     public Reader read() {
         jLineReader.getTerminal().resume();
@@ -228,7 +223,8 @@ public class JlineTerminal implements CypherShellTerminal {
             try {
                 stopPollingWhenIdleService.resume();
                 exitOnIdleTimeoutService.resume();
-                return jLineReader.readLine(prompt, null, maskingCallback(mask), null);
+                final var hook = mask ? new MaskingIdleTimeoutHook() : idleTimeoutHook;
+                return jLineReader.readLine(prompt, null, hook, null);
             } catch (org.jline.reader.EndOfFileException e) {
                 throw new NoMoreInputException();
             } catch (org.jline.reader.UserInterruptException e) {
@@ -237,18 +233,6 @@ public class JlineTerminal implements CypherShellTerminal {
                 stopPollingWhenIdleService.pause();
                 exitOnIdleTimeoutService.pause();
             }
-        }
-
-        /**
-         * jline reads a non-null masking callback as "a password is being read" and, on a dumb terminal, starts a
-         * thread that keeps rewriting the prompt. So only pass one when the input really is masked, or when it is
-         * carrying the idle timeout signal on a terminal that can actually redraw.
-         */
-        private MaskingCallback maskingCallback(boolean mask) {
-            if (mask) {
-                return new MaskingIdleTimeoutHook();
-            }
-            return isDumbTerminal() ? null : idleTimeoutHook;
         }
 
         @Override

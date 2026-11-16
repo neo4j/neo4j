@@ -26,12 +26,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import org.fusesource.jansi.Ansi;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.printer.AnsiFormattedText;
 import org.neo4j.shell.printer.Printer;
 
 class HelpTest {
@@ -41,14 +41,14 @@ class HelpTest {
 
     @BeforeEach
     public void setup() {
-        AnsiFormattedText.setEnabled(true);
+        Ansi.setEnabled(true);
         cmdHelper = mock(CommandFactoryHelper.class);
         cmd = new Help(printer, cmdHelper);
     }
 
     @AfterEach
     public void cleanup() {
-        AnsiFormattedText.resetToDefault();
+        Ansi.setEnabled(Ansi.isDetected());
     }
 
     @Test
