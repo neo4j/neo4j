@@ -23,7 +23,7 @@
 
     <properties>
         <moduleName>org.neo4j.cypher.internal.parser.antlr4</moduleName>
-        <maven-plugin-tools.version>3.8.2</maven-plugin-tools.version>
+        <maven-plugin-tools.version>3.15.1</maven-plugin-tools.version>
     </properties>
 
     <dependencies>
