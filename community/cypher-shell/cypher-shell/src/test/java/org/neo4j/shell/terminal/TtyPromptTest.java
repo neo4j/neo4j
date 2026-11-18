@@ -36,7 +36,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import org.jline.terminal.Attributes;
-import org.jline.terminal.impl.ExecPty;
+import org.jline.terminal.impl.exec.ExecPty;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 

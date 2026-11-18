@@ -135,12 +135,16 @@ public class CypherShellTerminalBuilder {
             attributes.setLocalFlag(Attributes.LocalFlag.ECHO, false);
             jLineTerminal
                     .jna(false)
-                    .jansi(false); // Certain environments (osx) can't handle jna/jansi mode when running tests in maven
+                    .jansi(false)
+                    .jni(false); // Certain environments (osx) can't handle native terminal modes when running tests
+            // in maven
             jLineTerminal.dumb(true).type(Terminal.TYPE_DUMB).attributes(attributes);
         }
 
+        final var activityListener = new ActivityListener();
+
         var reader = LineReaderBuilder.builder()
-                .terminal(jLineTerminal.build())
+                .terminal(new ActivityTrackingTerminal(jLineTerminal.build(), activityListener))
                 .parser(new StatementJlineParser(new ShellStatementParser()))
                 .completer(new JlineCompleter(new CommandFactoryHelper(), completionEngine))
                 .history(new DefaultHistory()) // The default history is in-memory until we set history file variable
@@ -153,7 +157,8 @@ public class CypherShellTerminalBuilder {
 
         bindKeyPadKeys(reader);
 
-        return new JlineTerminal(reader, isInteractive, printer, simplePromptSupplier, idleTimeout, idleDelay, dbInfo);
+        return new JlineTerminal(
+                reader, isInteractive, printer, simplePromptSupplier, idleTimeout, idleDelay, dbInfo, activityListener);
     }
 
     public static CypherShellTerminalBuilder terminalBuilder() {

@@ -59,7 +59,6 @@ Apache Software License, Version 2.0
   Jackson-annotations
   Jackson-core
   jackson-databind
-  jansi
   Java Native Access
   JSpecify annotations
   long
@@ -100,7 +99,8 @@ BSD License
   hoek
   hoist-non-react-statics
   ieee754
-  JLine JANSI Terminal
+  JLine JNI Terminal
+  JLine Native Library
   JLine Reader
   JLine Terminal
   json-schema

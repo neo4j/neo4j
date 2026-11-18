@@ -21,7 +21,7 @@
         <appassembler-maven-plugin.version>2.1.0</appassembler-maven-plugin.version>
         <assembly-suffix />
         <executable-suffix />
-        <jline.version>3.21.0</jline.version>
+        <jline.version>3.30.17</jline.version>
         <moduleName>org.neo4j.shell</moduleName>
         <name-of-main-class>org.neo4j.shell.Main</name-of-main-class>
         <native-maven-plugin.version>0.9.9</native-maven-plugin.version>
@@ -92,7 +92,12 @@
         </dependency>
         <dependency>
             <groupId>org.jline</groupId>
-            <artifactId>jline-terminal-jansi</artifactId>
+            <artifactId>jline-native</artifactId>
+            <version>${jline.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-terminal-jni</artifactId>
             <version>${jline.version}</version>
         </dependency>
 
