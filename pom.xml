@@ -164,8 +164,8 @@
     <opencypher.version>1.0.0-M23</opencypher.version>
     <caffeine.version>3.1.8</caffeine.version>
     <required.maven.version>3.8.2</required.maven.version>
-    <jackson.version>2.22.3</jackson.version>
-    <jackson-databind.version>2.22.3</jackson-databind.version>
+    <jackson.version>2.23.0</jackson.version>
+    <jackson-databind.version>2.23.0</jackson-databind.version>
     <jackson.annotation.version>2.22</jackson.annotation.version>
     <amazon-sdk.version>1.12.772</amazon-sdk.version>
     <awssdk.version>2.31.20</awssdk.version>
@@ -189,7 +189,7 @@
     <testcontainers.version>1.20.2</testcontainers.version>
     <build-resources.version>2025.11.1</build-resources.version>
     <s3mock.version>3.12.0</s3mock.version>
-    <parquet.version>1.18.1</parquet.version>
+    <parquet.version>1.18.2</parquet.version>
     <hadoop-common.version>3.5.0</hadoop-common.version>
   </properties>
 
