@@ -30,7 +30,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.channels.ServerSocketChannel;
-import java.time.Clock;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
@@ -51,6 +50,7 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.dbms.routing.RoutingService;
+import org.neo4j.time.Clocks;
 
 public class FabricSocketNettyConnectorTest extends AbstractNettyConnectorTest<FabricSocketNettyConnector> {
     private static final String CONNECTOR_ID = "bolt-intra-socket-test";
@@ -92,7 +92,7 @@ public class FabricSocketNettyConnectorTest extends AbstractNettyConnectorTest<F
                 bindAddress,
                 connectorPortRegister,
                 memoryPool,
-                Clock.systemUTC(),
+                Clocks.nanoClock(),
                 allocator,
                 bossGroup,
                 workerGroup,

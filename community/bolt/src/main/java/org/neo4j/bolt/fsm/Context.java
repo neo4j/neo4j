@@ -20,11 +20,11 @@
 package org.neo4j.bolt.fsm;
 
 import io.netty.channel.ChannelFuture;
-import java.time.Clock;
 import org.neo4j.bolt.fsm.error.NoSuchStateException;
 import org.neo4j.bolt.fsm.state.State;
 import org.neo4j.bolt.fsm.state.StateReference;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.time.SystemNanoClock;
 
 public interface Context extends StateMachineHandle {
 
@@ -58,7 +58,7 @@ public interface Context extends StateMachineHandle {
      *
      * @see Connection#clock()
      */
-    default Clock clock() {
+    default SystemNanoClock clock() {
         return connection().clock();
     }
 

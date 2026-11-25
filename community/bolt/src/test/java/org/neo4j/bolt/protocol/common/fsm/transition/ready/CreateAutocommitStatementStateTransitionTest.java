@@ -144,7 +144,7 @@ class CreateAutocommitStatementStateTransitionTest
                             .onStatementPrepared(
                                     Mockito.eq(TransactionType.IMPLICIT),
                                     Mockito.anyLong(),
-                                    Mockito.anyLong(),
+                                    Mockito.eq(42L),
                                     Mockito.any());
 
                     if (parameters.databaseName == null) {

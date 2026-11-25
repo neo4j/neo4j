@@ -29,7 +29,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import java.net.SocketAddress;
-import java.time.Clock;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
@@ -51,6 +50,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.config.AuthConfigProvider;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * Provides a basis for connectors which rely on netty.
@@ -72,7 +72,7 @@ public abstract class AbstractNettyConnector<CFG extends NettyConnectorConfigura
             String id,
             SocketAddress bindAddress,
             MemoryPool memoryPool,
-            Clock clock,
+            SystemNanoClock clock,
             ByteBufAllocator allocator,
             EventLoopGroup bossGroup,
             EventLoopGroup workerGroup,

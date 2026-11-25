@@ -19,9 +19,6 @@
  */
 package org.neo4j.bolt.tx;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,20 +33,21 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 class TransactionImplTest {
 
     private DatabaseReference databaseReference;
-    private Clock clock;
+    private SystemNanoClock clock;
     private BoltTransaction boltTransaction;
     private final String bookmark = "some-bookmark";
 
     @BeforeEach
     void prepare() {
         this.databaseReference = Mockito.mock(DatabaseReference.class);
-        this.clock = FakeClock.fixed(Instant.EPOCH, ZoneOffset.UTC);
+        this.clock = Clocks.fakeClock();
         this.boltTransaction = Mockito.mock(BoltTransaction.class, Mockito.RETURNS_MOCKS);
 
         Mockito.doReturn(this.bookmark).when(this.boltTransaction).getBookmark();

@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.protocol.common.fsm.transition.ready;
 
+import java.util.concurrent.TimeUnit;
 import org.neo4j.bolt.fsm.Context;
 import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.fsm.state.StateReference;
@@ -65,7 +66,7 @@ public final class CreateAutocommitStatementStateTransition extends AbstractStat
             }
         }
 
-        long start = ctx.clock().millis();
+        long start = ctx.clock().nanos();
         try {
             var tx = ctx.connection()
                     .beginTransaction(
@@ -77,9 +78,13 @@ public final class CreateAutocommitStatementStateTransition extends AbstractStat
                             message.transactionMetadata(),
                             message.notificationsConfig());
             var statement = tx.run(message.statement(), message.params());
-            long end = ctx.clock().millis();
+            long end = ctx.clock().nanos();
 
-            handler.onStatementPrepared(TransactionType.IMPLICIT, statement.id(), end - start, statement.fieldNames());
+            handler.onStatementPrepared(
+                    TransactionType.IMPLICIT,
+                    statement.id(),
+                    TimeUnit.NANOSECONDS.toMillis(end - start),
+                    statement.fieldNames());
             if (message.databaseName() == null) {
                 handler.onTransactionDatabase(ctx.connection().selectedDefaultDatabase());
             }

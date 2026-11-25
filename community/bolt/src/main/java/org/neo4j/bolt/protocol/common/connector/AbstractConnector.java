@@ -20,7 +20,6 @@
 package org.neo4j.bolt.protocol.common.connector;
 
 import io.netty.channel.Channel;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.config.AuthConfigProvider;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * Provides a generic base implementation for connectors.
@@ -53,7 +53,7 @@ public abstract class AbstractConnector<CFG extends ConnectorConfiguration> impl
 
     private final String id;
     private final MemoryPool memoryPool;
-    private final Clock clock;
+    private final SystemNanoClock clock;
     private final Connection.Factory connectionFactory;
     private final BoltProtocolRegistry protocolRegistry;
     private final Authentication authentication;
@@ -77,7 +77,7 @@ public abstract class AbstractConnector<CFG extends ConnectorConfiguration> impl
     public AbstractConnector(
             String id,
             MemoryPool memoryPool,
-            Clock clock,
+            SystemNanoClock clock,
             Connection.Factory connectionFactory,
             NetworkConnectionTracker connectionTracker,
             BoltProtocolRegistry protocolRegistry,
@@ -131,7 +131,7 @@ public abstract class AbstractConnector<CFG extends ConnectorConfiguration> impl
     }
 
     @Override
-    public Clock clock() {
+    public SystemNanoClock clock() {
         return this.clock;
     }
 

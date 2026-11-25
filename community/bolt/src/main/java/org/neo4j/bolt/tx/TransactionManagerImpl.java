@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.tx;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -41,16 +40,18 @@ import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
+import org.neo4j.time.SystemNanoClock;
 
 public class TransactionManagerImpl implements TransactionManager {
     private final BoltGraphDatabaseManagementServiceSPI graphDatabaseManagementService;
-    private final Clock clock;
+    private final SystemNanoClock clock;
     private final AtomicLong nextTransactionId = new AtomicLong(1);
 
     private final Map<String, Transaction> transactionMap = new ConcurrentHashMap<>();
     private final CleanupListener cleanupListener = new CleanupListener();
 
-    public TransactionManagerImpl(BoltGraphDatabaseManagementServiceSPI graphDatabaseManagementService, Clock clock) {
+    public TransactionManagerImpl(
+            BoltGraphDatabaseManagementServiceSPI graphDatabaseManagementService, SystemNanoClock clock) {
         this.graphDatabaseManagementService = graphDatabaseManagementService;
         this.clock = clock;
     }

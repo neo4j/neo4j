@@ -21,7 +21,6 @@ package org.neo4j.bolt.protocol.common.connector;
 
 import io.netty.channel.Channel;
 import java.net.SocketAddress;
-import java.time.Clock;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.config.AuthConfigProvider;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * Encapsulates the configuration and dependencies of a dedicated connector.
@@ -73,10 +73,14 @@ public interface Connector<CFG extends ConnectorConfiguration> extends Lifecycle
     /**
      * Retrieves the clock which shall provide the current date and time for operations within the
      * scope of this connector.
+     * <p />
+     * Durations (such as the {@code t_first} and {@code t_last} metadata reported to clients) must
+     * be measured using {@link SystemNanoClock#nanos()} as the wall clock may be adjusted at any
+     * time.
      *
      * @return a clock.
      */
-    Clock clock();
+    SystemNanoClock clock();
 
     /**
      * Retrieves the registry with which this connector registers all newly created connections.
