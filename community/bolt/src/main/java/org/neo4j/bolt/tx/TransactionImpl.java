@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.tx;
 
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -45,13 +44,14 @@ import org.neo4j.boltmessages.TransactionType;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class TransactionImpl implements Transaction {
     private final String id;
     private final TransactionType type;
     private final DatabaseReference database;
-    private final Clock clock;
+    private final SystemNanoClock clock;
     private final BoltTransaction transaction;
     private final AtomicReference<State> state = new AtomicReference<>(State.OPEN);
     private final AtomicBoolean interrupted = new AtomicBoolean();
@@ -79,7 +79,11 @@ public class TransactionImpl implements Transaction {
     private volatile boolean failed;
 
     public TransactionImpl(
-            String id, TransactionType type, DatabaseReference database, Clock clock, BoltTransaction transaction) {
+            String id,
+            TransactionType type,
+            DatabaseReference database,
+            SystemNanoClock clock,
+            BoltTransaction transaction) {
         this.id = id;
         this.type = type;
         this.database = database;

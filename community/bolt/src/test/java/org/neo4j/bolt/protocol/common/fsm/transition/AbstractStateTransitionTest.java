@@ -19,8 +19,7 @@
  */
 package org.neo4j.bolt.protocol.common.fsm.transition;
 
-import java.time.Clock;
-import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.neo4j.bolt.fsm.Context;
@@ -33,13 +32,14 @@ import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.boltmessages.request.RequestMessage;
+import org.neo4j.time.SystemNanoClock;
 
 public abstract class AbstractStateTransitionTest<R extends RequestMessage, T extends StateTransition<R>> {
 
     protected BoltProtocol protocol;
     protected Context context;
     protected ConnectionHandle connection;
-    protected Clock clock;
+    protected SystemNanoClock clock;
 
     protected T transition;
     protected ResponseHandler responseHandler;
@@ -49,7 +49,7 @@ public abstract class AbstractStateTransitionTest<R extends RequestMessage, T ex
         this.protocol = Mockito.mock(BoltProtocol.class);
         this.context = Mockito.mock(Context.class);
         this.connection = ConnectionMockFactory.newInstance();
-        this.clock = Mockito.mock(Clock.class);
+        this.clock = Mockito.mock(SystemNanoClock.class);
         this.responseHandler = Mockito.mock(ResponseHandler.class);
 
         Mockito.doReturn(new ProtocolVersion(5, 8)).when(this.protocol).version();
@@ -58,10 +58,13 @@ public abstract class AbstractStateTransitionTest<R extends RequestMessage, T ex
         Mockito.doReturn(this.clock).when(this.context).clock();
         Mockito.doReturn(this.initialState()).when(this.context).state();
 
-        Mockito.doReturn(0L, 42L, 84L).when(this.clock).millis();
-        Mockito.doReturn(Instant.EPOCH, Instant.ofEpochMilli(42), Instant.ofEpochMilli(84))
+        // the monotonic clock advances by 42ms per invocation while the wall clock is stepped back by
+        // ~41 seconds (as may happen when NTP or hypervisor time synchronization adjusts the system
+        // time)
+        Mockito.doReturn(0L, TimeUnit.MILLISECONDS.toNanos(42), TimeUnit.MILLISECONDS.toNanos(84))
                 .when(this.clock)
-                .instant();
+                .nanos();
+        Mockito.doReturn(41_000L, 0L, 42L).when(this.clock).millis();
 
         this.transition = this.getTransition();
     }

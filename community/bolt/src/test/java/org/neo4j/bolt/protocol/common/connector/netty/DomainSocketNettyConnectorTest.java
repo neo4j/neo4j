@@ -33,7 +33,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Assumptions;
@@ -52,6 +51,7 @@ import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.dbms.routing.RoutingService;
+import org.neo4j.time.Clocks;
 
 class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSocketNettyConnector> {
 
@@ -107,7 +107,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                 CONNECTOR_ID,
                 Path.of(((DomainSocketAddress) address).path()),
                 memoryPool,
-                Clock.systemUTC(),
+                Clocks.nanoClock(),
                 allocator,
                 bossGroup,
                 workerGroup,
@@ -176,7 +176,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                             CONNECTOR_ID,
                             Path.of(FILE_NAME),
                             memoryPool,
-                            Clock.systemUTC(),
+                            Clocks.nanoClock(),
                             allocator,
                             bossGroup,
                             workerGroup,

@@ -22,7 +22,6 @@ package org.neo4j.bolt.protocol.common.connector.netty;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.EventLoopGroup;
 import java.net.SocketAddress;
-import java.time.Clock;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.config.AuthConfigProvider;
+import org.neo4j.time.SystemNanoClock;
 
 public class AdditionalSocketNettyConnector extends SocketNettyConnector {
 
@@ -51,7 +51,7 @@ public class AdditionalSocketNettyConnector extends SocketNettyConnector {
             ConnectorType connectorType,
             ConnectorPortRegister portRegister,
             MemoryPool memoryPool,
-            Clock clock,
+            SystemNanoClock clock,
             ByteBufAllocator allocator,
             EventLoopGroup bossGroup,
             EventLoopGroup workerGroup,

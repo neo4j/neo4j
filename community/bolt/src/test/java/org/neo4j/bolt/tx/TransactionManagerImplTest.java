@@ -19,10 +19,7 @@
  */
 package org.neo4j.bolt.tx;
 
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Collections;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,13 +34,14 @@ import org.neo4j.boltmessages.TransactionType;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 class TransactionManagerImplTest {
 
     private BoltGraphDatabaseManagementServiceSPI graphDatabaseManagementService;
     private BoltGraphDatabaseServiceSPI graphDatabaseService;
-    private Clock clock;
+    private SystemNanoClock clock;
 
     private TransactionOwner transactionOwner;
 
@@ -52,7 +50,7 @@ class TransactionManagerImplTest {
         this.graphDatabaseManagementService =
                 Mockito.mock(BoltGraphDatabaseManagementServiceSPI.class, Mockito.RETURNS_MOCKS);
         this.graphDatabaseService = Mockito.mock(BoltGraphDatabaseServiceSPI.class, Mockito.RETURNS_MOCKS);
-        this.clock = FakeClock.fixed(Instant.EPOCH, ZoneOffset.UTC);
+        this.clock = Clocks.fakeClock();
 
         this.transactionOwner = Mockito.mock(TransactionOwner.class);
 

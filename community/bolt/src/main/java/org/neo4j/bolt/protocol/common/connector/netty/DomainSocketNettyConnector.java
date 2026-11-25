@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.net.BindException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
@@ -55,6 +54,7 @@ import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.config.AuthConfigProvider;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * Provides a connector which provides its services through a domain socket.
@@ -74,7 +74,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector<DomainSoc
             String id,
             Path path,
             MemoryPool memoryPool,
-            Clock clock,
+            SystemNanoClock clock,
             ByteBufAllocator allocator,
             EventLoopGroup bossGroup,
             EventLoopGroup workerGroup,

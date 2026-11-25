@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.protocol.common.fsm.transition.transaction;
 
+import java.util.concurrent.TimeUnit;
 import org.neo4j.bolt.fsm.Context;
 import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.fsm.state.StateReference;
@@ -43,15 +44,19 @@ public final class CreateStatementStateTransition extends TransactionalStateTran
     @Override
     protected StateReference process(Context ctx, Transaction tx, RunMessage message, ResponseHandler handler)
             throws StateMachineException {
-        long start = ctx.clock().millis();
+        long start = ctx.clock().nanos();
         try {
             var statement = tx.run(message.statement(), message.params());
-            long end = ctx.clock().millis();
+            long end = ctx.clock().nanos();
 
             // note that we are actively lying to our response handlers here in order to simulate
             // explicit transaction behavior even if an implicit transaction makes use of this
             // state transition in order to support internal Fabric functionality
-            handler.onStatementPrepared(TransactionType.EXPLICIT, statement.id(), end - start, statement.fieldNames());
+            handler.onStatementPrepared(
+                    TransactionType.EXPLICIT,
+                    statement.id(),
+                    TimeUnit.NANOSECONDS.toMillis(end - start),
+                    statement.fieldNames());
         } catch (TransactionException ex) {
             throw new TransactionStateTransitionException(ex);
         }

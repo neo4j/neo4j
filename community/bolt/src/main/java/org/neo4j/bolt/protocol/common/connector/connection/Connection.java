@@ -26,7 +26,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
 import java.net.SocketAddress;
-import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -48,6 +47,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * Represents an established Bolt connection as well as its current state.
@@ -91,7 +91,7 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      *
      * @return a clock.
      */
-    default Clock clock() {
+    default SystemNanoClock clock() {
         return this.connector().clock();
     }
 

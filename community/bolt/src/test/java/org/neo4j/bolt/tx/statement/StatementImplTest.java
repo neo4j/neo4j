@@ -19,23 +19,25 @@
  */
 package org.neo4j.bolt.tx.statement;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.time.SystemNanoClock;
 
 class StatementImplTest {
 
     private DatabaseReference databaseReference;
-    private Clock clock;
+    private SystemNanoClock clock;
     private BoltQueryExecution execution;
     private QueryExecution queryExecution;
     private QueryExecutionType queryExecutionType;
@@ -44,7 +46,7 @@ class StatementImplTest {
     @BeforeEach
     void prepare() {
         this.databaseReference = Mockito.mock(DatabaseReference.class);
-        this.clock = FakeClock.fixed(Instant.EPOCH, ZoneOffset.UTC);
+        this.clock = Clocks.fakeClock();
         this.execution = Mockito.mock(BoltQueryExecution.class);
         this.queryExecution = Mockito.mock(QueryExecution.class);
         this.querySubscriber = Mockito.mock(StatementQuerySubscriber.class);
@@ -114,5 +116,52 @@ class StatementImplTest {
         inOrder.verifyNoMoreInteractions();
 
         Assertions.assertThat(statement.hasRemaining()).isFalse();
+    }
+
+    /**
+     * Ensures that the time spent streaming results (reported as {@code t_last}) is measured using a
+     * monotonic time source and is thus unaffected by adjustments to the wall clock
+     * while results are being consumed.
+     */
+    @Test
+    void shouldMeasureStreamingTimeUsingMonotonicClock() throws Exception {
+        var clock = new SteppableWallClock();
+        var responseHandler = Mockito.mock(ResponseHandler.class);
+
+        Mockito.doReturn(QueryExecutionType.query(QueryExecutionType.QueryType.READ_ONLY))
+                .when(this.queryExecution)
+                .executionType();
+        Mockito.doAnswer(invocation -> {
+                    clock.forward(42, TimeUnit.MILLISECONDS);
+                    clock.stepWallClock(Duration.ofSeconds(-41));
+                    return false;
+                })
+                .when(this.queryExecution)
+                .await();
+
+        var statement = new StatementImpl(42, this.databaseReference, clock, this.execution, this.querySubscriber);
+        statement.consume(responseHandler, -1);
+
+        Assertions.assertThat(statement.executionTime()).isEqualTo(42);
+        Mockito.verify(responseHandler)
+                .onStreamingMetadata(
+                        Mockito.eq(42L), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+    }
+
+    /**
+     * Fake clock which permits its wall clock to be stepped independently of its monotonic time
+     * source.
+     */
+    private static final class SteppableWallClock extends FakeClock {
+        private long wallClockOffsetMillis;
+
+        void stepWallClock(Duration delta) {
+            this.wallClockOffsetMillis += delta.toMillis();
+        }
+
+        @Override
+        public long millis() {
+            return super.millis() + this.wallClockOffsetMillis;
+        }
     }
 }

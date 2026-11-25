@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.tx.statement;
 
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -44,6 +44,7 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryExecutionType.QueryType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -53,7 +54,7 @@ public class StatementImpl implements Statement {
 
     private final long id;
     private final DatabaseReference database;
-    private final Clock clock;
+    private final SystemNanoClock clock;
     private final StatementQuerySubscriber subscriber;
     private final BoltQueryExecution execution;
     private final EventPublisher<Statement.Listener> eventPublisher = new CopyOnWriteEventPublisher<>();
@@ -75,14 +76,14 @@ public class StatementImpl implements Statement {
      */
     private final AtomicReference<State> state = new AtomicReference<>(State.RUNNING);
 
-    private long timeSpentStreaming;
+    private long timeSpentStreamingNanos;
     private final List<String> fieldNames;
     private QueryStatistics statistics;
 
     public StatementImpl(
             long id,
             DatabaseReference database,
-            Clock clock,
+            SystemNanoClock clock,
             BoltQueryExecution execution,
             StatementQuerySubscriber subscriber) {
         this.id = id;
@@ -106,7 +107,7 @@ public class StatementImpl implements Statement {
 
     @Override
     public long executionTime() {
-        return this.timeSpentStreaming;
+        return TimeUnit.NANOSECONDS.toMillis(this.timeSpentStreamingNanos);
     }
 
     @Override
@@ -135,7 +136,7 @@ public class StatementImpl implements Statement {
             var recordHandler = responseHandler.onBeginStreaming(this.fieldNames);
             this.subscriber.setHandler(recordHandler);
 
-            long start = this.clock.millis();
+            long start = this.clock.nanos();
             var query = this.execution.queryExecution();
 
             // if the caller requested for all possible results to be streamed within a single operation,
@@ -154,7 +155,7 @@ public class StatementImpl implements Statement {
                     throw new StatementStreamingException("Failed to consume all statement results", ex);
                 }
 
-                this.timeSpentStreaming += this.clock.millis() - start;
+                this.timeSpentStreamingNanos += this.clock.nanos() - start;
 
                 // if possible, update the statement state to indicate that there is no more results
                 // waiting for consumption
@@ -172,7 +173,7 @@ public class StatementImpl implements Statement {
                     throw new StatementStreamingException("Failed to consume statement results", ex);
                 }
 
-                this.timeSpentStreaming += this.clock.millis() - start;
+                this.timeSpentStreamingNanos += this.clock.nanos() - start;
 
                 // if there are no remaining results to be consumed, attempt to update the state to
                 // reflect the new state
@@ -204,7 +205,7 @@ public class StatementImpl implements Statement {
 
         this.executionLock.lock();
         try {
-            long start = this.clock.millis();
+            long start = this.clock.nanos();
             var query = this.execution.queryExecution();
 
             // if the query has no side effects, and we wish to discard all remaining results, we'll
@@ -221,7 +222,7 @@ public class StatementImpl implements Statement {
                     throw new StatementStreamingException("Failed to discard results", ex);
                 }
 
-                this.timeSpentStreaming += this.clock.millis() - start;
+                this.timeSpentStreamingNanos += this.clock.nanos() - start;
 
                 // since there's no remaining records within this statement, swap its state from
                 // running to completed - if this swap fails, we'll simply ignore it as the owner of
@@ -242,7 +243,7 @@ public class StatementImpl implements Statement {
         var execution = this.execution.queryExecution();
 
         handler.onStreamingMetadata(
-                this.timeSpentStreaming,
+                this.executionTime(),
                 execution.executionType(),
                 this.database,
                 this.statistics,
